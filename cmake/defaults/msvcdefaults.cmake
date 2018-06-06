@@ -82,7 +82,7 @@ _add_define("YY_NO_UNISTD_H")
 # Forces all libraries that have separate source to be linked as
 # DLL's rather than static libraries on Microsoft Windows, unless
 # explicitly told otherwise.
-if (NOT ${Boost_USE_STATIC_LIBS})
+if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
 endif()
 
