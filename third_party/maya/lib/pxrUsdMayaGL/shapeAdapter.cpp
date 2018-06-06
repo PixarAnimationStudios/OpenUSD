@@ -315,10 +315,13 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
 
     // Dormant objects may be included in a soft selection.
     if (displayStatus == MHWRender::kDormant) {
-        const UsdMayaGLSoftSelectHelper& softSelectHelper =
-            UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
-        useWireframeColor = softSelectHelper.GetFalloffColor(shapeDagPath,
-                                                             mayaWireColor);
+        auto& batchRenderer = UsdMayaGLBatchRenderer::GetInstance();
+        if (batchRenderer.GetObjectSoftSelectEnabled()) {
+            const UsdMayaGLSoftSelectHelper& softSelectHelper =
+                UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
+            useWireframeColor = softSelectHelper.GetFalloffColor(shapeDagPath,
+                                                                 mayaWireColor);
+        }
     }
 
     // If the object isn't included in a soft selection, just ask Maya for the

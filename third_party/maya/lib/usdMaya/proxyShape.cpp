@@ -104,6 +104,9 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
 UsdMayaProxyShape::ClosestPointDelegate
 UsdMayaProxyShape::_sharedClosestPointDelegate = nullptr;
 
+UsdMayaProxyShape::ObjectSoftSelectEnabledDelgate
+UsdMayaProxyShape::_sharedObjectSoftSelectEnabledDelgate = nullptr;
+
 bool
 UsdMayaIsBoundingBoxModeEnabled()
 {
@@ -370,6 +373,26 @@ void
 UsdMayaProxyShape::SetClosestPointDelegate(ClosestPointDelegate delegate)
 {
     _sharedClosestPointDelegate = delegate;
+}
+
+/* static */
+void
+UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
+        ObjectSoftSelectEnabledDelgate delegate)
+{
+    _sharedObjectSoftSelectEnabledDelgate = delegate;
+}
+
+/* static */
+bool
+UsdMayaProxyShape::GetObjectSoftSelectEnabled()
+{
+    // If the delegate isn't set, we just assume soft select isn't currently
+    // enabled - this will mean that the object is selectable in VP2, by default
+    if (!_sharedObjectSoftSelectEnabledDelgate) {
+        return false;
+    }
+    return _sharedObjectSoftSelectEnabledDelgate();
 }
 
 /* virtual */
@@ -962,13 +985,29 @@ UsdMayaProxyShape::~UsdMayaProxyShape()
 MSelectionMask
 UsdMayaProxyShape::getShapeSelectionMask() const
 {
-    if (_CanBeSoftSelected()) {
-        // to support soft selection (mode=Object), we need to add kSelectMeshes
-        // to our selection mask.
-        MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
-        return MSelectionMask(selType);
+    // The intent of this function is to control whether this object is
+    // selectable at all in VP2
+
+    // However, due to a bug / quirk, it could be used to specifically control
+    // whether the object was SOFT-selectable if you were using
+    // MAYA_VP2_USE_VP1_SELECTON; in this mode, this setting is NOT querierd
+    // when doing "normal" selection, but IS queried when doing soft
+    // selection.
+
+    // Unfortunately, it is queried for both "normal" selection AND soft
+    // selection if you are using "true" VP2 selection.  So in order to
+    // control soft selection, in both modes, we keep track of whether
+    // we currently have object soft-select enabled, and then return an empty
+    // selection mask if it is, but this object is set to be non-soft-selectable
+
+    static const MSelectionMask emptyMask;
+    static const MSelectionMask normalMask(MSelectionMask::kSelectMeshes);
+
+    if (GetObjectSoftSelectEnabled() && !_CanBeSoftSelected()) {
+        // Disable selection, to disable soft-selection
+        return emptyMask;
     }
-    return MPxSurfaceShape::getShapeSelectionMask();
+    return normalMask;
 }
 
 bool

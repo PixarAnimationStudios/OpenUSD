@@ -67,6 +67,7 @@
 #include <maya/MDrawContext.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
+#include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
@@ -383,11 +384,31 @@ UsdMayaGLBatchRenderer::_OnMayaEndRenderCallback(
     }
 }
 
+/* static */
+void
+UsdMayaGLBatchRenderer::_OnSoftSelectOptionsChangedCallback(void* clientData)
+{
+    auto batchRenderer = static_cast<UsdMayaGLBatchRenderer*>(clientData);
+    int commandResult;
+    // -sse == -softSelectEnabled
+    MGlobal::executeCommand("softSelect -q -sse", commandResult);
+    if (!commandResult) {
+        batchRenderer->_objectSoftSelectEnabled = false;
+        return;
+    }
+    // -ssf == -softSelectFalloff
+    MGlobal::executeCommand("softSelect -q -ssf", commandResult);
+    // fallbackMode 3 == object mode
+    batchRenderer->_objectSoftSelectEnabled = (commandResult == 3);
+}
+
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _lastRenderFrameStamp(0u),
         _lastSelectionFrameStamp(0u),
         _legacyRenderPending(false),
-        _legacySelectionPending(false)
+        _legacySelectionPending(false),
+        _objectSoftSelectEnabled(false),
+        _softSelectOptionsCallbackId(0)
 {
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
@@ -466,6 +487,18 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
             MHWRender::MPassContext::kEndRenderSemantic,
             nullptr);
     }
+
+    // We call _OnSoftSelectOptionsChangedCallback manually once, to initalize
+    // _objectSoftSelectEnabled; because of this, it's setup is slightly
+    // different - since we're calling from within the constructor, we don't
+    // use CurrentlyExists()/GetInstance(), but instead pass this as clientData;
+    // this also means we should clean up the callback in the destructor.
+    _OnSoftSelectOptionsChangedCallback(this);
+    _softSelectOptionsCallbackId =
+        MEventMessage::addEventCallback(
+                "softSelectOptionsChanged",
+                _OnSoftSelectOptionsChangedCallback,
+                this);
 }
 
 /* virtual */
@@ -474,6 +507,12 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
     _selectionTracker.reset();
     _intersector.reset();
     _taskDelegate.reset();
+
+    // We remove the softSelectOptionsChanged callback because it's passed
+    // a this pointer, while others aren't.  We do that, instead of just
+    // using CurrentlyExists()/GetInstance() because we call it within the
+    // constructor
+    MMessage::removeCallback(_softSelectOptionsCallbackId);
 }
 
 const UsdMayaGLSoftSelectHelper&
