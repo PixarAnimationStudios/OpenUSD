@@ -63,7 +63,7 @@ public:
     ///
     static TraceEventNodeRefPtr New() {
         return TraceEventNode::New(
-            TfToken("root"), TraceCategory::Default, 0.0, 0.0, false);
+            TfToken("root"), TraceCategory::Default, 0.0, 0.0, {}, false);
     }
 
     /// Creates a new node with \p key, \p category, \p beginTime and 
@@ -72,9 +72,16 @@ public:
                           const TraceCategoryId category,
                           const TimeStamp beginTime,
                           const TimeStamp endTime,
+                          TraceEventNodeRefPtrVector&& children,
                           const bool separateEvents) {
         return TfCreateRefPtr(
-            new TraceEventNode(key, category, beginTime, endTime, separateEvents));
+            new TraceEventNode(
+                key,
+                category,
+                beginTime,
+                endTime,
+                std::move(children),
+                separateEvents));
     }
 
     /// Appends a new child node with \p key, \p category, \p beginTime and 
@@ -138,12 +145,14 @@ private:
         TraceCategoryId category,
         TimeStamp beginTime, 
         TimeStamp endTime,
+        TraceEventNodeRefPtrVector&& children,
         bool separateEvents)
 
         : _key(key)
         , _category(category)
         , _beginTime(beginTime)
         , _endTime(endTime)
+        , _children(std::move(children))
         , _fromSeparateEvents(separateEvents)
     {}
 

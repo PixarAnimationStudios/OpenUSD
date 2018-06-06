@@ -14,6 +14,7 @@ pxr_library(trace
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        aggregateTree
         aggregateNode
         category
         collection
@@ -39,6 +40,7 @@ pxr_library(trace
         threads
 
     PRIVATE_CLASSES
+        aggregateTreeBuilder
         eventTreeBuilder
         jsonSerialization
 

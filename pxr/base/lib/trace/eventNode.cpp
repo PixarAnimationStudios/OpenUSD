@@ -38,7 +38,7 @@ TraceEventNode::Append(
 {
     TraceEventNodeRefPtr n = 
         TraceEventNode::New(
-            key, category, beginTime, endTime, separateEvents);
+            key, category, beginTime, endTime, {}, separateEvents);
     _children.push_back(n);
     return n;
 }

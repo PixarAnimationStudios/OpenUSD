@@ -54,6 +54,7 @@ TF_DECLARE_PUBLIC_TOKENS(TraceReporterTokens, TRACE_REPORTER_TOKENS);
 
 
 TF_DECLARE_WEAK_AND_REF_PTRS(TraceAggregateNode);
+TF_DECLARE_WEAK_AND_REF_PTRS(TraceAggregateTree);
 TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
 TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventTree);
 
@@ -69,7 +70,7 @@ class TraceCollectionAvailable;
 /// can then be used as a data source to a GUI or written out to a file.
 ///
 class TraceReporter : 
-    public TraceReporterBase, public TraceCollection::Visitor {
+    public TraceReporterBase {
 public:
 
     TF_MALLOC_TAG_NEW("Trace", "TraceReporter");
@@ -192,29 +193,13 @@ public:
     /// populated internally within the Reporter object itself.
     TRACE_API static TraceAggregateNode::Id CreateValidEventId();
 
-
-    /// \name TraceCollection::Visitor Interface
-    /// @{
-    TRACE_API virtual void OnBeginCollection() override;
-    TRACE_API virtual void OnEndCollection() override;
-    TRACE_API virtual void OnBeginThread(const TraceThreadId&) override;
-    TRACE_API virtual void OnEndThread(const TraceThreadId&) override;
-    TRACE_API virtual bool AcceptsCategory(TraceCategoryId) override;
-    TRACE_API virtual void OnEvent(
-        const TraceThreadId&, const TfToken&, const TraceEvent&) override;
-    /// @}
-
 protected:
 
     TRACE_API TraceReporter(const std::string& label,
                    DataSourcePtr dataSource);
 
 private:
-    // Internal methods to traverse the collector's event log.
-    using _EventTimes = std::map<TfToken, TimeStamp>;
-
     void _ProcessCollection(const TraceReporterBase::CollectionPtr&) override;
-    void _ComputeInclusiveCounterValues();
     void _UpdateTree(bool buildEventTree);
     void _PrintRecursionMarker(std::ostream &s, const std::string &label, 
                                int indent);
@@ -226,15 +211,6 @@ private:
     void _PrintLineCalls(std::ostream &s, int inclusive, int exclusive,
                          int total, const std::string& label, int indent);
     void _PrintTimes(std::ostream &s);
-    void _AccumulateTime(const TraceAggregateNodeRefPtr& node);
-
-    void _OnBeginEvent(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnEndEvent(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnCounterEvent(
-        const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnDataEvent(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnTimespanEvent(
-        const TraceThreadId&, const TfToken&, const TraceEvent&);
 
     std::string _GetKeyName(const TfToken&) const;
 
@@ -243,44 +219,9 @@ private:
     bool _groupByFunction;
     bool _foldRecursiveCalls;
 
-    _EventTimes _eventTimes;
-    TraceAggregateNodeRefPtr _rootAggregateNode;
+    TraceAggregateTreeRefPtr _aggregateTree;
     TraceEventTreeRefPtr _eventTree;
 
-    CounterMap _counters;
-
-    using _CounterIndexMap =TfHashMap<TfToken, int, TfToken::HashFunctor>;
-    _CounterIndexMap _counterIndexMap;
-
-    // Helper class for aggregate event tree creation
-    struct _PendingEventNode {
-        struct Child {
-            TimeStamp start;
-            TraceAggregateNodeRefPtr node;
-        };
-
-        struct CounterData {
-            TimeStamp time;
-            int index;
-            double value;
-        };
-
-        _PendingEventNode(
-            TraceAggregateNode::Id id, const TfToken& key, TimeStamp start);
-
-        Child Close(TimeStamp end);
-
-        TraceAggregateNode::Id id;
-        TfToken key;
-        TimeStamp start;
-        std::vector<Child> children;
-        std::vector<CounterData> counters;
-    };
-    
-    using _PendingNodeStack = std::vector<_PendingEventNode>;
-    using _ThreadStackMap = std::map<TraceThreadId, _PendingNodeStack>;
-    _ThreadStackMap _threadStacks;
-    int _counterIndex;
     bool _buildEventTree;
 };
 

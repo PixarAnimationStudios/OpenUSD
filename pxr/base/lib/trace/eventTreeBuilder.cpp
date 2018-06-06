@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/trace/trace.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 Trace_EventTreeBuilder::Trace_EventTreeBuilder() 
@@ -76,6 +78,7 @@ Trace_EventTreeBuilder::OnEndThread(const TraceThreadId& threadId)
             // TODO: Incomplete events are treated as zero duration.
             stack.back().start = 0;
             threadRoot = stack.back().Close(0, /* separateEvents = */ true);
+            threadRoot->SetBeginAndEndTimesFromChildren();
             stack.pop_back();
             if (!stack.empty()) {
                 stack.back().children.push_back(threadRoot);
@@ -141,12 +144,13 @@ Trace_EventTreeBuilder::_OnEnd(
         // insert a new node and take any pending children from the 
         // top of the stack and parent them under this new node.
         
-        // TODO: Incomplete events are treated as zero duration.
+        // Incomplete events set their duration to match their children.
         _PendingEventNode pending(key, e.GetCategory(), 0);
         swap(pending.children, stack.back().children);
         swap(pending.attributes, stack.back().attributes);
         TraceEventNodeRefPtr node =
             pending.Close(0, /* separateEvents = */ true);
+        node->SetBeginAndEndTimesFromChildren();
         stack.back().children.push_back(node);
     }
 }
@@ -227,10 +231,7 @@ Trace_EventTreeBuilder::_PendingEventNode::Close(
     TimeStamp end, bool separateEvents) 
 {
     TraceEventNodeRefPtr node = 
-        TraceEventNode::New(key, category, start, end, separateEvents);
-    for (TraceEventNodeRefPtr& child : children) {
-        node->Append(child);
-    }
+        TraceEventNode::New(key, category, start, end, std::move(children), separateEvents);
     for (AttributeData& it : attributes) {
         node->AddAttribute(TfToken(it.key), std::move(it.data));
     }
