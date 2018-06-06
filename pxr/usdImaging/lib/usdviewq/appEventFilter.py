@@ -47,11 +47,13 @@ class AppEventFilter(QtCore.QObject):
         self._appController = appController
         
     def IsNavKey(self, key, modifiers):
-        return ((key in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right,
-                         QtCore.Qt.Key_Up, QtCore.Qt.Key_Down,
-                         QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown,
-                         QtCore.Qt.Key_Home, QtCore.Qt.Key_End))
-                and modifiers == QtCore.Qt.NoModifier)
+        # Note that the arrow keys are considered part of the keypad on macOS.
+        return (key in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right,
+                        QtCore.Qt.Key_Up, QtCore.Qt.Key_Down,
+                        QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown,
+                        QtCore.Qt.Key_Home, QtCore.Qt.Key_End)
+                and modifiers in (QtCore.Qt.NoModifier,
+                                  QtCore.Qt.KeypadModifier))
         
     def _IsWindow(self, obj):
         if isinstance(obj, QtWidgets.QWidget):
