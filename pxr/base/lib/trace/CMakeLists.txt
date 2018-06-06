@@ -119,6 +119,13 @@ pxr_build_test(testTraceCounters
         testenv/testTraceCounters.cpp
 )
 
+pxr_build_test(testTraceReportPerf
+    LIBRARIES
+        trace
+    CPPFILES
+        testenv/testTraceReportPerf.cpp
+)
+
 pxr_test_scripts(
     testenv/testTrace.py
     testenv/testTraceRecursion.py
@@ -244,4 +251,8 @@ pxr_register_test(testTraceSerialization
 
 pxr_register_test(testTraceCounters
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCounters"
+)
+
+pxr_register_test(testTraceReportPerf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
 )
