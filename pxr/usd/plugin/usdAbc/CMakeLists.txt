@@ -66,6 +66,7 @@ pxr_test_scripts(
     testenv/testUsdAbcBugs.py
     testenv/testUsdAbcCamera.py
     testenv/testUsdAbcConversionSubdiv.py
+    testenv/testUsdAbcIndexedProperties.py
     testenv/testUsdAbcInstancing.py
     testenv/testUsdAbcUvReadWrite.py
     testenv/testUsdAbcUvReadWrite_OldEncoding.py
@@ -89,6 +90,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcConversionSubdiv
     DEST testUsdAbcConversionSubdiv
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcIndexedProperties
+    DEST testUsdAbcIndexedProperties
 )
 
 pxr_install_test_dir(
@@ -145,6 +151,15 @@ pxr_register_test(testUsdAbcConversionSubdiv
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionSubdiv"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcIndexedProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedProperties"
+    DIFF_COMPARE indexedTextureCoordinates.def.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=def
 )
 
 pxr_register_test(testUsdAbcInstancing
