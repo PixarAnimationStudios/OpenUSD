@@ -2964,6 +2964,31 @@ _ReadOther(_PrimReaderContext* context)
     }
 }
 
+template<class T, class UsdValueType>
+void
+_ReadProperty(_PrimReaderContext* context, const char* name, TfToken propName, SdfValueTypeName typeName)
+{
+    // Read a generic Alembic property and convert it to a USD property.
+    // If the Alembic property is indexed, this will add both the values
+    // property and the indices property, in order to preserve topology.
+    auto prop = context->ExtractSchema(name);
+    if (prop.Cast<T>().isIndexed()) {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType, false>(prop));
+        context->AddProperty(
+            TfToken(SdfPath::JoinIdentifier(propName, UsdGeomTokens->indices)),
+            SdfValueTypeNames->IntArray,
+            _CopyIndices<T>(prop));
+    } else {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType>(prop));
+    }
+}
+
 /* Unused
 static
 void
@@ -3135,24 +3160,8 @@ _ReadPolyMesh(_PrimReaderContext* context)
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
 
-    // special case for texture coordinates: we want to preserve the topology,
-    // so we need to extract the indices properties if they exist.
-    auto uvProperty = context->ExtractSchema("uv");
-    if (uvProperty.Cast<IV2fGeomParam>().isIndexed()) {
-        context->AddProperty(
-            _GetUVPropertyName(),
-            _GetUVTypeName(),
-            _CopyGeneric<IV2fGeomParam, GfVec2f, false>(uvProperty));
-        context->AddProperty(
-            TfToken(_GetUVPropertyName().GetString() + ":indices"),
-            SdfValueTypeNames->IntArray,
-            _CopyIndices<IV2fGeomParam>(uvProperty));
-    } else {
-        context->AddProperty(
-            _GetUVPropertyName(),
-            _GetUVTypeName(),
-            _CopyGeneric<IV2fGeomParam, GfVec2f>(uvProperty));
-    }
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
 
     // Custom subdivisionScheme property.  Alembic doesn't have this since
     // the Alembic schema is PolyMesh.  Usd needs "none" as the scheme.
@@ -3246,24 +3255,8 @@ _ReadSubD(_PrimReaderContext* context)
         _CopyGeneric<IFloatArrayProperty, float>(
             context->ExtractSchema(".creaseSharpnesses")));
 
-    // special case for texture coordinates: we want to preserve the topology,
-    // so we need to extract the indices properties if they exist.
-    auto uvProperty = context->ExtractSchema("uv");
-    if (uvProperty.Cast<IV2fGeomParam>().isIndexed()) {
-        context->AddProperty(
-            _GetUVPropertyName(),
-            _GetUVTypeName(),
-            _CopyGeneric<IV2fGeomParam, GfVec2f, false>(uvProperty));
-        context->AddProperty(
-            TfToken(_GetUVPropertyName().GetString() + ":indices"),
-            SdfValueTypeNames->IntArray,
-            _CopyIndices<IV2fGeomParam>(uvProperty));
-    } else {
-        context->AddProperty(
-            _GetUVPropertyName(),
-            _GetUVTypeName(),
-            _CopyGeneric<IV2fGeomParam, GfVec2f>(uvProperty));
-    }
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
 }
 
 static
