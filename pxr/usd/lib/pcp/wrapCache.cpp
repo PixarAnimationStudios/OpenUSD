@@ -45,16 +45,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static std::auto_ptr<PcpCache>
-_New(const PcpLayerStackIdentifier& identifier,
-     const std::string& targetSchema,
-     bool usd,
-     const PcpPayloadDecoratorRefPtr& payloadDecorator)
-{
-    return std::auto_ptr<PcpCache>(
-        new PcpCache(identifier, targetSchema, usd, payloadDecorator));
-}
-
 static boost::python::tuple
 _ComputeLayerStack( PcpCache &cache, 
                     const PcpLayerStackIdentifier &identifier ) 
@@ -235,15 +225,16 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, std::auto_ptr<PcpCache>, boost::noncopyable> 
-        ("Cache", no_init)
-
-        .def("__init__", 
-             make_constructor(_New, default_call_policies(),
-                 (arg("layerStackIdentifier"),
-                  arg("targetSchema") = std::string(),
-                  arg("usd") = false,
-                  arg("payloadDecorator") = PcpPayloadDecoratorRefPtr())))
+    class_<PcpCache, boost::noncopyable> 
+        ("Cache", 
+         init<const PcpLayerStackIdentifier&,
+              const std::string&, 
+              bool,
+              const PcpPayloadDecoratorRefPtr&>(
+              (arg("layerStackIdentifier"),
+               arg("targetSchema") = std::string(),
+               arg("usd") = false,
+               arg("payloadDecorator") = PcpPayloadDecoratorRefPtr())))
 
         // Note: The following parameters are not wrapped as a properties
         // because setting them may require returning additional out-
