@@ -68,7 +68,8 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// Returns true if the visibility state was changed, or false
         /// otherwise.
         PXRUSDMAYAGL_API
-        virtual bool UpdateVisibility() override;
+        virtual bool UpdateVisibility(
+                const MSelectionList& isolatedObjects) override;
 
         PXRUSDMAYAGL_API
         virtual void SetRootXform(const GfMatrix4d& transform) override;

@@ -47,6 +47,7 @@
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MSelectionList.h>
 #include <maya/MUserData.h>
 
 
@@ -176,7 +177,7 @@ PxrMayaHdShapeAdapter::Sync(
 
 /* virtual */
 bool
-PxrMayaHdShapeAdapter::UpdateVisibility()
+PxrMayaHdShapeAdapter::UpdateVisibility(const MSelectionList&)
 {
     return false;
 }
@@ -345,6 +346,69 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
     }
 
     return useWireframeColor;
+}
+
+/* static */
+bool PxrMayaHdShapeAdapter::_GetVisibility(
+        const MDagPath& dagPath,
+        const MSelectionList& isolatedObjects,
+        bool* visibility)
+{
+    MStatus status;
+    const MHWRender::DisplayStatus displayStatus =
+        MHWRender::MGeometryUtilities::displayStatus(dagPath, &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (displayStatus == MHWRender::kInvisible) {
+        *visibility = false;
+        return true;
+    }
+
+    // The displayStatus() method above does not account for things like
+    // display layers, so we also check the shape's dag path for its visibility
+    // state.
+    const bool dagPathIsVisible = dagPath.isVisible(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (!dagPathIsVisible) {
+        *visibility = false;
+        return true;
+    }
+
+    // If non-empty, isolatedObjects contains the "root" isolated objects, so
+    // we'll need to check to see if one of our ancestors was isolated. (The
+    // ancestor check is potentially slow if you're isolating selection in
+    // a very large scene.)
+    // If empty, nothing is being isolated. (You don't pay the cost of any
+    // ancestor checking in this case.)
+    const bool somethingIsolated = !isolatedObjects.isEmpty(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (somethingIsolated) {
+        bool isIsolateVisible = false;
+        MDagPath curPath(dagPath);
+        while (curPath.length()) {
+            const bool hasItem = isolatedObjects.hasItem(
+                    curPath, MObject::kNullObj, &status);
+            if (status != MS::kSuccess) {
+                return false;
+            }
+            if (hasItem) {
+                isIsolateVisible = true;
+                break;
+            }
+            curPath.pop();
+        }
+        *visibility = isIsolateVisible;
+        return true;
+    }
+
+    // Passed all visibility checks.
+    *visibility = true;
+    return true;
 }
 
 PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()

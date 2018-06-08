@@ -402,6 +402,24 @@ UsdMayaGLBatchRenderer::_OnSoftSelectOptionsChangedCallback(void* clientData)
     batchRenderer->_objectSoftSelectEnabled = (commandResult == 3);
 }
 
+
+/* static */
+bool
+UsdMayaGLBatchRenderer::_GetViewFromDrawContext(
+        const MHWRender::MDrawContext& context,
+        M3dView* view)
+{
+    MString modelPanel;
+    if (context.renderingDestination(modelPanel) ==
+            MHWRender::MFrameContext::k3dViewport) {
+        if (M3dView::getM3dViewFromModelPanel(modelPanel, *view)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _lastRenderFrameStamp(0u),
         _lastSelectionFrameStamp(0u),
@@ -635,7 +653,12 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
         GfVec4d viewport;
         _GetViewport(view, &viewport);
 
-        _RenderBatches(nullptr, worldToViewMatrix, projectionMatrix, viewport);
+        _RenderBatches(
+                /* vp2Context */ nullptr,
+                &view,
+                worldToViewMatrix,
+                projectionMatrix,
+                viewport);
     }
 
     // Clean up the user data.
@@ -696,7 +719,15 @@ UsdMayaGLBatchRenderer::Draw(
         GfVec4d viewport;
         _GetViewport(context, &viewport);
 
-        _RenderBatches(&context, worldToViewMatrix, projectionMatrix, viewport);
+        M3dView view;
+        const bool hasView = _GetViewFromDrawContext(context, &view);
+
+        _RenderBatches(
+                &context,
+                hasView ? &view : nullptr,
+                worldToViewMatrix,
+                projectionMatrix,
+                viewport);
     }
 }
 
@@ -781,6 +812,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
 
     if (_UpdateLegacySelectionPending(false)) {
         _ComputeSelection(bucketsMap,
+                          &view,
                           viewMatrix,
                           projectionMatrix,
                           singleSelection);
@@ -850,8 +882,12 @@ UsdMayaGLBatchRenderer::TestIntersection(
         return false;
     }
 
+    M3dView view;
+    const bool hasView = _GetViewFromDrawContext(context, &view);
+
     if (_UpdateSelectionFrameStamp(context.getFrameStamp())) {
         _ComputeSelection(_shapeAdapterBuckets,
+                          hasView ? &view : nullptr,
                           viewMatrix,
                           projectionMatrix,
                           singleSelection);
@@ -912,6 +948,7 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
 HdRprimCollectionVector
 UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterBucketsMap& bucketsMap,
+        const MSelectionList& isolatedObjects,
         const bool useDepthSelection) const
 {
     HdRprimCollectionVector rprimCollections;
@@ -928,7 +965,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterSet& shapeAdapters = iter.second.second;
 
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility();
+            shapeAdapter->UpdateVisibility(isolatedObjects);
 
             isViewport2 = shapeAdapter->IsViewport2();
 
@@ -1000,10 +1037,19 @@ UsdMayaGLBatchRenderer::_TestIntersection(
 void
 UsdMayaGLBatchRenderer::_ComputeSelection(
         _ShapeAdapterBucketsMap& bucketsMap,
+        const M3dView* view3d,
         const GfMatrix4d& viewMatrix,
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
+    // Figure out Maya's isolate for this viewport.
+    MSelectionList isolatedObjects;
+#if MAYA_API_VERSION >= 201700
+    if (view3d && view3d->viewIsFiltered()) {
+        view3d->filteredObjectList(isolatedObjects);
+    }
+#endif
+
     // If the enable depth selection env setting has not been turned on, then
     // we can optimize area/marquee selections by handling collections
     // similarly to a single selection, where we test intersections against the
@@ -1012,7 +1058,8 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         (!singleSelection && TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION));
 
     const HdRprimCollectionVector rprimCollections =
-        _GetIntersectionRprimCollections(bucketsMap, useDepthSelection);
+        _GetIntersectionRprimCollections(
+            bucketsMap, isolatedObjects, useDepthSelection);
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
         "____________ SELECTION STAGE START ______________ "
@@ -1194,6 +1241,7 @@ UsdMayaGLBatchRenderer::_Render(
 void
 UsdMayaGLBatchRenderer::_RenderBatches(
         const MHWRender::MDrawContext* vp2Context,
+        const M3dView* view3d,
         const GfMatrix4d& worldToViewMatrix,
         const GfMatrix4d& projectionMatrix,
         const GfVec4d& viewport)
@@ -1205,6 +1253,14 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     if (bucketsMap.empty()) {
         return;
     }
+
+    // Figure out Maya's isolate for this viewport.
+    MSelectionList isolatedObjects;
+#if MAYA_API_VERSION >= 201700
+    if (view3d && view3d->viewIsFiltered()) {
+        view3d->filteredObjectList(isolatedObjects);
+    }
+#endif
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
         "____________ RENDER STAGE START ______________ (%zu buckets)\n",
@@ -1226,7 +1282,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
         HdRprimCollectionVector rprimCollections;
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility();
+            shapeAdapter->UpdateVisibility(isolatedObjects);
 
             rprimCollections.push_back(shapeAdapter->GetRprimCollection());
         }
