@@ -278,6 +278,36 @@ struct PxrUsdMayaWriteUtil
             VtVec3fArray* val);
     /// \}
 
+    /// \name Frame/time utilities {
+
+    /// Gets an ordered list of frame samples for the given \p frameRange,
+    /// advancing the time by \p stride on each iteration, and computing extra
+    /// subframe samples using \p subframeOffsets.
+    /// \p stride determines how much to increment the "current time" on each
+    /// iteration; whenever the current time is incremented past the end of
+    /// \p frameRange, iteration will stop.
+    /// \p subframeOffsets is treated as a set of offsets from the
+    /// "current time"; empty \p subframeOffsets is equivalent to {0.0}, which
+    /// means to only add one frame sample per time increment.
+    ///
+    /// Raises a runtime error and returns an empty list of time samples if
+    /// \p stride is not greater than 0.
+    /// Warns if any \p subframeOffsets fall outside of the open interval
+    /// (-\p stride, +\p stride), but returns a valid result in that case,
+    /// ensuring that the returned list is sorted. 
+    ///
+    /// Example: frameRange = [1, 5], subframeOffsets = {0.0, 0.9}, stride = 2.0
+    ///     This gives the time samples [1, 1.9, 3, 3.9, 5, 5.9].
+    ///     Note that the \p subframeOffsets allows the last frame to go
+    ///     _outside_ the specified \p frameRange.
+    PXRUSDMAYA_API
+    static std::vector<double> GetTimeSamples(
+            const GfInterval& frameRange,
+            const std::set<double>& subframeOffsets,
+            const double stride = 1.0);
+
+    /// \}
+
 };
 
 

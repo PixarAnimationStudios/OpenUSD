@@ -1453,5 +1453,54 @@ PxrUsdMayaWriteUtil::ReadMayaAttribute(
     return false;
 }
 
+std::vector<double>
+PxrUsdMayaWriteUtil::GetTimeSamples(
+        const GfInterval& frameRange,
+        const std::set<double>& subframeOffsets,
+        const double stride)
+{
+    std::vector<double> samples;
+
+    // Error if stride is <= 0.0.
+    if (stride <= 0.0) {
+        TF_RUNTIME_ERROR("stride (%f) is not greater than 0", stride);
+        return samples;
+    }
+
+    // Only warn if subframe offsets are outside the stride. Resulting time
+    // samples are still sane.
+    for (const double t : subframeOffsets) {
+        if (t <= -stride) {
+            TF_WARN("subframe offset (%f) <= -stride (-%f)", t, stride);
+        }
+        else if (t >= stride) {
+            TF_WARN("subframe offset (%f) >= stride (%f)", t, stride);
+        }
+    }
+
+    // Early-out if this is an empty range.
+    if (frameRange.IsEmpty()) {
+        return samples;
+    }
+
+    // Iterate over all possible times and sample offsets.
+    static const std::set<double> zeroOffset = {0.0};
+    const std::set<double>& actualOffsets = subframeOffsets.empty() ?
+            zeroOffset : subframeOffsets;
+    double currentTime = frameRange.GetMin();
+    while (frameRange.Contains(currentTime)) {
+        for (const double offset : actualOffsets) {
+            samples.push_back(currentTime + offset);
+        }
+        currentTime += stride;
+    }
+
+    // Need to sort list before returning to make sure it's in time order.
+    // This is mainly important for if there's a subframe offset outside the
+    // interval (-stride, stride).
+    std::sort(samples.begin(), samples.end());
+    return samples;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

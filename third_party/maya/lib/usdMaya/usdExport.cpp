@@ -24,9 +24,10 @@
 #include "pxr/pxr.h"
 #include "usdMaya/usdExport.h"
 
+#include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/usdWriteJob.h"
 #include "usdMaya/util.h"
-#include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/writeUtil.h"
 
 #include <maya/MFileObject.h>
 #include <maya/MItDependencyNodes.h>
@@ -142,6 +143,7 @@ MSyntax usdExport::createSyntax()
 
     // These are additional flags under our control.
     syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);
+    syntax.addFlag("-ft", "-frameStride", MSyntax::kDouble);
     syntax.addFlag("-fs", "-frameSample", MSyntax::kDouble);
     syntax.makeFlagMultiUse("-frameSample");
 
@@ -209,7 +211,6 @@ try
         if (fileName.empty()) {
             fileName = tmpVal.asChar();
         }
-        MGlobal::displayInfo(MString("Saving as ") + MString(fileName.c_str()));
     }
     else {
         MString error = "-file not specified.";
@@ -243,16 +244,17 @@ try
         timeInterval = GfInterval();
     }
 
+    double frameStride = 1.0;
+    if (argData.isFlagSet("frameStride")) {
+        argData.getFlagArgument("frameStride", 0, frameStride);
+    }
+
     std::set<double> frameSamples;
     unsigned int numFrameSamples = argData.numberOfFlagUses("frameSample");
     for (unsigned int i = 0; i < numFrameSamples; ++i) {
         MArgList tmpArgList;
         argData.getFlagArgumentList("frameSample", i, tmpArgList);
         frameSamples.insert(tmpArgList.asDouble(0));
-    }
-
-    if (frameSamples.empty()) {
-        frameSamples.insert(0.0);
     }
 
     // Get the objects to export as a MSelectionList
@@ -291,24 +293,20 @@ try
 
     // Create stage and process static data
     if (usdWriteJob.beginJob(fileName, append)) {
-        if (!jobArgs.timeInterval.IsEmpty()) {
+        std::vector<double> timeSamples =
+                PxrUsdMayaWriteUtil::GetTimeSamples(
+                jobArgs.timeInterval, frameSamples, frameStride);
+        if (!timeSamples.empty()) {
             const MTime oldCurTime = MAnimControl::currentTime();
-            for (double i = jobArgs.timeInterval.GetMin();
-                    jobArgs.timeInterval.Contains(i);
-                    i += 1.0) {
-                for (double sampleTime : frameSamples) {
-                    const double actualTime = i + sampleTime;
-                    if (verbose) {
-                        MString info;
-                        info = actualTime;
-                        MGlobal::displayInfo(info);
-                    }
-                    MGlobal::viewFrame(actualTime);
-                    // Process per frame data
-                    usdWriteJob.evalJob(actualTime);
-                    if (computation.isInterruptRequested()) {
-                        break;
-                    }
+            for (double t : timeSamples) {
+                if (verbose) {
+                    TF_STATUS("%f", t);
+                }
+                MGlobal::viewFrame(t);
+                // Process per frame data
+                usdWriteJob.evalJob(t);
+                if (computation.isInterruptRequested()) {
+                    break;
                 }
             }
 
@@ -329,9 +327,7 @@ try
 } // end of try block
 catch (std::exception & e)
 {
-    MString theError("std::exception encountered: ");
-    theError += e.what();
-    MGlobal::displayError(theError);
+    TF_RUNTIME_ERROR("std::exception encountered: %s", e.what());
     return MS::kFailure;
 }
 } // end of function
