@@ -27,7 +27,8 @@
 
 #include "pxr/pxr.h"
 
-#include <boost/operators.hpp>
+#include <cstddef>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This class holds data necessary to create keys for TraceEvent instances.
 /// This class is meant to be used as constexpr static data.
 ///
-class TraceStaticKeyData : boost::totally_ordered<TraceStaticKeyData> {
+class TraceStaticKeyData {
 public:
     /// \class StringLiteral
     ///
@@ -75,6 +76,10 @@ public:
 
     /// Equality comparison.  Inequality is also defined.
     bool operator == (const TraceStaticKeyData& other) const;
+
+    bool operator != (const TraceStaticKeyData& other) const {
+        return !(*this == other);
+    }
 
     /// Returns the string representation of the key data.
     std::string GetString() const;
