@@ -292,7 +292,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             _UsdToHdInterpolation(interpToken),
             HdPrimvarRoleTokens->color);
 
-        if (_CanComputeMaterialNetworks()) {
+        if (_GetMaterialBindingPurpose() == HdTokens->full) {
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
             // for the list of primvars.

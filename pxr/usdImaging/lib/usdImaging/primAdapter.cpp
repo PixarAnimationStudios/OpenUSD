@@ -447,11 +447,11 @@ UsdImagingPrimAdapter::_GetRprimSubtree(SdfPath const& indexPath) const
     return _delegate->GetRenderIndex().GetRprimSubtree(indexPath);
 }
 
-bool 
-UsdImagingPrimAdapter::_CanComputeMaterialNetworks() const
+TfToken
+UsdImagingPrimAdapter::_GetMaterialBindingPurpose() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
-        CanComputeMaterialNetworks();
+        GetMaterialBindingPurpose();
 }
 
 TfToken

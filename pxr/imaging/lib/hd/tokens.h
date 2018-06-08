@@ -65,6 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (elementCount)                              \
     (extent)                                    \
     (faceColors)                                \
+    (full)                                      \
     (geometry)                                  \
     (guide)                                     \
     (hermite)                                   \
@@ -95,6 +96,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (points)                                    \
     (pointsIndices)                             \
     (power)                                     \
+    (preview)                                   \
     (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \

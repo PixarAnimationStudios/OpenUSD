@@ -271,11 +271,14 @@ public:
     /// Materials
     ///
     ////////////////////////////////////////////////////////////////////////////
+    
     ///
-    /// Returns true if this renderer can deal with full materials.
+    /// Returns a token that indicates material bindings should be used,
+    /// based on the indicated purpose.  The default purpose is
+    /// HdTokens->preview.
     ///
     HD_API
-    virtual bool CanComputeMaterialNetworks() const { return false; }
+    virtual TfToken GetMaterialBindingPurpose() const;
 
     ///
     /// Returns a token that can be used to select among multiple

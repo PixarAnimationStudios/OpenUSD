@@ -278,7 +278,6 @@ HdUnitTestDelegate::AddMaterialResource(SdfPath const &id,
                                          VtValue materialResource)
 {
     HdRenderIndex& index = GetRenderIndex();
-    TF_VERIFY(index.GetRenderDelegate()->CanComputeMaterialNetworks());
     index.InsertSprim(HdPrimTypeTokens->material, this, id);
     _materials[id] = materialResource;
 }

@@ -111,8 +111,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime())
     , _materialBindingImplData(parentIndex->GetRenderDelegate()->
-            CanComputeMaterialNetworks() ? UsdShadeTokens->full 
-                                         : UsdShadeTokens->preview)
+                               GetMaterialBindingPurpose())
     , _materialBindingCache(GetTime(), &_materialBindingImplData)
     , _visCache(GetTime())
     , _drawModeCache(GetTime())
@@ -226,9 +225,10 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         // treated like Materials. When not using networks,
         // we want Shaders to be treated like HydraPbsSurface
         // for backwards compatibility.
-        bool useMaterialNetworks = GetRenderIndex().
-            GetRenderDelegate()->CanComputeMaterialNetworks();
-        if (!useMaterialNetworks && adapterKey == _tokens->Material) {
+        TfToken bindingPurpose = GetRenderIndex().
+            GetRenderDelegate()->GetMaterialBindingPurpose();
+        if (bindingPurpose == HdTokens->preview &&
+            adapterKey == _tokens->Material) {
             adapterKey = _tokens->HydraPbsSurface;
         }
     }
