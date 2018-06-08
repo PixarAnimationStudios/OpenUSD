@@ -40,7 +40,6 @@
 #include <boost/python/object.hpp>
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/operators.hpp>
 
 #include <cstddef>
@@ -291,7 +290,7 @@ template <class Ptr>
 bool
 TfAnyWeakPtr::_PointerHolder<Ptr>::_IsPolymorphic() const
 {
-    return boost::is_polymorphic<typename Ptr::DataType>::value;
+    return std::is_polymorphic<typename Ptr::DataType>::value;
 }
 
 template <class Ptr>
