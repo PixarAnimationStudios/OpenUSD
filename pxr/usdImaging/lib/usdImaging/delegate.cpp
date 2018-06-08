@@ -2721,15 +2721,8 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
     }
 
     SdfPath usdPath = GetPathForUsd(materialId);
-
-    if (!_valueCache.ExtractMaterialResource(usdPath, &vtMatResource)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow material resource fetch for %s\n",
-            materialId.GetText());
-        _UpdateSingleValue(usdPath, HdMaterial::DirtyResource);
-        TF_VERIFY(_valueCache.ExtractMaterialResource(usdPath, &vtMatResource));
-    }
-
+    _UpdateSingleValue(usdPath, HdMaterial::DirtyResource);
+    TF_VERIFY(_valueCache.FindMaterialResource(usdPath, &vtMatResource));
     return vtMatResource;
 }
 

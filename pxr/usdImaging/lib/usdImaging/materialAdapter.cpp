@@ -30,6 +30,7 @@
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,6 +75,15 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    // Also register this adapter on behalf of any descendent
+    // UsdShadeShader prims, since they are consumed to
+    // create the material network.
+    for (UsdPrim const& child: prim.GetDescendants()) {
+        if (child.IsA<UsdShadeShader>()) {
+            index->AddPrimInfo(child.GetPath(), child, shared_from_this());
+        }
+    }
 
     return prim.GetPath();
 }
@@ -128,8 +138,9 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                TfToken const& propertyName)
 {
-    // XXX: This doesn't get notifications for dependent nodes.
-    return HdChangeTracker::AllDirty;
+    // The only meaningful change is to dirty the computed resource,
+    // an HdMaterialNetwork.
+    return HdMaterial::DirtyResource;
 }
 
 /* virtual */
@@ -139,7 +150,19 @@ UsdImagingMaterialAdapter::MarkDirty(UsdPrim const& prim,
                                    HdDirtyBits dirty,
                                    UsdImagingIndexProxy* index)
 {
-    index->MarkSprimDirty(cachePath, dirty);
+    // If this is invoked on behalf of a Shader prim underneath a
+    // Material prim, walk up to the enclosing Material.
+    SdfPath materialCachePath = cachePath;
+    UsdPrim materialPrim = prim;
+    while (materialPrim && !materialPrim.IsA<UsdShadeMaterial>()) {
+        materialPrim = materialPrim.GetParent();
+        materialCachePath = materialCachePath.GetParentPath();
+    }
+    if (!TF_VERIFY(materialPrim)) {
+        return;
+    }
+
+    index->MarkSprimDirty(materialCachePath, dirty);
 }
 
 /* virtual */
