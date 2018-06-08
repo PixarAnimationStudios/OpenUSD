@@ -408,6 +408,14 @@ class TestUsdPrim(unittest.TestCase):
         assert not stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
+    def test_DefineOverInactive(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('DefineOverInactive.'+fmt)
+            p1 = s.DefinePrim('/f')
+            p1.SetActive(False)
+
+            with self.assertRaises(Tf.ErrorException):
+                g = s.DefinePrim('/f/g')
 
     def test_ChangeTypeName(self):
         for fmt in allFormats:

@@ -3176,12 +3176,24 @@ UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
 {
     // Special-case requests for the root.  It always succeeds and never does
     // authoring since the root cannot have PrimSpecs.
-    if (path == SdfPath::AbsoluteRootPath())
+    if (path == SdfPath::AbsoluteRootPath()) {
         return GetPseudoRoot();
+    }
 
     // Define all ancestors.
-    if (!_DefinePrim(path.GetParentPath(), TfToken()))
+    auto parentPath = path.GetParentPath();
+    if (!_DefinePrim(parentPath, TfToken())) {
         return UsdPrim();
+    }
+
+    // Disallow authoring a prim under an inactive ancestor
+    if (!GetPrimAtPath(parentPath).IsActive()) {
+        TF_RUNTIME_ERROR("Failed to create UsdPrim <%s>. "
+                         "Cannot author a UsdPrim under an inactive ancestor <%s>.", 
+                         path.GetText(),
+                         parentPath.GetText());
+        return UsdPrim();
+    }
     
     // Now author scene description for this prim.
     TfErrorMark m;
@@ -3212,8 +3224,9 @@ UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
     
     // Issue an error if we were unable to define this prim and an error isn't
     // already issued.
-    if ((!prim || !prim.IsDefined()) && m.IsClean())
+    if ((!prim || !prim.IsDefined()) && m.IsClean()) {
         TF_RUNTIME_ERROR("Failed to define UsdPrim <%s>", path.GetText());
+    }
 
     return prim;
 }
