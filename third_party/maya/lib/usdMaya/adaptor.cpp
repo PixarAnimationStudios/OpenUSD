@@ -603,6 +603,8 @@ PxrUsdMayaAdaptor::RegisterAttributeAlias(
 std::vector<std::string>
 PxrUsdMayaAdaptor::GetAttributeAliases(const TfToken& attributeName)
 {
+    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaAdaptor>();
+
     std::vector<std::string> result;
     result.push_back(_GetMayaAttrNameForAttrName(attributeName));
 

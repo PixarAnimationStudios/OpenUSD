@@ -336,5 +336,11 @@ class testUsdMayaAdaptor(unittest.TestCase):
         self.assertAlmostEqual(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
                 UsdGeom.Tokens.motionVelocityScale).Get(), 0.42)
 
+    def testGetAttributeAliases(self):
+        """Tests the GetAttributeAliases function."""
+        self.assertEqual(
+                UsdMaya.Adaptor.GetAttributeAliases("subdivisionScheme"),
+                ["USD_ATTR_subdivisionScheme", "USD_subdivisionScheme"])
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
