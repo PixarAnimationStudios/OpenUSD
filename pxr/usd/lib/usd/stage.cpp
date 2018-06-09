@@ -3187,11 +3187,12 @@ UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
     }
 
     // Disallow authoring a prim under an inactive ancestor
+    // Note that GetPrimAtPath() is safe here due to the way _DefinePrim
+    // recurses up to the toplevel prim at 3167.
     if (!GetPrimAtPath(parentPath).IsActive()) {
-        TF_RUNTIME_ERROR("Failed to create UsdPrim <%s>. "
-                         "Cannot author a UsdPrim under an inactive ancestor <%s>.", 
-                         path.GetText(),
-                         parentPath.GetText());
+        TF_WARN("Failed to create UsdPrim <%s>. "
+                "Cannot author a UsdPrim under an inactive ancestor <%s>.", 
+                path.GetText(), parentPath.GetText());
         return UsdPrim();
     }
     
