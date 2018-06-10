@@ -206,6 +206,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \
+    (volume)                                    \
                                                 \
     /* Sprims */                                \
     (camera)                                    \
@@ -223,6 +224,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (extComputation)                            \
                                                 \
     /* Bprims */                                \
+    (openvdbAsset)				\
+    (field3dAsset)				\
     (texture)
 
 #define HD_PRIMVAR_ROLE_TOKENS                  \

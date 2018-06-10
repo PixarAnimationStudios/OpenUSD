@@ -345,6 +345,11 @@ public:
     virtual VtValue GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName) override;
 
+    // Volume Support
+    USDIMAGING_API
+    virtual HdVolumeFieldDescriptorVector
+    GetVolumeFieldDescriptors(SdfPath const &volumeId) override;
+
     // Material Support
     USDIMAGING_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId) override;

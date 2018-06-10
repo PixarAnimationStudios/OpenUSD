@@ -324,6 +324,15 @@ public:
                        UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Volume field information
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual HdVolumeFieldDescriptorVector
+    GetVolumeFieldDescriptors(UsdPrim const& usdPrim, SdfPath const &id,
+                              UsdTimeCode time) const;
+
+    // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 

@@ -104,6 +104,13 @@
                         "isInternal": true,
                         "primTypeName": "Sphere"
                     },
+                    "UsdImagingVolumeAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Volume"
+                    },
                     "UsdImagingDomeLightAdapter": {
                         "bases": [
                             "UsdImagingLightAdapter"
@@ -145,6 +152,20 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "DistantLight"
+                    },
+                    "UsdImagingOpenVDBAssetAdapter": {
+                        "bases": [
+                            "UsdImagingFieldAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "OpenVDBAsset"
+                    },
+                    "UsdImagingField3DAssetAdapter": {
+                        "bases": [
+                            "UsdImagingFieldAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Field3DAsset"
                     }
                 }
             },

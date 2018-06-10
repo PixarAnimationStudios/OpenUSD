@@ -345,6 +345,14 @@ UsdImagingPrimAdapter::GetTextureResource(UsdPrim const& usdPrim,
     return nullptr;
 }
 
+HdVolumeFieldDescriptorVector
+UsdImagingPrimAdapter::GetVolumeFieldDescriptors(UsdPrim const& usdPrim,
+	                                         SdfPath const &id,
+                                                 UsdTimeCode time) const
+{
+    return HdVolumeFieldDescriptorVector();
+}
+
 void
 UsdImagingPrimAdapter::SetDelegate(UsdImagingDelegate* delegate)
 {
