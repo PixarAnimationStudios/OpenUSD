@@ -54,6 +54,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <regex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -235,10 +236,10 @@ bool isIntermediate(const MObject & object);
 PXRUSDMAYA_API
 bool isRenderable(const MObject & object);
 
-// strip iDepth namespaces from the node name, go from taco:foo:bar to bar
-// for iDepth > 1
+// strip iDepth namespaces from the node name or string path, go from
+// taco:foo:bar to bar for iDepth > 1. If iDepth is -1, strips all namespaces.
 PXRUSDMAYA_API
-MString stripNamespaces(const MString & iNodeName, unsigned int iDepth);
+MString stripNamespaces(const MString & iNodeName, int iDepth = -1);
 
 PXRUSDMAYA_API
 std::string SanitizeName(const std::string& name);
@@ -380,7 +381,7 @@ MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace ':' with '_'.
 PXRUSDMAYA_API
-PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape);
+PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape, bool stripNamespaces);
 
 /// Convenience function to retrieve custom data
 PXRUSDMAYA_API

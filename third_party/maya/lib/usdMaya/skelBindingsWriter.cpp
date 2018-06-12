@@ -72,7 +72,8 @@ static void
 _WriteSkelBindings(
     const SdfPath& bindingSite,
     const UsdStagePtr& stage,
-    const MDagPath& skeletonDagPath)
+    const MDagPath& skeletonDagPath,
+    bool stripNamespaces)
 {
     if (!skeletonDagPath.isValid()) {
         TF_CODING_ERROR("Skeleton '%s' is not valid",
@@ -84,7 +85,7 @@ _WriteSkelBindings(
     const UsdSkelBindingAPI bindingAPI = PxrUsdMayaTranslatorUtil
             ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(bindingPrim);
 
-    SdfPath skeletonPath = MayaSkeletonWriter::GetSkeletonPath(skeletonDagPath);
+    SdfPath skeletonPath = MayaSkeletonWriter::GetSkeletonPath(skeletonDagPath, stripNamespaces);
     if (stage->GetPrimAtPath(skeletonPath)) {
         if (UsdRelationship existingRel = bindingAPI.GetSkeletonRel()) {
             _CheckRelHasOneTarget(existingRel, skeletonPath);
@@ -93,7 +94,7 @@ _WriteSkelBindings(
             bindingAPI.CreateSkeletonRel().AddTarget(skeletonPath);
         }
     }
-    SdfPath animPath = MayaSkeletonWriter::GetAnimationPath(skeletonDagPath);
+    SdfPath animPath = MayaSkeletonWriter::GetAnimationPath(skeletonDagPath, stripNamespaces);
     if (stage->GetPrimAtPath(animPath)) {
         if (UsdRelationship existingRel = bindingAPI.GetAnimationSourceRel()) {
             _CheckRelHasOneTarget(existingRel, animPath);
@@ -140,7 +141,9 @@ _GetRootBoundPaths(
 }
 
 bool
-PxrUsdMaya_SkelBindingsWriter::WriteSkelBindings(const UsdStagePtr& stage) const
+PxrUsdMaya_SkelBindingsWriter::WriteSkelBindings(
+    const UsdStagePtr& stage,
+    bool stripNamespaces) const
 {
     for (const auto& skelRootPathAndData : _skelRootMap) {
         const SdfPath& skelRootPath = skelRootPathAndData.first;
@@ -158,7 +161,8 @@ PxrUsdMaya_SkelBindingsWriter::WriteSkelBindings(const UsdStagePtr& stage) const
             _WriteSkelBindings(
                     skelRootPath,
                     stage,
-                    *skelRootData.skeletonDagPaths.begin());
+                    *skelRootData.skeletonDagPaths.begin(),
+                    stripNamespaces);
             continue;
         }
 
@@ -211,7 +215,7 @@ PxrUsdMaya_SkelBindingsWriter::WriteSkelBindings(const UsdStagePtr& stage) const
                     /*minIncludeExcludeCollectionSize*/ 1u, // always compute
                     pathsToIgnore);
             for (const SdfPath& path : pathsToInclude) {
-                _WriteSkelBindings(path, stage, skeletonDagPath);
+                _WriteSkelBindings(path, stage, skeletonDagPath, stripNamespaces);
             }
         }
     }

@@ -79,6 +79,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
     (renderableOnly) \
     (renderLayerMode) \
     (shadingMode) \
+    (stripNamespaces) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \
@@ -125,6 +126,7 @@ struct JobExportArgs
     const SdfPath materialCollectionsPath;
     const bool mergeTransformAndShape;
     const bool normalizeNurbs;
+    const bool stripNamespaces;
     const SdfPath parentScope;
     const TfToken renderLayerMode;
     const TfToken rootKind;

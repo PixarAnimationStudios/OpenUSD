@@ -65,13 +65,14 @@ public:
     /// hierarchy with the given root joint.
     static VtTokenArray GetJointNames(
             const std::vector<MDagPath>& joints,
-            const MDagPath& rootJoint);
+            const MDagPath& rootJoint,
+            bool stripNamespaces);
     /// Gets the expected path where a UsdSkelSkeleton prim will be exported
     /// for the given root joint.
-    static SdfPath GetSkeletonPath(const MDagPath& rootJoint);
+    static SdfPath GetSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces);
     /// Gets the expected path where a UsdSkelPackedJointAnimation prim will be
     /// exported for the given root joint.
-    static SdfPath GetAnimationPath(const MDagPath& rootJoint);
+    static SdfPath GetAnimationPath(const MDagPath& rootJoint, bool stripNamespaces);
 
 private:
     std::vector<MDagPath> _animatedJoints;

@@ -520,40 +520,37 @@ bool PxrUsdMayaUtil::isRenderable(const MObject & object)
     return true;
 }
 
-MString PxrUsdMayaUtil::stripNamespaces(const MString & iNodeName, unsigned int iDepth)
+MString PxrUsdMayaUtil::stripNamespaces(const MString & iNodeName, int iDepth)
 {
-    if (iDepth == 0)
-    {
+    if (iDepth == 0) {
         return iNodeName;
     }
 
-    MStringArray strArray;
-    if (iNodeName.split(':', strArray) == MS::kSuccess)
-    {
-        unsigned int len = strArray.length();
-
-        // we want to strip off more namespaces than what we have
-        // so we just return the last name
-        if (len == 0)
-        {
-            return iNodeName;
+    std::stringstream ss;
+    MStringArray pathPartsArray;
+    if (iNodeName.split('|', pathPartsArray) == MS::kSuccess) {
+        unsigned int partsLen = pathPartsArray.length();
+        for (unsigned int i = 0; i < partsLen; ++i) {
+            ss << '|';
+            MStringArray strArray;
+            if (pathPartsArray[i].split(':', strArray) == MS::kSuccess) {
+                int len = strArray.length();
+                // if iDepth is -1, we don't keep any namespaces
+                if (iDepth != -1) {
+                    // add any ns beyond iDepth so if name is: "stripped:save1:save2:name" add "save1:save2:",
+                    // but if there aren't any to save like: "stripped:name" then add nothing.
+                    for (int j = iDepth; j < len - 1; ++j) {
+                        ss << strArray[j] << ":";
+                    }
+                }
+                ss << strArray[len - 1];  // add the node name
+            }
         }
-        else if (len <= iDepth + 1)
-        {
-            return strArray[len-1];
-        }
-
-        MString name;
-        for (unsigned int i = iDepth; i < len - 1; ++i)
-        {
-            name += strArray[i];
-            name += ":";
-        }
-        name += strArray[len-1];
-        return name;
+        auto path = ss.str();
+        return MString(path.c_str());
+    } else {
+        return iNodeName;
     }
-
-    return iNodeName;
 }
 
 std::string PxrUsdMayaUtil::SanitizeName(const std::string& name)
@@ -1213,14 +1210,19 @@ _IsShape(const MDagPath& dagPath) {
 }
 
 SdfPath
-PxrUsdMayaUtil::MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape)
+PxrUsdMayaUtil::MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape, bool stripNamespaces)
 {
-    std::string usdPathStr(dagPath.fullPathName().asChar());
-    std::replace( usdPathStr.begin(), usdPathStr.end(), '|', '/');
+    std::string usdPathStr;
 
-    // We may want to have another option that allows us to drop namespace's
-    // instead of making them part of the path.
-    std::replace( usdPathStr.begin(), usdPathStr.end(), ':', '_'); // replace namespace ":" with "_"
+    if (stripNamespaces) {
+        // drop namespaces instead of making them part of the path
+        MString stripped = PxrUsdMayaUtil::stripNamespaces(dagPath.fullPathName());
+        usdPathStr = stripped.asChar();
+    } else{
+        usdPathStr = dagPath.fullPathName().asChar();
+    }
+    std::replace(usdPathStr.begin(), usdPathStr.end(), '|', '/');
+    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_'); // replace namespace ":" with "_"
 
     SdfPath usdPath(usdPathStr);
     if (mergeTransformAndShape && _IsShape(dagPath)) {

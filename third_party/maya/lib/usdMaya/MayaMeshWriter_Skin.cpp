@@ -381,7 +381,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     // Get joint name tokens how MayaSkeletonWriter would generate them.
     // We don't need to check that they actually exist.
     VtTokenArray jointNames = MayaSkeletonWriter::GetJointNames(
-            jointDagPaths, rootJoint);
+            jointDagPaths, rootJoint, getArgs().stripNamespaces);
 
     // The data in the skinCluster is essentially already in the same format 
     // as UsdSkel expects, but we're going to compress it by only outputting

@@ -66,7 +66,7 @@ public:
 
     /// Writes the final minimal set of skel bindings into the stage. See the
     /// class description for more information on how this works.
-    bool WriteSkelBindings(const UsdStagePtr& stage) const;
+    bool WriteSkelBindings(const UsdStagePtr& stage, bool stripNamespaces) const;
 
 private:
     struct SkelRootData {

@@ -141,6 +141,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Export Visibility" exportVisibilityCheckBox;
 
+        checkBox -l "Strip Namespaces" stripNamespacesCheckBox;
+
         checkBox -l "Renderable Only" renderableOnlyCheckBox;
          
         checkBox -l "Export all cameras" defaultCamerasCheckBox;
@@ -214,6 +216,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "exportSkinClustersPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
+                } else if ($optionBreakDown[0] == "stripNamespaces") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "stripNamespacesCheckBox");
                 } else if ($optionBreakDown[0] == "animation") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
@@ -253,6 +257,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkin", "exportSkinClustersPopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "stripNamespaces", "stripNamespacesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");

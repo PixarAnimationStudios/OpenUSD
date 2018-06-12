@@ -247,6 +247,19 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
 
                 // Write out data (non-animated/default values).
                 if (const auto& usdPrim = primWriter->getPrim()) {
+                    if (mJobCtx.mArgs.stripNamespaces) {
+                        auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
+                        if (foundPair != mUsdPathToDagPathMap.end()){
+                            std::string error = TfStringPrintf("Multiple dag nodes map to the same prim path after "
+                                                               "stripping namespaces: %s - %s",
+                                                               foundPair->second.fullPathName().asChar(),
+                                                               primWriter->getDagPath().fullPathName().asChar());
+                            MGlobal::displayError(MString(error.c_str()));
+                            return false;
+                        }
+                        mUsdPathToDagPathMap[usdPrim.GetPath()] = primWriter->getDagPath();
+                    }
+
                     primWriter->write(UsdTimeCode::Default());
 
                     MDagPath dag = primWriter->getDagPath();
@@ -278,6 +291,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
     exportParams.mergeTransformAndShape = mJobCtx.mArgs.mergeTransformAndShape;
     exportParams.exportCollectionBasedBindings =
             mJobCtx.mArgs.exportCollectionBasedBindings;
+    exportParams.stripNamespaces = mJobCtx.mArgs.stripNamespaces;
     exportParams.overrideRootPath = mJobCtx.mArgs.usdModelRootOverridePath;
     exportParams.bindableRoots = mJobCtx.mArgs.dagPaths;
     exportParams.parentScope = mJobCtx.mArgs.parentScope;
@@ -302,7 +316,8 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
         return false;
     }
 
-    if (!mJobCtx.getSkelBindingsWriter().WriteSkelBindings(mJobCtx.mStage)) {
+    if (!mJobCtx.getSkelBindingsWriter().WriteSkelBindings(mJobCtx.mStage,
+        mJobCtx.mArgs.stripNamespaces)) {
         return false;
     }
 

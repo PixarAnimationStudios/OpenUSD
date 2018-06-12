@@ -46,6 +46,9 @@ struct PxrUsdMayaExportParams {
     /// per-gprim bindings.
     bool exportCollectionBasedBindings=false;
 
+    /// Stripping namespaces.
+    bool stripNamespaces=false;
+
     /// Modified root path. 
     SdfPath overrideRootPath;
 

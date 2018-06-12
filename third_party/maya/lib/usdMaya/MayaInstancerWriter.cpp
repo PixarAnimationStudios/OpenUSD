@@ -133,7 +133,7 @@ MayaInstancerWriter::_ExportPrototype(
     // The USD path of the prototype root if it were exported at its current
     // Maya location.
     const SdfPath prototypeComputedUsdPath =
-            PxrUsdMayaUtil::MDagPathToUsdPath(prototypeDagPath, false);
+            PxrUsdMayaUtil::MDagPathToUsdPath(prototypeDagPath, false, getArgs().stripNamespaces);
 
     MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid);
     itDag.reset(prototypeDagPath);
@@ -149,7 +149,7 @@ MayaInstancerWriter::_ExportPrototype(
         // The USD path of this prototype descendant prim if it were exported
         // at its current Maya location.
         const SdfPath curComputedUsdPath =
-                PxrUsdMayaUtil::MDagPathToUsdPath(curDagPath, false);
+                PxrUsdMayaUtil::MDagPathToUsdPath(curDagPath, false, getArgs().stripNamespaces);
 
         // Compute the current prim's relative path w/r/t the prototype root,
         // and use this to re-anchor it under the USD stage location where

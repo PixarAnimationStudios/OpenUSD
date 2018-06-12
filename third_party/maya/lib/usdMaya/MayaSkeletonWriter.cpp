@@ -87,37 +87,38 @@ MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath & iDag,
 VtTokenArray
 MayaSkeletonWriter::GetJointNames(
     const std::vector<MDagPath>& joints,
-    const MDagPath& rootDagPath)
+    const MDagPath& rootDagPath,
+    bool stripNamespaces)
 {
     // Get relative paths.
     // Joints have to be transforms, so mergeTransformAndShape
     // shouldn't matter here. (Besides, we're not actually using these
     // to point to prims.)
     SdfPath rootPath = PxrUsdMayaUtil::MDagPathToUsdPath(
-            rootDagPath, /*mergeTransformAndShape*/ false).GetParentPath();
+            rootDagPath, /*mergeTransformAndShape*/ false, stripNamespaces).GetParentPath();
     VtTokenArray result;
     for (const MDagPath& joint : joints) {
         SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
-                joint, /*mergeTransformAndShape*/ false);
+                joint, /*mergeTransformAndShape*/ false, stripNamespaces);
         result.push_back(path.MakeRelativePath(rootPath).GetToken());
     }
     return result;
 }
 
 SdfPath
-MayaSkeletonWriter::GetSkeletonPath(const MDagPath& rootJoint)
+MayaSkeletonWriter::GetSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces)
 {
     // Joints are always transforms!
     return _GetNiceSkeletonPath(
             rootJoint,
             PxrUsdMayaUtil::MDagPathToUsdPath(
-                rootJoint, /*mergeTransformAndShape*/ false));
+                rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces));
 }
 
 SdfPath
-MayaSkeletonWriter::GetAnimationPath(const MDagPath& rootJoint)
+MayaSkeletonWriter::GetAnimationPath(const MDagPath& rootJoint, bool stripNamespaces)
 {
-    return GetSkeletonPath(rootJoint).AppendChild(_tokens->Animation);
+    return GetSkeletonPath(rootJoint, stripNamespaces).AppendChild(_tokens->Animation);
 }
 
 /// Gets all of the joints rooted at the given dag path, including the dag path.
@@ -313,7 +314,7 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
             return;
         }
 
-        VtTokenArray jointNames = GetJointNames(jointDags, jointDags[0]);
+        VtTokenArray jointNames = GetJointNames(jointDags, jointDags[0], getArgs().stripNamespaces);
         std::string whyNotValid;
         if (!UsdSkelTopology(jointNames).Validate(&whyNotValid)) {
             TF_CODING_ERROR("Joint topology invalid: %s", whyNotValid.c_str());
