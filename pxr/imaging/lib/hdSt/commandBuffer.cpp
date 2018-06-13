@@ -44,6 +44,7 @@
 #include <boost/functional/hash.hpp>
 
 #include <functional>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -161,7 +162,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
                                                .bindlessTextureEnabled;
 
     // XXX: Temporary sorting by shader.
-    std::map<size_t, HdSt_DrawBatchSharedPtr> batchMap;
+    std::unordered_map<size_t, std::vector<HdSt_DrawBatchSharedPtr>> batchMap;
 
     for (size_t i = 0; i < _drawItems.size(); i++) {
         HdStDrawItem const * drawItem = _drawItems[i];
@@ -191,13 +192,32 @@ HdStCommandBuffer::_RebuildDrawBatches()
                 key, 
                 drawItem->GetBufferArraysHash());
                 //, drawItem->GetRprimID().GetText());
-
-        HdSt_DrawBatchSharedPtr batch;
-        TfMapLookup(batchMap, key, &batch);
-        if (!batch || !batch->Append(drawItemInstance)) {
-            batch = _NewDrawBatch(drawItemInstance);
-            _drawBatches.push_back(batch);
-            batchMap[key] = batch;
+        
+        std::vector<HdSt_DrawBatchSharedPtr> batches;
+        auto batchIter = batchMap.find(key);
+        if (batchIter == batchMap.end()) {
+           HdSt_DrawBatchSharedPtr batch = _NewDrawBatch(drawItemInstance);
+           _drawBatches.push_back(batch);
+           batches.push_back(batch);
+           batchMap[key] = batches;
+        }
+        else
+        {
+           batches = (batchIter->second);
+           bool hasAppended = false;
+           for (auto iter : batches) {
+               if (iter->Append(drawItemInstance)) {
+                   hasAppended = true;
+                   break;
+               }
+           }
+           
+           if (!hasAppended) {
+               HdSt_DrawBatchSharedPtr batch = _NewDrawBatch(drawItemInstance);
+               _drawBatches.push_back(batch);
+               batches.push_back(batch);
+               batchIter->second = batches;
+           }
         }
     }
 }
