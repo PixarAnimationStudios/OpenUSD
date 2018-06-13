@@ -73,7 +73,10 @@ unsigned char * GlfUVTextureStorageData::GetRawBuffer(int mipLevel) const
     return _rawBuffer;
 }
 
-bool GlfUVTextureStorageData::Read(int degradeLevel, bool generateMipmap) {
+bool GlfUVTextureStorageData::Read(int degradeLevel,
+                                   bool generateMipmap,
+                                   GlfImage::ImageOriginLocation originLocation)
+{
     _targetMemory = _size;
     std::vector<float> storageArray;
     if (_storageData.IsHolding<float>()) {

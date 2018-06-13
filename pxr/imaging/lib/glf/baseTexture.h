@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -81,6 +82,9 @@ protected:
     
     GLF_API
     GlfBaseTexture();
+
+    GLF_API
+    GlfBaseTexture(GlfImage::ImageOriginLocation originLocation);
 
     GLF_API
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);

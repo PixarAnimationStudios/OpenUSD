@@ -67,6 +67,20 @@ GlfBaseTexture::GlfBaseTexture()
     /* nothing */
 }
 
+GlfBaseTexture::GlfBaseTexture(GlfImage::ImageOriginLocation originLocation)
+  : GlfTexture(originLocation),
+    _textureName(_GenName()),
+    _currentWidth(0),
+    _currentHeight(0),
+    _format(GL_RGBA),
+    _hasWrapModeS(false),
+    _hasWrapModeT(false),
+    _wrapModeS(GL_REPEAT),
+    _wrapModeT(GL_REPEAT)
+{
+    /* nothing */
+}
+
 GlfBaseTexture::~GlfBaseTexture()
 {
     GlfSharedGLContextScopeHolder sharedGLContextScopeHolder;

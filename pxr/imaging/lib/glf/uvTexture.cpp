@@ -40,14 +40,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Custom factory to handle UVTexture and ArrayTexture for same types.
 class Glf_UVTextureFactory : public GlfTextureFactoryBase {
 public:
-    virtual GlfTextureRefPtr New(const TfToken& texturePath) const
+    virtual GlfTextureRefPtr New(const TfToken& texturePath,
+                                 GlfImage::ImageOriginLocation originLocation =
+                                                GlfImage::OriginUpperLeft) const
     {
-        return GlfUVTexture::New(texturePath);
+        return GlfUVTexture::New(texturePath,
+                                 /*cropTop*/ 0,
+                                 /*cropBottom*/ 0,
+                                 /*cropLeft*/ 0,
+                                 /*cropRight*/ 0,
+                                 originLocation);
     }
 
-    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths) const
+    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
+                                 GlfImage::ImageOriginLocation originLocation = 
+                                                GlfImage::OriginUpperLeft) const
     {
-        return GlfArrayTexture::New(texturePaths, texturePaths.size());
+        return GlfArrayTexture::New(texturePaths, 
+                                    texturePaths.size(), 
+                                    /*cropTop*/ 0,
+                                    /*cropBottom*/ 0,
+                                    /*cropLeft*/ 0,
+                                    /*cropRight*/ 0,
+                                    originLocation);
     }
 };
 
@@ -64,10 +79,13 @@ GlfUVTexture::New(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
+    unsigned int cropRight,
+    GlfImage::ImageOriginLocation originLocation)
 {
     return TfCreateRefPtr(new GlfUVTexture(
-            imageFilePath, cropTop, cropBottom, cropLeft, cropRight));
+            imageFilePath, cropTop, 
+            cropBottom, cropLeft, cropRight,
+            originLocation));
 }
 
 GlfUVTextureRefPtr 
@@ -76,10 +94,13 @@ GlfUVTexture::New(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
+    unsigned int cropRight,
+    GlfImage::ImageOriginLocation originLocation)
 {
     return TfCreateRefPtr(new GlfUVTexture(
-            TfToken(imageFilePath), cropTop, cropBottom, cropLeft, cropRight));
+            TfToken(imageFilePath), cropTop, 
+            cropBottom, cropLeft, cropRight,
+            originLocation));
 }
 
 bool 
@@ -99,8 +120,10 @@ GlfUVTexture::GlfUVTexture(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
-    : _imageFilePath(imageFilePath)
+    unsigned int cropRight,
+    GlfImage::ImageOriginLocation originLocation)
+    : GlfBaseTexture(originLocation)
+    , _imageFilePath(imageFilePath)
     , _cropTop(cropTop)
     , _cropBottom(cropBottom)
     , _cropLeft(cropLeft)
@@ -133,7 +156,7 @@ GlfUVTexture::_OnSetMemoryRequested(size_t targetMemory)
                               _GetCropTop(), _GetCropBottom(),
                               _GetCropLeft(), _GetCropRight());
     if (texData) {
-        texData->Read(0, _GenerateMipmap());
+        texData->Read(0, _GenerateMipmap(), GetOriginLocation());
     }
     _UpdateTexture(texData);
     _CreateTexture(texData, _GenerateMipmap());

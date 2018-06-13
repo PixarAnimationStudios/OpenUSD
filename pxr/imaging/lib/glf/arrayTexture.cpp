@@ -49,7 +49,8 @@ GlfArrayTexture::New(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
+    unsigned int cropRight,
+    GlfImage::ImageOriginLocation originLocation)
 {
     if (imageFilePaths.empty()) {
         // Need atleast one valid image file path.
@@ -58,9 +59,11 @@ GlfArrayTexture::New(
     }
 
     return TfCreateRefPtr(new GlfArrayTexture(
-                              imageFilePaths, arraySize,
+                              imageFilePaths, 
+                              arraySize,
                               cropTop, cropBottom,
-                              cropLeft, cropRight));
+                              cropLeft, cropRight,
+                              originLocation));
 }
 
 GlfArrayTextureRefPtr 
@@ -70,7 +73,8 @@ GlfArrayTexture::New(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
+    unsigned int cropRight,
+    GlfImage::ImageOriginLocation originLocation)
 {
     TfTokenVector imageFilePathTokens(imageFilePaths.begin(), imageFilePaths.end());
     return TfCreateRefPtr(new GlfArrayTexture(
@@ -79,7 +83,8 @@ GlfArrayTexture::New(
                               cropTop,
                               cropBottom,
                               cropLeft,
-                              cropRight));
+                              cropRight,
+                              originLocation));
 }
 
 bool 
@@ -94,13 +99,15 @@ GlfArrayTexture::GlfArrayTexture(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
+    unsigned int cropRight,
+    GlfImage::ImageOriginLocation originLocation)
     
     : GlfUVTexture(imageFilePaths[0],
                     cropTop,
                     cropBottom,
                     cropLeft,
-                    cropRight),
+                    cropRight,
+                    originLocation),
 
       _imageFilePaths(imageFilePaths),
     _arraySize(arraySize)
@@ -118,7 +125,7 @@ GlfArrayTexture::_OnSetMemoryRequested(size_t targetMemory)
                                   _GetCropTop(), _GetCropBottom(),
                                   _GetCropLeft(), _GetCropRight());
         if (texData) {
-            texData->Read(0, _GenerateMipmap());
+            texData->Read(0, _GenerateMipmap(), GetOriginLocation());
         }
 
         _UpdateTexture(texData);

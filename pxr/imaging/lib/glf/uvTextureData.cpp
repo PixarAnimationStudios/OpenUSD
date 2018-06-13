@@ -273,7 +273,8 @@ _IsValidCrop(GlfImageSharedPtr image,
 }
 
 bool
-GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
+GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
+                       GlfImage::ImageOriginLocation originLocation)
 {   
     TRACE_FUNCTION();
 
@@ -422,9 +423,11 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         storage.width = mip.width;
         storage.height = mip.height;
         storage.format = _glFormat;
+        storage.flipped = (originLocation == GlfImage::OriginLowerLeft) ?
+                          (true) : (false);
         storage.type = _glType;
         storage.data = _rawBuffer.get() + mip.offset;
-
+        
         if (!image->ReadCropped(cropTop, cropBottom, cropLeft, cropRight, storage)) {
             TF_WARN("Unable to read Texture '%s'.", _filePath.c_str());
             return false;
