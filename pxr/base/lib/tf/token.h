@@ -328,8 +328,9 @@ private:
         if (_rep.BitsAs<bool>()) {
             // We believe this rep is refCounted.
             if (_rep->_isCounted) {
-                if (_rep->_refCount == 1)
+                if (_rep->_refCount.load(std::memory_order_relaxed) == 1) {
                     _PossiblyDestroyRep();
+                }
                 else {
                     /*
                      * This is deliberately racy.  It's possible the statement
@@ -344,7 +345,7 @@ private:
                      * using it.  So it's not even necessarily a true leak --
                      * it's just a potential leak.
                      */
-                    --_rep->_refCount;
+                    _rep->_refCount.fetch_sub(1, std::memory_order_relaxed);
                 }
             } else {
                 // Our belief is wrong, update our cache of countedness.
@@ -380,12 +381,14 @@ private:
             return *this;
         }
 
-        bool IncrementIfCounted() const {
+        inline bool IncrementIfCounted() const {
             const bool isCounted = _isCounted;
-            if (isCounted)
-                ++_refCount;
+            if (isCounted) {
+                _refCount.fetch_add(1, std::memory_order_relaxed);
+            }
             return isCounted;
         }
+
         std::string _str;
         char const *_cstr;
         mutable std::atomic_int _refCount;
