@@ -1277,15 +1277,28 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
             || attrName == UsdGeomTokens->purpose
             || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)
             || TfStringStartsWith(attrName.GetString(),
-                                  UsdShadeTokens->materialBinding.GetString())
-            || TfStringStartsWith(attrName.GetString(),
-                                  UsdTokens->collection.GetString()))
+                                  UsdShadeTokens->materialBinding.GetString()))
         {
             // Because these are inherited attributes, we must update all
             // children.
             HdPrimGather gather;
-
             gather.Subtree(_usdIds.GetIds(), usdPrimPath, &affectedPrims);
+        } else if (TfStringStartsWith(attrName.GetString(),
+                                      UsdTokens->collection.GetString())) {
+            // XXX Performance: Collections used for material bindings
+            // can refer to prims at arbitrary locations in the scene.
+            // Accordingly, we conservatively invalidate everything.
+            // If we preserved _materialBindingCache rather than
+            // blowing it in _ProcessChangesForTimeUpdate(), we could
+            // potentially use it to analyze affected paths and
+            // perform more narrow invalidation.
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
+                "Collection property <%s> modified; conservatively "
+                "invalidating all prims to ensure that we discover "
+                "material binding changes.", usdPath.GetText());
+            HdPrimGather gather;
+            gather.Subtree(_usdIds.GetIds(), SdfPath::AbsoluteRootPath(),
+                           &affectedPrims);
         } else {
             // Only include non-inherited properties for prims that we are
             // explicitly tracking in the render index.
