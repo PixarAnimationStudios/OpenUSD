@@ -151,7 +151,7 @@ struct TestFallbackStackedInAThread
 {
     void operator()() {
         // This will run in multiple threads to make sure that the 
-        // stack intializers have run once per-thread.
+        // stack initializers have run once per-thread.
         TF_AXIOM(Tf_FallbackStacked::GetStackTop()->value == -1);
         TF_AXIOM(Tf_FallbackStacked::GetStackPrevious()->value == -2);
     }

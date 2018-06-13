@@ -251,7 +251,7 @@ public:
     ///
     /// When a listener is registered by \c TfNotice::Register(), an object of
     /// type \c TfNotice::Key is returned; this key object can be given to \c
-    /// Revoke() to subequently unregister the listener with respect to that
+    /// Revoke() to subsequently unregister the listener with respect to that
     /// particular notice type and callback method.
     class Key {
     public:

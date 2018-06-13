@@ -475,7 +475,7 @@ VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
 /// Updates \p strong to become \p strong composed over \p weak.
 ///
 /// The updated contents of \p strong will be all key-value pairs from \p
-/// stong together with the key-value pairs from \p weak whose keys are not in
+/// strong together with the key-value pairs from \p weak whose keys are not in
 /// \p strong.
 ///
 /// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
@@ -489,7 +489,7 @@ VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
 
 /// Updates \p weak to become \p strong composed over \p weak.
 ///
-/// The updated contents of \p weak will be all key-value pairs from \p stong
+/// The updated contents of \p weak will be all key-value pairs from \p strong
 /// together with the key-value pairs from \p weak whose keys are not in \p
 /// strong.
 ///

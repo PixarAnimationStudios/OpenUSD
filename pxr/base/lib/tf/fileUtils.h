@@ -113,7 +113,7 @@ bool TfMakeDirs(std::string const& path, int mode=-1);
 /// path. This parameter is a pointer, allowing the subdirectory list to be
 /// modified, thus controlling which directories are visited.  Note that
 /// modifying the subdirectory vector has no effect when TfWalkDirs is called
-/// with \c topDown set to \c false. The final paramter is a vector of file
+/// with \c topDown set to \c false. The final parameter is a vector of file
 /// names found in the directory path. The returned value determines whether
 /// the walk should be terminated (\c false), or continue (\c true).
 typedef boost::function<bool (std::string const&,

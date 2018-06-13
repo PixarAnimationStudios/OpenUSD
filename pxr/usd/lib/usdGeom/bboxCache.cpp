@@ -411,7 +411,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         }
 
         // If this is an ancestor of a path that's skipped, then we must
-        // continue the travesal down to find prims whose bounds can be
+        // continue the traversal down to find prims whose bounds can be
         // included.
         if (ancestorsOfPathsToSkip.find(primPath) !=
                 ancestorsOfPathsToSkip.end()) {
@@ -419,7 +419,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         }
 
         // Check if any of the descendants of the prim have transform overrides.
-        // If yes, we need to continue the travesal down to find prims whose
+        // If yes, we need to continue the traversal down to find prims whose
         // bounds can be included.
         if (ancestorsOfOverrides.find(primPath) != ancestorsOfOverrides.end()) {
             continue;
@@ -1219,7 +1219,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     //  3) Accumulate the results into this cache entry.
     //
 
-    // Filter childen and queue children.
+    // Filter children and queue children.
     if (!pruneChildren) {
         // Compute the enclosing model's (or subcomponent's) inverse CTM.
         // This will be used to compute the child bounds in model-space.

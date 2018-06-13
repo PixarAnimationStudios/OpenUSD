@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashSet
 ///
-/// This is a space efficent container that mimics the TfHashSet API that
+/// This is a space efficient container that mimics the TfHashSet API that
 /// uses a vector for storage when the size of the set is small.
 ///
 /// When the set gets bigger than \p Threshold a TfHashMap is allocated
@@ -203,7 +203,7 @@ public:
         return iter;
     }
 
-    /// Returns the number of elemens with key \p k.  Which is either 0 or 1.
+    /// Returns the number of elements with key \p k.  Which is either 0 or 1.
     ///
     size_t count(const Element &k) const {
         return find(k) != end();
@@ -412,7 +412,7 @@ private:
 
     // Vector holding all elements along with the EqualElement functor.  Since
     // sizeof(EqualElement) == 0 in many cases we use a compressed_pair to not
-    // pay a size penality.
+    // pay a size penalty.
 
     typedef
         boost::compressed_pair<

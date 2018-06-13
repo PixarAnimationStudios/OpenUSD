@@ -149,7 +149,7 @@ class Tf_DebugSymbolRegistry;
 ///
 class TfDebug {
 public:
-    /// Mark debugging as enabled for enum value \c val, and any descendents
+    /// Mark debugging as enabled for enum value \c val, and any descendants
     /// of \c val as defined by \c DefineParentChild().
     ///
     /// The default state for all debugging symbols is disabled. Note that the
@@ -162,7 +162,7 @@ public:
         _SetNodes(&_GetNode(val), 1, true);
     }
 
-    /// Mark debugging as disabled for enum value \c val, and any descendents
+    /// Mark debugging as disabled for enum value \c val, and any descendants
     /// of \c val as defined by \c DefineParentChild().
     template <class T>
     static void Disable(T val) {
@@ -190,7 +190,7 @@ public:
     ///
     /// Enum value \c child is marked as a child of \c parent; this means that
     /// enabling or disabling \c parent enable or disables not only parent,
-    /// but, recursively, all descendents of \c parent as well.
+    /// but, recursively, all descendants of \c parent as well.
     ///
     /// To avoid cycles, \c child cannot have been made a parent at the time
     /// of this call.
@@ -448,7 +448,7 @@ struct TfDebug::TimedScopeHelper<false> {
 /// all debugging symbols for enumerated type \c enumType are treated as
 /// disabled, regardless of any calls to \c TfDebug::Enable() or
 /// \c TfDebug::EnableAll().  Furthermore, this mode of disabling is
-/// discernable at compile time, rendering the \c TF_DEBUG() macro a literal
+/// discernible at compile time, rendering the \c TF_DEBUG() macro a literal
 /// no-op in terms of code-generation for this enumeration class.
 ///
 /// \hideinitializer

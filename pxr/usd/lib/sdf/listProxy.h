@@ -202,7 +202,7 @@ public:
     typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
 
     /// Creates a default list proxy object for list operation vector specified
-    /// \p op. This object evalutes to false in a boolean context and all
+    /// \p op. This object evaluates to false in a boolean context and all
     /// operations on this object have no effect.
     SdfListProxy(SdfListOpType op) :
         _op(op)

@@ -69,7 +69,7 @@
 /// no copies occur until a QPixmap's content is changed.
 ///
 /// Copy-on-write pointers are reference counted so there is no need to
-/// explicity delete the memory pointed to in the above example.
+/// explicitly delete the memory pointed to in the above example.
 ///
 /// Note that default-constructed copy-on-write pointers are null, and may be
 /// checked for null, but do not need to be checked for null.  Copy-on-write

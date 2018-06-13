@@ -143,7 +143,7 @@ public:
     ///
     /// Clean-up function for the index.  Uses the delegate to deallocate
     /// the memory used by the fallback prims.  The index is returned to
-    /// an uninitialized state and shouldn't be used, unless reinintialized.
+    /// an uninitialized state and shouldn't be used, unless reinitialized.
     ///
     void DestroyFallbackPrims(HdRenderDelegate *renderDelegate);
 

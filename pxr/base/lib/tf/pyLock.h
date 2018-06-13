@@ -130,7 +130,7 @@ public:
     /// (Re)acquires GIL and thread state, if previously released.
     TF_API void Acquire();
 
-    /// Explictly releases GIL and thread state.
+    /// Explicitly releases GIL and thread state.
     TF_API void Release();
 
     /// Unlock the GIL temporarily to allow other threads to use python.

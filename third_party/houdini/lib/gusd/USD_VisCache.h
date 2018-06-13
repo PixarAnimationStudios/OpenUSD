@@ -36,7 +36,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /** Thread-safe, memory-capped visibility cache.
-    This does not cache varying visiblity state; only unvarying visibility
+    This does not cache varying visibility state; only unvarying visibility
     values and information about whether or not visibility might vary
     with time is cached.*/
 class GusdUSD_VisCache final : public GusdUSD_DataCache

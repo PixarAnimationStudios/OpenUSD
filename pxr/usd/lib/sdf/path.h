@@ -124,10 +124,10 @@ typedef std::vector<class SdfPath> SdfPathVector;
 /// SdfPath is strongly thread-safe, in the sense that zero additional
 /// synchronization is required between threads creating or using SdfPath
 /// values. Just like TfToken, SdfPath values are immutable. Internally,
-/// SdfPath uses a global prefix tree to efficienty share representations
+/// SdfPath uses a global prefix tree to efficiently share representations
 /// of paths, and provide fast equality/hashing operations, but
 /// modifications to this table are internally synchronized. Consequently,
-/// as with TfToken, for best performance it is importantant to minimize
+/// as with TfToken, for best performance it is important to minimize
 /// the number of values created (since it requires synchronized access to
 /// this table) or copied (since it requires atomic ref-counting operations).
 ///

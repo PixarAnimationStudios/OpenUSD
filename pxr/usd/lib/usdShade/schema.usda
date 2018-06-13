@@ -79,7 +79,7 @@ over "GLOBAL" (
             }
             dictionary allPurpose = {
                 string value = ""
-                string doc = """Possible value for the 'materialPurpose' paramter
+                string doc = """Possible value for the 'materialPurpose' parameter
                 in the various methods available in UsdShadeMaterialBindingAPI.
                 Its value is empty and its purpose is to represent a general 
                 purpose material-binding that applies in the absence of a 

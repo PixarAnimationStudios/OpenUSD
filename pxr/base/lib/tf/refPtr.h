@@ -290,7 +290,7 @@
 /// from parent to child, everything is fine: if you "lose" the root of the
 /// tree, the tree will correctly destroy itself.
 ///
-/// But what if childen point back to parents?  Then a simple parent/child
+/// But what if children point back to parents?  Then a simple parent/child
 /// pair is stable, because the parent and child point at each other, and
 /// even if nobody else has a pointer to the parent, the reference count
 /// of the two nodes remains at one.

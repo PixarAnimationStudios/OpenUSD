@@ -135,7 +135,7 @@ public:
     /// layers.
     SDF_API bool ShouldSkipAnonymousReload() const;
 
-    /// Return true if the the \p layer produced by this file format
+    /// Return true if the \p layer produced by this file format
     /// streams its data to and from its serialized data store on demand.
     ///
     /// Sdf will treat streaming layers differently to avoid pulling

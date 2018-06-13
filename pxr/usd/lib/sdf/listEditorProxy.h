@@ -225,7 +225,7 @@ public:
         return false;
     }
 
-    /// Remove all occurances of the given item, regardless of whether
+    /// Remove all occurrences of the given item, regardless of whether
     /// the item is explicit, added, prepended, appended, deleted, or ordered.
     void RemoveItemEdits(const value_type& item)
     {
@@ -241,7 +241,7 @@ public:
         }
     }
 
-    /// Replace all occurances of the given item, regardless of
+    /// Replace all occurrences of the given item, regardless of
     /// whether the item is explicit, added, prepended, appended,
     /// deleted or ordered.
     void ReplaceItemEdits(const value_type& oldItem, const value_type& newItem)

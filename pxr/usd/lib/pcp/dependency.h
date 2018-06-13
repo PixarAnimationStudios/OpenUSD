@@ -59,7 +59,7 @@ enum PcpDependencyType {
     /// ancestral arcs along the chain as well.
     PcpDependencyTypePartlyDirect = (1 << 2),
 
-    /// Ancestreal dependencies involve only arcs from ancestral
+    /// Ancestral dependencies involve only arcs from ancestral
     /// levels of namespace, and no direct arcs.
     PcpDependencyTypeAncestral = (1 << 3),
 

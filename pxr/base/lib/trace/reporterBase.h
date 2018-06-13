@@ -74,7 +74,7 @@ protected:
     /// collections that have been received since the last call to _Update().
     TRACE_API void _Update();
 
-    /// Called once per collection fron _Update()
+    /// Called once per collection from _Update()
     virtual void _ProcessCollection(const CollectionPtr&) = 0;
 
 private:
