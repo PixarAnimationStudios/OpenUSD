@@ -93,6 +93,11 @@ public:
     PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(const SdfLayerHandle&) const;
 
+    /// Return the layer offset for the given layer, or NULL if the layer
+    /// can't be found or is the identity.
+    PCP_API
+    const SdfLayerOffset* GetLayerOffsetForLayer(const SdfLayerRefPtr&) const;
+    
     /// Returns the layer offset for the layer at the given index in this
     /// layer stack. Returns NULL if the offset is the identity.
     PCP_API
