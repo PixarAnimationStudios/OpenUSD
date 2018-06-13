@@ -63,6 +63,7 @@
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnVectorArrayData.h>
+#include <maya/MFnAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
@@ -174,7 +175,12 @@ PxrUsdMayaWriteUtil::GetUsdTypeName(
     // will fall through to the numericDataType switch below.
     switch (typedDataType) {
         case MFnData::kString:
-            return SdfValueTypeNames->String;
+            // If the attribute is marked as a filename, then return Asset
+            if (MFnAttribute(attrObj).isUsedAsFilename()) {
+                return SdfValueTypeNames->Asset;
+            } else {
+                return SdfValueTypeNames->String;
+            }
             break;
         case MFnData::kMatrix:
             // This must be a Matrix4d even if
