@@ -2368,7 +2368,7 @@ struct _CopySynthetic {
 };
 
 /// Copy a value from a property of a given type to \c UsdValueType.
-template <class T, class UsdValueType = void>
+template <class T, class UsdValueType = void, bool expand = true>
 struct _CopyGeneric {
     typedef T PropertyType;
     // This is defined for ITyped*Property.
@@ -2402,10 +2402,13 @@ struct _CopyGeneric {
 };
 
 /// Copy a ITypedGeomParam.  These are either an ITypedArrayProperty or a
-/// compound property with an ITypedArrayProperty and indices.  Either way
-/// we can call getExpanded() to get the un-indexed values.
-template <class T, class UsdValueType>
-struct _CopyGeneric<ITypedGeomParam<T>, UsdValueType> {
+/// compound property with an ITypedArrayProperty and indices. If the template
+/// parameter `expand` is true (which is the default), then we will call
+/// getExpanced() to get the un-indexed values. Otherwise we will get the
+/// indexed values, but _CopyIndices will need to be used to extract the
+/// indices.
+template <class T, class UsdValueType, bool expand>
+struct _CopyGeneric<ITypedGeomParam<T>, UsdValueType, expand> {
     typedef ITypedGeomParam<T> GeomParamType;
     typedef typename GeomParamType::prop_type PropertyType;
     typedef typename PropertyType::traits_type AlembicTraits;
@@ -2433,9 +2436,54 @@ struct _CopyGeneric<ITypedGeomParam<T>, UsdValueType> {
                     const ISampleSelector& iss) const
     {
         typename GeomParamType::sample_type sample;
-        object.getExpanded(sample, iss);
+        if (expand == false && object.isIndexed()) {
+            object.getIndexed(sample, iss);
+        } else {
+            object.getExpanded(sample, iss);
+        }
         return dst.Set(_CopyGenericValue<AlembicTraits,
                                          UsdValueType>(sample.getVals()));
+    }
+};
+
+/// Copy a ITypedGeomParam's index list as an int array.
+/// If the Alembic property is not indexed, it will do nothing.
+template <class GeomParamType>
+struct _CopyIndices {
+    typedef typename GeomParamType::prop_type PropertyType;
+    typedef typename PropertyType::traits_type AlembicTraits;
+
+    GeomParamType object;
+    _CopyIndices(const AlembicProperty& object_) :
+        object(object_.Cast<GeomParamType>())
+    {
+    }
+
+    bool operator()(_IsValidTag) const
+    {
+        return object.valid();
+    }
+
+    const MetaData& operator()(_MetaDataTag) const
+    {
+        return object.getMetaData();
+    }
+
+    _AlembicTimeSamples operator()(_SampleTimesTag) const
+    {
+        return _GetSampleTimes(object);
+    }
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        if (object.isIndexed()) {
+            typename GeomParamType::sample_type sample;
+            object.getIndexed(sample, iss);
+            return dst.Set(_CopyGenericValue<Uint32TPTraits,
+                                             int>(sample.getIndices()));
+        }
+        return false;
     }
 };
 
@@ -2916,6 +2964,31 @@ _ReadOther(_PrimReaderContext* context)
     }
 }
 
+template<class T, class UsdValueType>
+void
+_ReadProperty(_PrimReaderContext* context, const char* name, TfToken propName, SdfValueTypeName typeName)
+{
+    // Read a generic Alembic property and convert it to a USD property.
+    // If the Alembic property is indexed, this will add both the values
+    // property and the indices property, in order to preserve topology.
+    auto prop = context->ExtractSchema(name);
+    if (prop.Cast<T>().isIndexed()) {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType, false>(prop));
+        context->AddProperty(
+            TfToken(SdfPath::JoinIdentifier(propName, UsdGeomTokens->indices)),
+            SdfValueTypeNames->IntArray,
+            _CopyIndices<T>(prop));
+    } else {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType>(prop));
+    }
+}
+
 /* Unused
 static
 void
@@ -3086,11 +3159,9 @@ _ReadPolyMesh(_PrimReaderContext* context)
         SdfValueTypeNames->IntArray,
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
-    context->AddProperty(
-        _GetUVPropertyName(),
-        _GetUVTypeName(),
-        _CopyGeneric<IV2fGeomParam, GfVec2f>(
-            context->ExtractSchema("uv")));
+
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
 
     // Custom subdivisionScheme property.  Alembic doesn't have this since
     // the Alembic schema is PolyMesh.  Usd needs "none" as the scheme.
@@ -3183,11 +3254,9 @@ _ReadSubD(_PrimReaderContext* context)
         SdfValueTypeNames->FloatArray,
         _CopyGeneric<IFloatArrayProperty, float>(
             context->ExtractSchema(".creaseSharpnesses")));
-    context->AddProperty(
-        _GetUVPropertyName(),
-        _GetUVTypeName(),
-        _CopyGeneric<IV2fGeomParam, GfVec2f>(
-            context->ExtractSchema("uv")));
+
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
 }
 
 static
