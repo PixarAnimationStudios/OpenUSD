@@ -1379,6 +1379,14 @@ UsdMayaGLBatchRenderer::_UpdateLegacySelectionPending(const bool isPending)
 }
 
 void
+UsdMayaGLBatchRenderer::StartBatchingFrameDiagnostics()
+{
+    if (!_sharedDiagBatchCtx) {
+        _sharedDiagBatchCtx.reset(new PxrUsdMayaDiagnosticBatchContext());
+    }
+}
+
+void
 UsdMayaGLBatchRenderer::_MayaRenderDidEnd(
         const MHWRender::MDrawContext* /* context */)
 {
@@ -1389,6 +1397,9 @@ UsdMayaGLBatchRenderer::_MayaRenderDidEnd(
     // will be doing the drawing, the legacy viewport (MPxSurfaceShapeUIs) will
     // be handling selection.
     _UpdateLegacySelectionPending(true);
+
+    // End any diagnostics batching.
+    _sharedDiagBatchCtx.reset();
 
     _drawnMayaRenderPasses.clear();
 }

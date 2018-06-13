@@ -32,6 +32,7 @@
 #include "pxrUsdMayaGL/sceneDelegate.h"
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
+#include "usdMaya/diagnosticDelegate.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -237,6 +238,11 @@ public:
     PXRUSDMAYAGL_API
     inline bool GetObjectSoftSelectEnabled()
     { return _objectSoftSelectEnabled; }
+
+    /// Starts batching all diagnostics until the end of the current frame draw.
+    /// The batch renderer will automatically release the diagnostics when Maya
+    /// is done rendering the frame.
+    void StartBatchingFrameDiagnostics();
 
 private:
 
@@ -499,6 +505,12 @@ private:
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
     UsdMayaGLSoftSelectHelper _softSelectHelper;
+
+    /// Shared diagnostic batch context. Used for cases where we want to batch
+    /// diagnostics across multiple function calls, e.g., batching all of the
+    /// Sync() diagnostics across all prepareForDraw() callbacks in a single
+    /// frame.
+    std::unique_ptr<PxrUsdMayaDiagnosticBatchContext> _sharedDiagBatchCtx;
 };
 
 PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);

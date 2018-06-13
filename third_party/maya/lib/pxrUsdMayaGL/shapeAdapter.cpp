@@ -127,6 +127,8 @@ PxrMayaHdShapeAdapter::Sync(
     // Legacy viewport implementation.
     _isViewport2 = false;
 
+    UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
+
     const unsigned int displayStyle =
         _ToMFrameContextDisplayStyle(legacyDisplayStyle);
     const MHWRender::DisplayStatus displayStatus =
@@ -167,6 +169,8 @@ PxrMayaHdShapeAdapter::Sync(
 {
     // Viewport 2.0 implementation.
     _isViewport2 = true;
+
+    UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Synchronizing PxrMayaHdShapeAdapter for Viewport 2.0: %p\n",
