@@ -645,8 +645,8 @@ ArchGetAppLaunchTime()
  */
 void
 ArchSetFatalStackLogging( bool flag )
-{   
-    _shouldLogStackToDb = flag; 
+{
+    _shouldLogStackToDb = flag;   
 }
 
 /*
@@ -863,7 +863,10 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
 void
 ArchLogSessionInfo(const char *crashStackTrace)
 {
-    _InvokeSessionLogger(ArchGetProgramNameForErrors(), crashStackTrace);
+    if (_shouldLogStackToDb)
+    {
+        _InvokeSessionLogger(ArchGetProgramNameForErrors(), crashStackTrace);
+    }
 }
 
 void
