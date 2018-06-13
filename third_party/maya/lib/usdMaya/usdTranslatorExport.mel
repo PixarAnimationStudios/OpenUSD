@@ -161,6 +161,11 @@ global proc int usdTranslatorExport (string $parent,
 	        menuItem -l "CatmullClark SDiv" -ann "catmullClark";
 	        menuItem -l "Loop SDiv" -ann "loop";
 
+        optionMenuGrp -l "Export Skeletons:" exportSkelsPopup;
+            menuItem -l "None" -ann "none";
+            menuItem -l "All (Automatically Create SkelRoots)" -ann "auto";
+            menuItem -l "Only Under SkelRoots" -ann "explicit";
+
         optionMenuGrp -l "Export Skin Clusters:" exportSkinClustersPopup;
             menuItem -l "None" -ann "none";
             menuItem -l "All (Automatically Create SkelRoots)" -ann "auto";
@@ -210,6 +215,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
+                } else if ($optionBreakDown[0] == "exportSkels") {
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "exportSkelsPopup");
                 } else if ($optionBreakDown[0] == "exportSkin") {
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "exportSkinClustersPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
@@ -251,6 +258,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportInstances", "exportInstancesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkels", "exportSkelsPopup");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkin", "exportSkinClustersPopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");

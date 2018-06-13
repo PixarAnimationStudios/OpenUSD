@@ -289,6 +289,10 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     }
 
     for (const std::string& colorSetName: colorSetNames) {
+
+        if (_excludeColorSets.count(colorSetName) > 0)
+            continue;
+
         bool isDisplayColor = false;
 
         if (colorSetName == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) {

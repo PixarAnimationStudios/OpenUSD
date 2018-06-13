@@ -30,6 +30,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/skinningQuery.h"
 #include "pxr/usd/usdSkel/topology.h"
@@ -127,11 +128,11 @@ struct _MayaTokensData {
     const MString jointType{"joint"};
     const MString meshType{"mesh"};
     const MString skinClusterType{"skinCluster"};
-    const MString transformType{"transform"};
 
     // Plugs, etc.
     const MString bindPose{"bindPose"};
     const MString bindPreMatrix{"bindPreMatrix"};
+    const MString drawStyle{"drawStyle"};
     const MString geomMatrix{"geomMatrix"};
     const MString groupId{"groupId"};
     const MString inheritsTransform{"inheritsTransform"};
@@ -141,9 +142,12 @@ struct _MayaTokensData {
     const MString inMesh{"inMesh"};
     const MString intermediateObject{"intermediateObject"};
     const MString instObjGroups{"instObjGroups"};
+    const MString USD_isJointHierarchyRoot{"USD_isJointHierarchyRoot"};
     const MString matrix{"matrix"};
     const MString members{"members"};
     const MString message{"message"};
+    const MString none{"none"};
+    const MString normalizeWeights{"normalizeWeights"};
     const MString objectGroups{"objectGroups"};
     const MString objectGroupId{"objectGroupId"};
     const MString outputGeometry{"outputGeometry"};
@@ -318,7 +322,7 @@ bool
 _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
                   const SdfPath& skelPath,
                   PxrUsdMayaPrimReaderContext* context,
-                  std::vector<MObject>* jointNodes)
+                  VtArray<MObject>* jointNodes)
 {
     MStatus status;
     
@@ -366,7 +370,7 @@ _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
 /// representation, so the imaging representations cannot be identical.
 bool
 _SetJointRadii(const UsdSkelSkeletonQuery& skelQuery,
-               const std::vector<MObject>& jointNodes,
+               const VtArray<MObject>& jointNodes,
                const VtMatrix4dArray& restXforms)
 {
     MStatus status;
@@ -422,7 +426,7 @@ _SetJointRadii(const UsdSkelSkeletonQuery& skelQuery,
 /// state of the equivalent joints as defined in \p skelQuery.
 bool
 _CopyJointRestStatesFromSkel(const UsdSkelSkeletonQuery& skelQuery,
-                             const std::vector<MObject>& jointNodes)
+                             const VtArray<MObject>& jointNodes)
 {
     const size_t numJoints = jointNodes.size();
     // Compute skel-space rest xforms to store as the bindPose of each joint.
@@ -474,7 +478,7 @@ _CopyJointRestStatesFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 bool
 _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
                   const MObject& skelTransform,
-                  const std::vector<MObject>& jointNodes,
+                  const VtArray<MObject>& jointNodes,
                   const PxrUsdMayaPrimReaderArgs& args,
                   PxrUsdMayaPrimReaderContext* context)
 {
@@ -545,7 +549,7 @@ PxrUsdMayaTranslatorSkel::CreateJoints(
     MObject& parentNode,
     const PxrUsdMayaPrimReaderArgs& args,
     PxrUsdMayaPrimReaderContext* context,
-    std::vector<MObject>* joints)
+    VtArray<MObject>* joints)
 {
     if(!skelQuery) {    
         TF_CODING_ERROR("'skelQuery' is invalid");
@@ -556,24 +560,47 @@ PxrUsdMayaTranslatorSkel::CreateJoints(
         return false;
     }
 
-
-    // Create a plain transform as a container for all joints.
-    // This transform will also be where the transform of the skel's
-    // animation source will be written.
+    // We need to create a single transform beneath which to place all joints,
+    // both because UsdSkel allows for multiple root joints, and because we
+    // need a place to put the skel's anim transform.
+    // The container type will be of type 'joint', since this is easiest for
+    // us to latch onto when exporting back to USD.
+    
+    // The container will be named based on the name of the Skeleton in USD.
     SdfPath skelPath = 
-        skelQuery.GetPrim().GetPath().AppendChild(_tokens->Skeleton);
+        skelQuery.GetPrim().GetPath().AppendChild(
+            skelQuery.GetSkeleton().GetPrim().GetName());
 
     MStatus status;
-    MObject skelTransform;  
-    if(!PxrUsdMayaTranslatorUtil::CreateNode(
-           skelPath, _MayaTokens->transformType, parentNode,
-           context, &status, &skelTransform)) {
+    MObject containerJoint;
+    if (!PxrUsdMayaTranslatorUtil::CreateNode(
+            skelPath, _MayaTokens->jointType, parentNode,
+            context, &status, &containerJoint)) {
         return false;
     }
 
+    // Change the container joint's draw style so that it is not drawn.
+    MFnDependencyNode containerJointDep(containerJoint, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    PxrUsdMayaUtil::setPlugValue(containerJointDep, 
+                                 _MayaTokens->drawStyle,
+                                 2 /*None*/);
+
+    // Create an attribute to indicate to export that this joint should
+    // be treated as the anim transform, rather than as a normal joint.
+    PxrUsdMayaUtil::createNumericAttribute(
+        containerJointDep,
+        _MayaTokens->USD_isJointHierarchyRoot,
+        MFnNumericData::kBoolean);
+
+    PxrUsdMayaUtil::setPlugValue(
+        containerJointDep,
+        _MayaTokens->USD_isJointHierarchyRoot, true);
+
     return _CreateJointNodes(skelQuery, skelPath, context, joints) &&
            _CopyJointRestStatesFromSkel(skelQuery, *joints) &&
-           _CopyAnimFromSkel(skelQuery, skelTransform, *joints, args, context);
+           _CopyAnimFromSkel(skelQuery, containerJoint, *joints, args, context);
 }
 
 
@@ -581,7 +608,7 @@ PxrUsdMayaTranslatorSkel::CreateJoints(
 bool
 PxrUsdMayaTranslatorSkel::CreateBindPose(
     const UsdSkelSkeletonQuery& skelQuery,
-    const std::vector<MObject>& joints,
+    const VtArray<MObject>& joints,
     PxrUsdMayaPrimReaderContext* context,
     MObject* bindPoseNode)
 {
@@ -702,7 +729,7 @@ namespace {
 bool
 _SetVaryingJointInfluences(const MFnMesh& meshFn,
                            const MObject& skinCluster,
-                           const std::vector<MObject>& joints,
+                           const VtArray<MObject>& joints,
                            const VtIntArray& indices,
                            const VtFloatArray& weights,
                            int numInfluencesPerPoint,
@@ -731,7 +758,7 @@ _SetVaryingJointInfluences(const MFnMesh& meshFn,
             if(jointIdx >= 0 
                && static_cast<unsigned int>(jointIdx) < numJoints) {
                 float w = weights[pt*numInfluencesPerPoint+c];
-                // There may be multiple influence referencing the same joint
+                // There may be multiple influences referencing the same joint
                 // for this point. eg., 'unweighted' points are assigned
                 // index 0 and weight 0. Sum the weight contributions to ensure
                 // that we properly account for this.
@@ -750,23 +777,46 @@ _SetVaryingJointInfluences(const MFnMesh& meshFn,
     components.create(MFn::kMeshVertComponent);
     components.setCompleteData(numPoints);
 
-    // XXX: Note that weights are expected to be pre-normalized in USD, so
-    // there's no real need to normalize them at during application.
-    // TODO: Sometimes seeing warnings about weights exceeding 1 for some
-    // verts, even if we explicitly pre-normalize them ourselves. The warnings
-    // seem innocusous (mesh deformations remain correct), but would still
-    // be good to know why we see warnings.
+    // XXX: Note that weights are expected to be pre-normalized in USD.
+    // In order to faithfully transfer our source data, we do not perform
+    // any normalization on import. Maya's weight normalization also seems
+    // finicky w.r.t. precision, and tends to throw warnings even when the
+    // weights have been properly normalized, so this also saves us from 
+    // unnecessary warning spam.
+    
+    // If the 'normalizeWeights' attribute of the skinCluster is set to
+    // 'interactive' -- and by default, it is -- then weights are still
+    // normalized even if we set normalize=false on
+    // MFnSkinCluster::normalize(). This fact is unfortunately not made
+    // clear in the MFnSkinCluster documentation... 
+    // Temporarily set the attr to 'none'
+
+    MPlug normalizeWeights =
+        skinClusterFn.findPlug(_MayaTokens->normalizeWeights, &status);
+    MString initialNormalizeWeights;
+    if (!normalizeWeights.isNull()) {
+        initialNormalizeWeights = normalizeWeights.asString();
+        normalizeWeights.setString(_MayaTokens->none);
+    }
+
     status = skinClusterFn.setWeights(dagPath, components.object(),
                                       influenceIndices, vertOrderedWeights,
                                       /*normalize*/ false);
     CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Reset the normalization flag to its previous value.
+    if (!normalizeWeights.isNull()) {
+        normalizeWeights.setString(initialNormalizeWeights);
+    }
+
+
     return true;
 }
 
 
 bool
 _ComputeAndSetJointInfluences(const UsdSkelSkinningQuery& skinningQuery,
-                              const std::vector<MObject>& joints,
+                              const VtArray<MObject>& joints,
                               const MObject& skinCluster,
                               const MObject& shapeToSkin)
 {
@@ -893,7 +943,7 @@ bool
 PxrUsdMayaTranslatorSkel::CreateSkinCluster(
     const UsdSkelSkeletonQuery& skelQuery,
     const UsdSkelSkinningQuery& skinningQuery,
-    const std::vector<MObject>& joints,
+    const VtArray<MObject>& joints,
     const UsdPrim& primToSkin,
     const PxrUsdMayaPrimReaderArgs& args,
     PxrUsdMayaPrimReaderContext* context,
@@ -951,6 +1001,11 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
 
     MObject skinCluster =
         dgMod.createNode(_MayaTokens->skinClusterType, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    std::string skinClusterName = 
+        TfStringPrintf("skinCluster_%s", primToSkin.GetName().GetText());
+    status = dgMod.renameNode(skinCluster, MString(skinClusterName.c_str()));
+                              
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MObject groupId = dgMod.createNode(_MayaTokens->groupIdType, &status);

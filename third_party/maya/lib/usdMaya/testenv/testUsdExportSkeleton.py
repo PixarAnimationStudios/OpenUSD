@@ -22,8 +22,6 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-
-
 import os
 import unittest
 
@@ -31,7 +29,7 @@ from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as OM
 
-from pxr import Gf, Usd, UsdSkel, Vt
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdSkel, Vt
 
 
 class testUsdExportSkeleton(unittest.TestCase):
@@ -49,71 +47,95 @@ class testUsdExportSkeleton(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def _AssertMatricesClose(self, gfm1, gfm2):
-        for i in xrange(0, 4):
-            for j in xrange(0, 4):
-                self.assertAlmostEqual(gfm1[i][j], gfm2[i][j], places=3)
-
     def testSkeletonTopology(self):
         """Tests that the joint topology is correct."""
         usdFile = os.path.abspath('UsdExportSkeleton.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
-            shadingMode='none')
+                       shadingMode='none', exportSkels='auto')
         stage = Usd.Stage.Open(usdFile)
 
-        skeleton = UsdSkel.Skeleton.Get(stage, '/skeleton_Hip')
+        skeleton = UsdSkel.Skeleton.Get(stage, '/SkelChar/Hips/Skeleton')
         self.assertTrue(skeleton)
 
         joints = skeleton.GetJointsAttr().Get()
         self.assertEqual(joints, Vt.TokenArray([
-            "Hip",
-            "Hip/Spine",
-            "Hip/Spine/Neck",
-            "Hip/Spine/Neck/Head",
-            "Hip/Spine/Neck/LArm",
-            "Hip/Spine/Neck/LArm/LHand",
-            # note: skips ExtraJoints because it's not a joint
-            "Hip/Spine/Neck/LArm/LHand/ExtraJoints/ExtraJoint1",
-            "Hip/Spine/Neck/LArm/LHand/ExtraJoints/ExtraJoint1/ExtraJoint2",
-            "Hip/Spine/Neck/RArm",
-            "Hip/Spine/Neck/RArm/RHand",
-            "Hip/RLeg",
-            "Hip/RLeg/RFoot",
-            "Hip/LLeg",
-            "Hip/LLeg/LFoot"
+            "Hips",
+            "Hips/Torso",
+            "Hips/Torso/Chest",
+            "Hips/Torso/Chest/UpChest",
+            "Hips/Torso/Chest/UpChest/Neck",
+            "Hips/Torso/Chest/UpChest/Neck/Head",
+            "Hips/Torso/Chest/UpChest/Neck/Head/LEye",
+            "Hips/Torso/Chest/UpChest/Neck/Head/REye",
+            "Hips/Torso/Chest/UpChest/LShldr",
+            "Hips/Torso/Chest/UpChest/LShldr/LArm",
+            "Hips/Torso/Chest/UpChest/LShldr/LArm/LElbow",
+            "Hips/Torso/Chest/UpChest/LShldr/LArm/LElbow/LHand",
+            "Hips/Torso/Chest/UpChest/RShldr",
+            "Hips/Torso/Chest/UpChest/RShldr/RArm",
+            "Hips/Torso/Chest/UpChest/RShldr/RArm/RElbow",
+            "Hips/Torso/Chest/UpChest/RShldr/RArm/RElbow/RHand",
+            # note: skips ExtraJoints because it's not a joint.
+            "Hips/Torso/Chest/UpChest/RShldr/RArm/RElbow/RHand/ExtraJoints/RHandPropAttach",
+            "Hips/LLeg",
+            "Hips/LLeg/LKnee",
+            "Hips/LLeg/LKnee/LFoot",
+            "Hips/LLeg/LKnee/LFoot/LToes",
+            "Hips/RLeg",
+            "Hips/RLeg/RKnee",
+            "Hips/RLeg/RKnee/RFoot",
+            "Hips/RLeg/RKnee/RFoot/RToes"
         ]))
 
-    def testSkelTransformDecomposition(self):
+    def testSkelTransforms(self):
         """
-        Tests that the decomposed transform values, when recomposed, recreate
-        the correct Maya transformation matrix.
+        Tests that the computed joint transforms in USD, when tarnsformed into
+        world space, match the world space transforms of the Maya joints.
         """
+
+        # frameRange = [1, 30]
+        frameRange = [1, 3]
+
         usdFile = os.path.abspath('UsdExportSkeleton.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
-            shadingMode='none', frameRange=[1, 30])
+                       shadingMode='none', frameRange=frameRange,
+                       exportSkels='auto')
         stage = Usd.Stage.Open(usdFile)
-        anim = UsdSkel.PackedJointAnimation.Get(stage,
-                '/skeleton_Hip/Animation')
-        self.assertEqual(anim.GetJointsAttr().Get()[8],
-                "Hip/Spine/Neck/RArm")
-        animT = anim.GetTranslationsAttr()
-        animR = anim.GetRotationsAttr()
-        animS = anim.GetScalesAttr()
 
-        selList = OM.MSelectionList()
-        selList.add("RArm")
-        rArmDagPath = selList.getDagPath(0)
-        fnTransform = OM.MFnTransform(rArmDagPath)
+        root = UsdSkel.Root.Get(stage, '/SkelChar')
+        self.assertTrue(root)
 
-        for i in xrange(1, 31):
-            cmds.currentTime(i, edit=True)
+        skelCache = UsdSkel.Cache()
+        skelCache.Populate(root)
 
-            mayaXf = fnTransform.transformation().asMatrix()
-            usdT = animT.Get(i)[8]
-            usdR = animR.Get(i)[8]
-            usdS = animS.Get(i)[8]
-            usdXf = UsdSkel.MakeTransform(usdT, usdR, usdS)
-            self._AssertMatricesClose(usdXf, Gf.Matrix4d(*mayaXf))
+        skelQuery = skelCache.GetSkelQuery(stage.GetPrimAtPath('/SkelChar/Hips'))
+        self.assertTrue(skelQuery)
+
+        xfCache = UsdGeom.XformCache()
+
+        for frame in xrange(*frameRange):
+            cmds.currentTime(frame, edit=True)
+            xfCache.SetTime(frame)
+
+            skelLocalToWorld = \
+                skelQuery.ComputeLocalToWorldTransform(xfCache)
+
+            usdJointXforms = skelQuery.ComputeJointSkelTransforms(frame)
+
+            for joint,usdJointXf in zip(skelQuery.GetJointOrder(),
+                                        usdJointXforms):
+
+                usdJointWorldXf = usdJointXf * skelLocalToWorld
+                
+                selList = OM.MSelectionList()
+                selList.add(Sdf.Path(joint).name)
+
+                dagPath = selList.getDagPath(0)
+                mayaJointWorldXf = Gf.Matrix4d(*dagPath.inclusiveMatrix())
+
+                self.assertTrue(Gf.IsClose(mayaJointWorldXf,
+                                           usdJointWorldXf, 1e-5))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

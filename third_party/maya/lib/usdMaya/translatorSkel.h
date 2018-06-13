@@ -32,6 +32,8 @@
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
+#include "pxr/base/vt/array.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,12 +51,12 @@ struct PxrUsdMayaTranslatorSkel
                              MObject& parentNode,
                              const PxrUsdMayaPrimReaderArgs& args,
                              PxrUsdMayaPrimReaderContext* context,
-                             std::vector<MObject>* joints);
+                             VtArray<MObject>* joints);
 
     /// Create a bind psoe wired up to joint nodes created for \p skelQuery.
     PXRUSDMAYA_API
     static bool CreateBindPose(const UsdSkelSkeletonQuery& skelQuery,
-                               const std::vector<MObject>& joints,
+                               const VtArray<MObject>& joints,
                                PxrUsdMayaPrimReaderContext* context,
                                MObject* bindPoseNode);
 
@@ -65,7 +67,7 @@ struct PxrUsdMayaTranslatorSkel
     PXRUSDMAYA_API
     static bool CreateSkinCluster(const UsdSkelSkeletonQuery& skelQuery,
                                   const UsdSkelSkinningQuery& skinningQuery,
-                                  const std::vector<MObject>& joints,
+                                  const VtArray<MObject>& joints,
                                   const UsdPrim& primToSkin,
                                   const PxrUsdMayaPrimReaderArgs& args,
                                   PxrUsdMayaPrimReaderContext* context,

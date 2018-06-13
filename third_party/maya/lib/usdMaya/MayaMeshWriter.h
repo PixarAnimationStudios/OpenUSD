@@ -153,6 +153,10 @@ class MayaMeshWriter : public MayaTransformWriter
 
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;
+
+    /// Set of color sets that should be excluded.
+    /// Intermediate processes may alter this set prior to writeMeshAttrs().
+    std::set<std::string> _excludeColorSets;
 };
 
 typedef std::shared_ptr<MayaMeshWriter> MayaMeshWriterPtr;

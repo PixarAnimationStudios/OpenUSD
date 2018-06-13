@@ -240,7 +240,7 @@ UsdSkelAnimMapper::_Remap(const VtArray<T>& source,
 
 // Explicitly instantiate templated Remap methods for all array-value sdf types.
 #define _INSTANTIATE_REMAP(r, unused, elem)                     \
-    template bool UsdSkelAnimMapper::Remap(                     \
+    template USDSKEL_API bool UsdSkelAnimMapper::_Remap(                    \
         const SDF_VALUE_TRAITS_TYPE(elem)::ShapedType&,         \
         SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*,               \
         int, const SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;

@@ -27,6 +27,13 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaPrimWriter.h"
 
+#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdSkel/animMapper.h"
+#include "pxr/usd/usdSkel/packedJointAnimation.h"
+#include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/topology.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -52,8 +59,8 @@ class MayaSkeletonWriter : public MayaPrimWriter
 {
 public:
     MayaSkeletonWriter(const MDagPath & iDag,
-            const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
+                       const SdfPath& uPath,
+                       usdWriteJobCtx& jobCtx);
     
     void write(const UsdTimeCode &usdTime) override;
     bool exportsGprims() const override;
@@ -63,18 +70,27 @@ public:
 
     /// Gets the joint name tokens for the given dag paths, assuming a joint
     /// hierarchy with the given root joint.
-    static VtTokenArray GetJointNames(
-            const std::vector<MDagPath>& joints,
-            const MDagPath& rootJoint);
-    /// Gets the expected path where a UsdSkelSkeleton prim will be exported
-    /// for the given root joint.
-    static SdfPath GetSkeletonPath(const MDagPath& rootJoint);
-    /// Gets the expected path where a UsdSkelPackedJointAnimation prim will be
-    /// exported for the given root joint.
-    static SdfPath GetAnimationPath(const MDagPath& rootJoint);
+    static VtTokenArray GetJointNames(const std::vector<MDagPath>& joints,
+                                      const MDagPath& rootJoint);
+
+    /// Gets the expected path where a skeleton instance will be exported for
+    /// the given root joint. The skeleton instance both binds a skeleton and
+    /// holds root transformations of the joint hierarchy.
+    static SdfPath GetSkeletonInstancePath(const MDagPath& rootJoint);
 
 private:
-    std::vector<MDagPath> _animatedJoints;
+    bool _WriteRestState();
+
+    bool _valid;
+    UsdPrim _skelInstance;
+    UsdSkelSkeleton _skel;
+    UsdSkelPackedJointAnimation _skelAnim;
+
+    UsdSkelTopology _topology;
+    UsdSkelAnimMapper _skelToAnimMapper;
+    std::vector<MDagPath> _joints, _animatedJoints;
+    UsdAttribute _animXformAttr;
+    bool _animXformIsAnimated;
 };
 
 typedef std::shared_ptr<MayaSkeletonWriter> MayaSkeletonWriterPtr;

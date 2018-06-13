@@ -22,7 +22,6 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-
 import unittest, os
 
 from pxr import Gf, Usd, UsdSkel
@@ -263,14 +262,15 @@ class testUsdImportSkeleton(unittest.TestCase):
 
         self._ValidateMeshTransform(meshPrim.GetName(), skinningQuery)
 
-        self._ValidateSkinClusterRig(joints=joints,
-                                     skinClusterName="skinCluster1",
-                                     groupPartsName="skinClusterGroupParts",
-                                     groupIdName="skinClusterGroupId",
-                                     bindPoseName="bindPose",
-                                     meshName=meshPrim.GetName(),
-                                     usdSkelQuery=skelQuery,
-                                     usdSkinningQuery=skinningQuery)
+        self._ValidateSkinClusterRig(
+            joints=joints,
+            skinClusterName="skinCluster_{}".format(meshPrim.GetName()),
+            groupPartsName="skinClusterGroupParts",
+            groupIdName="skinClusterGroupId",
+            bindPoseName="bindPose",
+            meshName=meshPrim.GetName(),
+            usdSkelQuery=skelQuery,
+            usdSkinningQuery=skinningQuery)
 
 
 if __name__ == '__main__':

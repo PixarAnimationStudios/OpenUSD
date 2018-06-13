@@ -24,8 +24,10 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 #include "usdMaya/MayaSkeletonWriter.h"
+#include "usdMaya/translatorUtil.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
@@ -35,13 +37,21 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MItDependencyGraph.h>
-#include <maya/MTransformationMatrix.h>
 #include <maya/MMatrix.h>
-#include <maya/MQuaternion.h>
 
 #include <ostream>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((skelJointIndices, "skel:jointIndices"))
+    ((skelJointWeights, "skel:jointWeights"))
+    ((skelGeomBindTransform, "skel:geomBindTransform"))
+);
+
 
 /// Gets the closest upstream skin cluster for the mesh at the given dag path.
 /// Warns if there is more than one skin cluster.
@@ -208,116 +218,193 @@ _GetCompressedSkinWeights(
         for (unsigned int i = 0; i < numInfluences; ++i) {
             // Looping through each weight for vertex.
             float weight = weights[inputOffset + i];
-            if (weight != 0.0) {
+            if (!GfIsClose(weight, 0.0, 1e-8)) {
                 (*usdJointIndices)[outputOffset] = i;
                 (*usdJointWeights)[outputOffset] = weight;
                 outputOffset++;
             }
         }
     }
-
     return maxInfluenceCount;
 }
 
-/// Finds the rootmost ancestor of the prim at startPath that is an Xform
-/// or SkelRoot type prim.
-static UsdPrim
-_FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& startPath)
-{
-    UsdPrim currentPrim = stage->GetPrimAtPath(startPath.GetParentPath());
-    UsdPrim rootmost;
-    while (currentPrim) {
-        if (currentPrim.IsA<UsdGeomXform>()) {
-            rootmost = currentPrim;
-        }
-        else if (currentPrim.IsA<UsdSkelRoot>()) {
-            rootmost = currentPrim;
-        }
-        currentPrim = currentPrim.GetParent();
-    }
 
-    return rootmost;
+// Brief primer on our transformation stack:
+//
+// A skin cluster defines the following important spaces:
+//  geomMatrix: inclusive matrix of geom at time of bind
+//  bindPreMatrix: array of *inverse* inclusive joint matrices
+//  matrix: array of inclusive joint matrices
+// For clarity, we will refer to these as geomWorldRestXf,
+// jointWorldInverseRestXf, and jointWorldXf, respectively.
+//
+// To match Maya's deformations in USD, we must determine the complete transform
+// for transforming a point given in geometry space into world space, as
+// deformed by a joint, and match it.
+// Skinning in Maya happens in the space of the geometry. The resulting deformed
+// mesh is then connected as the input mesh of another shape, the transform of
+// which  further affect the result.
+// If a transform affected both the transform of the mesh that holds the result
+// of the deformation, as well as a joint that influences the mesh, we would end
+// up double transforming. Because of this, a rig typically must be structured
+// to prevent such double transformations -- for example, by specifying
+// inheritsTransform=false on geometry prims.
+// Moreover, the resulting mesh transform is usually equivalent to the
+// geomWorldBindXf (or geomMatrix), since if it is not, deformations tend to get
+// a little wonky and disjoint.
+// Accounting for the full transformation stack, a point given in geometry space
+// may be deformed and transformed into world space as follows:
+//
+//   geomWorldRestXf * jointWorldInverseRestXf * jointWorldXf * 
+//      inv(geomWorldRestXf) * geomWorldXf
+//
+// Where geomWorldXf is the inclusive matrix of the resulting deformation,
+// -- a post-deformation transform -- and as previously stated, it is
+// common that:
+//
+//   geomWorldXf = geomWorldRestXf
+//
+// Such that the last two terms cancel (_usually_!).
+// In UsdSkel, the equivalent xform for deforming a point is:
+//
+//   geomBindTransform * inv(jointSkelSpaceRestXf) *
+//      jointSkelSpaceXf * skelLocalToWorld
+//
+// Note that the only post-deformation UsdSkel defines is the global skeleton
+// instance transform, and affects every object skinned by the skeleton.
+// This implies that in order to preserve any of the post-deformations of Maya,
+// we must define a unique skeleton instance per mesh.
+// That is quite undesirable! At the same time, a per-mesh post-deformation
+// transform is not something that is widely supported across different DCC
+// apps; if we could encode it in USD, we would have hard time interchanging
+// the result. Because multi-app interchange is one of UsdSkel's primary goals,
+// and since it is usually the case that a deformed mesh's transform is
+// equivalent to its the 'geomMatrix', we choose to ignore these
+// post-deformation transforms.
+//
+// So, we assume 'geomWorldXf = geomWorldRestXf', and have:
+//
+//  geomWorldRestXf * jointWorldInverseRestXf * jointWorldXf =
+//   geomBindTransform * inv(jointSkelSpaceRestXf) *
+//      jointSkelSpaceXf * skelLocalToWorld
+//
+// The world space transformation of a joint in UsdSkel is defined as:
+//
+//      jointWorldXf = jointSkelSpaceXf * skelLocalToWorld
+//
+// Plugging this into the equation above, we get:
+//
+//  geomWorldRestXf * jointWorldInverseRestXf * jointWorldXf =
+//      geomBindTransform * inv(jointSkelSpaceRestXf) * jointWorldXf
+//
+// From this, it's clear that:
+//
+//      geomBindTransform = geomWorldRestXf
+//      jointWorldInverseRestXf = inv(jointSkelSpaceRestXf)
+//
+
+
+/// Check if a skinned primitive has an unsupported post-deformation
+/// transformation. These transformations aren't represented in UsdSkel.
+static void
+_WarnForPostDeformationTransform(const SdfPath& path,
+                                 const MDagPath& deformedMeshDag,
+                                 const MFnSkinCluster& skinCluster)
+{
+    MStatus status;
+    
+    MMatrix deformedMeshWorldXf = deformedMeshDag.inclusiveMatrix(&status);
+    if (!status)
+        return;
+
+    MMatrix bindPreMatrix;
+    if (PxrUsdMayaUtil::getPlugMatrix(
+            skinCluster, "bindPreMatrix", &bindPreMatrix)) {
+        
+        if (!GfIsClose(GfMatrix4d(deformedMeshWorldXf.matrix),
+                       GfMatrix4d(bindPreMatrix.matrix), 1e-5)) {
+            TF_WARN("Mesh <%s> appears to have a non-identity post-deformation "
+                    "transform (the 'bindPreMatrix' property of the skinCluster "
+                    "does not match the inclusive matrix of the deformed mesh). "
+                    "The resulting skinning in USD may be incorrect.",
+                    path.GetText());
+        }
+    }
 }
 
-/// Changes an ancestor prim's typename to SkelRoot if necessary and allowed
-/// by the exportSkin job arg.
-/// \p outMadeSkelRoot must be non-null; it will be set to indicate whether any
-/// auto-renaming actually occured (true) or whether there was already a
-/// SkelRoot, so no renaming was necessary (false).
-/// Coding error if the prim has no SkelRoot ancestor and no prim can be turned
-/// into a SkelRoot (these prims should have been skipped for export).
-/// Maya error if the existing SkelRoot ancestor is nested inside another
-/// SkelRoot.
-static SdfPath
-_VerifyOrMakeSkelRoot(
-    const UsdStagePtr& stage,
-    const SdfPath& meshPath,
-    const TfToken& exportSkinConfig,
-    bool* outMadeSkelRoot)
+
+/// Compute the geomBindTransform for a mesh using \p skinCluster.
+static bool
+_GetGeomBindTransform(const MFnSkinCluster& skinCluster,
+                      GfMatrix4d* geomBindXf)
 {
-    // Only try to auto-rename to SkelRoot if we're not already a
-    // descendant of one. Otherwise, verify that the user tagged it in a sane
-    // way.
-    if (UsdSkelRoot root = UsdSkelRoot::Find(stage->GetPrimAtPath(meshPath))) {
-        // Verify that the SkelRoot isn't nested in another SkelRoot.
-        // This is necessary because UsdSkel doesn't handle nested skel roots
-        // very well currently; this restriction may be loosened in the future.
-        if (UsdSkelRoot root2 = UsdSkelRoot::Find(root.GetPrim().GetParent())) {
-            MGlobal::displayError(TfStringPrintf("The SkelRoot <%s> is nested "
-                    "inside another SkelRoot <%s>. This might cause unexpected "
-                    "behavior. ",
-                    root.GetPath().GetText(),
-                    root2.GetPath().GetText()).c_str());
-            *outMadeSkelRoot = false;
-            return SdfPath();
-        }
-        else {
-            *outMadeSkelRoot = false;
-            return root.GetPath();
-        }
-    } else {
-        // If auto-generating the SkelRoot, find the rootmost
-        // UsdGeomXform and turn it into a SkelRoot.
-        // XXX: It might be good to also consider model hierarchy here, and not
-        // go past our ancestor component when trying to generate the SkelRoot.
-        // (Example: in a scene with /World, /World/Char_1, /World/Char_2, we
-        // might want SkelRoots to stop at Char_1 and Char_2.) Unfortunately,
-        // the current structure precludes us from accessing model hierarchy
-        // here.
-        if (exportSkinConfig == PxrUsdExportJobArgsTokens->auto_) {
-            if (UsdPrim root =
-                    _FindRootmostXformOrSkelRoot(stage, meshPath)) {
-                UsdSkelRoot::Define(stage, root.GetPath());
-                *outMadeSkelRoot = true;
-                return root.GetPath();
-            }
-            else {
-                TF_CODING_ERROR(
-                        "No UsdGeomXform ancestor of <%s>; it should have "
-                        "been skipped for skel data export",
-                        meshPath.GetText());
-                *outMadeSkelRoot = false;
-                return SdfPath();
-            }
-        }
-        else {
-            TF_CODING_ERROR(
-                    "No existing SkelRoot ancestor and not auto-generating "
-                    "SkelRoot ancestor for <%s>; it should have been skipped "
-                    "for skel data export",
-                    meshPath.GetText());
-            *outMadeSkelRoot = false;
-            return SdfPath();
-        }
+    MMatrix geomWorldRestXf;
+    if (!PxrUsdMayaUtil::getPlugMatrix(
+            skinCluster, "geomMatrix", &geomWorldRestXf)) {
+        // All skinClusters should have geomMatrix, but if not...
+        MGlobal::displayError(TfStringPrintf(
+                "Couldn't read geomMatrix from skinCluster '%s'",
+                skinCluster.name().asChar()).c_str());
+        return false;
     }
+
+    *geomBindXf = GfMatrix4d(geomWorldRestXf.matrix);
+    return true;
 }
+
+
+/// Compute and write joint influences.
+static bool
+_WriteJointInfluences(const MFnSkinCluster& skinCluster,
+                      const MFnMesh& inMesh,
+                      const UsdSkelBindingAPI& binding)
+{
+    // The data in the skinCluster is essentially already in the same format
+    // as UsdSkel expects, but we're going to compress it by only outputting
+    // the nonzero weights.
+    VtIntArray jointIndices;
+    VtFloatArray jointWeights;
+    int maxInfluenceCount = _GetCompressedSkinWeights(
+        inMesh, skinCluster, &jointIndices, &jointWeights);
+
+    if (maxInfluenceCount <= 0)
+        return false;
+
+    UsdSkelSortInfluences(&jointIndices, &jointWeights, maxInfluenceCount);
+
+    UsdGeomPrimvar indicesPrimvar =
+        binding.CreateJointIndicesPrimvar(false, maxInfluenceCount);
+    indicesPrimvar.Set(jointIndices);
+
+    UsdGeomPrimvar weightsPrimvar =
+        binding.CreateJointWeightsPrimvar(false, maxInfluenceCount);
+    weightsPrimvar.Set(jointWeights);
+
+    return true;
+}
+
+
+static bool
+_WriteJointOrder(const MDagPath& rootJoint,
+                 const std::vector<MDagPath>& jointDagPaths,
+                 const UsdSkelBindingAPI& binding)
+{
+    // Get joint name tokens how MayaSkeletonWriter would generate them.
+    // We don't need to check that they actually exist.
+    VtTokenArray jointNames = MayaSkeletonWriter::GetJointNames(
+        jointDagPaths, rootJoint);
+
+    binding.CreateJointsAttr().Set(jointNames);
+    return true;
+}
+
 
 MObject
 MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 {
     const TfToken& exportSkin = mWriteJobCtx.getArgs().exportSkin;
     if (exportSkin != PxrUsdExportJobArgsTokens->auto_ &&
-            exportSkin != PxrUsdExportJobArgsTokens->explicit_) {
+        exportSkin != PxrUsdExportJobArgsTokens->explicit_) {
         return MObject();
     }
 
@@ -342,28 +429,15 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
         return MObject();
     }
 
-    // If exportSkin=auto, we need to make sure there's a UsdGeomXform
-    // ancestor that we can turn into a SkelRoot. Otherwise, *error* and return.
-    if (exportSkin == PxrUsdExportJobArgsTokens->auto_ &&
-            !_FindRootmostXformOrSkelRoot(
-                getUsdStage(), primSchema.GetPath())) {
-        MGlobal::displayError(TfStringPrintf(
-                "Cannot automatically make SkelRoot above "
-                "<%s> because it has no Xform ancestors. Try grouping it "
-                "under a Maya transform node.",
-                primSchema.GetPath().GetText()).c_str());
-        return MObject();
-    }
-
     // Get all influences and find the rootmost joint.
     MDagPathArray jointDagPathArr;
     if (!skinCluster.influenceObjects(jointDagPathArr)) {
         return MObject();
     }
 
-    std::vector<MDagPath> jointDagPaths;
+    std::vector<MDagPath> jointDagPaths(jointDagPathArr.length());
     for (unsigned int i = 0; i < jointDagPathArr.length(); ++i) {
-        jointDagPaths.push_back(jointDagPathArr[i]);
+        jointDagPaths[i] = jointDagPathArr[i];
     }
 
     MDagPath rootJoint = _GetRootJoint(jointDagPaths);
@@ -373,63 +447,52 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
         // we currently export skeletons in MayaSkeletonWriter. We treat an
         // entire joint hierarchy rooted at a single joint as a single skeleton,
         // so when binding the mesh to a skeleton, we have to make sure that
-        // we're only binding to a single skeleton. This might change if we
-        // ever generate multiple-root skeletons.
+        // we're only binding to a single skeleton.
+        //
+        // This restrction is largely a consequence of UsdSkel encoding joint
+        // transforms in 'skeleton space': We need something that defines a rest
+        // (or bind) transform, since otherwise transforming into skeleton space
+        // is undefined for the rest pose.
         return MObject();
     }
 
-    // Get joint name tokens how MayaSkeletonWriter would generate them.
-    // We don't need to check that they actually exist.
-    VtTokenArray jointNames = MayaSkeletonWriter::GetJointNames(
-            jointDagPaths, rootJoint);
-
-    // The data in the skinCluster is essentially already in the same format 
-    // as UsdSkel expects, but we're going to compress it by only outputting
-    // the nonzero weights.
-    VtIntArray jointIndices;
-    VtFloatArray jointWeights;
-    int maxInfluenceCount = _GetCompressedSkinWeights(
-            inMesh, skinCluster, &jointIndices, &jointWeights);
-    if (maxInfluenceCount == 0) {
-        return MObject();
-    }
-    UsdSkelSortInfluences(&jointIndices, &jointWeights, maxInfluenceCount);
-
-    // The skeleton space is the exclusive transform of the root joint, i.e.
-    // the transform of its parent.
-    GfMatrix4d skeletonSpace(rootJoint.exclusiveMatrix().matrix);
-
-    // Obtain geometry bind transform, which moves the mesh into skeleton
-    // space. Note that we use the root joint space as skeleton space.
-    MMatrix geomMatrixWorld;
-    if (!PxrUsdMayaUtil::getPlugMatrix(
-            skinCluster, "geomMatrix", &geomMatrixWorld)) {
-        // All skinClusters should have geomMatrix, but if not...
-        MGlobal::displayError(TfStringPrintf(
-                "Couldn't read geomMatrix from skinCluster '%s'",
-                skinCluster.name().asChar()).c_str());
-        return MObject();
-    }
-    GfMatrix4d geomBindTransform =
-            skeletonSpace.GetInverse() * GfMatrix4d(geomMatrixWorld.matrix);
+    // Don't continue any further unless we are able to find or create a
+    // skel root that encapsulates both this mesh and the target
+    // skeleton instance.
+    const SdfPath skelInstancePath =
+        MayaSkeletonWriter::GetSkeletonInstancePath(rootJoint);
 
     // Write everything to USD once we know that we have OK data.
-    const UsdSkelBindingAPI bindingAPI(primSchema);
-    _SetAttribute(
-            bindingAPI.CreateJointIndicesPrimvar(false, maxInfluenceCount),
-            &jointIndices);
-    _SetAttribute(
-            bindingAPI.CreateJointWeightsPrimvar(false, maxInfluenceCount),
-            &jointWeights);
-    _SetAttribute(bindingAPI.CreateGeomBindTransformAttr(), 
-            &geomBindTransform);
+    const UsdSkelBindingAPI bindingAPI = PxrUsdMayaTranslatorUtil
+        ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
 
-    bool madeSkelRoot;
-    const SdfPath skelRootPath = _VerifyOrMakeSkelRoot(
-            getUsdStage(), getUsdPath(),
-            mWriteJobCtx.getArgs().exportSkin, &madeSkelRoot);
-    mWriteJobCtx.getSkelBindingsWriter().MarkBinding(
-            getUsdPath(), skelRootPath, rootJoint, madeSkelRoot);
+    if (_WriteJointInfluences(skinCluster, inMesh, bindingAPI)) {
+        _WriteJointOrder(rootJoint, jointDagPaths, bindingAPI);
+    }
+
+    GfMatrix4d geomBindTransform;
+    if (_GetGeomBindTransform(skinCluster,&geomBindTransform)) {
+        _SetAttribute(bindingAPI.CreateGeomBindTransformAttr(),
+                      &geomBindTransform);
+    }
+
+    _WarnForPostDeformationTransform(getUsdPath(), getDagPath(), skinCluster);
+
+    // Export will create a SkeletonInstance at the location corresponding to
+    // the root joint. Configure this mesh to be bound to the same instance.
+    bindingAPI.CreateSkeletonInstanceRel().SetTargets({skelInstancePath});
+
+    // Add all skel primvars to the exclude set.
+    // We don't want later processing to stomp on any of our data.
+    _excludeColorSets.insert({_tokens->skelJointIndices,
+                              _tokens->skelJointWeights,
+                              _tokens->skelGeomBindTransform});
+
+    // Mark the bindings for post processing.
+    mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
+        primSchema.GetPrim().GetPath(),
+        skelInstancePath, exportSkin);
+
     return inMeshObj;
 }
 
