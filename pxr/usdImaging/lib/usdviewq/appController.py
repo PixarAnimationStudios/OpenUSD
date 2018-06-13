@@ -305,7 +305,7 @@ class AppController(QtCore.QObject):
         # assertions without it.
         self._primToItemMap.clear()
 
-    def __init__(self, parserData):
+    def __init__(self, parserData, resolverContextFn):
         QtCore.QObject.__init__(self)
 
         with Timer() as uiOpenTimer:
@@ -320,6 +320,7 @@ class AppController(QtCore.QObject):
             self._noRender = parserData.noRender
             self._noPlugins = parserData.noPlugins
             self._unloaded = parserData.unloaded
+            self._resolverContextFn = resolverContextFn
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
@@ -1062,7 +1063,6 @@ class AppController(QtCore.QObject):
             t.PrintTime("'%s'" % msg)
 
     def _openStage(self, usdFilePath, populationMaskPaths):
-        Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1093,9 +1093,13 @@ class AppController(QtCore.QObject):
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, popMask, loadSet)
+                stage = Usd.Stage.OpenMasked(layer, 
+                                             self._resolverContextFn(usdFilePath),
+                                             popMask, loadSet)
             else:
-                stage = Usd.Stage.Open(layer, loadSet)
+                stage = Usd.Stage.Open(layer,
+                                       self._resolverContextFn(usdFilePath), 
+                                       loadSet)
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
