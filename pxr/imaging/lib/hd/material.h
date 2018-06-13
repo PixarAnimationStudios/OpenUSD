@@ -68,12 +68,28 @@ private:
 
 /// \struct HdMaterialRelationship
 ///
-/// Describes a connection between two nodes/terminals.
+/// Describes a connection between two nodes in a material.
+///
+/// A brief discussion of terminology follows:
+///
+/// * Shading nodes have inputs and outputs.
+/// * Shading nodes consume input values and produce output values.
+/// * Connections also have inputs and outputs.
+/// * Connections consume a value from the (\em inputId, \em inputName)
+///   and pass that value to the (\em outputId, \em outputName).
+///
+/// Note that a connection's input is considered an output on the
+/// upstream shading node, and the connection's output is an input
+/// on the downstream shading node.
+///
+/// A guideline to remember this terminology is that inputs
+/// are always upstream of outputs in the dataflow.
+/// 
 struct HdMaterialRelationship {
-    SdfPath sourceId;
-    TfToken sourceTerminal;
-    SdfPath remoteId;
-    TfToken remoteTerminal;
+    SdfPath inputId;
+    TfToken inputName;
+    SdfPath outputId;
+    TfToken outputName;
 };
 
 // VtValue requirements

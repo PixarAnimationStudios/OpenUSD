@@ -257,10 +257,10 @@ void walkGraph(UsdShadeShader const & shadeNode,
             
             // Store the relationship
             HdMaterialRelationship relationship;
-            relationship.sourceId = shadeNode.GetPath();
-            relationship.sourceTerminal = input.GetBaseName();
-            relationship.remoteId = source.GetPath();
-            relationship.remoteTerminal = outputName;
+            relationship.outputId = shadeNode.GetPath();
+            relationship.outputName = input.GetBaseName();
+            relationship.inputId = source.GetPath();
+            relationship.inputName = outputName;
             materialNetwork->relationships.push_back(relationship);
         } else {
             // Parameters detected, let's store it
