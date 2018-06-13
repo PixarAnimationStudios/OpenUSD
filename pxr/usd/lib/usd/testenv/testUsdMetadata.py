@@ -182,6 +182,93 @@ class TestUsdMetadata(unittest.TestCase):
             _TestExplicit(rel, "comment", "this is a comment")
             _TestExplicit(rel, "noLoadHint", True)
 
+    def test_ListConversion(self):
+        print "Verify that raw python lists are converted into metadata safely..."
+        from pxr import Gf
+
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('ListConversion.' + fmt)
+            p = s.DefinePrim('/p')
+            
+            p.SetCustomDataByKey('int_array', [1,2,3,4])
+            p.SetCustomDataByKey('double_array', [1.0, 2.0])
+            p.SetCustomDataByKey('string_array', ['h', 'e', 'l', 'l', 'o'])
+            p.SetCustomDataByKey('bool_array', [False, True])
+            
+            p.SetCustomDataByKey('gf_vec_2i_array', [Gf.Vec2i(1,2)])
+            p.SetCustomDataByKey('gf_vec_2f_array', [Gf.Vec2f(1.0,2.0)])
+            p.SetCustomDataByKey('gf_vec_2d_array', [Gf.Vec2d(1.0,2.0)])
+            p.SetCustomDataByKey('gf_vec_2h_array', [Gf.Vec2h(1.0,2.0)])
+            
+            p.SetCustomDataByKey('gf_vec_3i_array', [Gf.Vec3i(1,2,3)])
+            p.SetCustomDataByKey('gf_vec_3f_array', [Gf.Vec3f(1.0,2.0,3.0)])
+            p.SetCustomDataByKey('gf_vec_3d_array', [Gf.Vec3d(1.0,2.0,3.0)])
+            p.SetCustomDataByKey('gf_vec_3h_array', [Gf.Vec3h(1.0,2.0,3.0)])
+            
+            p.SetCustomDataByKey('gf_vec_4i_array', [Gf.Vec4i(1,2,3,4)])
+            p.SetCustomDataByKey('gf_vec_4f_array', [Gf.Vec4f(1.0,2.0,3.0,4.0)])
+            p.SetCustomDataByKey('gf_vec_4d_array', [Gf.Vec4d(1.0,2.0,3.0,4.0)])
+            p.SetCustomDataByKey('gf_vec_4h_array', [Gf.Vec4h(1.0,2.0,3.0,4.0)])
+            
+            p.SetCustomDataByKey('gf_mat_2d_array', [Gf.Matrix2d(1.0,2.0,
+                                                                 3.0,4.0)])
+            
+            p.SetCustomDataByKey('gf_mat_3d_array', [Gf.Matrix3d(1.0,2.0,3.0,
+                                                                 4.0,5.0,6.0,
+                                                                 7.0,8.0,9.0)])
+            
+            p.SetCustomDataByKey('gf_quatf_array', [Gf.Quatf(1.0,2.0,3.0,4.0)])
+            p.SetCustomDataByKey('gf_quatd_array', [Gf.Quatd(1.0,2.0,3.0,4.0)])
+            p.SetCustomDataByKey('gf_quath_array', [Gf.Quath(1.0,2.0,3.0,4.0)])
+            
+            # Set an unknown type, which will warn and not set.
+            class Foo(object):
+                pass
+            
+            p.SetCustomDataByKey('foo', [Foo(), Foo()])
+            
+            text = s.ExportToString()
+            layer = Sdf.Layer.CreateAnonymous('test.usda')
+            self.assertTrue(layer.ImportFromString(text))
+            
+            s = Usd.Stage.Open(layer)
+            p = s.GetPrimAtPath('/p')
+            
+            print s.ExportToString()
+            
+            self.assertFalse(p.GetCustomDataByKey('foo'))
+            
+            self.assertEqual(list(p.GetCustomDataByKey('int_array')), [1,2,3,4])
+            self.assertEqual(list(p.GetCustomDataByKey('double_array')), [1.0, 2.0])
+            self.assertEqual(list(p.GetCustomDataByKey('string_array')), ['h', 'e', 'l', 'l', 'o'])
+            self.assertEqual(list(p.GetCustomDataByKey('bool_array')), [False, True])
+            
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_2i_array')), [Gf.Vec2i(1,2)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_2f_array')), [Gf.Vec2f(1.0,2.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_2d_array')), [Gf.Vec2d(1.0,2.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_2h_array')), [Gf.Vec2h(1.0,2.0)])
+            
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_3i_array')), [Gf.Vec3i(1,2,3)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_3f_array')), [Gf.Vec3f(1.0,2.0,3.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_3d_array')), [Gf.Vec3d(1.0,2.0,3.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_3h_array')), [Gf.Vec3h(1.0,2.0,3.0)])
+            
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_4i_array')), [Gf.Vec4i(1,2,3,4)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_4f_array')), [Gf.Vec4f(1.0,2.0,3.0,4.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_4d_array')), [Gf.Vec4d(1.0,2.0,3.0,4.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_vec_4h_array')), [Gf.Vec4h(1.0,2.0,3.0,4.0)])
+            
+            self.assertEqual(list(p.GetCustomDataByKey('gf_mat_2d_array')), [Gf.Matrix2d(1.0,2.0,
+                                                                                         3.0,4.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_mat_3d_array')), [Gf.Matrix3d(1.0,2.0,3.0,
+                                                                                         4.0,5.0,6.0,
+                                                                                         7.0,8.0,9.0)])
+            
+            self.assertEqual(list(p.GetCustomDataByKey('gf_quatf_array')), [Gf.Quatf(1.0,2.0,3.0,4.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_quatd_array')), [Gf.Quatd(1.0,2.0,3.0,4.0)])
+            self.assertEqual(list(p.GetCustomDataByKey('gf_quath_array')), [Gf.Quath(1.0,2.0,3.0,4.0)])
+            
+            self.assertTrue(layer.ExportToString())
 
     def test_Unregistered(self):
         print "Verify that unregistered metadata fields cannot be authored..."

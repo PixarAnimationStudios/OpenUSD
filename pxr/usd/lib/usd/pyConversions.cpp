@@ -34,6 +34,20 @@
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/schema.h"
 
+#include "pxr/base/gf/range1d.h"
+#include "pxr/base/gf/range1f.h"
+#include "pxr/base/gf/range2d.h"
+#include "pxr/base/gf/range2f.h"
+#include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/range3f.h"
+#include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/matrix2d.h"
+#include "pxr/base/gf/matrix2f.h"
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -78,6 +92,30 @@ UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
         cast.Swap(val);
 
     return val;
+}
+
+namespace {
+    // Convenience function to convert from a vector of vt values
+    // which we recieve from python to a vector of reified types.
+    //
+    // This function assumes our output type 'VtArray' is correct and 
+    // will do UncheckedGet(s) based on this.
+    //
+    // This function also assumes the output vector is newly initialized
+    template <typename VtArrayType>
+    void _ToVtArray(VtValue* output) {
+        using ItemType = typename VtArrayType::value_type;
+        using StdVecType = typename std::vector<VtValue>;
+
+        const auto& input = output->UncheckedGet<StdVecType>();
+        VtArrayType result;
+        result.reserve(input.size());
+        for (const auto& item : input) {
+            result.push_back(item.template UncheckedGet<ItemType>());
+        }
+
+        output->Swap(result);
+    }
 }
 
 bool
@@ -132,6 +170,7 @@ UsdPythonToMetadataValue(
             value.CastToTypeOf(fallback);
         }
     }
+
     if (value.IsEmpty()) {
         TfPyThrowValueError(
             TfStringPrintf(
@@ -140,6 +179,91 @@ UsdPythonToMetadataValue(
                 fallback.GetType().GetTypeName().c_str(),
                 TfPyRepr(pyVal.Get()).c_str()));
     }
+
+    // We need to convert from python list types, which come in
+    // as std::vector<VtValue>s to proper VtArray types which can
+    // be authored in metadata.
+    // 
+    // Note that we don't convert all types, such as an array of 
+    // GfHalf, as its not possible for a python script to author these.
+    if (value.IsHolding<std::vector<VtValue>>()) {
+        const auto& vRef = value.UncheckedGet<std::vector<VtValue>>();
+        if (vRef.size() == 0) {
+            TF_WARN("Invalid metadata authored, cannot author empty list");
+            return false;
+        }
+        
+        const auto& firstElement = vRef[0];
+
+        // base types
+        if (firstElement.IsHolding<int>()) {
+            _ToVtArray<VtIntArray>(&value);
+        } else if (firstElement.IsHolding<double>()) {
+            _ToVtArray<VtDoubleArray>(&value);
+        } else if (firstElement.IsHolding<std::string>()) {
+            _ToVtArray<VtStringArray>(&value);
+        } else if (firstElement.IsHolding<bool>()) {
+            _ToVtArray<VtBoolArray>(&value);
+        } 
+
+        // gf vec2 types 
+        else if (firstElement.IsHolding<GfVec2i>()) {
+            _ToVtArray<VtVec2iArray>(&value);
+        } else if (firstElement.IsHolding<GfVec2f>()) {
+            _ToVtArray<VtVec2fArray>(&value); 
+        } else if (firstElement.IsHolding<GfVec2d>()) {
+            _ToVtArray<VtVec2dArray>(&value);
+        } else if (firstElement.IsHolding<GfVec2h>()) {
+            _ToVtArray<VtVec2hArray>(&value);
+        } 
+
+        // gf vec3 types
+        else if (firstElement.IsHolding<GfVec3i>()) {
+            _ToVtArray<VtVec3iArray>(&value);
+        } else if (firstElement.IsHolding<GfVec3f>()) {
+            _ToVtArray<VtVec3fArray>(&value); 
+        } else if (firstElement.IsHolding<GfVec3d>()) {
+            _ToVtArray<VtVec3dArray>(&value);
+        } else if (firstElement.IsHolding<GfVec3h>()) {
+            _ToVtArray<VtVec3hArray>(&value);
+        } 
+
+        // gf vec4 types
+        else if (firstElement.IsHolding<GfVec4i>()) {
+            _ToVtArray<VtVec4iArray>(&value);
+        } else if (firstElement.IsHolding<GfVec4f>()) {
+            _ToVtArray<VtVec4fArray>(&value); 
+        } else if (firstElement.IsHolding<GfVec4d>()) {
+            _ToVtArray<VtVec4dArray>(&value);
+        } else if (firstElement.IsHolding<GfVec4h>()) {
+            _ToVtArray<VtVec4hArray>(&value);
+        } 
+
+        // gf matrix types
+        else if (firstElement.IsHolding<GfMatrix2d>()) {
+            _ToVtArray<VtMatrix2dArray>(&value);
+        }
+        else if (firstElement.IsHolding<GfMatrix3d>()) {
+            _ToVtArray<VtMatrix3dArray>(&value);
+        }
+        
+        // gf quat types
+        else if (firstElement.IsHolding<GfQuatf>()) {
+            _ToVtArray<VtQuatfArray>(&value); 
+        } else if (firstElement.IsHolding<GfQuatd>()) {
+            _ToVtArray<VtQuatdArray>(&value);
+        } else if (firstElement.IsHolding<GfQuath>()) {
+            _ToVtArray<VtQuathArray>(&value);
+        } 
+
+        // error handling, unknown type authored
+        else {
+            TF_WARN("Invalid metadata authoring at %s, no known conversion for "
+                    "list containing unknown type.", keyPath.GetText());
+            return false;
+        }
+    } 
+
     result->Swap(value);
     return true;
 }
