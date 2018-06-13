@@ -220,13 +220,19 @@ void walkGraph(UsdShadeShader const & shadeNode,
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
         UsdShadeConnectableAPI source;
-        TfToken outputName;
+        TfToken sourceName;
         UsdShadeAttributeType sourceType;
         if (UsdShadeConnectableAPI::GetConnectedSource(input, 
-                &source, &outputName, &sourceType)) {
-            // When we find a connection, we try to walk it.
-            UsdShadeShader connectedNode(source);
-            walkGraph(connectedNode, materialNetwork);
+                &source, &sourceName, &sourceType)) {
+            // When we find a connection to a shading node output,
+            // walk the upstream shading node.  Do not do this for
+            // other sources (ex: a connection to a material
+            // public interface parameter), since they are not
+            // part of the shading node graph.
+            if (sourceType == UsdShadeAttributeType::Output) {
+                UsdShadeShader connectedNode(source);
+                walkGraph(connectedNode, materialNetwork);
+            }
         }
     }
 
@@ -250,18 +256,29 @@ void walkGraph(UsdShadeShader const & shadeNode,
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
         UsdShadeConnectableAPI source;
-        TfToken outputName;
+        TfToken sourceName;
         UsdShadeAttributeType sourceType;
         if (UsdShadeConnectableAPI::GetConnectedSource(input,
-            &source, &outputName, &sourceType)) {
-            
-            // Store the relationship
-            HdMaterialRelationship relationship;
-            relationship.outputId = shadeNode.GetPath();
-            relationship.outputName = input.GetBaseName();
-            relationship.inputId = source.GetPath();
-            relationship.inputName = outputName;
-            materialNetwork->relationships.push_back(relationship);
+            &source, &sourceName, &sourceType)) {
+            if (sourceType == UsdShadeAttributeType::Output) {
+                // Store the relationship
+                HdMaterialRelationship relationship;
+                relationship.outputId = shadeNode.GetPath();
+                relationship.outputName = input.GetBaseName();
+                relationship.inputId = source.GetPath();
+                relationship.inputName = sourceName;
+                materialNetwork->relationships.push_back(relationship);
+            } else if (sourceType == UsdShadeAttributeType::Input) {
+                // Connected to an input on the public interface.
+                // The source is not a node in the shader network, so
+                // pull the value and pass it in as a parameter.
+                if (UsdShadeInput connectedInput =
+                    source.GetInput(sourceName)) {
+                    if (connectedInput.Get(&value)) {
+                        node.parameters[input.GetBaseName()] = value;
+                    }
+                }
+            }
         } else {
             // Parameters detected, let's store it
             if (input.Get(&value)) {
