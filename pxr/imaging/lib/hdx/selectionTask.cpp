@@ -48,7 +48,9 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     , _offsetMin(0)
     , _offsetMax(-1)
     , _hasSelection(false)
+    , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
+    , _selPointColorsBar(nullptr)
 {
     _params = {false, GfVec4f(), GfVec4f()};
 }
@@ -95,10 +97,7 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
     if (sel && (paramsChanged || sel->GetVersion() != _lastVersion)) {
 
         _lastVersion = sel->GetVersion();
-        VtIntArray offsets;
-        VtIntArray values;
         
-        _hasSelection = sel->GetSelectionOffsetBuffer(&index, &offsets);
         if (!_selOffsetBar) {
 
             HdBufferSpecVector offsetSpecs;
@@ -120,6 +119,16 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
                                                 uniformSpecs);
         }
 
+        if (!_selPointColorsBar) {
+            HdBufferSpecVector colorSpecs;
+            colorSpecs.emplace_back(HdxTokens->selectionPointColors,
+                                      HdTupleType { HdTypeFloatVec4, 1 });
+            _selPointColorsBar =
+                resourceRegistry->AllocateSingleBufferArrayRange(
+                                                /*role*/HdxTokens->selection,
+                                                colorSpecs);
+        }
+
         //
         // Uniforms
         //
@@ -135,18 +144,31 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         //
         // Offsets
         //
+        VtIntArray offsets;
+        _hasSelection = sel->GetSelectionOffsetBuffer(&index, &offsets);
         HdBufferSourceSharedPtr offsetSource(
                 new HdVtBufferSource(HdxTokens->hdxSelectionBuffer,
                                      VtValue(offsets)));
         resourceRegistry->AddSource(_selOffsetBar, offsetSource);
+
+        //
+        // Point Colors
+        //
+        VtVec4fArray ptColors = sel->GetSelectedPointColors();
+        HdBufferSourceSharedPtr ptColorSource(
+                new HdVtBufferSource(HdxTokens->selectionPointColors,
+                                     VtValue(ptColors)));
+        resourceRegistry->AddSource(_selPointColorsBar, ptColorSource);
     }
 
     if (_params.enableSelection && _hasSelection) {
         (*ctx)[HdxTokens->selectionOffsets] = _selOffsetBar;
         (*ctx)[HdxTokens->selectionUniforms] = _selUniformBar;
+        (*ctx)[HdxTokens->selectionPointColors] = _selPointColorsBar;
     } else {
         (*ctx)[HdxTokens->selectionOffsets] = VtValue();
         (*ctx)[HdxTokens->selectionUniforms] = VtValue();
+        (*ctx)[HdxTokens->selectionPointColors] = VtValue();
     }
 }
 

@@ -30,6 +30,7 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 
+#include <algorithm>
 #include <limits>
 #include <iomanip>
 
@@ -177,6 +178,21 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     return true;
 }
 
+/*virtual*/
+VtVec4fArray
+HdxSelectionTracker::GetSelectedPointColors() const
+{
+    if (!_selection) return VtVec4fArray();
+    
+    std::vector<GfVec4f> const& pointColors =
+        _selection->GetSelectedPointColors();
+
+    VtVec4fArray vtColors(pointColors.size());
+    std::copy(pointColors.begin(), pointColors.end(), vtColors.begin());
+
+    return vtColors;
+}
+
 // Helper methods to fill the selection buffer
 static std::pair<int, int>
 _GetMinMax(std::vector<VtIntArray> const &vecIndices)
@@ -203,6 +219,9 @@ _GetMinMax(std::vector<VtIntArray> const &vecIndices)
 //     instance/subprim selection state, thus allowing us to support selection
 //     of multiple subprims. 
 //     If the offset is 0, it means there is nothing more to decode.
+//     For points alone, the offset is overloaded to represent the point color
+//     index for customized highlighting (or -1 if a color isn't specified;
+//     see HdSelection::AddPoints)
 static
 int _EncodeSelOffset(size_t offset, bool isSelected)
 {
@@ -212,7 +231,7 @@ int _EncodeSelOffset(size_t offset, bool isSelected)
 // This function takes care of encoding subprim selection offsets.
 // Returns true if output was filled, and false if not.
 static
-bool _FillSubprimOffsets(int type, 
+bool _FillSubprimSelOffsets(int type, 
                          std::vector<VtIntArray> const &vecIndices,
                          int nextSubprimOffset,
                          std::vector<int>* output)
@@ -253,6 +272,44 @@ bool _FillSubprimOffsets(int type,
     }
 
     return true;
+}
+
+// Encode subprim selection offsets for points, with the offset representing the
+// index of the point color to be used for custom point selection highlighting.
+// Note: When a color isn't specified (see HdSelection::AddPoints), an index of
+// -1 is used.
+static
+bool _FillPointSelOffsets(int type,
+                          std::vector<VtIntArray> const &pointIndices,
+                          std::vector<int> const &pointColorIndices,
+                          std::vector<int>* output)
+{
+    size_t startOutputSize = output->size();
+    bool hasSelectedPoints = _FillSubprimSelOffsets(type,
+                                                    pointIndices,
+                                                    /*nextSubprimOffset=*/0,
+                                                    output);
+    if (hasSelectedPoints) {
+        // Update the 'offset' part of selOffset for each of the selected
+        // points to represent the point color index for customized point
+        // selection highlighting.
+        std::pair<int, int> minmax = _GetMinMax(pointIndices);
+        int const& min = minmax.first;
+        int const SUBPRIM_SELOFFSETS_HEADER_SIZE = 3;
+        bool const SELECT_ALL = 1;
+        size_t selOffsetsStart = startOutputSize +
+                                 SUBPRIM_SELOFFSETS_HEADER_SIZE;
+        size_t vtIndex = 0;
+        for (VtIntArray const& indices : pointIndices ) {
+            int pointColorId = pointColorIndices[vtIndex++];
+            int selOffset = (pointColorId << 1) | SELECT_ALL;
+            for (int const& id : indices ) {
+                (*output)[selOffsetsStart + (id - min)] = selOffset;
+            }
+        }
+    }
+ 
+    return hasSelectedPoints;
 }
 
 /*virtual*/
@@ -401,8 +458,10 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         // ------------------------------------------------------------------ //
         size_t curOffset = output->size();
 
-        if (_FillSubprimOffsets(POINT,  primSelState->pointIndices,
-                                netSubprimOffset, output)) {
+        if (_FillPointSelOffsets(POINT,
+                                 primSelState->pointIndices,
+                                 primSelState->pointColorIndices,
+                                 output)) {
             hasSelectedSubprimitives = true;
             netSubprimOffset = curOffset + modeOffset;
             _DebugPrintArray("points", *output);
@@ -412,7 +471,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         // Subprimitives: Edges
         // ------------------------------------------------------------------ //
         curOffset = output->size();
-        if (_FillSubprimOffsets(EDGE,  primSelState->edgeIndices,
+        if (_FillSubprimSelOffsets(EDGE,  primSelState->edgeIndices,
                                 netSubprimOffset, output)) {
             hasSelectedSubprimitives = true;
             netSubprimOffset = curOffset + modeOffset;
@@ -424,7 +483,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         //                          individual curve(s) for basis curves)
         // ------------------------------------------------------------------ //
         curOffset = output->size();
-        if (_FillSubprimOffsets(ELEMENT,  primSelState->elementIndices,
+        if (_FillSubprimSelOffsets(ELEMENT,  primSelState->elementIndices,
                                 netSubprimOffset, output)) {
             hasSelectedSubprimitives = true;
             netSubprimOffset = curOffset + modeOffset;

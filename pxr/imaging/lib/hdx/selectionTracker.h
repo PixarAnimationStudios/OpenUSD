@@ -120,6 +120,9 @@ public:
     virtual bool GetSelectionOffsetBuffer(HdRenderIndex const *index,
                                           VtIntArray *offsets) const;
 
+    HDX_API
+    virtual VtVec4fArray GetSelectedPointColors() const;
+
     /// Returns a monotonically increasing version number, which increments
     /// whenever the result of GetBuffers has changed. Note that this number may
     /// overflow and become negative, thus clients should use a not-equal

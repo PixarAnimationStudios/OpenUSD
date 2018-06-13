@@ -40,12 +40,12 @@ bool HighlightModeHasSelection(int offset)
 
 int GetIndexOffsetForHighlightMode(int mode)
 {
-    return hdxSelectionBuffer[mode + 1/*[0] holds #modes*/];
+    return HdGet_hdxSelectionBuffer(mode + 1/*[0] holds #modes*/);
 }
 
 int GetNumSelectionHighlightModes()
 {
-    return hdxSelectionBuffer[0];
+    return HdGet_hdxSelectionBuffer(0);
 }
 
 // ------  selection offset specifics -------
@@ -69,9 +69,9 @@ struct SubprimHeader {
 SubprimHeader DecodeSubprimHeader(int offset)
 {
     SubprimHeader header;
-    header.type = hdxSelectionBuffer[offset    ];
-    header.min  = hdxSelectionBuffer[offset + 1];
-    header.max  = hdxSelectionBuffer[offset + 2];
+    header.type = HdGet_hdxSelectionBuffer(offset    );
+    header.min  = HdGet_hdxSelectionBuffer(offset + 1);
+    header.max  = HdGet_hdxSelectionBuffer(offset + 2);
     return header;
 }
 
@@ -86,7 +86,7 @@ bool IsSubprimSelected(int id, int min, int max, int headerStart,
     if (id >= min && id < max) {
         int netSubprimIndex =
             headerStart + SUBPRIM_SELOFFSETS_HEADER_SIZE + id - min;
-        int selOffset = hdxSelectionBuffer[netSubprimIndex];
+        int selOffset = HdGet_hdxSelectionBuffer(netSubprimIndex);
 
         DecodeSelOffset(selOffset, /*out*/isSelected, /*out*/nextSubprimOffset);
     } else {
@@ -95,7 +95,7 @@ bool IsSubprimSelected(int id, int min, int max, int headerStart,
         // subprim(s) selected. To get the offset to jump to, we mimic decoding
         // the "min" subprim id.
         int minSubprimIndex = headerStart + SUBPRIM_SELOFFSETS_HEADER_SIZE;
-        DecodeSelOffset(hdxSelectionBuffer[minSubprimIndex],
+        DecodeSelOffset(HdGet_hdxSelectionBuffer(minSubprimIndex),
                         /*out*/isSelected, /*out*/nextSubprimOffset);
         isSelected = false;
     }
@@ -109,10 +109,16 @@ struct SubprimSelectionResult {
     bool elementSelected;
     bool edgeSelected;
     bool pointSelected;
+    int  pointColorId;
 };
 bool IsAnySubprimSelected(SubprimSelectionResult s)
 {
     return (s.elementSelected || s.edgeSelected || s.pointSelected);
+}
+bool HasCustomizedPointColor(SubprimSelectionResult s)
+{
+    // Use -1 to encode selected points that don't have a custom point color.
+    return (s.pointColorId != -1);
 }
 
 #if defined(HD_HAS_hdxSelectionBuffer)
@@ -124,7 +130,7 @@ bool IsAnySubprimSelected(SubprimSelectionResult s)
 SubprimSelectionResult GetSubprimSel(int offset,
                                      int elementId, int edgeId, int pointId)
 {
-    SubprimSelectionResult s = SubprimSelectionResult(false, false, false);
+    SubprimSelectionResult s = SubprimSelectionResult(false, false, false, 0);
     int nextSubprimOffset = 0;
     SubprimHeader header = DecodeSubprimHeader(offset);
 
@@ -156,6 +162,11 @@ SubprimSelectionResult GetSubprimSel(int offset,
         s.pointSelected =
             IsSubprimSelected(pointId, header.min, header.max,
                               offset, /*unused*/nextSubprimOffset);
+        // For points alone, since there isn't any subprim to follow it, the
+        // offset field is overriden to represent the index into the
+        // selectedPointColors buffer to support customized coloring of a set of
+        // selected points.
+        s.pointColorId = nextSubprimOffset;
     }
 
     return s;
@@ -174,8 +185,8 @@ bool IsInstanceSelected(int offset, out int nextOffset)
     const int INSTANCE_SELOFFSETS_HEADER_SIZE = 2;
 
     for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
-        int min = hdxSelectionBuffer[offset  ];
-        int max = hdxSelectionBuffer[offset+1];
+        int min = HdGet_hdxSelectionBuffer(offset  );
+        int max = HdGet_hdxSelectionBuffer(offset+1);
         // allow to highlight in a top-down manner, by flipping level
         // during iteration.
         // note: instanceIndex[0] is instanceID.
@@ -186,7 +197,7 @@ bool IsInstanceSelected(int offset, out int nextOffset)
         if (instanceId >= min && instanceId < max) {
             int netIndex = offset + INSTANCE_SELOFFSETS_HEADER_SIZE +
                            instanceId - min;
-            DecodeSelOffset(hdxSelectionBuffer[netIndex],
+            DecodeSelOffset(HdGet_hdxSelectionBuffer(netIndex),
                             /*out*/sel, /*out*/nextOffset);
             if (sel) break;
             if (!sel && nextOffset == 0) break;
@@ -215,7 +226,7 @@ SelectionResult GetSelectionResult(int mode,
                                    int elementId, int edgeId, int pointId)
 {
     SelectionResult res =
-        SelectionResult(false, SubprimSelectionResult(false, false, false));
+        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     // The hdxSelectionBuffer layout is:
@@ -234,14 +245,14 @@ SelectionResult GetSelectionResult(int mode,
 
     const int PRIM_SELOFFSETS_HEADER_SIZE = 2;
     const int primId = HdGet_primID();
-    int smin = hdxSelectionBuffer[modeOffset];
-    int smax = hdxSelectionBuffer[modeOffset + 1];
+    int smin = HdGet_hdxSelectionBuffer(modeOffset);
+    int smax = HdGet_hdxSelectionBuffer(modeOffset + 1);
 
     if (primId >= smin && primId < smax) {
         int offset = modeOffset + PRIM_SELOFFSETS_HEADER_SIZE + primId - smin;
         int nextOffset = 0;
         bool sel = false;
-        DecodeSelOffset(hdxSelectionBuffer[offset],
+        DecodeSelOffset(HdGet_hdxSelectionBuffer(offset),
                         /*out*/sel, /*out*/nextOffset);
 
         // At this point, sel indicates whether the fragment corresponds to
@@ -284,7 +295,8 @@ bool IsPointSelected(int pointId)
         // elementId and edgeId. So, use fallback values instead.
         SelectionResult res =
             GetSelectionResult(mode, /*elementId*/-1, /*edgeId*/-1, pointId);
-        if (res.subprimSel.pointSelected) {
+        if (res.subprimSel.pointSelected &&
+            !HasCustomizedPointColor(res.subprimSel)) {
             sel = true;
             break;
         }
@@ -306,6 +318,18 @@ vec4 GetSelectionColor(int mode)
         s = HdGet_selColor();
     else if (mode == 1)
         s = HdGet_selLocateColor();
+
+    return s;
+}
+
+vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
+{
+    vec4 s = GetSelectionColor(mode);
+    if (res.pointSelected && HasCustomizedPointColor(res)) {
+        #if defined(HD_HAS_selectionPointColors)
+        s = HdGet_selectionPointColors(res.pointColorId);
+        #endif
+    }
 
     return s;
 }
@@ -333,16 +357,13 @@ vec4 ApplySelectionColor(vec4 color)
         SelectionResult res =
             GetSelectionResult(mode, elementId, edgeId, pointId);
 
-        if (res.primOrInstanceSel || IsAnySubprimSelected(res.subprimSel)) {
-            // XXX: Since we don't support subprim specific selection color,
-            // we simply use the mode to get the color to use.
-            // Once we plumb subprim selection colors, it makes sense to
-            // apply the "prim" selection color first, and then subprim(s).
+        if (res.primOrInstanceSel) {
             vec4 s = GetSelectionColor(mode);
-
-            // Note: We blend locate (over) select when an
-            // object is in both highlight modes.
             color.rgb = mix(color.rgb, s.rgb, s.a);
+        }
+        if (IsAnySubprimSelected(res.subprimSel)) {
+            vec4 ss = GetSubprimSelectionColor(mode, res.subprimSel);
+            color.rgb = mix(color.rgb, ss.rgb, ss.a);
         }
     } // for each highlight mode
     

@@ -26,6 +26,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
+#include <iterator> // std::distance
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 void 
@@ -101,13 +103,33 @@ HdSelection::AddPoints(HdSelection::HighlightMode const& mode,
                        VtIntArray const &pointIndices)
 {
     TF_VERIFY(mode < HdSelection::HighlightModeCount);
-    // For edges & points, we skip empty indices arrays
-    if (!pointIndices.empty()) {
-        _selMap[mode][path].pointIndices.push_back(pointIndices);
-        TF_DEBUG(HD_SELECTION_UPDATE).Msg(
-            "Adding points of Rprim %s to HdSelection (mode %d)",
-            path.GetText(), mode);
+
+    // When points are added without a color, we use -1 to encode this.
+    _AddPoints(mode, path, pointIndices, /*pointColorIndex=*/-1);
+}
+
+void 
+HdSelection::AddPoints(HdSelection::HighlightMode const& mode,
+                       SdfPath const& path,
+                       VtIntArray const &pointIndices,
+                       GfVec4f const& pointColor)
+{
+    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+
+    // When points are added with a color, add it to the tracked colors if
+    // needed, and use the resulting index 
+    auto const & pointColorIt = std::find(_selectedPointColors.begin(),
+                                          _selectedPointColors.end(),
+                                          pointColor);
+    size_t pointColorId = 0;
+    if (pointColorIt == _selectedPointColors.end()) {
+        pointColorId = _selectedPointColors.size();
+        _selectedPointColors.push_back(pointColor);
+    } else {
+        pointColorId =
+            std::distance(_selectedPointColors.begin(), pointColorIt);
     }
+    _AddPoints(mode, path, pointIndices, (int) pointColorId);
 }
 
 SdfPathVector
@@ -133,6 +155,28 @@ HdSelection::GetPrimSelectionState(HdSelection::HighlightMode const& mode,
         return &(it->second);
     } else {
         return nullptr;
+    }
+}
+
+std::vector<GfVec4f> const&
+HdSelection::GetSelectedPointColors() const
+{
+    return _selectedPointColors;
+}
+
+void
+HdSelection::_AddPoints(HdSelection::HighlightMode const& mode,
+                       SdfPath const& path,
+                       VtIntArray const &pointIndices,
+                       int pointColorIndex)
+{
+    // For edges & points, we skip empty indices arrays
+    if (!pointIndices.empty()) {
+        _selMap[mode][path].pointIndices.push_back(pointIndices);
+        _selMap[mode][path].pointColorIndices.push_back(pointColorIndex);
+        TF_DEBUG(HD_SELECTION_UPDATE).Msg(
+            "Adding points of Rprim %s to HdSelection (mode %d) with point"
+            " color index %d", path.GetText(), mode, pointColorIndex);
     }
 }
 

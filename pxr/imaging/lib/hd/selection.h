@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/vt/array.h"
 #include <boost/smart_ptr.hpp>
 #include <vector>
@@ -81,6 +82,13 @@ public:
     void AddPoints(HighlightMode const& mode,
                    SdfPath const &path,
                    VtIntArray const &pointIndices);
+    // Special handling for points: we allow a set of selected point indices to
+    // also specify a color to use for highlighting.
+    HD_API
+    void AddPoints(HighlightMode const& mode,
+                   SdfPath const &path,
+                   VtIntArray const &pointIndices,
+                   GfVec4f const &pointColor);
 
     // XXX: Ideally, this should be per instance, if we want to support
     // selection of subprims (faces/edges/points) per instance of an rprim.
@@ -96,6 +104,7 @@ public:
         std::vector<VtIntArray> elementIndices;
         std::vector<VtIntArray> edgeIndices;
         std::vector<VtIntArray> pointIndices;
+        std::vector<int>        pointColorIndices;
     };
 
     HD_API
@@ -107,12 +116,24 @@ public:
     SdfPathVector
     GetSelectedPrimPaths(HighlightMode const &mode) const;
 
+    HD_API
+    std::vector<GfVec4f> const& GetSelectedPointColors() const;
+
+private:
+    HD_API
+    void _AddPoints(HighlightMode const& mode,
+                    SdfPath const &path,
+                    VtIntArray const &pointIndices,
+                    int pointColorIndex);
+
 protected:
-    
     typedef std::unordered_map<SdfPath, PrimSelectionState, SdfPath::Hash>
         _PrimSelectionStateMap;
     // Keep track of selection per selection mode.
     _PrimSelectionStateMap _selMap[HighlightModeCount];
+
+    // Track all colors used for point selection highlighting.
+    std::vector<GfVec4f> _selectedPointColors;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
