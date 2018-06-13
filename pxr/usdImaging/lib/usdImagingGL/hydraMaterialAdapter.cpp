@@ -692,7 +692,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
 
                 // Extract the fallback value for this input
                 VtValue fallbackValue;
-                shaderInput.Get(&fallbackValue);
+                const bool hasFallbackValue = shaderInput.Get(&fallbackValue);
 
                 SdfPath connection;
                 UsdShadeConnectableAPI source;
@@ -701,6 +701,14 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
                 if (UsdShadeConnectableAPI::GetConnectedSource(
                     shaderInput, &source, &outputName, &sourceType)) {
                     connection = source.GetPath();
+                    if (!hasFallbackValue) {
+                        // We need to have a valid fallback value based on the
+                        // input's type, otherwise codeGen won't know the 
+                        // correct function signature and will generate faulty 
+                        // shader code.
+                        fallbackValue = 
+                            shaderInput.GetTypeName().GetDefaultValue();
+                    }
                 }
 
                 // Finally, initialize data for this potential input to the 
