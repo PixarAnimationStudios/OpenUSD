@@ -1275,7 +1275,11 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
         // from plugins (such as the PointInstancer).
         if (attrName == UsdGeomTokens->visibility
             || attrName == UsdGeomTokens->purpose
-            || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName))
+            || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)
+            || TfStringStartsWith(attrName.GetString(),
+                                  UsdShadeTokens->materialBinding.GetString())
+            || TfStringStartsWith(attrName.GetString(),
+                                  UsdTokens->collection.GetString()))
         {
             // Because these are inherited attributes, we must update all
             // children.

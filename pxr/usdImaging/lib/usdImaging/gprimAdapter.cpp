@@ -383,6 +383,13 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     else if (propertyName == UsdGeomTokens->doubleSided) 
         return HdChangeTracker::DirtyDoubleSided;
+
+    else if (TfStringStartsWith(propertyName.GetString(),
+                               UsdShadeTokens->materialBinding.GetString()) ||
+             TfStringStartsWith(propertyName.GetString(),
+                                UsdTokens->collection.GetString())) {
+        return HdChangeTracker::DirtyMaterialId;
+    }
     
     // TODO: support sparse displayColor updates
 
