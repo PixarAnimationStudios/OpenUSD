@@ -260,16 +260,25 @@ SdfLayer::CreateAnonymous(const string& tag)
         fileFormat = SdfFileFormat::FindById(TfToken(suffix));
     }
 
-    if (!fileFormat) {
-        fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+    return CreateAnonymous(tag, fileFormat);
+}
+
+SdfLayerRefPtr
+SdfLayer::CreateAnonymous(
+    const string &tag, const SdfFileFormatConstPtr &format)
+{
+    SdfFileFormatConstPtr fmt = format;
+    
+    if (!fmt) {
+        fmt = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
     }
 
-    if (!fileFormat) {
+    if (!fmt) {
         TF_CODING_ERROR("Cannot determine file format for anonymous SdfLayer");
         return SdfLayerRefPtr();
     }
 
-    return _CreateAnonymousWithFormat(fileFormat, tag);
+    return _CreateAnonymousWithFormat(fmt, tag);
 }
 
 SdfLayerRefPtr

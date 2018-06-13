@@ -6,6 +6,7 @@ set(DIRS
     usdstitch
     usdstitchclips
     sdfdump
+    sdffilter
 )
 
 foreach(d ${DIRS})

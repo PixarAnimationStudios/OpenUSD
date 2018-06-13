@@ -485,9 +485,16 @@ void wrapLayer()
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("CreateNew")
 
-        .def("CreateAnonymous", This::CreateAnonymous,
+        .def("CreateAnonymous", (SdfLayerRefPtr (*)(const std::string &))
+             This::CreateAnonymous,
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
              ( arg("tag") = std::string() ))
+        .def("CreateAnonymous",
+             (SdfLayerRefPtr (*)(const std::string &,
+                                 const SdfFileFormatConstPtr &))
+             This::CreateAnonymous,
+             return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
+             ( arg("tag"), arg("format") ))
         .staticmethod("CreateAnonymous")
 
         .def("New", &_New,

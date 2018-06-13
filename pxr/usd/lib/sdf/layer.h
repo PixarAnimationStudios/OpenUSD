@@ -236,6 +236,11 @@ public:
     static SdfLayerRefPtr CreateAnonymous(
         const std::string& tag = std::string());
 
+    /// Create an anonymous layer with a specific \p format.
+    SDF_API
+    static SdfLayerRefPtr CreateAnonymous(
+        const std::string &tag, const SdfFileFormatConstPtr &format);
+
     /// Returns true if this layer is an anonymous layer.
     SDF_API
     bool IsAnonymous() const;

@@ -686,6 +686,31 @@ private:
 // Write out the string representation of a block.
 SDF_API std::ostream& operator<<(std::ostream&, SdfValueBlock const&); 
 
+// A class that represents a human-readable value.  This is used for the special
+// purpose of producing layers that serialize field values in alternate ways; to
+// produce more human-readable output, for example.
+struct SdfHumanReadableValue {
+    SdfHumanReadableValue() = default;
+    explicit SdfHumanReadableValue(std::string const &text) : _text(text) {}
+
+    bool operator==(SdfHumanReadableValue const &other) const {
+        return GetText() == other.GetText();
+    }
+    bool operator!=(SdfHumanReadableValue const &other) const {
+        return !(*this == other);
+    }
+
+    std::string const &GetText() const { return _text; }
+private:
+    std::string _text;
+};
+
+SDF_API
+std::ostream &operator<<(std::ostream &out, const SdfHumanReadableValue &hrval);
+
+SDF_API
+size_t hash_value(const SdfHumanReadableValue &hrval);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_TYPES_H
