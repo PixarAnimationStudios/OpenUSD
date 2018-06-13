@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 static HdWrap _GetWrapS(UsdPrim const &usdPrim)
 {
     // XXX: This default value should come from the registry
-    TfToken wrapS("repeat");
+    TfToken wrapS("black");
     UsdShadeShader shader(usdPrim);
     if (shader) {
         UsdAttribute attr = shader.GetInput(UsdHydraTokens->wrapS);
@@ -54,6 +54,7 @@ static HdWrap _GetWrapS(UsdPrim const &usdPrim)
     }
     HdWrap wrapShd = (wrapS == UsdHydraTokens->clamp) ? HdWrapClamp
                    : (wrapS == UsdHydraTokens->repeat) ? HdWrapRepeat
+                   : (wrapS == UsdHydraTokens->mirror) ? HdWrapMirror
                    : HdWrapBlack; 
     return wrapShd;
 }
@@ -61,7 +62,7 @@ static HdWrap _GetWrapS(UsdPrim const &usdPrim)
 static HdWrap _GetWrapT(UsdPrim const &usdPrim)
 {
     // XXX: This default value should come from the registry
-    TfToken wrapT("repeat");
+    TfToken wrapT("black");
     UsdShadeShader shader(usdPrim);
     if (shader) {
         UsdAttribute attr = shader.GetInput(UsdHydraTokens->wrapT);
@@ -69,6 +70,7 @@ static HdWrap _GetWrapT(UsdPrim const &usdPrim)
     }
     HdWrap wrapThd = (wrapT == UsdHydraTokens->clamp) ? HdWrapClamp
                    : (wrapT == UsdHydraTokens->repeat) ? HdWrapRepeat
+                   : (wrapT == UsdHydraTokens->mirror) ? HdWrapMirror
                    : HdWrapBlack; 
     return wrapThd;
 }

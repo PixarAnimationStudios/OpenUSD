@@ -203,6 +203,7 @@ HdStGLConversions::GetWrap(HdWrap wrap)
         case HdWrapClamp : return GL_CLAMP_TO_EDGE;
         case HdWrapRepeat : return GL_REPEAT;
         case HdWrapBlack : return GL_CLAMP_TO_BORDER;
+        case HdWrapMirror : return GL_MIRRORED_REPEAT;
         case HdWrapUseMetaDict : return GL_REPEAT;
     }
 
