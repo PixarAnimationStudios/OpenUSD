@@ -31,6 +31,7 @@
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -157,35 +158,39 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    GfVec3f hitPoint;
-    const bool didHit =
+    const HdxIntersector::HitSet* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
             view,
-            selectInfo.singleSelection(),
-            &hitPoint);
+            selectInfo.singleSelection());
 
-    if (didHit) {
-        MSelectionList newSelectionList;
-        newSelectionList.add(selectInfo.selectPath());
+    const HdxIntersector::Hit* nearestHit =
+        UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
 
-        MPoint mayaHitPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
-
-        selectInfo.addSelection(
-            newSelectionList,
-            mayaHitPoint,
-            selectionList,
-            worldSpaceSelectedPoints,
-
-            // even though this is an "object", we use the "meshes" selection
-            // mask here.  This allows us to select usd assemblies that are
-            // switched to "full" as well as those that are still collapsed.
-            MSelectionMask(MSelectionMask::kSelectMeshes),
-
-            false);
+    if (!nearestHit) {
+        return false;
     }
 
-    return didHit;
+    const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
+    const MPoint mayaHitPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+
+    MSelectionList newSelectionList;
+    newSelectionList.add(selectInfo.selectPath());
+
+    selectInfo.addSelection(
+        newSelectionList,
+        mayaHitPoint,
+        selectionList,
+        worldSpaceSelectedPoints,
+
+        // even though this is an "object", we use the "meshes" selection
+        // mask here.  This allows us to select usd assemblies that are
+        // switched to "full" as well as those that are still collapsed.
+        MSelectionMask(MSelectionMask::kSelectMeshes),
+
+        false);
+
+    return true;
 }
 
 UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() : MPxSurfaceShapeUI()

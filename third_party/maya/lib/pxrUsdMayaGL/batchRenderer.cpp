@@ -750,12 +750,11 @@ void UsdMayaGLBatchRenderer::DrawCustomCollection(
     _Render(viewMatrix, projectionMatrix, viewport, items);
 }
 
-bool
+const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         M3dView& view,
-        const bool singleSelection,
-        GfVec3f* hitPoint)
+        const bool singleSelection)
 {
     // Legacy viewport implementation.
     //
@@ -794,7 +793,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     // setup, or with no shape adapters registered.
     if (!_renderIndex || bucketsMap.empty()) {
         _selectResults.clear();
-        return false;
+        return nullptr;
     }
 
     GfMatrix4d viewMatrix;
@@ -818,9 +817,9 @@ UsdMayaGLBatchRenderer::TestIntersection(
                           singleSelection);
     }
 
-    const HdxIntersector::Hit* hitInfo =
+    const HdxIntersector::HitSet* const hitSet =
         TfMapLookupPtr(_selectResults, shapeAdapterDelegateId);
-    if (!hitInfo) {
+    if (!hitSet || hitSet->empty()) {
         if (_selectResults.empty()) {
             // If nothing was selected previously AND nothing is selected now,
             // Maya does not refresh the viewport. This would be fine, except
@@ -837,32 +836,32 @@ UsdMayaGLBatchRenderer::TestIntersection(
             view.scheduleRefresh();
         }
 
-        return false;
+        return nullptr;
     }
 
-    if (hitPoint) {
-        *hitPoint = hitInfo->worldSpaceHitPoint;
+    TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg("FOUND %zu HIT(s)\n", hitSet->size());
+    if (TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO)) {
+        for (const HdxIntersector::Hit& hit : *hitSet) {
+            TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
+                "    HIT:\n"
+                "        delegateId: %s\n"
+                "        objectId  : %s\n"
+                "        ndcDepth  : %f\n",
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.ndcDepth);
+        }
     }
 
-    TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-        "FOUND HIT:\n"
-        "    delegateId: %s\n"
-        "    objectId  : %s\n"
-        "    ndcDepth  : %f\n",
-        hitInfo->delegateId.GetText(),
-        hitInfo->objectId.GetText(),
-        hitInfo->ndcDepth);
-
-    return true;
+    return hitSet;
 }
 
-bool
+const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         const MHWRender::MSelectionInfo& selectInfo,
         const MHWRender::MDrawContext& context,
-        const bool singleSelection,
-        GfVec3f* hitPoint)
+        const bool singleSelection)
 {
     // Viewport 2.0 implementation.
 
@@ -870,7 +869,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     // setup, or with no shape adapters registered.
     if (!_renderIndex || _shapeAdapterBuckets.empty()) {
         _selectResults.clear();
-        return false;
+        return nullptr;
     }
 
     GfMatrix4d viewMatrix;
@@ -879,7 +878,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
                                             context,
                                             viewMatrix,
                                             projectionMatrix)) {
-        return false;
+        return nullptr;
     }
 
     M3dView view;
@@ -893,26 +892,27 @@ UsdMayaGLBatchRenderer::TestIntersection(
                           singleSelection);
     }
 
-    const HdxIntersector::Hit* hitInfo =
+    const HdxIntersector::HitSet* const hitSet =
         TfMapLookupPtr(_selectResults, shapeAdapter->GetDelegateID());
-    if (!hitInfo) {
-        return false;
+    if (!hitSet || hitSet->empty()) {
+        return nullptr;
     }
 
-    if (hitPoint) {
-        *hitPoint = hitInfo->worldSpaceHitPoint;
+    TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg("FOUND %zu HIT(s)\n", hitSet->size());
+    if (TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO)) {
+        for (const HdxIntersector::Hit& hit : *hitSet) {
+            TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
+                "    HIT:\n"
+                "        delegateId: %s\n"
+                "        objectId  : %s\n"
+                "        ndcDepth  : %f\n",
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.ndcDepth);
+        }
     }
 
-    TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-        "FOUND HIT:\n"
-        "    delegateId: %s\n"
-        "    objectId  : %s\n"
-        "    ndcDepth  : %f\n",
-        hitInfo->delegateId.GetText(),
-        hitInfo->objectId.GetText(),
-        hitInfo->ndcDepth);
-
-    return true;
+    return hitSet;
 }
 
 bool
@@ -943,6 +943,26 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
     }
 
     return false;
+}
+
+/* static */
+const HdxIntersector::Hit*
+UsdMayaGLBatchRenderer::GetNearestHit(
+        const HdxIntersector::HitSet* const hitSet)
+{
+    if (!hitSet || hitSet->empty()) {
+        return nullptr;
+    }
+
+    const HdxIntersector::Hit* minHit = &(*hitSet->begin());
+
+    for (const auto& hit : *hitSet) {
+        if (hit < *minHit) {
+            minHit = &hit;
+        }
+    }
+
+    return minHit;
 }
 
 HdRprimCollectionVector
@@ -1091,42 +1111,15 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         }
 
         for (const HdxIntersector::Hit& hit : hits) {
-            auto itIfExists =
-                _selectResults.insert(
-                    std::make_pair(hit.delegateId, hit));
+            const auto itIfExists =
+                _selectResults.emplace(
+                    std::make_pair(hit.delegateId,
+                                   HdxIntersector::HitSet({hit})));
 
-            const bool &inserted = itIfExists.second;
-            if (inserted) {
-                continue;
+            const bool& inserted = itIfExists.second;
+            if (!inserted) {
+                _selectResults[hit.delegateId].insert(hit);
             }
-
-            HdxIntersector::Hit& existingHit = itIfExists.first->second;
-            if (hit.ndcDepth < existingHit.ndcDepth) {
-                existingHit = hit;
-            }
-        }
-    }
-
-    if (singleSelection && _selectResults.size() > 1u) {
-        TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "!!! multiple singleSel hits found: %zu\n",
-            _selectResults.size());
-
-        auto minIt = _selectResults.begin();
-        for (auto curIt = minIt; curIt != _selectResults.end(); ++curIt) {
-            const HdxIntersector::Hit& curHit = curIt->second;
-            const HdxIntersector::Hit& minHit = minIt->second;
-            if (curHit.ndcDepth < minHit.ndcDepth) {
-                minIt = curIt;
-            }
-        }
-
-        if (minIt != _selectResults.begin()) {
-            _selectResults.erase(_selectResults.begin(), minIt);
-        }
-        ++minIt;
-        if (minIt != _selectResults.end()) {
-            _selectResults.erase(minIt, _selectResults.end());
         }
     }
 
@@ -1136,28 +1129,27 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
     const HdSelection::HighlightMode selectionMode =
         HdSelection::HighlightModeSelect;
 
-    for (const auto& selectPair : _selectResults) {
-        const SdfPath& path = selectPair.first;
-        const HdxIntersector::Hit& hit = selectPair.second;
+    for (const auto& delegateHits : _selectResults) {
+        const HdxIntersector::HitSet& hitSet = delegateHits.second;
 
-        TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "NEW HIT          : %s\n"
-            "    delegateId   : %s\n"
-            "    objectId     : %s\n"
-            "    instanceIndex: %d\n"
-            "    ndcDepth     : %f\n",
-            path.GetText(),
-            hit.delegateId.GetText(),
-            hit.objectId.GetText(),
-            hit.instanceIndex,
-            hit.ndcDepth);
+        for (const HdxIntersector::Hit& hit : hitSet) {
+            TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
+                "NEW HIT\n"
+                "    delegateId   : %s\n"
+                "    objectId     : %s\n"
+                "    instanceIndex: %d\n"
+                "    ndcDepth     : %f\n",
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.instanceIndex,
+                hit.ndcDepth);
 
-        if (!hit.instancerId.IsEmpty()) {
-            VtIntArray instanceIndices;
-            instanceIndices.push_back(hit.instanceIndex);
-            selection->AddInstance(selectionMode, hit.objectId, instanceIndices);
-        } else {
-            selection->AddRprim(selectionMode, hit.objectId);
+            if (!hit.instancerId.IsEmpty()) {
+                const VtIntArray instanceIndices(1, hit.instanceIndex);
+                selection->AddInstance(selectionMode, hit.objectId, instanceIndices);
+            } else {
+                selection->AddRprim(selectionMode, hit.objectId);
+            }
         }
     }
 
