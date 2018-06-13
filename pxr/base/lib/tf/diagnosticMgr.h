@@ -141,6 +141,7 @@ public:
         /// Abort the program, but avoid the session logging mechanism. This
         /// is intended to be used for fatal error cases where any information
         /// has already been logged.
+        TF_API
         void _UnhandledAbort() const;
     };
 
