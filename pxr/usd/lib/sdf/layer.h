@@ -530,6 +530,13 @@ public:
         return hasValue && (!outValue.isValueBlock);
     }
 
+    /// Return the type of the value for \p name on spec \p id.  If no such
+    /// field exists, return typeid(void).
+    std::type_info const &GetFieldTypeid(
+        const SdfAbstractDataSpecId &id, const TfToken &name) const {
+        return _data->GetTypeid(id, name);
+    }
+
     /// Return whether a value exists for the given \a id and \a fieldName and
     /// \a keyPath.  The \p keyPath is a ':'-separated path addressing an
     /// element in sub-dictionaries.  Optionally returns the value if it exists.
@@ -667,6 +674,13 @@ public:
                   const TfToken& fieldName, T* value) const;
     SDF_API
     bool HasField(const SdfPath& path, const TfToken& fieldName) const;
+
+    std::type_info const &GetFieldTypeid(
+        const SdfPath &path, const TfToken &fieldName) const {
+        SdfAbstractDataSpecId specId(&path);
+        return GetFieldTypeid(specId, fieldName);
+    }
+
     template <class T>
     bool HasFieldDictKey(const SdfPath& path, const TfToken& fieldName,
                          const TfToken &keyPath, T* value) const;

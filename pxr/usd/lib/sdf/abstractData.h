@@ -243,6 +243,18 @@ public:
     virtual VtValue Get(const SdfAbstractDataSpecId& id, 
                         const TfToken& fieldName) const = 0;
 
+    /// Return the type of the value for \p fieldName on spec \p id.  If no such
+    /// field exists, return typeid(void).  Derived classes may optionally
+    /// override this for performance.  The base implementation is equivalent
+    /// to:
+    ///
+    /// \code
+    /// return Get(id, fieldName).GetTypeid();
+    /// \endcode
+    SDF_API
+    virtual std::type_info const &
+    GetTypeid(const SdfAbstractDataSpecId &id, const TfToken &fieldName) const;
+
     /// Set the value of the given \a id and \a fieldName.
     ///
     /// It's an error to set a field on a spec that does not exist. Setting a
