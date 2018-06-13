@@ -193,7 +193,8 @@ public:
     
     /// Return the size of the string that this token represents.
     size_t size() const {
-        return _rep ? _rep->_str.size() : 0;
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_str.size() : 0;
     }
 
     /// Return the text that this token represents.
@@ -202,7 +203,8 @@ public:
     /// object has been destroyed.
     ///
     char const* GetText() const {
-        return _rep ? _rep->_str.c_str() : "";
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_str.c_str() : "";
     }
 
     /// Synonym for GetText().
@@ -212,7 +214,8 @@ public:
 
     /// Return the string that this token represents.
     std::string const& GetString() const {
-        return _rep ? _rep->_str : _GetEmptyString();
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_str : _GetEmptyString();
     }
 
     /// Swap this token with another.
@@ -224,7 +227,8 @@ public:
     bool operator==(TfToken const& o) const {
         // Equal if pointers & bits are equal, or if just pointers are.  Done
         // this way to avoid the bitwise operations for common cases.
-        return _rep == o._rep || _rep.Get() == o._rep.Get();
+        return _rep.GetLiteral() == o._rep.GetLiteral() ||
+            _rep.Get() == o._rep.Get();
     }
 
     /// Equality operator
@@ -299,7 +303,7 @@ public:
     operator std::string const& () const { return GetString(); }
     
     /// Returns \c true iff this token contains the empty string \c ""
-    bool IsEmpty() const { return !_rep; }
+    bool IsEmpty() const { return _rep.GetLiteral() == 0; }
 
     /// Stream insertion.
     friend TF_API std::ostream &operator <<(std::ostream &stream, TfToken const&);

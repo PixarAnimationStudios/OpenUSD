@@ -111,8 +111,8 @@ public:
     }
 
     /// Dereference.
-    operator T *() const {
-        return _GetPtr();
+    T &operator *() const {
+        return *_GetPtr();
     }
 
     /// Retrieve the stored bits as the integral type \a Integral.
@@ -144,6 +144,15 @@ public:
     /// Retrieve the pointer.
     T *Get() const {
         return _GetPtr();
+    }
+
+    /// Retrieve the raw underlying value.  This can be useful for doing literal
+    /// equality checks between two instances.  The only guarantees are that
+    /// this has the same bit pattern as the pointer value if the bits are 0,
+    /// and will compare equal to another instance when both have identical
+    /// pointer and bits values.
+    constexpr uintptr_t GetLiteral() const {
+        return _AsInt(_ptrAndBits);
     }
 
     /// Swap this PointerAndBits with \a other.

@@ -61,6 +61,16 @@ Test_TfPointerAndBits()
 
         TF_AXIOM(TfPointerAndBits<short>(&data, 1).BitsAs<bool>() == true);
         TF_AXIOM(TfPointerAndBits<short>(&data, 1).Get() == &data);
+
+        // GetLiteral.
+        TF_AXIOM(TfPointerAndBits<short>(&data, 1).GetLiteral() !=
+                 pbs.GetLiteral());
+        TF_AXIOM(TfPointerAndBits<short>(&data, 0).GetLiteral() !=
+                 pbs.GetLiteral());
+        TF_AXIOM(TfPointerAndBits<short>(&data2, 1).GetLiteral() !=
+                 pbs.GetLiteral());
+        TF_AXIOM(TfPointerAndBits<short>(&data2, 0).GetLiteral() ==
+                 pbs.GetLiteral());
     }
 
     return true;

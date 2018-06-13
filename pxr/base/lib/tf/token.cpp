@@ -261,7 +261,7 @@ TF_REGISTRY_FUNCTION(TfType)
 void
 TfToken::_PossiblyDestroyRep() const
 {
-    Tf_TokenRegistry::_GetInstance()._PossiblyDestroyRep(_rep);
+    Tf_TokenRegistry::_GetInstance()._PossiblyDestroyRep(_rep.Get());
 }
 
 string const&

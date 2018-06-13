@@ -599,7 +599,7 @@ class VtValue
     struct _HoldAside {
         explicit _HoldAside(VtValue *val)
             : info((val->IsEmpty() || val->_IsLocalAndTriviallyCopyable())
-                   ? static_cast<_TypeInfo const *>(NULL) : val->_info) {
+                   ? static_cast<_TypeInfo const *>(NULL) : val->_info.Get()) {
             if (info)
                 info->Move(val->_storage, storage);
         }
@@ -638,8 +638,8 @@ public:
         _info = other._info;
         if (other._IsLocalAndTriviallyCopyable()) {
             _storage = other._storage;
-        } else if (_info) {
-            _info->CopyInit(other._storage, _storage);
+        } else if (auto *info = _info.Get()) {
+            info->CopyInit(other._storage, _storage);
         }
     }
 
@@ -796,7 +796,7 @@ public:
     /// otherwise.
     template <class T>
     bool IsHolding() const {
-        return _info && _TypeIs<T>();
+        return _info.GetLiteral() && _TypeIs<T>();
     }
 
     /// Returns true iff this is holding an array type (see VtIsArray<>).
@@ -977,7 +977,7 @@ public:
     }
 
     /// Returns true iff this value is empty.
-    bool IsEmpty() const { return !_info; }
+    bool IsEmpty() const { return _info.GetLiteral() == 0; }
 
     /// Return true if the held object provides a hash implementation.
     VT_API bool CanHash() const;
@@ -1015,8 +1015,8 @@ public:
         bool empty = IsEmpty(), rhsEmpty = rhs.IsEmpty();
         if (empty || rhsEmpty)
             return empty == rhsEmpty;
-        if (_info == rhs._info)
-            return _info->Equal(_storage, rhs._storage);
+        if (_info.GetLiteral() == rhs._info.GetLiteral())
+            return _info.Get()->Equal(_storage, rhs._storage);
         return _EqualityImpl(rhs);
     }
     bool operator != (const VtValue &rhs) const { return !(*this == rhs); }
@@ -1117,8 +1117,8 @@ private:
 
     inline void _Clear() {
         // optimize for local types not to deref _info.
-        if (_info && !_IsLocalAndTriviallyCopyable())
-            _info->Destroy(_storage);
+        if (_info.GetLiteral() && !_IsLocalAndTriviallyCopyable())
+            _info.Get()->Destroy(_storage);
         _info.Set(nullptr, 0);
     }
 
