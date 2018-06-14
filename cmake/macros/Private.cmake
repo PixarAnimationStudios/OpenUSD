@@ -220,17 +220,17 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
                "Failed to parse resource path ${resourceFile}")
         endif()
 
+        get_filename_component(dirPath ${resourceDestFile} PATH)
+        get_filename_component(destFileName ${resourceDestFile} NAME)
+        
         # plugInfo.json go through an initial template substitution step files
         # install it from the binary (gen) directory specified by the full
         # path. Otherwise, use the original relative path which is relative to
         # the source directory.
-        if (${resourceFile} STREQUAL "plugInfo.json")
+        if (${destFileName} STREQUAL "plugInfo.json")
             _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
             set(resourceFile "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
         endif()
-
-        get_filename_component(dirPath ${resourceDestFile} PATH)
-        get_filename_component(destFileName ${resourceDestFile} NAME)
 
         install(
             FILES ${resourceFile}
