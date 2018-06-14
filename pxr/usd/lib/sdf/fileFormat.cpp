@@ -251,6 +251,7 @@ SdfFileFormat::WriteToString(
     return false;
 }
 
+/* static */
 std::string
 SdfFileFormat::GetFileExtension(
     const std::string& s)
@@ -270,6 +271,14 @@ SdfFileFormat::GetFileExtension(
     return extension.empty() ? s : extension;
 }
 
+/* static */
+std::set<std::string>
+SdfFileFormat::FindAllFileFormatExtensions()
+{
+    return _FileFormatRegistry->FindAllFileFormatExtensions();
+}
+
+/* static */
 SdfFileFormatConstPtr
 SdfFileFormat::FindById(
     const TfToken& formatId)
@@ -277,6 +286,7 @@ SdfFileFormat::FindById(
     return _FileFormatRegistry->FindById(formatId);
 }
 
+/* static */
 SdfFileFormatConstPtr
 SdfFileFormat::FindByExtension(
     const std::string& extension,

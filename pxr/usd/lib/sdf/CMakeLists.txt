@@ -189,6 +189,7 @@ pxr_test_scripts(
     testenv/testSdfBatchNamespaceEdit.py
     testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
+    testenv/testSdfFileFormat.py
     testenv/testSdfLayer.py
     testenv/testSdfLayerMuting.py
     testenv/testSdfListOp.py
@@ -306,6 +307,11 @@ pxr_register_test(testSdfCustomLayerData
 
 pxr_register_test(testSdfHardToReach
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfHardToReach"
+)
+
+pxr_register_test(testSdfFileFormat
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormat"
 )
 
 pxr_register_test(testSdfLayer
