@@ -60,9 +60,10 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
     //       can be separated functionally and have different 
     //       delegate methods.
     if ((bits & (DirtyParams | DirtyTexture)) != 0) {
+       HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         HdResourceRegistrySharedPtr const &resourceRegistry = 
-            sceneDelegate->GetRenderIndex().GetResourceRegistry();
+                                              renderIndex.GetResourceRegistry();
 
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
         if (texID != HdTextureResource::ID(-1)) {
@@ -84,6 +85,15 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
         } else {
             _textureResource.reset();
         }
+
+        // The texture resource may have been cleared, so we need to release the
+        // old one.
+        //
+        // This is particularly important if the update is on the memory
+        // request.
+        // As the cache may be still holding on to the resource with a larger
+        // memory request.
+        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
     }
 
     *dirtyBits = Clean;

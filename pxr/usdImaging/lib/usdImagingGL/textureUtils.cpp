@@ -239,11 +239,10 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     timer.Start();
     GlfTextureHandleRefPtr texture =
         GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
-    texture->AddMemoryRequest(memoryLimit);
 
     texResource = HdTextureResourceSharedPtr(
         new HdStSimpleTextureResource(texture, isPtex, wrapS, wrapT,
-                                      minFilter, magFilter));
+                                      minFilter, magFilter, memoryLimit));
     timer.Stop();
 
     TF_DEBUG(USDIMAGING_TEXTURES).Msg("    Load time: %.3f s\n", 

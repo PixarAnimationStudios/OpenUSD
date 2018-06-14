@@ -289,9 +289,14 @@ HdStMaterial::_GetTextureResource(
             GlfUVTextureStorage::New(1,1, param.GetFallbackValue());
         GlfTextureHandleRefPtr texture =
             GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
-        texture->AddMemoryRequest(0); 
         texResource.reset(
-            new HdStSimpleTextureResource(texture, false));
+            new HdStSimpleTextureResource(texture,
+                                          false,
+                                          HdWrapClamp,
+                                          HdWrapClamp,
+                                          HdMinFilterNearest,
+                                          HdMagFilterNearest,
+                                          0));
         _fallbackTextureResources.push_back(texResource);
     } else {
         HdInstance<HdTextureResource::ID,
