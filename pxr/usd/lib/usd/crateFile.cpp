@@ -565,7 +565,7 @@ private:
 };
 
 template <class FileMappingPtr>
-_MmapStream<FileMappingPtr>
+inline _MmapStream<FileMappingPtr>
 _MakeMmapStream(FileMappingPtr const &mapping, char *debugPageMap) {
     return _MmapStream<FileMappingPtr>(mapping, debugPageMap);
 }
@@ -1959,7 +1959,7 @@ CrateFile::_InitMMap() {
         auto reader =
             _MakeReader(
                 _MakeMmapStream(
-                    _mappedFile, _debugPageMap.get()).DisablePrefetch());
+                    _mappedFile.get(), _debugPageMap.get()).DisablePrefetch());
         TfErrorMark m;
         _ReadStructuralSections(reader, fileSize);
         if (!m.IsClean())
@@ -2392,7 +2392,7 @@ CrateFile::_GetTimeSampleValueImpl(TimeSamples const &ts, size_t i) const
     auto offset = ts.valuesFileOffset + i * sizeof(ValueRep);
     if (_useMmap) {
         auto reader = _MakeReader(
-            _MakeMmapStream(_mappedFile, _debugPageMap.get()));
+            _MakeMmapStream(_mappedFile.get(), _debugPageMap.get()));
         reader.Seek(offset);
         return VtValue(reader.Read<ValueRep>());
     } else {
@@ -2409,7 +2409,7 @@ CrateFile::_MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const
     ts.values.resize(ts.times.Get().size());
     if (_useMmap) {
         auto reader = _MakeReader(
-            _MakeMmapStream(_mappedFile, _debugPageMap.get()));
+            _MakeMmapStream(_mappedFile.get(), _debugPageMap.get()));
         reader.Seek(ts.valuesFileOffset);
         for (size_t i = 0, n = ts.times.Get().size(); i != n; ++i)
             ts.values[i] = reader.Read<ValueRep>();
@@ -3282,7 +3282,7 @@ CrateFile::_ReadRawBytes(int64_t start, int64_t size, char *buf) const
 {
     if (_useMmap) {
         auto reader = _MakeReader(
-            _MakeMmapStream(_mappedFile, _debugPageMap.get()));
+            _MakeMmapStream(_mappedFile.get(), _debugPageMap.get()));
         reader.Seek(start);
         reader.template ReadContiguous<char>(buf, size);
     } else {
@@ -3446,7 +3446,7 @@ CrateFile::_UnpackValue(ValueRep rep, T *out) const
     if (_useMmap) {
         h.Unpack(
             _MakeReader(
-                _MakeMmapStream(_mappedFile, _debugPageMap.get())), rep, out);
+                _MakeMmapStream(_mappedFile.get(), _debugPageMap.get())), rep, out);
     } else {
         h.Unpack(
             _MakeReader(
@@ -3461,7 +3461,7 @@ CrateFile::_UnpackValue(ValueRep rep, VtArray<T> *out) const {
     if (_useMmap) {
         h.UnpackArray(
             _MakeReader(
-                _MakeMmapStream(_mappedFile, _debugPageMap.get())), rep, out);
+                _MakeMmapStream(_mappedFile.get(), _debugPageMap.get())), rep, out);
     } else {
         h.UnpackArray(
             _MakeReader(
@@ -3486,36 +3486,45 @@ CrateFile::_UnpackValue(ValueRep rep, VtValue *result) const {
     }
 }
 
-// Enum to TfType table.
-struct _EnumToTfTypeTablePopulater {
-    template <class T, class Table>
-    static void _Set(Table &table, TypeEnum typeEnum) {
-        auto index = static_cast<int>(typeEnum);
-        auto tfType = TfType::Find<T>();
-        TF_VERIFY(!tfType.IsUnknown(),
-                  "%s not registered with TfType",
-                  ArchGetDemangled<T>().c_str());
-        table[index] = tfType;
-    }
-
-    template <class T, class Table>
-    static typename
-    std::enable_if<!ValueTypeTraits<T>::supportsArray>::type
-    Populate(Table &scalarTable, Table &) {
-        _Set<T>(scalarTable, TypeEnumFor<T>());
-    }
-
-    template <class T, class Table>
-    static typename
-    std::enable_if<ValueTypeTraits<T>::supportsArray>::type
-    Populate(Table &scalarTable, Table &arrayTable) {
-        _Set<T>(scalarTable, TypeEnumFor<T>());
-        _Set<VtArray<T>>(arrayTable, TypeEnumFor<T>());
+struct _GetTypeidForArrayTypes {
+    template <class T>
+    static std::type_info const &Get(bool array) {
+        return array ? typeid(VtArray<T>) : typeid(T);
     }
 };
 
+struct _GetTypeidForNonArrayTypes {
+    template <class T>
+    static std::type_info const &Get(bool) {
+        return typeid(T);
+    }
+};
+
+template <bool SupportsArray>
+using _GetTypeid = typename std::conditional<SupportsArray,
+                                             _GetTypeidForArrayTypes,
+                                             _GetTypeidForNonArrayTypes>::type;
+
+std::type_info const &
+CrateFile::GetTypeid(ValueRep rep) const
+{
+    switch (rep.GetType()) {
+#define xx(ENUMNAME, _unused, T, SUPPORTSARRAY)                                \
+        case TypeEnum::ENUMNAME:                                               \
+            return _GetTypeid<SUPPORTSARRAY>::Get<T>(rep.IsArray());
+
+#include "crateDataTypes.h"
+
+#undef xx
+
+    default:
+        return typeid(void);
+    };
+}
+
 template <class T>
-void CrateFile::_DoTypeRegistration() {
+void
+CrateFile::_DoTypeRegistration() {
     auto typeEnumIndex = static_cast<int>(TypeEnumFor<T>());
     auto valueHandler = new _ValueHandler<T>();
     _valueHandlers[typeEnumIndex] = valueHandler;
@@ -3535,12 +3544,9 @@ void CrateFile::_DoTypeRegistration() {
     _unpackValueFunctionsMmap[typeEnumIndex] =
         [this, valueHandler](ValueRep rep, VtValue *out) {
             valueHandler->UnpackVtValue(
-                _MakeReader(_MakeMmapStream(_mappedFile,
+                _MakeReader(_MakeMmapStream(_mappedFile.get(),
                                             _debugPageMap.get())), rep, out);
         };
-
-    _EnumToTfTypeTablePopulater::Populate<T>(
-        _typeEnumToTfType, _typeEnumToTfTypeForArray);
 }
 
 // Functions that populate the value read/write functions.
@@ -3576,6 +3582,7 @@ CrateFile::_ClearValueHandlerDedupTables() {
 
 #undef xx
 }
+
 
 /* static */
 bool

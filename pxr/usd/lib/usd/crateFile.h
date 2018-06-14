@@ -633,6 +633,8 @@ public:
         return ret;
     }
 
+    std::type_info const &GetTypeid(ValueRep rep) const;
+
 private:
     explicit CrateFile(bool useMmap);
     CrateFile(string const &fileName, _FileMappingIPtr mapStart);
@@ -828,9 +830,6 @@ private:
     _unpackValueFunctionsMmap[static_cast<int>(TypeEnum::NumTypes)];
 
     _ValueHandlerBase *_valueHandlers[static_cast<int>(TypeEnum::NumTypes)];
-
-    TfType _typeEnumToTfType[static_cast<int>(TypeEnum::NumTypes)];
-    TfType _typeEnumToTfTypeForArray[static_cast<int>(TypeEnum::NumTypes)];
 
     ////////////////////////////////////////////////////////////////////////
 
