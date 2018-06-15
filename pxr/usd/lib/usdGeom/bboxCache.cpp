@@ -1158,7 +1158,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             successGettingExtent = extent.size() == 2;
             if (!successGettingExtent) {
                 TF_WARN("[BBox Cache] Extent for <%s> is of size %zu "
-                        "instead of 2.", prim.GetPath().GetString().c_str(),
+                        "instead of 2.", prim.GetPath().GetText(),
                         extent.size());
             }
         }
@@ -1191,6 +1191,16 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             } else {
 
                 successGettingExtent = _ComputeExtent(boundableObj, &extent);
+            }
+
+            if (successGettingExtent) {
+                // Extent computation reported success, but validate the result.
+                successGettingExtent = extent.size() == 2;
+                if (!successGettingExtent) {
+                    TF_WARN("[BBox Cache] Computed extent for <%s> is of size %zu "
+                            "instead of 2.", prim.GetPath().GetText(),
+                            extent.size());
+                }
             }
         }
 
