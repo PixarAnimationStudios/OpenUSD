@@ -90,10 +90,14 @@ pxr_library(glf
         
     PRIVATE_HEADERS
         rankedTypeMap.h
+        stb/stb_image.h
+        stb/stb_image_resize.h
+        stb/stb_image_write.h
 
     CPPFILES
         dictionary.cpp
         oiioImage.cpp
+        stbImage.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
