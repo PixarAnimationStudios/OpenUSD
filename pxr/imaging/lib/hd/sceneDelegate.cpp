@@ -328,6 +328,17 @@ HdSceneDelegate::GetTextureResource(SdfPath const& textureId)
 }
 
 // -----------------------------------------------------------------------//
+/// \name Renderbuffer Aspects
+// -----------------------------------------------------------------------//
+
+/*virtual*/
+HdRenderBufferDescriptor
+HdSceneDelegate::GetRenderBufferDescriptor(SdfPath const& id)
+{
+    return HdRenderBufferDescriptor();
+}
+
+// -----------------------------------------------------------------------//
 /// \name Light Aspects
 // -----------------------------------------------------------------------//
 

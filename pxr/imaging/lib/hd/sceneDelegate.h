@@ -240,6 +240,15 @@ struct HdExtComputationOutputDescriptor {
 typedef std::vector<HdExtComputationOutputDescriptor>
         HdExtComputationOutputDescriptorVector;
 
+/// \struct HdRenderBufferDescriptor
+///
+/// Describes the allocation structure of a render buffer bprim.
+struct HdRenderBufferDescriptor {
+    GfVec3i dimensions;
+    HdFormat format;
+    bool multiSampled;
+};
+
 /// \class HdSceneDelegate
 ///
 /// Adapter class providing data exchange with the client scene graph.
@@ -515,6 +524,14 @@ public:
     /// Returns the texture resource for a given texture ID.
     HD_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
+
+    // -----------------------------------------------------------------------//
+    /// \name Renderbuffer Aspects
+    // -----------------------------------------------------------------------//
+
+    /// Returns the allocation descriptor for a given render buffer prim.
+    HD_API
+    virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const& id);
 
     // -----------------------------------------------------------------------//
     /// \name Light Aspects

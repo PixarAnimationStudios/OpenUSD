@@ -474,6 +474,15 @@ HdUnitTestDelegate::UpdateInstancerPrototypes(float time)
 }
 
 void
+HdUnitTestDelegate::AddRenderBuffer(SdfPath const &id,
+    GfVec3i const& dims, HdFormat format, bool multiSampled)
+{
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
+    _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+}
+
+void
 HdUnitTestDelegate::AddCamera(SdfPath const &id)
 {
     HdRenderIndex& index = GetRenderIndex();
@@ -741,6 +750,16 @@ HdTextureResourceSharedPtr
 HdUnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
     return nullptr;
+}
+
+/*virtual*/
+HdRenderBufferDescriptor
+HdUnitTestDelegate::GetRenderBufferDescriptor(SdfPath const& id)
+{
+    if (_RenderBuffer *rb = TfMapLookupPtr(_renderBuffers, id)) {
+        return { rb->dims, rb->format, rb->multiSampled };
+    }
+    return HdRenderBufferDescriptor();
 }
 
 /*virtual*/

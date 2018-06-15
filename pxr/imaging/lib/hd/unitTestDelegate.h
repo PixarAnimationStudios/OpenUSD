@@ -226,6 +226,11 @@ public:
     HD_API
     void RebindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
 
+    /// Render buffers
+    HD_API
+    void AddRenderBuffer(SdfPath const &id, GfVec3i const& dims,
+                         HdFormat format, bool multiSampled);
+
     /// Camera
     HD_API
     void AddCamera(SdfPath const &id);
@@ -347,6 +352,8 @@ public:
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    HD_API
+    virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const& id);
 
 private:
     struct _Mesh {
@@ -467,6 +474,14 @@ private:
     struct _Task {
         VtDictionary params;
     };
+    struct _RenderBuffer {
+        _RenderBuffer() {}
+        _RenderBuffer(GfVec3i const &d, HdFormat f, bool ms)
+            : dims(d), format(f), multiSampled(ms) {}
+        GfVec3i dims;
+        HdFormat format;
+        bool multiSampled;
+    };
 
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Curves> _curves;
@@ -475,6 +490,7 @@ private:
     std::map<SdfPath, _MaterialHydra> _materialsHydra;
     std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, _Camera> _cameras;
+    std::map<SdfPath, _RenderBuffer> _renderBuffers;
     std::map<SdfPath, _Light> _lights;
     std::map<SdfPath, _Task> _tasks;
     TfHashSet<SdfPath, SdfPath::Hash> _hiddenRprims;

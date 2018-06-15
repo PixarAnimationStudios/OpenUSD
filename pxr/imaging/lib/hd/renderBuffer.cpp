@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,37 +21,47 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdShaderTokens, HD_SHADER_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_PRIMTYPE_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_PRIMVAR_ROLE_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdAovTokens, HD_AOV_TOKENS);
-
-TfToken HdAovTokensPrimvar(TfToken const& primvar)
+HdRenderBuffer::HdRenderBuffer(SdfPath const& id)
+    : HdBprim(id)
 {
-    return TfToken(
-        HdAovTokens->primvar.GetString() +
-        primvar.GetString());
 }
 
-TfToken HdAovTokensLpe(TfToken const& lpe)
+HdRenderBuffer::~HdRenderBuffer()
 {
-    return TfToken(
-        HdAovTokens->lpe.GetString() +
-        lpe.GetString());
+}
+
+/*virtual*/
+HdDirtyBits
+HdRenderBuffer::GetInitialDirtyBitsMask() const
+{
+    return HdRenderBuffer::AllDirty;
+}
+
+/*virtual*/
+void
+HdRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam *renderParam,
+                     HdDirtyBits *dirtyBits)
+{
+    if (*dirtyBits & DirtyDescription) {
+        HdRenderBufferDescriptor desc =
+            sceneDelegate->GetRenderBufferDescriptor(GetId());
+
+        Allocate(desc.dimensions, desc.format, desc.multiSampled);
+    }
+    *dirtyBits &= ~AllDirty;
+}
+
+/*virtual*/
+void
+HdRenderBuffer::Finalize(HdRenderParam *renderParam)
+{
+    _Deallocate();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

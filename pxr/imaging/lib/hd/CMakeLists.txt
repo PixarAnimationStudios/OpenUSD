@@ -59,6 +59,7 @@ pxr_library(hd
         points
         primGather
         primTypeIndex
+        renderBuffer
         renderDelegate
         renderIndex
         renderPass

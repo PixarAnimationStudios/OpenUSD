@@ -193,6 +193,19 @@ HdRenderPassState::GetClipPlanes() const
 }
 
 void
+HdRenderPassState::SetAttachments(
+        HdRenderPassAttachmentVector const& attachments)
+{
+    _attachments = attachments;
+}
+
+HdRenderPassAttachmentVector const&
+HdRenderPassState::GetAttachments() const
+{
+    return _attachments;
+}
+
+void
 HdRenderPassState::SetDepthBiasUseDefault(bool useDefault)
 {
     _depthBiasUseDefault = useDefault;
@@ -264,6 +277,32 @@ void
 HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
 {
     _colorMask = mask;
+}
+
+std::ostream& operator<<(std::ostream& out,
+                         const HdRenderPassAttachment& desc)
+{
+    out << "RenderPassAttachment: {"
+        << desc.aovName << ", "
+        << desc.renderBuffer << ", "
+        << desc.renderBufferId << ", "
+        << desc.clearValue << "}";
+    return out;
+}
+
+bool operator==(const HdRenderPassAttachment& lhs,
+                const HdRenderPassAttachment& rhs)
+{
+    return lhs.aovName           == rhs.aovName          &&
+           lhs.renderBuffer      == rhs.renderBuffer     &&
+           lhs.renderBufferId    == rhs.renderBufferId   &&
+           lhs.clearValue        == rhs.clearValue;
+}
+
+bool operator!=(const HdRenderPassAttachment& lhs,
+                const HdRenderPassAttachment& rhs)
+{
+    return !(lhs == rhs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

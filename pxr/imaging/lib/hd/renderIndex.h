@@ -338,7 +338,7 @@ public:
     void RemoveBprim(TfToken const& typeId, SdfPath const &id);
 
     HD_API
-    HdBprim const *GetBprim(TfToken const& typeId, SdfPath const &id) const;
+    HdBprim *GetBprim(TfToken const& typeId, SdfPath const &id) const;
 
     /// Returns the subtree rooted under the given path for the given bprim
     /// type.

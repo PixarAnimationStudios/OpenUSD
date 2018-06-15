@@ -442,7 +442,7 @@ HdRenderIndex::RemoveBprim(TfToken const& typeId, SdfPath const& id)
     _bprimIndex.RemovePrim(typeId, id, _tracker, _renderDelegate);
 }
 
-HdBprim const*
+HdBprim *
 HdRenderIndex::GetBprim(TfToken const& typeId, SdfPath const& id) const
 {
     return _bprimIndex.GetPrim(typeId, id);

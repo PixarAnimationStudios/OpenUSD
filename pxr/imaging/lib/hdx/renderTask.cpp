@@ -214,7 +214,9 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
     }
 
     if (_setupTask) {
+        _setupTask->SyncAttachments();
         _setupTask->SyncCamera();
+        _setupTask->SyncRenderPassState();
     }
 
     // sync render passes

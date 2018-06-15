@@ -223,7 +223,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (extComputation)                            \
                                                 \
     /* Bprims */                                \
-    (texture)
+    (texture)                                   \
+    (renderBuffer)
 
 #define HD_PRIMVAR_ROLE_TOKENS                  \
     ((none, ""))                                \
@@ -233,12 +234,64 @@ PXR_NAMESPACE_OPEN_SCOPE
     (point)                                     \
     (textureCoordinate)
 
+/* Schema for "Alternate Output Values" rendering,
+ * describing which values a renderpass should
+ * compute and write at render time.
+ */
+#define HD_AOV_TOKENS                           \
+    /* Standard rendering outputs */            \
+                                                \
+    /* HdAovTokens->color represents the final
+     * fragment RGBA color.
+     */                                         \
+    (color)                                     \
+    /* HdAovTokens->depth represents the clip-space
+     * depth of the final fragment.
+     */                                         \
+    (depth)                                     \
+    /* HdAovTokens->linearDepth represents the camera-space
+     * depth of the final fragment.
+     */                                         \
+    (linearDepth)                               \
+    /* ID rendering - these tokens represent the
+     * prim, instance, and subprim ids of the final
+     * fragment.
+     */                                         \
+    (primId)                                    \
+    (instanceId)                                \
+    (elementId)                                 \
+    (edgeId)                                    \
+    (pointId)                                   \
+    /* Geometric data */                        \
+    (Peye)                                      \
+    (Neye)                                      \
+    (patchCoord)                                \
+    (primitiveParam)                            \
+    /* Primvars:
+     *   The tokens don't try to enumerate primvars,
+     *   but instead provide an identifying namespace.
+     *   The "color" primvar is addressable as "primvar:color".
+     */                                         \
+    ((primvar, "primvar:"))                     \
+    /* Light path expressions:
+     *   Applicable only to raytracers, these tell
+     *   the renderer to output specific shading
+     *   components for specific classes of lightpath.
+     */                                         \
+    ((lpe, "lpe:"))
+
+HD_API
+TfToken HdAovTokensPrimvar(TfToken const& primvar);
+HD_API
+TfToken HdAovTokensLpe(TfToken const& lpe);
+
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
