@@ -38,11 +38,6 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (ReferencedPath)
-);
-
 GusdPackedUsdWrapper::GusdPackedUsdWrapper(
         const UsdStagePtr& stage,
         const SdfPath& primPath,
@@ -155,16 +150,6 @@ GusdPackedUsdWrapper::isValid() const
     return m_primRef;
 }
 
-SdfPath 
-_rootPrimPath(const SdfPath path)
-{
-    if( path.IsRootPrimPath()
-     || path.IsEmpty()) {
-        return path;
-    }
-
-    return _rootPrimPath(path.GetParentPath());
-}
 
 bool 
 GusdPackedUsdWrapper::updateFromGTPrim(
@@ -191,8 +176,6 @@ GusdPackedUsdWrapper::updateFromGTPrim(
 
         SdfPath variantPrimPath = gtPackedUSD->getPrimPath();
         SdfPath primPath = variantPrimPath.StripAllVariantSelections();
-        SdfPath rootPath = _rootPrimPath( primPath );
-        SdfPath relPath  = primPath.MakeRelativePath( rootPath );
 
         // Get Layer Offset values from context in case set as node paramaters.
         fpreal usdTimeOffset = ctxt.usdTimeOffset;
@@ -213,7 +196,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         SdfLayerOffset layerOffset = SdfLayerOffset(usdTimeOffset, usdTimeScale);
 
         // Add the reference. Layer offset will only appear if not default values.
-        m_primRef.GetReferences().AddReference(fileName, rootPath, layerOffset );
+        m_primRef.GetReferences().AddReference(fileName, primPath, layerOffset );
 
         // Set variant selections.
         if(ctxt.authorVariantSelections &&
@@ -238,18 +221,6 @@ GusdPackedUsdWrapper::updateFromGTPrim(
                 
                 p = p.GetParentPath();
             }
-        }
-
-        // We can only reference root prims. If we want to make a reference a non-root
-        // prim, create the root reference but set an attribute noting what we really
-        // wanted to reference. This will be used later when setting up relationships
-        // for building point instancers.
-        if( relPath != SdfPath::ReflexiveRelativePath() ) {
-            m_primRef.CreateAttribute(
-                                _tokens->ReferencedPath,
-                                SdfValueTypeNames->String,
-                                SdfVariabilityUniform)
-                                    .Set(relPath.GetString());
         }
 
         if( ctxt.purpose != UsdGeomTokens->default_ ) {

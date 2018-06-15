@@ -74,7 +74,6 @@ using std::map;
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((prunable, "pruning:prunable"))
-    (ReferencedPath)
     (Xform)
 );     
 
@@ -838,6 +837,10 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                                           newContext,
                                           xformCache );
 
+                // TODO: Grab material bindings for prims brought in with
+                // subroot references and copy them here so we don't lose
+                // shading
+
                 // Create an array of prototype transforms for subtracting from
                 // instance transforms later
                 m_prototypeTransforms.push_back(gtPrim.xform);
@@ -872,63 +875,6 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         string mapKey = pair.first;
         SdfPath relationshipPath = pair.second;
 
-        // USD doesn't allow references to non-root prims. If we want to build
-        // a point instancer with non-root prims, we reference the root prim
-        // but point the relationship to point to a descendant. When we wrote
-        // the prototype file, we added an attribute to tell us what descendant
-        // to use.
-        UsdPrim protoRootPrim( stage->DefinePrim( pair.second, _tokens->Xform ));
-        protoRootPrim.Load();
-        // TODO Enable cleanup to remove empty tokens left after moving
-        // transforms in the case of prototype transforms where the prototype
-        // is not the referenced root.
-        //SdfCleanupEnabler();
-        for(auto protoPrim : protoRootPrim.GetAllChildren()) {
-            UsdAttribute pathAttr
-                = protoPrim.GetAttribute(_tokens->ReferencedPath);
-            if( pathAttr ) {
-                string subPath;
-                pathAttr.Get(&subPath);
-                relationshipPath = protoPrim.GetPath().AppendPath(SdfPath(subPath));
-
-                // Get the prototype scope referenced by the relationship array
-                UsdPrim protoTarget = stage->GetPrimAtPath(relationshipPath);
-                if (!protoTarget.IsValid()) {
-                    TF_WARN( "Prototype does not exist at '%s'",
-                                relationshipPath.GetString().c_str() );
-                    continue;
-                }
-
-                // Get the Xformables at the prototype scope and the referenced
-                // prototype scope (where we actually retrieve geometry)
-                UsdGeomXformable protoXformable( protoPrim );
-                UsdGeomXformable protoTargetXformable( protoTarget );
-
-                // Get the xforms we wrote out on the prototype scope
-                bool resetXformStack = false;
-                std::vector<UsdGeomXformOp> xformOps = protoXformable.GetOrderedXformOps(&resetXformStack);
-                if (xformOps.size()==0)
-                    continue;
-
-                // Set the transform on the referenced scope to be the same
-                // we wrote onto the prototype scope. First clear previous
-                // xformOps.
-                protoTargetXformable.SetXformOpOrder(std::vector<UsdGeomXformOp>());
-                for (auto xformOp : xformOps) {
-                    // Add an equivalent xformOp to the target prototype scope
-                    // that was in the original protoype scope.
-                    const UsdGeomXformOp xformOpTarget =
-                        protoTargetXformable.AddXformOp(xformOp.GetOpType(),
-                                                        xformOp.GetPrecision());
-                    xformOpTarget.Set( xformOp.GetOpTransform(ctxt.time),
-                                       ctxt.time);
-
-                    // Clear each xformOp from the original scope.
-                    xformOp.GetAttr().Clear();
-                }
-                protoXformable.GetXformOpOrderAttr().Clear();
-            }
-        }
         if(ctxt.overlayAll) {
             relationshipPaths.push_back(relationshipPath);
         } else {
