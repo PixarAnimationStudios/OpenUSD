@@ -144,6 +144,7 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
             ("spam warning 0 -- and 2 similar", OM.MCommandMessage.kWarning)
         ])
 
+    @unittest.skip("Skip due to issue with unloading pxrUsd, see bug 161884")
     def testBatching_DelegateRemoved(self):
         """Tests removing the diagnostic delegate when the batch context is
         still open."""
