@@ -71,12 +71,14 @@ public:
     /// Gets the joint name tokens for the given dag paths, assuming a joint
     /// hierarchy with the given root joint.
     static VtTokenArray GetJointNames(const std::vector<MDagPath>& joints,
-                                      const MDagPath& rootJoint);
+                                      const MDagPath& rootJoint,
+                                      bool stripNamespaces);
 
     /// Gets the expected path where a skeleton instance will be exported for
     /// the given root joint. The skeleton instance both binds a skeleton and
     /// holds root transformations of the joint hierarchy.
-    static SdfPath GetSkeletonInstancePath(const MDagPath& rootJoint);
+    static SdfPath GetSkeletonInstancePath(const MDagPath& rootJoint,
+                                           bool stripNamespaces);
 
 private:
     bool _WriteRestState();

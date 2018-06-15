@@ -80,7 +80,8 @@ MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath & iDag,
         return;
     }
 
-    SdfPath skelInstancePath = GetSkeletonInstancePath(iDag);
+    SdfPath skelInstancePath = GetSkeletonInstancePath(
+            iDag, mWriteJobCtx.getArgs().stripNamespaces);
 
     SdfPath skelPath = _GetSkeletonPath(skelInstancePath);
 
@@ -127,7 +128,8 @@ _IsUsdJointHierarchyRoot(const MDagPath& joint)
 VtTokenArray
 MayaSkeletonWriter::GetJointNames(
     const std::vector<MDagPath>& joints,
-    const MDagPath& rootDagPath)
+    const MDagPath& rootDagPath,
+    bool stripNamespaces)
 {
 
     // Get paths relative to the root.
@@ -135,7 +137,7 @@ MayaSkeletonWriter::GetJointNames(
     // shouldn't matter here. (Besides, we're not actually using these
     // to point to prims.)
     SdfPath rootPath = PxrUsdMayaUtil::MDagPathToUsdPath(
-            rootDagPath, /*mergeTransformAndShape*/ false);
+            rootDagPath, /*mergeTransformAndShape*/ false, stripNamespaces);
 
     if (!_IsUsdJointHierarchyRoot(rootDagPath)) {   
         // Compute joint names  relative to the path of the parent node.
@@ -145,7 +147,7 @@ MayaSkeletonWriter::GetJointNames(
     VtTokenArray result;
     for (const MDagPath& joint : joints) {
         SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
-                joint, /*mergeTransformAndShape*/ false);
+                joint, /*mergeTransformAndShape*/ false, stripNamespaces);
         result.push_back(path.MakeRelativePath(rootPath).GetToken());
     }
     return result;
@@ -153,10 +155,12 @@ MayaSkeletonWriter::GetJointNames(
 
 
 SdfPath
-MayaSkeletonWriter::GetSkeletonInstancePath(const MDagPath& rootJoint)
+MayaSkeletonWriter::GetSkeletonInstancePath(
+    const MDagPath& rootJoint,
+    bool stripNamespaces)
 {
     SdfPath rootJointPath = PxrUsdMayaUtil::MDagPathToUsdPath(
-        rootJoint, /*mergeTransformAndShape*/ false);
+        rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces);
 
     if (_IsUsdJointHierarchyRoot(rootJoint)) {
         // The root joint is the special joint created for round-tripping
@@ -436,7 +440,8 @@ MayaSkeletonWriter::_WriteRestState()
         return false;
     }
 
-    VtTokenArray skelJointNames = GetJointNames(_joints, getDagPath());
+    VtTokenArray skelJointNames = GetJointNames(
+            _joints, getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
     _topology = UsdSkelTopology(skelJointNames);
     std::string whyNotValid;
     if (!_topology.Validate(&whyNotValid)) {
@@ -454,7 +459,8 @@ MayaSkeletonWriter::_WriteRestState()
     binding.CreateSkeletonRel().SetTargets({_skel.GetPrim().GetPath()});
 
     // Mark the bindings for post processing.
-    SdfPath skelInstancePath = GetSkeletonInstancePath(getDagPath());
+    SdfPath skelInstancePath = GetSkeletonInstancePath(
+            getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
     mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
         skelInstancePath, skelInstancePath,
         mWriteJobCtx.getArgs().exportSkels);
@@ -602,7 +608,8 @@ MayaSkeletonWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
 {
     bool hasPrims = MayaPrimWriter::getAllAuthoredUsdPaths(outPaths);
 
-    SdfPath skelInstancePath = GetSkeletonInstancePath(getDagPath());
+    SdfPath skelInstancePath = GetSkeletonInstancePath(
+            getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
     SdfPath skelPath = _GetSkeletonPath(skelInstancePath);
     SdfPath animPath = _GetAnimationPath(skelInstancePath);
     

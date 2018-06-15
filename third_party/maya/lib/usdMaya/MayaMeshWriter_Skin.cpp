@@ -387,12 +387,13 @@ _WriteJointInfluences(const MFnSkinCluster& skinCluster,
 static bool
 _WriteJointOrder(const MDagPath& rootJoint,
                  const std::vector<MDagPath>& jointDagPaths,
-                 const UsdSkelBindingAPI& binding)
+                 const UsdSkelBindingAPI& binding,
+                 const bool stripNamespaces)
 {
     // Get joint name tokens how MayaSkeletonWriter would generate them.
     // We don't need to check that they actually exist.
     VtTokenArray jointNames = MayaSkeletonWriter::GetJointNames(
-        jointDagPaths, rootJoint);
+        jointDagPaths, rootJoint, stripNamespaces);
 
     binding.CreateJointsAttr().Set(jointNames);
     return true;
@@ -460,14 +461,16 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     // skel root that encapsulates both this mesh and the target
     // skeleton instance.
     const SdfPath skelInstancePath =
-        MayaSkeletonWriter::GetSkeletonInstancePath(rootJoint);
+        MayaSkeletonWriter::GetSkeletonInstancePath(
+            rootJoint, mWriteJobCtx.getArgs().stripNamespaces);
 
     // Write everything to USD once we know that we have OK data.
     const UsdSkelBindingAPI bindingAPI = PxrUsdMayaTranslatorUtil
         ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
 
     if (_WriteJointInfluences(skinCluster, inMesh, bindingAPI)) {
-        _WriteJointOrder(rootJoint, jointDagPaths, bindingAPI);
+        _WriteJointOrder(rootJoint, jointDagPaths, bindingAPI,
+                         mWriteJobCtx.getArgs().stripNamespaces);
     }
 
     GfMatrix4d geomBindTransform;
