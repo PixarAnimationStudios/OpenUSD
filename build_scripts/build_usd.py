@@ -894,6 +894,17 @@ def InstallAlembic(context, force, buildArgs):
 ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 
 ############################################################
+# MaterialX
+
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.35.5.zip"
+
+def InstallMaterialX(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
+        RunCMake(context, force, buildArgs)
+
+MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
+
+############################################################
 # USD
 
 def InstallUSD(context, force, buildArgs):
@@ -960,6 +971,11 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=OFF')
         else:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=OFF')
+
+        if context.buildMaterialX:
+            extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=OFF')
 
         if context.buildMaya:
             if context.mayaLocation:
@@ -1158,6 +1174,14 @@ subgroup.add_argument("--hdf5", dest="enable_hdf5", action="store_true",
 subgroup.add_argument("--no-hdf5", dest="enable_hdf5", action="store_false",
                       help="Disable HDF5 support in the Alembic plugin (default)")
 
+group = parser.add_argument_group(title="MaterialX Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
+                      default=False,
+                      help="Build MaterialX plugin for USD")
+subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
+                      help="Do not build MaterialX plugin for USD (default)")
+
 group = parser.add_argument_group(title="Maya Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--maya", dest="build_maya", action="store_true", 
@@ -1281,6 +1305,9 @@ class InstallContext:
         self.buildAlembic = args.build_alembic
         self.enableHDF5 = self.buildAlembic and args.enable_hdf5
 
+        # - MaterialX Plugin
+        self.buildMaterialX = args.build_materialx
+
         # - Maya Plugin
         self.buildMaya = args.build_maya
         self.mayaLocation = (os.path.abspath(args.maya_location) 
@@ -1338,6 +1365,9 @@ if context.buildAlembic:
     if context.enableHDF5:
         requiredDependencies += [HDF5]
     requiredDependencies += [OPENEXR, ALEMBIC]
+
+if context.buildMaterialX:
+    requiredDependencies += [MATERIALX]
 
 if context.buildImaging:
     if context.enablePtex:
@@ -1470,6 +1500,7 @@ Building with settings:
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
+    MaterialX Plugin            {buildMaterialX}
     Maya Plugin                 {buildMaya}
     Katana Plugin               {buildKatana}
     Houdini Plugin              {buildHoudini}
@@ -1513,6 +1544,7 @@ summaryMsg = summaryMsg.format(
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
+    buildMaterialX=("On" if context.buildMaterialX else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"),
     buildMaya=("On" if context.buildMaya else "Off"),
     buildKatana=("On" if context.buildKatana else "Off"),
