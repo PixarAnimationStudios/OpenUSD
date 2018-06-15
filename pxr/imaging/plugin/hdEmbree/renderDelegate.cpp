@@ -52,6 +52,7 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
 
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
+    HdPrimTypeTokens->renderBuffer,
 };
 
 std::mutex HdEmbreeRenderDelegate::_mutexResourceRegistry;
@@ -86,6 +87,13 @@ HdEmbreeRenderDelegate::HandleRtcError(const RTCError code, const char* msg)
             TF_CODING_ERROR("Embree invalid error code: %s", msg);
             break;
     }
+}
+
+static void _RenderCallback(HdEmbreeRenderer *renderer,
+                            HdRenderThread *renderThread)
+{
+    renderer->Clear();
+    renderer->Render(renderThread);
 }
 
 HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
@@ -125,7 +133,7 @@ HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
     // Set the background render thread's rendering entrypoint to
     // HdEmbreeRenderer::Render.
     _renderThread.SetRenderCallback(
-        std::bind(&HdEmbreeRenderer::Render, &_renderer, &_renderThread));
+        std::bind(_RenderCallback, &_renderer, &_renderThread));
     // Start the background render thread.
     _renderThread.StartThread();
 
@@ -269,14 +277,22 @@ HdBprim *
 HdEmbreeRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
-    TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdEmbreeRenderBuffer(bprimId);
+    } else {
+        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    }
     return nullptr;
 }
 
 HdBprim *
 HdEmbreeRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
-    TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdEmbreeRenderBuffer(SdfPath::EmptyPath());
+    } else {
+        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    }
     return nullptr;
 }
 

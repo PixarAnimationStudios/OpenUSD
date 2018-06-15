@@ -45,7 +45,9 @@ HdEmbreeRenderPass::HdEmbreeRenderPass(HdRenderIndex *index,
     , _height(0)
     , _viewMatrix(1.0f) // == identity
     , _projMatrix(1.0f) // == identity
-    , _converged(false)
+    , _attachments()
+    , _colorBuffer(SdfPath::EmptyPath())
+    , _colorBufferConverged(false)
     , _texture(0)
     , _framebuffer(0)
 {
@@ -54,6 +56,9 @@ HdEmbreeRenderPass::HdEmbreeRenderPass(HdRenderIndex *index,
 
 HdEmbreeRenderPass::~HdEmbreeRenderPass()
 {
+    // Make sure the render thread's not running, in case it's writing
+    // to _colorBuffer.
+    _renderThread->StopRender();
     _DestroyBlitResources();
 }
 
@@ -140,7 +145,20 @@ HdEmbreeRenderPass::_Blit(unsigned int width, unsigned int height,
 bool
 HdEmbreeRenderPass::IsConverged() const
 {
-    return _converged;
+    // If the attachments array is empty, the render thread is rendering into
+    // _colorBuffer, so we check its convergence flag (sampled at blit time).
+    if (_attachments.size() == 0) {
+        return _colorBufferConverged;
+    }
+
+    // Otherwise, check the convergence of all attachments.
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        if ((_attachments[i].renderBuffer != nullptr) &&
+            !_attachments[i].renderBuffer->IsConverged()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void
@@ -179,22 +197,58 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
 
         _renderThread->StopRender();
         _renderer->SetViewport(_width, _height);
+        _colorBuffer.Allocate(GfVec3i(_width, _height, 1), HdFormatUNorm8Vec4,
+                              /*multiSampled=*/true);
         needStartRender = true;
     }
 
-    // Only start a new render if something in the scene has changed. Note:
-    // aside from efficiency, this is important for our implementation of
-    // IsConverged() to return anything meaningful; since otherwise the
-    // render thread would have an overwhelming chance of being active a few
-    // lines below where we update _converged.
-    if (needStartRender) {
-        _renderThread->StartRender();
+    // Determine whether we need to update the renderer attachments.
+    //
+    // It's possible for the passed in attachments to be empty, but that's
+    // never a legal state for the renderer, so if that's the case we add
+    // a color attachment that we can blit to the GL framebuffer. In order
+    // to check whether we need to add this color attachment, we check both
+    // the passed in attachments and also whether the renderer currently has
+    // bound attachments.
+    HdRenderPassAttachmentVector attachments =
+        renderPassState->GetAttachments();
+    if (_attachments != attachments || _renderer->GetAttachments().empty()) {
+        _attachments = attachments;
+
+        _renderThread->StopRender();
+        if (attachments.size() == 0) {
+            // No attachment means we should render to the GL colorbuffer
+            HdRenderPassAttachment cbAttach;
+            cbAttach.aovName = HdAovTokens->color;
+            cbAttach.renderBuffer = &_colorBuffer;
+            cbAttach.clearValue =
+                VtValue(GfVec4f(0.0707f, 0.0707f, 0.0707f, 1.0f));
+            attachments.push_back(cbAttach);
+        }
+        _renderer->SetAttachments(attachments);
+        // In general, the render thread clears attachments, but make sure
+        // they are cleared initially on this thread.
+        _renderer->Clear();
+        needStartRender = true;
     }
 
-    // Blit!
-    _converged = !_renderThread->IsRendering();
-    auto lock = _renderThread->LockFramebuffer();
-    _Blit(_width, _height, _renderer->GetColorBuffer());
+    // If there are no attachments, we should blit our local color buffer to
+    // the GL framebuffer.
+    if (_attachments.size() == 0) {
+        _colorBufferConverged = _colorBuffer.IsConverged();
+        _colorBuffer.Resolve();
+        uint8_t *data = _colorBuffer.Map();
+        if (data) {
+            _Blit(_width, _height, data);
+            _colorBuffer.Unmap();
+        }
+    }
+
+    // Only start a new render if something in the scene has changed.
+    if (needStartRender) {
+        _colorBufferConverged = false;
+        _renderThread->StartRender();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

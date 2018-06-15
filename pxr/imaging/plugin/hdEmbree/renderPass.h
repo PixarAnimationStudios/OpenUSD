@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hdEmbree/renderer.h"
+#include "pxr/imaging/hdEmbree/renderBuffer.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
@@ -116,8 +117,15 @@ private:
     // The projection matrix: camera space to NDC space
     GfMatrix4d _projMatrix;
 
-    // Whether the current render has converged.
-    bool _converged;
+    // The list of attachments this renderpass should write to.
+    HdRenderPassAttachmentVector _attachments;
+
+    // If no attachments are provided, provide an anonymous renderbuffer for
+    // color output.
+    HdEmbreeRenderBuffer _colorBuffer;
+
+    // Was the color buffer converged the last time we blitted it?
+    bool _colorBufferConverged;
 
     // For rendering the final result, a GL texture handle...
     GLuint _texture;

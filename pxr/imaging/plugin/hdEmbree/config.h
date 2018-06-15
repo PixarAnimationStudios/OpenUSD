@@ -71,12 +71,11 @@ public:
     /// Override with *HDEMBREE_SUBDIVISION_CACHE*.
     unsigned int subdivisionCache;
 
-    /// Should the renderpass's sampling functions use a fixed random seed?
-    /// (Helpful for things like unit tests, to get consistent results).
+    /// Should the renderpass jitter camera rays for antialiasing?
     ///
-    /// Override with *HDEMBREE_FIX_RANDOM_SEED*. Integer values greater than
+    /// Override with *HDEMBREE_JITTER_CAMERA*. Integer values greater than
     /// zero are considered "true".
-    bool fixRandomSeed;
+    bool jitterCamera;
 
     /// Should the renderpass use the color primvar, or flat white colors?
     /// (Flat white shows off ambient occlusion better).

@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdEmbree/renderer.h"
 
+#include "pxr/imaging/hdEmbree/renderBuffer.h"
 #include "pxr/imaging/hdEmbree/config.h"
 #include "pxr/imaging/hdEmbree/context.h"
 #include "pxr/imaging/hdEmbree/mesh.h"
@@ -38,12 +39,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbreeRenderer::HdEmbreeRenderer()
-    : _numSamples(0)
+    : _attachments()
+    , _attachmentsNeedValidation(false)
+    , _attachmentsValid(false)
     , _width(0)
     , _height(0)
     , _inverseViewMatrix(1.0f) // == identity
     , _inverseProjMatrix(1.0f) // == identity
-    , _clearColor(0.0707f, 0.0707f, 0.0707f)
+    , _scene(nullptr)
 {
 }
 
@@ -62,22 +65,10 @@ HdEmbreeRenderer::SetViewport(unsigned int width, unsigned int height)
 {
     _width = width;
     _height = height;
-    _sampleBuffer.resize(_width * _height * 3);
-    _colorBuffer.resize(_width * _height * 4);
 
-    // Initialize the color buffer
-    for (unsigned int i = 0; i < _width * _height; ++i) {
-        _colorBuffer[i*4+0] = (uint8_t)(255.0f*_clearColor[0]);
-        _colorBuffer[i*4+1] = (uint8_t)(255.0f*_clearColor[1]);
-        _colorBuffer[i*4+2] = (uint8_t)(255.0f*_clearColor[2]);
-        _colorBuffer[i*4+3] = 255;
-    }
-}
-
-void
-HdEmbreeRenderer::SetClearColor(const GfVec3f& clearColor)
-{
-    _clearColor = clearColor;
+    // Re-validate the attachments, since attachment viewport and
+    // render viewport need to match.
+    _attachmentsNeedValidation = true;
 }
 
 void
@@ -88,10 +79,211 @@ HdEmbreeRenderer::SetCamera(const GfMatrix4d& viewMatrix,
     _inverseProjMatrix = projMatrix.GetInverse();
 }
 
-const uint8_t*
-HdEmbreeRenderer::GetColorBuffer()
+void
+HdEmbreeRenderer::SetAttachments(
+    HdRenderPassAttachmentVector const &attachments)
 {
-    return _colorBuffer.data();
+    _attachments = attachments;
+
+    // Re-validate the attachments.
+    _attachmentsNeedValidation = true;
+}
+
+bool
+HdEmbreeRenderer::_ValidateAttachments()
+{
+    if (!_attachmentsNeedValidation) {
+        return _attachmentsValid;
+    }
+
+    _attachmentsNeedValidation = false;
+    _attachmentsValid = true;
+
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+
+        // By the time the attachment gets here, there should be a bound
+        // output buffer.
+        if (_attachments[i].renderBuffer == nullptr) {
+            TF_WARN("Aov '%s' doesn't have any renderbuffer bound",
+                    _attachments[i].aovName.GetText());
+            _attachmentsValid = false;
+            continue;
+        }
+
+        // Currently, HdEmbree only supports color, linearDepth, and primId
+        if (_attachments[i].aovName != HdAovTokens->color &&
+            _attachments[i].aovName != HdAovTokens->linearDepth &&
+            _attachments[i].aovName != HdAovTokens->primId) {
+            TF_WARN("Unsupported attachment with Aov '%s' won't be rendered to",
+                    _attachments[i].aovName.GetText());
+        }
+
+        HdFormat format = _attachments[i].renderBuffer->GetFormat();
+
+        // linearDepth is only supported for float32 attachments
+        if (_attachments[i].aovName == HdAovTokens->linearDepth &&
+            format != HdFormatFloat32) {
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _attachments[i].aovName.GetText(),
+                    TfEnum::GetName(format).c_str());
+            _attachmentsValid = false;
+        }
+
+        // primId is only supported for int32 attachments
+        if (_attachments[i].aovName == HdAovTokens->primId &&
+            format != HdFormatInt32) {
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _attachments[i].aovName.GetText(),
+                    TfEnum::GetName(format).c_str());
+            _attachmentsValid = false;
+        }
+
+        // color is only supported for vec3/vec4 attachments of float,
+        // unorm, or snorm.
+        if (_attachments[i].aovName == HdAovTokens->color) {
+            switch(format) {
+                case HdFormatUNorm8Vec4:
+                case HdFormatUNorm8Vec3:
+                case HdFormatSNorm8Vec4:
+                case HdFormatSNorm8Vec3:
+                case HdFormatFloat32Vec4:
+                case HdFormatFloat32Vec3:
+                    break;
+                default:
+                    TF_WARN("Aov '%s' has unsupported format '%s'",
+                        _attachments[i].aovName.GetText(),
+                        TfEnum::GetName(format).c_str());
+                    _attachmentsValid = false;
+                    break;
+            }
+        }
+
+        // make sure the clear value is reasonable for the format of the
+        // attached buffer.
+        if (!_attachments[i].clearValue.IsEmpty()) {
+            HdTupleType clearType =
+                HdGetValueTupleType(_attachments[i].clearValue);
+
+            // array-valued clear types aren't supported.
+            if (clearType.count != 1) {
+                TF_WARN("Aov '%s' clear value type '%s' is an array",
+                        _attachments[i].aovName.GetText(),
+                        _attachments[i].clearValue.GetTypeName().c_str());
+                _attachmentsValid = false;
+            }
+
+            // color only supports float/double vec3/4
+            if (_attachments[i].aovName == HdAovTokens->color &&
+                clearType.type != HdTypeFloatVec3 &&
+                clearType.type != HdTypeFloatVec4 &&
+                clearType.type != HdTypeDoubleVec3 &&
+                clearType.type != HdTypeDoubleVec4) {
+                TF_WARN("Aov '%s' clear value type '%s' isn't compatible",
+                        _attachments[i].aovName.GetText(),
+                        _attachments[i].clearValue.GetTypeName().c_str());
+                _attachmentsValid = false;
+            }
+
+            // only clear float formats with float, and int with int.
+            if ((format == HdFormatFloat32 && clearType.type != HdTypeFloat) ||
+                (format == HdFormatInt32 && clearType.type != HdTypeInt32)) {
+                TF_WARN("Aov '%s' clear value type '%s' isn't compatible with"
+                        " format %s",
+                        _attachments[i].aovName.GetText(),
+                        _attachments[i].clearValue.GetTypeName().c_str(),
+                        TfEnum::GetName(format).c_str());
+                _attachmentsValid = false;
+            }
+        }
+
+        // make sure the attachment and render viewports match.
+        // XXX: we could possibly relax this in the future.
+        if (_attachments[i].renderBuffer->GetWidth() != _width ||
+            _attachments[i].renderBuffer->GetHeight() != _height) {
+            TF_WARN("Aov '%s' viewport (%u, %u) doesn't match render viewport"
+                    " (%u, %u)",
+                    _attachments[i].aovName.GetText(),
+                    _attachments[i].renderBuffer->GetWidth(),
+                    _attachments[i].renderBuffer->GetHeight(),
+                    _width, _height);
+
+            // if the viewports don't match, we block rendering.
+            _attachmentsValid = false;
+        }
+    }
+
+    return _attachmentsValid;
+}
+
+/* static */
+GfVec4f
+HdEmbreeRenderer::_GetClearColor(VtValue const& clearValue)
+{
+    HdTupleType type = HdGetValueTupleType(clearValue);
+    if (type.count != 1) {
+        return GfVec4f(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    switch(type.type) {
+        case HdTypeFloatVec3:
+        {
+            GfVec3f f =
+                *(static_cast<const GfVec3f*>(HdGetValueData(clearValue)));
+            return GfVec4f(f[0], f[1], f[2], 1.0f);
+        }
+        case HdTypeFloatVec4:
+        {
+            GfVec4f f =
+                *(static_cast<const GfVec4f*>(HdGetValueData(clearValue)));
+            return GfVec4f(f[0], f[1], f[2], 1.0f);
+        }
+        case HdTypeDoubleVec3:
+        {
+            GfVec3d f =
+                *(static_cast<const GfVec3d*>(HdGetValueData(clearValue)));
+            return GfVec4f(f[0], f[1], f[2], 1.0f);
+        }
+        case HdTypeDoubleVec4:
+        {
+            GfVec4d f =
+                *(static_cast<const GfVec4d*>(HdGetValueData(clearValue)));
+            return GfVec4f(f[0], f[1], f[2], 1.0f);
+        }
+        default:
+            return GfVec4f(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+}
+
+void
+HdEmbreeRenderer::Clear()
+{
+    if (!_ValidateAttachments()) {
+        return;
+    }
+
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        if (_attachments[i].clearValue.IsEmpty()) {
+            continue;
+        }
+
+        HdEmbreeRenderBuffer *rb = 
+            static_cast<HdEmbreeRenderBuffer*>(_attachments[i].renderBuffer);
+
+        rb->Map();
+        if (_attachments[i].aovName == HdAovTokens->color) {
+            GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
+            rb->Clear(4, clearColor.data());
+        } else if (rb->GetFormat() == HdFormatInt32) {
+            int32_t clearValue = _attachments[i].clearValue.Get<int32_t>();
+            rb->Clear(1, &clearValue);
+        } else if (rb->GetFormat() == HdFormatFloat32) {
+            float clearValue = _attachments[i].clearValue.Get<float>();
+            rb->Clear(1, &clearValue);
+        } // else, _ValidateAttachments would have already warned.
+
+        rb->Unmap();
+        rb->SetConverged(false);
+    }
 }
 
 void
@@ -100,14 +292,20 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
     // Commit any pending changes to the scene.
     rtcCommit(_scene);
 
-    // Clear the sample buffer.
-    memset(_sampleBuffer.data(), 0, _width*_height*3*sizeof(float));
-    _numSamples = 0;
+    if (!_ValidateAttachments()) {
+        return;
+    }
 
     // A super simple heuristic: consider ourselves converged after N
     // samples.
     unsigned int samplesToConvergence =
         HdEmbreeConfig::GetInstance().samplesToConvergence;
+
+    // Map all of the attachments.
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        static_cast<HdEmbreeRenderBuffer*>(
+            _attachments[i].renderBuffer)->Map();
+    }
 
     // Render the image. Each pass through the loop adds a sample per pixel
     // (with jittered ray direction); the longer the loop runs, the less noisy
@@ -121,38 +319,71 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         // for loop.
         WorkParallelForN(numTilesX*numTilesY,
             std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                (i == 0) ? nullptr : renderThread,
                 std::placeholders::_1, std::placeholders::_2));
-        _numSamples++;
 
-        // Resolve the image buffer: find the average color per pixel by
-        // dividing the summed color by the number of samples;
-        // and convert the image into a GL-compatible format.
-        {
-            auto lock = renderThread->LockFramebuffer();
-            for (unsigned int i = 0; i < _width * _height; ++i) {
-                float r = 1.0f/_numSamples;
-                _colorBuffer[i*4+0] = (uint8_t)(255.0f*_sampleBuffer[i*3+0]*r);
-                _colorBuffer[i*4+1] = (uint8_t)(255.0f*_sampleBuffer[i*3+1]*r);
-                _colorBuffer[i*4+2] = (uint8_t)(255.0f*_sampleBuffer[i*3+2]*r);
-                _colorBuffer[i*4+3] = 255;
+        // After the first pass, mark the single-sampled attachments as
+        // converged and unmap them. If there are no multisampled attachments,
+        // we are done.
+        if (i == 0) {
+            bool moreWork = false;
+            for (size_t i = 0; i < _attachments.size(); ++i) {
+                HdEmbreeRenderBuffer *rb = static_cast<HdEmbreeRenderBuffer*>(
+                    _attachments[i].renderBuffer);
+                if (!rb->IsMultiSampled()) {
+                    rb->Unmap();
+                    rb->SetConverged(true);
+                } else {
+                    moreWork = true;
+                }
+            }
+            if (!moreWork) {
+                break;
             }
         }
 
+        // Cancellation point.
         if (renderThread->IsStopRequested()) {
             break;
+        }
+    }
+
+    // Mark the multisampled attachments as converged and unmap them.
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        HdEmbreeRenderBuffer *rb = static_cast<HdEmbreeRenderBuffer*>(
+            _attachments[i].renderBuffer);
+        if (rb->IsMultiSampled()) {
+            rb->Unmap();
+            rb->SetConverged(true);
         }
     }
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(size_t tileStart, size_t tileEnd)
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
+                               size_t tileStart, size_t tileEnd)
 {
     unsigned int tileSize =
         HdEmbreeConfig::GetInstance().tileSize;
     const unsigned int numTilesX = (_width + tileSize-1) / tileSize;
 
+    // Initialize the RNG for this tile (each tile creates one as
+    // a lazy way to do thread-local RNGs).
+    std::default_random_engine random(std::chrono::system_clock::now().
+                                      time_since_epoch().count());
+
+    // Create a uniform distribution for jitter calculations.
+    std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
+
+    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+
     // _RenderTiles gets a range of tiles; iterate through them.
     for (unsigned int tile = tileStart; tile < tileEnd; ++tile) {
+
+        // Cancellation point.
+        if (renderThread && renderThread->IsStopRequested()) {
+            break;
+        }
 
         // Compute the pixel location of tile boundaries.
         const unsigned int tileY = tile / numTilesX;
@@ -169,17 +400,11 @@ HdEmbreeRenderer::_RenderTiles(size_t tileStart, size_t tileEnd)
         for (unsigned int y = y0; y < y1; ++y) {
             for (unsigned int x = x0; x < x1; ++x) {
 
-                // Initialize the RNG with a fixed seed or with entropy,
-                // depending on environment settings.
-                std::default_random_engine random(0x12345678);
-                if (!HdEmbreeConfig::GetInstance().fixRandomSeed) {
-                    random.seed(std::chrono::system_clock::now().
-                        time_since_epoch().count());
-                }
-
                 // Jitter the camera ray direction.
-                std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-                GfVec2f jitter(uniform(random), uniform(random));
+                GfVec2f jitter(0.0f, 0.0f);
+                if (HdEmbreeConfig::GetInstance().jitterCamera) {
+                    jitter = GfVec2f(uniform_float(), uniform_float());
+                }
 
                 // Un-transform the pixel's NDC coordinates through the
                 // projection matrix to get the trace of the camera ray in the
@@ -207,14 +432,8 @@ HdEmbreeRenderer::_RenderTiles(size_t tileStart, size_t tileEnd)
                 origin = _inverseViewMatrix.Transform(origin);
                 dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
 
-                // Trace the ray to get pixel color.
-                GfVec3f color = _TraceRay(origin, dir);
-
-                // Add the pixel sample to the sample buffer.
-                int idx = y*_width+x;
-                _sampleBuffer[idx*3+0] += color[0];
-                _sampleBuffer[idx*3+1] += color[1];
-                _sampleBuffer[idx*3+2] += color[2];
+                // Trace the ray.
+                _TraceRay(x, y, origin, dir, uniform_float);
             }
         }
     }
@@ -240,14 +459,12 @@ _PopulateRay(RTCRay *ray, GfVec3f const& origin,
 }
 
 /// Generate a uniformly random direction ray.
-template <typename T>
 static GfVec3f
-_RandomDirection(T& random_engine)
+_RandomDirection(std::function<float()> uniform_float)
 {
     GfVec3f dir;
-    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-    float theta = 2.0f * M_PI * uniform(random_engine);
-    float phi = acosf(2.0f * uniform(random_engine) - 1.0f);
+    float theta = 2.0f * M_PI * uniform_float();
+    float phi = acosf(2.0f * uniform_float() - 1.0f);
     float sinphi = sinf(phi);
     dir[0] = cosf(theta) * sinphi;
     dir[1] = sinf(theta) * sinphi;
@@ -255,98 +472,161 @@ _RandomDirection(T& random_engine)
     return dir;
 }
 
-GfVec3f
-HdEmbreeRenderer::_TraceRay(GfVec3f const &origin, GfVec3f const &dir)
+void
+HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
+                            GfVec3f const &origin, GfVec3f const &dir,
+                            std::function<float()> uniform_float)
 {
     // Intersect the camera ray.
     RTCRay ray;
     _PopulateRay(&ray, origin, dir, 0.0f);
     rtcIntersect(_scene, ray);
 
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-        // Ray miss gets the clear color.
-        return _clearColor;
-    } else {
-        
-        // Get the instance and prototype context structures for the hit prim.
-        HdEmbreeInstanceContext *instanceContext =
-            static_cast<HdEmbreeInstanceContext*>(
-                rtcGetUserData(_scene, ray.instID));
+    // Write AOVs to attachments that aren't converged.
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        HdEmbreeRenderBuffer *renderBuffer =
+            static_cast<HdEmbreeRenderBuffer*>(_attachments[i].renderBuffer);
 
-        HdEmbreePrototypeContext *prototypeContext =
-            static_cast<HdEmbreePrototypeContext*>(
-                rtcGetUserData(instanceContext->rootScene, ray.geomID));
-
-        // Compute the worldspace location of the ray hit.
-        GfVec3f hitPos = GfVec3f(ray.org[0] + ray.tfar * ray.dir[0],
-                                 ray.org[1] + ray.tfar * ray.dir[1],
-                                 ray.org[2] + ray.tfar * ray.dir[2]);
-
-        // If a normal primvar is present (e.g. from smooth shading), use that
-        // for shading; otherwise use the flat face normal.
-        GfVec3f normal = -GfVec3f(ray.Ng[0], ray.Ng[1], ray.Ng[2]);
-        if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
-            prototypeContext->primvarMap[HdTokens->normals]->Sample(
-                ray.primID, ray.u, ray.v, &normal);
+        if (renderBuffer->IsConverged()) {
+            continue;
         }
 
-        // If a color primvar is present, use that as diffuse color; otherwise,
-        // use flat white.
-        GfVec4f color = GfVec4f(1.0f, 1.0f, 1.0f, 1.0f);
-        if (HdEmbreeConfig::GetInstance().useFaceColors &&
+        if (_attachments[i].aovName == HdAovTokens->color) {
+            GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
+            GfVec4f sample = _ComputeColor(ray, uniform_float, clearColor);
+            renderBuffer->Write(GfVec3i(x,y,1), 4, sample.data());
+        } else if (_attachments[i].aovName == HdAovTokens->linearDepth &&
+                   renderBuffer->GetFormat() == HdFormatFloat32) {
+            float depth;
+            if(_ComputeDepth(ray, &depth)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 1, &depth);
+            }
+        } else if (_attachments[i].aovName == HdAovTokens->primId &&
+                   renderBuffer->GetFormat() == HdFormatInt32) {
+            int32_t primId;
+            if (_ComputePrimId(ray, &primId)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 1, &primId);
+            }
+        }
+    }
+}
+
+bool
+HdEmbreeRenderer::_ComputePrimId(RTCRay const& rayHit,
+                                 int32_t *primId)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    // Get the instance and prototype context structures for the hit prim.
+    HdEmbreeInstanceContext *instanceContext =
+        static_cast<HdEmbreeInstanceContext*>(
+            rtcGetUserData(_scene, rayHit.instID));
+
+    HdEmbreePrototypeContext *prototypeContext =
+        static_cast<HdEmbreePrototypeContext*>(
+            rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
+
+    *primId = prototypeContext->rprim->GetPrimId();
+    return true;
+}
+
+bool
+HdEmbreeRenderer::_ComputeDepth(RTCRay const& rayHit,
+                                float *depth)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    *depth = rayHit.tfar;
+    return true;
+}
+
+GfVec4f
+HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
+                                std::function<float()> uniform_float,
+                                GfVec4f const& clearColor)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return clearColor;
+    }
+
+    // Get the instance and prototype context structures for the hit prim.
+    HdEmbreeInstanceContext *instanceContext =
+        static_cast<HdEmbreeInstanceContext*>(
+                rtcGetUserData(_scene, rayHit.instID));
+
+    HdEmbreePrototypeContext *prototypeContext =
+        static_cast<HdEmbreePrototypeContext*>(
+                rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
+
+    // Compute the worldspace location of the rayHit hit.
+    GfVec3f hitPos = GfVec3f(rayHit.org[0] + rayHit.tfar * rayHit.dir[0],
+            rayHit.org[1] + rayHit.tfar * rayHit.dir[1],
+            rayHit.org[2] + rayHit.tfar * rayHit.dir[2]);
+
+    // If a normal primvar is present (e.g. from smooth shading), use that
+    // for shading; otherwise use the flat face normal.
+    GfVec3f normal = -GfVec3f(rayHit.Ng[0], rayHit.Ng[1], rayHit.Ng[2]);
+    if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
+        prototypeContext->primvarMap[HdTokens->normals]->Sample(
+                rayHit.primID, rayHit.u, rayHit.v, &normal);
+    }
+
+    // If a color primvar is present, use that as diffuse color; otherwise,
+    // use flat white.
+    GfVec4f color = GfVec4f(1.0f, 1.0f, 1.0f, 1.0f);
+    if (HdEmbreeConfig::GetInstance().useFaceColors &&
             prototypeContext->primvarMap.count(HdTokens->color) > 0) {
-            prototypeContext->primvarMap[HdTokens->color]->Sample(
-                ray.primID, ray.u, ray.v, &color);
-        }
+        prototypeContext->primvarMap[HdTokens->color]->Sample(
+                rayHit.primID, rayHit.u, rayHit.v, &color);
+    }
 
-        // Transform the normal from object space to world space.
-        GfVec4f expandedNormal(normal[0], normal[1], normal[2], 0.0f);
-        expandedNormal = expandedNormal * instanceContext->objectToWorldMatrix;
-        normal = GfVec3f(expandedNormal[0], expandedNormal[1],
+    // Transform the normal from object space to world space.
+    GfVec4f expandedNormal(normal[0], normal[1], normal[2], 0.0f);
+    expandedNormal = expandedNormal * instanceContext->objectToWorldMatrix;
+    normal = GfVec3f(expandedNormal[0], expandedNormal[1],
             expandedNormal[2]);
 
-        // Make sure the normal is unit-length.
-        normal.Normalize();
+    // Make sure the normal is unit-length.
+    normal.Normalize();
 
-        // Lighting model: (camera dot normal), i.e. diffuse-only point light
-        // centered on the camera.
-        float diffuseLight = fabs(GfDot(-dir, normal)) *
-            HdEmbreeConfig::GetInstance().cameraLightIntensity;
+    // Lighting model: (camera dot normal), i.e. diffuse-only point light
+    // centered on the camera.
+    GfVec3f dir = GfVec3f(rayHit.dir[0], rayHit.dir[1], rayHit.dir[2]);
+    float diffuseLight = fabs(GfDot(-dir, normal)) *
+        HdEmbreeConfig::GetInstance().cameraLightIntensity;
 
-        // Lighting gets modulated by an ambient occlusion term.
-        float aoLightIntensity =
-            (1.0f - _ComputeAmbientOcclusion(hitPos, normal));
-            
-        // Return color.xyz * diffuseLight * aoLightIntensity.
-        // XXX: Transparency?
-        GfVec3f finalColor = GfVec3f(color[0], color[1], color[2]) *
-            diffuseLight * aoLightIntensity;
+    // Lighting gets modulated by an ambient occlusion term.
+    float aoLightIntensity =
+        (1.0f - _ComputeAmbientOcclusion(hitPos, normal, uniform_float));
 
-        // Clamp colors to [0,1].
-        finalColor[0] = std::max(0.0f, std::min(1.0f, finalColor[0]));
-        finalColor[1] = std::max(0.0f, std::min(1.0f, finalColor[1]));
-        finalColor[2] = std::max(0.0f, std::min(1.0f, finalColor[2]));
-        return finalColor;
-    }
+    // Return color.xyz * diffuseLight * aoLightIntensity.
+    // XXX: Transparency?
+    GfVec3f finalColor = GfVec3f(color[0], color[1], color[2]) *
+        diffuseLight * aoLightIntensity;
+
+    // Clamp colors to [0,1].
+    GfVec4f output;
+    output[0] = std::max(0.0f, std::min(1.0f, finalColor[0]));
+    output[1] = std::max(0.0f, std::min(1.0f, finalColor[1]));
+    output[2] = std::max(0.0f, std::min(1.0f, finalColor[2]));
+    output[3] = 1.0f;
+    return output;
 }
 
 float
 HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
-                                           GfVec3f const& normal)
+                                           GfVec3f const& normal,
+                                           std::function<float()> uniform_float)
 {
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     unsigned int ambientOcclusionSamples =
         HdEmbreeConfig::GetInstance().ambientOcclusionSamples;
     if (ambientOcclusionSamples < 1) {
         return 0.0f;
-    }
-
-    // Initialize the RNG with a fixed seed or with entropy, depending on
-    // environment settings.
-    std::default_random_engine random(0x12345678);
-    if (!HdEmbreeConfig::GetInstance().fixRandomSeed) {
-        random.seed(std::chrono::system_clock::now().
-            time_since_epoch().count());
     }
 
     float occlusionFactor = 0.0f;
@@ -357,7 +637,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     for (unsigned int i = 0; i < ambientOcclusionSamples; i++)
     {
         // We sample in the hemisphere centered on the face normal.
-        GfVec3f shadowDir = _RandomDirection(random);
+        GfVec3f shadowDir = _RandomDirection(uniform_float);
         if (GfDot(shadowDir, normal) < 0) shadowDir = -shadowDir;
 
         // Trace shadow ray, using the fast interface (rtcOccluded) since

@@ -33,6 +33,7 @@ pxr_plugin(hdEmbree
         instancer
         mesh
         meshSamplers
+        renderBuffer
         renderer
         rendererPlugin
         renderDelegate

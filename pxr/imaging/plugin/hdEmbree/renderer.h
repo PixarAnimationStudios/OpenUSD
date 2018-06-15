@@ -27,10 +27,12 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/renderThread.h"
+#include "pxr/imaging/hd/renderPassState.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
 #include <embree2/rtcore.h>
+#include <embree2/rtcore_ray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,18 +64,20 @@ public:
     ///   \param height The new viewport height.
     void SetViewport(unsigned int width, unsigned int height);
 
-    /// Set the clear color.
-    ///   \param clearColor The color to use for a camera ray miss.
-    void SetClearColor(const GfVec3f& clearColor);
-
     /// Set the camera to use for rendering.
     ///   \param viewMatrix The camera's world-to-view matrix.
     ///   \param projMatrix The camera's view-to-NDC projection matrix.
     void SetCamera(const GfMatrix4d& viewMatrix, const GfMatrix4d& projMatrix);
 
-    /// Return the color buffer with the current partial or final frame.
-    ///   \return A pointer to color data.
-    const uint8_t* GetColorBuffer();
+    /// Set the attachments to use for rendering.
+    ///   \param attachments A list of attachments.
+    void SetAttachments(HdRenderPassAttachmentVector const &attachments);
+
+    /// Get the attachments being used for rendering.
+    ///   \return the currently bound attachments.
+    HdRenderPassAttachmentVector const& GetAttachments() const {
+        return _attachments;
+    }
 
     /// Rendering entrypoint: add one sample per pixel to the whole sample
     /// buffer, and then loop until the image is converged.  After each pass,
@@ -82,16 +86,44 @@ public:
     ///                       for cancellation and locking the color buffer.
     void Render(HdRenderThread *renderThread);
 
+    /// Clear the bound attachments (typically before rendering).
+    void Clear();
+
 private:
+    // Validate the internal consistency of attachments provided to
+    // SetAttachments. If the attachments are invalid, this will issue
+    // appropriate warnings. If the function returns false, Render() will fail
+    // early.
+    //
+    // This function thunks itself using _attachmentsNeedValidation and
+    // _attachmentsValid.
+    //   \return True if the attachments are valid for rendering.
+    bool _ValidateAttachments();
+
+    // Return the clear color to use for the given VtValue.
+    static GfVec4f _GetClearColor(VtValue const& clearValue);
+
     // Render square tiles of pixels. This function is one unit of threadpool
     // work. For each tile, iterate over pixels in the tile, generating camera
     // rays, and following them/calculating color with _TraceRay. This function
     // renders all tiles between tileStart and tileEnd.
-    void _RenderTiles(size_t tileStart, size_t tileEnd);
+    void _RenderTiles(HdRenderThread *renderThread,
+                      size_t tileStart, size_t tileEnd);
 
-    // Cast a ray into the scene and if it hits an object, return the
-    // computed color; otherwise return _clearColor.
-    GfVec3f _TraceRay(GfVec3f const& origin, GfVec3f const& dir);
+    // Cast a ray into the scene and if it hits an object, write to the bound
+    // attachments.
+    void _TraceRay(unsigned int x, unsigned int y,
+                   GfVec3f const& origin, GfVec3f const& dir,
+                   std::function<float()> uniform_float);
+
+    // Compute the color at the given ray hit.
+    GfVec4f _ComputeColor(RTCRay const& rayHit,
+                          std::function<float()> uniform_float,
+                          GfVec4f const& clearColor);
+    // Compute the depth at the given ray hit.
+    bool _ComputeDepth(RTCRay const& rayHit, float *depth);
+    // Compute the prim ID at the given ray hit.
+    bool _ComputePrimId(RTCRay const& rayHit, int32_t *primId);
 
     // Compute the ambient occlusion term at a given point by firing rays
     // from "position" in the hemisphere centered on "normal"; the occlusion
@@ -100,19 +132,16 @@ private:
     // Modulating surface color by (1 - occlusionFactor) is similar to taking
     // the light contribution of an infinitely far, pure white dome light.
     float _ComputeAmbientOcclusion(GfVec3f const& position,
-                                   GfVec3f const& normal);
+                                   GfVec3f const& normal,
+                                   std::function<float()> uniform_float);
 
-    // The output buffer for the raytracing algorithm. If pixel is
-    // &_sampleBuffer[y*_width+x], then pixel[0-2] represent accumulated R,G,B
-    // values, over a number of render passes stored in numSamples; the average
-    // color value is then pixel[0-2] / numSamples.
-    std::vector<float> _sampleBuffer;
-    // The number of samples (per pixel) in _sampleBuffer.
-    unsigned int _numSamples;
+    // The bound attachments for this renderer.
+    HdRenderPassAttachmentVector _attachments;
 
-    // The resolved output buffer, in GL_RGBA. This is an intermediate between
-    // _sampleBuffer and the GL framebuffer.
-    std::vector<uint8_t> _colorBuffer;
+    // Do the attachments need to be re-validated?
+    bool _attachmentsNeedValidation;
+    // Are the attachments valid?
+    bool _attachmentsValid;
 
     // The width of the viewport we're rendering into.
     unsigned int _width;
@@ -123,9 +152,6 @@ private:
     GfMatrix4d _inverseViewMatrix;
     // The inverse projection matrix: NDC space to camera space.
     GfMatrix4d _inverseProjMatrix;
-
-    // The color of a ray miss.
-    GfVec3f _clearColor;
 
     // Our handle to the embree scene.
     RTCScene _scene;
