@@ -33,6 +33,7 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/base/arch/fileSystem.h"
 

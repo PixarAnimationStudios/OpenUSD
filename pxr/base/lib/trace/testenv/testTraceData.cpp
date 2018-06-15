@@ -26,6 +26,7 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/eventNode.h"
 #include "pxr/base/js/json.h"
+#include "pxr/base/tf/stringUtils.h"
 #include <iostream>
 
 #include <boost/preprocessor/punctuation/comma.hpp>

@@ -28,6 +28,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

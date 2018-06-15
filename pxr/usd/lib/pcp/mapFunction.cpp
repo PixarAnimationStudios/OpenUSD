@@ -29,6 +29,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <limits>
 

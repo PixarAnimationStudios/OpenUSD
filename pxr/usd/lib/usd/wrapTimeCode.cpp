@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/timeCode.h"
 
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/implicit.hpp>

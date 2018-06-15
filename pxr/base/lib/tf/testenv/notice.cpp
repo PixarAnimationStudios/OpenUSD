@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/notice.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/weakBase.h"

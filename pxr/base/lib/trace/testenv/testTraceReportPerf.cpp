@@ -28,6 +28,7 @@
 #include "pxr/base/trace/reporterDataSourceCollector.h"
 #include "pxr/base/trace/reporterDataSourceCollection.h"
 #include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <iostream>
 

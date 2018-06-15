@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "streamIO.h"
 #include "stream.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/iterator.hpp>

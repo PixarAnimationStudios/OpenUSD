@@ -28,6 +28,8 @@
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
+#include "pxr/base/tf/stringUtils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

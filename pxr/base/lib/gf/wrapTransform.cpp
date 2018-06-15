@@ -28,6 +28,7 @@
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/vec3d.h"
 
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 

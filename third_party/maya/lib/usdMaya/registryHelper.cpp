@@ -31,6 +31,7 @@
 #include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <maya/MGlobal.h>
 

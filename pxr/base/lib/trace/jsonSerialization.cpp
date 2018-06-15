@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/utils.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/base/trace/eventData.h"
 #include "pxr/base/trace/eventTreeBuilder.h"
