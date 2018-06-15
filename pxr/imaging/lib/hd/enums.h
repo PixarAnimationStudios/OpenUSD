@@ -239,43 +239,6 @@ enum HdMagFilter
     HdMagFilterLinear,
 };
 
-/// \enum HdFormat
-///
-/// Enumerates formats to be used when creating buffers.
-///
-/// Format names follow the general pattern:
-///
-///   Channel identifier, bit precision, type.
-///
-/// with the channel in the lowest bit coming first. This is the same general
-/// naming convention as Vulkan and DXGI
-///
-enum HdFormat
-{
-    HdFormatR8UNorm,
-    HdFormatR8SNorm,
-
-    HdFormatR8G8UNorm,
-    HdFormatR8G8SNorm,
-
-    HdFormatR8G8B8UNorm,
-    HdFormatR8G8B8SNorm,
-
-    HdFormatR8G8B8A8UNorm,
-    HdFormatR8G8B8A8SNorm,
-
-    HdFormatR32Float,
-
-    HdFormatR32G32Float,
-
-    HdFormatR32G32B32Float,
-
-    HdFormatR32G32B32A32Float,
-
-    HdFormatCount,
-    HdFormatUnknown = -1
-};
-
 ///
 /// \enum HdInterpolation
 ///

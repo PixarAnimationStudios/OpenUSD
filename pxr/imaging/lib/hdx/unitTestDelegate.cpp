@@ -264,7 +264,7 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
 
     HdStDrawTargetAttachmentDescArray attachments;
     attachments.AddAttachment("color",
-                              HdFormatR8G8B8A8UNorm,
+                              HdFormatUNorm8Vec4,
                               VtValue(GfVec4f(1,1,0,1)),
                               HdWrapRepeat,
                               HdWrapRepeat,

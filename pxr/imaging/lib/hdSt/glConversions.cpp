@@ -38,25 +38,25 @@ struct _FormatDesc {
 static const _FormatDesc FORMAT_DESC[] =
 {
     // format,  type,          internal format
-    {GL_RED,  GL_UNSIGNED_BYTE, GL_RED},     // HdFormatR8UNorm,
-    {GL_RED,  GL_BYTE,          GL_R8},      // HdFormatR8SNorm.
+    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8},      // HdFormatUNorm8,
+    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8},     // HdFormatUNorm8Vec2,
+    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8},    // HdFormatUNorm8Vec3,
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8},   // HdFormatUNorm8Vec4,
 
-    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8},     // HdFormatR8G8UNorm,
-    {GL_RG,   GL_BYTE,          GL_RG8},     // HdFormatR8G8SNorm,
+    {GL_RED,  GL_BYTE,          GL_R8_SNORM},      // HdFormatSNorm8,
+    {GL_RG,   GL_BYTE,          GL_RG8_SNORM},     // HdFormatSNorm8Vec2,
+    {GL_RGB,  GL_BYTE,          GL_RGB8_SNORM},    // HdFormatSNorm8Vec3,
+    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM},   // HdFormatSNorm8Vec4,
 
-    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8},    // HdFormatR8G8B8UNorm,
-    {GL_RGB,  GL_BYTE,          GL_RGB8},    // HdFormatR8G8B8SNorm,
+    {GL_RED,  GL_FLOAT,         GL_R32F},    // HdFormatFloat32,
+    {GL_RG,   GL_FLOAT,         GL_RG32F},   // HdFormatFloat32Vec2,
+    {GL_RGB,  GL_FLOAT,         GL_RGB32F},  // HdFormatFloat32Vec3,
+    {GL_RGBA, GL_FLOAT,         GL_RGBA32F}, // HdFormatFloat32Vec4,
 
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8},   // HdFormatR8G8B8A8UNorm,
-    {GL_RGBA, GL_BYTE,          GL_RGBA8},   // HdFormatR8G8B8A8SNorm,
-
-    {GL_RED,  GL_FLOAT,         GL_R32F},    // HdFormatR32Float,
-
-    {GL_RG,   GL_FLOAT,         GL_RG32F},   // HdFormatR32G32Float,
-
-    {GL_RGB,  GL_FLOAT,         GL_RGB32F},  // HdFormatR32G32B32Float,
-
-    {GL_RGBA,  GL_FLOAT,        GL_RGBA32F}, // HdFormatR32G32B32A32Float,
+    {GL_RED,  GL_INT,           GL_R32I},    // HdFormatInt32,
+    {GL_RG,   GL_INT,           GL_RG32I},   // HdFormatInt32Vec2,
+    {GL_RGB,  GL_INT,           GL_RGB32I},  // HdFormatInt32Vec3,
+    {GL_RGBA, GL_INT,           GL_RGBA32I}, // HdFormatInt32Vec4,
 };
 static_assert(TfArraySize(FORMAT_DESC) ==  HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
 
