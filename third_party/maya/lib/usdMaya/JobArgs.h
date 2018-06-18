@@ -67,6 +67,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
+    (exportReferenceObjects) \
     (kind) \
     (materialCollectionsPath) \
     (melPerFrameCallback) \
@@ -120,6 +121,7 @@ struct JobExportArgs
     const bool exportMeshUVs;
     const bool exportNurbsExplicitUV;
     const bool exportRefsAsInstanceable;
+    const bool exportReferenceObjects;
     const TfToken exportSkin;
     const bool exportVisibility;
     const SdfPath materialCollectionsPath;

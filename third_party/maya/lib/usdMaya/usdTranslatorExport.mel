@@ -138,6 +138,7 @@ global proc int usdTranslatorExport (string $parent,
         checkBox -l "Export UVs" exportUVsCheckBox;
 
         checkBox -l "Export ColorSets" exportColorSetsCheckBox;
+        checkBox -l "Export Reference Objects" exportReferenceObjectsCheckBox;
 
         checkBox -l "Export Visibility" exportVisibilityCheckBox;
 
@@ -198,6 +199,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportCollectionBasedBindingsCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
+                } else if ($optionBreakDown[0] == "exportReferenceObjects") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferenceObjectsCheckBox");
                 } else if ($optionBreakDown[0] == "renderableOnly") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "renderableOnlyCheckBox");
                 } else if ($optionBreakDown[0] == "defaultCameras") {
@@ -245,6 +248,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportCollectionBasedBindings", "exportCollectionBasedBindingsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferenceObjects", "exportReferenceObjectsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "defaultCameras", "defaultCamerasCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "renderLayerMode", "renderLayerModePopup");
