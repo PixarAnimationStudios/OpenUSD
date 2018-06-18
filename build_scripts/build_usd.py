@@ -699,7 +699,7 @@ PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
+OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.19.zip"
 
 def InstallOpenImageIO(context, force):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
