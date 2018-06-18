@@ -38,6 +38,7 @@ import subprocess
 import sys
 import tarfile
 import io
+import sysconfig
 try:
     import urllib2 as urllib
 except ImportError:
@@ -1210,6 +1211,18 @@ if extraPaths:
 if extraPythonPaths:
     paths = os.environ.get('PYTHONPATH', '').split(os.pathsep) + extraPythonPaths
     os.environ['PYTHONPATH'] = os.pathsep.join(paths)
+
+# Update CPLUS_INCLUDE_PATHS for Boost to include Python include path by default.
+# This helps with multiple interpreters where a user cannot define a single include path.
+# Appends the current interpreters include paths.
+# This should cause no issues at is appended so any user set values will win.
+if context.buildPython:
+    pyInclude = sysconfig.get_paths().get('include','')
+    if pyInclude:
+        paths = os.getenv('CPLUS_INCLUDE_PATH', '').split(os.pathsep)
+        paths.append(pyInclude)
+        os.environ['CPLUS_INCLUDE_PATH'] = os.pathsep.join(paths)
+
 
 # Determine list of dependencies that are required based on options
 # user has selected.
