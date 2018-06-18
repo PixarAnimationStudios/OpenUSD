@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import io
 try:
     import urllib2 as urllib
 except ImportError:
@@ -125,9 +126,9 @@ def Run(cmd, logCommandOutput = True):
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
                                  stderr=subprocess.STDOUT)
             while True:
-                l = p.stdout.readline()
+                l = p.stdout.readline().decode('utf-8')
                 if l != "":
-                    logfile.write(l.decode('utf-8'))
+                    logfile.write(l)
                     PrintCommandOutput(l)
                 elif p.poll() is not None:
                     break
@@ -232,7 +233,8 @@ def RunCMake(context, force, extraArgs = None):
 def PatchFile(filename, patches):
     """Applies patches to the specified file. patches is a list of tuples
     (old string, new string)."""
-    oldLines = open(filename, 'r').readlines()
+    with io.open(filename, 'r', encoding='utf-8') as f:
+        oldLines = f.readlines()
     newLines = oldLines
     for (oldLine, newLine) in patches:
         newLines = [s.replace(oldLine, newLine) for s in newLines]
@@ -240,7 +242,8 @@ def PatchFile(filename, patches):
         PrintInfo("Patching file {filename} (original in {oldFilename})..."
                   .format(filename=filename, oldFilename=filename + ".old"))
         shutil.copy(filename, filename + ".old")
-        open(filename, 'w').writelines(newLines)
+        with io.open(filename, 'w', encoding='utf-8') as f:
+            f.writelines(newLines)
 
 def DownloadURL(url, context, force, dontExtract = None):
     """Download and extract the archive file at given URL to the
