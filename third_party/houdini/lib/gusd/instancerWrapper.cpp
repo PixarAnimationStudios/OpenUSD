@@ -1503,11 +1503,25 @@ GusdInstancerWrapper::unpack(
     if( !m_usdPointInstancer.ComputeInstanceTransformsAtTime( &frames,
                                                         UsdTimeCode(frame),
                                                         UsdTimeCode(frame),
-                                                        UsdGeomPointInstancer::ProtoXformInclusion::IncludeProtoXform,
+                                                        UsdGeomPointInstancer::ProtoXformInclusion::ExcludeProtoXform,
                                                         UsdGeomPointInstancer::MaskApplication::IgnoreMask  ) )
     {
         TF_WARN( "ComputeFrames failed" );
         return false;
+    }
+
+    // Prefetch the local transformations for each prototype to set the pivot.
+    std::vector<UT_Matrix4D> protoXforms;
+    protoXforms.assign(targets.size(), UT_Matrix4D(1.0));
+    for( size_t i = 0; i < targets.size(); ++ i ) {
+        UsdPrim protoPrim = usdPrim.GetStage()->GetPrimAtPath(targets[i]);
+        if( protoPrim.IsA<UsdGeomImageable>() )
+        {
+            UT_Matrix4D protoXform;
+            GusdUSD_XformCache::GetInstance().GetLocalTransformation( 
+                 protoPrim, UsdTimeCode( frame ), protoXform );
+            protoXforms[i] = protoXform;
+        }
     }
 
     if( indices.size() != frames.size() )
@@ -1547,12 +1561,17 @@ GusdInstancerWrapper::unpack(
                                      viewportLod,
                                      purposes );
 
+        const UT_Matrix4D &protoXform = protoXforms[idx];
+        UT_Vector3D protoTranslates;
+        protoXform.getTranslates( protoTranslates );
+
         UT_Matrix4D m = GusdUT_Gf::Cast( frames[i] ) * xform;
-        UT_Vector3D p;
-        m.getTranslates( p );
+        UT_Vector3D pos;
+        m.getTranslates( pos );
         
         guPrim->setLocalTransform( UT_Matrix3D( m ) );
-        guPrim->setPos3(0,p);
+        guPrim->setPivot(-protoTranslates);
+        guPrim->setPos3(0,pos);
 
         if( i == 0 ) {
             start = guPrim->getPointOffset( 0 );
