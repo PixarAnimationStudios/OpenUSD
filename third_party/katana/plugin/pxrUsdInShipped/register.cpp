@@ -26,6 +26,7 @@
 #include <FnGeolib/op/FnGeolibOp.h>
 
 #include "pxr/pxr.h"
+#include "usdKatana/bootstrap.h"
 #include "usdKatana/usdInPluginRegistry.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -143,4 +144,6 @@ void registerPlugins()
 
     REGISTER_PLUGIN(MaterialReferenceAttrFnc, "PxrUsdInMaterialReference", 0, 1);
     REGISTER_PLUGIN(LibraryMaterialNamesAttrFnc, "PxrUsdInLibraryMaterialNames", 0, 1);
+
+    PxrUsdKatanaBootstrap();
 }

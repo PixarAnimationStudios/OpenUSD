@@ -28,6 +28,7 @@
 #   include <FnPlatform/Windows.h>
 #endif
 #include "usdKatana/blindDataObject.h"
+#include "usdKatana/bootstrap.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
 #include "usdKatana/readBlindData.h"
@@ -1328,5 +1329,6 @@ void registerPlugins()
     REGISTER_PLUGIN(FlushStageFnc,
         "PxrUsdIn.FlushStage", 0, 1);
     
-    
+ 
+    PxrUsdKatanaBootstrap();
 }

@@ -64,6 +64,11 @@ void* TfDlopen(const std::string &filename,
 TF_API
 int TfDlclose(void* handle);
 
+/// Retrieves the address of an exported symbol from the specified
+/// dynamic library.
+TF_API
+void* TfDlfindSymbol(void* handle, char const* name);
+
 /// \private
 TF_API
 bool Tf_DlOpenIsActive();

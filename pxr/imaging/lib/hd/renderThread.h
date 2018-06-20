@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 
 #include <atomic>
+#include <functional>
 #include <condition_variable>
 #include <mutex>
 #include <thread>

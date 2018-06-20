@@ -112,4 +112,9 @@ TfDlclose(void* handle)
     return status;
 }
 
+void* TfDlfindSymbol(void* handle, char const* name)
+{
+    return ArchLibraryFindSymbol(handle, name);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

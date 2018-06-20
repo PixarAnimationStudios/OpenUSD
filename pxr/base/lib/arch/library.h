@@ -75,6 +75,11 @@ std::string ArchLibraryError();
 ARCH_API
 int ArchLibraryClose(void* handle);
 
+/// Retrieves the address of an exported symbol from the specified
+/// dynamic library.
+ARCH_API
+void* ArchLibraryFindSymbol(void* handle, char const* name);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_LIBRARY_H

@@ -36,6 +36,7 @@ pxr_shared_library(${PXR_PACKAGE}
         attrMap
         baseMaterialHelpers
         blindDataObject
+        bootstrap
         cache
         debugCodes
         locks

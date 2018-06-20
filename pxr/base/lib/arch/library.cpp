@@ -85,4 +85,13 @@ int ArchLibraryClose(void* handle)
     return status;
 }
 
+void* ArchLibraryFindSymbol(void* handle, char const* name)
+{
+#if defined(ARCH_OS_WINDOWS)
+    return GetProcAddress(reinterpret_cast<HMODULE>(handle), name);
+#else
+    return dlsym(handle, name);
+#endif
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

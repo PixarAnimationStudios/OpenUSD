@@ -51,10 +51,6 @@ class PxrUsdKatanaAttrMap
 {
 
 public:
-    USDKATANA_API
-    PxrUsdKatanaAttrMap(FnPluginHost* host =
-                                    FnPluginManager::PluginManager::getHost());
-
     /// Configure this object to evaluate USD attributes at the given time.
     void SetUSDTimeCode(UsdTimeCode timeCode) {
         _usdTimeCode = timeCode;

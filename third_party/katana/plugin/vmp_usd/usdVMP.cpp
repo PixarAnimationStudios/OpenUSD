@@ -24,6 +24,7 @@
 #include "usdVMP.h"
 
 #include "pxr/pxr.h"
+#include "usdKatana/bootstrap.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
 #include "pxr/base/work/threadLimits.h"
@@ -427,6 +428,8 @@ DEFINE_VMP_PLUGIN(USDVMP)
 void registerPlugins()
 {
     REGISTER_PLUGIN(USDVMP, "USDVMP", 0, 1);
+
+    PxrUsdKatanaBootstrap();
 }
 
 // End
