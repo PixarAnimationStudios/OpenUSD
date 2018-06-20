@@ -37,7 +37,6 @@
 #include <maya/MFnMeshData.h>
 #include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
-#include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
@@ -99,9 +98,9 @@ PxrUsdMayaTranslatorMaterial::Read(
                 ).GetName().GetString();
 
         if (!status) {
-            MGlobal::displayError(TfStringPrintf(
-                        "Failed to make shadingEngine for %s\n", 
-                        shadingEngineName.c_str()).c_str());
+            TF_RUNTIME_ERROR(
+                        "Failed to make shadingEngine for %s", 
+                        shadingEngineName.c_str());
             return shadingEngine;
         }
         fnSet.setName(MString(shadingEngineName.c_str()),
@@ -130,7 +129,7 @@ _AssignMaterialFaceSet(const MObject &shadingEngine,
     MObject faceComp = compFn.create(
         MFn::kMeshPolygonComponent, &status);
     if (!status) {
-        MGlobal::displayError("Failed to create face component.");
+        TF_RUNTIME_ERROR("Failed to create face component.");
         return false;
     }
 
@@ -144,9 +143,9 @@ _AssignMaterialFaceSet(const MObject &shadingEngine,
     if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
         status = seFnSet.addMember(shapeDagPath, faceComp);
         if (!status) {
-            MGlobal::displayError(TfStringPrintf("Could not"
-                " add component to shadingEngine %s.", 
-                seFnSet.name().asChar()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Could not add component to shadingEngine %s.", 
+                    seFnSet.name().asChar());
             return false;
         }
     }
@@ -202,8 +201,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
             status = seFnSet.addMember(shapeObj);
             if (!status) {
-                MGlobal::displayError("Could not add shapeObj to "
-                                      "shadingEngine.\n");
+                TF_RUNTIME_ERROR(
+                        "Could not add shadingEngine for '%s'.",
+                        shapeDagPath.fullPathName().asChar());
             }
         }
 
@@ -221,9 +221,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         }
 
         if (faceCount == 0) {
-            MGlobal::displayError(TfStringPrintf("Unable to get face count "
-                "for gprim at path <%s>.", 
-                primSchema.GetPath().GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Unable to get face count for gprim at path <%s>.", 
+                    primSchema.GetPath().GetText());
             return false;
         }
 
@@ -233,9 +233,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
             faceSubsets, faceCount, UsdGeomTokens->partition, 
             &reasonWhyNotPartition);
         if (!validPartition) {
-            MGlobal::displayWarning(TfStringPrintf("face-subsets on <%s> don't "
-                "form a valid partition: %s", primSchema.GetPath().GetText(), 
-                reasonWhyNotPartition.c_str()).c_str());
+            TF_WARN("Face-subsets on <%s> don't form a valid partition: %s",
+                    primSchema.GetPath().GetText(), 
+                    reasonWhyNotPartition.c_str());
 
             VtIntArray unassignedIndices = 
                 UsdGeomSubset::GetUnassignedIndices(faceSubsets, faceCount);
@@ -287,18 +287,17 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         if (!materialFaceSet.GetBindingTargets(&bindingTargets) ||
             bindingTargets.empty()) {
                 
-            MGlobal::displayWarning(TfStringPrintf("No bindings found on "
-                "material faceSet at path <%s>.",
-                primSchema.GetPath().GetText()).c_str());
+            TF_WARN("No bindings found on material faceSet at path <%s>.",
+                    primSchema.GetPath().GetText());
             // No bindings to export in the material faceSet.
             return false;
         }
 
         std::string reason;
         if (!materialFaceSet.Validate(&reason)) {
-            MGlobal::displayWarning(TfStringPrintf("Invalid faceSet data "
-                "found on <%s>: %s", primSchema.GetPath().GetText(), 
-                reason.c_str()).c_str());
+            TF_WARN("Invalid faceSet data found on <%s>: %s",
+                    primSchema.GetPath().GetText(), 
+                    reason.c_str());
             return false;
         }
 
@@ -308,9 +307,8 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         materialFaceSet.GetFaceIndices(&faceIndices);
 
         if (!isPartition) {
-            MGlobal::displayWarning(TfStringPrintf("Invalid faceSet data "
-                "found on <%s>: Not a partition.", 
-                primSchema.GetPath().GetText()).c_str());
+            TF_WARN("Invalid faceSet data found on <%s>: Not a partition.", 
+                    primSchema.GetPath().GetText());
             return false;
         }
 
@@ -408,8 +406,7 @@ PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
         }
     }
     else {
-        MGlobal::displayError(TfStringPrintf("No shadingMode '%s' found.",
-                    shadingMode.GetText()).c_str());
+        TF_RUNTIME_ERROR("No shadingMode '%s' found.", shadingMode.GetText());
     }
 }
 

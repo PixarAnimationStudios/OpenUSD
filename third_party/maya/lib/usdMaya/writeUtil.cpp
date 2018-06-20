@@ -31,7 +31,6 @@
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/rotation.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/tf/envSetting.h"
@@ -64,7 +63,6 @@
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MFnAttribute.h>
-#include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
@@ -334,10 +332,10 @@ PxrUsdMayaWriteUtil::GetOrCreateUsdAttr(
 
     TfToken usdAttrNameToken(attrName);
     if (usdAttrNameToken.IsEmpty()) {
-        MGlobal::displayError(
-            TfStringPrintf("Invalid USD attribute name '%s' for Maya plug '%s'",
-                           attrName.c_str(),
-                           attrPlug.name().asChar()).c_str());
+        TF_RUNTIME_ERROR(
+                "Invalid USD attribute name '%s' for Maya plug '%s'",
+                attrName.c_str(),
+                attrPlug.name().asChar());
         return usdAttr;
     }
 
@@ -376,10 +374,10 @@ UsdGeomPrimvar PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
 
     TfToken primvarNameToken(primvarName);
     if (primvarNameToken.IsEmpty()) {
-        MGlobal::displayError(
-            TfStringPrintf("Invalid primvar name '%s' for Maya plug '%s'",
-                           primvarName.c_str(),
-                           attrPlug.name().asChar()).c_str());
+        TF_RUNTIME_ERROR(
+                "Invalid primvar name '%s' for Maya plug '%s'",
+                primvarName.c_str(),
+                attrPlug.name().asChar());
         return primvar;
     }
 
@@ -420,10 +418,10 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
 
     TfToken riAttrNameToken(attrName);
     if (riAttrNameToken.IsEmpty()) {
-        MGlobal::displayError(
-            TfStringPrintf("Invalid UsdRi attribute name '%s' for Maya plug '%s'",
-                           attrName.c_str(),
-                           attrPlug.name().asChar()).c_str());
+        TF_RUNTIME_ERROR(
+                "Invalid UsdRi attribute name '%s' for Maya plug '%s'",
+                attrName.c_str(),
+                attrPlug.name().asChar());
         return usdAttr;
     }
 
@@ -928,10 +926,10 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
                     PxrUsdMayaUserTaggedAttributeTokens->USDAttrTypePrimvar) {
             UsdGeomImageable imageable(usdPrim);
             if (!imageable) {
-                MGlobal::displayError(
-                    TfStringPrintf(
-                        "Cannot create primvar for non-UsdGeomImageable USD prim: '%s'",
-                        usdPrim.GetPath().GetText()).c_str());
+                TF_RUNTIME_ERROR(
+                        "Cannot create primvar for non-UsdGeomImageable USD "
+                        "prim <%s>",
+                        usdPrim.GetPath().GetText());
                 continue;
             }
             UsdGeomPrimvar primvar =
@@ -965,17 +963,17 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
                                                  usdAttr,
                                                  usdTime,
                                                  valueWriter)) {
-                MGlobal::displayError(
-                    TfStringPrintf("Could not set value for attribute: '%s'",
-                                   usdAttr.GetPath().GetText()).c_str());
+                TF_RUNTIME_ERROR(
+                        "Could not set value for attribute <%s>",
+                        usdAttr.GetPath().GetText());
                 continue;
             }
         } else {
-            MGlobal::displayError(
-                TfStringPrintf("Could not create attribute '%s' for USD prim: '%s'",
-                               usdAttrName.c_str(),
-                               usdPrim.GetPath().GetText()).c_str());
-                continue;
+            TF_RUNTIME_ERROR(
+                    "Could not create attribute '%s' for USD prim <%s>",
+                    usdAttrName.c_str(),
+                    usdPrim.GetPath().GetText());
+            continue;
         }
     }
 

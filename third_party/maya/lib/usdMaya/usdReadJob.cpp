@@ -31,7 +31,6 @@
 #include "usdMaya/translatorModelAssembly.h"
 #include "usdMaya/translatorXformable.h"
 
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
@@ -48,7 +47,6 @@
 
 #include <maya/MAnimControl.h>
 #include <maya/MDagModifier.h>
-#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MTime.h>
 
@@ -131,10 +129,10 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         GfInterval stageInterval;
         if (mArgs.timeInterval.IsFinite()) {
             if (mArgs.timeInterval.GetMin() > mArgs.timeInterval.GetMax()) {
-                std::string errorMsg = TfStringPrintf(
-                    "Frame range start (%f) was greater than end (%f)",
-                    mArgs.timeInterval.GetMin(), mArgs.timeInterval.GetMax());
-                MGlobal::displayError(errorMsg.c_str());
+                TF_RUNTIME_ERROR(
+                        "Frame range start (%f) was greater than end (%f)",
+                        mArgs.timeInterval.GetMin(),
+                        mArgs.timeInterval.GetMax());
                 return false;
             }
             stageInterval = mArgs.timeInterval;
@@ -155,20 +153,19 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     UsdPrim usdRootPrim = mPrimPath.empty() ? stage->GetDefaultPrim() :
         stage->GetPrimAtPath(SdfPath(mPrimPath));
     if (!usdRootPrim && !(mPrimPath.empty() || mPrimPath == "/")) {
-        std::string errorMsg = TfStringPrintf(
-            "Unable to set root prim to \"%s\" for USD file \"%s\" - using pseudo-root \"/\" instead",
-            mPrimPath.c_str(), mFileName.c_str());
-        MGlobal::displayError(errorMsg.c_str());
+        TF_RUNTIME_ERROR(
+                "Unable to set root prim to <%s> when reading USD file '%s'; "
+                "using the pseudo-root </> instead",
+                mPrimPath.c_str(), mFileName.c_str());
         usdRootPrim = stage->GetPseudoRoot();
     }
 
     bool isImportingPsuedoRoot = (usdRootPrim == stage->GetPseudoRoot());
 
     if (!usdRootPrim) {
-        std::string errorMsg = TfStringPrintf(
-            "No default prim found in USD file \"%s\"",
-            mFileName.c_str());
-        MGlobal::displayError(errorMsg.c_str());
+        TF_RUNTIME_ERROR(
+                "No default prim found in USD file '%s'",
+                mFileName.c_str());
         return false;
     }
 

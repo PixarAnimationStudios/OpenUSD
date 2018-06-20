@@ -100,9 +100,9 @@ PxrUsdMayaTranslatorModelAssembly::Create(
 
     UsdPrim prim = stage->DefinePrim(authorPath);
     if (!prim) {
-        MString errorMsg("Failed to create prim for USD reference assembly at path: ");
-        errorMsg += MString(authorPath.GetText());
-        MGlobal::displayError(errorMsg);
+        TF_RUNTIME_ERROR(
+                "Failed to create prim for USD reference assembly at path <%s>",
+                authorPath.GetText());
         return false;
     }
 
@@ -160,21 +160,21 @@ PxrUsdMayaTranslatorModelAssembly::Create(
                 if (refPrimPath.IsRootPrimPath()) {
                     refs.AddReference(SdfReference(refAssetPath, refPrimPath));
                 } else {
-                    MString errorMsg("Not creating reference for assembly node '");
-                    errorMsg += assemblyNode.fullPathName();
-                    errorMsg += "' with non-root prim path: ";
-                    errorMsg += refPrimPath.GetText();
-                    MGlobal::displayError(errorMsg);
+                    TF_RUNTIME_ERROR(
+                            "Not creating reference for assembly node '%s' "
+                            "with non-root prim path <%s>",
+                            assemblyNode.fullPathName().asChar(),
+                            refPrimPath.GetText());
                 }
             }
         } else {
-            MString errorMsg("Could not resolve reference '");
-            errorMsg += refAssetPath.c_str();
-            errorMsg += "'; creating placeholder Xform for <";
-            errorMsg += authorPath.GetText();
-            errorMsg += ">";
-            MGlobal::displayWarning(errorMsg);
-            prim.SetDocumentation(std::string(errorMsg.asChar()));
+            const std::string errorMsg = TfStringPrintf(
+                    "Could not resolve reference '%s'; creating placeholder "
+                    "Xform for <%s>",
+                    refAssetPath.c_str(),
+                    authorPath.GetText());
+            TF_RUNTIME_ERROR(errorMsg);
+            prim.SetDocumentation(errorMsg);
         }
     }
 
@@ -344,8 +344,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr usdStage = UsdStage::Open(assetIdentifier);
     if (!usdStage) {
-        MGlobal::displayError("Cannot open USD file " +
-            MString(assetIdentifier.c_str()));
+        TF_RUNTIME_ERROR("Cannot open USD file %s", assetIdentifier.c_str());
         return false;
     }
 
@@ -359,8 +358,8 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     }
 
     if (!modelPrim) {
-        MGlobal::displayError("Could not find model prim in USD file " +
-            MString(assetIdentifier.c_str()));
+        TF_RUNTIME_ERROR("Could not find model prim in USD file %s",
+                assetIdentifier.c_str());
         return false;
     }
 

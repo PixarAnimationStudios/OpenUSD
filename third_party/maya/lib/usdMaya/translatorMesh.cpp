@@ -80,9 +80,11 @@ PxrUsdMayaTranslatorMesh::Create(
     if (fvc.ValueMightBeTimeVarying()){
         // at some point, it would be great, instead of failing, to create a usd/hydra proxy node
         // for the mesh, perhaps?  For now, better to give a more specific error
-        MGlobal::displayError(
-            TfStringPrintf("<%s> is a topologically varying Mesh (animated faceVertexCounts). Skipping...", 
-                prim.GetPath().GetText()).c_str());
+        TF_RUNTIME_ERROR(
+                "<%s> is a topologically varying Mesh (has animated "
+                "faceVertexCounts), which isn't currently supported. "
+                "Skipping...", 
+                prim.GetPath().GetText());
         return false;
     } else {
         // for any non-topo-varying mesh, sampling at zero will get us the right answer
@@ -93,9 +95,11 @@ PxrUsdMayaTranslatorMesh::Create(
     if (fvi.ValueMightBeTimeVarying()){
         // at some point, it would be great, instead of failing, to create a usd/hydra proxy node
         // for the mesh, perhaps?  For now, better to give a more specific error
-        MGlobal::displayError(
-            TfStringPrintf("<%s> is a topologically varying Mesh (animated faceVertexIndices). Skipping...", 
-                prim.GetPath().GetText()).c_str());
+        TF_RUNTIME_ERROR(
+                "<%s> is a topologically varying Mesh (has animated "
+                "faceVertexIndices), which isn't currently supported. "
+                "Skipping...", 
+                prim.GetPath().GetText());
         return false;
     } else {
         // for any non-topo-varying mesh, sampling at zero will get us the right answer
@@ -104,10 +108,11 @@ PxrUsdMayaTranslatorMesh::Create(
         
     // Sanity Checks. If the vertex arrays are empty, skip this mesh
     if (faceVertexCounts.size() == 0 || faceVertexIndices.size() == 0) {
-        MGlobal::displayError(
-            TfStringPrintf("FaceVertex arrays are empty [Count:%zu Indices:%zu] on Mesh <%s>. Skipping...", 
+        TF_RUNTIME_ERROR(
+                "faceVertexCounts or faceVertexIndices array is empty "
+                "[count: %zu, indices:%zu] on Mesh <%s>. Skipping...", 
                 faceVertexCounts.size(), faceVertexIndices.size(), 
-                prim.GetPath().GetText()).c_str());
+                prim.GetPath().GetText());
         return false; // invalid mesh, so exit
     }
 
@@ -136,18 +141,16 @@ PxrUsdMayaTranslatorMesh::Create(
     mesh.GetNormalsAttr().Get(&normals, normalsTimeSample);
     
     if (points.size() == 0) {
-        MGlobal::displayError(
-            TfStringPrintf("Points arrays is empty on Mesh <%s>. Skipping...", 
-                prim.GetPath().GetText()).c_str());
+        TF_RUNTIME_ERROR("points array is empty on Mesh <%s>. Skipping...", 
+                prim.GetPath().GetText());
         return false; // invalid mesh, so exit
     }
 
     std::string reason;
     if (!UsdGeomMesh::ValidateTopology(faceVertexIndices, faceVertexCounts,
                                        points.size(), &reason)) {
-        MGlobal::displayError(
-            TfStringPrintf("Skipping Mesh <%s> with invalid topology: %s",
-                           prim.GetPath().GetText(), reason.c_str()).c_str());
+        TF_RUNTIME_ERROR("Skipping Mesh <%s> with invalid topology: %s",
+                prim.GetPath().GetText(), reason.c_str());
         return false;
     }
 
@@ -252,8 +255,8 @@ PxrUsdMayaTranslatorMesh::Create(
             mayaHoleIndices[i] = holeIndices[i];
         }
         if (meshFn.setInvisibleFaces(mayaHoleIndices) == MS::kFailure) {
-            MGlobal::displayError(TfStringPrintf("Unable to set Invisible Faces on <%s>", 
-                            meshFn.fullPathName().asChar()).c_str());
+            TF_RUNTIME_ERROR("Unable to set Invisible Faces on <%s>", 
+                    meshFn.fullPathName().asChar());
         }
     }
 
@@ -296,10 +299,10 @@ PxrUsdMayaTranslatorMesh::Create(
             // as uv sets is turned on, we assume that Float2Array primvars 
             // are UV sets.
             if (!_AssignUVSetPrimvarToMesh(primvar, meshFn)) {
-                MGlobal::displayWarning(
-                    TfStringPrintf("Unable to retrieve and assign data for UV set <%s> on mesh <%s>", 
-                                   name.GetText(),
-                                   mesh.GetPrim().GetPath().GetText()).c_str());
+                TF_WARN("Unable to retrieve and assign data for UV set <%s> on "
+                        "mesh <%s>", 
+                        name.GetText(),
+                        mesh.GetPrim().GetPath().GetText());
             }
         } else if (typeName == SdfValueTypeNames->FloatArray   || 
                    typeName == SdfValueTypeNames->Float3Array  || 
@@ -307,10 +310,10 @@ PxrUsdMayaTranslatorMesh::Create(
                    typeName == SdfValueTypeNames->Float4Array  || 
                    typeName == SdfValueTypeNames->Color4fArray) {
             if (!_AssignColorSetPrimvarToMesh(mesh, primvar, meshFn)) {
-                MGlobal::displayWarning(
-                    TfStringPrintf("Unable to retrieve and assign data for color set <%s> on mesh <%s>",
-                                   name.GetText(),
-                                   mesh.GetPrim().GetPath().GetText()).c_str());
+                TF_WARN("Unable to retrieve and assign data for color set <%s> "
+                        "on mesh <%s>",
+                        name.GetText(),
+                        mesh.GetPrim().GetPath().GetText());
             }
         }
     }

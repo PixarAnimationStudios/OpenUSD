@@ -35,6 +35,7 @@
 #include <maya/MArgList.h>
 #include <maya/MArgDatabase.h>
 #include <maya/MComputation.h>
+#include <maya/MGlobal.h>
 #include <maya/MObjectArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MSyntax.h>
@@ -185,7 +186,6 @@ try
 
     // Check that all flags were valid
     if (status != MS::kSuccess) {
-        MGlobal::displayError("Invalid parameters detected.  Exiting.");
         return status;
     }
 
@@ -219,8 +219,7 @@ try
         }
     }
     else {
-        MString error = "-file not specified.";
-        MGlobal::displayError(error);
+        TF_RUNTIME_ERROR("-file not specified.");
         return MS::kFailure;
     }
 

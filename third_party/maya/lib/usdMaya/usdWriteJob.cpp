@@ -59,6 +59,7 @@
 
 #include <maya/MFnDagNode.h>
 #include <maya/MFnRenderLayer.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
@@ -92,11 +93,12 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
         for (n = m; n != endPath; n++) {
             MDagPath path2 = *n;
             if (PxrUsdMayaUtil::isAncestorDescendentRelationship(path1,path2)) {
-                MString errorMsg = path1.fullPathName();
-                errorMsg += " and ";
-                errorMsg += path2.fullPathName();
-                errorMsg += " have an ancestor relationship. Skipping USD Export.";
-                MGlobal::displayError(errorMsg);
+                TF_RUNTIME_ERROR(
+                        "%s and %s are ancestors or descendants of each other. "
+                        "Please specify export DAG paths that don't overlap. "
+                        "Exiting.",
+                        path1.fullPathName().asChar(),
+                        path2.fullPathName().asChar());
                 return false;
             }
         }  // for n
@@ -115,7 +117,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                                    PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     }
 
-    MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
+    TF_STATUS("Creating stage file '%s'", mFileName.c_str());
 
     if (mJobCtx.mArgs.renderLayerMode == PxrUsdExportJobArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
@@ -250,11 +252,12 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                     if (mJobCtx.mArgs.stripNamespaces) {
                         auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
                         if (foundPair != mUsdPathToDagPathMap.end()){
-                            std::string error = TfStringPrintf("Multiple dag nodes map to the same prim path after "
-                                                               "stripping namespaces: %s - %s",
-                                                               foundPair->second.fullPathName().asChar(),
-                                                               primWriter->getDagPath().fullPathName().asChar());
-                            MGlobal::displayError(MString(error.c_str()));
+                            TF_RUNTIME_ERROR(
+                                    "Multiple dag nodes map to the same prim "
+                                    "path after stripping namespaces: %s - %s",
+                                    foundPair->second.fullPathName().asChar(),
+                                    primWriter->getDagPath().fullPathName()
+                                        .asChar());
                             return false;
                         }
                         mUsdPathToDagPathMap[usdPrim.GetPath()] = primWriter->getDagPath();
@@ -330,9 +333,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
             mChasers.push_back(fn);
         }
         else {
-            std::string error = TfStringPrintf("Failed to create chaser: %s",
-                                               chaserName.c_str());
-            MGlobal::displayError(MString(error.c_str()));
+            TF_RUNTIME_ERROR("Failed to create chaser: %s", chaserName.c_str());
         }
     }
 
@@ -421,7 +422,7 @@ void usdWriteJob::endJob()
     }
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
-    MGlobal::displayInfo("usdWriteJob::endJob Saving Stage");
+    TF_STATUS("Saving stage");
 }
 
 TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)

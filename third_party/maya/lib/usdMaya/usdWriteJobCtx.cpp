@@ -43,7 +43,6 @@
 #include "pxr/usd/usdGeom/scope.h"
 
 #include <maya/MDagPathArray.h>
-#include <maya/MGlobal.h>
 #include <maya/MString.h>
 #include <maya/MPxNode.h>
 
@@ -198,7 +197,8 @@ bool usdWriteJobCtx::openFile(const std::string& filename, bool append)
     if (append) {
         mStage = UsdStage::Open(SdfLayer::FindOrOpen(filename), resolverCtx);
         if (!mStage) {
-            MGlobal::displayError("Failed to open stage file " + MString(filename.c_str()));
+            TF_RUNTIME_ERROR(
+                    "Failed to open stage file '%s'", filename.c_str());
             return false;
         }
     } else {
@@ -212,7 +212,8 @@ bool usdWriteJobCtx::openFile(const std::string& filename, bool append)
 
         mStage = UsdStage::CreateNew(filename, resolverCtx);
         if (!mStage) {
-            MGlobal::displayError("Failed to create stage file " + MString(filename.c_str()));
+            TF_RUNTIME_ERROR(
+                    "Failed to create stage file '%s'", filename.c_str());
             return false;
         }
     }

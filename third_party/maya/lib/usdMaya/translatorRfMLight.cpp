@@ -56,7 +56,6 @@
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -140,15 +139,12 @@ static
 bool
 _ReportError(const std::string& msg, const SdfPath& primPath=SdfPath())
 {
-    MString errorMsg(msg.c_str());
-
-    if (primPath.IsPrimPath()) {
-        errorMsg += MString(" for UsdLuxLight prim at path: ");
-        errorMsg += MString(primPath.GetText());
-    }
-
-    MGlobal::displayError(errorMsg);
-
+    TF_RUNTIME_ERROR(
+            "%s%s",
+            msg.c_str(),
+            primPath.IsPrimPath()
+                ? TfStringPrintf(" for Light <%s>", primPath.GetText()).c_str()
+                : "");
     return false;
 }
 

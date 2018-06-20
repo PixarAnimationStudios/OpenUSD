@@ -33,7 +33,6 @@
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <maya/MFileIO.h>
-#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
 #include <map>
@@ -57,7 +56,7 @@ _OnMayaNewOrOpenSceneCallback(void* clientData)
         return;
     }
 
-    MGlobal::displayInfo("Clearing USD Stage Cache");
+    TF_STATUS("Clearing USD Stage Cache");
     UsdMayaStageCache::Clear();
 
     std::lock_guard<std::mutex> lock(_sharedSessionLayersMutex);

@@ -36,6 +36,7 @@
 
 #include <maya/MAnimControl.h>
 #include <maya/MFileObject.h>
+#include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
@@ -157,7 +158,7 @@ usdTranslatorExport::writer(const MFileObject &file,
             return MS::kFailure;
         }
     } else {
-        MGlobal::displayWarning("No DAG nodes to export. Skipping");
+        TF_WARN("No DAG nodes to export. Skipping.");
     }
     
     return MS::kSuccess;

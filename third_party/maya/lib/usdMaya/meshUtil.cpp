@@ -37,7 +37,6 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
-#include <maya/MGlobal.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -192,9 +191,9 @@ PxrUsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
                schemeToken != UsdGeomTokens->catmullClark &&
                schemeToken != UsdGeomTokens->loop &&
                schemeToken != UsdGeomTokens->bilinear) {
-        MGlobal::displayError("Unsupported subdivision scheme: " +
-            MString(schemeToken.GetText()) + " on mesh: " +
-            MString(mesh.fullPathName()));
+        TF_RUNTIME_ERROR(
+                "Unsupported subdivision scheme: %s on mesh: %s",
+                schemeToken.GetText(), mesh.fullPathName().asChar());
         return TfToken();
     }
 
@@ -239,9 +238,9 @@ TfToken PxrUsdMayaMeshUtil::GetSubdivInterpBoundary(const MFnMesh& mesh)
     } else if (interpBoundaryToken != UsdGeomTokens->none &&
                interpBoundaryToken != UsdGeomTokens->edgeAndCorner &&
                interpBoundaryToken != UsdGeomTokens->edgeOnly) {
-        MGlobal::displayError("Unsupported interpolate boundary setting: " +
-            MString(interpBoundaryToken.GetText()) + " on mesh: " +
-            MString(mesh.fullPathName()));
+        TF_RUNTIME_ERROR(
+                "Unsupported interpolate boundary setting: %s on mesh: %s",
+                interpBoundaryToken.GetText(), mesh.fullPathName().asChar());
         return TfToken();
     }
 
@@ -322,8 +321,11 @@ TfToken PxrUsdMayaMeshUtil::GetSubdivFVLinearInterpolation(const MFnMesh& mesh)
             sdFVLinearInterpolation != UsdGeomTokens->cornersOnly &&
             sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 &&
             sdFVLinearInterpolation != UsdGeomTokens->cornersPlus2) {
-        MGlobal::displayError("Unsupported Face Varying Linear Interpolation Attribute: " +
-            MString(sdFVLinearInterpolation.GetText()) + " on mesh: " + MString(mesh.fullPathName()));
+        TF_RUNTIME_ERROR(
+                "Unsupported face-varying linear interpolation: %s "
+                "on mesh: %s",
+                sdFVLinearInterpolation.GetText(),
+                mesh.fullPathName().asChar());
         return TfToken();
     }
 

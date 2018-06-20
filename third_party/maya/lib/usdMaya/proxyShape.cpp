@@ -345,12 +345,11 @@ UsdMayaProxyShape::GetShapeAtDagPath(const MDagPath& dagPath)
 {
     MObject mObj = dagPath.node();
     if (mObj.apiType() != MFn::kPluginShape) {
-        MGlobal::displayError(
-            TfStringPrintf(
+        TF_CODING_ERROR(
                 "Could not get UsdMayaProxyShape for non-plugin shape node "
-                "at dag path: %s (apiTypeStr = %s)",
+                "at DAG path: %s (apiTypeStr = %s)",
                 dagPath.fullPathName().asChar(),
-                mObj.apiTypeStr()).c_str());
+                mObj.apiTypeStr());
         return nullptr;
     }
 
@@ -358,10 +357,9 @@ UsdMayaProxyShape::GetShapeAtDagPath(const MDagPath& dagPath)
     UsdMayaProxyShape* pShape =
         static_cast<UsdMayaProxyShape*>(depNodeFn.userNode());
     if (!pShape) {
-        MGlobal::displayError(
-            TfStringPrintf(
-                "Could not get UsdMayaProxyShape for node at dag path: %s",
-                dagPath.fullPathName().asChar()).c_str());
+        TF_CODING_ERROR(
+                "Could not get UsdMayaProxyShape for node at DAG path: %s",
+                dagPath.fullPathName().asChar());
         return nullptr;
     }
 
@@ -596,10 +594,11 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
             usdPrim = usdStage->GetPrimAtPath( primPath );
         }
         else {
-            MGlobal::displayWarning(
-                MPxSurfaceShape::name() + ": Stage primPath '" +
-                MString(inData->primPath.GetText()) +
-                "'' not a parent of primPath '");
+            TF_WARN("%s: Shape primPath <%s> is not a descendant of input "
+                    "stage primPath <%s>",
+                    MPxSurfaceShape::name().asChar(),
+                    primPath.GetText(),
+                    inData->primPath.GetText());
         }
     } else {
         usdPrim = usdStage->GetPseudoRoot();

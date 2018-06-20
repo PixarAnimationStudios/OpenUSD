@@ -27,11 +27,9 @@
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
 
 #include <set>
 
@@ -159,12 +157,11 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
     JsParseError jsError;
     JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
     if (!jsValue) {
-        MString errorMsg(TfStringPrintf(
+        TF_RUNTIME_ERROR(
             "Failed to parse USD exported attributes JSON on node at"
             " dagPath '%s' at line %d, column %d: %s",
             dagPath.fullPathName().asChar(),
-            jsError.line, jsError.column, jsError.reason.c_str()).c_str());
-        MGlobal::displayError(errorMsg);
+            jsError.line, jsError.column, jsError.reason.c_str());
         return result;
     }
 
@@ -180,11 +177,10 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         const MPlug attrPlug = depFn.findPlug(
                 mayaAttrName.c_str(), true, &status);
         if (status != MS::kSuccess || attrPlug.isNull()) {
-            MString errorMsg(TfStringPrintf(
+            TF_RUNTIME_ERROR(
                 "Could not find attribute '%s' for USD export on node at"
                 " dagPath '%s'",
-                mayaAttrName.c_str(), dagPath.fullPathName().asChar()).c_str());
-            MGlobal::displayError(errorMsg);
+                mayaAttrName.c_str(), dagPath.fullPathName().asChar());
             continue;
         }
 
@@ -233,11 +229,10 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
 
         const auto& insertIter = processedAttributeNames.emplace(usdAttrName);
         if (!insertIter.second) {
-            MString errorMsg(TfStringPrintf(
+            TF_RUNTIME_ERROR(
                 "Ignoring duplicate USD export tag for attribute '%s' on node"
                 " at dagPath '%s'",
-                usdAttrName.c_str(), dagPath.fullPathName().asChar()).c_str());
-            MGlobal::displayError(errorMsg);
+                usdAttrName.c_str(), dagPath.fullPathName().asChar());
             continue;
         }
 

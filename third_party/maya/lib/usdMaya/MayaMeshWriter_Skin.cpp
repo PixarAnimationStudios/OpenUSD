@@ -28,12 +28,12 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/utils.h"
 
+#include <maya/MDoubleArray.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MItDependencyGraph.h>
@@ -69,11 +69,11 @@ _GetSkinCluster(const MDagPath& dagPath) {
     MObject skinClusterObj = itDG.currentItem();
     // If there's another skin cluster, then we have multiple skin clusters.
     if (itDG.next() && !itDG.isDone()) {
-        MGlobal::displayWarning(TfStringPrintf(
+        TF_WARN(
             "Multiple skinClusters upstream of '%s'; using closest "
             "skinCluster '%s'",
             dagPath.fullPathName().asChar(),
-            MFnDependencyNode(skinClusterObj).name().asChar()).c_str());
+            MFnDependencyNode(skinClusterObj).name().asChar());
     }
 
     return skinClusterObj;
@@ -113,10 +113,9 @@ _GetInputMesh(const MFnSkinCluster& skinCluster) {
     CHECK_MSTATUS_AND_RETURN(status, MObject());
 
     if (!inputGeometryObj.hasFn(MFn::kMesh)) {
-        MGlobal::displayWarning(TfStringPrintf(
+        TF_WARN(
                 "%s is not a mesh; unable to obtain input mesh for %s",
-                inputGeometry.name().asChar(), skinCluster.name().asChar())
-                .c_str());
+                inputGeometry.name().asChar(), skinCluster.name().asChar());
         return MObject();
     }
 
@@ -342,9 +341,9 @@ _GetGeomBindTransform(const MFnSkinCluster& skinCluster,
     if (!PxrUsdMayaUtil::getPlugMatrix(
             skinCluster, "geomMatrix", &geomWorldRestXf)) {
         // All skinClusters should have geomMatrix, but if not...
-        MGlobal::displayError(TfStringPrintf(
+        TF_RUNTIME_ERROR(
                 "Couldn't read geomMatrix from skinCluster '%s'",
-                skinCluster.name().asChar()).c_str());
+                skinCluster.name().asChar());
         return false;
     }
 

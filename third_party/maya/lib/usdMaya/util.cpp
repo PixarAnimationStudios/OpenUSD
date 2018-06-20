@@ -191,15 +191,7 @@ bool PxrUsdMayaUtil::isAncestorDescendentRelationship(const MDagPath & path1,
 
     descendent.pop(diff);
 
-    bool ret = (ancestor == descendent);
-
-    if (ret)
-    {
-        MString err = path1.fullPathName() + " and ";
-        err += path2.fullPathName() + " have parenting relationships";
-        MGlobal::displayError(err);
-    }
-    return ret;
+    return ancestor == descendent;
 }
 
 
@@ -388,7 +380,7 @@ bool PxrUsdMayaUtil::isAnimated(MObject & object, bool checkParent)
 
     if (stat!= MS::kSuccess)
     {
-        MGlobal::displayError("Unable to create DG iterator ");
+        TF_RUNTIME_ERROR("Unable to create DG iterator");
     }
 
     // MAnimUtil::isAnimated(node) will search the history of the node
@@ -746,9 +738,10 @@ _getMayaShadersColor(
         }
 
         if (shaderObjs[i].isNull()) {
-            MGlobal::displayError("Invalid Maya Shader Object at index: " +
-                                  MString(TfStringPrintf("%d", i).c_str()) +
-                                  ". Unable to retrieve ShaderBaseColor.");
+            TF_RUNTIME_ERROR(
+                    "Invalid Maya shader object at index %d. "
+                    "Unable to retrieve shader base color.",
+                    i);
             continue;
         }
 
@@ -765,9 +758,10 @@ _getMayaShadersColor(
                 AlphaData ?  &(*AlphaData)[i] : NULL);
 
         if (!gotValues) {
-            MGlobal::displayError("Failed to get shaders colors at index: " +
-                                  MString(TfStringPrintf("%d", i).c_str()) +
-                                  ". Unable to retrieve ShaderBaseColor.");
+            TF_RUNTIME_ERROR(
+                    "Failed to get shaders colors at index %d. "
+                    "Unable to retrieve shader base color.",
+                    i);
         }
     }
 }
@@ -1240,8 +1234,9 @@ bool PxrUsdMayaUtil::GetBoolCustomData(UsdAttribute obj, TfToken key, bool defau
         if (data.IsHolding<bool>()) {
             return data.Get<bool>();
         } else {
-            MGlobal::displayError("Custom Data: " + MString(key.GetText()) +
-                                    " is not of type bool. Skipping...");
+            TF_RUNTIME_ERROR(
+                    "customData at key '%s' is not of type bool. Skipping...",
+                    key.GetText());
         }
     }
     return returnValue;

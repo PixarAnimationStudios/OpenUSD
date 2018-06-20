@@ -109,11 +109,9 @@ _Token(
     // Empty token will silently be promoted to default value.
     // Warning for non-empty tokens that don't match.
     if (tok != defaultToken && !tok.IsEmpty()) {
-        const std::string msg = TfStringPrintf(
-                "Value '%s' is not allowed for flag '%s'; using fallback '%s' "
+        TF_WARN("Value '%s' is not allowed for flag '%s'; using fallback '%s' "
                 "instead",
                 tok.GetText(), key.GetText(), defaultToken.GetText());
-        MGlobal::displayWarning(msg.c_str());
     }
     return defaultToken;
 }

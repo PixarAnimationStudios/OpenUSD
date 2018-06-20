@@ -89,26 +89,24 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
                 UsdSkelRoot::Find(stage->GetPrimAtPath(paths[i]))) {
 
                 if (root2.GetPrim() != root.GetPrim()) {
-                    MGlobal::displayError(
-                        TfStringPrintf(
+                    TF_RUNTIME_ERROR(
                             "Expected SkelRoot for prim <%s> to be under the "
                             "same SkelRoot as prim <%s> (<%s>), but instead "
                             "found <%s>. This might cause unexpected "
                             "behavior.", paths[i].GetText(),
                             firstPath.GetText(),
                             root.GetPrim().GetPath().GetText(),
-                            root2.GetPrim().GetPath().GetText()).c_str());
+                            root2.GetPrim().GetPath().GetText());
                     return SdfPath();
                 }
             } else {
-                MGlobal::displayError(
-                    TfStringPrintf(
+                TF_RUNTIME_ERROR(
                         "Expected SkelRoot for prim <%s> to be under the same "
                         "SkelRoot as prim <%s> (%s), but it is not under a "
                         "SkelRoot at all. This might cause unexpected "
                         "behavior.", paths[i].GetText(),
                         firstPath.GetText(),
-                        root.GetPrim().GetPath().GetText()).c_str());
+                        root.GetPrim().GetPath().GetText());
                 return SdfPath();
             }
         }
@@ -118,11 +116,12 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
         // This is necessary because UsdSkel doesn't handle nested skel roots
         // very well currently; this restriction may be loosened in the future.
         if (UsdSkelRoot root2 = UsdSkelRoot::Find(root.GetPrim().GetParent())) {
-            MGlobal::displayError(TfStringPrintf("The SkelRoot <%s> is nested "
+            TF_RUNTIME_ERROR(
+                    "The SkelRoot <%s> is nested "
                     "inside another SkelRoot <%s>. This might cause unexpected "
-                    "behavior. ",
+                    "behavior.",
                     root.GetPath().GetText(),
-                    root2.GetPath().GetText()).c_str());
+                    root2.GetPath().GetText());
             return SdfPath();
         }
         else {
@@ -141,13 +140,12 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
 
             for (size_t i = 1; i < paths.size(); ++i) {
                 if (!paths[i].HasPrefix(root.GetPath())) {
-                    MGlobal::displayError(
-                        TfStringPrintf(
+                    TF_RUNTIME_ERROR(
                             "Could not find a common ancestor of prim <%s> and "
                             "<%s> that can be converted to a SkelRoot. "
                             "Try giving the primitives a common, transform "
                             "ancestor node.", firstPath.GetText(),
-                            paths[i].GetText()).c_str());
+                            paths[i].GetText());
                     return SdfPath();
                 }
             }
@@ -156,11 +154,10 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
             return root.GetPath();
         }
         else {
-            MGlobal::displayError(
-                TfStringPrintf(
+            TF_RUNTIME_ERROR(
                     "Could not find a UsdGeomXform or ancestor of "
                     "prim <%s> that can be converted to a SkelRoot.",
-                    firstPath.GetText()).c_str());
+                    firstPath.GetText());
             return SdfPath();
         }
     }

@@ -180,16 +180,16 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
             }
             
             if (!statusOK) {
-                MGlobal::displayError(
-                    TfStringPrintf("Unable to set Crease Vertices on <%s>: %s", 
+                TF_RUNTIME_ERROR("Unable to set Crease Vertices on <%s>: %s", 
                         meshFn.fullPathName().asChar(),
-                        statusOK.errorString().asChar()).c_str());
+                        statusOK.errorString().asChar());
                 return false;
             }
             
         } else {
-            MGlobal::displayError(TfStringPrintf("Mismatch between Corner Indices & Sharpness on <%s>", 
-                    primSchema.GetPrim().GetPath().GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Mismatch between Corner Indices & Sharpness on <%s>", 
+                    primSchema.GetPrim().GetPath().GetText());
             return false;
         }
     }
@@ -265,16 +265,16 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
             }
             
             if (!statusOK) {
-                MGlobal::displayError(
-                    TfStringPrintf("Unable to set Crease Edges on <%s>: %s", 
+                TF_RUNTIME_ERROR("Unable to set Crease Edges on <%s>: %s", 
                         meshFn.fullPathName().asChar(),
-                        statusOK.errorString().asChar()).c_str());
+                        statusOK.errorString().asChar());
                 return false;
             }
 
         } else {
-            MGlobal::displayError(TfStringPrintf("Mismatch between Crease Lengths & Sharpness on <%s>", 
-                    primSchema.GetPrim().GetPath().GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Mismatch between Crease Lengths & Sharpness on <%s>", 
+                    primSchema.GetPrim().GetPath().GetText());
             return false;
         }
     }
@@ -286,10 +286,9 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
 
             if (!_AddCreaseSet( meshFn.name().asChar(),
                                 creaseLevel, elemList, &statusOK )){
-                MGlobal::displayError(
-                    TfStringPrintf("Unable to set crease sets on <%s>: %s", 
+                TF_RUNTIME_ERROR("Unable to set crease sets on <%s>: %s", 
                         meshFn.fullPathName().asChar(),
-                        statusOK.errorString().asChar()).c_str());
+                        statusOK.errorString().asChar());
                 return false;
             }
         }

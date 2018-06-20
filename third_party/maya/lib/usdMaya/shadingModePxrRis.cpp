@@ -49,7 +49,6 @@
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
-#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 
 
@@ -111,10 +110,10 @@ private:
         const TfToken risShaderType = _GetShaderTypeName(depNode);
 
         if (!TfStringStartsWith(risShaderType, _tokens->PxrShaderPrefix)) {
-            MGlobal::displayError(TfStringPrintf(
-                "_ExportShadingNodeHelper: skipping '%s' because it's type '%s' is not Pxr.\n",
-                depNode.name().asChar(),
-                risShaderType.GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Skipping '%s' because its type '%s' is not Pxr-prefixed.",
+                    depNode.name().asChar(),
+                    risShaderType.GetText());
             return UsdPrim();
         }
 
@@ -149,10 +148,11 @@ private:
                 if (numElements > 0u) {
                     attrPlugs.push_back(attrPlug[0]);
                     if (numElements > 1u) {
-                        MGlobal::displayWarning(TfStringPrintf(
+                        TF_WARN(
                             "Array with multiple elements encountered at '%s'. "
-                            "Currently, only arrays with a single element are supported.",
-                            attrPlug.name().asChar()).c_str());
+                            "Currently, only arrays with a single element are "
+                            "supported.",
+                            attrPlug.name().asChar());
                     }
                 }
             }
@@ -366,12 +366,11 @@ _CreateShaderObject(
                      &status);
     if (status != MS::kSuccess) {
         // we need to make sure assumes those types are loaded..
-        MGlobal::displayError(
-            TfStringPrintf(
+        TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'. "
                 "Probably missing a loadPlugin.\n",
                 mayaTypeName.GetText(),
-                shaderSchema.GetPrim().GetName().GetText()).c_str());
+                shaderSchema.GetPrim().GetName().GetText());
         return MObject();
     }
 
@@ -411,11 +410,11 @@ _CreateShaderObject(
             const unsigned int numElements = srcAttr.evaluateNumElements();
             if (numElements > 0u) {
                 if (numElements > 1u) {
-                    MGlobal::displayWarning(TfStringPrintf(
+                    TF_WARN(
                         "Array with multiple elements encountered at '%s'. "
-                        "Currently, only arrays with a single element are supported. "
-                        "Not connecting attribute.",
-                        srcAttr.name().asChar()).c_str());
+                        "Currently, only arrays with a single element are "
+                        "supported. Not connecting attribute.",
+                        srcAttr.name().asChar());
                     continue;
                 }
 

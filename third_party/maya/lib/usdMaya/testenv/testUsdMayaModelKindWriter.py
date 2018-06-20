@@ -26,6 +26,7 @@
 import os
 import unittest
 from pxr import Kind
+from pxr import Tf
 from pxr import Usd
 
 from maya import cmds
@@ -51,10 +52,21 @@ class testUsdMayaModelKindWriter(unittest.TestCase):
         cmds.loadPlugin('pxrUsd')
 
         usdFilePath = os.path.abspath('KindTest.usda')
+
+        # Check the error mark; this ensures that we actually got a Tf error
+        # (that was eventually converted into a Maya error, which Maya raises
+        # in Python as a RuntimeError).
+        mark = Tf.Error.Mark()
+        mark.SetMark()
         with self.assertRaises(RuntimeError):
-                          cmds.usdExport(mergeTransformAndShape=True,
-                                         file=usdFilePath,
-                                         kind='assembly')
+            cmds.usdExport(mergeTransformAndShape=True,
+                           file=usdFilePath,
+                           kind='assembly')
+        errors = mark.GetErrors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn(
+            "</KindTest> has kind 'assembly', which is derived from 'assembly'",
+            str(errors[0]))
 
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,

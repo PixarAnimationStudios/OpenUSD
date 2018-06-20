@@ -26,6 +26,7 @@
 
 #include "pxr/usd/usdGeom/mesh.h"
 
+#include <maya/MDoubleArray.h>
 #include <maya/MUintArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

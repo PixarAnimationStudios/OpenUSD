@@ -164,13 +164,12 @@ PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
             }
             else if (!KindRegistry::IsA(kind, _args.rootKind)) {
                 // If existing kind is not derived from rootKind, then error.
-                MString errorMsg = primPath.GetText();
-                errorMsg += " has kind '";
-                errorMsg += kind.GetText();
-                errorMsg += "' but the rootKind argument was '";
-                errorMsg += _args.rootKind.GetText();
-                errorMsg += "'; expected that or derived kind.";
-                MGlobal::displayError(errorMsg);
+                TF_RUNTIME_ERROR(
+                        "<%s> has kind '%s' but the export root kind option "
+                        "is set to '%s'; expected that or a derived kind",
+                        primPath.GetText(),
+                        kind.GetText(),
+                        _args.rootKind.GetText());
                 return false;
             }
         }
@@ -195,17 +194,26 @@ PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
                 errorMsg += kind.GetText();
                 errorMsg += "' and cannot have a mesh below. Please remove:";
 
+                std::vector<std::string> pathStrings;
                 const auto exportedGprimsIter =
                         _pathsToExportedGprimsMap.find(primPath);
                 if (exportedGprimsIter != _pathsToExportedGprimsMap.end()) {
                     std::vector<SdfPath>& paths = exportedGprimsIter->second;
-                    for (const SdfPath& p : paths) {
-                        errorMsg += "\n  ";
-                        errorMsg += p.GetText();
-                    }
+                    std::transform(
+                            paths.begin(), paths.end(),
+                            std::back_inserter(pathStrings),
+                            [](const SdfPath& p) { return p.GetString(); });
                 }
 
-                MGlobal::displayError(errorMsg);
+                TF_RUNTIME_ERROR(
+                        "<%s> has kind '%s', which is derived from 'assembly'. "
+                        "Assemblies should not directly contain meshes/gprims. "
+                        "Please remove %zu prim%s: %s",
+                        primPath.GetText(),
+                        kind.GetText(),
+                        pathStrings.size(),
+                        pathStrings.size() == 1 ? "" : "s",
+                        TfStringJoin(pathStrings, "; ").c_str());
                 return false;
             }
         }
@@ -278,8 +286,10 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
         for (SdfPath const &path : pathsToBeGroup) {
             SdfPrimSpecHandle primSpec = SdfCreatePrimInLayer(layer, path);
             if (!primSpec) {
-                MGlobal::displayError("Failed to create primSpec for setting "
-                        "kind at path:" + MString(path.GetText()));
+                TF_RUNTIME_ERROR(
+                        "Failed to create prim spec for setting kind at path "
+                        "<%s>",
+                        path.GetText());
             }
             else {
                 primSpec->SetKind(KindTokens->group);

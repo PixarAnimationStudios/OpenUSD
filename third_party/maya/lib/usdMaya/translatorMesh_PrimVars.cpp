@@ -41,7 +41,6 @@
 
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
-#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshFaceVertex.h>
 
@@ -101,10 +100,9 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     // Get the raw data before applying any indexing.
     VtVec2fArray uvValues;
     if (!primvar.Get(&uvValues) || uvValues.empty()) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not read UV values from primvar '%s' on mesh: %s",
-                           primvarName.GetText(),
-                           primvar.GetAttr().GetPrimPath().GetText()).c_str());
+        TF_WARN("Could not read UV values from primvar '%s' on mesh: %s",
+                primvarName.GetText(),
+                primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
@@ -172,10 +170,9 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     } else {
         status = meshFn.createUVSet(uvSetName);
         if (status != MS::kSuccess) {
-            MGlobal::displayWarning(
-                TfStringPrintf("Unable to create UV set '%s' for mesh: %s",
-                               uvSetName.asChar(),
-                               meshFn.fullPathName().asChar()).c_str());
+            TF_WARN("Unable to create UV set '%s' for mesh: %s",
+                    uvSetName.asChar(),
+                    meshFn.fullPathName().asChar());
             return false;
         }
     }
@@ -190,10 +187,9 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     // We'll assign mesh components to these values below.
     status = meshFn.setUVs(uCoords, vCoords, &uvSetName);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unable to set UV data on UV set '%s' for mesh: %s",
-                           uvSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Unable to set UV data on UV set '%s' for mesh: %s",
+                uvSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -210,19 +206,17 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     MIntArray vertexList;
     status = meshFn.getVertices(vertexCounts, vertexList);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not get vertex counts for UV set '%s' on mesh: %s",
-                           uvSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Could not get vertex counts for UV set '%s' on mesh: %s",
+                uvSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
     status = meshFn.assignUVs(vertexCounts, uvIds, &uvSetName);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not assign UV values to UV set '%s' on mesh: %s",
-                           uvSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Could not assign UV values to UV set '%s' on mesh: %s",
+                uvSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -295,19 +289,18 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
             numValues = rgbaArray.size();
         }
     } else {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unsupported color set primvar type '%s' for primvar '%s' on mesh: %s",
-                           typeName.GetAsToken().GetText(),
-                           primvarName.GetText(),
-                           primvar.GetAttr().GetPrimPath().GetText()).c_str());
+        TF_WARN("Unsupported color set primvar type '%s' for primvar '%s' on "
+                "mesh: %s",
+                typeName.GetAsToken().GetText(),
+                primvarName.GetText(),
+                primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
     if (status != MS::kSuccess || numValues == 0) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not read color set values from primvar '%s' on mesh: %s",
-                           primvarName.GetText(),
-                           primvar.GetAttr().GetPrimPath().GetText()).c_str());
+        TF_WARN("Could not read color set values from primvar '%s' on mesh: %s",
+                primvarName.GetText(),
+                primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
@@ -390,10 +383,9 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     status = meshFn.createColorSet(colorSetName, NULL, clamped, colorRep);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unable to create color set '%s' for mesh: %s",
-                           colorSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Unable to create color set '%s' for mesh: %s",
+                colorSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -401,10 +393,9 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // primvar. We'll assign mesh components to these values below.
     status = meshFn.setColors(colorArray, &colorSetName, colorRep);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unable to set color data on color set '%s' for mesh: %s",
-                           colorSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Unable to set color data on color set '%s' for mesh: %s",
+                colorSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -419,10 +410,9 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     status = meshFn.assignColors(colorIds, &colorSetName);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not assign color values to color set '%s' on mesh: %s",
-                           colorSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Could not assign color values to color set '%s' on mesh: %s",
+                colorSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 

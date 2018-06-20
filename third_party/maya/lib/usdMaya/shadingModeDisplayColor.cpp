@@ -55,7 +55,6 @@
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnLambertShader.h>
-#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -140,8 +139,9 @@ private:
 
             UsdPrim boundPrim = stage->GetPrimAtPath(boundPrimPath);
             if (!boundPrim) {
-                MGlobal::displayError("No prim bound to: " +
-                                      MString(boundPrimPath.GetText()));
+                TF_CODING_ERROR(
+                        "Couldn't find bound prim <%s>",
+                        boundPrimPath.GetText());
                 continue;
             }
 
@@ -286,12 +286,12 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
             }
             gotDisplayColorAndOpacity = true;
         } else {
-            MString warn = MString("Unable to retrieve DisplayColor on Material: ");
-            warn += shadeMaterial ? shadeMaterial.GetPrim().GetPath().GetText() : "<NONE>";
-            warn += " or GPrim: ";
-            warn += primSchema ? primSchema.GetPrim().GetPath().GetText() 
-                               : "<NONE>";
-            MGlobal::displayWarning(warn);
+            TF_WARN("Unable to retrieve displayColor on Material: %s "
+                    "or Gprim: %s",
+                    shadeMaterial ? shadeMaterial.GetPrim().GetPath().GetText()
+                                  : "<NONE>",
+                    primSchema ? primSchema.GetPrim().GetPath().GetText() 
+                               : "<NONE>");
         }
     } else {
         shadeMaterial

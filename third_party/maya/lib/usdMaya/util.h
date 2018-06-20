@@ -45,7 +45,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnNumericData.h>
-#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -90,32 +89,6 @@ private:
     MDataHandleHolder(const MPlug& plug, MDataHandle dataHandle);
     ~MDataHandleHolder();
 };
-
-inline MStatus isFloat(MString str, const MString & usage)
-{
-    MStatus status = MS::kSuccess;
-
-    if (!str.isFloat())
-    {
-        MGlobal::displayInfo(usage);
-        status = MS::kFailure;
-    }
-
-    return status;
-}
-
-inline MStatus isUnsigned(MString str, const MString & usage)
-{
-    MStatus status = MS::kSuccess;
-
-    if (!str.isUnsigned())
-    {
-        MGlobal::displayInfo(usage);
-        status = MS::kFailure;
-    }
-
-    return status;
-}
 
 // safely inverse a scale component
 inline double inverseScale(double scale)

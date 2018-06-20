@@ -117,7 +117,6 @@ MStatus usdImport::doIt(const MArgList & args)
 
     // Check that all flags were valid
     if (status != MS::kSuccess) {
-        MGlobal::displayError("Invalid parameters detected.  Exiting.");
         return status;
     }
 
@@ -135,18 +134,18 @@ MStatus usdImport::doIt(const MArgList & args)
 
         // Use the usd resolver for validation (but save the unresolved)
         if (ArGetResolver().Resolve(mFileName).empty()) {
-            MString msg = MString("File does not exist, or could not be resolved (")
-                    + tmpVal + ") - Exiting.";
-            MGlobal::displayError(msg);
+            TF_RUNTIME_ERROR(
+                    "File '%s' does not exist, or could not be resolved. "
+                    "Exiting.",
+                    mFileName.c_str());
             return MS::kFailure;
         }
 
-        MGlobal::displayInfo(MString("Importing ") + MString(mFileName.c_str()));
+        TF_STATUS("Importing '%s'", mFileName.c_str());
     }
     
     if (mFileName.empty()) {
-        MString error = "Non empty file specified. Skipping...";
-        MGlobal::displayError(error);
+        TF_RUNTIME_ERROR("Empty file specified. Exiting.");
         return MS::kFailure;
     }
 
@@ -221,10 +220,9 @@ MStatus usdImport::doIt(const MArgList & args)
             MDagPath dagPath;
             status = selList.getDagPath(0, dagPath);
             if (status != MS::kSuccess) {
-                std::string errorStr = TfStringPrintf(
-                        "Invalid path \"%s\"for -parent.",
+                TF_RUNTIME_ERROR(
+                        "Invalid path '%s' for -parent.",
                         tmpVal.asChar());
-                MGlobal::displayError(MString(errorStr.c_str()));
                 return MS::kFailure;
             }
             mUsdReadJob->setMayaRootDagPath( dagPath );

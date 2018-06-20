@@ -315,7 +315,7 @@ void
 UsdMayaGLBatchRenderer::Reset()
 {
     if (UsdMayaGLBatchRenderer::CurrentlyExists()) {
-        MGlobal::displayInfo("Resetting USD Batch Renderer");
+        TF_STATUS("Resetting USD Batch Renderer");
         UsdMayaGLBatchRenderer::DeleteInstance();
     }
 
@@ -494,7 +494,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
     if (!renderer) {
-        MGlobal::displayError("Viewport 2.0 renderer not initialized.");
+        TF_RUNTIME_ERROR("Viewport 2.0 renderer not initialized.");
     } else {
         // Note that we do not ever remove this notification handler. Maya
         // ensures that only one handler will be registered for a given name

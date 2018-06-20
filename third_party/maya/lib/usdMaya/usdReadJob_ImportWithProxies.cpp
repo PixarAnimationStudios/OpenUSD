@@ -49,7 +49,6 @@
 
 #include <maya/MDagModifier.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPxRepresentation.h>
 #include <maya/MString.h>
@@ -336,19 +335,18 @@ usdReadJob::_DoImportWithProxies(UsdPrimRange& range)
         } else if (prim.GetTypeName() == _tokens->ScopePrimTypeName) {
             // XXX: This is completely wrong, but I don't want to deal
             // with the fallout of fixing it right now.
-            MGlobal::displayWarning(
-                TfStringPrintf("Scope \"%s\". Skipping all children.",
-                               prim.GetPath().GetText()).c_str());
+            TF_WARN("Encountered Scope <%s>; currently cannot handle Scopes. "
+                    "Skipping all children.",
+                    prim.GetPath().GetText());
             primIt.PruneChildren();
         } else if (prim.GetTypeName() != _tokens->XformTypeName) {
             // Don't complain about Xform prims being unsupported. For the
             // "Expanded" representation of assemblies, we'll only create the
             // transforms we need to in order to reach supported prims.
-            MGlobal::displayWarning(
-                TfStringPrintf("Prim type \"%s\" unsupported in 'Expanded' "
-                               "representation for prim \"%s\". Skipping...",
-                               prim.GetTypeName().GetText(),
-                               prim.GetPath().GetText()).c_str());
+            TF_WARN("Prim type '%s' unsupported in 'Expanded' "
+                    "representation for prim <%s>. Skipping...",
+                    prim.GetTypeName().GetText(),
+                    prim.GetPath().GetText());
         }
     }
 

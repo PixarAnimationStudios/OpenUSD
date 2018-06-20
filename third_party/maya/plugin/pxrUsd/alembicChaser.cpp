@@ -217,10 +217,10 @@ _WritePrefixedAttrs(
                     depFn, attrEntry.mayaAttributeName);
             UsdGeomImageable imageable(entry.usdPrim);
             if (!imageable) {
-                MGlobal::displayError(TfStringPrintf(
+                TF_RUNTIME_ERROR(
                         "Cannot create primvar for non-UsdGeomImageable "
-                        "USD prim: '%s'",
-                        entry.usdPrim.GetPath().GetText()).c_str());
+                        "USD prim <%s>",
+                        entry.usdPrim.GetPath().GetText());
                 continue;
             }
             UsdGeomPrimvar primvar = PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
@@ -244,11 +244,11 @@ _WritePrefixedAttrs(
             PxrUsdMayaWriteUtil::SetUsdAttr(plg, usdAttr, usdTime);
         }
         else {
-            MGlobal::displayError(TfStringPrintf(
+            TF_RUNTIME_ERROR(
                     "Could not create attribute '%s' for "
-                    "USD prim: '%s'",
+                    "USD prim <%s>",
                     attrEntry.usdAttributeName.c_str(),
-                    entry.usdPrim.GetPath().GetText()).c_str());
+                    entry.usdPrim.GetPath().GetText());
             continue;
         }
     }

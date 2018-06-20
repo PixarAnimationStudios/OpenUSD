@@ -527,7 +527,9 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     if ((dirtiedPlugName.length() > variantSetPrefix.length()) && 
         (dirtiedPlugName.substring(0, variantSetPrefix.length()-1) == variantSetPrefix))
     {
-        MGlobal::displayInfo("UsdMayaReferenceAssembly::setDependentsDirty VariantSet value changed.  Dirtying stage: " + dirtiedPlugName);
+        TF_STATUS(
+                "Dirtying stage due to variant selection change: %s",
+                dirtiedPlugName.asChar());
         MObject thisNode = thisMObject();
         affectedPlugs.append( MPlug(thisNode, _psData.inStageDataCached) );
         affectedPlugs.append( MPlug(thisNode, _psData.outStageData) );
@@ -788,12 +790,14 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
             usdPrim = usdStage->GetPrimAtPath( primPath );
         }
         else {
-            MGlobal::displayWarning("UsdMayaReferenceAssembly::computeOutStageData" + MPxNode::name() + ": Stage primPath '" + 
-                                    MString(inData->primPath.GetText()) + "'' not a parent of primPath '" +
-                                    MString(primPathStr.c_str()) + "'. Skipping variant assignment.");
+            TF_WARN("%s: Assembly primPath <%s> is not a descendant of input "
+                    "stage primPath <%s>. Skipping variant assignment.",
+                    MPxNode::name().asChar(),
+                    primPathStr.c_str(),
+                    inData->primPath.GetText());
         }
     } else {
-        MGlobal::displayWarning(MPxNode::name() + ": Stage primPath MISSING");
+        TF_WARN("%s: Stage primPath MISSING", MPxNode::name().asChar());
     }
 
     // Handle UsdPrim variant overrides and draw modes for subassemblies (i.e.,
@@ -1262,22 +1266,18 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     
     if( !invalidEdits.empty() )
     {
-        MString badEdits("The following edits could not be read from the proxy for '");
-        badEdits += assemblyPathStr;
-        badEdits += "':\n\t";
-        badEdits += TfStringJoin( invalidEdits, "\n\t" ).c_str();
-        
-        MGlobal::displayWarning( badEdits );
+        TF_WARN("The following edits could not be read from the proxy for '%s':"
+                "\n\t%s",
+                assemblyPathStr.asChar(),
+                TfStringJoin(invalidEdits, "\n\t").c_str());
     }
     
     if( !failedEdits.empty() )
     {
-        MString badEdits("The following edits could not be pushed to the proxy for '");
-        badEdits += assemblyPathStr;
-        badEdits += "':\n\t";
-        badEdits += TfStringJoin( failedEdits, "\n\t" ).c_str();
-        
-        MGlobal::displayError( badEdits );
+        TF_WARN("The following edits could not be pushed to the proxy for '%s':"
+                "\n\t%s",
+                assemblyPathStr.asChar(),
+                TfStringJoin(failedEdits, "\n\t").c_str());
     }
 }
 
