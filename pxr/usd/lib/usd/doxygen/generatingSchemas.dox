@@ -70,7 +70,12 @@ Schema classes can be classified into the following two types:
             - <b>Multiple-Apply API Schemas</b> - Applied API schemas that can 
             be applied multiple times on the same prim with different instance 
             names. For example, UsdCollectionAPI, which has to be applied once 
-            per collection owned by a prim. 
+            per collection owned by a prim. Properties instantiated by this 
+            API schema are prefixed with the namespace prefix of the schema 
+            followed by the instance name. There is specific metadata one 
+            authors in schema.usda to identify the prefix for multi-apply 
+            schemas, and the properties for a multi-apply schema should 
+            be listed without any prefix.
 
  - <b>IsA schema</b> - An IsA schema can impart a typeName to a prim in
     addition to providing an interface to a prim's qualities. Every IsA
@@ -278,6 +283,11 @@ Here's a short description of each datum in the per-class customData dictionary:
     Can be set to 'nonApplied', to create a non-applied API schema or to 
     "multipleApply" to create a multiple-apply API schema.
 
+  - \b propertyNamespacePrefix - must only be specified on multiple apply API 
+    schemas which have properties. This token, alongside the instance name, 
+    will be inserted as a prefix to all properties created by this 
+    multiple-apply API schema.
+
   - \b isPrivateApply - boolean value indicating whether the Apply method that
     is auto-generated for an applied API schema must be private or public. 
     This defaults to False and must only be specified for API schemas.
@@ -464,6 +474,22 @@ class "MyParamsAPI" (
     # one can force a schema property to be considered custom by explicitly
     # declaring it to be so.
     custom string info
+}
+
+# Example multiple-apply API that gives an interface to create instances of 
+# "critters" on a prim.
+class "GridCrittersAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "critter"
+    }
+)
+{
+    # this will instantiated as "critter:<instance name>:xform"
+    matrix4d xform
+    # this will instantiated as "critter:<instance name>:color"
+    color4f color
 }
 \endcode
 

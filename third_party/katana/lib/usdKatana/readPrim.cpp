@@ -454,7 +454,7 @@ _BuildCollections(
             incExcStr << "((";
             for (const SdfPath &p : includes) {
                 TfToken collectionName;
-                if (UsdCollectionAPI::IsCollectionPath(p, &collectionName)) {
+                if (UsdCollectionAPI::IsCollectionAPIPath(p, &collectionName)) {
                     SdfPath collPrimPath= p.GetPrimPath();
                     std::string katCollStr = _GetKatanaCollectionPath(collPrimPath, 
                         collectionName, prim, collection.GetName(), data);

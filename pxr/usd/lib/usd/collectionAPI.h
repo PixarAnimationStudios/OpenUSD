@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/tokens.h"
@@ -142,6 +143,11 @@ class SdfAssetPath;
 /// \snippet examples.cpp ApplyCollections
 /// 
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdTokens.
+/// So to set an attribute to the value "rightHanded", use UsdTokens->rightHanded
+/// as the value.
+///
 class UsdCollectionAPI : public UsdAPISchemaBase
 {
 public:
@@ -167,47 +173,84 @@ public:
     /// to the same prim multiple times with different instance names. 
     static const bool IsMultipleApply = true;
 
-    /// Construct a UsdCollectionAPI on UsdPrim \p prim .
-    /// Equivalent to UsdCollectionAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdCollectionAPI on UsdPrim \p prim with
+    /// name \p name . Equivalent to
+    /// UsdCollectionAPI::Get(
+    ///    prim.GetStage(),
+    ///    prim.GetPath().AppendProperty(
+    ///        "collection:name"));
+    ///
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdCollectionAPI(const UsdPrim& prim=UsdPrim())
-        : UsdAPISchemaBase(prim)
-    {
-    }
+    explicit UsdCollectionAPI(
+        const UsdPrim& prim=UsdPrim(), const TfToken &name=TfToken())
+        : UsdAPISchemaBase(prim, /*instanceName*/ name)
+    { }
 
-    /// Construct a UsdCollectionAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdCollectionAPI(schemaObj.GetPrim()),
-    /// as it preserves SchemaBase state.
-    explicit UsdCollectionAPI(const UsdSchemaBase& schemaObj)
-        : UsdAPISchemaBase(schemaObj)
-    {
-    }
+    /// Construct a UsdCollectionAPI on the prim held by \p schemaObj with
+    /// name \p name.  Should be preferred over
+    /// UsdCollectionAPI(schemaObj.GetPrim(), name), as it preserves
+    /// SchemaBase state.
+    explicit UsdCollectionAPI(
+        const UsdSchemaBase& schemaObj, const TfToken &name)
+        : UsdAPISchemaBase(schemaObj, /*instanceName*/ name)
+    { }
 
     /// Destructor.
     USD_API
     virtual ~UsdCollectionAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
-    /// class and all its ancestor classes.  Does not include attributes that
-    /// may be authored by custom/extended methods of the schemas involved.
+    /// class and all its ancestor classes for a given instance name.  Does not
+    /// include attributes that may be authored by custom/extended methods of
+    /// the schemas involved. The names returned will have the proper namespace
+    /// prefix.
     USD_API
     static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    GetSchemaAttributeNames(
+        bool includeInherited=true, const TfToken instanceName=TfToken());
+
+    /// Returns the name of this multiple-apply schema instance
+    TfToken GetName() const {
+        return _GetInstanceName();
+    }
 
     /// Return a UsdCollectionAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
-    /// return an invalid schema object.  This is shorthand for the following:
+    /// return an invalid schema object.  \p path must be of the format
+    /// <path>.collection:name .
+    ///
+    /// This is shorthand for the following:
     ///
     /// \code
-    /// UsdCollectionAPI(stage->GetPrimAtPath(path));
+    /// TfToken name = SdfPath::StripNamespace(path.GetToken());
+    /// UsdCollectionAPI(
+    ///     stage->GetPrimAtPath(path.GetPrimPath()), name);
     /// \endcode
     ///
     USD_API
     static UsdCollectionAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+    /// Return a UsdCollectionAPI with name \p name holding the
+    /// prim \p prim. Shorthand for UsdCollectionAPI(prim, name);
+    USD_API
+    static UsdCollectionAPI
+    Get(const UsdPrim &prim, const TfToken &name);
+
+    /// Checks if the given name \p baseName is the base name of a property
+    /// of CollectionAPI.
+    USD_API
+    static bool
+    IsSchemaPropertyBaseName(const TfToken &baseName);
+
+    /// Checks if the given path \p path is an attribute of an API schema of
+    /// type CollectionAPI. If so, it stores the instance name of
+    /// the schema in \p name and returns true. Otherwise, it returns false.
+    USD_API
+    static bool
+    IsCollectionAPIPath(const SdfPath &path, TfToken *name);
 private:
 
     /// Applies this <b>multiple-apply</b> API schema to the given \p prim 
@@ -252,6 +295,95 @@ private:
     virtual bool _IsMultipleApplyAPISchema() const override;
 
 public:
+    // --------------------------------------------------------------------- //
+    // EXPANSIONRULE 
+    // --------------------------------------------------------------------- //
+    /// Specifies how the paths that are included in
+    /// the collection must be expanded to determine its members.
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USD_API
+    UsdAttribute GetExpansionRuleAttr() const;
+
+    /// See GetExpansionRuleAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USD_API
+    UsdAttribute CreateExpansionRuleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // INCLUDEROOT 
+    // --------------------------------------------------------------------- //
+    /// Boolean attribute indicating whether the pseudo-root
+    /// path &lt;/&gt; should be counted as one of the included target
+    /// paths.  The fallback is false.  This separate attribute is
+    /// required because relationships cannot directly target the root.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USD_API
+    UsdAttribute GetIncludeRootAttr() const;
+
+    /// See GetIncludeRootAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USD_API
+    UsdAttribute CreateIncludeRootAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // INCLUDES 
+    // --------------------------------------------------------------------- //
+    /// Specifies a list of targets that are included in the collection.
+    /// This can target prims or properties directly. A collection can insert
+    /// the rules of another collection by making its <i>includes</i>
+    /// relationship target the <b>collection:{collectionName}</b> property on
+    /// the owning prim of the collection to be included
+    ///
+    USD_API
+    UsdRelationship GetIncludesRel() const;
+
+    /// See GetIncludesRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USD_API
+    UsdRelationship CreateIncludesRel() const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXCLUDES 
+    // --------------------------------------------------------------------- //
+    /// Specifies a list of targets that are excluded below
+    /// the included paths in this collection. This can target prims or
+    /// properties directly, but cannot target another collection. This is to
+    /// keep the membership determining logic simple, efficient and easier to
+    /// reason about. Finally, it is invalid for a collection to exclude
+    /// paths that are not included in it. The presence of such "orphaned"
+    /// excluded paths will not affect the set of paths included in the
+    /// collection, but may affect the performance of querying membership of 
+    /// a path in the collection (see
+    /// UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
+    /// or of enumerating the objects belonging to the collection (see 
+    /// UsdCollectionAPI::GetIncludedObjects).
+    ///
+    USD_API
+    UsdRelationship GetExcludesRel() const;
+
+    /// See GetExcludesRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USD_API
+    UsdRelationship CreateExcludesRel() const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -264,16 +396,6 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
 public:
-    /// Constructor to initialize a UsdCollectionAPI object for a collection 
-    /// named \p name on the prim, \p prim.
-    /// This does not create the collection by instantiating the 'expansionRule'
-    /// property. If the collection already exists, it's properties are not 
-    /// modified. Use ApplyCollection() to create a collection on a prim.
-    UsdCollectionAPI(const UsdPrim& prim, 
-                     const TfToken &name) :
-        UsdAPISchemaBase(prim, /*instanceName*/ name)
-    { }
-
     /// Adds a new collection named \p name on the given prim, \p prim with the 
     /// specified expansion-rule, \p expansionRule.
     /// 
@@ -434,12 +556,6 @@ public:
         bool _hasExcludes=false;
     };
 
-    /// Returns the name of the collection.
-    USD_API
-    TfToken GetName() const {
-        return _GetInstanceName();
-    }
-
     /// Returns the canonical path that represents this collection. 
     /// This points to a property named "collection:{collectionName}" on the 
     /// prim defining the collection (which won't really exist as a property 
@@ -457,11 +573,6 @@ public:
     static SdfPath GetNamedCollectionPath(
         const UsdPrim &prim, 
         const TfToken &collectionName);
-
-    /// Returns true if a property with the given base-name, \p baseName 
-    /// could be collection schema property.
-    USD_API
-    static bool IsSchemaPropertyBaseName(const TfToken &baseName);
 
     /// Returns true if \p path points to a collection.
     /// i.e., if it is a property path and the property name is of the 
@@ -513,74 +624,6 @@ public:
         const MembershipQuery &query,
         const UsdStageWeakPtr &stage,
         const Usd_PrimFlagsPredicate &pred=UsdPrimDefaultPredicate);
-
-    /// \anchor UsdCollectionAPI_RawProperties
-    /// \name Collection Property API
-    /// 
-    /// API for getting and creating the "raw" properties associated with a 
-    /// collection. 
-    /// 
-    /// @{
-
-    /// Boolean attribute indicating whether the pseudo-root
-    /// path &lt;/&gt; should be counted as one of the included target
-    /// paths.  The fallback is false.  This separate attribute is
-    /// required because relationships cannot directly target the root.
-    ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
-    USD_API
-    UsdAttribute GetIncludeRootAttr() const;
-
-    /// See GetIncludeRootAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USD_API
-    UsdAttribute CreateIncludeRootAttr(VtValue const &defaultValue = VtValue(),
-                                       bool writeSparsely=false) const;
-
-    /// Returns the "expansionRule" attribute of the collection if it exists.
-    /// 
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    ///
-    USD_API 
-    UsdAttribute GetExpansionRuleAttr() const;
-
-
-    /// Creates the "expansionRule" attribute associated with the collection.
-    /// 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default.
-    ///
-    /// \sa GetExpansionRuleAttr()
-    ///
-    USD_API
-    UsdAttribute CreateExpansionRuleAttr(
-        const VtValue &defaultValue=VtValue()) const;
-
-    /// Returns the "includes" relationship of the collection if it exists.
-    USD_API 
-    UsdRelationship GetIncludesRel() const;
-    
-    /// Creates the "includes" relationship of the collection if it doesn't 
-    /// already exist and returns it.
-    USD_API
-    UsdRelationship CreateIncludesRel() const;
-
-    /// Returns the "excludes" relationship of the collection if it exists.
-    USD_API 
-    UsdRelationship GetExcludesRel() const;
-
-    /// Creates the "excludes" relationship of the collection if it doesn't 
-    /// already exist and returns it.
-    USD_API 
-    UsdRelationship CreateExcludesRel() const;
 
     /// @}
 
@@ -649,14 +692,6 @@ public:
     bool BlockCollection() const;
 
 private:
-    // Returns the collection:<name>:expansionRule attribute of the collection.
-    UsdAttribute _GetExpansionRuleAttr(bool create=false) const;
-
-    // Returns the collection:<name>:includes relationship.
-    UsdRelationship _GetIncludesRel(bool create=false) const;
-
-    // Returns the collection:<name>:excludes relationship.
-    UsdRelationship _GetExcludesRel(bool create=false) const;
 
     // Returns the name of the property belonging to this collection, given the 
     // base name of the attribute. Eg, if baseName is 'includes', this 

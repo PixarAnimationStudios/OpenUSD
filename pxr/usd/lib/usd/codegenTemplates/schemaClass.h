@@ -101,6 +101,30 @@ public:
     static const bool IsMultipleApply = {{ "true" if cls.isMultipleApply else "false" }};
 {% endif %}
 
+{% if cls.isMultipleApply %}
+    /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim with
+    /// name \p name . Equivalent to
+    /// {{ cls.cppClassName }}::Get(
+    ///    prim.GetStage(),
+    ///    prim.GetPath().AppendProperty(
+    ///        "{{ cls.propertyNamespacePrefix }}:name"));
+    ///
+    /// for a \em valid \p prim, but will not immediately throw an error for
+    /// an invalid \p prim
+    explicit {{ cls.cppClassName }}(
+        const UsdPrim& prim=UsdPrim(), const TfToken &name=TfToken())
+        : {{ cls.parentCppClassName }}(prim, /*instanceName*/ name)
+    { }
+
+    /// Construct a {{ cls.cppClassName }} on the prim held by \p schemaObj with
+    /// name \p name.  Should be preferred over
+    /// {{ cls.cppClassName }}(schemaObj.GetPrim(), name), as it preserves
+    /// SchemaBase state.
+    explicit {{ cls.cppClassName }}(
+        const UsdSchemaBase& schemaObj, const TfToken &name)
+        : {{ cls.parentCppClassName }}(schemaObj, /*instanceName*/ name)
+    { }
+{% else %}
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim .
     /// Equivalent to {{ cls.cppClassName }}::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -117,6 +141,7 @@ public:
         : {{ cls.parentCppClassName }}(schemaObj)
     {
     }
+{% endif %}
 
     /// Destructor.
     {% if useExportAPI -%}
@@ -124,29 +149,72 @@ public:
     {% endif -%}
     virtual ~{{ cls.cppClassName }}();
 
+{% if cls.isMultipleApply %}
+    /// Return a vector of names of all pre-declared attributes for this schema
+    /// class and all its ancestor classes for a given instance name.  Does not
+    /// include attributes that may be authored by custom/extended methods of
+    /// the schemas involved. The names returned will have the proper namespace
+    /// prefix.
+{% else %}
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+{% endif %}
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static const TfTokenVector &
+{% if cls.isMultipleApply %}
+    GetSchemaAttributeNames(
+        bool includeInherited=true, const TfToken instanceName=TfToken());
+{% else %}
     GetSchemaAttributeNames(bool includeInherited=true);
+{% endif %}
+{% if cls.isMultipleApply %}
+
+    /// Returns the name of this multiple-apply schema instance
+    TfToken GetName() const {
+        return _GetInstanceName();
+    }
+{% endif %}
 
     /// Return a {{ cls.cppClassName }} holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+    /// return an invalid schema object.  \p path must be of the format
+    /// <path>.{{ cls.propertyNamespacePrefix }}:name .
+    ///
+    /// This is shorthand for the following:
+    ///
+    /// \code
+    /// TfToken name = SdfPath::StripNamespace(path.GetToken());
+    /// {{ cls.cppClassName }}(
+    ///     stage->GetPrimAtPath(path.GetPrimPath()), name);
+    /// \endcode
+{% else %}
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
     /// {{ cls.cppClassName }}(stage->GetPrimAtPath(path));
     /// \endcode
+{% endif %}
     ///
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }}
     Get(const UsdStagePtr &stage, const SdfPath &path);
+{% if cls.isMultipleApply %}
+
+    /// Return a {{ cls.cppClassName }} with name \p name holding the
+    /// prim \p prim. Shorthand for {{ cls.cppClassName }}(prim, name);
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static {{ cls.cppClassName }}
+    Get(const UsdPrim &prim, const TfToken &name);
+{% endif %}
 
 {% if cls.isConcrete %}
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -176,6 +244,24 @@ public:
     {% endif -%}
     static {{ cls.cppClassName }}
     Define(const UsdStagePtr &stage, const SdfPath &path);
+{% endif %}
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+    /// Checks if the given name \p baseName is the base name of a property
+    /// of {{ cls.usdPrimTypeName }}.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static bool
+    IsSchemaPropertyBaseName(const TfToken &baseName);
+
+    /// Checks if the given path \p path is an attribute of an API schema of
+    /// type {{ cls.usdPrimTypeName }}. If so, it stores the instance name of
+    /// the schema in \p name and returns true. Otherwise, it returns false.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static bool
+    Is{{ cls.usdPrimTypeName }}Path(const SdfPath &path, TfToken *name);
 {% endif %}
 {% if cls.isPrivateApply %}
 private:

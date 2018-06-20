@@ -351,6 +351,13 @@ class ClassInfo(object):
                 not self.isAPISchemaBase
         self.apiSchemaType = self.customData.get(Usd.Tokens.apiSchemaType, 
                 Usd.Tokens.singleApply if self.isApi else None)
+        self.propertyNamespacePrefix = \
+            self.customData.get(Usd.Tokens.propertyNamespacePrefix)
+
+        if not self.apiSchemaType == Usd.Tokens.multipleApply and \
+            self.propertyNamespacePrefix:
+            raise Exception(errorMsg("propertyNamespacePrefix should only "
+                "be used as a metadata field on multiple-apply API schemas"))
 
         if self.isApi and \
            self.apiSchemaType not in [Usd.Tokens.nonApplied, 
@@ -460,6 +467,28 @@ def ParseUsd(usdFilePath):
 
         usdPrim = stage.GetPrimAtPath(sdfPrim.path)
         classInfo = ClassInfo(usdPrim, sdfPrim)
+
+        errorPrefix = ('Invalid schema definition at ' 
+                       + '<' + str(sdfPrim.path) + '>')
+        errorSuffix = ('See '
+                       'https://graphics.pixar.com/usd/docs/api/'
+                       '_usd__page__generating_schemas.html '
+                       'for more information.\n')
+        errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
+        # make sure that if we have a multiple-apply schema with a property
+        # namespace prefix that the prim actually has some properties
+        if classInfo.apiSchemaType == Usd.Tokens.multipleApply:
+            if classInfo.propertyNamespacePrefix and \
+                len(sdfPrim.properties) == 0:
+                raise Exception(errorMsg("Multiple-apply schemas that have the "
+                    "propertyNamespacePrefix metadata fields must have at "
+                    "least one property"))
+            if not classInfo.propertyNamespacePrefix and \
+                not len(sdfPrim.properties) == 0:
+                raise Exception(errorMsg("Multiple-apply schemas that do not"
+                    "have a propertyNamespacePrefix metadata field must have "
+                    "zero properties"))
+
         classes.append(classInfo)
         #
         # We don't want to use the composed property names here because we only

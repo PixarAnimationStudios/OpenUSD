@@ -185,6 +185,37 @@ class "CollectionAPI" (
     """
 )
 {
+    rel excludes (
+        doc = '''Specifies a list of targets that are excluded below
+        the included paths in this collection. This can target prims or
+        properties directly, but cannot target another collection. This is to
+        keep the membership determining logic simple, efficient and easier to
+        reason about. Finally, it is invalid for a collection to exclude
+        paths that are not included in it. The presence of such "orphaned"
+        excluded paths will not affect the set of paths included in the
+        collection, but may affect the performance of querying membership of 
+        a path in the collection (see
+        UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
+        or of enumerating the objects belonging to the collection (see 
+        UsdCollectionAPI::GetIncludedObjects).'''
+    )
+    uniform token expansionRule (
+        doc = """Specifies how the paths that are included in
+        the collection must be expanded to determine its members."""
+    )
+    uniform bool includeRoot (
+        doc = """Boolean attribute indicating whether the pseudo-root
+        path &lt;/&gt; should be counted as one of the included target
+        paths.  The fallback is false.  This separate attribute is
+        required because relationships cannot directly target the root."""
+    )
+    rel includes (
+        doc = """Specifies a list of targets that are included in the collection.
+        This can target prims or properties directly. A collection can insert
+        the rules of another collection by making its <i>includes</i>
+        relationship target the <b>collection:{collectionName}</b> property on
+        the owning prim of the collection to be included"""
+    )
 }
 
 class "ClipsAPI" (

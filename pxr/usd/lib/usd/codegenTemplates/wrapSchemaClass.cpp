@@ -63,6 +63,14 @@ _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
 }
 {% endif %}
 {% endfor %}
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+
+static bool _WrapIs{{ cls.usdPrimTypeName }}Path(const SdfPath &path) {
+    TfToken collectionName;
+    return {{ cls.cppClassName }}::Is{{ cls.usdPrimTypeName }}Path(
+        path, &collectionName);
+}
+{% endif %}
 {% if useExportAPI %}
 
 } // anonymous namespace
@@ -76,11 +84,29 @@ void wrap{{ cls.cppClassName }}()
         cls("{{ cls.className }}");
 
     cls
+{% if cls.isMultipleApply %}
+        .def(init<UsdPrim, TfToken>())
+        .def(init<UsdSchemaBase const&, TfToken>())
+{% else %}
         .def(init<UsdPrim>(arg("prim")))
         .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+{% endif %}
         .def(TfTypePythonClass())
 
+{% if cls.isMultipleApply %}
+        .def("Get",
+            ({{ cls.cppClassName }}(*)(const UsdStagePtr &stage, 
+                                       const SdfPath &path))
+               &This::Get,
+            (arg("stage"), arg("path")))
+        .def("Get",
+            ({{ cls.cppClassName }}(*)(const UsdPrim &prim,
+                                       const TfToken &name))
+               &This::Get,
+            (arg("prim"), arg("name")))
+{% else %}
         .def("Get", &This::Get, (arg("stage"), arg("path")))
+{% endif %}
         .staticmethod("Get")
 {% if cls.isConcrete %}
 
@@ -121,6 +147,9 @@ void wrap{{ cls.cppClassName }}()
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
+{% if cls.isMultipleApply %}
+             arg("instanceName")=TfToken(),
+{% endif %}
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
@@ -155,6 +184,10 @@ void wrap{{ cls.cppClassName }}()
              &This::Create{{ Proper(rel.apiName) }}Rel)
 {% endif %}
 {% endfor %}
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+        .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
+            .staticmethod("Is{{ cls.usdPrimTypeName }}Path")
+{% endif %}
     ;
 
     _CustomWrapCode(cls);

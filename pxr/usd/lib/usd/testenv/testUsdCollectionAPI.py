@@ -259,7 +259,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # Test the other overload of GetCollection.
         leafGeomPath = leafGeom.GetCollectionPath()
-        leafGeom = Usd.CollectionAPI.GetCollection(stage, leafGeomPath)
+        leafGeom = Usd.CollectionAPI.Get(stage, leafGeomPath)
         self.assertEqual(leafGeom.GetCollectionPath(), leafGeomPath)
 
         (valid, reason) = leafGeom.Validate()
@@ -268,15 +268,15 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # Test GetName() API.
         self.assertEqual(leafGeom.GetName(), 'leafGeom')
 
-        # Test Get/IsCollectionPath API.
-        self.assertTrue(Usd.CollectionAPI.IsCollectionPath(
+        # Test Get/IsCollectionAPIPath API.
+        self.assertTrue(Usd.CollectionAPI.IsCollectionAPIPath(
             leafGeom.GetCollectionPath()))
 
         # Ensure that paths of collection schema properties aren't valid
         # collection paths.
-        self.assertFalse(Usd.CollectionAPI.IsCollectionPath(
+        self.assertFalse(Usd.CollectionAPI.IsCollectionAPIPath(
             leafGeom.GetExpansionRuleAttr().GetPath()))
-        self.assertFalse(Usd.CollectionAPI.IsCollectionPath(
+        self.assertFalse(Usd.CollectionAPI.IsCollectionAPIPath(
             leafGeom.GetIncludesRel().GetPath()))
 
         leafGeomMquery = leafGeom.ComputeMembershipQuery()
