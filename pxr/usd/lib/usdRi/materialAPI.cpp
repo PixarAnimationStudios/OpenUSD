@@ -217,7 +217,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_DEFINE_ENV_SETTING(
-    USD_RI_WRITE_BXDF_OUTPUT, true, 
+    USD_RI_WRITE_BXDF_OUTPUT, false, 
     "If set to false, then \"ri:surface\" output is created instead of the "
     "\"ri:bxdf\" output, when UsdRiMaterialAPI::SetSurfaceSource() is "
     "invoked.");
