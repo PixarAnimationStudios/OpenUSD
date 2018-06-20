@@ -29,7 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/UserTaggedAttribute.h"
+#include "usdMaya/userTaggedAttribute.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"

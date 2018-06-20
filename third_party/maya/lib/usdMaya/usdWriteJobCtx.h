@@ -25,10 +25,12 @@
 #define PXRUSDMAYA_USDWRITEJOBCTX_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/path.h"
+
 #include "usdMaya/api.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/skelBindingsWriter.h"
-#include "usdMaya/JobArgs.h"
+
+#include "pxr/usd/sdf/path.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MObjectHandle.h>
@@ -46,16 +48,16 @@ class usdWriteJob;
 /// \brief Provides basic functionality and access to shared data for MayaPrimWriters.
 ///
 /// The main purpose of this class is to handle source prim creation for instancing,
-/// and to avoid storing the JobExportArgs and UsdStage on each prim writer.
+/// and to avoid storing the PxrUsdMayaJobExportArgs and UsdStage on each prim writer.
 ///
 class usdWriteJobCtx {
 protected:
     friend class usdWriteJob;
 
     PXRUSDMAYA_API
-    usdWriteJobCtx(const JobExportArgs& args);
+    usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args);
 public:
-    const JobExportArgs& getArgs() const { return mArgs; };
+    const PxrUsdMayaJobExportArgs& getArgs() const { return mArgs; };
     const UsdStageRefPtr& getUsdStage() const { return mStage; };
     // Queries the master path for instancing.
     // This also creates the master shape if it doesn't exist.
@@ -86,7 +88,7 @@ protected:
     PXRUSDMAYA_API
     void processInstances();
 
-    JobExportArgs mArgs;
+    PxrUsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over
     std::vector<MayaPrimWriterPtr> mMayaPrimWriterList;
     // Stage used to write out USD file

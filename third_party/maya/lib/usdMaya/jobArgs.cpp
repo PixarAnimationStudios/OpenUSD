@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 
 #include "usdMaya/registryHelper.h"
 #include "usdMaya/shadingModeRegistry.h"
@@ -170,7 +170,7 @@ _Vector(const VtDictionary& userArgs, const TfToken& key)
 
 /// Convenience function that takes the result of _Vector and converts it to a
 /// TfToken::Set.
-TfToken::Set
+static TfToken::Set
 _TokenSet(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::string> vec = _Vector<std::string>(userArgs, key);
@@ -184,18 +184,18 @@ _TokenSet(const VtDictionary& userArgs, const TfToken& key)
 // The chaser args are stored as vectors of vectors (since this is how you
 // would need to pass them in the Maya Python command API). Convert this to a
 // map of maps.
-static std::map<std::string, JobExportArgs::ChaserArgs>
+static std::map<std::string, PxrUsdMayaJobExportArgs::ChaserArgs>
 _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::vector<VtValue>> chaserArgs =
             _Vector<std::vector<VtValue>>(userArgs, key);
 
-    std::map<std::string, JobExportArgs::ChaserArgs> result;
+    std::map<std::string, PxrUsdMayaJobExportArgs::ChaserArgs> result;
     for (const std::vector<VtValue>& argTriple : chaserArgs) {
         if (argTriple.size() != 3) {
             TF_CODING_ERROR(
                     "Each chaser arg must be a triple (chaser, arg, value)");
-            return std::map<std::string, JobExportArgs::ChaserArgs>();
+            return std::map<std::string, PxrUsdMayaJobExportArgs::ChaserArgs>();
         }
 
         const std::string& chaser = argTriple[0].Get<std::string>();
@@ -206,7 +206,7 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
-JobExportArgs::JobExportArgs(
+PxrUsdMayaJobExportArgs::PxrUsdMayaJobExportArgs(
     const VtDictionary& userArgs,
     const PxrUsdMayaUtil::ShapeSet& dagPaths,
     const GfInterval& timeInterval) :
@@ -309,7 +309,7 @@ JobExportArgs::JobExportArgs(
 }
 
 std::ostream&
-operator <<(std::ostream& out, const JobExportArgs& exportArgs)
+operator <<(std::ostream& out, const PxrUsdMayaJobExportArgs& exportArgs)
 {
     out << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable) << std::endl
         << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
@@ -367,19 +367,19 @@ operator <<(std::ostream& out, const JobExportArgs& exportArgs)
 }
 
 /* static */
-JobExportArgs JobExportArgs::CreateFromDictionary(
+PxrUsdMayaJobExportArgs PxrUsdMayaJobExportArgs::CreateFromDictionary(
     const VtDictionary& userArgs,
     const PxrUsdMayaUtil::ShapeSet& dagPaths,
     const GfInterval& timeInterval)
 {
-    return JobExportArgs(
+    return PxrUsdMayaJobExportArgs(
             VtDictionaryOver(userArgs, GetDefaultDictionary()),
             dagPaths,
             timeInterval);
 }
 
 /* static */
-const VtDictionary& JobExportArgs::GetDefaultDictionary()
+const VtDictionary& PxrUsdMayaJobExportArgs::GetDefaultDictionary()
 {
     static VtDictionary d;
     static std::once_flag once;
@@ -431,7 +431,7 @@ const VtDictionary& JobExportArgs::GetDefaultDictionary()
     return d;
 }
 
-JobImportArgs::JobImportArgs(
+PxrUsdMayaJobImportArgs::PxrUsdMayaJobImportArgs(
     const VtDictionary& userArgs,
     const bool importWithProxyShapes,
     const GfInterval& timeInterval) :
@@ -462,19 +462,19 @@ JobImportArgs::JobImportArgs(
 }
 
 /* static */
-JobImportArgs JobImportArgs::CreateFromDictionary(
+PxrUsdMayaJobImportArgs PxrUsdMayaJobImportArgs::CreateFromDictionary(
     const VtDictionary& userArgs,
     const bool importWithProxyShapes,
     const GfInterval& timeInterval)
 {
-    return JobImportArgs(
+    return PxrUsdMayaJobImportArgs(
             VtDictionaryOver(userArgs, GetDefaultDictionary()),
             importWithProxyShapes,
             timeInterval);
 }
 
 /* static */
-const VtDictionary& JobImportArgs::GetDefaultDictionary()
+const VtDictionary& PxrUsdMayaJobImportArgs::GetDefaultDictionary()
 {
     static VtDictionary d;
     static std::once_flag once;
@@ -506,7 +506,7 @@ const VtDictionary& JobImportArgs::GetDefaultDictionary()
 }
 
 std::ostream&
-operator <<(std::ostream& out, const JobImportArgs& importArgs)
+operator <<(std::ostream& out, const PxrUsdMayaJobImportArgs& importArgs)
 {
     out << "shadingMode: " << importArgs.shadingMode << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl

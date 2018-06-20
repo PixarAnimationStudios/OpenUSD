@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 
 #include "usdMaya/api.h"
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/usd/usd/prim.h"
@@ -48,7 +48,7 @@ public:
     PXRUSDMAYA_API
     PxrUsdMayaPrimReaderArgs(
             const UsdPrim& prim,
-            const JobImportArgs& jobArgs);
+            const PxrUsdMayaJobImportArgs& jobArgs);
 
     /// \brief return the usd prim that should be read.
     PXRUSDMAYA_API
@@ -78,7 +78,7 @@ public:
 
 private:
     const UsdPrim& _prim;
-    const JobImportArgs& _jobArgs;
+    const PxrUsdMayaJobImportArgs& _jobArgs;
 };
 
 

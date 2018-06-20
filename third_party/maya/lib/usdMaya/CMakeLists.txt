@@ -77,7 +77,7 @@ pxr_shared_library(${PXR_PACKAGE}
         primReader
         functorPrimReader
 
-        JobArgs
+        jobArgs
         usdReadJob
         usdWriteJob
         usdWriteJobCtx
@@ -92,14 +92,16 @@ pxr_shared_library(${PXR_PACKAGE}
         usdTranslatorExport
         usdTranslatorImport
 
-        Chaser
-        ChaserRegistry
+        chaser
+        chaserRegistry
 
-        UserTaggedAttribute
+        userTaggedAttribute
 
     PRIVATE_CLASSES
         debugCodes
+        modelKindWriter
         registryHelper
+
         MayaCameraWriter
         MayaInstancerWriter
         MayaLocatorWriter
@@ -108,7 +110,6 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaNurbsSurfaceWriter
         MayaParticleWriter
         MayaSkeletonWriter
-        ModelKindWriter
 
     PRIVATE_HEADERS
         shadingModePxrRis_rfm_map.h

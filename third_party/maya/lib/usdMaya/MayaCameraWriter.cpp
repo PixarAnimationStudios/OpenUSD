@@ -24,8 +24,8 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaCameraWriter.h"
 
-#include "usdMaya/JobArgs.h"
 #include "usdMaya/adaptor.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/vec2f.h"

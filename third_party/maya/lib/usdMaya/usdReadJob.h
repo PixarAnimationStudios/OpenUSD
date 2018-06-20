@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderContext.h"
 
 #include "pxr/usd/usd/prim.h"
@@ -53,7 +53,7 @@ class usdReadJob
     usdReadJob(const std::string& iFileName, 
         const std::string& iPrimPath, 
         const std::map<std::string, std::string>& iVariants,
-        const JobImportArgs & iArgs,
+        const PxrUsdMayaJobImportArgs & iArgs,
 
         // We need to know the names of the assembly and proxy shape types for
         // when we need to create them. This is specified in the creator for
@@ -95,7 +95,7 @@ class usdReadJob
     bool _ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims);
 
     // Data
-    JobImportArgs mArgs;
+    PxrUsdMayaJobImportArgs mArgs;
     std::string mFileName;
     std::string mPrimPath;
     std::map<std::string,std::string> mVariants;

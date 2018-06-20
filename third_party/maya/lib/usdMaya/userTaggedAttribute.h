@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file UserTaggedAttribute.h
+/// \file userTaggedAttribute.h
 
-#ifndef PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
-#define PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
+#ifndef PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
+#define PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -131,4 +131,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
+#endif

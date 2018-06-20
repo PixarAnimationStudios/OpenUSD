@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/usdTranslatorExport.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/usdWriteJob.h"
 #include "usdMaya/writeUtil.h"
@@ -97,7 +97,7 @@ usdTranslatorExport::writer(const MFileObject &file,
             else {
                 userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
                     argName, theOption[1].asChar(),
-                    JobExportArgs::GetDefaultDictionary());
+                    PxrUsdMayaJobExportArgs::GetDefaultDictionary());
             }
         }
     }
@@ -135,8 +135,9 @@ usdTranslatorExport::writer(const MFileObject &file,
     }
     
     if (dagPaths.size()) {
-        JobExportArgs jobArgs = JobExportArgs::CreateFromDictionary(
-                userArgs, dagPaths, timeInterval);
+        PxrUsdMayaJobExportArgs jobArgs =
+                PxrUsdMayaJobExportArgs::CreateFromDictionary(
+                    userArgs, dagPaths, timeInterval);
         usdWriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append)) {
             std::vector<double> timeSamples =
@@ -199,7 +200,7 @@ usdTranslatorExport::GetDefaultOptions()
     std::call_once(once, []() {
         std::vector<std::string> entries;
         for (const std::pair<std::string, VtValue> keyValue :
-                JobExportArgs::GetDefaultDictionary()) {
+                PxrUsdMayaJobExportArgs::GetDefaultDictionary()) {
             if (keyValue.second.IsHolding<bool>()) {
                 entries.push_back(TfStringPrintf("%s=%d",
                         keyValue.first.c_str(),

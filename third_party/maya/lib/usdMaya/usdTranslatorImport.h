@@ -29,7 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>

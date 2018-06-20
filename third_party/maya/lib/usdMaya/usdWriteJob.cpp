@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/usdWriteJob.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/MayaPrimWriter.h"
 #include "usdMaya/MayaTransformWriter.h"
 
@@ -32,8 +32,8 @@
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/shadingModeExporterContext.h"
 
-#include "usdMaya/Chaser.h"
-#include "usdMaya/ChaserRegistry.h"
+#include "usdMaya/chaser.h"
+#include "usdMaya/chaserRegistry.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -72,7 +72,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-usdWriteJob::usdWriteJob(const JobExportArgs & iArgs) :
+usdWriteJob::usdWriteJob(const PxrUsdMayaJobExportArgs & iArgs) :
     mModelKindWriter(iArgs), mJobCtx(iArgs)
 {
 }

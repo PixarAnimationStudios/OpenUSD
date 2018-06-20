@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/usdTranslatorImport.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/usdReadJob.h"
 #include "usdMaya/usdWriteJob.h"
@@ -97,7 +97,7 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
             } else {
                 userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
                     argName, theOption[1].asChar(),
-                    JobImportArgs::GetDefaultDictionary());
+                    PxrUsdMayaJobImportArgs::GetDefaultDictionary());
             }
         }
     }
@@ -111,8 +111,9 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
         timeInterval = GfInterval();
     }
 
-    JobImportArgs jobArgs = JobImportArgs::CreateFromDictionary(
-            userArgs, /*importWithProxyShapes*/ false, timeInterval);
+    PxrUsdMayaJobImportArgs jobArgs =
+            PxrUsdMayaJobImportArgs::CreateFromDictionary(
+                userArgs, /*importWithProxyShapes*/ false, timeInterval);
     usdReadJob *mUsdReadJob = new usdReadJob(fileName, primPath, variants, jobArgs,
             _assemblyTypeName, _proxyShapeTypeName);
     std::vector<MDagPath> addedDagPaths;
@@ -155,7 +156,7 @@ usdTranslatorImport::GetDefaultOptions()
     std::call_once(once, []() {
         std::vector<std::string> entries;
         for (const std::pair<std::string, VtValue> keyValue :
-                JobImportArgs::GetDefaultDictionary()) {
+                PxrUsdMayaJobImportArgs::GetDefaultDictionary()) {
             if (keyValue.second.IsHolding<bool>()) {
                 entries.push_back(TfStringPrintf("%s=%d",
                         keyValue.first.c_str(),

@@ -27,7 +27,7 @@
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/adaptor.h"
-#include "usdMaya/UserTaggedAttribute.h"
+#include "usdMaya/userTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/rotation.h"

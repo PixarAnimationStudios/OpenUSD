@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_CHASER_H
 #define PXRUSDMAYA_CHASER_H
 
-/// \file Chaser.h
+/// \file chaser.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -69,4 +69,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_CHASER_H
+#endif

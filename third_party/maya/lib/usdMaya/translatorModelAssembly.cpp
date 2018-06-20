@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorModelAssembly.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"

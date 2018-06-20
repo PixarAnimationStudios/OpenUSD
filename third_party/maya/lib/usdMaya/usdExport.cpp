@@ -58,7 +58,8 @@ MSyntax usdExport::createSyntax()
 {
     MSyntax syntax;
 
-    // These flags correspond to entries in JobExportArgs::GetDefaultDictionary.
+    // These flags correspond to entries in
+    // PxrUsdMayaJobExportArgs::GetDefaultDictionary.
     syntax.addFlag("-mt",
                    PxrUsdExportJobArgsTokens->mergeTransformAndShape.GetText(),
                    MSyntax::kBoolean);
@@ -191,7 +192,7 @@ try
 
     // Read all of the dictionary args first.
     const VtDictionary userArgs = PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
-            argData, JobExportArgs::GetDefaultDictionary());
+            argData, PxrUsdMayaJobExportArgs::GetDefaultDictionary());
 
     // Now read all of the other args that are specific to this command.
     bool verbose = argData.isFlagSet("verbose");
@@ -287,8 +288,9 @@ try
         }
     }
 
-    JobExportArgs jobArgs = JobExportArgs::CreateFromDictionary(
-            userArgs, dagPaths, timeInterval);
+    PxrUsdMayaJobExportArgs jobArgs =
+            PxrUsdMayaJobExportArgs::CreateFromDictionary(
+                userArgs, dagPaths, timeInterval);
 
     // Create WriteJob object
     usdWriteJob usdWriteJob(jobArgs);

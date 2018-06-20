@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/Chaser.h"
+#include "usdMaya/chaser.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

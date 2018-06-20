@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "usdMaya/ChaserRegistry.h"
+#include "usdMaya/chaserRegistry.h"
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/pxr.h"

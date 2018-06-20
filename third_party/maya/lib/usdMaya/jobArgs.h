@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_JOBARGS_H
-#define PXRUSDMAYA_JOBARGS_H
+#ifndef PXRUSDMAYA_JOB_ARGS_H
+#define PXRUSDMAYA_JOB_ARGS_H
 
-/// \file JobArgs.h
+/// \file jobArgs.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -109,7 +109,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdImportJobArgsTokens,
         PXRUSDMAYA_JOBIMPORTARGS_TOKENS);
 
-struct JobExportArgs
+struct PxrUsdMayaJobExportArgs
 {
     const TfToken defaultMeshScheme;
     const bool excludeInvisible;
@@ -156,35 +156,37 @@ struct JobExportArgs
     // the model path. This to allow a proper internal reference.
     SdfPath usdModelRootOverridePath; // XXX can we make this const?
 
-    /// Creates a JobExportArgs from the given \p dict, overlaid on top of the
-    /// default dictionary given by GetDefaultDictionary().
+    /// Creates a PxrUsdMayaJobExportArgs from the given \p dict, overlaid on
+    /// top of the default dictionary given by GetDefaultDictionary().
     /// The values of \p dict are stronger (will override) the values from the
     /// default dictionary.
     /// Issues runtime errors if \p dict contains values of the wrong type;
     /// types should match those declared in GetDefaultDictionary().
     PXRUSDMAYA_API
-    static JobExportArgs CreateFromDictionary(
+    static PxrUsdMayaJobExportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
         const PxrUsdMayaUtil::ShapeSet& dagPaths,
         const GfInterval& timeInterval = GfInterval());
 
-    /// Gets the default arguments dictionary for JobExportArgs.
+    /// Gets the default arguments dictionary for PxrUsdMayaJobExportArgs.
     PXRUSDMAYA_API
     static const VtDictionary& GetDefaultDictionary();
 
 private:
     PXRUSDMAYA_API
-    JobExportArgs(
+    PxrUsdMayaJobExportArgs(
         const VtDictionary& userArgs,
         const PxrUsdMayaUtil::ShapeSet& dagPaths,
         const GfInterval& timeInterval);
 };
 
 PXRUSDMAYA_API
-std::ostream& operator <<(std::ostream& out, const JobExportArgs& exportArgs);
+std::ostream& operator <<(
+    std::ostream& out,
+    const PxrUsdMayaJobExportArgs& exportArgs);
 
 
-struct JobImportArgs
+struct PxrUsdMayaJobImportArgs
 {
     const TfToken assemblyRep;
     const TfToken::Set excludePrimvarNames;
@@ -202,35 +204,37 @@ struct JobImportArgs
     /// non-empty interval.
     const GfInterval timeInterval;
 
-    /// Creates a JobImportArgs from the given \p dict, overlaid on top of the
-    /// default dictionary given by GetDefaultDictionary().
+    /// Creates a PxrUsdMayaJobImportArgs from the given \p dict, overlaid on
+    /// top of the default dictionary given by GetDefaultDictionary().
     /// The values of \p dict are stronger (will override) the values from the
     /// default dictionary.
     /// Issues runtime errors if \p dict contains values of the wrong type;
     /// types should match those declared in GetDefaultDictionary().
     PXRUSDMAYA_API
-    static JobImportArgs CreateFromDictionary(
+    static PxrUsdMayaJobImportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
         const bool importWithProxyShapes = false,
         const GfInterval& timeInterval = GfInterval::GetFullInterval());
 
-    /// Gets the default arguments dictionary for JobImportArgs.
+    /// Gets the default arguments dictionary for PxrUsdMayaJobImportArgs.
     PXRUSDMAYA_API
     static const VtDictionary& GetDefaultDictionary();
 
 private:
     PXRUSDMAYA_API
-    JobImportArgs(
+    PxrUsdMayaJobImportArgs(
         const VtDictionary& userArgs,
         const bool importWithProxyShapes,
         const GfInterval& timeInterval);
 };
 
 PXRUSDMAYA_API
-std::ostream& operator <<(std::ostream& out, const JobImportArgs& exportArgs);
+std::ostream& operator <<(
+    std::ostream& out,
+    const PxrUsdMayaJobImportArgs& exportArgs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYA_JOBARGS_H
+#endif

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "ModelKindWriter.h"
+#include "usdMaya/modelKindWriter.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 PxrUsdMaya_ModelKindWriter::PxrUsdMaya_ModelKindWriter(
-    const JobExportArgs& args)
+    const PxrUsdMayaJobExportArgs& args)
     : _args(args),
       _rootIsAssembly(KindRegistry::IsA(args.rootKind, KindTokens->assembly))
 {

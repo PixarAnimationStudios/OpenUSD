@@ -69,7 +69,7 @@ usdReadJob::usdReadJob(
     const std::string &iFileName,
     const std::string &iPrimPath,
     const std::map<std::string, std::string>& iVariants,
-    const JobImportArgs &iArgs,
+    const PxrUsdMayaJobImportArgs &iArgs,
     const std::string& assemblyTypeName,
     const std::string& proxyShapeTypeName) :
     mArgs(iArgs),

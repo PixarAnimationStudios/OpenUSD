@@ -28,10 +28,10 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/Chaser.h"
+#include "usdMaya/chaser.h"
 
 #include "usdMaya/util.h"
-#include "usdMaya/ModelKindWriter.h"
+#include "usdMaya/modelKindWriter.h"
 
 #include "usdMaya/usdWriteJobCtx.h"
 
@@ -49,7 +49,7 @@ class usdWriteJob
   public:
 
     PXRUSDMAYA_API
-    usdWriteJob(const JobExportArgs & iArgs);
+    usdWriteJob(const PxrUsdMayaJobExportArgs & iArgs);
 
     PXRUSDMAYA_API
     ~usdWriteJob();

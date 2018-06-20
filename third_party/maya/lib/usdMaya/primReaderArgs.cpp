@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const UsdPrim& prim,
-        const JobImportArgs& jobArgs)
+        const PxrUsdMayaJobImportArgs& jobArgs)
     : 
         _prim(prim),
         _jobArgs(jobArgs)

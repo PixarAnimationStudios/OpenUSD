@@ -21,16 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_MODELKINDWRITER_H
-#define PXRUSDMAYA_MODELKINDWRITER_H
+#ifndef PXRUSDMAYA_MODEL_KIND_WRITER_H
+#define PXRUSDMAYA_MODEL_KIND_WRITER_H
 
-/// \file ModelKindWriter.h
+/// \file modelKindWriter.h
 
 #include "pxr/pxr.h"
+
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/MayaPrimWriter.h"
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "usdMaya/JobArgs.h"
-#include "usdMaya/MayaPrimWriter.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -45,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// end of writing to the USD stage.
 class PxrUsdMaya_ModelKindWriter {
 public:
-    PxrUsdMaya_ModelKindWriter(const JobExportArgs& args);
+    PxrUsdMaya_ModelKindWriter(const PxrUsdMayaJobExportArgs& args);
 
     /// Processes the given prim in order to collect model hierarchy data.
     /// This should be called after the prim has been written with the given
@@ -72,7 +74,7 @@ private:
     typedef std::unordered_map<SdfPath, bool, SdfPath::Hash> SdfPathBoolMap;
     typedef std::unordered_set<SdfPath, SdfPath::Hash> SdfPathSet;
 
-    JobExportArgs _args;
+    PxrUsdMayaJobExportArgs _args;
 
     // Precomputes whether _args.rootKind IsA assembly.
     bool _rootIsAssembly;
@@ -102,4 +104,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MODELKINDWRITER_H
+#endif // PXRUSDMAYA_MODEL_KIND_WRITER_H

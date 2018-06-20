@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/usdImport.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/usdReadJob.h"
 
@@ -63,7 +63,8 @@ MSyntax usdImport::createSyntax()
 {
     MSyntax syntax;
 
-    // These flags correspond to entries in JobImportArgs::GetDefaultDictionary.
+    // These flags correspond to entries in
+    // PxrUsdMayaJobImportArgs::GetDefaultDictionary.
     syntax.addFlag("-shd",
                    PxrUsdImportJobArgsTokens->shadingMode.GetText(),
                    MSyntax::kString);
@@ -122,7 +123,7 @@ MStatus usdImport::doIt(const MArgList & args)
 
     // Get dictionary values.
     const VtDictionary userArgs = PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
-            argData, JobImportArgs::GetDefaultDictionary());
+            argData, PxrUsdMayaJobImportArgs::GetDefaultDictionary());
     
     std::string mFileName;
     if (argData.isFlagSet("file"))
@@ -199,8 +200,9 @@ MStatus usdImport::doIt(const MArgList & args)
         delete mUsdReadJob;
     }
 
-    JobImportArgs jobArgs = JobImportArgs::CreateFromDictionary(
-            userArgs, /*importWithProxyShapes*/ false, timeInterval);
+    PxrUsdMayaJobImportArgs jobArgs =
+            PxrUsdMayaJobImportArgs::CreateFromDictionary(
+                userArgs, /*importWithProxyShapes*/ false, timeInterval);
 
     // pass in assemblyTypeName and proxyShapeTypeName
     mUsdReadJob = new usdReadJob(mFileName, mPrimPath, mVariants, jobArgs,

@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorCamera.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorUtil.h"
@@ -389,8 +389,9 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject)
 {
-    JobImportArgs defaultJobArgs = JobImportArgs::CreateFromDictionary(
-            JobImportArgs::GetDefaultDictionary());
+    PxrUsdMayaJobImportArgs defaultJobArgs =
+            PxrUsdMayaJobImportArgs::CreateFromDictionary(
+                PxrUsdMayaJobImportArgs::GetDefaultDictionary());
     PxrUsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
     return _ReadToCamera(usdCamera, cameraObject, args, NULL);
 }

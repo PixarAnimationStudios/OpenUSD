@@ -92,7 +92,9 @@ public:
     const SdfPath&         getUsdPath()    const { return mUsdPath; }
     const UsdStageRefPtr&  getUsdStage()   const { return mWriteJobCtx.getUsdStage(); }
     bool isValid()                         const { return mIsValid; }
-    const JobExportArgs&   getArgs()       const { return mWriteJobCtx.getArgs(); }
+    const PxrUsdMayaJobExportArgs& getArgs() const {
+        return mWriteJobCtx.getArgs();
+    }
     const UsdPrim&         getPrim()       const { return mUsdPrim; }
 
     bool getExportsVisibility() const { return mExportsVisibility; }

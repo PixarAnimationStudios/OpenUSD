@@ -55,7 +55,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
     inline
-    SdfPath& rootOverridePath(const JobExportArgs& args, SdfPath& path) {
+    SdfPath& rootOverridePath(
+            const PxrUsdMayaJobExportArgs& args,
+            SdfPath& path) {
         if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
             path = path.ReplacePrefix(path.GetPrefixes()[0], args.usdModelRootOverridePath);
         }
@@ -65,7 +67,8 @@ namespace {
     const SdfPath instancesScopePath("/InstanceSources");
 }
 
-usdWriteJobCtx::usdWriteJobCtx(const JobExportArgs& args) : mArgs(args), mNoInstances(true)
+usdWriteJobCtx::usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args)
+        : mArgs(args), mNoInstances(true)
 {
 
 }

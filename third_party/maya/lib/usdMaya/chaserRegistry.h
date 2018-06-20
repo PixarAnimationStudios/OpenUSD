@@ -24,12 +24,12 @@
 #ifndef PXRUSDMAYA_CHASER_REGISTRY_H
 #define PXRUSDMAYA_CHASER_REGISTRY_H
 
-/// \file ChaserRegistry.h
+/// \file chaserRegistry.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/Chaser.h"
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/chaser.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/util.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -72,7 +72,7 @@ public:
         FactoryContext(
                 const UsdStagePtr& stage, 
                 const DagToUsdMap& dagToUsdMap,
-                const JobExportArgs& jobArgs);
+                const PxrUsdMayaJobExportArgs& jobArgs);
 
         /// \brief Returns the exported stage.
         ///
@@ -93,12 +93,12 @@ public:
         /// It is safe for the \p PxrUsdMayaChaser to save this return value by
         /// reference and use it during it's execution.
         PXRUSDMAYA_API
-        const JobExportArgs& GetJobArgs() const;
+        const PxrUsdMayaJobExportArgs& GetJobArgs() const;
 
     private:
         UsdStagePtr _stage;
         const DagToUsdMap& _dagToUsdMap;
-        const JobExportArgs& _jobArgs;
+        const PxrUsdMayaJobExportArgs& _jobArgs;
     };
 
     typedef boost::function<PxrUsdMayaChaser* (const FactoryContext&)> FactoryFn;
@@ -145,4 +145,4 @@ PxrUsdMayaChaser* _ChaserFactory_##name(const PxrUsdMayaChaserRegistry::FactoryC
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_CHASER_REGISTRY_H
+#endif

@@ -24,8 +24,8 @@
 #include "pxr/pxr.h"
 #include "usdMaya/referenceAssembly.h"
 
-#include "usdMaya/JobArgs.h"
 #include "usdMaya/editUtil.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
@@ -1481,8 +1481,10 @@ bool UsdMayaRepresentationHierBase::activate()
                 PxrUsdImportJobArgsTokens->Unloaded.GetString();
     }
 
-    JobImportArgs importArgs = JobImportArgs::CreateFromDictionary(
-            userArgs, shouldImportWithProxies, GfInterval::GetFullInterval());
+    PxrUsdMayaJobImportArgs importArgs =
+            PxrUsdMayaJobImportArgs::CreateFromDictionary(
+                userArgs, shouldImportWithProxies,
+                GfInterval::GetFullInterval());
     usdReadJob readJob(usdFilePath.asChar(),
                        usdPrimPath.asChar(),
                        variantSetSelections,

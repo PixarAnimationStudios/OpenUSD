@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/ChaserRegistry.h"
+#include "usdMaya/chaserRegistry.h"
 
 #include "usdMaya/debugCodes.h"
 
@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 PxrUsdMayaChaserRegistry::FactoryContext::FactoryContext(
         const UsdStagePtr& stage,
         const DagToUsdMap& dagToUsdMap,
-        const JobExportArgs& jobArgs)
+        const PxrUsdMayaJobExportArgs& jobArgs)
     : _stage(stage)
     , _dagToUsdMap(dagToUsdMap)
     , _jobArgs(jobArgs)
@@ -55,7 +55,7 @@ PxrUsdMayaChaserRegistry::FactoryContext::GetDagToUsdMap() const
     return _dagToUsdMap;
 }
 
-const JobExportArgs&
+const PxrUsdMayaJobExportArgs&
 PxrUsdMayaChaserRegistry::FactoryContext::GetJobArgs() const
 {
     return _jobArgs;
