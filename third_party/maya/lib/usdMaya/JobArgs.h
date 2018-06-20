@@ -34,8 +34,11 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 
+#include <maya/MString.h>
+
 #include <map>
 #include <ostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -172,12 +175,33 @@ struct JobExportArgs
     PXRUSDMAYA_API
     static const VtDictionary& GetDefaultDictionary();
 
+    /// Adds type name to filter out during export. This will also add all
+    /// inherited types (so if you exclude "constraint", it will also exclude
+    /// "parentConstraint")
+    PXRUSDMAYA_API
+    void AddFilteredTypeName(const MString& typeName);
+
+    const std::set<unsigned int>& GetFilteredTypeIds() const {
+        return _filteredTypeIds;
+    }
+
+    void ClearFilteredTypeIds() {
+        _filteredTypeIds.clear();
+    }
+
 private:
     PXRUSDMAYA_API
     JobExportArgs(
         const VtDictionary& userArgs,
         const PxrUsdMayaUtil::ShapeSet& dagPaths,
         const GfInterval& timeInterval);
+
+    // Maya type ids to avoid exporting; these are
+    // EXACT types, though the only exposed way to modify this,
+    // AddFilteredTypeName, will also add all inherited types
+    // (so if you exclude "constraint", it will also exclude
+    // "parentConstraint")
+    std::set<unsigned int> _filteredTypeIds;
 };
 
 PXRUSDMAYA_API

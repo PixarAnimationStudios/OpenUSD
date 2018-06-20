@@ -157,6 +157,9 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-f", "-file", MSyntax::kString);
     syntax.addFlag("-sl", "-selection", MSyntax::kNoArg);
 
+    syntax.addFlag("-ft" , "-filterTypes", MSyntax::kString);
+    syntax.makeFlagMultiUse("-filterTypes");
+
     syntax.addFlag("-v", "-verbose", MSyntax::kNoArg);
 
     syntax.enableQuery(false);
@@ -290,6 +293,13 @@ try
 
     JobExportArgs jobArgs = JobExportArgs::CreateFromDictionary(
             userArgs, dagPaths, timeInterval);
+
+    unsigned int numFilteredTypes = argData.numberOfFlagUses("filterTypes");
+    for (unsigned int i=0; i < numFilteredTypes; i++) {
+        MArgList tmpArgList;
+        argData.getFlagArgumentList("filterTypes", i, tmpArgList);
+        jobArgs.AddFilteredTypeName(tmpArgList.asString(0));
+    }
 
     // Create WriteJob object
     usdWriteJob usdWriteJob(jobArgs);

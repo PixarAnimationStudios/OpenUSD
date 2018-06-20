@@ -68,6 +68,7 @@ usdTranslatorExport::writer(const MFileObject &file,
     double frameStride = 1.0;
     bool append=false;
     
+    MStringArray filteredTypes;
     // Get the options 
     if ( optionsString.length() > 0 ) {
         MStringArray optionList;
@@ -92,6 +93,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             }
             else if (argName == "frameStride") {
                 frameStride = theOption[1].asDouble();
+            }
+            else if (argName == "filterTypes") {
+                theOption[1].split(',', filteredTypes);
             }
             else {
                 userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
@@ -136,6 +140,9 @@ usdTranslatorExport::writer(const MFileObject &file,
     if (dagPaths.size()) {
         JobExportArgs jobArgs = JobExportArgs::CreateFromDictionary(
                 userArgs, dagPaths, timeInterval);
+        for (unsigned int i=0; i < filteredTypes.length(); ++i) {
+            jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
+        }
         usdWriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append)) {
             std::vector<double> timeSamples =
