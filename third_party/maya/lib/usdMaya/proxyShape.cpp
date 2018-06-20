@@ -545,7 +545,6 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
         inDataCachedHandle.setClean();
         return MS::kSuccess;
     }
-    return MS::kFailure;
 }
 
 MStatus

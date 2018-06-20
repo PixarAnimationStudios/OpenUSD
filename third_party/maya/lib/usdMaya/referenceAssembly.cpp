@@ -708,9 +708,16 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                 // more sense to bail in this case.
                 SdfPath::AbsoluteRootPath();
         }
-        else {
-            retValue = MS::kFailure;
-            CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+        // If fileString is non-empty but we couldn't create a stage from there,
+        // issue an error. (If fileString is empty, it just means that the
+        // reference assembly hasn't been set up yet.)
+        // We'll still return a success code from this function because we can
+        // provide Maya with a sane result (an empty UsdMayaStageData).
+        if (!fileString.empty() && !usdStage) {
+            TF_RUNTIME_ERROR(
+                    "Could not open stage with root layer '%s'",
+                    fileString.c_str());
         }
 
         // Create the output outData ========
