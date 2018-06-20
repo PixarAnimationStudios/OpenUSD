@@ -158,7 +158,7 @@ evaluateLights(vec3 emissive, float occlusion, float ior,
             shadowing(lightSource[i].shadowIndex, Peye) : 1.0;
     #endif
         // Apply occlusion on top
-        shadow *= 1.0 - occlusion;
+        shadow *= occlusion;
 
         // Evaluate diffuse
         vec3 d = matDiffuseColor.rgb * evaluateDirectDiffuse();

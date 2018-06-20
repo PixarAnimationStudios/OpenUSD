@@ -47,7 +47,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     (usdVaryingXform)       \
     (bxdf)                  \
     (displacement)          \
-    (uvPrimvar)
+    (uvPrimvar)             \
+    (UsdPreviewSurface)     \
+    (UsdUVTexture)          \
+    (UsdPrimvarReader_float)\
+    (UsdPrimvarReader_float2)\
+    (UsdPrimvarReader_float3)\
+    (UsdPrimvarReader_float4)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
 

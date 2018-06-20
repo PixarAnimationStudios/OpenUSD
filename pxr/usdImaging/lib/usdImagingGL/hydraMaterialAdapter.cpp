@@ -47,12 +47,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (displacementShader)
     (texture)
     (primvar)
-    (UsdPreviewSurface)
-    (UsdPrimvarReader_float)
-    (UsdPrimvarReader_float2)
-    (UsdPrimvarReader_float3)
-    (UsdPrimvarReader_float4)
-    (UsdUVTexture)
     (st)
     (file)
     (varname)
@@ -184,7 +178,7 @@ GetFilenameInput(TfToken const& id)
 {
     if(id == UsdHydraTokens->HwUvTexture_1) {
         return UsdHydraTokens->infoFilename;
-    } else if (id == _tokens->UsdUVTexture) {
+    } else if (id == UsdImagingTokens->UsdUVTexture) {
         return _tokens->file;
     }
     return UsdHydraTokens->infoFilename;
@@ -202,7 +196,8 @@ static bool
 IsTextureFamilyNode(TfToken const& id)
 {
     return (id == UsdHydraTokens->HwUvTexture_1 || 
-            id == UsdHydraTokens->HwPtexTexture_1);
+            id == UsdHydraTokens->HwPtexTexture_1||
+            id == UsdImagingTokens->UsdUVTexture);
 }
 
 // XXX : This should use the shader node registry
@@ -210,10 +205,10 @@ static bool
 IsPrimvarFamilyNode(TfToken const& id)
 {
     return (id == UsdHydraTokens->HwPrimvar_1 || 
-            id == _tokens->UsdPrimvarReader_float ||
-            id == _tokens->UsdPrimvarReader_float2 ||
-            id == _tokens->UsdPrimvarReader_float3 ||
-            id == _tokens->UsdPrimvarReader_float4 );
+            id == UsdImagingTokens->UsdPrimvarReader_float ||
+            id == UsdImagingTokens->UsdPrimvarReader_float2 ||
+            id == UsdImagingTokens->UsdPrimvarReader_float3 ||
+            id == UsdImagingTokens->UsdPrimvarReader_float4 );
 }
 
 // XXX : This should use the shader node registry
@@ -223,14 +218,14 @@ GetPrimvars(TfToken const& id)
     TfTokenVector t;
     if (id == UsdHydraTokens->HwPrimvar_1) {
         t.push_back(UsdHydraTokens->infoVarname);
-    } else if (id == _tokens->UsdPrimvarReader_float ||
-               id == _tokens->UsdPrimvarReader_float2 ||
-               id == _tokens->UsdPrimvarReader_float3 ||
-               id == _tokens->UsdPrimvarReader_float4) {
+    } else if (id == UsdImagingTokens->UsdPrimvarReader_float ||
+               id == UsdImagingTokens->UsdPrimvarReader_float2 ||
+               id == UsdImagingTokens->UsdPrimvarReader_float3 ||
+               id == UsdImagingTokens->UsdPrimvarReader_float4) {
         t.push_back(_tokens->varname);
     } else if (id == UsdHydraTokens->HwUvTexture_1) {
         t.push_back(UsdHydraTokens->uv);
-    } else if (id == _tokens->UsdUVTexture) {
+    } else if (id == UsdImagingTokens->UsdUVTexture) {
         t.push_back(_tokens->st);
     } else if (id == UsdHydraTokens->HwPtexTexture_1) {
         t.push_back(UsdImagingTokens->faceIndexPrimvar);
@@ -464,7 +459,7 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
         // Extract the id of the node
         UsdAttribute attr = shader.GetIdAttr();
         attr.Get(&shaderId);
-        if (shaderId == _tokens->UsdPreviewSurface) {
+        if (shaderId == UsdImagingTokens->UsdPreviewSurface) {
             TF_DEBUG(USDIMAGING_SHADERS).Msg(
                 "Loading UsdShade preview surface\n");
             GlfGLSLFX gfx (UsdImagingGLPackagePreviewSurfaceShader());
