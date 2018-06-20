@@ -84,44 +84,6 @@ public:
         TF_API virtual ~FactoryBase();
     };
 
-private:
-    /// Helper object used for defining an TfType with the C++ type T.
-    ///
-    template <typename T>
-    class _TypeDefiner {
-    public:
-        typedef _TypeDefiner<T> This;
-
-        /// Return the type just created.
-        TfType GetType();
-
-    private:
-        _TypeDefiner(TfType const& type);
-
-        // For each of the C++ base types in TypeVector,
-        // add a cast function for casting raw pointers to/from the type BASE.
-        template < typename TypeVector >
-        This& _AddBaseCppTypes();
-
-        // Add a cast function for casting raw pointers to/from the type BASE.
-        template <typename BASE>
-        This& _AddBaseCppType();
-
-        // Type being defined.
-        // We'd prefer to just hold a TfType, but we can't because this
-        // is a nested type and so TfType's definition is not complete.
-        // Instead, we store a pointer to an owned TfType.
-        TfType const* _type;
-
-        template <typename DERIVED, typename TypeVector, bool empty>
-        friend struct Tf_AddBases;
-
-        friend class TfType;
-    };
-
-    template <typename DERIVED, typename TypeVector, bool empty>
-    friend struct Tf_AddBases;
-
 public:
     
     enum LegacyFlags {
@@ -139,10 +101,6 @@ public:
         TF_API virtual ~PyPolymorphicBase();
     };
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-
-private:
-    // Sentinel placeholder for Bases<> typelist.
-    class Unspecified;
 
 public:
     /// A type-list of C++ base types.
@@ -718,7 +676,9 @@ private:
     bool _IsAImpl(TfType queryType) const;
 
     typedef void *(*_CastFunction)(void *, bool derivedToBase);
-    
+
+    template <typename TypeVector>
+    friend struct Tf_AddBases;
     friend struct _TypeInfo;
     friend class Tf_TypeRegistry;
     friend class TfHash;
@@ -779,18 +739,6 @@ template <>
 struct TfSizeofType<const volatile void> {
     static const size_t value = 0;
 };
-
-template <typename T>
-TfType::_TypeDefiner<T>::_TypeDefiner(TfType const& type)
-{
-    // Record traits information about T.
-    const bool isPodType = std::is_pod<T>::value;
-    const bool isEnumType = std::is_enum<T>::value;
-    const size_t sizeofType = TfSizeofType<T>::value;
-
-    _type = &type;
-    _type->_DefineCppType(typeid(T), sizeofType, isPodType, isEnumType);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
