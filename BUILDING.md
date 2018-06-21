@@ -144,6 +144,16 @@ invoking cmake. usdview may also be disabled independently by specifying the cma
 
 Hydra's rendering functionality can be extended with these optional plugins.
 
+##### OpenImageIO 
+
+This plugin can optionally be enabled by specifying the cmake flag
+```PXR_BUILD_OPENIMAGEIO_PLUGIN=TRUE```. When enabled, OpenImageIO provides 
+broader support for reading and writing different image formats as textures. 
+If OpenImageIO is disabled, imaging by default supports the image formats bmp, 
+jpg, png, tga, and hdr. With OpenImageIO enabled, support extends to exr, tif, 
+zfile, and tx file formats, which allows for the use of more advanced features
+like subimages and mipmaps.
+
 ##### Embree Rendering
 
 This component contains an example rendering backend for Hydra and usdview, based on the

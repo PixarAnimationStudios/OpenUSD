@@ -945,6 +945,12 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=ON')
             else:
                 extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=OFF')
+            
+            if context.buildOIIO:
+                extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=OFF')
+                
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -1159,6 +1165,12 @@ subgroup.add_argument("--no-embree", dest="build_embree", action="store_false",
                       help="Do not build Embree sample imaging plugin (default)")
 group.add_argument("--embree-location", type=str,
                    help="Directory where Embree is installed.")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true", 
+                      default=False,
+                      help="Build OpenImageIO plugin for USD")
+subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false",
+                      help="Do not build OpenImageIO plugin for USD (default)")
 
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1300,6 +1312,7 @@ class InstallContext:
         self.buildEmbree = self.buildImaging and args.build_embree
         self.embreeLocation = (os.path.abspath(args.embree_location)
                                if args.embree_location else None)
+        self.buildOIIO = args.build_oiio
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -1373,8 +1386,11 @@ if context.buildImaging:
     if context.enablePtex:
         requiredDependencies += [PTEX]
 
-    requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, GLEW, 
-                             OPENIMAGEIO, OPENSUBDIV]
+    requiredDependencies += [OPENEXR, GLEW, 
+                             OPENSUBDIV]
+    
+    if context.buildOIIO:
+        requiredDependencies += [JPEG, TIFF, PNG, OPENIMAGEIO]
                              
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
@@ -1493,6 +1509,7 @@ Building with settings:
   Building                      {buildType}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
+      OpenImageIO support:      {buildOIIO} 
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
@@ -1538,6 +1555,7 @@ summaryMsg = summaryMsg.format(
                else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
+    buildOIIO=("On" if context.buildOIIO else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),

@@ -27,6 +27,7 @@ option(PXR_HEADLESS_TEST_MODE "Disallow GUI based tests, useful for running unde
 option(PXR_BUILD_TESTS "Build tests" ON)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_EMBREE_PLUGIN "Build embree imaging plugin" OFF)
+option(PXR_BUILD_OPENIMAGEIO_PLUGIN "Build OpenImageIO plugin" OFF)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
 option(PXR_BUILD_USDVIEW "Build usdview" ON)
 option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" OFF)
