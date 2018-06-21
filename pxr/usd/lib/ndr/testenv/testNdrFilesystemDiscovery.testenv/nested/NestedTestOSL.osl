@@ -1,0 +1,14 @@
+//
+// NestedTestOSL
+//
+// This file is not used directly in the test, but is compiled into the OSO.
+// It has no purpose other than to ensure it is discovered.
+//
+
+shader NestedTestOSL
+(
+    float inputA = .0
+)
+{
+    // Nothing here!
+}

@@ -104,8 +104,8 @@ Support for OSL is disabled by default, and can optionally be enabled by
 specifying the cmake flag ```PXR_ENABLE_OSL_SUPPORT=TRUE```.  This will
 enable components and libraries that depend on OSL.
 
-Note: There are not yet any components that depend on OSL, but we
-anticipate their arrival in the near future.
+Enabling OSL suport allows the Shader Definition Registry (sdr) to
+parse metadata from OSL shaders.
 
 ##### Documentation
 

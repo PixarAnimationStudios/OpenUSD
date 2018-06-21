@@ -1,0 +1,5 @@
+<!-- A simple node with the same name as an OSL node. -->
+<!-- Helps ensure the registry can properly fetch nodes w/ the same name but different type. -->
+<args format="1.0">
+    <param name="inputA" type="float" default="0.0" />
+</args>

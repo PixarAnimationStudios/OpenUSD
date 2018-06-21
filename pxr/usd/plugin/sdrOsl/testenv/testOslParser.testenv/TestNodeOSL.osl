@@ -1,0 +1,118 @@
+//
+// TestNodeOSL
+//
+// This file is not used directly in the test, but is compiled into the OSO.
+//
+
+struct TestStruct {
+    float foo;
+};
+
+shader TestNodeOSL
+[[
+    string category = "testing",
+    string departments = "testDept",
+    string help = "This is the test node",
+    string label = "TestNodeLabel",
+    string primvars = "primvar1|primvar2|primvar3|$primvarNamingProperty|$invalidPrimvarNamingProperty",
+    string uncategorizedMetadata = "uncategorized",
+]]
+(
+    float inputA = .0 [[
+        string widget = "number",
+        string label = "inputA label",
+        string page = "inputs1",
+        string help = "inputA help message",
+        int uncategorized = 1
+    ]],
+    int inputB = 0 [[
+        string widget = "number",
+        string page = "inputs2"
+    ]],
+    float inputC = 2. [[
+        string widget = "number",
+        string page = "inputs2"
+    ]],
+    int inputD[1] = { 1 }
+    [[
+        string widget = "dynamicArray",
+        string isDynamicArray = "1",
+        string arraySize = "-1",
+        string page = "inputs2"
+    ]],
+    float inputF2[2] = { 1.0, 2.0 } [[
+        string widget = "null",
+        string page = "inputs2",
+        int connectable = 0
+    ]],
+    float inputF3[3] = { 1.0, 2.0, 3.0 } [[
+        string widget = "null",
+        string page = "inputs2"
+    ]],
+    float inputF4[4] = { 1.0, 2.0, 3.0, 4.0 } [[
+        string widget = "null",
+        string page = "inputs2"
+    ]],
+    float inputF5[5] = { 1.0, 2.0, 3.0, 4.0, 5.0 } [[
+        string widget = "null",
+        string page = "inputs2"
+    ]],
+    string inputInterp = "linear" [[
+        string widget = "null",
+        string page = "inputs2",
+        string options = "linear|catmull-rom|bspline|constant",
+        int connectable = 0
+    ]],
+    string inputOptions = "opt1" [[
+        string widget = "null",
+        string page = "inputs2",
+        string options = "opt1:opt1val|opt2:opt2val",
+        int connectable = 0
+    ]],
+    point inputPoint = point(0, 0, 0) [[
+        string page = "inputs2"
+    ]],
+    normal inputNormal = normal(0, 0, 0) [[
+        string page = "inputs2"
+    ]],
+    TestStruct inputStruct = { 0.0 } [[
+        string page = "inputs2"
+    ]],
+    string inputAssetIdentifier = "" [[
+        string page = "inputs2",
+        string widget = "assetIdInput"
+    ]],
+    string primvarNamingProperty = "" [[
+        string widget = "null",
+        string page = "inputs2"
+    ]],
+    int invalidPrimvarNamingProperty = 0 [[
+        string widget = "number",
+        string page = "inputs2",
+        string help = "Invalid because a primvar naming property must have a string type"
+    ]],
+    output float resultF = .0 [[
+        string widget = "null",
+        string page = "results"
+    ]],
+    output float resultF2[2] = { 1.0, 2.0 } [[
+        string widget = "null",
+        string page = "results"
+    ]],
+    output float resultF3[3] = { 1.0, 2.0, 3.0 } [[
+        string widget = "null",
+        string page = "results"
+    ]],
+    output int resultI = 0 [[
+        string widget = "null",
+        string page = "results",
+        int uncategorized = 1
+    ]],
+    output point outputPoint = point(0, 0, 0),
+    output normal outputNormal = normal(0, 0, 0),
+    output color outputColor = color(0, 0, 0),
+    output vector outputVector = vector(0, 0, 0)
+)
+{
+    // Nothing here!
+}

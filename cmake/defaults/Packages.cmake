@@ -172,6 +172,10 @@ if (PXR_BUILD_MATERIALX_PLUGIN)
     find_package(MaterialX REQUIRED)
 endif()
 
+if(PXR_ENABLE_OSL_SUPPORT)
+    find_package(OSL REQUIRED)
+endif()
+
 # ----------------------------------------------
 
 set(BUILD_SHARED_LIBS "${build_shared_libs}")
