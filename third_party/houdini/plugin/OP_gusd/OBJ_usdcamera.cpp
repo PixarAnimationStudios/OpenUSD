@@ -240,7 +240,7 @@ GusdOBJ_usdcamera::GetTemplates()
     for(std::size_t i = 1; i < numObjTemplates; ++i) 
     {
         templates.push_back( objTemplates[i] );
-        if(UT_String(objTemplates[i].getNamePtr()->getToken()) == "display")
+        if(UT_String(objTemplates[i].getNamePtr()->getToken()) == "caching")
             templates.push_back(displayFrustum);
     }
     templates.insert(templates.end(), camTemplates,
