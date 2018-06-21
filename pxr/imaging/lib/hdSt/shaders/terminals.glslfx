@@ -179,9 +179,37 @@ vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     vec4 hullColor = vec4(vec3(0.18), 1.0);
-#if defined(HD_HAS_hullColor)
+
+#if defined(HD_HAS_selectedWeight)
+    float weight = clamp(HdGet_selectedWeight(), 0.0, 1.0);
+
+    if (weight <= 0.0) {
+        discard;
+    }
+
+    // The three control points of the quadratic curve for the selection color
+    // with the binomial coefficient premultiplied in.
+    // constant  :      1
+    // linear    :    1   1
+    // quadratic :  1   2   1
+    vec3 c0 = vec3(0.0, 0.0, 0.0); // 1.0 * Black
+    vec3 c1 = vec3(2.0, 0.0, 0.0); // 2.0 * Red
+    vec3 c2 = vec3(1.0, 1.0, 0.0); // 1.0 * Yellow
+    
+    // de Casteljau quadratic curve interpolation
+    // A recursive application of lerp ('mix' in glsl) reducing the order each
+    // step of the recursion. 
+    //  at weight = 0.0  we get c0
+    //  at weight = 0.5  we get c0 * .25 + c1 * 0.5 + c2 *.25
+    //  at weight = 1.0  we get c2
+    // Thus it is a smooth curve going from c0 to c2 bending towards c1
+    hullColor.rgb = mix(mix(c0, c1, weight),
+                        mix(c1, c2, weight), weight);
+
+#elif defined(HD_HAS_hullColor)
     hullColor = HdGet_hullColor();
 #endif
+
     return ApplyColorOverrides(hullColor);
 }
 
