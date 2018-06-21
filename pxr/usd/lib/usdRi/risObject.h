@@ -52,6 +52,8 @@ class SdfAssetPath;
 
 /// \class UsdRiRisObject
 ///
+/// \deprecated Specialized RIS shader schemas have been deprecated in 
+/// favor of all shader prims being simple UsdShadeShader.
 /// Represents a ris object with connectable parameters. 
 ///
 class UsdRiRisObject : public UsdShadeShader

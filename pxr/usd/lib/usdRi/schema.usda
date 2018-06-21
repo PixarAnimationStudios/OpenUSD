@@ -85,7 +85,9 @@ class RslShader "RslShader" (
 
 class RisObject "RisObject" (
     inherits = [</Shader>]
-    doc = """Represents a ris object with connectable parameters. """ 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris object with connectable parameters. """ 
 ) {
     asset info:filePath (
         customData = { 
@@ -101,13 +103,17 @@ class RisObject "RisObject" (
 
 class RisPattern "RisPattern" (
     inherits = [</RisObject>]
-    doc = """Represents a ris pattern object. Multiple of these can be assigned.""" 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris pattern object. Multiple of these can be assigned.""" 
 ) {
 }
 
 class RisOslPattern "RisOslPattern" (
     inherits = [</RisPattern>]
-    doc = """Represents a ris osl pattern object.""" 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris osl pattern object.""" 
 ) {
     asset info:filePath = @PxrOSL@ (
         hidden = true
@@ -124,7 +130,9 @@ class RisOslPattern "RisOslPattern" (
 
 class RisBxdf "RisBxdf" (
     inherits = [</RisObject>]
-    doc = """Represents a ris bxdf object. One of these is assigned at one time.""" 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris bxdf object. One of these is assigned at one time.""" 
 ) {
 }
 
