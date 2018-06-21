@@ -153,7 +153,7 @@ def Xform "World" (
             rel riLook:bxdf = </World/Looks/PxrDisney5SG/PxrDisney5>
             int katana:fromKlf:material:pbsNetworkMaterialVersion = 1
 
-            def RisBxdf "PxrDisney5"
+            def Shader "PxrDisney5"
             {
                 float anisotropic = 0
                 ColorFloat baseColor
@@ -165,7 +165,7 @@ def Xform "World" (
                 Vec3f color = (0, 0, 0)
                 rel connectedSourceFor:baseColor = </World/Looks/PxrDisney5SG/PxrMix1.outputs:resultRGB>
                 ColorFloat emitColor = (0, 0, 0)
-                asset info:filePath = @PxrDisney@
+                uniform token info:id = "PxrDisney"
                 int inputAOV = 0
                 int isHistoricallyInteresting = 2
                 float metallic = 0
@@ -183,14 +183,14 @@ def Xform "World" (
                 ColorFloat subsurfaceColor = (0, 0, 0)
             }
 
-            def RisPattern "PxrMix1"
+            def Shader "PxrMix1"
             {
                 string binMembership = ""
                 bool caching = 0
                 ColorFloat color1 = (0.523443, 0.177094, 0.00889227)
                 ColorFloat color2 = (0.101631, 0.415395, 0.796917)
                 rel connectedSourceFor:mix = </World/Looks/PxrDisney5SG/PxrFractal1.outputs:resultF>
-                asset info:filePath = @PxrMix@
+                uniform token info:id = "PxrMix"
                 int isHistoricallyInteresting = 2
                 float mix
                 token nodeState = "Normal"
@@ -201,14 +201,14 @@ def Xform "World" (
                 ColorFloat resultRGB = (1, 1, 1)
             }
 
-            def RisPattern "PxrFractal1"
+            def Shader "PxrFractal1"
             {
                 string binMembership = ""
                 bool caching = 0
                 float dimension = 1
                 float erosion = 0
                 float frequency = 1.1011236
-                asset info:filePath = @PxrFractal@
+                uniform token info:id= "PxrFractal"
                 int isHistoricallyInteresting = 2
                 float lacunarity = 2
                 int layers = 6
@@ -257,17 +257,17 @@ def Xform "World" (
         {
             def Material "initialShadingGroup"
             {
-                def RisBxdf "initialShadingGroup_lambert"
+                def Shader "initialShadingGroup_lambert"
                 {
-                    asset info:filePath = @PxrDiffuse@
+                    uniform token info:id = "PxrDiffuse"
                 }
             }
 
             def Material "lambert2SG"
             {
-                def RisBxdf "lambert2SG_lambert"
+                def Shader "lambert2SG_lambert"
                 {
-                    asset info:filePath = @PxrDiffuse@
+                    uniform token info:id = "PxrDiffuse"
                 }
             }
         }
@@ -276,9 +276,9 @@ def Xform "World" (
         {
             def Material "anotherLambert"
             {
-                def RisBxdf "anotherLambertBxdf"
+                def Shader "anotherLambertBxdf"
                 {
-                    asset info:filePath = @PxrDiffuse@
+                    uniform token info:id = "PxrDiffuse"
                 }
             }
         }

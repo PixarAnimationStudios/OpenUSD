@@ -55,12 +55,12 @@ def Xform "Sphere" (
             color3f inputs:transparency
             token outputs:bxfd
 
-            def RisBxdf "initialShadingGroup_lambert"
+            def Shader "initialShadingGroup_lambert"
             {
                 rel connectedSourceFor:diffuseColor = </Sphere/Materials/initialShadingGroup.inputs:displayColor>
                 rel connectedSourceFor:transmissionColor = </Sphere/Materials/initialShadingGroup.inputs:transparency>
                 color3f diffuseColor
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
                 token outputs:out
                 color3f transmissionColor
             }
@@ -74,12 +74,12 @@ def Xform "Sphere" (
             color3f inputs:transparency
             token outputs:bxfd
 
-            def RisBxdf "lambert2SG_lambert"
+            def Shader "lambert2SG_lambert"
             {
                 rel connectedSourceFor:diffuseColor = </Sphere/Materials/lambert2SG.inputs:displayColor>
                 rel connectedSourceFor:transmissionColor = </Sphere/Materials/lambert2SG.inputs:transparency>
                 color3f diffuseColor
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
                 token outputs:out
                 color3f transmissionColor
             }
@@ -93,12 +93,12 @@ def Xform "Sphere" (
             color3f inputs:transparency
             token outputs:bxfd
 
-            def RisBxdf "lambert3SG_lambert"
+            def Shader "lambert3SG_lambert"
             {
                 rel connectedSourceFor:diffuseColor = </Sphere/Materials/lambert3SG.inputs:displayColor>
                 rel connectedSourceFor:transmissionColor = </Sphere/Materials/lambert3SG.inputs:transparency>
                 color3f diffuseColor
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
                 token outputs:out
                 color3f transmissionColor
             }

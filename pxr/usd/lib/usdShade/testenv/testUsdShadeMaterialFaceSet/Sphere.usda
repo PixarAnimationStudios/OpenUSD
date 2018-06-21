@@ -31,12 +31,12 @@ def Xform "Sphere" (
             token outputs:bxfd 
             rel connectedSourceFor:outputs:bxdf = </Sphere/Materials/initialShadingGroup/initialShadingGroup_lambert.outputs:out>
 
-            def RisBxdf "initialShadingGroup_lambert"
+            def Shader "initialShadingGroup_lambert"
             {
                 color3f diffuseColor
                 rel connectedSourceFor:diffuseColor = </Sphere/Materials/initialShadingGroup.inputs:displayColor>
 
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
 
                 color3f transmissionColor
                 rel connectedSourceFor:transmissionColor = </Sphere/Materials/initialShadingGroup.inputs:transparency>
@@ -54,12 +54,12 @@ def Xform "Sphere" (
             token outputs:bxfd 
             rel connectedSourceFor:outputs:bxdf = </Sphere/Materials/lambert2SG/lambert2SG_lambert.outputs:out>
 
-            def RisBxdf "lambert2SG_lambert"
+            def Shader "lambert2SG_lambert"
             {
                 color3f diffuseColor
                 rel connectedSourceFor:diffuseColor = </Sphere/Materials/lambert2SG.inputs:displayColor>
 
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
 
                 color3f transmissionColor
                 rel connectedSourceFor:transmissionColor = </Sphere/Materials/lambert2SG.inputs:transparency>
@@ -77,12 +77,12 @@ def Xform "Sphere" (
             token outputs:bxfd 
             rel connectedSourceFor:outputs:bxdf = </Sphere/Materials/lambert3SG/lambert3SG_lambert.outputs:out>
 
-            def RisBxdf "lambert3SG_lambert"
+            def Shader "lambert3SG_lambert"
             {
                 color3f diffuseColor
                 rel connectedSourceFor:diffuseColor = </Sphere/Materials/lambert3SG.inputs:displayColor>
 
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
 
                 color3f transmissionColor
                 rel connectedSourceFor:transmissionColor = </Sphere/Materials/lambert3SG.inputs:transparency>
