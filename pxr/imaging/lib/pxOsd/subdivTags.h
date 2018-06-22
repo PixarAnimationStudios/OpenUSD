@@ -144,24 +144,6 @@ public:
     }
     /// @}
 
-
-    /// @}
-
-    ///
-    /// \name Holes
-    /// @{
-
-    /// Returns the edge corner indices
-    VtIntArray const &GetHoleIndices() const {
-        return _holeIndices;
-    }
-
-    /// Returns faces indices for holes
-    void SetHoleIndices(VtIntArray const &holeIndices) {
-        _holeIndices = holeIndices;
-    }
-    /// @}
-
     typedef size_t ID;
 
     /// Returns the hash value of this topology to be used for instancing.
@@ -184,8 +166,6 @@ private:
 
     VtIntArray   _cornerIndices;
     VtFloatArray _cornerWeights;
-
-    VtIntArray   _holeIndices;
 };
 
 PXOSD_API

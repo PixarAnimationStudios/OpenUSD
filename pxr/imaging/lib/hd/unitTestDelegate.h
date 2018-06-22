@@ -85,6 +85,7 @@ public:
                  VtVec3fArray const &points,
                  VtIntArray const &numVerts,
                  VtIntArray const &verts,
+                 VtIntArray const &holes,
                  PxOsdSubdivTags const &subdivTags,
                  VtValue const &color,
                  HdInterpolation colorInterpolation,
@@ -364,6 +365,7 @@ private:
               VtVec3fArray const &points,
               VtIntArray const &numVerts,
               VtIntArray const &verts,
+              VtIntArray const &holes,
               PxOsdSubdivTags const &subdivTags,
               VtValue const &color,
               HdInterpolation colorInterpolation,
@@ -372,7 +374,7 @@ private:
             scheme(scheme), orientation(orientation),
             transform(transform),
             points(points), numVerts(numVerts), verts(verts),
-            subdivTags(subdivTags), color(color),
+            holes(holes), subdivTags(subdivTags), color(color),
             colorInterpolation(colorInterpolation), guide(guide),
             doubleSided(doubleSided) { }
 
@@ -382,6 +384,7 @@ private:
         VtVec3fArray points;
         VtIntArray numVerts;
         VtIntArray verts;
+        VtIntArray holes;
         PxOsdSubdivTags subdivTags;
         VtValue color;
         HdInterpolation colorInterpolation;

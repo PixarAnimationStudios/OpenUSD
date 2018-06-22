@@ -358,9 +358,6 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
 
     _GetPtr(prim, UsdGeomTokens->cornerSharpnesses, time, &farray);
     tags->SetCornerWeights(farray);
-
-    _GetPtr(prim, UsdGeomTokens->holeIndices, time, &iarray);
-    tags->SetHoleIndices(iarray);
 }
 
 
