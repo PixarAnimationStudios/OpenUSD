@@ -581,13 +581,15 @@ HdSt_CodeGen::Compile()
                << _metaData.instancerNumLevels << "\n"
                << "#define HD_INSTANCE_INDEX_WIDTH "
                << (_metaData.instancerNumLevels+1) << "\n"; 
-   TF_FOR_ALL (it, _metaData.elementData) {
+   if (!_geometricShader->IsPrimTypePoints()) {
+      TF_FOR_ALL (it, _metaData.elementData) {
         _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
-    }
-    if (hasGS) {
+      }
+      if (hasGS) {
         TF_FOR_ALL (it, _metaData.fvarData) {
            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
         }
+      }
     }
     TF_FOR_ALL (it, _metaData.vertexData) {
         _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
@@ -2023,10 +2025,17 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         // users to call them -- we really should restructure whatever is
         // necessary to avoid having to do this and thus guarantee that users
         // can never call bogus versions of these functions.
-        accessors
-            << "int GetElementID() {\n"
-            << "  return 0;\n"
-            << "}\n";
+        if (_geometricShader->IsPrimTypePoints()) {
+            accessors
+              << "int GetElementID() {\n"
+              << "  return -1;\n"
+              << "}\n";  
+        } else {
+            accessors
+                << "int GetElementID() {\n"
+                << "  return 0;\n"
+                << "}\n";
+        }
         accessors
             << "int GetAggregatedElementID() {\n"
             << "  return GetElementID();\n"
@@ -2117,15 +2126,17 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         << "bool IsFragmentOnEdge();\n";
 
     // Uniform primvar data declarations & accessors
-    TF_FOR_ALL (it, _metaData.elementData) {
-        HdBinding binding = it->first;
-        TfToken const &name = it->second.name;
-        TfToken const &dataType = it->second.dataType;
+    if (!_geometricShader->IsPrimTypePoints()) {
+        TF_FOR_ALL (it, _metaData.elementData) {
+            HdBinding binding = it->first;
+            TfToken const &name = it->second.name;
+            TfToken const &dataType = it->second.dataType;
 
-        _EmitDeclaration(declarations, name, dataType, binding);
-        // AggregatedElementID gives us the buffer index post batching, which
-        // is what we need for accessing element (uniform) primvar data.
-        _EmitAccessor(accessors, name, dataType, binding,"GetAggregatedElementID()");
+            _EmitDeclaration(declarations, name, dataType, binding);
+            // AggregatedElementID gives us the buffer index post batching, which
+            // is what we need for accessing element (uniform) primvar data.
+            _EmitAccessor(accessors, name, dataType, binding,"GetAggregatedElementID()");
+        }
     }
 
     // Emit primvar declarations and accessors.
