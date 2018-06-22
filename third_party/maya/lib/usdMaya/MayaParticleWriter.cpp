@@ -25,6 +25,7 @@
 #include "usdMaya/MayaParticleWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/primWriterRegistry.h"
 
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -46,8 +47,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kParticle, UsdGeomPoints);
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kNParticle, UsdGeomPoints);
+PXRUSDMAYA_REGISTER_WRITER(particle, MayaParticleWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(particle, UsdGeomPoints);
+
+PXRUSDMAYA_REGISTER_WRITER(nParticle, MayaParticleWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nParticle, UsdGeomPoints);
 
 namespace {
     template <typename T>

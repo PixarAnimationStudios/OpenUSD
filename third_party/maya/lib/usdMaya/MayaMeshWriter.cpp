@@ -26,6 +26,7 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/meshUtil.h"
+#include "usdMaya/primWriterRegistry.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -36,7 +37,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kMesh, UsdGeomMesh);
+PXRUSDMAYA_REGISTER_WRITER(mesh, MayaMeshWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
 
 namespace {
 

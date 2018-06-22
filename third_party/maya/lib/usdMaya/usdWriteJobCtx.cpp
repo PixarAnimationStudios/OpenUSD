@@ -23,16 +23,7 @@
 //
 #include "usdMaya/usdWriteJobCtx.h"
 
-#include "usdMaya/MayaCameraWriter.h"
-#include "usdMaya/MayaInstancerWriter.h"
-#include "usdMaya/MayaLocatorWriter.h"
-#include "usdMaya/MayaMeshWriter.h"
-#include "usdMaya/MayaNurbsCurveWriter.h"
-#include "usdMaya/MayaNurbsSurfaceWriter.h"
-#include "usdMaya/MayaParticleWriter.h"
-#include "usdMaya/MayaSkeletonWriter.h"
 #include "usdMaya/MayaTransformWriter.h"
-#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/stageCache.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -269,19 +260,24 @@ MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
     const SdfPath writePath = usdPath.IsEmpty() ?
             getUsdPathFromDagPath(curDag, instanceSource) : usdPath;
 
-    // Check whether a user prim writer exists for the node first, since plugin
-    // nodes may provide the same function sets as native Maya nodes. If a
-    // writer can't be found, we'll fall back on the standard writers below.
-    if (ob.hasFn(MFn::kPluginDependNode) && ob.hasFn(MFn::kDagNode) && ob.hasFn(MFn::kDependencyNode)) {
+    if (mArgs.exportInstances && curDag.isInstanced() && !instanceSource) {
+        // Deal with instances -- we just create a transform for them.
+        MayaTransformWriterPtr primPtr = std::make_shared<MayaTransformWriter>(
+                curDag, writePath, instanceSource, *this);
+        if (primPtr->isValid()) {
+            return primPtr;
+        }
+    }
+    else {
+        // Deal with non-instances. Try to look up a writer plugin.
+        // We search through the node's type ancestors, working backwards until
+        // we find a prim writer plugin.
         MFnDependencyNode depNodeFn(ob);
-        MPxNode *pxNode = depNodeFn.userNode();
-
-        std::string mayaTypeName(pxNode->typeName().asChar());
-
+        std::string mayaTypeName(depNodeFn.typeName().asChar());
         if (PxrUsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
-                PxrUsdMayaPrimWriterRegistry::Find(mayaTypeName)) {
+                _FindWriter(mayaTypeName)) {
             MayaPrimWriterPtr primPtr(primWriterFactory(
-                curDag, writePath, instanceSource, *this));
+                    curDag, writePath, instanceSource, *this));
             if (primPtr && primPtr->isValid()) {
                 // We found a registered user prim writer that handles this node
                 // type, so return now.
@@ -290,63 +286,32 @@ MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
         }
     }
 
-    // Deal with instances first because they're special.
-    // Then the rest of the checks need to occur with derived classes
-    // coming before base classes (e.g. instancer before transform).
-    if (mArgs.exportInstances && curDag.isInstanced() && !instanceSource) {
-        MayaTransformWriterPtr primPtr(new MayaTransformWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kJoint)) {
-        MayaSkeletonWriterPtr primPtr(new MayaSkeletonWriter(curDag, writePath, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kInstancer)) {
-        MayaInstancerWriterPtr primPtr(new MayaInstancerWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kTransform)) {
-        MayaTransformWriterPtr primPtr(new MayaTransformWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kMesh)) {
-        MayaMeshWriterPtr primPtr(new MayaMeshWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kNurbsCurve)) {
-        MayaNurbsCurveWriterPtr primPtr(new MayaNurbsCurveWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kNurbsSurface)) {
-        MayaNurbsSurfaceWriterPtr primPtr(new MayaNurbsSurfaceWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kParticle) || ob.hasFn(MFn::kNParticle)) {
-        MayaParticleWriterPtr primPtr(new MayaParticleWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kCamera)) {
-        const SdfPath cameraWritePath = usdPath.IsEmpty() ?
-                getUsdPathFromDagPath(curDag, false) : usdPath;
-        MayaCameraWriterPtr primPtr(new MayaCameraWriter(curDag, cameraWritePath, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
-        }
-    } else if (ob.hasFn(MFn::kLocator)) {
-        MayaLocatorWriterPtr primPtr(new MayaLocatorWriter(curDag, writePath, instanceSource, *this));
-        if (primPtr->isValid()) {
-            return primPtr;
+    // Could not create a writer for this node.
+    return nullptr;
+}
+
+PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
+usdWriteJobCtx::_FindWriter(const std::string& mayaNodeType)
+{
+    // Check if type is already cached locally.
+    auto iter = mWriterFactoryCache.find(mayaNodeType);
+    if (iter != mWriterFactoryCache.end()) {
+        return iter->second;
+    }
+
+    // Search up the ancestor hierarchy for a writer plugin.
+    const std::vector<std::string> ancestorTypes =
+            PxrUsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
+    for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
+        if (PxrUsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
+                PxrUsdMayaPrimWriterRegistry::Find(*i)) {
+            mWriterFactoryCache[mayaNodeType] = primWriterFactory;
+            return primWriterFactory;
         }
     }
 
+    // No writer found, so mark the type as unknown in the local cache.
+    mWriterFactoryCache[mayaNodeType] = nullptr;
     return nullptr;
 }
 

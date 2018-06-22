@@ -66,8 +66,7 @@ _GetListOpForTokenVector(const TfTokenVector& vector)
 
 
 
-std::map<std::pair<MFn::Type, std::string>, TfType>
-    PxrUsdMayaAdaptor::_schemaLookup;
+std::map<std::string, TfType> PxrUsdMayaAdaptor::_schemaLookup;
 std::map<TfToken, std::vector<std::string>>
     PxrUsdMayaAdaptor::_attributeAliases;
 
@@ -130,17 +129,8 @@ PxrUsdMayaAdaptor::GetUsdType() const
     TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaAdaptor>();
 
     MObject object = _handle.object();
-    std::pair<MFn::Type, std::string> lookupKey;
-    if (object.hasFn(MFn::kPluginDependNode)) {
-        MFnDependencyNode depNode(object);
-        std::string typeName(depNode.typeName().asChar());
-        lookupKey = std::make_pair(MFn::kPluginDependNode, typeName);
-    }
-    else {
-        lookupKey = std::make_pair(object.apiType(), std::string());
-    }
-
-    auto iter = _schemaLookup.find(lookupKey);
+    MFnDependencyNode depNode(object);
+    auto iter = _schemaLookup.find(depNode.typeName().asChar());
     if (iter != _schemaLookup.end()) {
         return iter->second;
     }
@@ -575,19 +565,10 @@ PxrUsdMayaAdaptor::GetRegisteredTypedSchemas()
 /* static */
 void
 PxrUsdMayaAdaptor::RegisterTypedSchemaConversion(
-    const MFn::Type mayaType,
+    const std::string& nodeTypeName,
     const TfType& usdType)
 {
-    _schemaLookup[std::make_pair(mayaType, std::string())] = usdType;
-}
-
-/* static */
-void
-PxrUsdMayaAdaptor::RegisterTypedSchemaConversion(
-    const std::string& pluginType,
-    const TfType& usdType)
-{
-    _schemaLookup[std::make_pair(MFn::kPluginDependNode, pluginType)] = usdType;
+    _schemaLookup[nodeTypeName] = usdType;
 }
 
 /* static */

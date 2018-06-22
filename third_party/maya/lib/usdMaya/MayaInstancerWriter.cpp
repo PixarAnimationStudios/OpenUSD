@@ -24,6 +24,8 @@
 #include "usdMaya/MayaInstancerWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/usdWriteJobCtx.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -43,7 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static constexpr double _EPSILON = 1e-3;
 
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kInstancer, UsdGeomPointInstancer);
+PXRUSDMAYA_REGISTER_WRITER(instancer, MayaInstancerWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(instancer, UsdGeomPointInstancer);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens, 

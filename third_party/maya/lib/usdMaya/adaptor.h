@@ -539,21 +539,13 @@ public:
     PXRUSDMAYA_API
     static TfToken::Set GetRegisteredTypedSchemas();
 
-    /// Registers the given Maya Fn type with a USD typed schema.
-    /// Each Maya type is associated with only one TfType; re-registering
-    /// the same Maya type again will overwrite the previous registration.
-    /// However, multiple Maya types may map to the same TfType.
-    PXRUSDMAYA_API
-    static void RegisterTypedSchemaConversion(
-            const MFn::Type mayaType, const TfType& usdType);
-
     /// Registers the given Maya plugin type with a USD typed schema.
     /// Each Maya type is associated with only one TfType; re-registering
     /// the same Maya type again will overwrite the previous registration.
     /// However, multiple Maya types may map to the same TfType.
     PXRUSDMAYA_API
     static void RegisterTypedSchemaConversion(
-            const std::string& pluginType, const TfType& usdType);
+            const std::string& nodeTypeName, const TfType& usdType);
 
     /// For backwards compatibility only: when upgrading any pre-existing code
     /// to use the adaptor mechanism, you can instruct the adaptor to recognize
@@ -584,31 +576,34 @@ public:
 private:
     MObjectHandle _handle;
 
-    /// Mapping of Maya (Maya Fn type, type name) to TfType's for typed schemas.
+    /// Mapping of Maya type name to TfType's for typed schemas.
     /// API (untyped) schemas should never be included in this mapping.
-    /// The type name string is only included for nodes of type
-    /// MFn::kPluginDependNode. It is empty for all other node types.
-    static std::map<std::pair<MFn::Type, std::string>, TfType> _schemaLookup;
+    static std::map<std::string, TfType> _schemaLookup;
 
     /// Attribute aliases for backwards compatibility.
     static std::map<TfToken, std::vector<std::string>> _attributeAliases;
 };
 
-/// Registers the given Maya \p fnOrPluginType with the given USD \p schemaType
+/// Registers the given \p mayaTypeName with the given USD \p schemaType
 /// so that those Maya nodes can be used with the given typed schema in the
-/// adaptor system. \p fnOrPluginType can be a Maya MFn::Type enum or a plugin
-/// type string. Each \p fnOrPluginType is mapped to a single \p schemaType;
-/// the last registration wins.
+/// adaptor system. \p mayaTypeName is a Maya node name. Each \p fnOrPluginType
+/// is mapped to a single \p schemaType; the last registration wins.
 ///
 /// The convention in the UsdMaya library is to place the registration macro
 /// in the prim writer if both a prim writer and reader exist for the same
 /// node type.
+///
+/// Example usage:
+/// \code
+/// PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(myTypeName, MySchemaType);
+/// \endcode
+///
 /// \sa PxrUsdMayaAdaptor::RegisterTypedSchemaConversion()
-#define PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(fnOrPluginType, schemaType)\
+#define PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mayaTypeName, schemaType)\
 TF_REGISTRY_FUNCTION(PxrUsdMayaAdaptor)\
 {\
     PxrUsdMayaAdaptor::RegisterTypedSchemaConversion(\
-            fnOrPluginType, TfType::Find<schemaType>());\
+            #mayaTypeName, TfType::Find<schemaType>());\
 }
 
 /// Registers an \p alias string for the given \p attrName token or string.

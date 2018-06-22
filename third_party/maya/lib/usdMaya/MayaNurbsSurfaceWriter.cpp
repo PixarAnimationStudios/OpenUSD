@@ -26,6 +26,7 @@
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/usd/usdGeom/nurbsPatch.h"
@@ -43,7 +44,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kNurbsSurface, UsdGeomNurbsPatch);
+PXRUSDMAYA_REGISTER_WRITER(nurbsSurface, MayaNurbsSurfaceWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsSurface, UsdGeomNurbsPatch);
 
 MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
         const MDagPath & iDag,

@@ -45,6 +45,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnSet.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MItMeshFaceVertex.h>
@@ -1555,4 +1556,27 @@ PxrUsdMayaUtil::ParseArgumentValue(
     }
 
     return VtValue();
+}
+
+std::vector<std::string>
+PxrUsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
+{
+    std::vector<std::string> inheritedTypesVector;
+
+    const MString inheritedTypesMel = TfStringPrintf(
+            "nodeType -isTypeName -inherited %s", ty.c_str()).c_str();
+    MStringArray inheritedTypes;
+    if (!MGlobal::executeCommand(
+            inheritedTypesMel, inheritedTypes, false, false)) {
+        TF_RUNTIME_ERROR(
+                "Failed to query ancestor types of '%s' via MEL",
+                ty.c_str());
+        return inheritedTypesVector;
+    }
+
+    inheritedTypesVector.reserve(inheritedTypes.length());
+    for (unsigned int i = 0; i < inheritedTypes.length(); ++i) {
+        inheritedTypesVector.push_back(inheritedTypes[i].asChar());
+    }
+    return inheritedTypesVector;
 }

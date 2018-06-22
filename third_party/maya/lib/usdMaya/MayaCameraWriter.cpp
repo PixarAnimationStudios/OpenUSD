@@ -26,6 +26,7 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/vec2f.h"
@@ -39,10 +40,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kCamera, UsdGeomCamera);
+PXRUSDMAYA_REGISTER_WRITER(camera, MayaCameraWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(camera, UsdGeomCamera);
 
-MayaCameraWriter::MayaCameraWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx) :
-    MayaTransformWriter(iDag, uPath, false, jobCtx) // cameras are not instanced
+MayaCameraWriter::MayaCameraWriter(
+    const MDagPath & iDag,
+    const SdfPath& uPath,
+    bool instanceSource,
+    usdWriteJobCtx& jobCtx)
+    : MayaTransformWriter(iDag, uPath, instanceSource, jobCtx) 
 {
     UsdGeomCamera primSchema =
         UsdGeomCamera::Define(getUsdStage(), getUsdPath());

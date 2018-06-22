@@ -27,28 +27,29 @@
 /// \file primWriterRegistry.h
 
 #include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "usdMaya/MayaPrimWriter.h"
-#include "usdMaya/FunctorPrimWriter.h"
 
-#include <boost/function.hpp>
+#include "usdMaya/api.h"
+#include "usdMaya/FunctorPrimWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class MayaPrimWriter;
+typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterPtr;
 
 /// \class PxrUsdMayaPrimWriterRegistry
-/// \brief Provides functionality to register and lookup usd Maya writer
-/// plugins.
+/// \brief Provides functionality to register and lookup USD writer plugins
+/// for Maya nodes.
 ///
-/// Use PXRUSDMAYA_DEFINE_WRITER(mayaTypeName, args, ctx) to register a new
-/// writer for maya.  The plugin is expected to create a prim at
+/// Use PXRUSDMAYA_DEFINE_WRITER(mayaTypeName, args, ctx) to define a new
+/// writer function, or use
+/// PXRUSDMAYA_REGISTER_WRITER(mayaTypeName, writerClass) to register a writer
+/// class with the registry.
 ///
-/// \code
-/// ctx->GetAuthorPath()
-/// \endcode
+/// The plugin is expected to create a prim at <tt>ctx->GetAuthorPath()</tt>.
 ///
 /// In order for the core system to discover the plugin, you need a
-/// plugInfo.json that contains the maya type name and the maya plugin to load:
+/// \c plugInfo.json that contains the Maya type name and the Maya plugin to
+/// load:
 /// \code
 /// {
 ///     "UsdMaya": {
@@ -62,8 +63,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// } 
 /// \endcode
 ///
-/// For now, there is only support for user-defined shape plugins, with more
-/// general support to come in the future.
+/// The registry contains information for both Maya built-in node types
+/// and for any user-defined plugin types. If UsdMaya does not ship with a
+/// writer plugin for some Maya built-in type, you can register your own
+/// plugin for that Maya built-in type.
 struct PxrUsdMayaPrimWriterRegistry
 {
     typedef std::function< MayaPrimWriterPtr (
@@ -71,10 +74,10 @@ struct PxrUsdMayaPrimWriterRegistry
             const SdfPath&, bool,
             usdWriteJobCtx&) > WriterFactoryFn;
 
-    /// \brief Register \p fn as a factory function providing a
-    /// \link MayaPrimWriter subclass that can be used to write \p mayaType.
-    /// If you can't provide a MayaPrimWriter for the given arguments,
-    /// return a null pointer.
+    /// \brief Register \p fn as a factory function providing a MayaPrimWriter
+    /// subclass that can be used to write \p mayaType.
+    /// If you can't provide a valid MayaPrimWriter for the given arguments,
+    /// return a null pointer from the factory function \p fn.
     ///
     /// Example for registering a writer factory in your custom plugin:
     /// \code{.cpp}
@@ -86,7 +89,7 @@ struct PxrUsdMayaPrimWriterRegistry
     ///             usdWriteJobCtx& jobCtx);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, MyWriter) {
-    ///     PxrUsdMayaPrimWriterRegistry::Register("MyCustomPrim",
+    ///     PxrUsdMayaPrimWriterRegistry::Register("myCustomMayaNode",
     ///             MyWriter::Create);
     /// }
     /// \endcode
@@ -95,8 +98,7 @@ struct PxrUsdMayaPrimWriterRegistry
 
     /// \brief Finds a writer if one exists for \p mayaTypeName.
     ///
-    /// If there is no writer plugin for \p mayaTypeName, this will return 
-    /// a value that evaluates to false.
+    /// If there is no writer plugin for \p mayaTypeName, returns nullptr.
     PXRUSDMAYA_API
     static WriterFactoryFn Find(const std::string& mayaTypeName);
 };
@@ -115,16 +117,55 @@ struct PxrUsdMayaPrimWriterRegistry
 ///     return true;
 /// }
 /// \endcode
-#define PXRUSDMAYA_DEFINE_WRITER(mayaTypeName, argsVarName, ctxVarName)\
+#define PXRUSDMAYA_DEFINE_WRITER(mayaTypeName, argsVarName, ctxVarName) \
 struct PxrUsdMayaWriterDummy_##mayaTypeName { }; \
-static bool PxrUsdMaya_PrimWriter_##mayaTypeName(const PxrUsdMayaPrimWriterArgs&, PxrUsdMayaPrimWriterContext*); \
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, PxrUsdMayaWriterDummy_##mayaTypeName) \
-{\
-    PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName,\
-            FunctorPrimWriter::CreateFactory(\
-            PxrUsdMaya_PrimWriter_##mayaTypeName));\
-}\
-bool PxrUsdMaya_PrimWriter_##mayaTypeName(const PxrUsdMayaPrimWriterArgs& argsVarName, PxrUsdMayaPrimWriterContext* ctxVarName)
+static bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
+    const PxrUsdMayaPrimWriterArgs&, \
+    PxrUsdMayaPrimWriterContext*); \
+TF_REGISTRY_FUNCTION_WITH_TAG( \
+    PxrUsdMayaPrimWriterRegistry, \
+    PxrUsdMayaWriterDummy_##mayaTypeName) \
+{ \
+    PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, \
+            FunctorPrimWriter::CreateFactory( \
+            PxrUsdMaya_PrimWriter_##mayaTypeName)); \
+} \
+bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
+    const PxrUsdMayaPrimWriterArgs& argsVarName, \
+    PxrUsdMayaPrimWriterContext* ctxVarName)
+
+/// \brief Registers a pre-existing writer class for the given Maya type;
+/// the writer class should be a subclass of MayaPrimWriter with a four-place
+/// constructor that takes <tt>(const MDagPath& mayaPath,
+/// const SdfPath& usdPath, bool instanceSource, usdWriteJobCtx& jobCtx)</tt>
+/// as arguments.
+///
+/// Example:
+/// \code{.cpp}
+/// class MyWriter : public MayaPrimWriter {
+///     MyWriter(
+///             const MDagPath& mayaPath,
+///             const SdfPath& usdPath,
+///             bool instanceSource,
+///             usdWriteJobCtx& jobCtx) {
+///         // ...
+///     }
+/// };
+/// PXRUSDMAYA_REGISTER_WRITER(myCustomMayaNode, MyWriter);
+/// \endcode
+#define PXRUSDMAYA_REGISTER_WRITER(mayaTypeName, writerClass) \
+TF_REGISTRY_FUNCTION_WITH_TAG( \
+    PxrUsdMayaPrimWriterRegistry, \
+    mayaTypeName##_##writerClass) \
+{ \
+    PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, \
+        [](const MDagPath& mayaPath, const SdfPath& usdPath, \
+                bool instanceSource, \
+                usdWriteJobCtx& jobCtx) { \
+            return std::make_shared<writerClass>( \
+                mayaPath, usdPath, instanceSource, jobCtx); \
+        }); \
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

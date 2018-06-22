@@ -26,6 +26,7 @@
 #include "usdMaya/MayaSkeletonWriter.h"
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
+#include "usdMaya/usdWriteJobCtx.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -403,7 +404,7 @@ _WriteJointOrder(const MDagPath& rootJoint,
 MObject
 MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 {
-    const TfToken& exportSkin = mWriteJobCtx.getArgs().exportSkin;
+    const TfToken& exportSkin = getArgs().exportSkin;
     if (exportSkin != PxrUsdExportJobArgsTokens->auto_ &&
         exportSkin != PxrUsdExportJobArgsTokens->explicit_) {
         return MObject();
@@ -463,7 +464,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 
     if (_WriteJointInfluences(skinCluster, inMesh, bindingAPI)) {
         _WriteJointOrder(rootJoint, jointDagPaths, bindingAPI,
-                         mWriteJobCtx.getArgs().stripNamespaces);
+                         getArgs().stripNamespaces);
     }
 
     GfMatrix4d geomBindTransform;

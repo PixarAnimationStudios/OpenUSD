@@ -24,8 +24,10 @@
 #include "usdMaya/MayaSkeletonWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
+#include "usdMaya/usdWriteJobCtx.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -46,7 +48,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kJoint, UsdSkelSkeleton);
+PXRUSDMAYA_REGISTER_WRITER(joint, MayaSkeletonWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(joint, UsdSkelSkeleton);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens, 
@@ -130,8 +133,11 @@ _GetJointHierarchyComponents(const MDagPath& dagPath,
 }
 
 
+// Note: we currently don't support instanceSource for joints, but we have to
+// have the argument in order to register the writer plugin.
 MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
                                        const SdfPath& uPath,
+                                       bool /*instanceSource */,
                                        usdWriteJobCtx& jobCtx)
     : MayaPrimWriter(iDag, uPath, jobCtx),
       _valid(false), _animXformIsAnimated(false)
@@ -143,7 +149,7 @@ MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
     }
 
     SdfPath skelPath =
-        GetSkeletonPath(iDag, mWriteJobCtx.getArgs().stripNamespaces);
+        GetSkeletonPath(iDag, getArgs().stripNamespaces);
 
     _skel = UsdSkelSkeleton::Define(getUsdStage(), skelPath);
     if (!TF_VERIFY(_skel))
@@ -405,7 +411,7 @@ MayaSkeletonWriter::_WriteRestState()
 
     VtTokenArray skelJointNames =
         GetJointNames(_joints, getDagPath(),
-                      mWriteJobCtx.getArgs().stripNamespaces);
+                      getArgs().stripNamespaces);
     _topology = UsdSkelTopology(skelJointNames);
     std::string whyNotValid;
     if (!_topology.Validate(&whyNotValid)) {
@@ -424,7 +430,7 @@ MayaSkeletonWriter::_WriteRestState()
 
     SdfPath skelPath = _skel.GetPrim().GetPath();
     mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
-        skelPath, skelPath, mWriteJobCtx.getArgs().exportSkels);
+        skelPath, skelPath, getArgs().exportSkels);
         
     VtMatrix4dArray restXforms =
         _GetJointLocalRestTransforms(_topology, _joints);
@@ -436,7 +442,7 @@ MayaSkeletonWriter::_WriteRestState()
     _GetAnimatedJoints(_topology, skelJointNames, getDagPath(),
                        _joints, restXforms,
                        &animJointNames, &_animatedJoints,
-                       !mWriteJobCtx.getArgs().timeInterval.IsEmpty());
+                       !getArgs().timeInterval.IsEmpty());
 
     if (haveUsdSkelXform) {
         _skelXformAttr = _skel.MakeMatrixXform();

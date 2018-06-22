@@ -28,19 +28,18 @@
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/translatorGprim.h"
+#include "usdMaya/usdWriteJobCtx.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/base/gf/gamma.h"
-
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/inherits.h"
-
-#include "pxr/base/tf/staticTokens.h"
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDagNode.h>
@@ -222,6 +221,16 @@ MayaPrimWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
         return true;
     }
     return false;
+}
+
+const UsdStageRefPtr&
+MayaPrimWriter::getUsdStage() const {
+    return mWriteJobCtx.getUsdStage();
+}
+
+const PxrUsdMayaJobExportArgs&
+MayaPrimWriter::getArgs() const {
+    return mWriteJobCtx.getArgs();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -56,6 +56,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// General utilities for working with the Maya API.
 namespace PxrUsdMayaUtil
 {
 
@@ -476,6 +477,15 @@ VtValue ParseArgumentValue(
     const std::string& key,
     const std::string& value,
     const VtDictionary& guideDict);
+
+/// Gets all Maya node types that are ancestors of the given Maya node type
+/// \p ty. If \p ty isn't registered in Maya's type system, issues a runtime
+/// error and returns an empty string.
+/// The returned list is sorted from furthest to closest ancestor. The returned
+/// list will always have the given type \p ty as the last item.
+/// Note that this calls out to MEL.
+PXRUSDMAYA_API
+std::vector<std::string> GetAllAncestorMayaNodeTypes(const std::string& ty);
 
 } // namespace PxrUsdMayaUtil
 

@@ -54,6 +54,7 @@ class MayaSkeletonWriter : public MayaPrimWriter
 public:
     MayaSkeletonWriter(const MDagPath& iDag,
                        const SdfPath& uPath,
+                       bool instanceSource,
                        usdWriteJobCtx& jobCtx);
     
     void write(const UsdTimeCode &usdTime) override;

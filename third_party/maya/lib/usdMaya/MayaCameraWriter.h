@@ -37,7 +37,11 @@ class UsdGeomCamera;
 class MayaCameraWriter : public MayaTransformWriter
 {
   public:
-    MayaCameraWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx);
+    MayaCameraWriter(
+        const MDagPath& iDag,
+        const SdfPath& uPath,
+        bool instanceSource,
+        usdWriteJobCtx& jobCtx);
     virtual ~MayaCameraWriter() {};
 
     virtual void write(const UsdTimeCode &usdTime);

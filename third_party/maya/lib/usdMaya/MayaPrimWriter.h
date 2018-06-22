@@ -25,14 +25,19 @@
 #define PXRUSDMAYA_MAYAPRIMWRITER_H
 
 #include "pxr/pxr.h"
+
 #include "usdMaya/api.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/jobArgs.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/sparseValueWriter.h"
 
+#include <maya/MDagPath.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+class usdWriteJobCtx;
+class PxrUsdMayaJobExportArgs;
 class UsdGeomImageable;
 class UsdTimeCode;
 class UsdUtilsSparseValueWriter;
@@ -90,12 +95,12 @@ public:
 public:
     const MDagPath&        getDagPath()    const { return mDagPath; }
     const SdfPath&         getUsdPath()    const { return mUsdPath; }
-    const UsdStageRefPtr&  getUsdStage()   const { return mWriteJobCtx.getUsdStage(); }
     bool isValid()                         const { return mIsValid; }
-    const PxrUsdMayaJobExportArgs& getArgs() const {
-        return mWriteJobCtx.getArgs();
-    }
     const UsdPrim&         getPrim()       const { return mUsdPrim; }
+    PXRUSDMAYA_API
+    const UsdStageRefPtr& getUsdStage() const;
+    PXRUSDMAYA_API
+    const PxrUsdMayaJobExportArgs& getArgs() const;
 
     bool getExportsVisibility() const { return mExportsVisibility; }
     void setExportsVisibility(bool exports);
@@ -149,6 +154,8 @@ private:
     bool mIsValid;
     bool mExportsVisibility;
 };
+
+typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

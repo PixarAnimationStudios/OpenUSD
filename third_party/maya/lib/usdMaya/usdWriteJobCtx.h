@@ -28,6 +28,7 @@
 
 #include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/skelBindingsWriter.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -97,6 +98,10 @@ private:
     PXRUSDMAYA_API
     SdfPath getUsdPathFromDagPath(const MDagPath& dagPath, bool instanceSource);
 
+    /// Prim writer search with ancestor type resolution behavior.
+    PxrUsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(
+            const std::string& mayaNodeType);
+
     struct MObjectHandleComp {
         bool operator()(const MObjectHandle& rhs, const MObjectHandle& lhs) const {
             return rhs.hashCode() < lhs.hashCode();
@@ -117,6 +122,12 @@ private:
     SdfPath mParentScopePath;
     bool mNoInstances;
     PxrUsdMaya_SkelBindingsWriter mSkelBindingsWriter;
+    // Cache of node type names mapped to their "resolved" writer factory,
+    // taking into account Maya's type hierarchy (note that this means that
+    // some types not resolved by the PxrUsdMayaPrimWriterRegistry will get
+    // resolved in this map).
+    std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFactoryFn>
+            mWriterFactoryCache;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
