@@ -1470,8 +1470,15 @@ PxrUsdKatanaUtils::ModelGroupIsAssembly(const UsdPrim &prim)
         || PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim);
 }
 
+
 FnKat::GroupAttribute
-PxrUsdKatanaUtils::GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
+PxrUsdKatanaUtils::GetViewerProxyAttr(
+            double currentTime,
+            const std::string & fileName,
+            const std::string & referencePath,
+            const std::string & rootLocation,
+            FnAttribute::GroupAttribute sessionAttr,
+            const std::string & ignoreLayerRegex)
 {
     FnKat::GroupBuilder proxiesBuilder;
 
@@ -1482,10 +1489,10 @@ PxrUsdKatanaUtils::GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
         FnKat::StringAttribute("usd"));
 
     proxiesBuilder.set("viewer.load.opArgs.a.currentTime", 
-        FnKat::DoubleAttribute(data.GetCurrentTime()));
+        FnKat::DoubleAttribute(currentTime));
 
     proxiesBuilder.set("viewer.load.opArgs.a.fileName", 
-        FnKat::StringAttribute(data.GetUsdInArgs()->GetFileName()));
+        FnKat::StringAttribute(fileName));
 
     proxiesBuilder.set("viewer.load.opArgs.a.forcePopulateUsdStage", 
         FnKat::FloatAttribute(1));
@@ -1493,18 +1500,29 @@ PxrUsdKatanaUtils::GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
     // XXX: Once everyone has switched to the op, change referencePath
     // to isolatePath here and in the USD VMP (2/25/2016).
     proxiesBuilder.set("viewer.load.opArgs.a.referencePath", 
-        FnKat::StringAttribute(data.GetUsdPrim().GetPath().GetString()));
+        FnKat::StringAttribute(referencePath));
 
     proxiesBuilder.set("viewer.load.opArgs.a.rootLocation", 
-        FnKat::StringAttribute(data.GetUsdInArgs()->GetRootLocationPath()));
+        FnKat::StringAttribute(rootLocation));
 
-    proxiesBuilder.set("viewer.load.opArgs.a.session",
-            data.GetUsdInArgs()->GetSessionAttr());
+    proxiesBuilder.set("viewer.load.opArgs.a.session", sessionAttr);
 
     proxiesBuilder.set("viewer.load.opArgs.a.ignoreLayerRegex",
-       FnKat::StringAttribute(data.GetUsdInArgs()->GetIgnoreLayerRegex()));
+            FnKat::StringAttribute(ignoreLayerRegex));
 
     return proxiesBuilder.build();
+}
+
+FnKat::GroupAttribute
+PxrUsdKatanaUtils::GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
+{
+    return GetViewerProxyAttr(
+            data.GetCurrentTime(),
+            data.GetUsdInArgs()->GetFileName(),
+            data.GetUsdPrim().GetPath().GetString(),
+            data.GetUsdInArgs()->GetRootLocationPath(),
+            data.GetUsdInArgs()->GetSessionAttr(),
+            data.GetUsdInArgs()->GetIgnoreLayerRegex());
 }
 
 bool 

@@ -154,6 +154,16 @@ struct PxrUsdKatanaUtils {
     /// Creates the 'proxies' group attribute for consumption by the viewer.
     static FnKat::GroupAttribute GetViewerProxyAttr(
             const PxrUsdKatanaUsdInPrivateData& data);
+    
+    /// Creates the 'proxies' group attribute directly from fields
+    static FnKat::GroupAttribute GetViewerProxyAttr(
+            double currentTime,
+            const std::string & fileName,
+            const std::string & referencePath,
+            const std::string & rootLocation,
+            FnAttribute::GroupAttribute sessionAttr,
+            const std::string & ignoreLayerRegex);
+    
 
     /// Returns the asset name for the given prim.  It should be a model.  This
     /// will fallback to the name of the prim.

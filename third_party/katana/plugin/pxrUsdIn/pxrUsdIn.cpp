@@ -1273,6 +1273,43 @@ public:
     }
 };
 
+
+
+
+class PxrUsdInAddViewerProxyOp : public FnKat::GeolibOp
+{
+public:
+    static void setup(FnKat::GeolibSetupInterface &interface)
+    {
+        interface.setThreading(
+                FnKat::GeolibSetupInterface::ThreadModeConcurrent);
+    }
+
+    static void cook(FnKat::GeolibCookInterface &interface)
+    {
+        interface.setAttr("proxies", 
+        PxrUsdKatanaUtils::GetViewerProxyAttr(
+            FnKat::DoubleAttribute(interface.getOpArg("currentTime")
+                    ).getValue(0.0, false),
+            FnKat::StringAttribute(interface.getOpArg("fileName")
+                    ).getValue("", false),
+            
+            FnKat::StringAttribute(interface.getOpArg("isolatePath")
+                    ).getValue("", false),
+            
+            FnKat::StringAttribute(interface.getOpArg("rootLocation")
+                    ).getValue("", false),
+            interface.getOpArg("session"),
+            FnKat::StringAttribute(interface.getOpArg("ignoreLayerRegex")
+                    ).getValue("", false)
+        ));
+    }
+};
+
+
+
+
+
 class FlushStageFnc : public Foundry::Katana::AttributeFunction
 {
 public:
@@ -1300,15 +1337,13 @@ public:
 
 
 
-
-
-
 //-----------------------------------------------------------------------------
 
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInBootstrapOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInMaterialGroupBootstrapOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInBuildIntermediateOp)
+DEFINE_GEOLIBOP_PLUGIN(PxrUsdInAddViewerProxyOp)
 DEFINE_ATTRIBUTEFUNCTION_PLUGIN(FlushStageFnc);
 
 void registerPlugins()
@@ -1319,6 +1354,8 @@ void registerPlugins()
         "PxrUsdIn.BootstrapMaterialGroup", 0, 1);
     REGISTER_PLUGIN(PxrUsdInBuildIntermediateOp,
         "PxrUsdIn.BuildIntermediate", 0, 1);    
+    REGISTER_PLUGIN(PxrUsdInAddViewerProxyOp,
+        "PxrUsdIn.AddViewerProxy", 0, 1);    
     REGISTER_PLUGIN(FlushStageFnc,
         "PxrUsdIn.FlushStage", 0, 1);
     
