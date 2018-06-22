@@ -2446,21 +2446,25 @@ class AppController(QtCore.QObject):
         #       In the future, we should do this when a signal from
         #       ViewSettingsDataModel is emitted so the prim view always updates
         #       when they are changed.
+        self._dataModel.selection.removeInactivePrims()
         self._resetPrimView()
 
     def _toggleShowMasterPrims(self):
         self._dataModel.viewSettings.showAllMasterPrims = (
             self._ui.actionShow_All_Master_Prims.isChecked())
+        self._dataModel.selection.removeMasterPrims()
         self._resetPrimView()
 
     def _toggleShowUndefinedPrims(self):
         self._dataModel.viewSettings.showUndefinedPrims = (
             self._ui.actionShow_Undefined_Prims.isChecked())
+        self._dataModel.selection.removeUndefinedPrims()
         self._resetPrimView()
 
     def _toggleShowAbstractPrims(self):
         self._dataModel.viewSettings.showAbstractPrims = (
             self._ui.actionShow_Abstract_Prims.isChecked())
+        self._dataModel.selection.removeAbstractPrims()
         self._resetPrimView()
 
     def _toggleRolloverPrimInfo(self):

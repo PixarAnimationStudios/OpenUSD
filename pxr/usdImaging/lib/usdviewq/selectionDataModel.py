@@ -736,6 +736,33 @@ class SelectionDataModel(QtCore.QObject):
 
         self.switchToPrimPath(prim.GetPath(), instance)
 
+    ### Prim Group Removal Operations ###
+    # Convenience methods for removing groups of prims 
+    
+    def removeInactivePrims(self):
+        """Remove all inactive prims"""
+        for prim in self.getPrims():
+            if not prim.IsActive():
+                self.removePrim(prim)
+    
+    def removeMasterPrims(self):
+        """Remove all master prims"""
+        for prim in self.getPrims():
+            if prim.IsMaster() or prim.IsInMaster():
+                self.removePrim(prim)
+
+    def removeAbstractPrims(self):
+        """Remove all abstract prims"""
+        for prim in self.getPrims():
+            if prim.IsAbstract():
+                self.removePrim(prim)
+    
+    def removeUndefinedPrims(self):
+        """Remove all undefined prims"""
+        for prim in self.getPrims():
+            if not prim.IsDefined():
+                self.removePrim(prim)
+     
     ### Property Path Operations ###
 
     def clearProps(self):
