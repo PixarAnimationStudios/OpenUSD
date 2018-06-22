@@ -4396,22 +4396,22 @@ UsdStage::_GetPrimSpec(const SdfPath& path)
 }
 
 SdfSpecType
-UsdStage::_GetDefiningSpecType(const UsdPrim& prim,
+UsdStage::_GetDefiningSpecType(Usd_PrimDataConstPtr primData,
                                const TfToken& propName) const
 {
-    if (!TF_VERIFY(prim) || !TF_VERIFY(!propName.IsEmpty()))
+    if (!TF_VERIFY(primData) || !TF_VERIFY(!propName.IsEmpty()))
         return SdfSpecTypeUnknown;
 
     // Check for a spec type in the definition registry, in case this is a
     // builtin property.
     SdfSpecType specType =
-        UsdSchemaRegistry::GetSpecType(prim.GetTypeName(), propName);
+        UsdSchemaRegistry::GetSpecType(primData->GetTypeName(), propName);
 
     if (specType != SdfSpecTypeUnknown)
         return specType;
 
     // Otherwise look for the strongest authored property spec.
-    Usd_Resolver res(&prim.GetPrimIndex(), /*skipEmptyNodes=*/true);
+    Usd_Resolver res(&primData->GetPrimIndex(), /*skipEmptyNodes=*/true);
     SdfPath curPath;
     bool curPathValid = false;
     while (res.IsValid()) {
@@ -5804,7 +5804,7 @@ UsdStage::_GetGeneralMetadataImpl(const UsdObject &obj,
                                   bool useFallbacks,
                                   Composer *composer) const
 {
-    Usd_Resolver resolver(&obj.GetPrim().GetPrimIndex());
+    Usd_Resolver resolver(&obj._Prim()->GetPrimIndex());
     if (!_ComposeGeneralMetadataImpl(
             obj, fieldName, keyPath, useFallbacks, &resolver, composer)) {
         return false;
@@ -6514,7 +6514,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                                 Resolver *resolver,
                                 const UsdTimeCode *time) const
 {
-    const UsdPrim prim = prop.GetPrim();
+    auto primHandle = prop._Prim();
     boost::optional<double> localTime;
     if (time && !time->IsDefault()) {
         localTime = time->GetValue();
@@ -6524,9 +6524,10 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
     // attribute at the given time. Clips never contribute default
     // values.
     const std::vector<Usd_ClipCache::Clips>* clipsAffectingPrim = nullptr;
-    if (prim._Prim()->MayHaveOpinionsInClips()
+    if (primHandle->MayHaveOpinionsInClips()
         && (!time || !time->IsDefault())) {
-        clipsAffectingPrim = &(_clipCache->GetClipsForPrim(prim.GetPath()));
+        clipsAffectingPrim =
+            &(_clipCache->GetClipsForPrim(primHandle->GetPath()));
     }
 
     // Clips may contribute opinions at nodes where no specs for the attribute
@@ -6534,7 +6535,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
     // Usd_Resolver that we want to iterate over 'empty' nodes as well.
     const bool skipEmptyNodes = (bool)(!clipsAffectingPrim);
 
-    for (Usd_Resolver res(&prim.GetPrimIndex(), skipEmptyNodes); 
+    for (Usd_Resolver res(&primHandle->GetPrimIndex(), skipEmptyNodes); 
          res.IsValid(); res.NextNode()) {
 
         const PcpNodeRef& node = res.GetNode();

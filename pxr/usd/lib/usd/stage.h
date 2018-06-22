@@ -1735,7 +1735,7 @@ private:
     // either the builtin definition's spec type, if the indicated property is
     // builtin, otherwise it's the strongest authored spec's type if one exists,
     // otherwise it's SdfSpecTypeUnknown.
-    SdfSpecType _GetDefiningSpecType(const UsdPrim &prim,
+    SdfSpecType _GetDefiningSpecType(Usd_PrimDataConstPtr primData,
                                      const TfToken &propName) const;
 
     // Helper to apply Pcp changes and recompose the scenegraph accordingly,
