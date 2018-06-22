@@ -1561,19 +1561,61 @@ PxrUsdMayaUtil::ParseArgumentValue(
 std::vector<std::string>
 PxrUsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
 {
-    std::vector<std::string> inheritedTypesVector;
-
     const MString inheritedTypesMel = TfStringPrintf(
             "nodeType -isTypeName -inherited %s", ty.c_str()).c_str();
     MStringArray inheritedTypes;
     if (!MGlobal::executeCommand(
             inheritedTypesMel, inheritedTypes, false, false)) {
         TF_RUNTIME_ERROR(
-                "Failed to query ancestor types of '%s' via MEL",
+                "Failed to query ancestor types of '%s' via MEL (does the type "
+                "exist?)",
                 ty.c_str());
-        return inheritedTypesVector;
+        return std::vector<std::string>();
     }
 
+#if MAYA_API_VERSION < 201800
+    // In older versions of Maya, the MEL command
+    // "nodeType -isTypeName -inherited" returns an empty array (but does not
+    // fail) for some built-in types.
+    // The buggy built-in cases from Maya 2016 have been hard-coded below with
+    // the appropriate ancestors list. (The cases below all work with 2018.)
+    if (inheritedTypes.length() == 0) {
+        if (ty == "file") {
+            return {"shadingDependNode", "texture2d", "file"};
+        }
+        else if (ty == "mesh") {
+            return {
+                "containerBase", "entity", "dagNode", "shape", "geometryShape",
+                "deformableShape", "controlPoint", "surfaceShape", "mesh"
+            };
+        }
+        else if (ty == "nurbsCurve") {
+            return {
+                "containerBase", "entity", "dagNode", "shape", "geometryShape",
+                "deformableShape", "controlPoint", "curveShape", "nurbsCurve"
+            };
+        }
+        else if (ty == "nurbsSurface") {
+            return {
+                "containerBase", "entity", "dagNode", "shape", "geometryShape",
+                "deformableShape", "controlPoint", "surfaceShape",
+                "nurbsSurface"
+            };
+        }
+        else if (ty == "time") {
+            return {"time"};
+        }
+        else {
+            TF_RUNTIME_ERROR(
+                    "Type '%s' exists, but MEL returned empty ancestor type "
+                    "information for it",
+                    ty.c_str());
+            return {ty}; // Best that we can do without ancestor type info.
+        }
+    }
+#endif
+
+    std::vector<std::string> inheritedTypesVector;
     inheritedTypesVector.reserve(inheritedTypes.length());
     for (unsigned int i = 0; i < inheritedTypes.length(); ++i) {
         inheritedTypesVector.push_back(inheritedTypes[i].asChar());
