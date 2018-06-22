@@ -52,10 +52,15 @@ Usd_Resolver::_Init() {
 void
 Usd_Resolver::_SkipEmptyNodes()
 {
-    while (IsValid() &&
-           ((_skipEmptyNodes && !_curNode->HasSpecs()) ||
-            _curNode->IsInert())) {
-        _curNode++;
+    if (_skipEmptyNodes) {
+        for (; IsValid() && (!_curNode->HasSpecs() ||
+                             _curNode->IsInert()); ++_curNode) {
+            // do nothing.
+        }
+    } else {
+        for (; IsValid() && _curNode->IsInert(); ++_curNode) {
+            // do nothing.
+        }
     }
 }
 
