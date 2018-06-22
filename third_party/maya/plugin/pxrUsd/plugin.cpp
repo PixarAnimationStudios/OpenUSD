@@ -28,6 +28,7 @@
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
 #include "usdMaya/diagnosticDelegate.h"
+#include "usdMaya/pointBasedDeformerNode.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 #include "usdMaya/stageData.h"
@@ -67,6 +68,14 @@ initializePlugin(MObject obj)
         UsdMayaStageNode::typeId,
         UsdMayaStageNode::creator,
         UsdMayaStageNode::initialize);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerNode(
+        UsdMayaPointBasedDeformerNode::typeName,
+        UsdMayaPointBasedDeformerNode::typeId,
+        UsdMayaPointBasedDeformerNode::creator,
+        UsdMayaPointBasedDeformerNode::initialize,
+        MPxNode::kDeformerNode);
     CHECK_MSTATUS(status);
 
     status = plugin.registerShape(
@@ -234,6 +243,9 @@ uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(UsdMayaProxyShape::typeId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(UsdMayaPointBasedDeformerNode::typeId);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(UsdMayaStageNode::typeId);
