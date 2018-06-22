@@ -53,7 +53,6 @@
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/functional/hash.hpp>
-#include <boost/optional.hpp>
 #include <algorithm>
 #include <functional>
 #include <vector>
@@ -744,24 +743,24 @@ struct Task {
 
     explicit Task(Type type, const PcpNodeRef& node = PcpNodeRef())
         : type(type)
-        , node(node)
         , vsetNum(0)
+        , node(node)
     { }
 
     Task(Type type, const PcpNodeRef& node,
          std::string &&vsetName, int vsetNum)
         : type(type)
+        , vsetNum(vsetNum)
         , node(node)
         , vsetName(std::move(vsetName))
-        , vsetNum(vsetNum)
     { }
 
     Task(Type type, const PcpNodeRef& node,
          std::string const &vsetName, int vsetNum)
         : type(type)
+        , vsetNum(vsetNum)
         , node(node)
         , vsetName(vsetName)
-        , vsetNum(vsetNum)
     { }
 
     inline bool operator==(Task const &rhs) const {
@@ -785,18 +784,17 @@ struct Task {
             TfEnum::GetName(task.type).c_str(),
             task.node.GetPath().GetText(),
             TfStringify(task.node.GetSite()).c_str());
-        if (task.vsetName) {
+        if (!task.vsetName.empty()) {
             os << TfStringPrintf(", vsetName=%s, vsetNum=%d",
-                                 task.vsetName->c_str(), task.vsetNum);
+                                 task.vsetName.c_str(), task.vsetNum);
         }
         return os << ")";
     }        
     
     Type type;
+    int vsetNum; // << only for variant tasks.
     PcpNodeRef node;
-    // only for variant tasks:
-    boost::optional<std::string> vsetName;
-    int vsetNum;
+    std::string vsetName; // << only for variant tasks.
 };
 
 }
@@ -872,6 +870,7 @@ struct Pcp_PrimIndexer
     // Open tasks, in priority order
     using _TaskQueue = std::vector<Task>;
     _TaskQueue tasks;
+    bool tasksSorted;
 
     const bool evaluateImpliedSpecializes;
     const bool evaluateVariants;
@@ -893,6 +892,7 @@ struct Pcp_PrimIndexer
         , inputs(inputs_)
         , outputs(outputs_)
         , previousFrame(previousFrame_)
+        , tasksSorted(true)
         , evaluateImpliedSpecializes(evaluateImpliedSpecializes_)
         , evaluateVariants(evaluateVariants_)
     {
@@ -903,10 +903,27 @@ struct Pcp_PrimIndexer
     }
 
     void AddTask(Task &&task) {
-        Task::PriorityOrder comp(inputs.payloadDecorator);
-        auto iter = std::lower_bound(tasks.begin(), tasks.end(), task, comp);
-        if (iter == tasks.end() || *iter != task) {
-            tasks.insert(iter, std::move(task));
+        if (tasks.empty()) {
+            tasks.reserve(8); // Typically we have about this many tasks, and
+                              // this results in a single 256 byte allocation.
+            tasks.push_back(std::move(task));
+        }
+        else {
+            if (tasksSorted) {
+                // If same task, skip.
+                if (tasks.back() != task) {
+                    tasks.push_back(std::move(task));
+                    // Check if we've violated the order.  We've violated it if
+                    // the comparator says the new task is less than the
+                    // previously last task.
+                    Task::PriorityOrder comp(inputs.payloadDecorator);
+                    tasksSorted =
+                        !comp(tasks[tasks.size()-1], tasks[tasks.size()-2]);
+                }
+            }
+            else {
+                tasks.push_back(std::move(task));
+            }
         }
     }
 
@@ -914,6 +931,13 @@ struct Pcp_PrimIndexer
     Task PopTask() {
         Task task(Task::Type::None);
         if (!tasks.empty()) {
+            if (!tasksSorted) {
+                Task::PriorityOrder comp(inputs.payloadDecorator);
+                std::sort(tasks.begin(), tasks.end(), comp);
+                tasks.erase(
+                    std::unique(tasks.begin(), tasks.end()), tasks.end());
+                tasksSorted = true;
+            }
             task = std::move(tasks.back());
             tasks.pop_back();
         }
@@ -958,23 +982,21 @@ struct Pcp_PrimIndexer
             }
         }
         else {
+            if (contributesSpecs && evaluateVariants) {
+                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
+            }
             if (!skipCompletedNodesForAncestralOpinions) {
                 // In this case, we only need to add tasks that weren't
                 // evaluated during the recursive prim indexing for
                 // ancestral opinions.
                 if (contributesSpecs) {
-                    AddTask(Task(Task::Type::EvalNodeInherits, n));
                     AddTask(Task(Task::Type::EvalNodeSpecializes, n));
-                    AddTask(Task(Task::Type::EvalNodeReferences, n));
+                    AddTask(Task(Task::Type::EvalNodeInherits, n));
                     AddTask(Task(Task::Type::EvalNodePayload, n));
+                    AddTask(Task(Task::Type::EvalNodeReferences, n));
                 }
                 if (!isUsd) {
                     AddTask(Task(Task::Type::EvalNodeRelocations, n));
-                }
-            }
-            if (contributesSpecs) {
-                if (evaluateVariants) {
-                    AddTask(Task(Task::Type::EvalNodeVariantSets, n));
                 }
             }
             if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
@@ -4431,11 +4453,11 @@ Pcp_BuildPrimIndex(
             break;
         case Task::Type::EvalNodeVariantAuthored:
             _EvalNodeAuthoredVariant(&outputs->primIndex, task.node, &indexer,
-                                     *task.vsetName, task.vsetNum);
+                                     task.vsetName, task.vsetNum);
             break;
         case Task::Type::EvalNodeVariantFallback:
             _EvalNodeFallbackVariant(&outputs->primIndex, task.node, &indexer,
-                                     *task.vsetName, task.vsetNum);
+                                     task.vsetName, task.vsetNum);
             break;
         case Task::Type::EvalNodeVariantNoneFound:
             // No-op.  These tasks are just markers for RetryVariantTasks().
