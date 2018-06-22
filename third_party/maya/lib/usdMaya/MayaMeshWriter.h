@@ -47,10 +47,9 @@ class MayaMeshWriter : public MayaTransformWriter
                    const SdfPath& uPath,
                    bool instanceSource,
                    usdWriteJobCtx& jobCtx);
-    virtual ~MayaMeshWriter() {};
 
-    virtual void write(const UsdTimeCode &usdTime) override;
-    virtual bool exportsGprims() const override;
+    void Write(const UsdTimeCode &usdTime) override;
+    bool ExportsGprims() const override;
 
   protected:
     bool writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema);

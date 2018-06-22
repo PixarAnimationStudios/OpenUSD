@@ -57,11 +57,10 @@ public:
                        bool instanceSource,
                        usdWriteJobCtx& jobCtx);
     
-    void write(const UsdTimeCode &usdTime) override;
-    bool exportsGprims() const override;
-    bool shouldPruneChildren() const override;
-    bool isShapeAnimated() const override;
-    bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
+    void Write(const UsdTimeCode &usdTime) override;
+    bool ExportsGprims() const override;
+    bool ShouldPruneChildren() const override;
+    bool GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
 
     /// Gets the joint name tokens for the given dag paths, assuming a joint
     /// hierarchy with the given root joint.
@@ -74,6 +73,9 @@ public:
     /// holds root transformations of the joint hierarchy.
     static SdfPath GetSkeletonPath(const MDagPath& rootJoint,
                                    bool stripNamespaces);
+
+protected:
+    bool _IsShapeAnimated() const override;
 
 private:
     bool _WriteRestState();

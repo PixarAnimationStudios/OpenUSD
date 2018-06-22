@@ -248,7 +248,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);
 
                 // Write out data (non-animated/default values).
-                if (const auto& usdPrim = primWriter->getPrim()) {
+                if (const auto& usdPrim = primWriter->GetUsdPrim()) {
                     if (mJobCtx.mArgs.stripNamespaces) {
                         auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
                         if (foundPair != mUsdPathToDagPathMap.end()){
@@ -256,16 +256,16 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                                     "Multiple dag nodes map to the same prim "
                                     "path after stripping namespaces: %s - %s",
                                     foundPair->second.fullPathName().asChar(),
-                                    primWriter->getDagPath().fullPathName()
+                                    primWriter->GetDagPath().fullPathName()
                                         .asChar());
                             return false;
                         }
-                        mUsdPathToDagPathMap[usdPrim.GetPath()] = primWriter->getDagPath();
+                        mUsdPathToDagPathMap[usdPrim.GetPath()] = primWriter->GetDagPath();
                     }
 
-                    primWriter->write(UsdTimeCode::Default());
+                    primWriter->Write(UsdTimeCode::Default());
 
-                    MDagPath dag = primWriter->getDagPath();
+                    MDagPath dag = primWriter->GetDagPath();
                     mDagPathToUsdPathMap[dag] = usdPrim.GetPath();
 
                     // If we are merging transforms and the object derives from
@@ -275,7 +275,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                         MayaTransformWriterPtr xformWriter =
                             std::dynamic_pointer_cast<MayaTransformWriter>(primWriter);
                         if (xformWriter) {
-                            MDagPath xformDag = xformWriter->getTransformDagPath();
+                            MDagPath xformDag = xformWriter->GetTransformDagPath();
                             mDagPathToUsdPathMap[xformDag] = usdPrim.GetPath();
                         }
                     }
@@ -283,7 +283,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                      mModelKindWriter.OnWritePrim(usdPrim, primWriter);
                 }
 
-                if (primWriter->shouldPruneChildren()) {
+                if (primWriter->ShouldPruneChildren()) {
                     itDag.prune();
                 }
             }
@@ -351,9 +351,9 @@ void usdWriteJob::evalJob(double iFrame)
     const UsdTimeCode usdTime(iFrame);
 
     for (const MayaPrimWriterPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
-        const UsdPrim& usdPrim = primWriter->getPrim();
+        const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
-            primWriter->write(usdTime);
+            primWriter->Write(usdTime);
         }
     }
 
@@ -415,7 +415,7 @@ void usdWriteJob::endJob()
     }
     // Running post export function on all the prim writers.
     for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
-        primWriter->postExport();
+        primWriter->PostExport();
     }
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
         mJobCtx.mStage->GetRootLayer()->Save();
@@ -474,7 +474,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     if (mJobCtx.mParentScopePath.IsEmpty()) {
         // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
         MayaPrimWriterPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
-        std::string firstPrimWriterPathStr( firstPrimWriterPtr->getDagPath().fullPathName().asChar() );
+        std::string firstPrimWriterPathStr( firstPrimWriterPtr->GetDagPath().fullPathName().asChar() );
         std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
         std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), ':', '_'); // replace namespace ":" with "_"
         usdVariantRootPrimPath = SdfPath(firstPrimWriterPathStr).GetPrefixes()[0];

@@ -37,12 +37,10 @@ class MayaNurbsCurveWriter : public MayaTransformWriter
 {
   public:
     MayaNurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, bool instanceSource, usdWriteJobCtx& jobCtx);
-    virtual ~MayaNurbsCurveWriter() {};
 
-    virtual void write(const UsdTimeCode &usdTime);
-    
-    /// \override
-    virtual bool exportsGprims() const;
+    void Write(const UsdTimeCode &usdTime) override;
+
+    bool ExportsGprims() const override;
 
   protected:
     bool writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema);

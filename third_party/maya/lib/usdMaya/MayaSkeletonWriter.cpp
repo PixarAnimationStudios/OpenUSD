@@ -142,20 +142,20 @@ MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
     : MayaPrimWriter(iDag, uPath, jobCtx),
       _valid(false), _animXformIsAnimated(false)
 {
-    const TfToken& exportSkels = jobCtx.getArgs().exportSkels;
+    const TfToken& exportSkels = _GetExportArgs().exportSkels;
     if (exportSkels != PxrUsdExportJobArgsTokens->auto_ &&
         exportSkels != PxrUsdExportJobArgsTokens->explicit_) {
         return;
     }
 
     SdfPath skelPath =
-        GetSkeletonPath(iDag, getArgs().stripNamespaces);
+        GetSkeletonPath(iDag, _GetExportArgs().stripNamespaces);
 
-    _skel = UsdSkelSkeleton::Define(getUsdStage(), skelPath);
+    _skel = UsdSkelSkeleton::Define(GetUsdStage(), skelPath);
     if (!TF_VERIFY(_skel))
         return;
 
-    mUsdPrim = _skel.GetPrim();
+    _usdPrim = _skel.GetPrim();
 }
 
 
@@ -401,17 +401,17 @@ MayaSkeletonWriter::_WriteRestState()
     // Check if the root joint is the special root joint created
     // for round-tripping UsdSkel data.
     bool haveUsdSkelXform =
-        PxrUsdMayaTranslatorSkel::IsUsdSkelTransform(getDagPath());
+        PxrUsdMayaTranslatorSkel::IsUsdSkelTransform(GetDagPath());
     
-    _GetJointHierarchyComponents(getDagPath(),
+    _GetJointHierarchyComponents(GetDagPath(),
                                  &_skelXformPath,
                                  &_animXformPath,
                                  &_jointHierarchyRootPath,
                                  &_joints);
 
     VtTokenArray skelJointNames =
-        GetJointNames(_joints, getDagPath(),
-                      getArgs().stripNamespaces);
+        GetJointNames(_joints, GetDagPath(),
+                      _GetExportArgs().stripNamespaces);
     _topology = UsdSkelTopology(skelJointNames);
     std::string whyNotValid;
     if (!_topology.Validate(&whyNotValid)) {
@@ -429,8 +429,8 @@ MayaSkeletonWriter::_WriteRestState()
     // Mark the bindings for post processing.
 
     SdfPath skelPath = _skel.GetPrim().GetPath();
-    mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
-        skelPath, skelPath, getArgs().exportSkels);
+    _writeJobCtx.getSkelBindingsWriter().MarkBindings(
+        skelPath, skelPath, _GetExportArgs().exportSkels);
         
     VtMatrix4dArray restXforms =
         _GetJointLocalRestTransforms(_topology, _joints);
@@ -439,14 +439,14 @@ MayaSkeletonWriter::_WriteRestState()
     _SetAttribute(_skel.GetRestTransformsAttr(), restXforms);
 
     VtTokenArray animJointNames;
-    _GetAnimatedJoints(_topology, skelJointNames, getDagPath(),
+    _GetAnimatedJoints(_topology, skelJointNames, GetDagPath(),
                        _joints, restXforms,
                        &animJointNames, &_animatedJoints,
-                       !getArgs().timeInterval.IsEmpty());
+                       !_GetExportArgs().timeInterval.IsEmpty());
 
     if (haveUsdSkelXform) {
         _skelXformAttr = _skel.MakeMatrixXform();
-        if (!getArgs().timeInterval.IsEmpty()) {
+        if (!_GetExportArgs().timeInterval.IsEmpty()) {
             MObject node = _skelXformPath.node();
             _skelXformIsAnimated = PxrUsdMayaUtil::isAnimated(node);
         } else {
@@ -458,7 +458,7 @@ MayaSkeletonWriter::_WriteRestState()
 
         // TODO: pull the name from the anim transform dag path.
         SdfPath animPath = _GetAnimationPath(skelPath);
-        _skelAnim = UsdSkelAnimation::Define(getUsdStage(), animPath);
+        _skelAnim = UsdSkelAnimation::Define(GetUsdStage(), animPath);
 
         if (TF_VERIFY(_skelAnim)) {
 
@@ -470,7 +470,7 @@ MayaSkeletonWriter::_WriteRestState()
                 
                 _animXformAttr = _skelAnim.MakeMatrixXform();
 
-                if (!getArgs().timeInterval.IsEmpty()) {
+                if (!_GetExportArgs().timeInterval.IsEmpty()) {
                     MObject node = _animXformPath.node();
                     _animXformIsAnimated = PxrUsdMayaUtil::isAnimated(node);
                 } else {
@@ -493,7 +493,7 @@ MayaSkeletonWriter::_WriteRestState()
 
 
 void
-MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
+MayaSkeletonWriter::Write(const UsdTimeCode &usdTime)
 {
     if (usdTime.IsDefault()) {
         _valid = _WriteRestState();
@@ -554,7 +554,7 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
                     // actually animated since we rely on decomposition to get
                     // separate anim components.
                     // In the future, we may want to RLE-compress the data in   
-                    // postExport to remove redundant time samples.
+                    // PostExport to remove redundant time samples.
                     _SetAttribute(_skelAnim.GetTranslationsAttr(),
                                   &translations, usdTime);
                     _SetAttribute(_skelAnim.GetRotationsAttr(),
@@ -568,20 +568,20 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
 }
 
 bool
-MayaSkeletonWriter::exportsGprims() const
+MayaSkeletonWriter::ExportsGprims() const
 {
     // Nether the Skeleton nor its animation sources are gprims.
     return false;
 }
 
 bool
-MayaSkeletonWriter::shouldPruneChildren() const
+MayaSkeletonWriter::ShouldPruneChildren() const
 {
     return true;
 }
 
 bool
-MayaSkeletonWriter::isShapeAnimated() const
+MayaSkeletonWriter::_IsShapeAnimated() const
 {
     // Either the root xform or the SkelAnimation beneath it
     // may be animated.
@@ -589,16 +589,16 @@ MayaSkeletonWriter::isShapeAnimated() const
 }
 
 bool
-MayaSkeletonWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+MayaSkeletonWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
 {
-    bool hasPrims = MayaPrimWriter::getAllAuthoredUsdPaths(outPaths);
+    bool hasPrims = MayaPrimWriter::GetAllAuthoredUsdPaths(outPaths);
 
     SdfPath skelPath = GetSkeletonPath(
-        getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
+        GetDagPath(), _GetExportArgs().stripNamespaces);
     SdfPath animPath = _GetAnimationPath(skelPath);
     
     for (const SdfPath& path : {skelPath, animPath}) {  
-        if (getUsdStage()->GetPrimAtPath(path)) {
+        if (GetUsdStage()->GetPrimAtPath(path)) {
             outPaths->push_back(path);
             hasPrims = true;
         }

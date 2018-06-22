@@ -47,14 +47,14 @@ FunctorPrimWriter::~FunctorPrimWriter()
 }
 
 void
-FunctorPrimWriter::write(
+FunctorPrimWriter::Write(
         const UsdTimeCode& usdTime)
 {
-    SdfPath authorPath = getUsdPath();
-    UsdStageRefPtr stage = getUsdStage();
+    SdfPath authorPath = GetUsdPath();
+    UsdStageRefPtr stage = GetUsdStage();
 
-    PxrUsdMayaPrimWriterArgs args(getDagPath(),
-        getArgs().exportRefsAsInstanceable);
+    PxrUsdMayaPrimWriterArgs args(GetDagPath(),
+        _GetExportArgs().exportRefsAsInstanceable);
     PxrUsdMayaPrimWriterContext ctx(usdTime, authorPath, stage);
     _plugFn(args, &ctx);
     _exportsGprims = ctx.GetExportsGprims();
@@ -62,38 +62,38 @@ FunctorPrimWriter::write(
     _pruneChildren = ctx.GetPruneChildren();
     _authoredPaths = ctx.GetAuthoredPaths();
 
-    mUsdPrim = stage->GetPrimAtPath(authorPath);
-    if (!mUsdPrim) {
+    _usdPrim = stage->GetPrimAtPath(authorPath);
+    if (!_usdPrim) {
         return;
     }
 
     // Write "parent" class attrs
-    UsdGeomXformable primSchema(mUsdPrim);
+    UsdGeomXformable primSchema(_usdPrim);
     if (primSchema) {
-        writeTransformAttrs(usdTime, primSchema);
+        _WriteXformableAttrs(usdTime, primSchema);
     }
 }
 
 bool
-FunctorPrimWriter::exportsGprims() const
+FunctorPrimWriter::ExportsGprims() const
 {
     return _exportsGprims;
 }
     
 bool
-FunctorPrimWriter::exportsReferences() const
+FunctorPrimWriter::ExportsReferences() const
 {
     return _exportsReferences;
 }
 
 bool
-FunctorPrimWriter::shouldPruneChildren() const
+FunctorPrimWriter::ShouldPruneChildren() const
 {
     return _pruneChildren;
 }
 
 bool
-FunctorPrimWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+FunctorPrimWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
 {
     if (!_authoredPaths.empty()) {
         outPaths->insert(

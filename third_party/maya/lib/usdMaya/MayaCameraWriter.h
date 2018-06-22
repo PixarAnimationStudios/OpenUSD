@@ -42,9 +42,8 @@ class MayaCameraWriter : public MayaTransformWriter
         const SdfPath& uPath,
         bool instanceSource,
         usdWriteJobCtx& jobCtx);
-    virtual ~MayaCameraWriter() {};
 
-    virtual void write(const UsdTimeCode &usdTime);
+    void Write(const UsdTimeCode &usdTime) override;
     
   protected:
     bool writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamera &primSchema);

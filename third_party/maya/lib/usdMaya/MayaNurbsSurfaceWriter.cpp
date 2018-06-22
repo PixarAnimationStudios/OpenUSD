@@ -55,10 +55,10 @@ MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
     MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
 {
     UsdGeomNurbsPatch primSchema =
-        UsdGeomNurbsPatch::Define(getUsdStage(), getUsdPath());
+        UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
-    mUsdPrim = primSchema.GetPrim();
-    TF_AXIOM(mUsdPrim);
+    _usdPrim = primSchema.GetPrim();
+    TF_AXIOM(_usdPrim);
 }
 
 static void
@@ -94,10 +94,10 @@ _FixNormalizedKnotRange(
 }
 
 //virtual 
-void MayaNurbsSurfaceWriter::write(const UsdTimeCode &usdTimeCode)
+void MayaNurbsSurfaceWriter::Write(const UsdTimeCode &usdTimeCode)
 {
     // == Write
-    UsdGeomNurbsPatch primSchema(mUsdPrim);
+    UsdGeomNurbsPatch primSchema(_usdPrim);
 
     // Write the attrs
     writeNurbsSurfaceAttrs(usdTimeCode, primSchema);
@@ -111,19 +111,19 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     MStatus status = MS::kSuccess;
 
     // Write parent class attrs
-    writeTransformAttrs(usdTimeCode, primSchema);
+    _WriteXformableAttrs(usdTimeCode, primSchema);
 
     // Return if usdTimeCode does not match if shape is animated
-    if (usdTimeCode.IsDefault() == isShapeAnimated() ) {
+    if (usdTimeCode.IsDefault() == _IsShapeAnimated() ) {
         // skip shape as the usdTimeCode does not match if shape isAnimated value
         return true; 
     }
 
-    MFnNurbsSurface nurbs(getDagPath(), &status);
+    MFnNurbsSurface nurbs(GetDagPath(), &status);
     if (!status) {
         TF_RUNTIME_ERROR(
                 "MFnNurbsSurface() failed for surface at DAG path: %s",
-                getDagPath().fullPathName().asChar());
+                GetDagPath().fullPathName().asChar());
         return false;
     }
     
@@ -131,7 +131,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // We use the same code used for gathering shader data on a mesh
     // but we pass 0 for the numfaces argument since there is no per face
     // shader assignment possible.
-    if (getArgs().exportDisplayColor) {
+    if (_GetExportArgs().exportDisplayColor) {
         VtArray<GfVec3f> RGBData;
         VtArray<float> AlphaData;
         TfToken interpolation;
@@ -171,7 +171,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         TF_RUNTIME_ERROR(
                 "MFnNurbsSurface '%s' has degenerate knot vectors. "
                 "Skipping...",
-                getDagPath().fullPathName().asChar());
+                GetDagPath().fullPathName().asChar());
         return false;
     }
 
@@ -190,7 +190,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     double uScale = 1.0;
     double vScale = 1.0;
 
-    if (getArgs().normalizeNurbs) {
+    if (_GetExportArgs().normalizeNurbs) {
         if (endU>startU && endV>startV) {
             uOffset = startU;
             vOffset = startV;
@@ -218,7 +218,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         sampKnotsInV[i+1]=(double)((knotsInV[i]-vOffset)*vScale);
     }
 
-    if (getArgs().normalizeNurbs) {
+    if (_GetExportArgs().normalizeNurbs) {
         _FixNormalizedKnotRange(sampKnotsInU, numKnotsInU+2, nurbs.degreeU(), startU, endU);
         _FixNormalizedKnotRange(sampKnotsInV, numKnotsInV+2, nurbs.degreeV(), startV, endV);
     }
@@ -243,7 +243,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
     // Create st vec2f vertex primvar
     VtArray<GfVec2f> stValues;
-    if (getArgs().exportNurbsExplicitUV) {
+    if (_GetExportArgs().exportNurbsExplicitUV) {
         stValues.resize(numCVsInU*numCVsInV);
     }
 
@@ -453,7 +453,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 }
 
 bool
-MayaNurbsSurfaceWriter::exportsGprims() const
+MayaNurbsSurfaceWriter::ExportsGprims() const
 {
     return true;
 }

@@ -67,11 +67,15 @@ TF_DEFINE_PRIVATE_TOKENS(
 MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
                                const SdfPath& uPath,
                                usdWriteJobCtx& jobCtx) :
-    mWriteJobCtx(jobCtx),
-    mDagPath(iDag),
-    mUsdPath(uPath),
-    mIsValid(true),
-    mExportsVisibility(jobCtx.getArgs().exportVisibility)
+    _writeJobCtx(jobCtx),
+    _dagPath(iDag),
+    _usdPath(uPath),
+    _isValid(true),
+    _exportVisibility(jobCtx.getArgs().exportVisibility)
+{
+}
+
+MayaPrimWriter::~MayaPrimWriter()
 {
 }
 
@@ -94,13 +98,13 @@ _GetClassNamesToWrite(
 }
 
 bool
-MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime, UsdGeomImageable &primSchema) 
+MayaPrimWriter::_WriteImageableAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime, UsdGeomImageable &primSchema) 
 {
     MStatus status;
-    MFnDependencyNode depFn(getDagPath().node());
+    MFnDependencyNode depFn(GetDagPath().node());
     MFnDependencyNode depFnT(dagT.node()); // optionally also scan a shape's transform if merging transforms
 
-    if (mExportsVisibility) {
+    if (_exportVisibility) {
         bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
         bool isAnimated = false;  // if either shape or xform is animated, then animated
 
@@ -132,7 +136,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
 
         PxrUsdMayaPrimWriterContext* unused = NULL;
         PxrUsdMayaTranslatorGprim::Write(
-                getDagPath().node(),
+                GetDagPath().node(),
                 gprim,
                 unused);
 
@@ -140,7 +144,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
 
     std::vector<std::string> classNames;
     if (_GetClassNamesToWrite(
-            getDagPath().node(),
+            GetDagPath().node(),
             usdPrim,
             &classNames)) {
         PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
@@ -150,7 +154,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     // Currently only purpose, which is uniform, so only export at default time.
     if (usdTime.IsDefault()) {
         PxrUsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
-                getDagPath().node(),
+                GetDagPath().node(),
                 dagT.node(),
                 usdPrim,
                 {UsdGeomTokens->purpose},
@@ -163,7 +167,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     // Write attributes on the transform first, and then attributes on the shape
     // node. This means that attribute name collisions will always be handled by
     // taking the shape node's value if we're merging transforms and shapes.
-    if (dagT.isValid() && !(dagT == getDagPath())) {
+    if (dagT.isValid() && !(dagT == GetDagPath())) {
         if (usdTime.IsDefault()) {
             PxrUsdMayaWriteUtil::WriteMetadataToPrim(dagT.node(), usdPrim);
             PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
@@ -174,63 +178,113 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     }
 
     if (usdTime.IsDefault()) {
-        PxrUsdMayaWriteUtil::WriteMetadataToPrim(getDagPath().node(), usdPrim);
+        PxrUsdMayaWriteUtil::WriteMetadataToPrim(GetDagPath().node(), usdPrim);
         PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
-                getDagPath().node(), usdPrim, _GetSparseValueWriter());
+                GetDagPath().node(), usdPrim, _GetSparseValueWriter());
     }
-    PxrUsdMayaWriteUtil::WriteUserExportedAttributes(getDagPath(), usdPrim, 
+    PxrUsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
             usdTime, _GetSparseValueWriter());
 
     return true;
 }
 
 bool
-MayaPrimWriter::exportsGprims() const
+MayaPrimWriter::ExportsGprims() const
 {
     return false;
 }
     
 bool
-MayaPrimWriter::exportsReferences() const
+MayaPrimWriter::ExportsReferences() const
 {
     return false;
 }
 
 bool
-MayaPrimWriter::shouldPruneChildren() const
+MayaPrimWriter::ShouldPruneChildren() const
 {
     return false;
 }
 
 void
-MayaPrimWriter::postExport()
+MayaPrimWriter::PostExport()
 { 
 }
 
 void
-MayaPrimWriter::setExportsVisibility(bool exports)
+MayaPrimWriter::SetExportVisibility(bool exportVis)
 {
-    mExportsVisibility = exports;
+    _exportVisibility = exportVis;
 }
 
 bool
-MayaPrimWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+MayaPrimWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
 {
-    if (!getUsdPath().IsEmpty()) {
-        outPaths->push_back(getUsdPath());
+    if (!GetUsdPath().IsEmpty()) {
+        outPaths->push_back(GetUsdPath());
         return true;
     }
     return false;
 }
 
-const UsdStageRefPtr&
-MayaPrimWriter::getUsdStage() const {
-    return mWriteJobCtx.getUsdStage();
+bool
+MayaPrimWriter::GetExportVisibility() const
+{
+    return _exportVisibility;
 }
 
+const MDagPath&
+MayaPrimWriter::GetDagPath() const
+{
+    return _dagPath;
+}
+
+const SdfPath&
+MayaPrimWriter::GetUsdPath() const
+{
+    return _usdPath;
+}
+
+void
+MayaPrimWriter::_SetUsdPath(const SdfPath &newPath)
+{
+    _usdPath = newPath;
+};
+
+const UsdPrim&
+MayaPrimWriter::GetUsdPrim() const
+{
+    return _usdPrim;
+}
+
+const UsdStageRefPtr&
+MayaPrimWriter::GetUsdStage() const
+{
+    return _writeJobCtx.getUsdStage();
+}
+
+bool
+MayaPrimWriter::IsValid() const
+{
+    return _isValid;
+}
+
+void
+MayaPrimWriter::_SetValid(bool isValid)
+{
+    _isValid = isValid;
+};
+
 const PxrUsdMayaJobExportArgs&
-MayaPrimWriter::getArgs() const {
-    return mWriteJobCtx.getArgs();
+MayaPrimWriter::_GetExportArgs() const
+{
+    return _writeJobCtx.getArgs();
+}
+
+UsdUtilsSparseValueWriter*
+MayaPrimWriter::_GetSparseValueWriter()
+{
+    return &_valueWriter;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

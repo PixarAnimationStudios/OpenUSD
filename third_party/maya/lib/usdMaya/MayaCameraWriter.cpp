@@ -51,20 +51,20 @@ MayaCameraWriter::MayaCameraWriter(
     : MayaTransformWriter(iDag, uPath, instanceSource, jobCtx) 
 {
     UsdGeomCamera primSchema =
-        UsdGeomCamera::Define(getUsdStage(), getUsdPath());
+        UsdGeomCamera::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
-    mUsdPrim = primSchema.GetPrim();
-    TF_AXIOM(mUsdPrim);
+    _usdPrim = primSchema.GetPrim();
+    TF_AXIOM(_usdPrim);
 }
 
 /* virtual */
-void MayaCameraWriter::write(const UsdTimeCode &usdTime)
+void MayaCameraWriter::Write(const UsdTimeCode &usdTime)
 {
     // == Write
-    UsdGeomCamera primSchema(mUsdPrim);
+    UsdGeomCamera primSchema(_usdPrim);
 
     // Write parent class attrs
-    writeTransformAttrs(usdTime, primSchema);
+    _WriteXformableAttrs(usdTime, primSchema);
 
     // Write the attrs
     writeCameraAttrs(usdTime, primSchema);
@@ -78,13 +78,13 @@ bool MayaCameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamer
     // - We are at the default time and NO attributes on the shape are animated.
     //    OR
     // - We are at a non-default time and some attribute on the shape IS animated.
-    if (usdTime.IsDefault() == isShapeAnimated()) {
+    if (usdTime.IsDefault() == _IsShapeAnimated()) {
         return true;
     }
 
     MStatus status;
 
-    MFnCamera camFn(getDagPath(), &status);
+    MFnCamera camFn(GetDagPath(), &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // NOTE: We do not use a GfCamera and then call SetFromCamera() below

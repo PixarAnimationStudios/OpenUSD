@@ -57,16 +57,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// exporting Maya "locator" type nodes.
 class MayaLocatorWriter : public MayaTransformWriter
 {
-    public:
-        MayaLocatorWriter(
-                const MDagPath& iDag,
-                const SdfPath& uPath,
-                const bool instanceSource,
-                usdWriteJobCtx& jobCtx);
+public:
+    MayaLocatorWriter(
+            const MDagPath& iDag,
+            const SdfPath& uPath,
+            const bool instanceSource,
+            usdWriteJobCtx& jobCtx);
 
-        virtual ~MayaLocatorWriter() override;
-
-        virtual void write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 };
 
 typedef std::shared_ptr<MayaLocatorWriter> MayaLocatorWriterPtr;

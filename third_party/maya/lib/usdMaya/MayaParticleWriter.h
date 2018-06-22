@@ -39,12 +39,14 @@ public:
                        const SdfPath& uPath,
                        bool instanceSource,
                        usdWriteJobCtx& jobCtx);
-    virtual ~MayaParticleWriter() {}
 
-    virtual void write(const UsdTimeCode &usdTime) override;
+    void Write(const UsdTimeCode &usdTime) override;
 
+protected:
     // TODO: Check this properly, static particles are uncommon, but used.
-    virtual bool isShapeAnimated() const override { return true; }
+    bool _IsShapeAnimated() const override {
+        return true;
+    }
 
 private:
     void writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points);

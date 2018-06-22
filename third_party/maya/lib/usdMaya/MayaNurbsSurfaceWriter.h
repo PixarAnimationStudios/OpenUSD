@@ -40,12 +40,10 @@ class MayaNurbsSurfaceWriter : public MayaTransformWriter
             const SdfPath& uPath,
             bool instanceSource,
             usdWriteJobCtx& jobCtx);
-    virtual ~MayaNurbsSurfaceWriter() {};
     
-    virtual void write(const UsdTimeCode &usdTime);
+    void Write(const UsdTimeCode &usdTime) override;
 
-    /// \override
-    virtual bool exportsGprims() const;
+    bool ExportsGprims() const override;
 
   protected:
     bool writeNurbsSurfaceAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsPatch &primSchema);

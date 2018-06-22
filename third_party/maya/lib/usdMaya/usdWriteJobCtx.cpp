@@ -82,22 +82,22 @@ SdfPath usdWriteJobCtx::getOrCreateMasterPath(const MDagPath& dg)
 
         // This will get auto destroyed, because we are not storing it in the list
         MayaTransformWriterPtr transformPrimWriter(new MayaTransformWriter(dagCopy, usdPath.GetParentPath(), true, *this));
-        if (!transformPrimWriter || !transformPrimWriter->isValid()) {
+        if (!transformPrimWriter || !transformPrimWriter->IsValid()) {
             return SdfPath();
         }
 
-        transformPrimWriter->write(UsdTimeCode::Default());
-        mMasterToUsdPath[handle] = transformPrimWriter->getUsdPath();
+        transformPrimWriter->Write(UsdTimeCode::Default());
+        mMasterToUsdPath[handle] = transformPrimWriter->GetUsdPath();
 
         auto primWriter = _createPrimWriter(allInstances[0], SdfPath(), true);
         if (!primWriter) { // Note that _createPrimWriter ensures validity.
             return SdfPath();
         }
 
-        primWriter->write(UsdTimeCode::Default());
+        primWriter->Write(UsdTimeCode::Default());
         mMasterToPrimWriter[handle] = mMayaPrimWriterList.size();
         mMayaPrimWriterList.push_back(primWriter);
-        return transformPrimWriter->getUsdPath();
+        return transformPrimWriter->GetUsdPath();
     }
 }
 
@@ -264,7 +264,7 @@ MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
         // Deal with instances -- we just create a transform for them.
         MayaTransformWriterPtr primPtr = std::make_shared<MayaTransformWriter>(
                 curDag, writePath, instanceSource, *this);
-        if (primPtr->isValid()) {
+        if (primPtr->IsValid()) {
             return primPtr;
         }
     }
@@ -278,7 +278,7 @@ MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
                 _FindWriter(mayaTypeName)) {
             MayaPrimWriterPtr primPtr(primWriterFactory(
                     curDag, writePath, instanceSource, *this));
-            if (primPtr && primPtr->isValid()) {
+            if (primPtr && primPtr->IsValid()) {
                 // We found a registered user prim writer that handles this node
                 // type, so return now.
                 return primPtr;

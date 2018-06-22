@@ -404,14 +404,14 @@ _WriteJointOrder(const MDagPath& rootJoint,
 MObject
 MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 {
-    const TfToken& exportSkin = getArgs().exportSkin;
+    const TfToken& exportSkin = _GetExportArgs().exportSkin;
     if (exportSkin != PxrUsdExportJobArgsTokens->auto_ &&
         exportSkin != PxrUsdExportJobArgsTokens->explicit_) {
         return MObject();
     }
 
     // Figure out if we even have a skin cluster in the first place.
-    MObject skinClusterObj = _GetSkinCluster(getDagPath());
+    MObject skinClusterObj = _GetSkinCluster(GetDagPath());
     if (skinClusterObj.isNull()) {
         return MObject();
     }
@@ -464,7 +464,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 
     if (_WriteJointInfluences(skinCluster, inMesh, bindingAPI)) {
         _WriteJointOrder(rootJoint, jointDagPaths, bindingAPI,
-                         getArgs().stripNamespaces);
+                         _GetExportArgs().stripNamespaces);
     }
 
     GfMatrix4d geomBindTransform;
@@ -473,11 +473,11 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
                       &geomBindTransform);
     }
 
-    _WarnForPostDeformationTransform(getUsdPath(), getDagPath(), skinCluster);
+    _WarnForPostDeformationTransform(GetUsdPath(), GetDagPath(), skinCluster);
 
     const SdfPath skelPath =
         MayaSkeletonWriter::GetSkeletonPath(
-            rootJoint, mWriteJobCtx.getArgs().stripNamespaces);
+            rootJoint, _GetExportArgs().stripNamespaces);
 
     // Export will create a Skeleton at the location corresponding to
     // the root joint. Configure this mesh to be bound to the same skel.
@@ -490,7 +490,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
                               _tokens->skelGeomBindTransform});
 
     // Mark the bindings for post processing.
-    mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
+    _writeJobCtx.getSkelBindingsWriter().MarkBindings(
         primSchema.GetPrim().GetPath(),
         skelPath, exportSkin);
 

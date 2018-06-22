@@ -78,21 +78,20 @@ public:
             const SdfPath& uPath,
             bool instanceSource,
             usdWriteJobCtx& jobCtx);
-    virtual ~MayaInstancerWriter() {};
     
     PXRUSDMAYA_API
-    virtual void write(const UsdTimeCode &usdTime) override;
+    void Write(const UsdTimeCode &usdTime) override;
     PXRUSDMAYA_API
-    virtual void postExport() override;
+    void PostExport() override;
     PXRUSDMAYA_API
-    virtual bool exportsReferences() const override;
+    bool ExportsReferences() const override;
     PXRUSDMAYA_API
-    virtual bool shouldPruneChildren() const override;
+    bool ShouldPruneChildren() const override;
     PXRUSDMAYA_API
-    virtual bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
+    bool GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
 
 protected:
-    virtual bool writeInstancerAttrs(
+    bool writeInstancerAttrs(
             const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer);
 
 private:

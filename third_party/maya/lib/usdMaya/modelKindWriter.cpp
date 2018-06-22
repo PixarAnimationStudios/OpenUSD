@@ -86,7 +86,7 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
     // that gprims are authored beneath components, rather than assemblies.
     // Then record the actual gprim if its root prim has been tagged as
     // potentially an assembly.
-    if (primWriter->exportsGprims()) {
+    if (primWriter->ExportsGprims()) {
 
         SdfPath rootPath = _FindAncestorRootPrimOrComponent(prim);
         if (!rootPath.IsEmpty())
@@ -99,8 +99,8 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
         }
     }
 
-    if (primWriter->exportsReferences()) {
-        TF_VERIFY(primWriter->getAllAuthoredUsdPaths(&_pathsThatMayHaveKind));
+    if (primWriter->ExportsReferences()) {
+        TF_VERIFY(primWriter->GetAllAuthoredUsdPaths(&_pathsThatMayHaveKind));
     }
 }
 
