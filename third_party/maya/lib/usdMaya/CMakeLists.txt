@@ -65,6 +65,7 @@ pxr_shared_library(${PXR_PACKAGE}
         shadingModeImporter
         shadingModeRegistry
         skelBindingsWriter
+        stageNode
         util
         usdPrimProvider
         writeUtil
@@ -225,7 +226,7 @@ pxr_test_scripts(
 #   A) we can't use relative paths ("./maya_profile"), because maya in
 #      windows will error
 #   B) we don't know the absolute path to the test directory at cmake-compile
-#      time 
+#      time
 
 pxr_install_test_dir(
     SRC testenv/UsdExportAssemblyTest

@@ -31,6 +31,7 @@
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 #include "usdMaya/stageData.h"
+#include "usdMaya/stageNode.h"
 #include "usdMaya/undoHelperCmd.h"
 #include "usdMaya/usdImport.h"
 #include "usdMaya/usdExport.h"
@@ -59,6 +60,13 @@ initializePlugin(MObject obj)
         UsdMayaStageData::typeName,
         UsdMayaStageData::mayaTypeId,
         UsdMayaStageData::creator);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerNode(
+        UsdMayaStageNode::typeName,
+        UsdMayaStageNode::typeId,
+        UsdMayaStageNode::creator,
+        UsdMayaStageNode::initialize);
     CHECK_MSTATUS(status);
 
     status = plugin.registerShape(
@@ -226,6 +234,9 @@ uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(UsdMayaProxyShape::typeId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(UsdMayaStageNode::typeId);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterData(UsdMayaStageData::mayaTypeId);
