@@ -3,8 +3,6 @@
 //Last modified: Thu, Mar 22, 2018 09:29:47 AM
 //Codeset: UTF-8
 requires maya "2016";
-requires "stereoCamera" "10.0";
-requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -709,8 +707,6 @@ createNode shapeEditorManager -n "shapeEditorManager";
 	rename -uid "D8315900-0000-6EE1-5AB2-F2F700000294";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
 	rename -uid "D8315900-0000-6EE1-5AB2-F2F700000295";
-createNode px_renderGlobals -s -n "px_renderGlobals1";
-	rename -uid "75C18900-0000-6BFE-5AB2-F26800000294";
 createNode groupId -n "groupId38";
 	rename -uid "D8315900-0000-6EE1-5AB2-F701000002C8";
 	setAttr ".ihi" 0;
@@ -860,7 +856,6 @@ select -ne :defaultRenderGlobals;
 	setAttr -k on ".clip";
 	setAttr -k on ".edm";
 	setAttr -k on ".edl";
-	setAttr ".ren" -type "string" "px_render";
 	setAttr -av -k on ".esr";
 	setAttr -k on ".ors";
 	setAttr ".outf" 3;

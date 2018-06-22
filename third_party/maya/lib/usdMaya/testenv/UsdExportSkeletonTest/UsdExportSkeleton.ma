@@ -3,9 +3,6 @@
 //Last modified: Fri, Jun 08, 2018 04:31:15 PM
 //Codeset: UTF-8
 requires maya "2018ff08";
-requires -nodeType "px_renderGlobals" "px_render" "1.0";
-requires "stereoCamera" "10.0";
-requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2018";
@@ -254,9 +251,6 @@ createNode renderLayerManager -n "renderLayerManager";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "774FC900-0000-4580-5B1B-0DD800000360";
 	setAttr ".g" yes;
-createNode px_renderGlobals -s -n "px_renderGlobals1";
-	rename -uid "774FC900-0000-4580-5B1B-0DD800000361";
-	setAttr ".fgh" -type "string" "studio_shading";
 createNode animCurveTL -n "SkelChar_translateX";
 	rename -uid "774FC900-0000-4580-5B1B-0DE900000363";
 	setAttr ".tan" 18;
@@ -2370,7 +2364,6 @@ select -ne :initialShadingGroup;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
 select -ne :defaultRenderGlobals;
-	setAttr ".ren" -type "string" "px_render";
 	setAttr ".outf" 3;
 select -ne :defaultResolution;
 	setAttr ".pa" 1;
@@ -2814,8 +2807,6 @@ connectAttr "RToes_scaleX.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo.tgi[0].
 connectAttr "LElbow_translateX.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo.tgi[0].ni[47].dn"
 		;
 connectAttr "LEye_translateY.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo.tgi[0].ni[48].dn"
-		;
-connectAttr ":px_renderGlobals1.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo.tgi[0].ni[49].dn"
 		;
 connectAttr "LFoot_translateX.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo.tgi[0].ni[50].dn"
 		;

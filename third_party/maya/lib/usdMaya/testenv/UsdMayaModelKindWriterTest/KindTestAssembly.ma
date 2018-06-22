@@ -4,7 +4,6 @@
 //Codeset: UTF-8
 requires maya "2016";
 requires -nodeType "pxrUsdReferenceAssembly" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
-requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -195,7 +194,6 @@ select -ne :initialShadingGroup;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
 select -ne :defaultRenderGlobals;
-	setAttr ".ren" -type "string" "px_render";
 	setAttr ".outf" 3;
 select -ne :defaultResolution;
 	setAttr ".pa" 1;
