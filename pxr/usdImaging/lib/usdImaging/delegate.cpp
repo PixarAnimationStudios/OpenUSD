@@ -2195,8 +2195,19 @@ size_t
 UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
                                     float *times, GfMatrix4d *samples)
 {
+    if (maxNumSamples < 1) {
+        return 0;
+    }
+
     SdfPath usdPath = GetPathForUsd(id);
     UsdPrim prim = _stage->GetPrimAtPath(usdPath);
+    if (!prim) {
+        // If this is not a literal USD prim, it is an instance of
+        // other object synthesized by UsdImaging.  Just return
+        // the single transform sample from the ValueCache.
+        samples[0] = GetTransform(id);
+        return 1;
+    }
 
     // Provide the number of time samples configured in _timeSampleOffsets,
     // but limited to the caller's declared capacity.
