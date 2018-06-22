@@ -24,13 +24,16 @@
 #ifndef PXRUSDMAYA_USD_IMPORT_H
 #define PXRUSDMAYA_USD_IMPORT_H
 
+/// \file usdMaya/usdImport.h
+
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
 #include <maya/MArgList.h>
 #include <maya/MPxCommand.h>
+#include <maya/MStatus.h>
 #include <maya/MSyntax.h>
 
-#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,34 +44,29 @@ class usdImport : public MPxCommand
 {
   public:
     PXRUSDMAYA_API
-    usdImport(const std::string& assemblyTypeName,
-              const std::string& proxyShapeTypeName);
+    usdImport();
     PXRUSDMAYA_API
-    virtual ~usdImport();
-    
-    PXRUSDMAYA_API
-    virtual MStatus doIt(const MArgList& args);
-    PXRUSDMAYA_API
-    virtual MStatus redoIt();
-    PXRUSDMAYA_API
-    virtual MStatus undoIt();
-    virtual bool  isUndoable () const { return true; };
-
+    ~usdImport() override;
 
     PXRUSDMAYA_API
-    static MSyntax  createSyntax();
+    MStatus doIt(const MArgList& args) override;
     PXRUSDMAYA_API
-    static void* creator(const std::string& assemblyTypeName,
-                         const std::string& proxyShapeTypeName);
+    MStatus redoIt() override;
+    PXRUSDMAYA_API
+    MStatus undoIt() override;
+    bool isUndoable() const override { return true; };
+
+    PXRUSDMAYA_API
+    static MSyntax createSyntax();
+    PXRUSDMAYA_API
+    static void* creator();
 
   private:
-    usdReadJob *mUsdReadJob;
-
-    const std::string _assemblyTypeName;
-    const std::string _proxyShapeTypeName;
+    usdReadJob* mUsdReadJob;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXRUSDMAYA_USD_IMPORT_H
+
+#endif

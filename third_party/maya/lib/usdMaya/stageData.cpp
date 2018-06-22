@@ -25,17 +25,35 @@
 #include "usdMaya/stageData.h"
 
 #include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
 
 #include <maya/MGlobal.h>
+#include <maya/MSceneMessage.h>
+#include <maya/MString.h>
+#include <maya/MTypeId.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaStageDataTokens,
+                        PXRUSDMAYA_STAGE_DATA_TOKENS);
+
+
+const MTypeId UsdMayaStageData::mayaTypeId(0x0010A257);
+const MString UsdMayaStageData::typeName(
+    PxrUsdMayaStageDataTokens->MayaTypeName.GetText());
 
 
 /* This exists solely to make sure that the usdStage instance
  * gets discarded when Maya exits, so that an temporary files
  * that might have been created are unlinked.
  */
-static void _cleanUp(void *gdPtr) 
+static
+void
+_cleanUp(void *gdPtr)
 {
     UsdMayaStageData *gd = (UsdMayaStageData *)gdPtr;
 
@@ -44,38 +62,41 @@ static void _cleanUp(void *gdPtr)
     gd->stage = UsdStageRefPtr();
 }
 
-void* UsdMayaStageData::creator(
-        const PluginStaticData& psData) {
-
-        return new UsdMayaStageData(psData);
+/* static */
+void*
+UsdMayaStageData::creator()
+{
+    return new UsdMayaStageData();
 }
 
-void UsdMayaStageData::copy(
-    const MPxData& aDatum) {
+/* virtual */
+void
+UsdMayaStageData::copy(const MPxData& src)
+{
+    const UsdMayaStageData* stageData =
+        dynamic_cast<const UsdMayaStageData*>(&src);
 
-        const UsdMayaStageData* aUsdStageData =
-            dynamic_cast<const UsdMayaStageData*>(&aDatum);
-
-        if(aUsdStageData) {
-            stage = aUsdStageData->stage;
-            primPath = aUsdStageData->primPath;
-        }
+    if (stageData) {
+        stage = stageData->stage;
+        primPath = stageData->primPath;
+    }
 }
 
-MTypeId UsdMayaStageData::typeId() const {
-
-        return _psData.typeId;
+/* virtual */
+MTypeId
+UsdMayaStageData::typeId() const
+{
+    return mayaTypeId;
 }
 
-MString UsdMayaStageData::name() const {
-
-        return _psData.typeName;
+/* virtual */
+MString
+UsdMayaStageData::name() const
+{
+    return typeName;
 }
 
-UsdMayaStageData::UsdMayaStageData(
-        const PluginStaticData& psData)
-    : MPxGeometryData()
-      , _psData(psData)
+UsdMayaStageData::UsdMayaStageData() : MPxGeometryData()
 {
     registerExitCallback();
 }
@@ -84,8 +105,8 @@ void
 UsdMayaStageData::registerExitCallback()
 {
     _exitCallbackId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting,
-						 _cleanUp,
-						 this);
+                                                 _cleanUp,
+                                                 this);
 }
 
 void
@@ -93,14 +114,12 @@ UsdMayaStageData::unregisterExitCallback()
 {
     MSceneMessage::removeCallback(_exitCallbackId);
 }
-    
 
+/* virtual */
 UsdMayaStageData::~UsdMayaStageData() {
 
     unregisterExitCallback();
 }
 
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

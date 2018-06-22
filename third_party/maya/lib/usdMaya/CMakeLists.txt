@@ -82,7 +82,6 @@ pxr_shared_library(${PXR_PACKAGE}
         usdWriteJob
         usdWriteJobCtx
 
-        pluginStaticData
         proxyShape
         referenceAssembly
         undoHelperCmd

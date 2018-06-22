@@ -55,8 +55,8 @@
 #include <unordered_map>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 
 // for now, we hard code this to use displayColor.  But maybe the more
@@ -65,22 +65,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 // (usdMaya/referenceAssembly.cpp)
 const static TfToken ASSEMBLY_SHADING_MODE = PxrUsdMayaShadingModeTokens->displayColor;
 
+
 usdReadJob::usdReadJob(
-    const std::string &iFileName,
-    const std::string &iPrimPath,
-    const std::map<std::string, std::string>& iVariants,
-    const PxrUsdMayaJobImportArgs &iArgs,
-    const std::string& assemblyTypeName,
-    const std::string& proxyShapeTypeName) :
+        const std::string &iFileName,
+        const std::string &iPrimPath,
+        const std::map<std::string, std::string>& iVariants,
+        const PxrUsdMayaJobImportArgs &iArgs) :
     mArgs(iArgs),
     mFileName(iFileName),
     mPrimPath(iPrimPath),
     mVariants(iVariants),
     mDagModifierUndo(),
     mDagModifierSeeded(false),
-    mMayaRootDagPath(),
-    _assemblyTypeName(assemblyTypeName),
-    _proxyShapeTypeName(proxyShapeTypeName)
+    mMayaRootDagPath()
 {
 }
 
@@ -88,7 +85,8 @@ usdReadJob::~usdReadJob()
 {
 }
 
-bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
+bool
+usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 {
     MStatus status;
 
@@ -238,8 +236,8 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 }
 
 
-bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
-                           const UsdPrim& usdRootPrim)
+bool
+usdReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
     // We want both pre- and post- visit iterations over the prims in this
     // method. To do so, iterate over all the root prims of the input range,
@@ -297,7 +295,6 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                             parentNode,
                             args,
                             &readCtx,
-                            _assemblyTypeName,
                             mArgs.assemblyRep)) {
                         if (readCtx.GetPruneChildren()) {
                             primIt.PruneChildren();
@@ -336,8 +333,8 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
     return true;
 }
 
-
-bool usdReadJob::redoIt()
+bool
+usdReadJob::redoIt()
 {
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
@@ -346,8 +343,8 @@ bool usdReadJob::redoIt()
     return (status == MS::kSuccess);
 }
 
-
-bool usdReadJob::undoIt()
+bool
+usdReadJob::undoIt()
 {
     if (!mDagModifierSeeded) {
         mDagModifierSeeded = true;
@@ -380,4 +377,3 @@ bool usdReadJob::undoIt()
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -57,6 +57,7 @@
 #include <string>
 #include <vector>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -140,9 +141,10 @@ _IsPxrGeomRoot(const UsdPrim& prim)
 
 static
 bool
-_CreateParentTransformNodes(const UsdPrim& usdPrim,
-                            const PxrUsdMayaPrimReaderArgs& args,
-                            PxrUsdMayaPrimReaderContext* context)
+_CreateParentTransformNodes(
+        const UsdPrim& usdPrim,
+        const PxrUsdMayaPrimReaderArgs& args,
+        PxrUsdMayaPrimReaderContext* context)
 {
     const UsdPrim parentPrim = usdPrim.GetParent();
     if (!parentPrim ||
@@ -194,11 +196,10 @@ usdReadJob::_ProcessProxyPrims(
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
         if (!PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
-                                                               mVariants,
-                                                               parentNode,
-                                                               args,
-                                                               &ctx,
-                                                               _proxyShapeTypeName)) {
+                                                            mVariants,
+                                                            parentNode,
+                                                            args,
+                                                            &ctx)) {
             return false;
         }
     }
@@ -234,7 +235,8 @@ usdReadJob::_ProcessProxyPrims(
 }
 
 bool
-usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrims)
+usdReadJob::_ProcessSubAssemblyPrims(
+            const std::vector<UsdPrim>& subAssemblyPrims)
 {
     TF_FOR_ALL(iter, subAssemblyPrims) {
         const UsdPrim subAssemblyPrim = *iter;
@@ -253,13 +255,12 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
 
         MObject parentNode = ctx.GetMayaNode(subAssemblyPrim.GetPath().GetParentPath(), false);
         if (!PxrUsdMayaTranslatorModelAssembly::Read(subAssemblyPrim,
-                                                        subAssemblyUsdFilePath,
-                                                        subAssemblyUsdPrimPath,
-                                                        parentNode,
-                                                        args,
-                                                        &ctx,
-                                                        _assemblyTypeName,
-                                                        mArgs.assemblyRep)) {
+                                                     subAssemblyUsdFilePath,
+                                                     subAssemblyUsdPrimPath,
+                                                     parentNode,
+                                                     args,
+                                                     &ctx,
+                                                     mArgs.assemblyRep)) {
             return false;
         }
     }
@@ -370,5 +371,5 @@ usdReadJob::_DoImportWithProxies(UsdPrimRange& range)
     return true;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

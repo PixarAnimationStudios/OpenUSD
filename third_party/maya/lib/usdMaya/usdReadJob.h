@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_USDREADJOB_H
-#define PXRUSDMAYA_USDREADJOB_H
+#ifndef PXRUSDMAYA_USD_READ_JOB_H
+#define PXRUSDMAYA_USD_READ_JOB_H
 
-/// \file usdReadJob.h
+/// \file usdMaya/usdReadJob.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -50,16 +50,11 @@ class usdReadJob
   public:
 
     PXRUSDMAYA_API
-    usdReadJob(const std::string& iFileName, 
-        const std::string& iPrimPath, 
-        const std::map<std::string, std::string>& iVariants,
-        const PxrUsdMayaJobImportArgs & iArgs,
-
-        // We need to know the names of the assembly and proxy shape types for
-        // when we need to create them. This is specified in the creator for
-        // the command that uses this class. See usdImport.
-        const std::string& assemblyTypeName,
-        const std::string& proxyShapeTypeName);
+    usdReadJob(
+            const std::string& iFileName,
+            const std::string& iPrimPath,
+            const std::map<std::string, std::string>& iVariants,
+            const PxrUsdMayaJobImportArgs & iArgs);
 
     PXRUSDMAYA_API
     ~usdReadJob();
@@ -72,7 +67,9 @@ class usdReadJob
     bool undoIt();
 
     // Getters/Setters
-    void setMayaRootDagPath(const MDagPath &mayaRootDagPath) { mMayaRootDagPath = mayaRootDagPath; };
+    void setMayaRootDagPath(const MDagPath &mayaRootDagPath) {
+        mMayaRootDagPath = mayaRootDagPath;
+    };
 
   private:
     // XXX: Activating the 'Expanded' representation of a USD reference
@@ -82,15 +79,14 @@ class usdReadJob
     // usdImport, and an 'Expanded' representation-style import, respectively.
     // It would be great if we could combine these into a single traversal at
     // some point.
-    bool _DoImport(UsdPrimRange& range,
-                   const UsdPrim& usdRootPrim);
+    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
     bool _DoImportWithProxies(UsdPrimRange& range);
 
     // These are helper methods for the proxy import method.
     bool _ProcessProxyPrims(
-        const std::vector<UsdPrim>& proxyPrims,
-        const UsdPrim& pxrGeomRoot,
-        const std::vector<std::string>& collapsePointPathStrings);
+            const std::vector<UsdPrim>& proxyPrims,
+            const UsdPrim& pxrGeomRoot,
+            const std::vector<std::string>& collapsePointPathStrings);
     bool _ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrims);
     bool _ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims);
 
@@ -104,12 +100,10 @@ class usdReadJob
     typedef PxrUsdMayaPrimReaderContext::ObjectRegistry PathNodeMap;
     PathNodeMap mNewNodeRegistry;
     MDagPath mMayaRootDagPath;
-
-    const std::string _assemblyTypeName;
-    const std::string _proxyShapeTypeName;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_USDREADJOB_H
+
+#endif

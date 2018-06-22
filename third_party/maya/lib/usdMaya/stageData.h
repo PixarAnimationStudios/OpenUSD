@@ -21,67 +21,64 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_STAGEDATA_H
-#define PXRUSDMAYA_STAGEDATA_H
+#ifndef PXRUSDMAYA_STAGE_DATA_H
+#define PXRUSDMAYA_STAGE_DATA_H
+
+/// \file usdMaya/stageData.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 
+#include <maya/MPxData.h>
 #include <maya/MPxGeometryData.h>
-#include <maya/MTypeId.h>
-#include <maya/MSceneMessage.h>
+#include <maya/MMessage.h>
 #include <maya/MString.h>
+#include <maya/MTypeId.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdMayaStageData : public MPxGeometryData {
+#define PXRUSDMAYA_STAGE_DATA_TOKENS \
+    ((MayaTypeName, "pxrUsdStageData"))
 
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaStageDataTokens,
+                         PXRUSDMAYA_API,
+                         PXRUSDMAYA_STAGE_DATA_TOKENS);
+
+
+class UsdMayaStageData : public MPxGeometryData
+{
     public:
-
-        /// \brief Helper struct to hold MObjects for this class.
-        ///
-        /// These would normally be static members but since we have this class
-        /// registered in multiple plugins, we have the actual data stored
-        /// statically in the plugin.cpp.  
-        /// 
-        /// A reference to this is setup by creator().
-        ///
-        /// \sa PxrUsdMayaPluginStaticData
-        struct PluginStaticData {
-            const MTypeId typeId;
-            const MString typeName;
-
-            PluginStaticData(
-                    const MTypeId& typeId, 
-                    const MString& typeName) :
-                typeId(typeId),
-                typeName(typeName)
-            { }
-        };
-
-        /**
-         * creator method
-         */
+        /// Unlike other Maya node types, MPxData/MPxGeometryData declare
+        /// typeId() as a pure virtual method that must be overridden in
+        /// derived classes, so we have to call this static member "mayaTypeId"
+        /// instead of just "typeId" as we usually would.
         PXRUSDMAYA_API
-        static void* creator(
-                const PluginStaticData& _psData);
+        static const MTypeId mayaTypeId;
+        PXRUSDMAYA_API
+        static const MString typeName;
+
+        PXRUSDMAYA_API
+        static void* creator();
 
         /**
-         * \name virtual overrides
+         * \name MPxGeometryData overrides
          */
         //@{
 
         PXRUSDMAYA_API
-        void copy(
-            const MPxData& aDatum);
+        void copy(const MPxData& src) override;
 
         PXRUSDMAYA_API
-        MTypeId typeId() const;
+        MTypeId typeId() const override;
 
         PXRUSDMAYA_API
-        MString name() const;
+        MString name() const override;
         //@}
 
         PXRUSDMAYA_API
@@ -100,22 +97,18 @@ class UsdMayaStageData : public MPxGeometryData {
 
         //@}
 
-    protected:
     private:
+        UsdMayaStageData();
+        ~UsdMayaStageData() override;
 
-        UsdMayaStageData(const PluginStaticData& psData);
-        ~UsdMayaStageData();
-
-        UsdMayaStageData(
-            const UsdMayaStageData&);
-
+        UsdMayaStageData(const UsdMayaStageData&);
         UsdMayaStageData& operator=(const UsdMayaStageData&);
-
-        const PluginStaticData& _psData;
 
         MCallbackId _exitCallbackId;
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_STAGEDATA_H
+
+#endif

@@ -67,6 +67,7 @@
 #include <string>
 #include <vector>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -204,7 +205,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     }
     else {
         // export all that we can.
-        if (UsdMayaReferenceAssembly* usdRefAssem = 
+        if (UsdMayaReferenceAssembly* usdRefAssem =
             dynamic_cast<UsdMayaReferenceAssembly*>(assemblyNode.userNode())) {
             for (const auto& varSels: usdRefAssem->GetVariantSetSelections()) {
                 const std::string& variantSetName = varSels.first;
@@ -234,9 +235,9 @@ PxrUsdMayaTranslatorModelAssembly::Create(
 static
 bool
 _GetAssetInfo(
-    const UsdPrim& prim,
-    std::string* assetIdentifier,
-    SdfPath* assetPrimPath)
+        const UsdPrim& prim,
+        std::string* assetIdentifier,
+        SdfPath* assetPrimPath)
 {
     UsdModelAPI usdModel(prim);
     SdfAssetPath identifier;
@@ -253,9 +254,9 @@ _GetAssetInfo(
 static
 bool
 _GetReferenceInfo(
-    const UsdPrim& prim,
-    std::string* assetIdentifier,
-    SdfPath* assetPrimPath)
+        const UsdPrim& prim,
+        std::string* assetIdentifier,
+        SdfPath* assetPrimPath)
 {
     SdfReferenceListOp refsOp;
     SdfReferenceListOp::ItemVector refs;
@@ -276,10 +277,10 @@ _GetReferenceInfo(
 /* static */
 bool
 PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
-    const UsdPrim& usdImportRootPrim,
-    const UsdPrim& prim,
-    std::string* assetIdentifier,
-    SdfPath* assetPrimPath)
+        const UsdPrim& usdImportRootPrim,
+        const UsdPrim& prim,
+        std::string* assetIdentifier,
+        SdfPath* assetPrimPath)
 {
     if (!prim) {
         return false;
@@ -327,14 +328,13 @@ _GetVariantSelections(const UsdPrim& prim)
 /* static */
 bool
 PxrUsdMayaTranslatorModelAssembly::Read(
-    const UsdPrim& prim,
-    const std::string& assetIdentifier,
-    const SdfPath& assetPrimPath,
-    MObject parentNode,
-    const PxrUsdMayaPrimReaderArgs& args,
-    PxrUsdMayaPrimReaderContext* context,
-    const std::string& assemblyTypeName,
-    const TfToken& assemblyRep)
+        const UsdPrim& prim,
+        const std::string& assetIdentifier,
+        const SdfPath& assetPrimPath,
+        MObject parentNode,
+        const PxrUsdMayaPrimReaderArgs& args,
+        PxrUsdMayaPrimReaderContext* context,
+        const TfToken& assemblyRep)
 {
     // This translator does not apply if assemblyRep == "Import".
     if (assemblyRep == PxrUsdImportJobArgsTokens->Import) {
@@ -370,7 +370,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     const std::string assemblyCmd =
         TfStringPrintf("import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
                        prim.GetName().GetText(),
-                       assemblyTypeName.c_str());
+                       PxrUsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
     MString newAssemblyName;
     MStatus status = MGlobal::executePythonCommand(assemblyCmd.c_str(),
                                                    newAssemblyName);
@@ -477,8 +477,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
     const std::map<std::string, std::string>& variantSetSelections,
     MObject parentNode,
     const PxrUsdMayaPrimReaderArgs& args,
-    PxrUsdMayaPrimReaderContext* context,
-    const std::string& proxyShapeTypeName)
+    PxrUsdMayaPrimReaderContext* context)
 {
     if (!prim) {
         return false;
@@ -501,7 +500,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create the proxy shape node.
     MDagModifier dagMod;
-    MObject proxyObj = dagMod.createNode(proxyShapeTypeName.c_str(),
+    MObject proxyObj = dagMod.createNode(PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
                                          transformObj,
                                          &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -558,5 +557,5 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
     return true;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

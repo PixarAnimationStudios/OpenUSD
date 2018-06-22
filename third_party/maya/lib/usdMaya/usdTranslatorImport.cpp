@@ -34,39 +34,47 @@
 #include "usdMaya/usdReadJob.h"
 #include "usdMaya/usdWriteJob.h"
 
+#include "pxr/base/gf/interval.h"
+#include "pxr/base/vt/dictionary.h"
+
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MString.h>
+#include <maya/MStringArray.h>
 
 #include <map>
 #include <string>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
-void* usdTranslatorImport::creator(const std::string& assemblyTypeName,
-                                   const std::string& proxyShapeTypeName) {
-    return new usdTranslatorImport(assemblyTypeName, proxyShapeTypeName);
+/* static */
+void*
+usdTranslatorImport::creator()
+{
+    return new usdTranslatorImport();
 }
 
-usdTranslatorImport::usdTranslatorImport(const std::string& assemblyTypeName,
-                                         const std::string& proxyShapeTypeName) :
-        MPxFileTranslator(),
-        _assemblyTypeName(assemblyTypeName),
-        _proxyShapeTypeName(proxyShapeTypeName)
+usdTranslatorImport::usdTranslatorImport() : MPxFileTranslator()
 {
 }
 
-usdTranslatorImport::~usdTranslatorImport() {
+/* virtual */
+usdTranslatorImport::~usdTranslatorImport()
+{
 }
 
-MStatus usdTranslatorImport::reader(const MFileObject & file,
-                         const MString &optionsString, 
-                         MPxFileTranslator::FileAccessMode mode ) {
+/* virtual */
+MStatus
+usdTranslatorImport::reader(
+        const MFileObject& file,
+        const MString& optionsString,
+        MPxFileTranslator::FileAccessMode mode)
+{
     std::string fileName(file.fullName().asChar());
     std::string primPath("/");
-    std::map<std::string,std::string> variants;
+    std::map<std::string, std::string> variants;
 
     bool readAnimData = true;
     bool useCustomFrameRange = false;
@@ -74,7 +82,7 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
 
     VtDictionary userArgs;
 
-    if ( optionsString.length() > 0 ) {
+    if (optionsString.length() > 0) {
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
@@ -95,9 +103,11 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
             } else if (argName == "endTime") {
                 timeInterval.SetMax(theOption[1].asDouble());
             } else {
-                userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
-                    argName, theOption[1].asChar(),
-                    PxrUsdMayaJobImportArgs::GetDefaultDictionary());
+                userArgs[argName] =
+                    PxrUsdMayaUtil::ParseArgumentValue(
+                        argName,
+                        theOption[1].asChar(),
+                        PxrUsdMayaJobImportArgs::GetDefaultDictionary());
             }
         }
     }
@@ -112,15 +122,21 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
     }
 
     PxrUsdMayaJobImportArgs jobArgs =
-            PxrUsdMayaJobImportArgs::CreateFromDictionary(
-                userArgs, /*importWithProxyShapes*/ false, timeInterval);
-    usdReadJob *mUsdReadJob = new usdReadJob(fileName, primPath, variants, jobArgs,
-            _assemblyTypeName, _proxyShapeTypeName);
+        PxrUsdMayaJobImportArgs::CreateFromDictionary(
+            userArgs,
+            /* importWithProxyShapes = */ false,
+            timeInterval);
+    usdReadJob* mUsdReadJob =
+        new usdReadJob(fileName,
+                       primPath,
+                       variants,
+                       jobArgs);
     std::vector<MDagPath> addedDagPaths;
     bool success = mUsdReadJob->doIt(&addedDagPaths);
     return (success) ? MS::kSuccess : MS::kFailure;
 }
 
+/* virtual */
 MPxFileTranslator::MFileKind
 usdTranslatorImport::identifyFile(
         const MFileObject& file,
@@ -138,8 +154,8 @@ usdTranslatorImport::identifyFile(
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() || 
+    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() ||
+        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() ||
         fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
         retValue = kIsMyFileType;
     }
@@ -176,5 +192,5 @@ usdTranslatorImport::GetDefaultOptions()
     return defaultOptions;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE
