@@ -38,6 +38,7 @@
 #include "meshWrapper.h"
 #include "packedUsdWrapper.h"
 #include "pointsWrapper.h"
+#include "scopeWrapper.h"
 #include "xformWrapper.h"
 #include "instancerWrapper.h"
 #include "USD_Traverse.h"
@@ -99,6 +100,8 @@ GusdInit()
             TfToken("BasisCurves"), &GusdCurvesWrapper::defineForRead);
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("NurbsCurves"), &GusdNURBSCurvesWrapper::defineForRead);
+    GusdPrimWrapper::registerPrimDefinitionFuncForRead(
+            TfToken("Scope"), &GusdScopeWrapper::defineForRead);
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("Xform"), &GusdXformWrapper::defineForRead);
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(

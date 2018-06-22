@@ -465,12 +465,11 @@ GusdGU_PackedUSD::getUsdTransform() const
         return m_transformCache;
     }
 
-    if( prim.IsA<UsdGeomXformable>() )
-    {
-        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-             prim, m_frame, m_transformCache );
+    if( GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform(
+             prim, m_frame, m_transformCache ) ) {
         m_transformCacheValid = true;
-    }        
+    }
+
     return m_transformCache;
 }
 
