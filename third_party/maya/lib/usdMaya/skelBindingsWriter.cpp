@@ -66,62 +66,27 @@ _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& path)
 /// it's not possible to create one, returns an empty SdfPath.
 static SdfPath
 _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
-                      const SdfPathVector& paths,
+                      const SdfPath& path,
                       const TfToken& config)
 {
-    if ((config != PxrUsdExportJobArgsTokens->auto_ &&
-         config != PxrUsdExportJobArgsTokens->explicit_) || paths.size() == 0) {
+    if (config != PxrUsdExportJobArgsTokens->auto_ &&
+        config != PxrUsdExportJobArgsTokens->explicit_) {
         return SdfPath();
     }
-
-    SdfPath firstPath = paths.front();
 
     // Only try to auto-rename to SkelRoot if we're not already a
     // descendant of one. Otherwise, verify that the user tagged it in a sane
     // way.
 
-    if (UsdSkelRoot root = UsdSkelRoot::Find(stage->GetPrimAtPath(firstPath))) {
-
-        // Verify that all other paths being considered are encapsulated
-        // within the same skel root.
-        for (size_t i = 1; i < paths.size(); ++i) {
-            if (UsdSkelRoot root2 =
-                UsdSkelRoot::Find(stage->GetPrimAtPath(paths[i]))) {
-
-                if (root2.GetPrim() != root.GetPrim()) {
-                    TF_RUNTIME_ERROR(
-                            "Expected SkelRoot for prim <%s> to be under the "
-                            "same SkelRoot as prim <%s> (<%s>), but instead "
-                            "found <%s>. This might cause unexpected "
-                            "behavior.", paths[i].GetText(),
-                            firstPath.GetText(),
-                            root.GetPrim().GetPath().GetText(),
-                            root2.GetPrim().GetPath().GetText());
-                    return SdfPath();
-                }
-            } else {
-                TF_RUNTIME_ERROR(
-                        "Expected SkelRoot for prim <%s> to be under the same "
-                        "SkelRoot as prim <%s> (%s), but it is not under a "
-                        "SkelRoot at all. This might cause unexpected "
-                        "behavior.", paths[i].GetText(),
-                        firstPath.GetText(),
-                        root.GetPrim().GetPath().GetText());
-                return SdfPath();
-            }
-        }
-        
+    if (UsdSkelRoot root = UsdSkelRoot::Find(stage->GetPrimAtPath(path))) {
 
         // Verify that the SkelRoot isn't nested in another SkelRoot.
         // This is necessary because UsdSkel doesn't handle nested skel roots
         // very well currently; this restriction may be loosened in the future.
         if (UsdSkelRoot root2 = UsdSkelRoot::Find(root.GetPrim().GetParent())) {
-            TF_RUNTIME_ERROR(
-                    "The SkelRoot <%s> is nested "
-                    "inside another SkelRoot <%s>. This might cause unexpected "
-                    "behavior.",
-                    root.GetPath().GetText(),
-                    root2.GetPath().GetText());
+            TF_WARN("The SkelRoot <%s> is nested inside another SkelRoot <%s>. "
+                    "This might cause unexpected behavior.",
+                    root.GetPath().GetText(), root2.GetPath().GetText());
             return SdfPath();
         }
         else {
@@ -136,28 +101,14 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
         // might want SkelRoots to stop at Char_1 and Char_2.) Unfortunately,
         // the current structure precludes us from accessing model hierarchy
         // here.
-        if (UsdPrim root = _FindRootmostXformOrSkelRoot(stage, firstPath)) {
-
-            for (size_t i = 1; i < paths.size(); ++i) {
-                if (!paths[i].HasPrefix(root.GetPath())) {
-                    TF_RUNTIME_ERROR(
-                            "Could not find a common ancestor of prim <%s> and "
-                            "<%s> that can be converted to a SkelRoot. "
-                            "Try giving the primitives a common, transform "
-                            "ancestor node.", firstPath.GetText(),
-                            paths[i].GetText());
-                    return SdfPath();
-                }
-            }
-
+        if (UsdPrim root = _FindRootmostXformOrSkelRoot(stage, path)) {
             UsdSkelRoot::Define(stage, root.GetPath());
             return root.GetPath();
         }
         else {
-            TF_RUNTIME_ERROR(
-                    "Could not find a UsdGeomXform or ancestor of "
+            TF_WARN("Could not find a UsdGeomXform or ancestor of "
                     "prim <%s> that can be converted to a SkelRoot.",
-                    firstPath.GetText());
+                    path.GetText());
             return SdfPath();
         }
     }
@@ -169,10 +120,10 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
 void
 PxrUsdMaya_SkelBindingsWriter::MarkBindings(
     const SdfPath& path,
-    const SdfPath& skelInstancePath,
+    const SdfPath& skelPath,
     const TfToken& config)
 {
-    _bindingToInstanceMap[path] = _Entry(skelInstancePath, config);
+    _bindingToSkelMap[path] = _Entry(skelPath, config);
 }
 
 
@@ -181,11 +132,10 @@ PxrUsdMaya_SkelBindingsWriter::_VerifyOrMakeSkelRoots(
     const UsdStagePtr& stage) const
 {
     bool success = true;
-    for (const auto& pair : _bindingToInstanceMap) {
+    for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
         SdfPath skelRootPath =
-            _VerifyOrMakeSkelRoot(stage, {pair.first, entry.first},
-                                  entry.second);
+            _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
         success &= !skelRootPath.IsEmpty();
     }
     return success;

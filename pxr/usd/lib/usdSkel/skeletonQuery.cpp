@@ -38,10 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 UsdSkelSkeletonQuery::UsdSkelSkeletonQuery(
-    const UsdPrim& prim,
     const UsdSkel_SkelDefinitionRefPtr& definition,
     const UsdSkelAnimQuery& animQuery)
-    : _prim(prim), _definition(definition), _animQuery(animQuery)
+    : _definition(definition), _animQuery(animQuery)
 {
     if(definition && animQuery) {
         _animToSkelMapper = UsdSkelAnimMapper(animQuery.GetJointOrder(),
@@ -101,7 +100,7 @@ UsdSkelSkeletonQuery::ComputeLocalToWorldTransform(
     }
 
     if(ComputeAnimTransform(xform, xfCache->GetTime())) {
-        *xform *= xfCache->GetLocalToWorldTransform(_prim);
+        *xform *= xfCache->GetLocalToWorldTransform(GetSkeleton().GetPrim());
         return true;
     }
     return false;
@@ -269,10 +268,10 @@ UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtMatrix4dArray* xforms,
 }
 
 
-const UsdPrim&
+UsdPrim
 UsdSkelSkeletonQuery::GetPrim() const
 {
-    return _prim;
+    return GetSkeleton().GetPrim();
 }
 
 
@@ -320,9 +319,8 @@ UsdSkelSkeletonQuery::GetDescription() const
 {
     if(IsValid()) {
         return TfStringPrintf(
-            "UsdSkelSkeletonQuery (prim = <%s>, skel = <%s>, anim = <%s>)",
-            _prim.GetPath().GetText(),
-            _definition->GetSkeleton().GetPrim().GetPath().GetText(),
+            "UsdSkelSkeletonQuery (skel = <%s>, anim = <%s>)",
+            GetPrim().GetPath().GetText(),
             _animQuery.GetPrim().GetPath().GetText());
     }
     return "invalid UsdSkelSkeletonQuery";

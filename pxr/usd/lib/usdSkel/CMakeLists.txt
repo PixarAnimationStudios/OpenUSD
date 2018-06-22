@@ -20,6 +20,7 @@ pxr_library(usdSkel
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        animation
         animMapper
         animQuery
         bindingAPI
@@ -38,6 +39,7 @@ pxr_library(usdSkel
 
     PUBLIC_HEADERS
         api.h
+        binding.h
 
     PRIVATE_CLASSES
         animQueryImpl
@@ -52,8 +54,10 @@ pxr_library(usdSkel
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
+        wrapBinding.cpp
         wrapBindingAPI.cpp
         wrapBlendShape.cpp
         wrapCache.cpp

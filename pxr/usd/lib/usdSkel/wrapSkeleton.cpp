@@ -69,7 +69,7 @@ void wrapUsdSkelSkeleton()
 {
     typedef UsdSkelSkeleton This;
 
-    class_<This, bases<UsdGeomImageable> >
+    class_<This, bases<UsdGeomBoundable> >
         cls("Skeleton");
 
     cls

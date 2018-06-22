@@ -47,17 +47,29 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
                             for ca,cb in zip(a,b)))
 
         
+    def test_SkelAnimation(self):
+        """
+        Tests anim query implementation for SkelAnimation.
+        """
+        self._TestSkelAnimation(UsdSkel.Animation)
+
+
     def test_PackedJointAnimation(self):
         """
-        Tests anim query implementation for PackedJointAnimation.
+        Test for backwards-compatibility with the deprecated
+        UsdSkelPackedJointAnimation schema.
         """
+        self._TestSkelAnimation(UsdSkel.PackedJointAnimation)
+
+        
+    def _TestSkelAnimation(self, animSchema):
 
         numFrames = 10
         random.seed(0)
 
         stage = Usd.Stage.CreateInMemory()
 
-        anim = UsdSkel.PackedJointAnimation.Define(stage, "/Anim")
+        anim = animSchema.Define(stage, "/Anim")
 
         joints = Vt.TokenArray(["/A", "/B", "/C"])
         blendshapes = Vt.TokenArray(["shapeA", "shapeB", "shapeC"])

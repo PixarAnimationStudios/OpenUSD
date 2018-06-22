@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdSkelPackedJointAnimation,
-        TfType::Bases< UsdGeomXformable > >();
+        TfType::Bases< UsdSkelAnimation > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -97,136 +97,13 @@ UsdSkelPackedJointAnimation::_GetTfType() const
     return _GetStaticTfType();
 }
 
-UsdAttribute
-UsdSkelPackedJointAnimation::GetJointsAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->joints);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->joints,
-                       SdfValueTypeNames->TokenArray,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::GetTranslationsAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->translations);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::CreateTranslationsAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->translations,
-                       SdfValueTypeNames->Float3Array,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::GetRotationsAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->rotations);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::CreateRotationsAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->rotations,
-                       SdfValueTypeNames->QuatfArray,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::GetScalesAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->scales);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::CreateScalesAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->scales,
-                       SdfValueTypeNames->Half3Array,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::GetBlendShapesAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->blendShapes);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::CreateBlendShapesAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->blendShapes,
-                       SdfValueTypeNames->TokenArray,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::GetBlendShapeWeightsAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->blendShapeWeights);
-}
-
-UsdAttribute
-UsdSkelPackedJointAnimation::CreateBlendShapeWeightsAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->blendShapeWeights,
-                       SdfValueTypeNames->FloatArray,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-namespace {
-static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
-{
-    TfTokenVector result;
-    result.reserve(left.size() + right.size());
-    result.insert(result.end(), left.begin(), left.end());
-    result.insert(result.end(), right.begin(), right.end());
-    return result;
-}
-}
-
 /*static*/
 const TfTokenVector&
 UsdSkelPackedJointAnimation::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames = {
-        UsdSkelTokens->joints,
-        UsdSkelTokens->translations,
-        UsdSkelTokens->rotations,
-        UsdSkelTokens->scales,
-        UsdSkelTokens->blendShapes,
-        UsdSkelTokens->blendShapeWeights,
-    };
+    static TfTokenVector localNames;
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdGeomXformable::GetSchemaAttributeNames(true),
-            localNames);
+        UsdSkelAnimation::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

@@ -58,9 +58,6 @@ public:
     /// Create an anim query for \p prim, if the prim is a valid type.
     static UsdSkel_AnimQueryImplRefPtr New(const UsdPrim& prim);
 
-    /// Returns true if \p prim is a valid animation primitive.
-    static bool IsAnimPrim(const UsdPrim& prim);
-
     virtual ~UsdSkel_AnimQueryImpl() {}
 
     virtual UsdPrim GetPrim() const = 0;

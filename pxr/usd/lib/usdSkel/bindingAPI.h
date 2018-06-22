@@ -33,7 +33,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
 
-#include "pxr/usd/usdGeom/primvar.h" 
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdSkel/skeleton.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -299,12 +300,8 @@ public:
     // --------------------------------------------------------------------- //
     // ANIMATIONSOURCE 
     // --------------------------------------------------------------------- //
-    /// Animation source to be bound to this prim and its 
-    /// descendants. An animationSource has no effect until the next
-    /// _skel:skeleton_ binding applied either at the same prim that
-    /// the animationSource is defined on, or at the binding of an
-    /// ancestor prim. An animationSource does not affect a skeleton
-    /// bound on an ancestor scope.
+    /// Animation source to be bound to Skeleton primitives at or
+    /// beneath the location at which this property is defined.
     /// 
     ///
     USDSKEL_API
@@ -330,26 +327,6 @@ public:
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDSKEL_API
     UsdRelationship CreateSkeletonRel() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // SKELETONINSTANCE 
-    // --------------------------------------------------------------------- //
-    /// Optionally specifies a skeleton instance, defined elsewhere
-    /// in the model hierarchy, as the skeleton instance that affects this prim 
-    /// and all of its descendants. The target skeleton instance must be
-    /// contained within the same ancestor SkelRoot as the prim at which this
-    /// relationship is set. If the _skel:skeleton_ relationship is also
-    /// defined on this prim, then a new skeleton instance is established at
-    /// this prim, and this property is ignored.
-    ///
-    USDSKEL_API
-    UsdRelationship GetSkeletonInstanceRel() const;
-
-    /// See GetSkeletonInstanceRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateSkeletonInstanceRel() const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -419,6 +396,33 @@ public:
     /// make a primitive rigidly deformed by a single joint.
     USDSKEL_API
     bool SetRigidJointInfluence(int jointIndex, float weight=1) const;
+
+    /// Convenience method to query the Skeleton bound on this prim.
+    /// Returns true if a Skeleton binding is defined, and sets \p skel to
+    /// the target skel. The resulting Skeleton may still be invalid,
+    /// if the Skeleton has been explicitly *unbound*.
+    ///
+    /// This does not resolved inherited skeleton bindings.
+    USDSKEL_API
+    bool GetSkeleton(UsdSkelSkeleton* skel) const;
+
+    /// Convenience method to query the animation source bound on this prim.
+    /// Returns true if an animation source binding is defined, and sets
+    /// \p prim to the target prim. The resulting primitive may still be
+    /// invalid, if the prim has been explicitly *unbound*.
+    ///
+    /// This does not resolved inherited animation source bindings.
+    USDSKEL_API
+    bool GetAnimationSource(UsdPrim* prim) const;
+
+    /// Returns the skeleton bound at this prim, or one of its ancestors.
+    USDSKEL_API
+    UsdSkelSkeleton GetInheritedSkeleton() const;
+
+    /// Returns the animation source bound at this prim, or one of
+    /// its ancestors.
+    USDSKEL_API
+    UsdPrim GetInheritedAnimationSource() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

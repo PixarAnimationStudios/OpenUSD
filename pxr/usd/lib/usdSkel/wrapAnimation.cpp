@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdSkel/bindingAPI.h"
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -50,48 +50,55 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateGeomBindTransformAttr(UsdSkelBindingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateGeomBindTransformAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateJointsAttr(UsdSkelBindingAPI &self,
+_CreateJointsAttr(UsdSkelAnimation &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateJointsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateJointIndicesAttr(UsdSkelBindingAPI &self,
+_CreateTranslationsAttr(UsdSkelAnimation &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateJointIndicesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
+    return self.CreateTranslationsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
-_CreateJointWeightsAttr(UsdSkelBindingAPI &self,
+_CreateRotationsAttr(UsdSkelAnimation &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateJointWeightsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+    return self.CreateRotationsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateBlendShapesAttr(UsdSkelBindingAPI &self,
+_CreateScalesAttr(UsdSkelAnimation &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateScalesAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateBlendShapesAttr(UsdSkelAnimation &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateBlendShapesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateBlendShapeWeightsAttr(UsdSkelAnimation &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateBlendShapeWeightsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
 
 } // anonymous namespace
 
-void wrapUsdSkelBindingAPI()
+void wrapUsdSkelAnimation()
 {
-    typedef UsdSkelBindingAPI This;
+    typedef UsdSkelAnimation This;
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("BindingAPI");
+    class_<This, bases<UsdGeomXformable> >
+        cls("Animation");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -101,8 +108,8 @@ void wrapUsdSkelBindingAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .staticmethod("Define")
 
         .def("IsConcrete",
             static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
@@ -111,14 +118,6 @@ void wrapUsdSkelBindingAPI()
         .def("IsTyped",
             static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
         .staticmethod("IsTyped")
-
-        .def("IsApplied", 
-            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
-        .staticmethod("IsApplied")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -133,13 +132,6 @@ void wrapUsdSkelBindingAPI()
         .def(!self)
 
         
-        .def("GetGeomBindTransformAttr",
-             &This::GetGeomBindTransformAttr)
-        .def("CreateGeomBindTransformAttr",
-             &_CreateGeomBindTransformAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
         .def("GetJointsAttr",
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
@@ -147,17 +139,24 @@ void wrapUsdSkelBindingAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetJointIndicesAttr",
-             &This::GetJointIndicesAttr)
-        .def("CreateJointIndicesAttr",
-             &_CreateJointIndicesAttr,
+        .def("GetTranslationsAttr",
+             &This::GetTranslationsAttr)
+        .def("CreateTranslationsAttr",
+             &_CreateTranslationsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetJointWeightsAttr",
-             &This::GetJointWeightsAttr)
-        .def("CreateJointWeightsAttr",
-             &_CreateJointWeightsAttr,
+        .def("GetRotationsAttr",
+             &This::GetRotationsAttr)
+        .def("CreateRotationsAttr",
+             &_CreateRotationsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetScalesAttr",
+             &This::GetScalesAttr)
+        .def("CreateScalesAttr",
+             &_CreateScalesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
@@ -167,22 +166,14 @@ void wrapUsdSkelBindingAPI()
              &_CreateBlendShapesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+        
+        .def("GetBlendShapeWeightsAttr",
+             &This::GetBlendShapeWeightsAttr)
+        .def("CreateBlendShapeWeightsAttr",
+             &_CreateBlendShapeWeightsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
-        
-        .def("GetAnimationSourceRel",
-             &This::GetAnimationSourceRel)
-        .def("CreateAnimationSourceRel",
-             &This::CreateAnimationSourceRel)
-        
-        .def("GetSkeletonRel",
-             &This::GetSkeletonRel)
-        .def("CreateSkeletonRel",
-             &This::CreateSkeletonRel)
-        
-        .def("GetBlendShapeTargetsRel",
-             &This::GetBlendShapeTargetsRel)
-        .def("CreateBlendShapeTargetsRel",
-             &This::CreateBlendShapeTargetsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -209,48 +200,7 @@ void wrapUsdSkelBindingAPI()
 
 namespace {
 
-
-object
-_GetSkeleton(const UsdSkelBindingAPI& binding)
-{
-    UsdSkelSkeleton skel;
-    return binding.GetSkeleton(&skel) ? object(skel) : object();
-}
-
-
-object
-_GetAnimationSource(const UsdSkelBindingAPI& binding)
-{
-    UsdPrim prim;
-    return binding.GetAnimationSource(&prim) ? object(prim) : object();
-}
-
-
 WRAP_CUSTOM {
-    using This = UsdSkelBindingAPI;
-
-    _class
-        .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar)
-
-        .def("CreateJointIndicesPrimvar", &This::CreateJointIndicesPrimvar,
-             (arg("constant"), arg("elementSize")=-1))
-
-        .def("GetJointWeightsPrimvar", &This::GetJointWeightsPrimvar)
-
-        .def("CreateJointWeightsPrimvar", &This::CreateJointWeightsPrimvar,
-             (arg("constant"), arg("elementSize")=-1))
-
-        .def("SetRigidJointInfluence", &This::SetRigidJointInfluence,
-             (arg("jointIndex"), arg("weight")=1.0f))
-
-        .def("GetSkeleton", &_GetSkeleton)
-
-        .def("GetAnimationSource", &_GetAnimationSource)
-        
-        .def("GetInheritedSkeleton", &This::GetInheritedSkeleton)
-        
-        .def("GetInheritedAnimationSource", &This::GetInheritedAnimationSource)
-        ;
 }
 
-} // namespace
+}

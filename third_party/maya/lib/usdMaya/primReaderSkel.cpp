@@ -42,6 +42,39 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+/// Prim reader for skeletons.
+/// This produce a joint hierarchy, possibly animated, corresponding
+/// to a UsdSkelSkeleton.
+class PxrUsdMayaPrimReaderSkeleton : public PxrUsdMayaPrimReader
+{
+public:
+    PxrUsdMayaPrimReaderSkeleton(const PxrUsdMayaPrimReaderArgs& args)
+        : PxrUsdMayaPrimReader(args) {}
+
+    virtual ~PxrUsdMayaPrimReaderSkeleton() {}
+
+    bool Read(PxrUsdMayaPrimReaderContext* context) override;
+
+private:
+    // TODO: Ideally, we'd share the cache across different models
+    // if importing multiple skel roots.
+    UsdSkelCache _cache;
+};
+
+
+TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelSkeleton) {
+    PxrUsdMayaPrimReaderRegistry::Register<UsdSkelSkeleton>(
+        [](const PxrUsdMayaPrimReaderArgs& args)
+        {
+            return PxrUsdMayaPrimReaderPtr(
+                new PxrUsdMayaPrimReaderSkeleton(args));
+        });
+}
+
+
+/// Prim reader for a UsdSkelRoot.
+/// This post-processes the skinnable prims beneath a UsdSkelRoot
+/// to define skin clusters, etc. for bound skeletons.
 class PxrUsdMayaPrimReaderSkelRoot : public PxrUsdMayaPrimReader
 {
 public:
@@ -50,23 +83,11 @@ public:
 
     virtual ~PxrUsdMayaPrimReaderSkelRoot() {}
 
-    virtual bool Read(PxrUsdMayaPrimReaderContext* context) override;
+    bool Read(PxrUsdMayaPrimReaderContext* context) override;
 
-    virtual bool HasPostReadSubtree() const override { return true; }
+    bool HasPostReadSubtree() const override { return true; }
 
-    virtual void PostReadSubtree(PxrUsdMayaPrimReaderContext* context) override;
-
-protected:
-    struct _SkelInstanceData {
-        MObject rootXformNode;
-        MObject bindPose;
-        VtArray<MObject> joints;
-    };
-
-    bool _ReadSkel(const UsdSkelSkeletonQuery& skelQuery,
-                   MObject& xformNode,
-                   PxrUsdMayaPrimReaderContext* context,
-                   _SkelInstanceData* skelInstanceData);
+    void PostReadSubtree(PxrUsdMayaPrimReaderContext* context) override;
 
 private:
     // TODO: Ideally, we'd share the cache across different models
@@ -87,25 +108,54 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelRoot) {
 
 
 bool
+PxrUsdMayaPrimReaderSkeleton::Read(PxrUsdMayaPrimReaderContext* context)
+{
+    UsdSkelSkeleton skel(_GetArgs().GetUsdPrim());
+    if (!TF_VERIFY(skel))
+        return false;
+
+    if (UsdSkelSkeletonQuery skelQuery = _cache.GetSkelQuery(skel)) {
+
+        MObject parentNode = context->GetMayaNode(
+            skel.GetPrim().GetPath().GetParentPath(), true);
+
+        // Build out a joint hierarchy.
+        VtArray<MObject> joints;
+        if (PxrUsdMayaTranslatorSkel::CreateJointHierarchy(
+                skelQuery, parentNode, _GetArgs(), context, &joints)) {
+            
+            // Add a bind pose. This is not necessary for skinning to function
+            // in Maya, but may be a requirement of some exporters. The dagPose
+            // command also functions based on the definition of the bind pose.
+            MObject bindPose;
+            if (PxrUsdMayaTranslatorSkel::CreateBindPose(
+                    skelQuery, joints, context, &bindPose)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+bool
 PxrUsdMayaPrimReaderSkelRoot::Read(PxrUsdMayaPrimReaderContext* context)
 {
-    const UsdPrim& prim = _GetArgs().GetUsdPrim();
-    if(!TF_VERIFY(prim))
+    UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
+    if (!TF_VERIFY(skelRoot))
         return false;
 
     // First pass through:
     // The skel root itself is a transform, so produce a transform.
-    // The rest of the skel is produced as a post sub-tree process.
+    // Skeletal bindings will be handled as a post sub-tree process.
     MObject parentNode =
-        context->GetMayaNode(prim.GetPath().GetParentPath(),
-                            /*findAncestors*/ true);
+        context->GetMayaNode(skelRoot.GetPrim().GetPath().GetParentPath(),
+                             /*findAncestors*/ true);
 
     MStatus status;
     MObject obj;
-    return PxrUsdMayaTranslatorUtil::CreateTransformNode(prim, parentNode,
-                                                         _GetArgs(),
-                                                         context,
-                                                         &status, &obj);
+    return PxrUsdMayaTranslatorUtil::CreateTransformNode(
+        skelRoot.GetPrim(), parentNode, _GetArgs(), context, &status, &obj);
 }
 
 
@@ -116,123 +166,75 @@ PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree(
     UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skelRoot))
         return;
+    
+    // Compute skel bindings and create skin clusters for bound skels
+    // We do this in a post-subtree stage to ensure that any skinnable
+    // prims we produce skin clusters for have been processed first.
 
     _cache.Populate(skelRoot);
 
-    // Map of queries for each unique skel instance, mapped to the
-    // MObject holding that skel instance.
-    boost::unordered_map<
-        UsdSkelSkeletonQuery,
-        std::shared_ptr<_SkelInstanceData> > skelInstanceObjectMap;
+    std::vector<UsdSkelBinding> bindings;
+    if (!_cache.ComputeSkelBindings(skelRoot, &bindings)) {
+        return;
+    }
 
-    // We import in two stages:
+    for (const UsdSkelBinding& binding : bindings) {
+        if (binding.GetSkinningTargets().empty())
+            continue;
 
-    // First traversal: Find the full set of unique skel instances.
-    // TODO: UsdSkel should have a more direct way of providing this.
-    for (const UsdPrim& prim : UsdPrimRange(skelRoot.GetPrim())) {
-        if (UsdSkelSkeletonQuery skelQuery = _cache.GetSkelQuery(prim)) {
-            auto it = skelInstanceObjectMap.find(skelQuery);
-            if (it != skelInstanceObjectMap.end()) {
+        if (const UsdSkelSkeletonQuery& skelQuery =
+            _cache.GetSkelQuery(binding.GetSkeleton())) {
+            
+            VtArray<MObject> joints;
+            if (!PxrUsdMayaTranslatorSkel::GetJoints(
+                    skelQuery, context, &joints)) {
                 continue;
             }
             
-            // We need to define a joint hierarchy to represent this skel
-            // instance. Since we want that hierarchy to inherit the transform
-            // of whatever primitive is transforming the skel -- which is not
-            // necessarily the prim we queried the cache with above! -- we wish
-            // to define the hierarchy as a child of that transform node.
-            // Note that if the skel:xform rel is being used, it is invalid
-            // for the xform prim to be outside of the SkelRoot, so we should
-            // expect import to have already produced the transform node.
-            MObject instanceNode =
-                context->GetMayaNode(skelQuery.GetPrim().GetPath(),
-                                     /*findAncestors*/ true);
-            if (!instanceNode.isNull()) {
-                auto skelInstanceData = std::make_shared<_SkelInstanceData>();
-                _ReadSkel(skelQuery, instanceNode, context,
-                          skelInstanceData.get());
-                
-                skelInstanceObjectMap[skelQuery] = skelInstanceData;
-            }
-        }
-    }
+            for (const auto& skinningQuery : binding.GetSkinningTargets()) {
 
-    // Second traversal: Configure deformers on skinnable prims.
-    std::vector<std::pair<UsdPrim,UsdSkelSkinningQuery> > pairs;    
-    for (const UsdPrim& prim : UsdPrimRange(skelRoot.GetPrim())) {
+                const UsdPrim& skinnedPrim = skinningQuery.GetPrim();
 
-        if (UsdSkelSkeletonQuery skelQuery = _cache.GetSkelQuery(prim)) {
-
-            auto it = skelInstanceObjectMap.find(skelQuery);
-            if (it != skelInstanceObjectMap.end()) {
-                const auto& skelInstanceData = it->second;
-                
-                if (skelInstanceData &&
-                    _cache.ComputeSkinnedPrims(prim, &pairs)) {
-
-                    for (const auto& pair : pairs) {
-
-                        VtArray<MObject> joints(skelInstanceData->joints);
-                        if (pair.second.GetMapper()) {
-                            // TODO:
-                            // UsdSkelAnimMapper needs to provide a Remap method
-                            // that can handle arbitrary container/value types.
-                            // For now, we can compute an appropriate remapping
-                            // using the result of remapping ordered indices.
-                            VtIntArray indices(joints.size());
-                            for (size_t i = 0; i < indices.size(); ++i) {
-                                indices[i] = static_cast<int>(i);
-                            }
-                            
-                            VtIntArray remappedIndices;
-                            if (!pair.second.GetMapper()->Remap(
-                                    indices, &remappedIndices)) {
-                                continue;
-                            }
-                            joints.resize(remappedIndices.size());
-                            for (size_t i = 0; i < remappedIndices.size(); ++i) {
-                                joints[i] =
-                                    skelInstanceData->joints[remappedIndices[i]];
-                            }
+                // Get an ordering of the joints that matches the ordering of
+                // the binding.
+                VtArray<MObject> skinningJoints;
+                if (!skinningQuery.GetMapper()) {
+                    skinningJoints = joints;
+                } else {
+                    // TODO:
+                    // UsdSkelAnimMapper currently only supports remapping
+                    // of Sdf value types, so we can't easily use it here.
+                    // For now, we can delegate remapping behavior by
+                    // remapping ordered joint indices.
+                    VtIntArray indices(joints.size());
+                    for (size_t i = 0; i < joints.size(); ++i)
+                        indices[i] = i;
+                    
+                    VtIntArray remappedIndices;
+                    if (!skinningQuery.GetMapper()->Remap(
+                            indices, &remappedIndices)) {
+                        continue;
+                    }
+                    
+                    skinningJoints.resize(remappedIndices.size());
+                    for (size_t i = 0; i < remappedIndices.size(); ++i) {
+                        int index = remappedIndices[i];
+                        if (index >= 0 && static_cast<size_t>(index) < joints.size()) {
+                            skinningJoints[i] = joints[index];
                         }
-
-                        // Add a skin cluster to skin this prim.
-                        PxrUsdMayaTranslatorSkel::CreateSkinCluster(
-                            skelQuery, pair.second, joints, pair.first,
-                            _GetArgs(), context, skelInstanceData->bindPose);
                     }
                 }
+
+                MObject bindPose =
+                    PxrUsdMayaTranslatorSkel::GetBindPose(skelQuery, context);
+
+                // Add a skin cluster to skin this prim.
+                PxrUsdMayaTranslatorSkel::CreateSkinCluster(
+                    skelQuery, skinningQuery, skinningJoints,
+                    skinnedPrim, _GetArgs(), context, bindPose);
             }
         }
     }
-}
-
-
-bool
-PxrUsdMayaPrimReaderSkelRoot::_ReadSkel(const UsdSkelSkeletonQuery& skelQuery,
-                                        MObject& xformNode,
-                                        PxrUsdMayaPrimReaderContext* context,
-                                        _SkelInstanceData* skelInstanceData)
-{
-    skelInstanceData->rootXformNode = xformNode;
-
-    // Build out a joint hierarchy.
-    if (!PxrUsdMayaTranslatorSkel::CreateJoints(
-            skelQuery, xformNode, _GetArgs(), context,
-            &skelInstanceData->joints)) {
-        return false;
-    }
-
-    // Add a bind pose. This is not necessary for skinning to function in Maya,
-    // but may be a requirement of some exporters. The dagPose command also
-    // functions based on the definition of the bind pose.
-    if (!PxrUsdMayaTranslatorSkel::CreateBindPose(
-            skelQuery, skelInstanceData->joints, context,
-            &skelInstanceData->bindPose)) {
-        return false;
-    }
-
-    return true;
 }
 
 

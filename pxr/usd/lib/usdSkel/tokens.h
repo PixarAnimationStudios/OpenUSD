@@ -64,15 +64,15 @@ struct UsdSkelTokensType {
     USDSKEL_API UsdSkelTokensType();
     /// \brief "blendShapes"
     /// 
-    /// UsdSkelPackedJointAnimation
+    /// UsdSkelAnimation
     const TfToken blendShapes;
     /// \brief "blendShapeWeights"
     /// 
-    /// UsdSkelPackedJointAnimation
+    /// UsdSkelAnimation
     const TfToken blendShapeWeights;
     /// \brief "joints"
     /// 
-    /// UsdSkelPackedJointAnimation, UsdSkelSkeleton
+    /// UsdSkelAnimation, UsdSkelSkeleton
     const TfToken joints;
     /// \brief "offsets"
     /// 
@@ -100,11 +100,11 @@ struct UsdSkelTokensType {
     const TfToken restTransforms;
     /// \brief "rotations"
     /// 
-    /// UsdSkelPackedJointAnimation
+    /// UsdSkelAnimation
     const TfToken rotations;
     /// \brief "scales"
     /// 
-    /// UsdSkelPackedJointAnimation
+    /// UsdSkelAnimation
     const TfToken scales;
     /// \brief "skel:animationSource"
     /// 
@@ -126,13 +126,9 @@ struct UsdSkelTokensType {
     /// 
     /// UsdSkelBindingAPI
     const TfToken skelSkeleton;
-    /// \brief "skel:skeletonInstance"
-    /// 
-    /// UsdSkelBindingAPI
-    const TfToken skelSkeletonInstance;
     /// \brief "translations"
     /// 
-    /// UsdSkelPackedJointAnimation
+    /// UsdSkelAnimation
     const TfToken translations;
     /// \brief "weight"
     /// 

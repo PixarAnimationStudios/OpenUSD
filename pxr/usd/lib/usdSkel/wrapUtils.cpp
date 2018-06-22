@@ -233,6 +233,10 @@ _SkinTransformLBS(const GfMatrix4d& geomBindTransform,
 
 void wrapUsdSkelUtils()
 {
+    def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (arg("prim")));
+
+    def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, (arg("prim")));
+
     def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
         (arg("topology"), arg("xforms"), arg("inverseXforms"),
          arg("rootInverseXform")=object()));

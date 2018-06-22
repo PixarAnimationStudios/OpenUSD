@@ -1,48 +1,83 @@
 #usda 1.0
 
-def Skeleton "Skel1" {
+
+def SkelAnimation "Anim1" {}
+
+def SkelAnimation "Anim2" {}
+
+def SkelAnimation "InactiveAnim" (active=false) {}
+
+def Scope "InstancedModel" (
+    instanceable = true
+)
+{
+    def SkelAnimation "Anim" {
+    }
+   
+    def Skeleton "A" {}
+
+    def Skeleton "B" {
+        rel skel:animationSource = <../Anim>
+    }
 }
 
-def Skeleton "Skel2" {
-}
+def SkelRoot "AnimationSource" {
 
-def Skeleton "Skel3" {
-}
+    def Scope "Scope" {
+        rel skel:animationSource = </Anim1>
 
-def PackedJointAnimation "Anim1" {
-}
-
-def PackedJointAnimation "Anim2" {
-}
-
-def PackedJointAnimation "InactiveAnim" (active=false) {
-}
-
-def SkelRoot "InheritedBindings" {
-    def Scope "Model1" {
-        rel skel:skeleton = </Skel1>
-        
-        def Scope "A" {
-            # This animation source applies below, not above!
-            rel skel:animationSource = </Anim1>
-
-            def Scope "B" {
-                # This adopts the animation above
-                rel skel:skeleton = </Skel2>
-                
-                def Scope "Gprim" {
-                }
-            }
-        }
-        def Scope "C" {
-            # This takes the locally-bound animation
+        def Skeleton "A" {}
+    
+        def Skeleton "B" {
             rel skel:animationSource = </Anim2>
-            rel skel:skeleton = </Skel3>
-
-            def Scope "Gprim" {
-            }
         }
+    }
 
+    def Skeleton "C" {}
+    
+    def Skeleton "D" {
+        rel skel:animationSource = </InactiveAnim>
+    }
+
+    over "Instance" (
+        add references = </InstancedModel>
+    )
+    {
+        rel skel:animationSource = </Anim1>
+    }
+}
+
+
+def SkelRoot "Skeleton" {
+
+    def Skeleton "SkelA" {}
+    def Skeleton "SkelB" {}
+    def Skeleton "InactiveSkel" (active=false) {}
+
+    def Scope "Scope" {
+        rel skel:animationSource = <../SkelA>
+
+        def Mesh "A" {}
+    
+        def Mesh "B" {
+            rel skel:animationSource = <../SkelB>
+        }
+    }
+
+    def Mesh "C" {}
+    
+    def Mesh "D" {
+        rel skel:skeleton = <../InactiveSkel>
+    }
+}
+
+
+def SkelRoot "IneheritedBindings" {
+    def Skeleton "SkelA" {}
+
+    def Scope "Model1" {
+        rel skel:skeleton = <../SkelA>
+        
         def Scope "NonRigidScope1" {
             # Non-xformable scope: cannot treat as rigid.
             matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))

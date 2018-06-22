@@ -36,7 +36,7 @@ class TestUsdSkelCache(unittest.TestCase):
 
         stage = Usd.Stage.CreateInMemory()
          
-        anim = UsdSkel.PackedJointAnimation.Define(stage, "/Anim")
+        anim = UsdSkel.Animation.Define(stage, "/Anim")
         
         assert cache.GetAnimQuery(anim.GetPrim())
 
@@ -47,8 +47,89 @@ class TestUsdSkelCache(unittest.TestCase):
 
         # TODO: Test query of anim behind instancing
 
+    
+    def test_InheritedAnimationSource(self):
+        """Tests for correctness in the interpretation of the inherited
+           skel:animationSource binding."""
+        
+        testFile = "populate.usda"
+        stage = Usd.Stage.Open(testFile)
 
-    def test_Populate(self):
+        rootPath = "/AnimationSource"
+
+        cache = UsdSkel.Cache()
+        root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
+        self.assertTrue(cache.Populate(root))
+
+        queryA = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/A"))
+        self.assertTrue(queryA)
+        self.assertEqual(queryA.GetAnimQuery().GetPrim().GetPath(),
+                         Sdf.Path("/Anim1"))
+
+        queryB = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/B"))
+        self.assertTrue(queryB)
+        self.assertEqual(queryB.GetAnimQuery().GetPrim().GetPath(),
+                         Sdf.Path("/Anim2"))
+
+        queryC = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/C"))
+        self.assertFalse(queryC)
+        
+        queryD = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/C"))
+        self.assertFalse(queryD)
+
+        # Ensure that the animationSource binding crosses instancing arcs.
+
+        queryInstA = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, rootPath+"/Instance/A"))
+        self.assertTrue(queryInstA)
+        self.assertEqual(queryInstA.GetAnimQuery().GetPrim().GetPath(),
+                         Sdf.Path("/Anim1"))
+
+        queryInstB = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, rootPath+"/Instance/B"))
+        self.assertTrue(queryInstB)
+        self.assertTrue(queryInstB.GetAnimQuery().GetPrim().IsInMaster())
+
+
+    def _test_InheritedSkeletonBinding(self):
+        """Tests for correctness in the interpretation of the inherited
+           skel:skeleton binding."""
+        testFile = "populate.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        rootPath = "/Skeleton"
+
+        # TODO: To correctly test this, we need either a different kind of mapping,
+        # or we need the skinning query to keep a record of the bound prim.
+
+        cache = UsdSkel.Cache()
+        root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
+        self.assertTrue(cache.Populate(root))
+
+        queryA = cache.GetSkinningQuery(
+            UsdSkel.Animation.Get(stage, rootPath+"/Scope/A"))
+        self.assertTrue(queryA)
+        self.assertEqual(queryA.GetSkelQuery().GetPrim().GetPath(),
+                         Sdf.Path("/Anim1"))
+
+        queryB = cache.GetSkinningQuery(UsdSkel.Animation.Get(stage, rootPath+"/Scope/B"))
+        self.assertTrue(queryB)
+        self.assertEqual(queryB.GetAnimQuery().GetPrim().GetPath(),
+                         Sdf.Path("/Anim2"))
+
+        queryC = cache.GetSkinningQuery(UsdSkel.Animation.Get(stage, rootPath+"/Scope/C"))
+        self.assertFalse(queryC)
+        
+        queryD = cache.GetSkinningQuery(UsdSkel.Animation.Get(stage, rootPath+"/Scope/C"))
+        self.assertFalse(queryD)
+
+
+
+    def _test_Populate(self):
         """Tests for correctness in interpretation of inherited bindings,
            as computed through Populate()."""
 

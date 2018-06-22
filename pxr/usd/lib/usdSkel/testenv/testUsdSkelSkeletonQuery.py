@@ -61,7 +61,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
 
         skelRoot = UsdSkel.Root.Define(stage, "/SkelRoot")
 
-        anim = UsdSkel.PackedJointAnimation.Define(stage, "/SkelRoot/Anim")
+        anim = UsdSkel.Animation.Define(stage, "/SkelRoot/Anim")
         skel = UsdSkel.Skeleton.Define(stage, "/SkelRoot/Skel")
 
         binding = UsdSkel.BindingAPI.Apply(skelRoot.GetPrim())
@@ -111,7 +111,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         skelCache = UsdSkel.Cache()
         skelCache.Populate(skelRoot)
 
-        query = skelCache.GetSkelQuery(skelRoot.GetPrim())
+        query = skelCache.GetSkelQuery(skel)
         self.assertTrue(query)
 
         # Validate joint rest xform computations.
@@ -179,7 +179,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         skelCache.Clear()
         skelCache.Populate(skelRoot)
 
-        query = skelCache.GetSkelQuery(skelRoot.GetPrim())
+        query = skelCache.GetSkelQuery(skel)
 
         expectedXforms = restXforms
         computedXforms = query.ComputeJointLocalTransforms(10)
@@ -197,7 +197,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         skelCache.Clear()
         skelCache.Populate(skelRoot)
 
-        query = skelCache.GetSkelQuery(skelRoot.GetPrim())
+        query = skelCache.GetSkelQuery(skel)
 
         expectedXforms = restXforms
         computedXforms = query.ComputeJointLocalTransforms(5)

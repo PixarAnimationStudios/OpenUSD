@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdSkelSkeleton,
-        TfType::Bases< UsdGeomImageable > >();
+        TfType::Bases< UsdGeomBoundable > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -153,7 +153,7 @@ UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdGeomImageable::GetSchemaAttributeNames(true),
+            UsdGeomBoundable::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)
@@ -172,3 +172,72 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdSkel/cache.h"
+#include "pxr/usd/usdSkel/skeletonQuery.h"
+#include "pxr/usd/usdSkel/skinningQuery.h"
+#include "pxr/usd/usdSkel/utils.h"
+
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+/// Plugin extent method.
+static bool
+_ComputeExtent(const UsdGeomBoundable& boundable,
+               const UsdTimeCode& time,
+               const GfMatrix4d* transform,
+               VtVec3fArray* extent)
+{
+    UsdSkelSkeleton skel(boundable);
+    if (!TF_VERIFY(skel)) {
+        return false;
+    }
+
+    UsdSkelCache skelCache;
+
+    UsdSkelSkeletonQuery skelQuery =
+        skelCache.GetSkelQuery(UsdSkelSkeleton(boundable.GetPrim()));
+
+    // We compute joint transforms in skel space, which is given as:
+    //
+    //    animationSource.animTransform * skelPrim.localToWorldTransform
+    //
+    // UsdGeomBoundable, however, wants extent with respect to the skel
+    // primitive itself (I.e., with the animation source's transform baked in).
+    // Compute a root transform that accounts for the animation source.
+    GfMatrix4d rootXform;
+    if (skelQuery.ComputeAnimTransform(&rootXform, time)) {
+        if(transform)
+            rootXform *= *transform;
+    } else {
+        if(transform)
+            rootXform = *transform;
+        else
+            rootXform.SetIdentity();
+    }
+    
+    if (TF_VERIFY(skelQuery)) {
+        // Compute skel-space joint transforms.
+        // The extent for this skel is based on the pivots of all joints.
+        VtMatrix4dArray skelXforms;
+        if (skelQuery.ComputeJointSkelTransforms(&skelXforms, time)) {
+            return UsdSkelComputeJointsExtent(skelXforms, extent,
+                                              /*padding*/ 0, &rootXform);
+        }
+    }
+    return true;
+}
+
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdSkelSkeleton>(_ComputeExtent);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

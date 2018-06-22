@@ -57,21 +57,21 @@ public:
     /// set through the UsdSkelBindingAPI, as inherited on \p prim.
     /// The resulting query will be marked valid only if the inherited
     /// properties provide proper valid joint influences.
-    /// The \p prim is passed only for the sake of validation messages,
-    /// as is not otherwise important.
     USDSKEL_API
     UsdSkelSkinningQuery(const UsdPrim& prim,
                          const VtTokenArray& skelJointOrder,
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
                          const UsdAttribute& geomBindTransform,
-                         const VtTokenArray* jointOrder=nullptr);
+                         const UsdAttribute& joints);
 
     /// Returns true if this query is valid.
     bool IsValid() const { return _valid; }
     
     /// Boolena conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
+
+    const UsdPrim& GetPrim() const { return _prim; }
 
     int GetNumInfluencesPerComponent() const {
         return _numInfluencesPerComponent;
@@ -168,7 +168,6 @@ public:
                                  GfMatrix4d* xform,
                                  UsdTimeCode time=UsdTimeCode::Default()) const;
 
-
     /// Helper for computing an *approximate* padding for use in extents
     /// computations. The padding is computed as the difference between the
     /// pivots of the \p skelRestXforms -- _skeleton space_ joint transforms
@@ -187,6 +186,7 @@ public:
     std::string GetDescription() const;
 
 private:
+    UsdPrim _prim;
     bool _valid;
     int _numInfluencesPerComponent;
     TfToken _interpolation;

@@ -51,7 +51,7 @@ class SdfAssetPath;
 
 /// \class UsdSkelRoot
 ///
-/// Transformable prim type used to identify a scope beneath which
+/// Boundable prim type used to identify a scope beneath which
 /// skeletally-posed primitives are defined.
 /// 
 /// A SkelRoot must be defined at or above a skinned primitive for any skinning

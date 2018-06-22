@@ -25,7 +25,7 @@ over "GLOBAL" (
 
 class SkelRoot "SkelRoot" (
     inherits = </Boundable>
-    doc = """Transformable prim type used to identify a scope beneath which
+    doc = """Boundable prim type used to identify a scope beneath which
     skeletally-posed primitives are defined.
 
     A SkelRoot must be defined at or above a skinned primitive for any skinning
@@ -45,15 +45,17 @@ class SkelRoot "SkelRoot" (
 
 
 class Skeleton "Skeleton" (
-    inherits = </Imageable>
-    doc = """Describes a skeleton. A Skeleton is responsible both for
-    establishing the _topology_ of a skeleton, as well as for identifying a
-    rest pose.
+    inherits = </Boundable>
+    doc = """Describes a skeleton. 
 
     See the extended \\ref UsdSkel_Skeleton "Skeleton Schema" documentation for
     more information.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+
         string extraIncludes = """
 #include "pxr/usd/usdSkel/topology.h" """
     }
@@ -75,14 +77,17 @@ class Skeleton "Skeleton" (
 }
 
 
-class PackedJointAnimation "PackedJointAnimation" (
+class SkelAnimation "SkelAnimation" (
     inherits = </Xformable>
     doc = """Describes a skel animation, where joint animation is stored in a
     vectorized form.
 
-    See the extended \\ref UsdSkel_PackedJointAnimation "Packed Joint Animation"
+    See the extended \\ref UsdSkel_SkelAnimation "Skel Animation"
     documentation for more information.
     """
+    customData = {
+        string className = "Animation"
+    }
 ) {
     uniform token[] joints (
         doc = """Array of tokens identifying which joints this animation's
@@ -124,6 +129,13 @@ class PackedJointAnimation "PackedJointAnimation" (
 }
 
 
+class PackedJointAnimation "PackedJointAnimation" (
+    inherits = </SkelAnimation>
+    doc = """Deprecated. Please use SkelAnimation instead."""
+)
+{
+}
+
 class "BindingAPI" (
     inherits = </APISchemaBase>
     doc = """Provides API for authoring and extracting all the skinning-related
@@ -135,7 +147,8 @@ class "BindingAPI" (
     """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdGeom/primvar.h" """
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdSkel/skeleton.h" """
     }
 )
 {
@@ -143,12 +156,8 @@ class "BindingAPI" (
         customData = {
             string apiName = "animationSource"
         }       
-        doc = """Animation source to be bound to this prim and its 
-        descendants. An animationSource has no effect until the next
-        _skel:skeleton_ binding applied either at the same prim that
-        the animationSource is defined on, or at the binding of an
-        ancestor prim. An animationSource does not affect a skeleton
-        bound on an ancestor scope.
+        doc = """Animation source to be bound to Skeleton primitives at or
+        beneath the location at which this property is defined.
         """
     )
 
@@ -159,19 +168,6 @@ class "BindingAPI" (
         doc = """Skeleton to be bound to this prim and its descendents that
         possess a mapping and weighting to the joints of the identified
         Skeleton."""
-    )
-
-    rel skel:skeletonInstance (
-        customData = {
-            string apiName = "skeletonInstance"
-        }
-        doc = """Optionally specifies a skeleton instance, defined elsewhere
-        in the model hierarchy, as the skeleton instance that affects this prim 
-        and all of its descendants. The target skeleton instance must be
-        contained within the same ancestor SkelRoot as the prim at which this
-        relationship is set. If the _skel:skeleton_ relationship is also
-        defined on this prim, then a new skeleton instance is established at
-        this prim, and this property is ignored."""
     )
 
     matrix4d primvars:skel:geomBindTransform (

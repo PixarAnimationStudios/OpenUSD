@@ -24,13 +24,14 @@
 #include "usdMaya/MayaSkeletonWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
-#include "pxr/usd/usdSkel/packedJointAnimation.h"
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/utils.h"
@@ -55,20 +56,81 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 static SdfPath
-_GetSkeletonPath(const SdfPath& skelInstancePath)
+_GetAnimationPath(const SdfPath& skelPath)
 {
-    return skelInstancePath.AppendChild(_tokens->Skeleton);
+    return skelPath.AppendChild(_tokens->Animation);
 }
 
 
-static SdfPath
-_GetAnimationPath(const SdfPath& skelInstancePath)
+/// Gets all of the components of the joint hierarchy rooted at \p dagPath.
+/// The \p skelXformPath will hold the path to a joint that defines
+/// the transform of a UsdSkelSkeleton. It may be invalid if no
+/// joint explicitly defines that transform.
+/// The \p animXformPath will hold the path to a joint that defines
+/// the transform of a UsdSkelSkeleton's animation source, if any.
+/// The \p joints array, if provided, will be filled with the ordered set of
+/// joint paths, excluding the set of joints described above.
+/// The \p jointHierarchyRootPath will hold the common parent path of
+/// all of the returned joints.
+static 
+void
+_GetJointHierarchyComponents(const MDagPath& dagPath,
+                             MDagPath* skelXformPath,
+                             MDagPath* animXformPath,
+                             MDagPath* jointHierarchyRootPath,
+                             std::vector<MDagPath>* joints=nullptr)
 {
-    return _GetSkeletonPath(skelInstancePath).AppendChild(_tokens->Animation);
+    if(joints)
+        joints->clear();
+    *skelXformPath = MDagPath();
+    *animXformPath = MDagPath();
+
+    MItDag dagIter(MItDag::kDepthFirst, MFn::kJoint);
+    dagIter.reset(dagPath, MItDag::kDepthFirst, MFn::kJoint);
+    
+    // The first joint may be the root of a Skeleton.
+    if (!dagIter.isDone()) {
+        MDagPath path;
+        dagIter.getPath(path);
+        if (PxrUsdMayaTranslatorSkel::IsUsdSkelTransform(path)) {
+            *skelXformPath = path;
+            dagIter.next();
+        }
+    }
+
+    // The next joint may be the transform corresponding to
+    // a UsdSkelAnimation.
+    if (!dagIter.isDone()) {
+        MDagPath path;
+        dagIter.getPath(path);
+        if (PxrUsdMayaTranslatorSkel::IsUsdSkelAnimTransform(path)) {
+            *animXformPath = path;
+            dagIter.next();
+        }
+    }
+
+    // All remaining joints are treated as normal joints.
+    if (joints) {
+        while (!dagIter.isDone()) {
+            MDagPath path;
+            dagIter.getPath(path);
+            joints->push_back(path);
+            dagIter.next();
+        }
+    }
+    
+    if (animXformPath->isValid()) {
+        *jointHierarchyRootPath = *animXformPath;
+    } else if(skelXformPath->isValid()) {
+        *jointHierarchyRootPath = *skelXformPath;
+    } else {
+        *jointHierarchyRootPath = dagPath;  
+        jointHierarchyRootPath->pop();
+    }
 }
 
 
-MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath & iDag,
+MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
                                        const SdfPath& uPath,
                                        usdWriteJobCtx& jobCtx)
     : MayaPrimWriter(iDag, uPath, jobCtx),
@@ -80,48 +142,14 @@ MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath & iDag,
         return;
     }
 
-    SdfPath skelInstancePath = GetSkeletonInstancePath(
-            iDag, mWriteJobCtx.getArgs().stripNamespaces);
-
-    SdfPath skelPath = _GetSkeletonPath(skelInstancePath);
+    SdfPath skelPath =
+        GetSkeletonPath(iDag, mWriteJobCtx.getArgs().stripNamespaces);
 
     _skel = UsdSkelSkeleton::Define(getUsdStage(), skelPath);
     if (!TF_VERIFY(_skel))
         return;
 
-    // The skeleton may be bound at this scope, or at the parent scope.
-    if (skelInstancePath == uPath) {
-
-        // The skeleton will be bound at the path corresponding to the joint.
-        // This means that we need to produce a new xform at the joint,
-        // which we use to bind the skel instance.
-
-        _skelInstance = UsdGeomXform::Define(getUsdStage(),
-                                             skelInstancePath).GetPrim();
-        if (TF_VERIFY(_skelInstance)) {
-            mUsdPrim = _skelInstance;
-        }
-
-    } else {
-        // The skel instance will be bound on an ancestor prim,
-        // which we expect to already exist.
-        _skelInstance = getUsdStage()->GetPrimAtPath(skelInstancePath);
-        if (TF_VERIFY(_skelInstance)) {
-            mUsdPrim = _skel.GetPrim();
-        }
-    }
-}
-
-
-static bool
-_IsUsdJointHierarchyRoot(const MDagPath& joint)
-{
-    MFnDependencyNode jointDep(joint.node());
-    MPlug plug = jointDep.findPlug("USD_isJointHierarchyRoot");
-    if (!plug.isNull()) {
-        return plug.asBool();
-    }
-    return false;
+    mUsdPrim = _skel.GetPrim();
 }
 
 
@@ -131,21 +159,21 @@ MayaSkeletonWriter::GetJointNames(
     const MDagPath& rootDagPath,
     bool stripNamespaces)
 {
+    MDagPath skelXformPath, animXformPath, jointHierarchyRootPath;
+    _GetJointHierarchyComponents(rootDagPath, &skelXformPath,
+                                 &animXformPath, &jointHierarchyRootPath);
 
-    // Get paths relative to the root.
+    // Get paths relative to the root of the joint hierarchy.
     // Joints have to be transforms, so mergeTransformAndShape
     // shouldn't matter here. (Besides, we're not actually using these
     // to point to prims.)
     SdfPath rootPath = PxrUsdMayaUtil::MDagPathToUsdPath(
-            rootDagPath, /*mergeTransformAndShape*/ false, stripNamespaces);
-
-    if (!_IsUsdJointHierarchyRoot(rootDagPath)) {   
-        // Compute joint names  relative to the path of the parent node.
-        rootPath = rootPath.GetParentPath();
-    }
+            jointHierarchyRootPath, /*mergeTransformAndShape*/ false,
+            stripNamespaces);
 
     VtTokenArray result;
     for (const MDagPath& joint : joints) {
+
         SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
                 joint, /*mergeTransformAndShape*/ false, stripNamespaces);
         result.push_back(path.MakeRelativePath(rootPath).GetToken());
@@ -155,52 +183,11 @@ MayaSkeletonWriter::GetJointNames(
 
 
 SdfPath
-MayaSkeletonWriter::GetSkeletonInstancePath(
-    const MDagPath& rootJoint,
-    bool stripNamespaces)
+MayaSkeletonWriter::GetSkeletonPath(const MDagPath& rootJoint,
+                                    bool stripNamespaces)
 {
-    SdfPath rootJointPath = PxrUsdMayaUtil::MDagPathToUsdPath(
+    return PxrUsdMayaUtil::MDagPathToUsdPath(
         rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces);
-
-    if (_IsUsdJointHierarchyRoot(rootJoint)) {
-        // The root joint is the special joint created for round-tripping
-        // UsdSkel data. The skeleton instance will be bound on the parent
-        // path, with the skeleton created beneath it.
-        
-        if (!rootJointPath.IsRootPrimPath()) {
-            return rootJointPath.GetParentPath();
-        } else {
-            TF_WARN("Ignoring invalid attr 'USD_isJointHierarchyRoot' on node "
-                    "<%s>: attr is only valid on non-root nodes.",
-                    rootJointPath.GetText());
-        }
-    }
-    return rootJointPath;
-}
-
-
-
-/// Gets all of the joints rooted at the given dag path.
-/// If \p includeRoot, the set of joints includes the given dag path as well.
-/// The vector returned ensures that ancestor joints come before descendant
-/// joints.
-static std::vector<MDagPath>
-_GetJoints(const MDagPath& dagPath, bool includeRoot)
-{
-    MItDag dagIter(MItDag::kDepthFirst, MFn::kJoint);
-    dagIter.reset(dagPath, MItDag::kDepthFirst, MFn::kJoint);
-
-    if (!includeRoot)
-        dagIter.next();
-
-    std::vector<MDagPath> result;
-    while (!dagIter.isDone()) {
-        MDagPath path;
-        dagIter.getPath(path);
-        result.push_back(path);
-        dagIter.next();
-    }
-    return result;
 }
 
 
@@ -342,30 +329,6 @@ _GetJointLocalTransforms(
 }
 
 
-/// Gets the root transformation of the skeleton instance exported for a joint.
-static GfMatrix4d
-_GetSkelLocalToWorldTransform(const MDagPath& dagPath)
-{
-    if (_IsUsdJointHierarchyRoot(dagPath)) {
-        // The input path is the special root joint used to hold the
-        // anim transform during round tripping; it gives us the complete
-        // local-to-world transform of the skel.
-        return -_GetJointWorldTransform(dagPath);
-    } else if(dagPath.length() > 1) {
-        // The input dagPath is expected to be our root joint.
-        // The transform of the parent will provide the local-to-world
-        // transform of the skel.
-        MDagPath parent(dagPath);
-        parent.pop();
-        return GfMatrix4d(parent.inclusiveMatrix().matrix);
-    }
-
-    // Can't find a reasonable root transform for the skel instance.
-    // Fall back to the identity.
-    return GfMatrix4d(1);
-}
-
-
 /// Returns true if the joint's transform definitely matches its rest transform
 /// over all exported frames.
 static bool
@@ -412,7 +375,7 @@ _GetAnimatedJoints(
 
     // The resulting vector contains only animated joints or joints not
     // in their rest pose. The order is *not* guaranteed to be the Skeleton
-    // order, because UsdSkel allows arbitrary order on PackedJointAnimations.
+    // order, because UsdSkel allows arbitrary order on SkelAnimation.
     for (size_t i = 0; i < jointDagPaths.size(); ++i) {
         const TfToken& jointName = usdJointNames[i];
         const MDagPath& dagPath = jointDagPaths[i];
@@ -431,17 +394,18 @@ MayaSkeletonWriter::_WriteRestState()
 {
     // Check if the root joint is the special root joint created
     // for round-tripping UsdSkel data.
-    bool isUsdJointHierarchyRoot = _IsUsdJointHierarchyRoot(getDagPath());
+    bool haveUsdSkelXform =
+        PxrUsdMayaTranslatorSkel::IsUsdSkelTransform(getDagPath());
+    
+    _GetJointHierarchyComponents(getDagPath(),
+                                 &_skelXformPath,
+                                 &_animXformPath,
+                                 &_jointHierarchyRootPath,
+                                 &_joints);
 
-    _joints = _GetJoints(getDagPath(), !isUsdJointHierarchyRoot);
-    if (!isUsdJointHierarchyRoot && _joints.size() == 0) {
-        TF_CODING_ERROR("There should be at least one joint "
-                        "since this prim is a joint");
-        return false;
-    }
-
-    VtTokenArray skelJointNames = GetJointNames(
-            _joints, getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
+    VtTokenArray skelJointNames =
+        GetJointNames(_joints, getDagPath(),
+                      mWriteJobCtx.getArgs().stripNamespaces);
     _topology = UsdSkelTopology(skelJointNames);
     std::string whyNotValid;
     if (!_topology.Validate(&whyNotValid)) {
@@ -454,16 +418,13 @@ MayaSkeletonWriter::_WriteRestState()
     // so that the root xform establishes a skeleton instance 
     // with the right transform.
     const UsdSkelBindingAPI binding = PxrUsdMayaTranslatorUtil
-        ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(_skelInstance);
-
-    binding.CreateSkeletonRel().SetTargets({_skel.GetPrim().GetPath()});
+        ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(_skel.GetPrim());
 
     // Mark the bindings for post processing.
-    SdfPath skelInstancePath = GetSkeletonInstancePath(
-            getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
+
+    SdfPath skelPath = _skel.GetPrim().GetPath();
     mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
-        skelInstancePath, skelInstancePath,
-        mWriteJobCtx.getArgs().exportSkels);
+        skelPath, skelPath, mWriteJobCtx.getArgs().exportSkels);
         
     VtMatrix4dArray restXforms =
         _GetJointLocalRestTransforms(_topology, _joints);
@@ -476,16 +437,26 @@ MayaSkeletonWriter::_WriteRestState()
                        _joints, restXforms,
                        &animJointNames, &_animatedJoints,
                        !mWriteJobCtx.getArgs().timeInterval.IsEmpty());
-    
-    if (isUsdJointHierarchyRoot || animJointNames.size() > 0) {
 
-        SdfPath animPath = _GetAnimationPath(_skelInstance.GetPath());
-        _skelAnim = UsdSkelPackedJointAnimation::Define(
-            getUsdStage(), animPath);
+    if (haveUsdSkelXform) {
+        _skelXformAttr = _skel.MakeMatrixXform();
+        if (!getArgs().timeInterval.IsEmpty()) {
+            MObject node = _skelXformPath.node();
+            _skelXformIsAnimated = PxrUsdMayaUtil::isAnimated(node);
+        } else {
+            _skelXformIsAnimated = false;
+        }
+    }
+
+    if (_animXformPath.isValid() || animJointNames.size() > 0) {
+
+        // TODO: pull the name from the anim transform dag path.
+        SdfPath animPath = _GetAnimationPath(skelPath);
+        _skelAnim = UsdSkelAnimation::Define(getUsdStage(), animPath);
 
         if (TF_VERIFY(_skelAnim)) {
 
-            if (isUsdJointHierarchyRoot) {
+            if (_animXformPath.isValid()) {
 
                 // The root joint (current dag path) holds the
                 // anim transform for the joint animation.
@@ -494,7 +465,7 @@ MayaSkeletonWriter::_WriteRestState()
                 _animXformAttr = _skelAnim.MakeMatrixXform();
 
                 if (!getArgs().timeInterval.IsEmpty()) {
-                    MObject node = getDagPath().node();
+                    MObject node = _animXformPath.node();
                     _animXformIsAnimated = PxrUsdMayaUtil::isAnimated(node);
                 } else {
                     _animXformIsAnimated = false;
@@ -524,33 +495,41 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
 
     if (!_valid)
         return;
- 
+
+    if ((usdTime.IsDefault() || _skelXformIsAnimated) && _skelXformAttr) {
+
+        // We have a joint which provides the transform of the Skeleton,
+        // instead of the transform of a joint in the hierarchy.
+        GfMatrix4d localXf = _GetJointLocalTransform(_skelXformPath);
+        _SetAttribute(_skelXformAttr, localXf, usdTime);
+    }
+
     if ((usdTime.IsDefault() || _animXformIsAnimated) && _animXformAttr) {
 
         // If we have an anim transform attr to write to, the local transform
         // of the current dag path provides the anim transform.
-        GfMatrix4d localXf = _GetJointLocalTransform(getDagPath());
+        GfMatrix4d localXf = _GetJointLocalTransform(_animXformPath);
         _SetAttribute(_animXformAttr, localXf, usdTime);
     }
 
     // Time-varying step: write the packed joint animation transforms once per
     // time code. We do want to run this @ default time also so that any
     // deviations from the rest pose are exported as the default values on the
-    // PackedJointAnimation.
+    // SkelAnimation.
     if (_animatedJoints.size() > 0) {
 
         if (!_skelAnim) {
 
-            SdfPath animPath = _GetAnimationPath(_skelInstance.GetPath());
+            SdfPath animPath = _GetAnimationPath(_skel.GetPrim().GetPath());
 
             TF_CODING_ERROR(
-                "PackedJointAnimation <%s> doesn't exist but should "
+                "SkelAnimation <%s> doesn't exist but should "
                 "have been created during default-time pass.",
                 animPath.GetText());
             return;
         }
 
-        GfMatrix4d rootXf = _GetSkelLocalToWorldTransform(getDagPath());
+        GfMatrix4d rootXf = _GetJointWorldTransform(_jointHierarchyRootPath);
 
         VtMatrix4dArray localXforms;
         if (_GetJointLocalTransforms(_topology, _joints,
@@ -598,7 +577,7 @@ MayaSkeletonWriter::shouldPruneChildren() const
 bool
 MayaSkeletonWriter::isShapeAnimated() const
 {
-    // Either the root xform or the PackedJointAnimation beneath it
+    // Either the root xform or the SkelAnimation beneath it
     // may be animated.
     return _animXformIsAnimated || _animatedJoints.size() > 0;
 }
@@ -608,10 +587,9 @@ MayaSkeletonWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
 {
     bool hasPrims = MayaPrimWriter::getAllAuthoredUsdPaths(outPaths);
 
-    SdfPath skelInstancePath = GetSkeletonInstancePath(
-            getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
-    SdfPath skelPath = _GetSkeletonPath(skelInstancePath);
-    SdfPath animPath = _GetAnimationPath(skelInstancePath);
+    SdfPath skelPath = GetSkeletonPath(
+        getDagPath(), mWriteJobCtx.getArgs().stripNamespaces);
+    SdfPath animPath = _GetAnimationPath(skelPath);
     
     for (const SdfPath& path : {skelPath, animPath}) {  
         if (getUsdStage()->GetPrimAtPath(path)) {

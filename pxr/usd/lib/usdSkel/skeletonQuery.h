@@ -62,22 +62,18 @@ TF_DECLARE_REF_PTRS(UsdSkel_SkelDefinition);
 /// // Populate the cache for a skel root.
 /// skelCache.Populate(UsdSkelRoot(skelRootPrim));
 ///
-/// for(const auto& prim : UsdPrimRange(skelRootPrim) {
-///     if(UsdSkelSkeletonQuery = skelCache.GetSkelQuery(prim)) {
-///         ...
-///     }
+/// if (UsdSkelSkeletonQuery skelQuery = skelCache.GetSkelQuery(skelPrim)) {
+///     ...
 /// }
 /// \endcode
 ///
-/// If constructing a query through a cache, the caller is on the hook for
-/// resolving the inherited properties that a define a skeletal binding.
 class UsdSkelSkeletonQuery
 {
 public:
     UsdSkelSkeletonQuery() {}
 
     /// Return true if this query is valid.
-    bool IsValid() const { return _prim && _definition; }
+    bool IsValid() const { return _definition; }
 
     /// Boolean conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
@@ -86,8 +82,7 @@ public:
     /// same UsdSkelSkeletonQuery, false otherwise.
     friend bool operator==(const UsdSkelSkeletonQuery& lhs,
                            const UsdSkelSkeletonQuery& rhs) {
-        return lhs._prim == rhs._prim &&
-               lhs._definition == rhs._definition &&
+        return lhs._definition == rhs._definition &&
                lhs._animQuery == rhs._animQuery;
     }
 
@@ -102,12 +97,12 @@ public:
     USDSKEL_API
     friend size_t hash_value(const UsdSkelSkeletonQuery& query);
 
-    /// Returns the prim at which this skeleton instance is bound.
-    USDSKEL_API
-    const UsdPrim& GetPrim() const;
-
     /// Returns the underlying Skeleton primitive corresponding to the
     /// bound skeleton instance, if any.
+    USDSKEL_API
+    UsdPrim GetPrim() const;
+
+    /// Returns the bound skeleton instance, if any.
     USDSKEL_API
     const UsdSkelSkeleton& GetSkeleton() const;
     
@@ -133,10 +128,10 @@ public:
     bool ComputeAnimTransform(GfMatrix4d* xform,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
-    /// Compute the local-to-world transform of the skeleton instance.
-    /// A Skeleton instance's local to world transform is:
+    /// Compute the local-to-world transform of the skeleton.
+    /// A Skeleton's complete local to world transform is:
     /// \code
-    ///     animTransform * skelInstanceLocalToWorld
+    ///     animTransform * skelPrimLocalToWorld
     /// \endcode
     USDSKEL_API
     bool ComputeLocalToWorldTransform(GfMatrix4d* xform,
@@ -184,10 +179,8 @@ public:
 private:
 
     USDSKEL_API
-    UsdSkelSkeletonQuery(const UsdPrim& prim,
-                         const UsdSkel_SkelDefinitionRefPtr& definition,
+    UsdSkelSkeletonQuery(const UsdSkel_SkelDefinitionRefPtr& definition,
                          const UsdSkelAnimQuery& anim=UsdSkelAnimQuery());
-
 
     bool _HasMappableAnim() const;
 
@@ -203,7 +196,6 @@ private:
                                     UsdTimeCode time) const;
 
 private:
-    UsdPrim _prim;
     UsdSkel_SkelDefinitionRefPtr _definition;
     UsdSkelAnimQuery _animQuery;
     UsdSkelAnimMapper _animToSkelMapper;

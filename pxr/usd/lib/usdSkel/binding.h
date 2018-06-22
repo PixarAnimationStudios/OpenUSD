@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,50 +21,48 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_SKELBINDINGSWRITER_H
-#define PXRUSDMAYA_SKELBINDINGSWRITER_H
+#ifndef USDSKEL_BINDING_H
+#define USDSKEL_BINDING_H
 
-/// \file skelBindingsWriter.h
+/// \file usdSkel/binding.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/pathTable.h"
-#include "usdMaya/util.h"
+#include "pxr/usd/usdSkel/api.h"
 
-#include <maya/MDagPath.h>
-
-#include <set>
-#include <unordered_map>
+#include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/skinningQuery.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// This class encapsulates all of the logic for writing or modifying
-/// SkelRoot prims for all scopes that have skel bindings.
-class PxrUsdMaya_SkelBindingsWriter {
+/// \class UsdSkelBinding
+///
+/// Helper object that describes the binding of a skeleton to a set of
+/// skinnable objects. The set of skinnable objects is given as
+/// UsdSkelSkinningQuery prims, which can be used both to identify the
+/// skinned prim as well compute skinning properties of the prim.
+class UsdSkelBinding
+{
 public:
-    PxrUsdMaya_SkelBindingsWriter();
+    UsdSkelBinding() {}
 
-    /// Mark \p path as containing bindings utilizing the skeleton
-    /// at \p skelPath.
-    /// Bindings are marked so that SkelRoots may be post-processed.
-    void MarkBindings(const SdfPath& path,
-                      const SdfPath& skelPath,
-                      const TfToken& config);
+    UsdSkelBinding(const UsdSkelSkeleton& skel,
+                   const VtArray<UsdSkelSkinningQuery>& skinningQueries)
+        : _skel(skel), _skinningQueries(skinningQueries) {}
 
-    /// Performs final processing for skel bindings.
-    bool PostProcessSkelBindings(const UsdStagePtr& stage) const;
+    /// Returns the bound skeleton.
+    const UsdSkelSkeleton& GetSkeleton() const { return _skel; }
+
+    /// Returns the set skinning targets.
+    const VtArray<UsdSkelSkinningQuery>& GetSkinningTargets() const
+        { return _skinningQueries; }
 
 private:
-
-    bool _VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const;
-
-    using _Entry = std::pair<SdfPath,TfToken>;
-
-    std::unordered_map<SdfPath, _Entry, SdfPath::Hash> _bindingToSkelMap;
+    UsdSkelSkeleton _skel;
+    VtArray<UsdSkelSkinningQuery> _skinningQueries;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_SKELBINDINGSWRITER_H
+#endif // USDSKEL_SKINNING_MAP

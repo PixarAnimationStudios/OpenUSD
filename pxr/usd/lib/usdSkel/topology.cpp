@@ -41,15 +41,27 @@ _GetParentIndex(const _PathIndexMap& pathMap, const SdfPath& path)
 {
     if(path.IsPrimPath()) {
 
+        bool isAbsPath = path.IsAbsolutePath();
+
         // XXX: A topology is typically constructed using relative
         // paths, but we make this work regardless.
-        const SdfPath& end = !path.IsAbsolutePath() ? 
+        const SdfPath& end = !isAbsPath ?
             SdfPath::ReflexiveRelativePath() : SdfPath::AbsoluteRootPath();
+
+
+        // Avoid infinite loops if given paths like '.', '..', etc.
+        // TODO: SdfPath should provide a method that allows safe ancestor
+        // traversal without risk of introducing infinite loops.
+        if (path == end ||
+            (!isAbsPath && path.GetName() == SdfPathTokens->parentPathElement)) {
+            return -1;
+        }
 
         // Recurse over all parent paths, not just the direct parent.
         // For instance, if the map includes only paths 'a' and 'a/b/c',
         // 'a' will be treated as the parent of 'a/b/c'.
-        for(SdfPath p = path.GetParentPath(); p != end; p = p.GetParentPath()) {
+        for (SdfPath p = path.GetParentPath(); p != end; p = p.GetParentPath()) {
+
             auto it = pathMap.find(p);
             if(it != pathMap.end()) {
                 return it->second;

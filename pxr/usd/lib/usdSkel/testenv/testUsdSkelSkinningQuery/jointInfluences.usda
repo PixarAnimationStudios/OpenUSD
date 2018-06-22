@@ -9,10 +9,10 @@ def Skeleton "Skel2" {
 def Skeleton "Skel3" {
 }
 
-def PackedJointAnimation "Anim1" {
+def SkelAnimation "Anim1" {
 }
 
-def PackedJointAnimation "Anim2" {
+def SkelAnimation "Anim2" {
 }
 
 

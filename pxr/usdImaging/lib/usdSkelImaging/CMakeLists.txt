@@ -9,7 +9,7 @@ pxr_library(usdSkelImaging
         usdSkel
 
     PUBLIC_CLASSES
-        skelRootAdapter
+        skeletonAdapter
         utils
 
     PUBLIC_HEADERS

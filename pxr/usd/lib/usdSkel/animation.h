@@ -21,19 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDSKEL_GENERATED_SKELETON_H
-#define USDSKEL_GENERATED_SKELETON_H
+#ifndef USDSKEL_GENERATED_ANIMATION_H
+#define USDSKEL_GENERATED_ANIMATION_H
 
-/// \file usdSkel/skeleton.h
+/// \file usdSkel/animation.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
-
-#include "pxr/usd/usdSkel/topology.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -49,18 +47,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SKELETON                                                                   //
+// SKELANIMATION                                                              //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdSkelSkeleton
+/// \class UsdSkelAnimation
 ///
-/// Describes a skeleton. 
+/// Describes a skel animation, where joint animation is stored in a
+/// vectorized form.
 /// 
-/// See the extended \ref UsdSkel_Skeleton "Skeleton Schema" documentation for
-/// more information.
+/// See the extended \ref UsdSkel_SkelAnimation "Skel Animation"
+/// documentation for more information.
 /// 
 ///
-class UsdSkelSkeleton : public UsdGeomBoundable
+class UsdSkelAnimation : public UsdGeomXformable
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -74,26 +73,26 @@ public:
     /// UsdPrim.
     static const bool IsTyped = true;
 
-    /// Construct a UsdSkelSkeleton on UsdPrim \p prim .
-    /// Equivalent to UsdSkelSkeleton::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdSkelAnimation on UsdPrim \p prim .
+    /// Equivalent to UsdSkelAnimation::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdSkelSkeleton(const UsdPrim& prim=UsdPrim())
-        : UsdGeomBoundable(prim)
+    explicit UsdSkelAnimation(const UsdPrim& prim=UsdPrim())
+        : UsdGeomXformable(prim)
     {
     }
 
-    /// Construct a UsdSkelSkeleton on the prim held by \p schemaObj .
-    /// Should be preferred over UsdSkelSkeleton(schemaObj.GetPrim()),
+    /// Construct a UsdSkelAnimation on the prim held by \p schemaObj .
+    /// Should be preferred over UsdSkelAnimation(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdSkelSkeleton(const UsdSchemaBase& schemaObj)
-        : UsdGeomBoundable(schemaObj)
+    explicit UsdSkelAnimation(const UsdSchemaBase& schemaObj)
+        : UsdGeomXformable(schemaObj)
     {
     }
 
     /// Destructor.
     USDSKEL_API
-    virtual ~UsdSkelSkeleton();
+    virtual ~UsdSkelAnimation();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -102,17 +101,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdSkelSkeleton holding the prim adhering to this
+    /// Return a UsdSkelAnimation holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdSkelSkeleton(stage->GetPrimAtPath(path));
+    /// UsdSkelAnimation(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDSKEL_API
-    static UsdSkelSkeleton
+    static UsdSkelAnimation
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -138,7 +137,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDSKEL_API
-    static UsdSkelSkeleton
+    static UsdSkelAnimation
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
@@ -157,11 +156,10 @@ public:
     // --------------------------------------------------------------------- //
     // JOINTS 
     // --------------------------------------------------------------------- //
-    /// An array of path tokens identifying the set of joints that make
-    /// up the skeleton, and their order. Each token in the array must be valid
-    /// when parsed as an SdfPath. The parent-child relationships of the
-    /// corresponding paths determine the parent-child relationships of each
-    /// joint.
+    /// Array of tokens identifying which joints this animation's
+    /// data applies to. The tokens for joints correspond to the tokens of
+    /// Skeleton primitives. The order of the joints as listed here may
+    /// vary from the order of joints on the Skeleton itself.
     ///
     /// \n  C++ Type: VtArray<TfToken>
     /// \n  Usd Type: SdfValueTypeNames->TokenArray
@@ -180,27 +178,119 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // RESTTRANSFORMS 
+    // TRANSLATIONS 
     // --------------------------------------------------------------------- //
-    /// Specifies rest transforms of each joint in 
-    /// **joint-local space**, in the ordering imposed by *joints*.
-    /// Joint transforms should all be given as orthogonal, affine
-    /// transformations.
+    /// Joint-local translations of all affected joints. Array length 
+    /// should match the size of the *joints* attribute.
     ///
-    /// \n  C++ Type: VtArray<GfMatrix4d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
-    /// \n  Variability: SdfVariabilityUniform
+    /// \n  C++ Type: VtArray<GfVec3f>
+    /// \n  Usd Type: SdfValueTypeNames->Float3Array
+    /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
     USDSKEL_API
-    UsdAttribute GetRestTransformsAttr() const;
+    UsdAttribute GetTranslationsAttr() const;
 
-    /// See GetRestTransformsAttr(), and also 
+    /// See GetTranslationsAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDSKEL_API
-    UsdAttribute CreateRestTransformsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateTranslationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ROTATIONS 
+    // --------------------------------------------------------------------- //
+    /// Joint-local unit quaternion rotations of all affected joints, 
+    /// in 32-bit precision. Array length should match the size of the 
+    /// *joints* attribute.
+    ///
+    /// \n  C++ Type: VtArray<GfQuatf>
+    /// \n  Usd Type: SdfValueTypeNames->QuatfArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetRotationsAttr() const;
+
+    /// See GetRotationsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateRotationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SCALES 
+    // --------------------------------------------------------------------- //
+    /// Joint-local scales of all affected joints, in
+    /// 16 bit precision. Array length should match the size of the *joints* 
+    /// attribute.
+    ///
+    /// \n  C++ Type: VtArray<GfVec3h>
+    /// \n  Usd Type: SdfValueTypeNames->Half3Array
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetScalesAttr() const;
+
+    /// See GetScalesAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateScalesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // BLENDSHAPES 
+    // --------------------------------------------------------------------- //
+    /// Array of tokens identifying which blend shapes this
+    /// animation's data applies to. The tokens for blendShapes correspond to
+    /// the tokens set in the *skel:blendShapes* binding property of the
+    /// UsdSkelBindingAPI.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetBlendShapesAttr() const;
+
+    /// See GetBlendShapesAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateBlendShapesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // BLENDSHAPEWEIGHTS 
+    // --------------------------------------------------------------------- //
+    /// Array of weight values for each blend shape. Each weight value
+    /// is associated with the corresponding blend shape identified within the
+    /// *blendShapes* token array, and therefore must have the same length as
+    /// *blendShapes.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetBlendShapeWeightsAttr() const;
+
+    /// See GetBlendShapeWeightsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateBlendShapeWeightsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

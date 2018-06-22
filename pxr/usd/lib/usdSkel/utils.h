@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GfMatrix3f;
 class GfMatrix4d;
 class GfRotation;
+class UsdPrim;
 class UsdPrimRange;
 class UsdRelationship;
 class UsdSkelRoot;
@@ -58,6 +59,20 @@ class UsdSkelTopology;
 
 /// \defgroup UsdSkel_Utils Utilities
 /// @{
+
+
+/// Returns true if \p prim is a valid skel animation source.
+USDSKEL_API
+bool
+UsdSkelIsSkelAnimationPrim(const UsdPrim& prim);
+
+
+/// Returns true if \p prim is considered to be a skinnable primitive.
+/// Whether or not the prim is actually skinned additionally depends on whether
+/// or not the prim has a bound skeleton, and prop joint influences.
+USDSKEL_API
+bool
+UsdSkelIsSkinnablePrim(const UsdPrim& prim);
 
 
 /// \defgroup UsdSkel_JointTransformUtils Joint Transform Utilities

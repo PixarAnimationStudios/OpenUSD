@@ -21,18 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDSKELIMAGING_SKELROOTADAPTER_H
-#define USDSKELIMAGING_SKELROOTADAPTER_H
+#ifndef USDSKELIMAGING_SKELETONADAPTER_H
+#define USDSKELIMAGING_SKELETONADAPTER_H
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
-#include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdSkelImaging/api.h"
 
 #include "pxr/imaging/hd/meshTopology.h"
 
 #include "pxr/usd/usdSkel/cache.h"
-#include "pxr/usd/usdSkel/root.h"
+#include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 
 #include <boost/unordered_map.hpp>
@@ -41,30 +40,30 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class UsdImagingSkelRootAdapter
+/// \class UsdImagingSkeletonAdapter
 ///
-/// Support for drawing skeletal data beneath a UsdSkelRoot.
+/// Support for drawing bones of a UsdSkelSkeleton.  
 ///
-class UsdSkelImagingSkelRootAdapter : public UsdImagingPrimAdapter {
+class UsdSkelImagingSkeletonAdapter : public UsdImagingPrimAdapter {
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
-    UsdSkelImagingSkelRootAdapter()
+    UsdSkelImagingSkeletonAdapter()
         : BaseAdapter()
     {}
 
     USDSKELIMAGING_API
-    virtual ~UsdSkelImagingSkelRootAdapter();
+    virtual ~UsdSkelImagingSkeletonAdapter();
 
     USDSKELIMAGING_API
-    virtual SdfPath
+    SdfPath
     Populate(const UsdPrim& prim,
              UsdImagingIndexProxy* index,
              const UsdImagingInstancerContext*
                  instancerContext=nullptr) override;
 
     USDSKELIMAGING_API
-    virtual bool IsSupported(const UsdImagingIndexProxy* index) const override;
+    bool IsSupported(const UsdImagingIndexProxy* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -72,50 +71,68 @@ public:
 
     /// Thread Safe.
     USDSKELIMAGING_API
-    virtual void TrackVariability(const UsdPrim& prim,
-                                  const SdfPath& cachePath,
-                                  HdDirtyBits* timeVaryingBits,
-                                  const UsdImagingInstancerContext* 
-                                     instancerContext = nullptr) const override;
+    void TrackVariability(const UsdPrim& prim,
+                          const SdfPath& cachePath,
+                          HdDirtyBits* timeVaryingBits,
+                          const UsdImagingInstancerContext* 
+                             instancerContext = nullptr) const override;
 
     /// Thread Safe.
     USDSKELIMAGING_API
-    virtual void UpdateForTime(const UsdPrim& prim,
-                               const SdfPath& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               const UsdImagingInstancerContext* 
-                                   instancerContext = nullptr) const override;
+    void UpdateForTime(const UsdPrim& prim,
+                       const SdfPath& cachePath, 
+                       UsdTimeCode time,
+                       HdDirtyBits requestedBits,
+                       const UsdImagingInstancerContext*
+                           instancerContext=nullptr) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing
     // ---------------------------------------------------------------------- //
 
     USDSKELIMAGING_API
-    virtual HdDirtyBits ProcessPropertyChange(const UsdPrim& prim,
-                                              const SdfPath& cachePath,
-                                              const TfToken& propertyName) override;
+    HdDirtyBits ProcessPropertyChange(const UsdPrim& prim,
+                                      const SdfPath& cachePath,
+                                      const TfToken& propertyName) override;
 
     USDSKELIMAGING_API
-    virtual void MarkDirty(const UsdPrim& prim,
-                           const SdfPath& cachePath,
-                           HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index) override;
+    void MarkDirty(const UsdPrim& prim,
+                   const SdfPath& cachePath,
+                   HdDirtyBits dirty,
+                   UsdImagingIndexProxy* index) override;
 
+    USDSKELIMAGING_API
+    void MarkTransformDirty(const UsdPrim& prim,
+                            const SdfPath& cachePath,
+                            UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
+    void MarkVisibilityDirty(const UsdPrim& prim,
+                             const SdfPath& cachePath,
+                             UsdImagingIndexProxy* index) override;
 
 protected:
 
-    virtual void _RemovePrim(const SdfPath& cachePath,
-                             UsdImagingIndexProxy* index);
+    void _RemovePrim(const SdfPath& cachePath,
+                     UsdImagingIndexProxy* index) override;
 
-    GfRange3d _GetExtent(const UsdSkelRoot& skelRoot, UsdTimeCode time) const;
+    /// Reads the extent from the given prim. If the extent is not authored,
+    /// an empty GfRange3d is returned, the extent will not be computed.
+    GfRange3d _GetExtent(const UsdPrim& prim, UsdTimeCode time) const;
 
-protected:
+    /// Returns the UsdGeomImagable "purpose" for this prim, including any
+    /// inherited purpose. Inherited values are strongest.
+    TfToken _GetPurpose(const UsdPrim & prim, UsdTimeCode time) const;
+
+    /// Returns a value holding color, opacity for \p prim,
+    /// taking into account explicitly authored color on the prim.
+    GfVec4f _GetColorAndOpacity(const UsdPrim& prim, UsdTimeCode time) const;
+
+private:
 
     /// Data for a skel instance.
-    struct _SkelInstance {
+    struct _SkelData {
 
-        UsdSkelRoot          skelRoot;
         UsdSkelSkeletonQuery skelQuery;
 
         /// Compute bone mesh topology, and intiailize
@@ -132,17 +149,17 @@ protected:
         VtIntArray      _boneMeshJointIndices;
     };
 
-    _SkelInstance*  _GetSkelInstance(const SdfPath& cachePath) const;
+    _SkelData*  _GetSkelData(const SdfPath& cachePath) const;
 
-    using _SkelInstanceMap =
-        boost::unordered_map<SdfPath,std::shared_ptr<_SkelInstance> >;
+    using _SkelDataMap =
+        boost::unordered_map<SdfPath,std::shared_ptr<_SkelData> >;
 
 private:
-    UsdSkelCache     _skelCache;
-    _SkelInstanceMap _instanceCache;
+    UsdSkelCache _skelCache;
+    _SkelDataMap _skelDataCache;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDSKELIMAGING_SKELROOTADAPTER
+#endif // USDSKELIMAGING_SKELETONADAPTER

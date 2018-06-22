@@ -116,6 +116,8 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (Animation)
+    (bindPose)
     (Skeleton)
 );
 
@@ -142,7 +144,8 @@ struct _MayaTokensData {
     const MString inMesh{"inMesh"};
     const MString intermediateObject{"intermediateObject"};
     const MString instObjGroups{"instObjGroups"};
-    const MString USD_isJointHierarchyRoot{"USD_isJointHierarchyRoot"};
+    const MString USD_isUsdSkelAnimTransform{"USD_isUsdSkelAnimTransform"};
+    const MString USD_isUsdSkelTransform{"USD_isUsdSkelTransform"};
     const MString matrix{"matrix"};
     const MString members{"members"};
     const MString message{"message"};
@@ -315,12 +318,26 @@ _GetJointAnimTimeSamples(const UsdSkelSkeletonQuery& skelQuery,
 }
 
 
+/// Get the absolute path to \p joint, within \p containerPath.
+SdfPath
+_GetJointPath(const SdfPath& containerPath, const TfToken& joint)
+{
+    SdfPath jointPath(joint);
+    if (jointPath.IsAbsolutePath()) {
+        jointPath = jointPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
+    }
+    if (!jointPath.IsEmpty()) {
+        return containerPath.AppendPath(jointPath);
+    }
+    return SdfPath();
+}
+
 
 /// Create joint nodes for each joint in the joint order of \p skelQuery.
 /// If successful, \p jointNodes holds the ordered set of joint nodes.
 bool
 _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
-                  const SdfPath& skelPath,
+                  const SdfPath& containerPath,
                   PxrUsdMayaPrimReaderContext* context,
                   VtArray<MObject>* jointNodes)
 {
@@ -335,26 +352,24 @@ _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
     // Joints are ordered so that ancestors precede descendants.
     // So we can iterate over joints in order and be assured that parent
     // joints will be created before their children.
-    for(size_t i = 0; i < numJoints; ++i) {
-
-        const SdfPath jointPath(jointNames[i]);
-        if(jointPath.IsEmpty())
+    for (size_t i = 0; i < numJoints; ++i) {
+        
+        const SdfPath jointPath = _GetJointPath(containerPath, jointNames[i]);
+        if (!jointPath.IsPrimPath())
             continue;
 
-        SdfPath absJointPath = skelPath.AppendPath(jointPath);
-
         MObject parentJoint =
-            context->GetMayaNode(absJointPath.GetParentPath(), true);
-        if(parentJoint.isNull()) {
+            context->GetMayaNode(jointPath.GetParentPath(), true);
+        if (parentJoint.isNull()) {
             TF_WARN("Could not find parent node for joint <%s>.",
-                    absJointPath.GetText());
+                    jointPath.GetText());
             return false;
         }
 
-        if(!PxrUsdMayaTranslatorUtil::CreateNode(absJointPath,
-                                                 _MayaTokens->jointType,
-                                                 parentJoint, context,
-                                                 &status, &(*jointNodes)[i])) {
+        if (!PxrUsdMayaTranslatorUtil::CreateNode(jointPath,
+                                                  _MayaTokens->jointType,
+                                                  parentJoint, context,
+                                                  &status, &(*jointNodes)[i])) {
             return false;
         }
     }
@@ -473,11 +488,12 @@ _CopyJointRestStatesFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 }
 
 
-/// Apply animation (joints and root anim transform)
+/// Apply animation (joints and anim transform)
 /// from \p skelQuery onto \p jointNodes.
 bool
 _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
-                  const MObject& skelTransform,
+                  const MObject& skelXform,
+                  const MObject& animXform,
                   const VtArray<MObject>& jointNodes,
                   const PxrUsdMayaPrimReaderArgs& args,
                   PxrUsdMayaPrimReaderContext* context)
@@ -492,6 +508,24 @@ _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 
     MStatus status;
 
+    {
+        // Copy local xforms of the skel itself.
+
+        UsdGeomXformable::XformQuery xfQuery(skelQuery.GetSkeleton());
+        std::vector<GfMatrix4d> xforms(usdTimes.size());
+        for (size_t i = 0; i < usdTimes.size(); ++i) {  
+            if (!xfQuery.GetLocalTransformation(&xforms[i], usdTimes[i])) {
+                xforms[i].SetIdentity();
+            }
+        }
+        MFnDependencyNode skelXformDep(skelXform, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        if(!_SetTransformAnim(skelXformDep, xforms, mayaTimes, context)) {
+            return false;
+        }
+    }
+
     if(UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
         // Skel has an animation source.
         // Copy the animation source's transform onto the skel.
@@ -502,10 +536,10 @@ _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
                 xforms[i].SetIdentity();
             }
         }
-        MFnDependencyNode transformDep(skelTransform, &status);
+        MFnDependencyNode animXformDep(animXform, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        if(!_SetTransformAnim(transformDep, xforms, mayaTimes, context)) {
+        if(!_SetTransformAnim(animXformDep, xforms, mayaTimes, context)) {
             return false;
         }
     }
@@ -539,12 +573,49 @@ _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 }
 
 
+template <typename T>
+bool _CreateNumericAttribute(MFnDependencyNode& depNode,
+                             const MString& attr,
+                             MFnNumericData::Type type, 
+                             T initialVal)
+{
+    return PxrUsdMayaUtil::createNumericAttribute(depNode, attr, type) &&
+           PxrUsdMayaUtil::setPlugValue(depNode, attr, initialVal);
+}
+
+
 } // namespace
 
 
 /* static */
 bool
-PxrUsdMayaTranslatorSkel::CreateJoints(
+PxrUsdMayaTranslatorSkel::IsUsdSkelTransform(const MDagPath& joint)
+{
+    MFnDependencyNode jointDep(joint.node());
+    MPlug plug = jointDep.findPlug(_MayaTokens->USD_isUsdSkelTransform);
+    if (!plug.isNull()) {
+        return plug.asBool();
+    }
+    return false;
+}
+
+
+/* static */
+bool
+PxrUsdMayaTranslatorSkel::IsUsdSkelAnimTransform(const MDagPath& joint)
+{
+    MFnDependencyNode jointDep(joint.node());
+    MPlug plug = jointDep.findPlug(_MayaTokens->USD_isUsdSkelAnimTransform);
+    if (!plug.isNull()) {
+        return plug.asBool();
+    }
+    return false;
+}
+
+
+/* static */
+bool
+PxrUsdMayaTranslatorSkel::CreateJointHierarchy(
     const UsdSkelSkeletonQuery& skelQuery,
     MObject& parentNode,
     const PxrUsdMayaPrimReaderArgs& args,
@@ -560,48 +631,116 @@ PxrUsdMayaTranslatorSkel::CreateJoints(
         return false;
     }
 
-    // We need to create a single transform beneath which to place all joints,
-    // both because UsdSkel allows for multiple root joints, and because we
-    // need a place to put the skel's anim transform.
-    // The container type will be of type 'joint', since this is easiest for
-    // us to latch onto when exporting back to USD.
+    // We need to create extra joints to hold the root transformation
+    // of the skeleton, as well as the separate anim transform of the
+    // animation source.
+    // These don't really need to be joints; they could be transforms, and the
+    // translation would still be correct. However, using joints gives us a
+    // nice way of configuring export so that we can put these helper
+    // transforms back where they belong in USD: We just define an exporter
+    // that exports the root-most joints of joint hierarchies.
     
-    // The container will be named based on the name of the Skeleton in USD.
-    SdfPath skelPath = 
-        skelQuery.GetPrim().GetPath().AppendChild(
-            skelQuery.GetSkeleton().GetPrim().GetName());
+    // Eventually we may want to provide an import path that instead
+    // concatenates those extra transforms onto the root joints.
+
+    SdfPath skelPath = skelQuery.GetPrim().GetPath();
 
     MStatus status;
-    MObject containerJoint;
+
+    // Create a joint for the transform of the UsdSkelSkeleton.
+
+    MObject skelXformJoint;
     if (!PxrUsdMayaTranslatorUtil::CreateNode(
             skelPath, _MayaTokens->jointType, parentNode,
-            context, &status, &containerJoint)) {
+            context, &status, &skelXformJoint)) {
         return false;
     }
 
-    // Change the container joint's draw style so that it is not drawn.
-    MFnDependencyNode containerJointDep(containerJoint, &status);
+    MFnDependencyNode skelXformJointDep(skelXformJoint, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    PxrUsdMayaUtil::setPlugValue(containerJointDep, 
-                                 _MayaTokens->drawStyle,
-                                 2 /*None*/);
+    // Create an attribute to indicate to export that this joint
+    // holds the UsdSkelSkeleton's transform.
+    _CreateNumericAttribute(skelXformJointDep,
+                            _MayaTokens->USD_isUsdSkelTransform,
+                            MFnNumericData::kBoolean,
+                            true);
 
-    // Create an attribute to indicate to export that this joint should
-    // be treated as the anim transform, rather than as a normal joint.
-    PxrUsdMayaUtil::createNumericAttribute(
-        containerJointDep,
-        _MayaTokens->USD_isJointHierarchyRoot,
-        MFnNumericData::kBoolean);
+    // Create a joint for the transform coming from the
+    // Skeleton's animation source.
+    SdfPath animPath = skelPath.AppendChild(_tokens->Animation);
+    MObject animXformJoint;
+    if (!PxrUsdMayaTranslatorUtil::CreateNode(
+            animPath, _MayaTokens->jointType, skelXformJoint,
+            context, &status, &animXformJoint)) {
+        return false;
+    }
 
-    PxrUsdMayaUtil::setPlugValue(
-        containerJointDep,
-        _MayaTokens->USD_isJointHierarchyRoot, true);
+    MFnDependencyNode animXformJointDep(animXformJoint, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-    return _CreateJointNodes(skelQuery, skelPath, context, joints) &&
+    // Create an atatribute to indice to export that this joint
+    // holds the transform corresponding to an animation source.
+    _CreateNumericAttribute(animXformJointDep,
+                            _MayaTokens->USD_isUsdSkelAnimTransform,
+                            MFnNumericData::kBoolean, true);
+
+    // Change the draw style of these extra joints so that they
+    // are not drawn.
+    PxrUsdMayaUtil::setPlugValue(skelXformJointDep, 
+                                 _MayaTokens->drawStyle, 2 /*None*/);
+
+    PxrUsdMayaUtil::setPlugValue(animXformJointDep, 
+                                 _MayaTokens->drawStyle, 2 /*None*/);
+
+    return _CreateJointNodes(skelQuery, animPath, context, joints) &&
            _CopyJointRestStatesFromSkel(skelQuery, *joints) &&
-           _CopyAnimFromSkel(skelQuery, containerJoint, *joints, args, context);
+           _CopyAnimFromSkel(skelQuery, skelXformJoint, animXformJoint,
+                             *joints, args, context);
 }
+
+
+bool
+PxrUsdMayaTranslatorSkel::GetJoints(const UsdSkelSkeletonQuery& skelQuery,
+                                    PxrUsdMayaPrimReaderContext* context,
+                                    VtArray<MObject>* joints)
+{
+    if (!joints) {
+        TF_CODING_ERROR("'joints' pointer is null.");
+        return false;
+    }
+
+    joints->clear();
+    joints->reserve(skelQuery.GetJointOrder().size());
+
+    SdfPath skelPath = skelQuery.GetPrim().GetPath();
+    SdfPath animPath = skelPath.AppendChild(_tokens->Animation);
+
+    for (const TfToken& joint : skelQuery.GetJointOrder()) {
+        const SdfPath jointPath = _GetJointPath(animPath, joint);
+
+        MObject jointObj;
+        if (jointPath.IsPrimPath()) {
+            jointObj = context->GetMayaNode(jointPath, false);
+        }
+        joints->push_back(jointObj);
+    }
+    return true;
+}
+
+
+namespace {
+
+
+SdfPath
+_GetBindPosePrimPath(const UsdSkelSkeletonQuery& skelQuery)
+{
+    SdfPath skelPath = skelQuery.GetPrim().GetPath();
+    return skelPath.AppendChild(TfToken(skelPath.GetName() + "_bindPose"));
+}
+
+
+} // namespace
 
 
 /* static */
@@ -624,14 +763,18 @@ PxrUsdMayaTranslatorSkel::CreateBindPose(
     MStatus status;
     MDGModifier dgMod;
 
+    SdfPath bindPosePrimPath = _GetBindPosePrimPath(skelQuery);
+
     *bindPoseNode = dgMod.createNode(_MayaTokens->dagPoseType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    status = dgMod.renameNode(*bindPoseNode, _MayaTokens->bindPose);
+
+    status = dgMod.renameNode(*bindPoseNode,
+                              MString(bindPosePrimPath.GetName().c_str()));
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MFnDependencyNode bindPoseDep(*bindPoseNode, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    context->RegisterNewMayaNode(bindPoseDep.name().asChar(), *bindPoseNode);
+    context->RegisterNewMayaNode(bindPosePrimPath.GetText(), *bindPoseNode);
 
     const size_t numJoints = joints.size();
 
@@ -721,6 +864,15 @@ PxrUsdMayaTranslatorSkel::CreateBindPose(
     return PxrUsdMayaUtil::setPlugValue(
         bindPoseDep, _MayaTokens->bindPose, true);
 }
+
+
+MObject
+PxrUsdMayaTranslatorSkel::GetBindPose(const UsdSkelSkeletonQuery& skelQuery,
+                                      PxrUsdMayaPrimReaderContext* context)
+{
+    return context->GetMayaNode(_GetBindPosePrimPath(skelQuery), false);
+}
+
 
 
 namespace {

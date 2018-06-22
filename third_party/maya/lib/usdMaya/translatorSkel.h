@@ -44,14 +44,29 @@ class UsdSkelSkinningQuery;
 
 struct PxrUsdMayaTranslatorSkel
 {
+    /// Returns true if \p joint is holding the transform of a UsdSkelSkeleton.
+    PXRUSDMAYA_API
+    static bool IsUsdSkelTransform(const MDagPath& joint);
+
+    /// Returns true if \p joint is holding the transform of a
+    /// UsdSkelSkeleton's animation source.
+    PXRUSDMAYA_API
+    static bool IsUsdSkelAnimTransform(const MDagPath& joint);
+
     /// Create joint nodes for each joint in \p skelQuery.
     /// Animation is applied to the joints if \p args enable it.
     PXRUSDMAYA_API
-    static bool CreateJoints(const UsdSkelSkeletonQuery& skelQuery,
-                             MObject& parentNode,
-                             const PxrUsdMayaPrimReaderArgs& args,
-                             PxrUsdMayaPrimReaderContext* context,
-                             VtArray<MObject>* joints);
+    static bool CreateJointHierarchy(const UsdSkelSkeletonQuery& skelQuery,
+                                     MObject& parentNode,
+                                     const PxrUsdMayaPrimReaderArgs& args,
+                                     PxrUsdMayaPrimReaderContext* context,
+                                     VtArray<MObject>* joints);
+
+    /// Find the set of MObjects joint objects for a skeleton.
+    PXRUSDMAYA_API
+    static bool GetJoints(const UsdSkelSkeletonQuery& skelQuery,
+                          PxrUsdMayaPrimReaderContext* context,
+                          VtArray<MObject>* joints);
 
     /// Create a bind psoe wired up to joint nodes created for \p skelQuery.
     PXRUSDMAYA_API
@@ -59,6 +74,11 @@ struct PxrUsdMayaTranslatorSkel
                                const VtArray<MObject>& joints,
                                PxrUsdMayaPrimReaderContext* context,
                                MObject* bindPoseNode);
+
+    /// Find the bind pose for a skeleton.   
+    PXRUSDMAYA_API
+    static MObject GetBindPose(const UsdSkelSkeletonQuery& skelQuery,
+                               PxrUsdMayaPrimReaderContext* context);
 
     /// Create a skin cluster for skinning \p primToSkin.
     /// The skinning cluster is wired up to be driven by the joints

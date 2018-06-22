@@ -54,7 +54,7 @@ class testUsdExportSkeleton(unittest.TestCase):
                        shadingMode='none', exportSkels='auto')
         stage = Usd.Stage.Open(usdFile)
 
-        skeleton = UsdSkel.Skeleton.Get(stage, '/SkelChar/Hips/Skeleton')
+        skeleton = UsdSkel.Skeleton.Get(stage, '/SkelChar/Hips')
         self.assertTrue(skeleton)
 
         joints = skeleton.GetJointsAttr().Get()
@@ -108,7 +108,10 @@ class testUsdExportSkeleton(unittest.TestCase):
         skelCache = UsdSkel.Cache()
         skelCache.Populate(root)
 
-        skelQuery = skelCache.GetSkelQuery(stage.GetPrimAtPath('/SkelChar/Hips'))
+        skel = UsdSkel.Skeleton.Get(stage, '/SkelChar/Hips')
+        self.assertTrue(skel)
+
+        skelQuery = skelCache.GetSkelQuery(skel)
         self.assertTrue(skelQuery)
 
         xfCache = UsdGeom.XformCache()

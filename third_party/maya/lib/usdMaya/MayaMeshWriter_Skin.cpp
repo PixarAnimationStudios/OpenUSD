@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 #include "usdMaya/MayaSkeletonWriter.h"
+#include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -456,13 +457,6 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
         return MObject();
     }
 
-    // Don't continue any further unless we are able to find or create a
-    // skel root that encapsulates both this mesh and the target
-    // skeleton instance.
-    const SdfPath skelInstancePath =
-        MayaSkeletonWriter::GetSkeletonInstancePath(
-            rootJoint, mWriteJobCtx.getArgs().stripNamespaces);
-
     // Write everything to USD once we know that we have OK data.
     const UsdSkelBindingAPI bindingAPI = PxrUsdMayaTranslatorUtil
         ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
@@ -480,9 +474,13 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 
     _WarnForPostDeformationTransform(getUsdPath(), getDagPath(), skinCluster);
 
-    // Export will create a SkeletonInstance at the location corresponding to
-    // the root joint. Configure this mesh to be bound to the same instance.
-    bindingAPI.CreateSkeletonInstanceRel().SetTargets({skelInstancePath});
+    const SdfPath skelPath =
+        MayaSkeletonWriter::GetSkeletonPath(
+            rootJoint, mWriteJobCtx.getArgs().stripNamespaces);
+
+    // Export will create a Skeleton at the location corresponding to
+    // the root joint. Configure this mesh to be bound to the same skel.
+    bindingAPI.CreateSkeletonRel().SetTargets({skelPath});
 
     // Add all skel primvars to the exclude set.
     // We don't want later processing to stomp on any of our data.
@@ -493,7 +491,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     // Mark the bindings for post processing.
     mWriteJobCtx.getSkelBindingsWriter().MarkBindings(
         primSchema.GetPrim().GetPath(),
-        skelInstancePath, exportSkin);
+        skelPath, exportSkin);
 
     return inMeshObj;
 }
