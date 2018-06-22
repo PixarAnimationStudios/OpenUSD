@@ -245,7 +245,8 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             bool isLeafInstancer;
 
             // Inherited attribute resolution...
-            SdfPath protoMaterialId = primAdapter->GetMaterialId(prim);
+            SdfPath protoMaterialId =
+                primAdapter->GetMaterialId(*iter);
             if (protoMaterialId.IsEmpty()) {
                 protoMaterialId = instanceMaterialId;
             }
