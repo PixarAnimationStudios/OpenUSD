@@ -74,6 +74,11 @@ UsdSkelRoot::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdSkelRoot::_GetSchemaType() const {
+    return UsdSkelRoot::schemaType;
+}
+
 /* static */
 const TfType &
 UsdSkelRoot::_GetStaticTfType()

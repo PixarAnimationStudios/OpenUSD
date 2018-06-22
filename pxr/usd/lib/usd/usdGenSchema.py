@@ -373,6 +373,19 @@ class ClassInfo(object):
         self.isPrivateApply = self.customData.get(Usd.Tokens.isPrivateApply, 
                 False)
 
+        if self.isApi and not self.isAppliedAPISchema:
+            self.schemaType = "UsdSchemaType::NonAppliedAPI";
+        elif self.isApi and self.isAppliedAPISchema and not self.isMultipleApply:
+            self.schemaType = "UsdSchemaType::SingleApplyAPI"
+        elif self.isApi and self.isAppliedAPISchema and self.isMultipleApply:
+            self.schemaType = "UsdSchemaType::MultipleApplyAPI"
+        elif self.isConcrete and self.isTyped:
+            self.schemaType = "UsdSchemaType::ConcreteTyped"
+        elif self.isTyped:
+            self.schemaType = "UsdSchemaType::AbstractTyped"
+        else:
+            self.schemaType = "UsdSchemaType::AbstractBase"
+
         if self.isConcrete and not self.isTyped:
             raise Exception(errorMsg('Schema classes must either inherit '
                                      'Typed(IsA), or neither inherit typed '

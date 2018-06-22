@@ -74,6 +74,11 @@ UsdGeomBasisCurves::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomBasisCurves::_GetSchemaType() const {
+    return UsdGeomBasisCurves::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomBasisCurves::_GetStaticTfType()

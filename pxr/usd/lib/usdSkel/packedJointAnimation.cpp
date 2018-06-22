@@ -74,6 +74,11 @@ UsdSkelPackedJointAnimation::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdSkelPackedJointAnimation::_GetSchemaType() const {
+    return UsdSkelPackedJointAnimation::schemaType;
+}
+
 /* static */
 const TfType &
 UsdSkelPackedJointAnimation::_GetStaticTfType()

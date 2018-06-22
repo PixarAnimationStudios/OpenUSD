@@ -66,18 +66,10 @@ UsdContrivedEmptyMultipleApplyAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdContrivedEmptyMultipleApplyAPI(prim, name);
 }
 
-/*virtual*/
-bool 
-UsdContrivedEmptyMultipleApplyAPI::_IsAppliedAPISchema() const 
-{
-    return true;
-}
 
-/*virtual*/
-bool 
-UsdContrivedEmptyMultipleApplyAPI::_IsMultipleApplyAPISchema() const 
-{
-    return true;
+/* virtual */
+UsdSchemaType UsdContrivedEmptyMultipleApplyAPI::_GetSchemaType() const {
+    return UsdContrivedEmptyMultipleApplyAPI::schemaType;
 }
 
 /* static */

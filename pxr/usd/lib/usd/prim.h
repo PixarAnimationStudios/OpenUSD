@@ -497,12 +497,13 @@ public:
                       "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
                       "Provided type must not be UsdAPISchemaBase.");
-        static_assert(!T::IsTyped,
-                      "Provided schema type must not be typed.");
-        static_assert(T::IsApplied,
-                      "Provided schema type must be an applied API schema.");
+        static_assert(
+            (T::schemaType == UsdSchemaType::SingleApplyAPI
+            || T::schemaType == UsdSchemaType::MultipleApplyAPI),
+            "Provided schema type must be an applied API schema.");
 
-        if (!T::IsMultipleApply && !instanceName.IsEmpty()) {
+        if (T::schemaType != UsdSchemaType::MultipleApplyAPI
+            && !instanceName.IsEmpty()) {
             TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
                 "not contain an application instanceName ( %s ).",
                 TfType::GetCanonicalTypeName(typeid(T)).c_str(),

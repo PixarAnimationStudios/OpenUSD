@@ -115,18 +115,10 @@ UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
 
     return false;
 }
-/*virtual*/
-bool 
-UsdContrivedMultipleApplyAPI::_IsAppliedAPISchema() const 
-{
-    return true;
-}
 
-/*virtual*/
-bool 
-UsdContrivedMultipleApplyAPI::_IsMultipleApplyAPISchema() const 
-{
-    return true;
+/* virtual */
+UsdSchemaType UsdContrivedMultipleApplyAPI::_GetSchemaType() const {
+    return UsdContrivedMultipleApplyAPI::schemaType;
 }
 
 /* static */

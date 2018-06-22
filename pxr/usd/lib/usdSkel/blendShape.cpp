@@ -74,6 +74,11 @@ UsdSkelBlendShape::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdSkelBlendShape::_GetSchemaType() const {
+    return UsdSkelBlendShape::schemaType;
+}
+
 /* static */
 const TfType &
 UsdSkelBlendShape::_GetStaticTfType()

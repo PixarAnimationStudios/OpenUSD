@@ -55,6 +55,11 @@ UsdAPISchemaBase::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdAPISchemaBase::_GetSchemaType() const {
+    return UsdAPISchemaBase::schemaType;
+}
+
 /* static */
 const TfType &
 UsdAPISchemaBase::_GetStaticTfType()
@@ -106,34 +111,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool 
-UsdAPISchemaBase::IsAppliedAPISchema() const
-{
-    // Invoke the virtual method that returns the answer.
-    return _IsAppliedAPISchema();
-}
-
-bool 
-UsdAPISchemaBase::IsMultipleApplyAPISchema() const
-{
-    // Invoke the virtual method that returns the answer.
-    return _IsMultipleApplyAPISchema();
-}
-
-/* virtual */
-bool 
-UsdAPISchemaBase::_IsAppliedAPISchema() const
-{
-    return false;
-}
-
-/* virtual */
-bool 
-UsdAPISchemaBase::_IsMultipleApplyAPISchema() const
-{
-    return false;
-}
 
 /* static */
 UsdPrim 

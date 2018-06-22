@@ -74,6 +74,11 @@ UsdGeomSphere::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomSphere::_GetSchemaType() const {
+    return UsdGeomSphere::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomSphere::_GetStaticTfType()

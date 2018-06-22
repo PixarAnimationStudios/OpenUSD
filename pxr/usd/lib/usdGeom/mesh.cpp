@@ -74,6 +74,11 @@ UsdGeomMesh::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomMesh::_GetSchemaType() const {
+    return UsdGeomMesh::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomMesh::_GetStaticTfType()

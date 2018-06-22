@@ -66,14 +66,6 @@ void wrapUsdAPISchemaBase()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -114,17 +106,6 @@ void wrapUsdAPISchemaBase()
 namespace {
 
 WRAP_CUSTOM {
-    _class
-        .def("IsAPISchema",
-            static_cast<bool (*)(void)>( [](){ 
-                return UsdAPISchemaBase::IsAPISchema; }))
-        .staticmethod("IsAPISchema")
-
-        .def("IsAppliedAPISchema", &UsdAPISchemaBase::IsAppliedAPISchema)
-        .def("IsMultipleApplyAPISchema", 
-             &UsdAPISchemaBase::IsMultipleApplyAPISchema)
-
-    ;
 }
 
 }

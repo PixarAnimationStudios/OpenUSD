@@ -74,6 +74,11 @@ UsdLuxDistantLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdLuxDistantLight::_GetSchemaType() const {
+    return UsdLuxDistantLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxDistantLight::_GetStaticTfType()

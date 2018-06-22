@@ -154,6 +154,29 @@ enum UsdLoadPolicy {
     UsdLoadWithoutDescendants
 };
 
+/// \enum UsdSchemaType
+///
+/// An enum representing which type of schema a given schema class belongs to
+///
+enum class UsdSchemaType {
+    /// Represents abstract or base schema types that are interface-only
+    /// and cannot be instantiated. These are reserved for core base classes
+    /// known to the usdGenSchema system, so this should never be assigned to
+    /// generated schema classes.
+    AbstractBase,
+    /// Represents a non-concrete typed schema
+    AbstractTyped,
+    /// Represents a concrete typed schema
+    ConcreteTyped,
+    /// Non-applied API schema
+    NonAppliedAPI,
+    /// Single Apply API schema
+    SingleApplyAPI,
+    /// Multiple Apply API Schema
+    MultipleApplyAPI
+    
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

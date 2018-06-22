@@ -794,15 +794,24 @@ class TestUsdPrim(unittest.TestCase):
                 s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
 
     def test_AppliedSchemas(self):
-        self.assertTrue(Usd.ModelAPI.IsAPISchema())
-        self.assertTrue(Usd.ClipsAPI.IsAPISchema())
-        self.assertTrue(Usd.CollectionAPI.IsAPISchema())
+        self.assertTrue(Usd.ModelAPI().IsAPISchema())
+        self.assertTrue(Usd.ClipsAPI().IsAPISchema())
+        self.assertTrue(Usd.CollectionAPI().IsAPISchema())
 
-        self.assertFalse(Usd.ModelAPI.IsApplied())
-        self.assertFalse(Usd.ClipsAPI.IsApplied())
-        self.assertTrue(Usd.CollectionAPI.IsApplied())
+        self.assertFalse(Usd.ModelAPI().IsAppliedAPISchema())
+        self.assertFalse(Usd.ClipsAPI().IsAppliedAPISchema())
+        self.assertTrue(Usd.CollectionAPI().IsAppliedAPISchema())
 
-        self.assertTrue(Usd.CollectionAPI.IsMultipleApply())
+        self.assertTrue(Usd.CollectionAPI().IsMultipleApplyAPISchema())
+
+        self.assertTrue(
+            Usd.CollectionAPI().GetSchemaType() == Usd.SchemaType.MultipleApplyAPI)
+        self.assertTrue(
+            Usd.CollectionAPI().GetSchemaType() != Usd.SchemaType.SingleApplyAPI)
+        self.assertTrue(
+            Usd.ModelAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
+        self.assertTrue(
+            Usd.ClipsAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
 
         for fmt in allFormats:
             sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)

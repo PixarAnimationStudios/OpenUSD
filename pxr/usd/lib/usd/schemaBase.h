@@ -57,16 +57,50 @@ class UsdSchemaBase {
     typedef const Usd_PrimDataHandle UsdSchemaBase::*_UnspecifiedBoolType;
 
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType in usd/common.h
+    static const UsdSchemaType schemaType = UsdSchemaType::AbstractBase;
 
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = false;
+    /// Returns whether or not this class corresponds to a concrete instantiable
+    /// prim type in scene description.  If this is true,
+    /// GetStaticPrimDefinition() will return a valid prim definition with
+    /// a non-empty typeName.
+    bool IsConcrete() const {
+        return _GetSchemaType() == UsdSchemaType::ConcreteTyped;
+    }
+
+    /// Returns whether or not this class inherits from UsdTyped. Types which
+    /// inherit from UsdTyped can impart a typename on a UsdPrim.
+    bool IsTyped() const {
+        return _GetSchemaType() == UsdSchemaType::ConcreteTyped
+            || _GetSchemaType() == UsdSchemaType::AbstractTyped;
+    }
+
+    /// Returns whether this is an API schema or not.
+    bool IsAPISchema() const {
+        return _GetSchemaType() == UsdSchemaType::NonAppliedAPI
+            || _GetSchemaType() == UsdSchemaType::SingleApplyAPI
+            || _GetSchemaType() == UsdSchemaType::MultipleApplyAPI;
+    }
+
+    /// Returns whether this is an applied API schema or not. If this returns
+    /// true this class will have an Apply() method
+    bool IsAppliedAPISchema() const {
+        return _GetSchemaType() == UsdSchemaType::SingleApplyAPI
+            || _GetSchemaType() == UsdSchemaType::MultipleApplyAPI;
+    }
+
+    /// Returns whether this is an applied API schema or not. If this returns
+    /// true the constructor, Get and Apply methods of this class will take
+    /// in the name of the API schema instance.
+    bool IsMultipleApplyAPISchema() const {
+        return _GetSchemaType() == UsdSchemaType::MultipleApplyAPI;
+    }
+
+    UsdSchemaType GetSchemaType() const {
+        return _GetSchemaType();
+    }
 
     /// Construct and store \p prim as the held prim.
     USD_API
@@ -133,6 +167,12 @@ public:
     }
 
 protected:
+    /// Returns the type of schema this class is.
+    ///
+    /// \sa UsdSchemaBase::schemaType
+    virtual UsdSchemaType _GetSchemaType() const {
+        return schemaType;
+    }
     // Helper for subclasses to get the TfType for this schema object's dynamic
     // C++ type.
     const TfType &_GetType() const {

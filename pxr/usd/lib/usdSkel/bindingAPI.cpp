@@ -60,11 +60,10 @@ UsdSkelBindingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdSkelBindingAPI(stage->GetPrimAtPath(path));
 }
 
-/*virtual*/
-bool 
-UsdSkelBindingAPI::_IsAppliedAPISchema() const 
-{
-    return true;
+
+/* virtual */
+UsdSchemaType UsdSkelBindingAPI::_GetSchemaType() const {
+    return UsdSkelBindingAPI::schemaType;
 }
 
 /* static */

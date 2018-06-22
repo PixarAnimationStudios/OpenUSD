@@ -29,6 +29,8 @@
 #include "pxr/base/tf/pyEnum.h"
 
 #include <boost/python/def.hpp>
+#include <boost/python/enum.hpp>
+
 
 using namespace boost::python;
 
@@ -45,4 +47,13 @@ void wrapUsdCommon()
 
     TfPyWrapEnum<UsdListPosition>();
     TfPyWrapEnum<UsdLoadPolicy>();
+
+    enum_<UsdSchemaType>("SchemaType")
+        .value("AbstractBase", UsdSchemaType::AbstractBase)
+        .value("AbstractTyped", UsdSchemaType::AbstractTyped)
+        .value("ConcreteTyped", UsdSchemaType::ConcreteTyped)
+        .value("NonAppliedAPI", UsdSchemaType::NonAppliedAPI)
+        .value("SingleApplyAPI", UsdSchemaType::SingleApplyAPI)
+        .value("MultipleApplyAPI", UsdSchemaType::MultipleApplyAPI)
+    ;
 }

@@ -61,6 +61,11 @@ UsdGeomPrimvarsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdGeomPrimvarsAPI::_GetSchemaType() const {
+    return UsdGeomPrimvarsAPI::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomPrimvarsAPI::_GetStaticTfType()

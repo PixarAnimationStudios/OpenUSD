@@ -60,11 +60,10 @@ UsdLuxListAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdLuxListAPI(stage->GetPrimAtPath(path));
 }
 
-/*virtual*/
-bool 
-UsdLuxListAPI::_IsAppliedAPISchema() const 
-{
-    return true;
+
+/* virtual */
+UsdSchemaType UsdLuxListAPI::_GetSchemaType() const {
+    return UsdLuxListAPI::schemaType;
 }
 
 /* static */

@@ -151,27 +151,10 @@ class SdfAssetPath;
 class UsdCollectionAPI : public UsdAPISchemaBase
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = false;
-
-    /// Compile-time constant indicating whether or not this class represents an 
-    /// applied API schema, i.e. an API schema that has to be applied to a prim
-    /// with a call to auto-generated Apply() method before any schema 
-    /// properties are authored.
-    static const bool IsApplied = true;
-    
-    /// Compile-time constant indicating whether or not this class represents a 
-    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
-    /// to the same prim multiple times with different instance names. 
-    static const bool IsMultipleApply = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::MultipleApplyAPI;
 
     /// Construct a UsdCollectionAPI on UsdPrim \p prim with
     /// name \p name . Equivalent to
@@ -272,6 +255,13 @@ private:
     static UsdCollectionAPI 
     _Apply(const UsdPrim &prim, const TfToken &name);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USD_API
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -283,16 +273,6 @@ private:
     // override SchemaBase virtuals.
     USD_API
     virtual const TfType &_GetTfType() const;
-
-    // This override returns true since UsdCollectionAPI is an 
-    // applied API schema.
-    USD_API
-    virtual bool _IsAppliedAPISchema() const override;
-
-    // This override returns true since UsdCollectionAPI is a multiple-
-    // apply API schema.
-    USD_API
-    virtual bool _IsMultipleApplyAPISchema() const override;
 
 public:
     // --------------------------------------------------------------------- //

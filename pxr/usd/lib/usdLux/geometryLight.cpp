@@ -74,6 +74,11 @@ UsdLuxGeometryLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdLuxGeometryLight::_GetSchemaType() const {
+    return UsdLuxGeometryLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxGeometryLight::_GetStaticTfType()

@@ -60,11 +60,10 @@ UsdLuxShadowAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdLuxShadowAPI(stage->GetPrimAtPath(path));
 }
 
-/*virtual*/
-bool 
-UsdLuxShadowAPI::_IsAppliedAPISchema() const 
-{
-    return true;
+
+/* virtual */
+UsdSchemaType UsdLuxShadowAPI::_GetSchemaType() const {
+    return UsdLuxShadowAPI::schemaType;
 }
 
 /* static */

@@ -74,6 +74,11 @@ UsdRiPxrAovLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiPxrAovLight::_GetSchemaType() const {
+    return UsdRiPxrAovLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiPxrAovLight::_GetStaticTfType()

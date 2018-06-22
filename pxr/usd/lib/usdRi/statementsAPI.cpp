@@ -60,11 +60,10 @@ UsdRiStatementsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiStatementsAPI(stage->GetPrimAtPath(path));
 }
 
-/*virtual*/
-bool 
-UsdRiStatementsAPI::_IsAppliedAPISchema() const 
-{
-    return true;
+
+/* virtual */
+UsdSchemaType UsdRiStatementsAPI::_GetSchemaType() const {
+    return UsdRiStatementsAPI::schemaType;
 }
 
 /* static */

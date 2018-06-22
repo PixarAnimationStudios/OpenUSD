@@ -117,18 +117,10 @@ UsdCollectionAPI::IsCollectionAPIPath(
 
     return false;
 }
-/*virtual*/
-bool 
-UsdCollectionAPI::_IsAppliedAPISchema() const 
-{
-    return true;
-}
 
-/*virtual*/
-bool 
-UsdCollectionAPI::_IsMultipleApplyAPISchema() const 
-{
-    return true;
+/* virtual */
+UsdSchemaType UsdCollectionAPI::_GetSchemaType() const {
+    return UsdCollectionAPI::schemaType;
 }
 
 /* static */

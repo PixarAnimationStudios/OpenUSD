@@ -74,6 +74,11 @@ UsdSkelSkeleton::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdSkelSkeleton::_GetSchemaType() const {
+    return UsdSkelSkeleton::schemaType;
+}
+
 /* static */
 const TfType &
 UsdSkelSkeleton::_GetStaticTfType()

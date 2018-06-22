@@ -160,22 +160,12 @@ bool
     return false;
 }
 {% endif %}
-{% if cls.isAppliedAPISchema %}
-/*virtual*/
-bool 
-{{ cls.cppClassName }}::_IsAppliedAPISchema() const 
-{
-    return true;
-}
-{% if cls.isMultipleApply %}
 
-/*virtual*/
-bool 
-{{ cls.cppClassName }}::_IsMultipleApplyAPISchema() const 
-{
-    return true;
+/* virtual */
+UsdSchemaType {{ cls.cppClassName }}::_GetSchemaType() const {
+    return {{ cls.cppClassName }}::schemaType;
 }
-{% endif %}
+{% if cls.isAppliedAPISchema %}
 
 /* static */
 {{ cls.cppClassName }}

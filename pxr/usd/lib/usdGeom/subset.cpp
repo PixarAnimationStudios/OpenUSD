@@ -74,6 +74,11 @@ UsdGeomSubset::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomSubset::_GetSchemaType() const {
+    return UsdGeomSubset::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomSubset::_GetStaticTfType()

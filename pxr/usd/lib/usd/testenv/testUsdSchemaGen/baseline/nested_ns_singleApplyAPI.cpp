@@ -60,11 +60,10 @@ UsdContrivedSingleApplyAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdContrivedSingleApplyAPI(stage->GetPrimAtPath(path));
 }
 
-/*virtual*/
-bool 
-UsdContrivedSingleApplyAPI::_IsAppliedAPISchema() const 
-{
-    return true;
+
+/* virtual */
+UsdSchemaType UsdContrivedSingleApplyAPI::_GetSchemaType() const {
+    return UsdContrivedSingleApplyAPI::schemaType;
 }
 
 /* static */

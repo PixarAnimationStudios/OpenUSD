@@ -74,6 +74,11 @@ UsdSkelAnimation::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdSkelAnimation::_GetSchemaType() const {
+    return UsdSkelAnimation::schemaType;
+}
+
 /* static */
 const TfType &
 UsdSkelAnimation::_GetStaticTfType()

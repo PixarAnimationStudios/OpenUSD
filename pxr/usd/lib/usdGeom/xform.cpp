@@ -74,6 +74,11 @@ UsdGeomXform::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomXform::_GetSchemaType() const {
+    return UsdGeomXform::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomXform::_GetStaticTfType()

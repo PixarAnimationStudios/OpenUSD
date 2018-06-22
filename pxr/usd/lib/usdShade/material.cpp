@@ -74,6 +74,11 @@ UsdShadeMaterial::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdShadeMaterial::_GetSchemaType() const {
+    return UsdShadeMaterial::schemaType;
+}
+
 /* static */
 const TfType &
 UsdShadeMaterial::_GetStaticTfType()

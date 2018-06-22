@@ -74,6 +74,11 @@ UsdLuxLightFilter::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdLuxLightFilter::_GetSchemaType() const {
+    return UsdLuxLightFilter::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxLightFilter::_GetStaticTfType()

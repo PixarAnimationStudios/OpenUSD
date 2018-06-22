@@ -74,6 +74,11 @@ UsdShadeNodeGraph::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdShadeNodeGraph::_GetSchemaType() const {
+    return UsdShadeNodeGraph::schemaType;
+}
+
 /* static */
 const TfType &
 UsdShadeNodeGraph::_GetStaticTfType()

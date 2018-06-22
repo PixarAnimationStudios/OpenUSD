@@ -55,6 +55,11 @@ UsdLuxLight::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdLuxLight::_GetSchemaType() const {
+    return UsdLuxLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxLight::_GetStaticTfType()

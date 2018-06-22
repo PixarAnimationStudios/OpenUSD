@@ -77,29 +77,10 @@ class SdfAssetPath;
 class {{ cls.cppClassName }} : public {{ cls.parentCppClassName }}
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = {{ "true" if cls.isConcrete else "false" }};
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = {{ "true" if cls.isTyped else "false" }};
-{% if cls.isApi %}
-
-    /// Compile-time constant indicating whether or not this class represents an 
-    /// applied API schema, i.e. an API schema that has to be applied to a prim
-    /// with a call to auto-generated Apply() method before any schema 
-    /// properties are authored.
-    static const bool IsApplied = {{ "true" if cls.isAppliedAPISchema else "false" }};
-    
-    /// Compile-time constant indicating whether or not this class represents a 
-    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
-    /// to the same prim multiple times with different instance names. 
-    static const bool IsMultipleApply = {{ "true" if cls.isMultipleApply else "false" }};
-{% endif %}
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = {{cls.schemaType }};
 
 {% if cls.isMultipleApply %}
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim with
@@ -319,6 +300,15 @@ private:
 {% endif %}
 {% endif %}
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -335,24 +325,6 @@ private:
     {% endif -%}
     virtual const TfType &_GetTfType() const;
 
-{% if cls.isAppliedAPISchema %}
-    // This override returns true since {{ cls.cppClassName }} is an 
-    // applied API schema.
-    {% if useExportAPI -%}
-    {{ Upper(libraryName) }}_API
-    {% endif -%}
-    virtual bool _IsAppliedAPISchema() const override;
-
-{% endif %}
-{% if cls.isMultipleApply %}
-    // This override returns true since {{ cls.cppClassName }} is a multiple-
-    // apply API schema.
-    {% if useExportAPI -%}
-    {{ Upper(libraryName) }}_API
-    {% endif -%}
-    virtual bool _IsMultipleApplyAPISchema() const override;
-
-{% endif %}
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName]%}
 {# Only emit Create/Get API and doxygen if apiName is not empty string. #}

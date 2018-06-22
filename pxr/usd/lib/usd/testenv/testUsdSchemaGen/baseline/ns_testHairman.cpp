@@ -74,6 +74,11 @@ UsdContrivedTestHairman::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdContrivedTestHairman::_GetSchemaType() const {
+    return UsdContrivedTestHairman::schemaType;
+}
+
 /* static */
 const TfType &
 UsdContrivedTestHairman::_GetStaticTfType()

@@ -60,11 +60,10 @@ UsdGeomModelAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdGeomModelAPI(stage->GetPrimAtPath(path));
 }
 
-/*virtual*/
-bool 
-UsdGeomModelAPI::_IsAppliedAPISchema() const 
-{
-    return true;
+
+/* virtual */
+UsdSchemaType UsdGeomModelAPI::_GetSchemaType() const {
+    return UsdGeomModelAPI::schemaType;
 }
 
 /* static */
