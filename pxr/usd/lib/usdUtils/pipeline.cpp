@@ -236,5 +236,10 @@ TfToken UsdUtilsGetPrimaryUVSetName()
     return TfToken("st");
 }
 
+TfToken UsdUtilsGetPrefName()
+{
+    return TfToken("pref");
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

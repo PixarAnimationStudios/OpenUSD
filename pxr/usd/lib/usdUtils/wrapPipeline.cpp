@@ -47,4 +47,5 @@ void wrapPipeline()
     def("UninstancePrimAtPath", UsdUtilsUninstancePrimAtPath, 
         (arg("stage"), arg("path")));
     def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName);
+    def("GetPrefName", UsdUtilsGetPrefName);
 }

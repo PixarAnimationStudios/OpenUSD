@@ -239,6 +239,9 @@ PxrUsdMayaJobExportArgs::PxrUsdMayaJobExportArgs(
             _Boolean(userArgs, PxrUsdExportJobArgsTokens->exportUVs)),
         exportNurbsExplicitUV(
             _Boolean(userArgs, PxrUsdExportJobArgsTokens->exportUVs)),
+        exportReferenceObjects(
+            _Boolean(userArgs,
+                PxrUsdExportJobArgsTokens->exportReferenceObjects)),
         exportRefsAsInstanceable(
             _Boolean(userArgs,
                 PxrUsdExportJobArgsTokens->exportRefsAsInstanceable)),
@@ -288,6 +291,7 @@ PxrUsdMayaJobExportArgs::PxrUsdMayaJobExportArgs(
                 PxrUsdExportJobArgsTokens->shadingMode,
                 PxrUsdMayaShadingModeTokens->none,
                 PxrUsdMayaShadingModeRegistry::ListExporters())),
+
         chaserNames(
             _Vector<std::string>(userArgs, PxrUsdExportJobArgsTokens->chaser)),
         allChaserArgs(
@@ -395,6 +399,7 @@ const VtDictionary& PxrUsdMayaJobExportArgs::GetDefaultDictionary()
         d[PxrUsdExportJobArgsTokens->exportDisplayColor] = true;
         d[PxrUsdExportJobArgsTokens->exportInstances] = true;
         d[PxrUsdExportJobArgsTokens->exportMaterialCollections] = false;
+        d[PxrUsdExportJobArgsTokens->exportReferenceObjects] = false;
         d[PxrUsdExportJobArgsTokens->exportRefsAsInstanceable] = false;
         d[PxrUsdExportJobArgsTokens->exportSkin] =
                 PxrUsdExportJobArgsTokens->none.GetString();

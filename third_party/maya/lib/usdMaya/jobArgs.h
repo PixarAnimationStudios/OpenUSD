@@ -63,6 +63,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
     (exportDisplayColor) \
     (exportInstances) \
     (exportMaterialCollections) \
+    (exportReferenceObjects) \
     (exportRefsAsInstanceable) \
     (exportSkels) \
     (exportSkin) \
@@ -121,6 +122,7 @@ struct PxrUsdMayaJobExportArgs
     const bool exportMaterialCollections;
     const bool exportMeshUVs;
     const bool exportNurbsExplicitUV;
+    const bool exportReferenceObjects;
     const bool exportRefsAsInstanceable;
     const TfToken exportSkels;
     const TfToken exportSkin;
