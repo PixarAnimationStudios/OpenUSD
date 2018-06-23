@@ -544,9 +544,7 @@ struct _NameChildrenPred
         // index will be used as a source for a master prim.
         if (index.IsInstanceable()) {
             const bool indexUsedAsMasterSource = 
-                _instanceCache->RegisterInstancePrimIndex(index)
-                || !_instanceCache->GetMasterUsingPrimIndexPath(
-                    index.GetPath()).IsEmpty();
+                _instanceCache->RegisterInstancePrimIndex(index);
             return indexUsedAsMasterSource;
         }
 
