@@ -325,39 +325,51 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     if(!prim.IsA<UsdGeomMesh>())
         return;
 
-    TfToken token; VtIntArray iarray; VtFloatArray farray;
+    TfToken interpolationRule =
+        _Get<TfToken>(prim, UsdGeomTokens->interpolateBoundary, time);
+    if (interpolationRule.IsEmpty()) {
+        interpolationRule = UsdGeomTokens->edgeAndCorner;
+    }
+    tags->SetVertexInterpolationRule(interpolationRule);
 
-    _GetPtr(prim, UsdGeomTokens->interpolateBoundary, time, &token);
-    tags->SetVertexInterpolationRule(token);
-
-    auto meshPrim = UsdGeomMesh(prim);
-    auto fvLinearInterpAttr = meshPrim.GetFaceVaryingLinearInterpolationAttr();
-    fvLinearInterpAttr.Get(&token, time); 
-
-    tags->SetFaceVaryingInterpolationRule(token);
+    TfToken faceVaryingRule = _Get<TfToken>(
+        prim, UsdGeomTokens->faceVaryingLinearInterpolation, time);
+    if (faceVaryingRule.IsEmpty()) {
+        faceVaryingRule = UsdGeomTokens->cornersPlus1;
+    }
+    tags->SetFaceVaryingInterpolationRule(faceVaryingRule);
 
     // XXX uncomment after fixing USD schema
+    // TfToken creaseMethod =
+    //     _Get<TfToken>(prim, UsdGeomTokens->creaseMethod, time);
+    // tags->SetCreaseMethod(creaseMethod);
 
-    //_GetPtr(prim, UsdGeomTokens->creaseMethod, time, &token);
-    //tags->SetCreaseMethod(token);
+    TfToken triangleRule =
+        _Get<TfToken>(prim, UsdGeomTokens->triangleSubdivisionRule, time);
+    if (triangleRule.IsEmpty()) {
+        triangleRule = UsdGeomTokens->catmullClark;
+    }
+    tags->SetTriangleSubdivision(triangleRule);
 
-    _GetPtr(prim, UsdGeomTokens->triangleSubdivisionRule, time, &token);
-    tags->SetTriangleSubdivision(token);
+    VtIntArray creaseIndices =
+        _Get<VtIntArray>(prim, UsdGeomTokens->creaseIndices, time);
+    tags->SetCreaseIndices(creaseIndices);
 
-    _GetPtr(prim, UsdGeomTokens->creaseIndices, time, &iarray);
-    tags->SetCreaseIndices(iarray);
+    VtIntArray creaseLengths =
+        _Get<VtIntArray>(prim, UsdGeomTokens->creaseLengths, time);
+    tags->SetCreaseLengths(creaseLengths);
 
-    _GetPtr(prim, UsdGeomTokens->creaseLengths, time, &iarray);
-    tags->SetCreaseLengths(iarray);
+    VtFloatArray creaseSharpnesses =
+        _Get<VtFloatArray>(prim, UsdGeomTokens->creaseSharpnesses, time);
+    tags->SetCreaseWeights(creaseSharpnesses);
 
-    _GetPtr(prim, UsdGeomTokens->creaseSharpnesses, time, &farray);
-    tags->SetCreaseWeights(farray);
+    VtIntArray cornerIndices =
+        _Get<VtIntArray>(prim, UsdGeomTokens->cornerIndices, time);
+    tags->SetCornerIndices(cornerIndices);
 
-    _GetPtr(prim, UsdGeomTokens->cornerIndices, time, &iarray);
-    tags->SetCornerIndices(iarray);
-
-    _GetPtr(prim, UsdGeomTokens->cornerSharpnesses, time, &farray);
-    tags->SetCornerWeights(farray);
+    VtFloatArray cornerSharpnesses =
+        _Get<VtFloatArray>(prim, UsdGeomTokens->cornerSharpnesses, time);
+    tags->SetCornerWeights(cornerSharpnesses);
 }
 
 
