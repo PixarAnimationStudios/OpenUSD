@@ -49,6 +49,7 @@
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -1276,7 +1277,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                          HdStDrawItem *drawItem,
-                                         const HdMeshReprDesc &desc)
+                                         const HdMeshReprDesc &desc,
+                                         size_t drawItemIdForDesc)
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
@@ -1350,6 +1352,16 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     bool useCustomDisplacement =
         hasCustomDisplacementTerminal && desc.useCustomDisplacement;
 
+    // The edge geomstyles below are rasterized as lines.
+    // See HdSt_GeometricShader::BindResources()
+    bool rasterizedAsLines = 
+         (desc.geomStyle == HdMeshGeomStyleEdgeOnly ||
+         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly);
+    bool discardIfNotActiveSelected = rasterizedAsLines && 
+                                     (drawItemIdForDesc == 1);
+    bool discardIfNotRolloverSelected = rasterizedAsLines && 
+                                     (drawItemIdForDesc == 2);
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  desc.shadingTerminal,
@@ -1360,7 +1372,9 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  blendWireframeColor,
                                  cullStyle,
                                  geomStyle,
-                                 desc.lineWidth);
+                                 desc.lineWidth,
+                                 discardIfNotActiveSelected,
+                                 discardIfNotRolloverSelected);
 
     HdStResourceRegistrySharedPtr resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(
@@ -1433,6 +1447,38 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     return bits;
 }
 
+static
+size_t _GetNumDrawItemsForDesc(HdMeshReprDesc const& reprDesc)
+{
+    // By default, each repr desc item maps to 1 draw item
+    size_t numDrawItems = 1;
+    switch (reprDesc.geomStyle) {
+    case HdMeshGeomStyleInvalid:
+        numDrawItems = 0;
+        break;
+
+    // The edge geomstyles (below) result in geometry rasterized as lines.
+    // This has an interesting and unfortunate limitation in that a
+    // shared edge corresponds to the face that was drawn first/last
+    // (depending on the depth test), and hence, cannot be uniquely
+    // identified.
+    // For face selection highlighting, this means that only a subset of the
+    // edges of a selected face may be highlighted.
+    // In order to support correct face selection highlighting, we draw the
+    // geometry two more times (one for each selection mode), discarding
+    // fragments that don't correspond to a selected face in that mode.
+    case HdMeshGeomStyleHullEdgeOnly:
+    case HdMeshGeomStyleEdgeOnly:
+        numDrawItems += HdSelection::HighlightModeCount;
+        break;
+
+    default:
+        break;
+    }
+
+    return numDrawItems;
+}
+
 void
 HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 {
@@ -1454,47 +1500,59 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
             const HdMeshReprDesc &desc = descs[descIdx];
 
-            if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
+            size_t numDrawItems = _GetNumDrawItemsForDesc(desc);
+            if (numDrawItems == 0) continue;
 
-            // redirect hull topology to extra slot
-            HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
-            repr->AddDrawItem(drawItem);
-            HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
+            for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
+                HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+                repr->AddDrawItem(drawItem);
+                HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
 
-            if (desc.geomStyle == HdMeshGeomStyleHull         ||
-                desc.geomStyle == HdMeshGeomStyleHullEdgeOnly ||
-                desc.geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
-
-                drawingCoord->SetTopologyIndex(HdStMesh::HullTopology);
-                if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
-                    _customDirtyBitsInUse |= DirtyHullIndices;
-                    *dirtyBits |= DirtyHullIndices;
+                switch (desc.geomStyle) {
+                case HdMeshGeomStyleHull:
+                case HdMeshGeomStyleHullEdgeOnly:
+                case HdMeshGeomStyleHullEdgeOnSurf:
+                {
+                    drawingCoord->SetTopologyIndex(HdStMesh::HullTopology);
+                    if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
+                        _customDirtyBitsInUse |= DirtyHullIndices;
+                        *dirtyBits |= DirtyHullIndices;
+                    }
+                    break;
                 }
 
-            } else if (desc.geomStyle == HdMeshGeomStylePoints) {
-                // in the current implementation, we use topology(DrawElements)
-                // for points too, to draw a subset of vertex primvars
-                // (not that the points may be followed by the refined vertices)
-                drawingCoord->SetTopologyIndex(HdStMesh::PointsTopology);
-                if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
-                    _customDirtyBitsInUse |= DirtyPointsIndices;
-                    *dirtyBits |= DirtyPointsIndices;
+                case HdMeshGeomStylePoints:
+                {
+                    // in the current implementation, we use topology
+                    // for points too, to draw a subset of vertex primvars
+                    // (note that the points may be followed by the refined
+                    // vertices)
+                    drawingCoord->SetTopologyIndex(HdStMesh::PointsTopology);
+                    if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
+                        _customDirtyBitsInUse |= DirtyPointsIndices;
+                        *dirtyBits |= DirtyPointsIndices;
+                    }
+                    break;
                 }
-            } else {
-                if (!(_customDirtyBitsInUse & DirtyIndices)) {
-                    _customDirtyBitsInUse |= DirtyIndices;
-                    *dirtyBits |= DirtyIndices;
-                }
-            }
-            if (desc.smoothNormals) {
-                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
-                    _customDirtyBitsInUse |= DirtySmoothNormals;
-                    *dirtyBits |= DirtySmoothNormals;
-                }
-            }
-        }
-    }
 
+                default:
+                {
+                    if (!(_customDirtyBitsInUse & DirtyIndices)) {
+                        _customDirtyBitsInUse |= DirtyIndices;
+                        *dirtyBits |= DirtyIndices;
+                    }
+                }
+                }
+
+                if (desc.smoothNormals) {
+                    if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
+                        _customDirtyBitsInUse |= DirtySmoothNormals;
+                        *dirtyBits |= DirtySmoothNormals;
+                    }
+                }
+            } // for each draw item
+        } // for each repr desc for the repr
+    } // if new repr
 }
 
 void
@@ -1552,8 +1610,10 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
-
-        if (desc.geomStyle != HdMeshGeomStyleInvalid) {
+        size_t numDrawItems = _GetNumDrawItemsForDesc(desc);
+        if (numDrawItems == 0) continue;
+        
+        for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 curRepr->GetDrawItem(drawItemIndex++));
 
@@ -1590,20 +1650,22 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
             int drawItemIndex = 0;
             for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-                if (descs[descIdx].geomStyle == HdMeshGeomStyleInvalid) {
-                    continue;
-                }
-                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                size_t numDrawItems = _GetNumDrawItemsForDesc(descs[descIdx]);
+                if (numDrawItems == 0) continue;
+
+                for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
+                    HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                     repr->GetDrawItem(drawItemIndex++));
 
-                if (needsSetMaterialShader) {
-                    drawItem->SetMaterialShaderFromRenderIndex(
-                        renderIndex, materialId, mixinSource);
-                }
-                if (needsSetGeometricShader) {
-                    _UpdateDrawItemGeometricShader(sceneDelegate,
-                        drawItem, descs[descIdx]);
-                }
+                    if (needsSetMaterialShader) {
+                        drawItem->SetMaterialShaderFromRenderIndex(
+                            renderIndex, materialId, mixinSource);
+                    }
+                    if (needsSetGeometricShader) {
+                        _UpdateDrawItemGeometricShader(sceneDelegate,
+                            drawItem, descs[descIdx], itemId);
+                    }
+                }               
             }
         }
     }

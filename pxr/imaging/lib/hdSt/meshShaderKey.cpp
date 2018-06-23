@@ -55,6 +55,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
     ((patchEdgeOnSurfFS,       "MeshPatchWire.Fragment.EdgeOnSurface"))
+    
+    ((edgeNoFilterFS,          "MeshWire.Fragment.NoFilter"))
+    ((edgeSelActiveFilterFS,   "MeshWire.Fragment.FilterElementSelActive"))
+    ((edgeSelRolloverFilterFS, "MeshWire.Fragment.FilterElementSelRollover"))
+
+    // selection decoding
+    ((selDecodeUtils,          "Selection.DecodeUtils"))
+    ((selPointSelVS,           "Selection.Vertex.PointSel"))
+    ((selElementSelFS,         "Selection.Fragment.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
     ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
@@ -66,8 +75,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     // point id mixins (for point picking & selection)
     ((pointIdNoneVS,           "PointId.Vertex.None"))
     ((pointIdVS,               "PointId.Vertex.PointParam"))
-    ((pointIdSelDecodeUtilsVS, "Selection.DecodeUtils"))
-    ((pointIdSelPointSelVS,    "Selection.Vertex.PointSel"))
     ((pointIdFallbackFS,       "PointId.Fragment.Fallback"))
     ((pointIdFS,               "PointId.Fragment.PointParam"))
 
@@ -106,7 +113,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
-    float lineWidth)
+    float lineWidth,
+    bool discardIfNotActiveSelected /*=false*/,
+    bool discardIfNotRolloverSelected /*=false*/)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
@@ -133,8 +142,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         // Even though these are more "render pass-ish", we do this here to
         // reduce the shader code generated when the points repr isn't used.
         VS[vsIndex++] = _tokens->pointIdVS;
-        VS[vsIndex++] = _tokens->pointIdSelDecodeUtilsVS;
-        VS[vsIndex++] = _tokens->pointIdSelPointSelVS;
+        VS[vsIndex++] = _tokens->selDecodeUtils;
+        VS[vsIndex++] = _tokens->selPointSelVS;
     } else {
         VS[vsIndex++] =  _tokens->pointIdNoneVS;
     }
@@ -198,28 +207,48 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
 
     // fragment shader
-    FS[0] = _tokens->instancing;
-    FS[1] = (smoothNormals ? _tokens->smooth
+     uint8_t fsIndex = 0;
+    FS[fsIndex++] = _tokens->instancing;
+    FS[fsIndex++] = (smoothNormals ? _tokens->smooth
                            : _tokens->flat);
-    FS[2] = (doubleSided   ? _tokens->doubleSidedFS
+    FS[fsIndex++] = (doubleSided   ? _tokens->doubleSidedFS
                            : _tokens->singleSidedFS);
-    if (isPrimTypePatches) {
-        FS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
-                  geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->patchEdgeOnlyFS
-              : ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||
-                  geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
-                                                              : _tokens->edgeNoneFS));
-    } else {
-        if (geomStyle == HdMeshGeomStyleEdgeOnly ||
-            geomStyle == HdMeshGeomStyleHullEdgeOnly) {
-            FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
-                                        : _tokens->edgeOnlyNoBlendFS;
-        } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
-                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
-            FS[3] = _tokens->edgeOnSurfFS;
+
+    if ((geomStyle == HdMeshGeomStyleEdgeOnly ||
+         geomStyle == HdMeshGeomStyleHullEdgeOnly)) {
+
+        if (discardIfNotActiveSelected) {
+            // We don't add 'selDecodeUtils' because it is part of the
+            // render pass' FS mixin.
+            FS[fsIndex++] = _tokens->selElementSelFS;
+            FS[fsIndex++] = _tokens->edgeSelActiveFilterFS;
+        } else if (discardIfNotRolloverSelected) {
+            // We don't add 'selDecodeUtils' because it is part of the
+            // render pass' FS mixin.
+            FS[fsIndex++] = _tokens->selElementSelFS;
+            FS[fsIndex++] = _tokens->edgeSelRolloverFilterFS;
         } else {
-            FS[3] = _tokens->edgeNoneFS;
+            FS[fsIndex++] = _tokens->edgeNoFilterFS;
         }
+
+        if (isPrimTypePatches) {
+            FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
+        } else {
+            FS[fsIndex++] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
+                                        : _tokens->edgeOnlyNoBlendFS;
+        }
+
+    } else if ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||
+                geomStyle == HdMeshGeomStyleHullEdgeOnSurf)) {
+
+        if (isPrimTypePatches) {
+            FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
+        } else {
+            FS[fsIndex++] = _tokens->edgeOnSurfFS;
+        }
+
+    } else {
+        FS[fsIndex++] = _tokens->edgeNoneFS;
     }
 
     TfToken terminalFS;
@@ -243,11 +272,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->surfaceFS;
     }
 
-    FS[4] = terminalFS;
-    FS[5] = _tokens->commonFS;
+    FS[fsIndex++] = terminalFS;
+    FS[fsIndex++] = _tokens->commonFS;
 
     // edge id
-    uint8_t fsIndex = 6;
     if (!GS[0].IsEmpty()) {
         TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdEdgeParamGS);
         if (isPrimTypeTris) {

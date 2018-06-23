@@ -305,6 +305,26 @@ bool IsPointSelected(int pointId)
     return sel;
 }
 
+--- --------------------------------------------------------------------------
+-- glsl Selection.Fragment.ElementSel
+
+int GetActiveSelectionMode() {return 0;}
+int GetRolloverSelectionMode() {return 1;}
+
+// Decodes the selection buffer to find out if the current fragment is from a
+// selected face.
+bool IsFaceSelected(int mode, int elementId)
+{
+    bool sel = false;
+    #if defined(HD_HAS_hdxSelectionBuffer)
+    SelectionResult res =
+        GetSelectionResult(mode, elementId, /*edgeId*/-1, /*pointId*/-1);
+    if (res.subprimSel.elementSelected) {
+        sel = true;
+    }
+    #endif
+    return sel;
+}
 
 --- --------------------------------------------------------------------------
 -- glsl Selection.ComputeColor

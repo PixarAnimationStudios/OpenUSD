@@ -42,7 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdSceneDelegate;
-class HdStMaterial;
 
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
@@ -106,7 +105,8 @@ protected:
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdStDrawItem *drawItem,
-                                        const HdMeshReprDesc &desc);
+                                        const HdMeshReprDesc &desc,
+                                        size_t drawItemIdForDesc);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdStDrawItem *drawItem,

@@ -27,6 +27,8 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdSt/shaders/meshWire.glslfx
 
+#import $TOOLS/hdx/shaders/selection.glslfx 
+
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Geometry.NoEdge
 
@@ -160,6 +162,44 @@ void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.NoFilter
+
+void ApplySelectionFilter()
+{
+    // do nothing
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.FilterElementSelActive
+
+// Fwd decl methods used (from selection.glslfx)
+int GetActiveSelectionMode();
+bool IsFaceSelected(int mode, int elementId);
+int GetElementID(); // code gen
+
+void ApplySelectionFilter()
+{
+    if (!IsFaceSelected(GetActiveSelectionMode(), GetElementID())) {
+        discard;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.FilterElementSelRollover
+
+// Fwd decl methods used (from selection.glslfx)
+int GetRolloverSelectionMode();
+bool IsFaceSelected(int mode, int elementId);
+int GetElementID(); // code gen
+
+void ApplySelectionFilter()
+{
+    if (!IsFaceSelected(GetRolloverSelectionMode(), GetElementID())) {
+        discard;
+    }
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.NoEdge
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
@@ -198,6 +238,8 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeOnlyBlendColor
 
+void ApplySelectionFilter();
+
 in EdgeData
 {
     noperspective vec3 edgeDistance;
@@ -205,6 +247,8 @@ in EdgeData
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
+    ApplySelectionFilter();
+
     vec3 edgeDistance = inEdgeData.edgeDistance;
 
     float d = min(edgeDistance.x,
@@ -226,6 +270,8 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeOnlyNoBlend
 
+void ApplySelectionFilter();
+
 in EdgeData
 {
     noperspective vec3 edgeDistance;
@@ -233,6 +279,8 @@ in EdgeData
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
+    ApplySelectionFilter();
+
     vec3 edgeDistance = inEdgeData.edgeDistance;
 
     float d = min(edgeDistance.x,
@@ -282,6 +330,8 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 --- --------------------------------------------------------------------------
 -- glsl MeshPatchWire.Fragment.EdgeOnly
 
+void ApplySelectionFilter();
+
 in EdgeData
 {
     noperspective vec3 edgeDistance;
@@ -289,6 +339,8 @@ in EdgeData
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
+    ApplySelectionFilter();
+
     vec3 edgeDistance = inEdgeData.edgeDistance;
 
     float d = min(edgeDistance.x,
