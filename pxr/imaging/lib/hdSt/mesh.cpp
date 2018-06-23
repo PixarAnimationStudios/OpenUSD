@@ -648,8 +648,10 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     source->GetNumElements(), numPoints);
 
                 // If the primvar has more data than needed, we issue a warning,
-                // but don't skip the primvar update. We handle it naively, and
-                // thus will use more GPU memory than needed.
+                // but don't skip the primvar update. Truncate the buffer to
+                // the expected length.
+                boost::static_pointer_cast<HdVtBufferSource>(source)
+                    ->Truncate(numPoints);
             }
 
             if (refineLevel > 0) {

@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // ------------------------------------------------------------------------- //
 
 void
-HdVtBufferSource::_SetValue(const VtValue &v, size_t arraySize)
+HdVtBufferSource::_SetValue(const VtValue &v, int arraySize)
 {
     _value = v;
     _tupleType = HdGetValueTupleType(_value);
@@ -81,7 +81,7 @@ HdVtBufferSource::_SetValue(const VtValue &v, size_t arraySize)
 }
 
 HdVtBufferSource::HdVtBufferSource(TfToken const& name, VtValue const& value,
-                                   size_t arraySize)
+                                   int arraySize)
     : _name(name)
 {
     _SetValue(value, arraySize);
@@ -105,7 +105,7 @@ HdVtBufferSource::HdVtBufferSource(TfToken const &name,
 
 HdVtBufferSource::HdVtBufferSource(TfToken const &name,
                                    VtArray<GfMatrix4d> const &matrices,
-                                   size_t arraySize)
+                                   int arraySize)
     : _name(name)
 {
     if (GetDefaultMatrixType() == HdTypeDoubleMat4) {
@@ -127,6 +127,19 @@ HdVtBufferSource::HdVtBufferSource(TfToken const &name,
 
 HdVtBufferSource::~HdVtBufferSource()
 {
+}
+
+void
+HdVtBufferSource::Truncate(int numElements)
+{
+    if (numElements > _numElements) {
+        TF_CODING_ERROR(
+            "Buffer '%s', cannot truncate from length %d to length %d",
+            _name.GetText(), _numElements, numElements);
+        return;
+    }
+
+    _numElements = numElements;
 }
 
 /*static*/

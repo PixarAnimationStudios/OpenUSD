@@ -54,7 +54,7 @@ public:
     /// \param arraySize indicates how many values are provided per element.
     HD_API
     HdVtBufferSource(TfToken const &name, VtValue const& value,
-                     size_t arraySize=1);
+                     int arraySize=1);
 
     /// Constructs a new buffer from a matrix.
     /// The data is convert to the default type (see GetDefaultMatrixType()).
@@ -73,7 +73,7 @@ public:
     /// \param arraySize indicates how many values are provided per element.
     HD_API
     HdVtBufferSource(TfToken const &name, VtArray<GfMatrix4d> const &matrices,
-                     size_t arraySize=1);
+                     int arraySize=1);
 
     /// Returns the default matrix type.
     /// The default is HdTypeFloatMat4, but if HD_ENABLE_DOUBLEMATRIX is true,
@@ -84,6 +84,13 @@ public:
     /// Destructor deletes the internal storage.
     HD_API
     ~HdVtBufferSource();
+
+    /// Truncate the buffer to the given number of elements.
+    /// If the VtValue contains too much data, this is a way to only forward
+    /// part of the data to the hydra buffer system. numElements must be less
+    /// than or equal to the current result of GetNumElements().
+    HD_API
+    void Truncate(int numElements);
 
     /// Return the name of this buffer source.
     virtual TfToken const &GetName() const override {
@@ -125,7 +132,7 @@ protected:
 
 private:
     // Constructor helper.
-    void _SetValue(const VtValue &v, size_t arraySize);
+    void _SetValue(const VtValue &v, int arraySize);
 
     TfToken _name;
 
@@ -138,7 +145,7 @@ private:
     // class should remain noncopyable.
     VtValue _value;
     HdTupleType _tupleType;
-    size_t _numElements;
+    int _numElements;
 };
 
 /// Diagnostic output.
