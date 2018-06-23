@@ -157,6 +157,10 @@ public:
     /// This has no effect in the case of the default USD timecode.
     UsdTimeCode GetTimeWithOffset(float offset) const;
 
+    /// Applies any scene edits which have been queued up by notices from USD.
+    USDIMAGING_API
+    void ApplyPendingUpdates();
+
     /// Returns the refinement level that is used when prims have no explicit
     /// level set.
     ///
@@ -483,10 +487,6 @@ private:
     void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy,
                      bool repopulateFromRoot = false);
 
-    // Process all pending updates, ensuring that rprims are marked dirty
-    // as needed.
-    void _ProcessPendingUpdates();
-
     // ---------------------------------------------------------------------- //
     // Usd Data-Access Helper Methods
     // ---------------------------------------------------------------------- //
@@ -533,13 +533,6 @@ private:
     // ---------------------------------------------------------------------- //
     // Helper methods for updating the delegate on time changes
     // ---------------------------------------------------------------------- //
-
-    // Set the delegate's current time to the given time and process
-    // any object changes that have occurred in the interim.
-    bool _ProcessChangesForTimeUpdate(UsdTimeCode time);
-
-    // Set dirty bits based off those previous been designated as time varying.
-    void _ApplyTimeVaryingState();
 
     // Execute all time update tasks that have been added to the given worker.
     static void _ExecuteWorkForTimeUpdate(_Worker* worker);

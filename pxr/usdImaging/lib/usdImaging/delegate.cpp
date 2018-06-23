@@ -761,40 +761,121 @@ UsdImagingDelegate::Populate(std::vector<UsdImagingDelegate*> const& delegates,
 
 }
 
-bool
-UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
+void
+UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Begin update for time (%f)\n",
-                            time.GetValue());
+    worker->DisableValueCacheMutations();
+    {
+        // Release the GIL to ensure that threaded work won't deadlock if
+        // they also need the GIL.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        WorkParallelForN(
+            worker->GetTaskCount(), 
+            std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
+                      worker, std::placeholders::_1, std::placeholders::_2));
+    }
+    worker->EnableValueCacheMutations();
+}
 
-    //
-    // Process pending changes.
-    //
-    bool timeChanged = _time != time;
-    bool hadChanges = !_pathsToResync.empty()
-                      || !_pathsToUpdate.empty();
-    
+void
+UsdImagingDelegate::SetTime(UsdTimeCode time)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // XXX: Many clients rely on SetTime(currentTime) to apply pending
+    // scene edits. If we fix them to call ApplyPendingUpdates(), we can
+    // remove this.
+    ApplyPendingUpdates();
+
+    // Early out if the time code is the same.
+    if (_time == time) {
+        return;
+    }
+
+    TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Update for time (%f)",
+        time.GetValue());
+
     _time = time;
     _xformCache.SetTime(_time);
     _visCache.SetTime(_time);
     // No need to set time on the look binding cache here, since we know we're
     // only querying relationships.
 
+    UsdImagingIndexProxy indexProxy(this, nullptr);
+
+    // Mark varying attributes as dirty and build a work queue for threads to
+    // populate caches for the new time.
+    TF_FOR_ALL(it, _primInfoMap) {
+        const SdfPath &usdPath = it->first;
+        _PrimInfo &primInfo    = it->second;
+
+        if (primInfo.timeVaryingBits != HdChangeTracker::Clean) {
+            primInfo.adapter->MarkDirty(primInfo.usdPrim,
+                                        usdPath,
+                                        primInfo.timeVaryingBits,
+                                        &indexProxy);
+        }
+    }
+}
+
+void 
+UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
+                             const std::vector<UsdTimeCode>& times)
+{
+    if (delegates.size() != times.size()) {
+        TF_CODING_ERROR("Mismatched parameters");
+        return;
+    }
+
+    if (delegates.empty()) {
+        return;
+    }
+
+    // Collect work from the batch of delegates into a single worker.
+    // This has to be done single-threaded due to potential mutations
+    // to the render index that is shared among these delegates.
+    for (size_t i = 0; i < delegates.size(); ++i) {
+        delegates[i]->SetTime(times[i]);
+    }
+}
+
+UsdTimeCode
+UsdImagingDelegate::GetTimeWithOffset(float offset) const
+{
+    return _time.IsNumeric() ? UsdTimeCode(_time.GetValue() + offset) : _time;
+}
+
+// -------------------------------------------------------------------------- //
+// Change Processing 
+// -------------------------------------------------------------------------- //
+
+void
+UsdImagingDelegate::ApplyPendingUpdates()
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // Early out if there are no updates.
+    if (_pathsToResync.empty() && _pathsToUpdate.empty()) {
+        return;
+    }
+
+    TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Update for scene edits");
+
+    // Need to invalidate all caches if any stage objects have changed. This
+    // invalidation is overly conservative, but correct.
+    _xformCache.Clear();
+    _materialBindingImplData.ClearCaches();
+    _materialBindingCache.Clear();
+    _visCache.Clear();
+    _drawModeCache.Clear();
+
     UsdImagingDelegate::_Worker worker;
     UsdImagingIndexProxy indexProxy(this, &worker);
-
-    if (hadChanges) {
-        // Need to invalidate all caches if any stage objects have changed. This
-        // invalidation is overly conservative, but correct.
-        _xformCache.Clear();
-        _materialBindingImplData.ClearCaches();
-        _materialBindingCache.Clear();
-        _visCache.Clear();
-        _drawModeCache.Clear();
-    }
 
     if (!_pathsToResync.empty()) {
         // Make a copy of pathsToResync, but uniqued with a prefix-check, which
@@ -832,9 +913,6 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
     // doesn't apply changes to removed objects.
     indexProxy._ProcessRemovals();
 
-    // 
-    // Process Updates.
-    //
     if (!_pathsToUpdate.empty()) {
         _PathsToUpdateMap pathsToUpdate;
         std::swap(pathsToUpdate, _pathsToUpdate);
@@ -858,112 +936,13 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         }
     }
 
-    // Don't invalidate values if the current time didn't change and we didn't
-    // process any changes.
-    if (!timeChanged && !hadChanges) {
-        TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] canceled because time (%f) "
-                                "did not change and there were no updates\n",
-                                _time.GetValue());
-        return false;
-    }
-
     // If any changes called Repopulate() on the indexProxy, we need to
     // repopulate them before any updates. If the list is empty, _Populate is a
     // no-op.
     _Populate(&indexProxy);
     _ExecuteWorkForVariabilityUpdate(&worker);
-
-    return true;
 }
 
-void
-UsdImagingDelegate::_ApplyTimeVaryingState()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    UsdImagingIndexProxy indexProxy(this, nullptr);
-
-    // Mark varying attributes as dirty and build a work queue for threads to
-    // populate caches for the new time.
-    TF_FOR_ALL(it, _primInfoMap) {
-        const SdfPath &usdPath = it->first;
-        _PrimInfo &primInfo    = it->second;
-
-        if (primInfo.timeVaryingBits != HdChangeTracker::Clean) {
-            primInfo.adapter->MarkDirty(primInfo.usdPrim,
-                                        usdPath,
-                                        primInfo.timeVaryingBits,
-                                        &indexProxy);
-        }
-    }
-}
-
-void
-UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    worker->DisableValueCacheMutations();
-    {
-        // Release the GIL to ensure that threaded work won't deadlock if
-        // they also need the GIL.
-        TF_PY_ALLOW_THREADS_IN_SCOPE();
-        WorkParallelForN(
-            worker->GetTaskCount(), 
-            std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
-                      worker, std::placeholders::_1, std::placeholders::_2));
-    }
-    worker->EnableValueCacheMutations();
-}
-
-void
-UsdImagingDelegate::SetTime(UsdTimeCode time)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (_ProcessChangesForTimeUpdate(time)) {
-        _ApplyTimeVaryingState();
-    }
-}
-
-void 
-UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
-                             const std::vector<UsdTimeCode>& times)
-{
-    if (delegates.size() != times.size()) {
-        TF_CODING_ERROR("Mismatched parameters");
-        return;
-    }
-
-    if (delegates.empty()) {
-        return;
-    }
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // Collect work from the batch of delegates into a single worker.
-    // This has to be done single-threaded due to potential mutations
-    // to the render index that is shared among these delegates.
-    for (size_t i = 0; i < delegates.size(); ++i) {
-        if (delegates[i]->_ProcessChangesForTimeUpdate(times[i])) {
-            delegates[i]->_ApplyTimeVaryingState();
-        }
-    }
-}
-
-UsdTimeCode
-UsdImagingDelegate::GetTimeWithOffset(float offset) const
-{
-    return _time.IsNumeric() ? UsdTimeCode(_time.GetValue() + offset) : _time;
-}
-
-// -------------------------------------------------------------------------- //
-// Change Processing 
-// -------------------------------------------------------------------------- //
 void 
 UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                                       UsdStageWeakPtr const& sender)
@@ -1359,14 +1338,6 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
             }
         }
     }
-}
-
-void 
-UsdImagingDelegate::_ProcessPendingUpdates()
-{
-    // Change processing logic is all implemented in SetTime, so just
-    // redirect to that using our current time.
-    SetTime(_time);
 }
 
 // -------------------------------------------------------------------------- //
@@ -1793,7 +1764,7 @@ UsdImagingDelegate::SetInvisedPrimPaths(SdfPathVector const &invisedPaths)
     // process instance visibility.
     // this call is needed because we use _RefreshObject to repopulate
     // vis-ed/invis-ed instanced prims (accumulated in _pathsToUpdate)
-    _ProcessChangesForTimeUpdate(_time);
+    ApplyPendingUpdates();
 }
 
 void
@@ -2082,15 +2053,13 @@ UsdImagingDelegate::PopulateSelection(
     HD_TRACE_FUNCTION();
 
     // Process any pending path resyncs/updates first to ensure all
-    // adapters are up-to-date. Note that this can't just be a call to
-    // _ProcessChangesForTimeUpdate, since that won't mark any rprims as
-    // dirty.
+    // adapters are up-to-date.
     //
-    // XXX: 
+    // XXX:
     // It feels a bit unsatisfying to have to do this here. UsdImagingDelegate
-    // should provide better guidance about when scene description changes are 
+    // should provide better guidance about when scene description changes are
     // handled.
-    _ProcessPendingUpdates();
+    ApplyPendingUpdates();
 
     // UsdImagingDelegate currently only supports hiliting an instance in its
     // entirety.  With the advent of UsdPrim "instance proxies", it will be

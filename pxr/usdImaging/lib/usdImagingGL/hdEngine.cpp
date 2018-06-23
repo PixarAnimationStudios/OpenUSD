@@ -163,6 +163,9 @@ UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& param
     // all prim refine levels will be dirtied.
     int refineLevel = _GetRefineLevel(params.complexity);
     _delegate->SetRefineLevelFallback(refineLevel);
+
+    // Apply any queued up scene edits.
+    _delegate->ApplyPendingUpdates();
 }
 
 void
