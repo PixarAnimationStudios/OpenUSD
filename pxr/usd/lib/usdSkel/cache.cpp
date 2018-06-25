@@ -124,24 +124,27 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
     // and map the last item on the stack to descendant prims.
     // This is done to handle inherited skel:skeleton bindings.
 
-    std::vector<UsdSkelSkeleton> skelStack(1);
+    std::vector<std::pair<UsdSkelSkeleton,UsdPrim> > skelStack;
     
     auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim());
     for (auto it = range.begin(); it != range.end(); ++it) {
 
         if (it.IsPostVisit()) {
-            skelStack.pop_back();
+            if (skelStack.size() > 0 && skelStack.back().second == *it)
+                skelStack.pop_back();
             continue;
         }
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
 
-            TF_DEBUG(USDSKEL_CACHE).Msg(
-                "[UsdSkelCache]  Pruning traversal at <%s> "
-                "(prim is not UsdGeomImageable)\n",
-                it->GetPath().GetText());
+            if (!it.IsPostVisit()) {
+                TF_DEBUG(USDSKEL_CACHE).Msg(
+                    "[UsdSkelCache]  Pruning traversal at <%s> "
+                    "(prim is not UsdGeomImageable)\n",
+                    it->GetPath().GetText());
 
-            it.PruneChildren();
+                it.PruneChildren();
+            }
             continue;
         }
 
@@ -149,7 +152,7 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
 
         UsdSkelSkeleton skel;
         if (!binding.GetSkeleton(&skel)) {
-            skel = skelStack.back();
+            skel = skelStack.back().first;
         } else  {
             TF_DEBUG(USDSKEL_CACHE).Msg(
                 "[UsdSkelCache]  Found skel binding at <%s> "
@@ -167,7 +170,7 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
                 bindingMap[skel].push_back(query);
             }
         }
-        skelStack.push_back(skel);
+        skelStack.emplace_back(skel, *it);
     }
 
     bindings->reserve(bindingMap.size());
@@ -216,7 +219,7 @@ UsdSkelCache::ComputeSkelBinding(const UsdSkelRoot& skelRoot,
         if (UsdSkelBindingAPI(*it).GetSkeleton(&locallyBoundSkel))
             boundSkel = locallyBoundSkel;
 
-        if (boundSkel = skel) {
+        if (boundSkel.GetPrim() == skel.GetPrim()) {
             if (UsdSkelSkinningQuery query = GetSkinningQuery(*it)) {
                 skinningQueries.push_back(query);
             }
