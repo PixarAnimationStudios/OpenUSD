@@ -51,6 +51,8 @@ class MayaMeshWriter : public MayaTransformWriter
     void Write(const UsdTimeCode &usdTime) override;
     bool ExportsGprims() const override;
 
+    virtual void PostExport() override;
+
   protected:
     bool writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema);
 
@@ -92,6 +94,7 @@ class MayaMeshWriter : public MayaTransformWriter
 
     bool _createAlphaPrimVar(UsdGeomGprim &primSchema,
                              const TfToken& name,
+                             const UsdTimeCode& usdTime,
                              const VtArray<float>& data,
                              const TfToken& interpolation,
                              const VtArray<int>& assignmentIndices,
@@ -100,6 +103,7 @@ class MayaMeshWriter : public MayaTransformWriter
 
     bool _createRGBPrimVar(UsdGeomGprim &primSchema,
                            const TfToken& name,
+                           const UsdTimeCode& usdTime,
                            const VtArray<GfVec3f>& data,
                            const TfToken& interpolation,
                            const VtArray<int>& assignmentIndices,
@@ -108,6 +112,7 @@ class MayaMeshWriter : public MayaTransformWriter
 
     bool _createRGBAPrimVar(UsdGeomGprim &primSchema,
                             const TfToken& name,
+                            const UsdTimeCode& usdTime,
                             const VtArray<GfVec3f>& rgbData,
                             const VtArray<float>& alphaData,
                             const TfToken& interpolation,
@@ -117,6 +122,7 @@ class MayaMeshWriter : public MayaTransformWriter
 
     bool _createUVPrimVar(UsdGeomGprim &primSchema,
                           const TfToken& name,
+                          const UsdTimeCode& usdTime,
                           const VtArray<GfVec2f>& data,
                           const TfToken& interpolation,
                           const VtArray<int>& assignmentIndices,
@@ -127,6 +133,7 @@ class MayaMeshWriter : public MayaTransformWriter
     /// authored opinions for them.
     bool _addDisplayPrimvars(
         UsdGeomGprim &primSchema,
+        const UsdTimeCode& usdTime,
         const MFnMesh::MColorRepresentation colorRep,
         const VtArray<GfVec3f>& RGBData,
         const VtArray<float>& AlphaData,
@@ -135,6 +142,10 @@ class MayaMeshWriter : public MayaTransformWriter
         const int unassignedValueIndex,
         const bool clamped,
         const bool authored);
+
+    /// Prepends a default value to an attribute containing primvars.
+    static void _prependDefaultValue(UsdAttribute& attr,
+                                     const UsdTimeCode& usdTime);
 
     /// Default value to use when collecting UVs from a UV set and a component
     /// has no authored value.
@@ -149,6 +160,7 @@ class MayaMeshWriter : public MayaTransformWriter
     /// component has no authored value.
     static const GfVec3f _ColorSetDefaultRGB;
     static const float _ColorSetDefaultAlpha;
+    static const GfVec4f _ColorSetDefaultRGBA;
 
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;
