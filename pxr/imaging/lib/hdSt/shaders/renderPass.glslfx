@@ -102,7 +102,12 @@ float GetPointSelectedSize() {
 #endif
 }
 vec4  GetWireframeColor() {
-#if defined(HD_HAS_wireframeColor)
+// Individual prims can specify an alternative wireframe color
+// to one specified in the render pass.  This is used in cases were
+// there is not enough contrast with the normal one. 
+#if defined(HD_HAS_overrideWireframeColor)
+    return HdGet_overrideWireframeColor();
+#elif defined(HD_HAS_wireframeColor)
     return HdGet_wireframeColor();
 #else
     return vec4(0,0,0,0);
