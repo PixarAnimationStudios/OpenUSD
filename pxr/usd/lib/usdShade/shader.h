@@ -35,6 +35,8 @@
 
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/shaderNode.h"
     
 
 #include "pxr/base/vt/value.h"
@@ -270,6 +272,69 @@ public:
     UsdShadeConnectableAPI ConnectableAPI() const;
 
     // -------------------------------------------------------------------------
+    /// \name Outputs API
+    ///
+    /// Outputs represent a typed property on a shader or node-graph whose value 
+    /// is computed externally. 
+    /// 
+    /// When they exist on a node-graph, they are connectable and are typically 
+    /// connected to the output of a shader within the node-graph.
+    /// 
+    /// @{
+        
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace. Outputs on a shader cannot be connected, as their 
+    /// value is assumed to be computed externally.
+    /// 
+    USDSHADE_API
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    USDSHADE_API
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// 
+    USDSHADE_API
+    std::vector<UsdShadeOutput> GetOutputs() const;
+
+    /// @}
+
+    // ------------------------------------------------------------------------- 
+
+    /// \name Inputs API
+    ///
+    /// Inputs are connectable properties with a typed value. 
+    /// 
+    /// On shaders, the shader parameters are encoded as inputs. On node-graphs,
+    /// interface attributes are represented as inputs.
+    /// 
+    /// @{
+        
+    /// Create an input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace. Inputs on both shaders and node-graphs are connectable.
+    /// 
+    USDSHADE_API
+    UsdShadeInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    USDSHADE_API
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// 
+    USDSHADE_API
+    std::vector<UsdShadeInput> GetInputs() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
 
     /// \anchor UsdShadeShader_ImplementationSource
     /// \name Shader Source API
@@ -395,68 +460,78 @@ public:
 
     /// @}
 
-    /// \name Outputs API
-    ///
-    /// Outputs represent a typed property on a shader or node-graph whose value 
-    /// is computed externally. 
+    // -------------------------------------------------------------------------
+
+    /// \anchor UsdShadeShader_Metadata_API
+    /// \name Shader Metadata_API
     /// 
-    /// When they exist on a node-graph, they are connectable and are typically 
-    /// connected to the output of a shader within the node-graph.
+    /// This section provides API for authoring and querying shader metadata.
+    /// When the shader's implementationSource is <b>sourceAsset</b> or 
+    /// <b>sourceCode</b>, the authored "shaderMetadata" dictionary value 
+    /// provides additional metadata needed to process the shader source
+    /// correctly. It is used in combination with the sourceAsset or sourceCode
+    /// value to fetch the appropriate node from the shader registry.
+    /// 
+    /// We expect the keys in shaderMetadata to correspond to the keys 
+    /// in \ref SdrNodeMetadata. However, this is not strictly enforced in the 
+    /// API. The only allowed value type in the "shaderMetadata" dictionary is a 
+    /// std::string since it needs to be converted into a NdrTokenMap, which Sdr
+    /// will parse using utilities available in \ref ShaderMetadataHelpers.
     /// 
     /// @{
-        
-    /// Create an output which can either have a value or can be connected.
-    /// The attribute representing the output is created in the "outputs:" 
-    /// namespace. Outputs on a shader cannot be connected, as their 
-    /// value is assumed to be computed externally.
-    /// 
+
+    /// Returns this shader's composed "shaderMetadata" dictionary as a 
+    /// NdrTokenMap.
     USDSHADE_API
-    UsdShadeOutput CreateOutput(const TfToken& name,
-                                const SdfValueTypeName& typeName);
-
-    /// Return the requested output if it exists.
-    /// 
-    USDSHADE_API
-    UsdShadeOutput GetOutput(const TfToken &name) const;
-
-    /// Outputs are represented by attributes in the "outputs:" namespace.
-    /// 
-    USDSHADE_API
-    std::vector<UsdShadeOutput> GetOutputs() const;
-
-    /// @}
-
-
-    /// \name Inputs API
-    ///
-    /// Inputs are connectable properties with a typed value. 
-    /// 
-    /// On shaders, the shader parameters are encoded as inputs. On node-graphs,
-    /// interface attributes are represented as inputs.
-    /// 
-    /// @{
-        
-    /// Create an input which can either have a value or can be connected.
-    /// The attribute representing the input is created in the "inputs:" 
-    /// namespace. Inputs on both shaders and node-graphs are connectable.
-    /// 
-    USDSHADE_API
-    UsdShadeInput CreateInput(const TfToken& name,
-                              const SdfValueTypeName& typeName);
-
-    /// Return the requested input if it exists.
-    /// 
-    USDSHADE_API
-    UsdShadeInput GetInput(const TfToken &name) const;
-
-    /// Inputs are represented by attributes in the "inputs:" namespace.
-    /// 
-    USDSHADE_API
-    std::vector<UsdShadeInput> GetInputs() const;
-
-    /// @}
-
+    NdrTokenMap GetShaderMetadata() const;
     
+    /// Returns the value corresponding to \p key in the composed 
+    /// <b>shaderMetadata</b> dictionary.
+    USDSHADE_API
+    std::string GetShaderMetadataByKey(const TfToken &key) const;
+        
+    /// Authors the given \p shaderMetadata on this shader at the current 
+    /// EditTarget.
+    USDSHADE_API
+    void SetShaderMetadata(const NdrTokenMap &shaderMetadata) const;
+
+    /// Sets the value corresponding to \p key to the given string \p value, in 
+    /// the shader's "shaderMetadata" dictionary at the current EditTarget.
+    USDSHADE_API
+    void SetShaderMetadataByKey(
+        const TfToken &key, 
+        const std::string &value) const;
+
+    /// Returns true if the shader has a non-empty composed "shaderMetadata" 
+    /// dictionary value.
+    USDSHADE_API
+    bool HasShaderMetadata() const;
+
+    /// Returns true if there is a value corresponding to the given \p key in 
+    /// the composed "shaderMetadata" dictionary.
+    USDSHADE_API
+    bool HasShaderMetadataByKey(const TfToken &key) const;
+
+    /// Clears any "shaderMetadata" value authored on the shader in the current 
+    /// EditTarget.
+    USDSHADE_API
+    void ClearShaderMetadata() const;
+
+    /// Clears the entry corresponding to the given \p key in the 
+    /// "shaderMetadata" dictionary authored in the current EditTarget.
+    USDSHADE_API
+    void ClearShaderMetadataByKey(const TfToken &key) const;
+
+    /// @}
+
+    /// This method attempts to ensure that there is a ShaderNode in the shader 
+    /// registry (i.e. \ref SdrRegistry) representing this shader for the 
+    /// given \p sourceType. It may return a null pointer if none could be 
+    /// found or created.
+    USDSHADE_API
+    SdrShaderNodeConstPtr GetShaderNodeForSourceType(const TfToken &sourceType) 
+        const; 
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

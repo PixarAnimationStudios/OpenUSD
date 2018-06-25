@@ -135,6 +135,7 @@ void wrapUsdShadeShader()
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include <boost/python/return_internal_reference.hpp>
 
 namespace {
 
@@ -189,6 +190,28 @@ WRAP_CUSTOM {
              arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceCode", _WrapGetSourceCode, 
              arg("sourceType")=UsdShadeTokens->universalSourceType)
+
+        .def("GetShaderMetadata", &UsdShadeShader::GetShaderMetadata)
+        .def("GetShaderMetadataByKey", &UsdShadeShader::GetShaderMetadataByKey,
+             (arg("key")))
+
+        .def("SetShaderMetadata", &UsdShadeShader::SetShaderMetadata,
+             (arg("shaderMetadata")))
+        .def("SetShaderMetadataByKey", &UsdShadeShader::SetShaderMetadataByKey,
+             (arg("key"), arg("value")))
+
+        .def("HasShaderMetadata", &UsdShadeShader::HasShaderMetadata)
+        .def("HasShaderMetadataByKey", &UsdShadeShader::HasShaderMetadataByKey,
+             (arg("key")))
+
+        .def("ClearShaderMetadata", &UsdShadeShader::ClearShaderMetadata)
+        .def("ClearShaderMetadataByKey", 
+             &UsdShadeShader::ClearShaderMetadataByKey, (arg("key")))
+
+        .def("GetShaderNodeForSourceType", 
+             &UsdShadeShader::GetShaderNodeForSourceType,
+             (arg("sourceType")),
+             return_internal_reference<>())
 
         .def("CreateOutput", &UsdShadeShader::CreateOutput,
              (arg("name"), arg("type")))

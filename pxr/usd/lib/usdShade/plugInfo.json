@@ -36,6 +36,13 @@
                         ], 
                         "displayGroup": "Rendering", 
                         "type": "token"
+                    }, 
+                    "shaderMetadata": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "displayGroup": "Shading", 
+                        "type": "dictionary"
                     }
                 }, 
                 "Types": {

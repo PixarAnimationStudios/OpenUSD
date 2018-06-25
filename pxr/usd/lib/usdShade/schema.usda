@@ -178,6 +178,13 @@ over "GLOBAL" (
                 sparsely. The value "fallbackStrength" never gets authored 
                 into scene description."""
             }
+            dictionary shaderMetadata = {
+                string doc = """Dictionary valued metadata key authored on a 
+                Shader prim with implementationSource value of sourceAsset or 
+                sourceCode to pass along metadata to the shader parser or 
+                compiler.
+                """
+            }
         }
     }
 )
@@ -332,6 +339,8 @@ class Shader "Shader" (
         string extraIncludes = """
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/shaderNode.h"
     """
     }
 ) {

@@ -178,6 +178,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -356,7 +357,6 @@ UsdShadeShader::SetSourceCode(
                                       SdfVariabilityUniform,
                                       VtValue(sourceCode),
                                       /* writeSparsely */ false);
-
 }
 
 bool 
@@ -384,6 +384,96 @@ UsdShadeShader::GetSourceCode(
     }
 
     return false;
+}
+
+SdrShaderNodeConstPtr 
+UsdShadeShader::GetShaderNodeForSourceType(const TfToken &sourceType) const
+{
+    TfToken implSource = GetImplementationSource();
+    if (implSource == UsdShadeTokens->id) {
+        TfToken shaderId;
+        if (GetShaderId(&shaderId)) {
+            return SdrRegistry::GetInstance().GetShaderNodeByIdentifierAndType(
+                    shaderId, sourceType);
+        }
+    } else if (implSource == UsdShadeTokens->sourceAsset) {
+        SdfAssetPath sourceAsset;
+        if (GetSourceAsset(&sourceAsset, sourceType)) {
+            return SdrRegistry::GetInstance().GetShaderNodeFromAsset(
+                sourceAsset, GetShaderMetadata());
+        }
+    } else if (implSource == UsdShadeTokens->sourceCode) {
+        std::string sourceCode;
+        if (GetSourceCode(&sourceCode, sourceType)) {
+            return SdrRegistry::GetInstance().GetShaderNodeFromSourceCode(
+                sourceCode, sourceType, GetShaderMetadata());
+        }
+    }
+
+    return nullptr;
+}
+
+NdrTokenMap
+UsdShadeShader::GetShaderMetadata() const
+{
+    NdrTokenMap result;
+
+    VtDictionary shaderMetadata;
+    if (GetPrim().GetMetadata(UsdShadeTokens->shaderMetadata, &shaderMetadata)){
+        for (const auto &it : shaderMetadata) {
+            result[TfToken(it.first)] = TfStringify(it.second);
+        }
+    }
+
+    return result;
+}
+
+std::string 
+UsdShadeShader::GetShaderMetadataByKey(const TfToken &key) const
+{
+    VtValue val;
+    GetPrim().GetMetadataByDictKey(UsdShadeTokens->shaderMetadata, key, &val);
+    return TfStringify(val);
+}
+    
+void 
+UsdShadeShader::SetShaderMetadata(const NdrTokenMap &shaderMetadata) const
+{
+    for (auto &i: shaderMetadata) {
+        SetShaderMetadataByKey(i.first, i.second);
+    }
+}
+
+void 
+UsdShadeShader::SetShaderMetadataByKey(
+    const TfToken &key, 
+    const std::string &value) const
+{
+    GetPrim().SetMetadataByDictKey(UsdShadeTokens->shaderMetadata, key, value);
+}
+
+bool 
+UsdShadeShader::HasShaderMetadata() const
+{
+    return GetPrim().HasMetadata(UsdShadeTokens->shaderMetadata);
+}
+
+bool 
+UsdShadeShader::HasShaderMetadataByKey(const TfToken &key) const
+{
+    return GetPrim().HasMetadataDictKey(UsdShadeTokens->shaderMetadata, key);
+}
+
+void 
+UsdShadeShader::ClearShaderMetadata() const
+{
+    GetPrim().ClearMetadata(UsdShadeTokens->shaderMetadata);
+}
+
+void
+UsdShadeShader::ClearShaderMetadataByKey(const TfToken &key) const
+{
+    GetPrim().ClearMetadataByDictKey(UsdShadeTokens->shaderMetadata, key);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
