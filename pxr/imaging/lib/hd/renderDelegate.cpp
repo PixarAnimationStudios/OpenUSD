@@ -65,5 +65,11 @@ HdRenderDelegate::GetMaterialBindingPurpose() const
     return HdTokens->preview;
 }
 
+TfTokenVector 
+HdRenderDelegate::GetShaderSourceTypes() const
+{
+    return TfTokenVector();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -316,5 +316,10 @@ HdStRenderDelegate::IsSupported()
     return (GlfContextCaps::GetInstance().glVersion >= 400);
 }
 
+TfTokenVector
+HdStRenderDelegate::GetShaderSourceTypes() const
+{
+    return {GlfGLSLFXTokens->glslfx};
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

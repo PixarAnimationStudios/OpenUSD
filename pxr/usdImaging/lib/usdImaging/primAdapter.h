@@ -434,6 +434,9 @@ protected:
     // Returns the material context from the renderer delegate.
     TfToken _GetMaterialNetworkSelector() const;
 
+    // Returns the shader source type from the render delegate.
+    TfTokenVector _GetShaderSourceTypes() const;
+
     // Returns \c true if \p usdPath is included in the scene delegate's
     // invised path list.
     bool _IsInInvisedPaths(SdfPath const& usdPath) const;

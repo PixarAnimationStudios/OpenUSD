@@ -105,6 +105,11 @@ public:
     HDST_API
     static bool IsSupported();
 
+    /// Returns the source type of the shader node that the render delegate 
+    /// must fetch from the shader registry.
+    HDST_API
+    virtual TfTokenVector GetShaderSourceTypes() const override;
+
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;

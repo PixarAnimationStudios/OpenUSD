@@ -174,7 +174,7 @@ UsdImagingMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
 }
 
 static
-void extractPrimvarsFromNode(UsdShadeShader const & shadeNode, 
+void _ExtractPrimvarsFromNode(UsdShadeShader const & shadeNode, 
                              HdMaterialNode const & node, 
                              HdMaterialNetwork *materialNetwork)
 {
@@ -198,8 +198,9 @@ void extractPrimvarsFromNode(UsdShadeShader const & shadeNode,
 // Walk the shader graph and emit nodes in topological order
 // to avoid forward-references.
 static
-void walkGraph(UsdShadeShader const & shadeNode, 
-               HdMaterialNetwork *materialNetwork)
+void _WalkGraph(UsdShadeShader const & shadeNode, 
+               HdMaterialNetwork *materialNetwork,
+               const TfTokenVector &shaderSourceTypes)
 {
     // Store the path of the node
     HdMaterialNode node;
@@ -231,28 +232,38 @@ void walkGraph(UsdShadeShader const & shadeNode,
             // part of the shading node graph.
             if (sourceType == UsdShadeAttributeType::Output) {
                 UsdShadeShader connectedNode(source);
-                walkGraph(connectedNode, materialNetwork);
+                _WalkGraph(connectedNode, materialNetwork, shaderSourceTypes);
             }
         }
     }
 
     // Extract the type of the node
-    VtValue value;
-    shadeNode.GetIdAttr().Get(&value);
-    if (value.IsHolding<TfToken>()){
-        node.type = value.UncheckedGet<TfToken>();
+    TfToken id;
+    if (!shadeNode.GetShaderId(&id)) {
+        for (auto &sourceType : shaderSourceTypes) {
+            if (SdrShaderNodeConstPtr n = 
+                    shadeNode.GetShaderNodeForSourceType(sourceType)) {
+                id = n->GetIdentifier();
+                break;
+            }
+        }
+    }
+
+    if (!id.IsEmpty()) {
+        node.type = id;
 
         // If a node is recognizable, we will try to extract the primvar 
         // names that is using since this can help render delegates 
         // optimize what what is needed from a prim when making data 
         // accessible for renderers.
-        extractPrimvarsFromNode(shadeNode, node, materialNetwork);
+        _ExtractPrimvarsFromNode(shadeNode, node, materialNetwork);
     } else {
         TF_WARN("UsdShade Shader without an id: %s.", node.path.GetText());
         node.type = TfToken("PbsNetworkMaterialStandIn_2");
     }
 
     // Add the parameters and the relationships of this node
+    VtValue value;
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
         UsdShadeConnectableAPI source;
@@ -304,10 +315,12 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim,
     }
     const TfToken context = _GetMaterialNetworkSelector();
     if (UsdShadeShader s = material.ComputeSurfaceSource(context)) {
-        walkGraph(s, &materialNetworkMap->map[UsdImagingTokens->bxdf]);
+        _WalkGraph(s, &materialNetworkMap->map[UsdImagingTokens->bxdf],
+                  _GetShaderSourceTypes());
     }
     if (UsdShadeShader d = material.ComputeDisplacementSource(context)) {
-        walkGraph(d, &materialNetworkMap->map[UsdImagingTokens->displacement]);
+        _WalkGraph(d, &materialNetworkMap->map[UsdImagingTokens->displacement],
+                  _GetShaderSourceTypes());
     }
 }
 

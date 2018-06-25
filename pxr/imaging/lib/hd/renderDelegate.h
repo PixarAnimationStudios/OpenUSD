@@ -287,6 +287,13 @@ public:
     HD_API
     virtual TfToken GetMaterialNetworkSelector() const { return TfToken(); }
 
+    ///
+    /// Returns the ordered list of shader source types that the render delegate 
+    /// supports.
+    /// 
+    HD_API
+    virtual TfTokenVector GetShaderSourceTypes() const;
+
 protected:
     /// This class must be derived from
     HdRenderDelegate()          = default;
