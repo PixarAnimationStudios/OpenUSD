@@ -132,7 +132,7 @@ using std::string;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-    USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING, false,
+    USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING, true,
     "If off, UsdRiStatementsAPI will write old-style attributes.  "
     "Otherwise, primvars in the ri: namespace will be written instead.");
 
