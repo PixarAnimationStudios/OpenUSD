@@ -54,18 +54,22 @@ WorkSerialForN(size_t n, Fn &&fn)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// WorkParallelForN(size_t n, CallbackType callback)
+/// WorkParallelForN(size_t n, CallbackType callback, size_t grainSize = 1)
 ///
 /// Runs \p callback in parallel over the range 0 to n.
 ///
 /// Callback must be of the form:
 ///
 ///     void LoopCallback(size_t begin, size_t end);
-/// 
+///
+/// grainSize specifices a minumum amount of work to be done per-thread. There
+/// is overhead to launching a thread (or task) and a typical guideline is that
+/// you want to have at least 10,000 instructions to count for the overhead of
+/// launching a thread.
 ///
 template <typename Fn>
 void
-WorkParallelForN(size_t n, Fn &&callback)
+WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
 {
     if (n == 0)
         return;
@@ -91,12 +95,10 @@ WorkParallelForN(size_t n, Fn &&callback)
             Fn &_fn;
         };
 
-        // Note that for the tbb version in the future, we will likely want to 
-        // tune the grain size.
         // In most cases we do not want to inherit cancellation state from the
         // parent context, so we create an isolated task group context.
         tbb::task_group_context ctx(tbb::task_group_context::isolated);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0,n),
+        tbb::parallel_for(tbb::blocked_range<size_t>(0,n,grainSize),
             Work_ParallelForN_TBB(callback),
             ctx);
 
@@ -108,6 +110,23 @@ WorkParallelForN(size_t n, Fn &&callback)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///
+/// WorkParallelForN(size_t n, CallbackType callback, size_t grainSize = 1)
+///
+/// Runs \p callback in parallel over the range 0 to n.
+///
+/// Callback must be of the form:
+///
+///     void LoopCallback(size_t begin, size_t end);
+///
+///
+template <typename Fn>
+void
+WorkParallelForN(size_t n, Fn &&callback)
+{
+    WorkParallelForN(n, callback, 1);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
