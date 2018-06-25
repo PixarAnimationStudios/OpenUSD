@@ -39,6 +39,7 @@
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -512,6 +513,10 @@ public:
     // to this function.
     HD_API 
     virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
+
+    // Returns the metadata dictionary for the given material ID. 
+    HD_API
+    virtual VtDictionary GetMaterialMetadata(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects

@@ -176,7 +176,11 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // note: if we add topologyId computation in delegate,
         // we can move this copy into topologyInstance.IsFirstInstance() block
         HdDisplayStyle const displayStyle = GetDisplayStyle(sceneDelegate);
+
         int refineLevel = displayStyle.refineLevel;
+        HdSt_MeshTopology::RefineMode refineMode =
+                HdSt_MeshTopology::RefineModeUniform;
+
         _smoothNormalsEnabled = !displayStyle.flatShadingEnabled;
         _displacementEnabled = displayStyle.displacementEnabled;
               
@@ -190,10 +194,14 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             _smoothNormalsEnabled = false;
         } else if (meshTopology.GetScheme() == PxOsdOpenSubdivTokens->bilinear) {
             _smoothNormalsEnabled = false;
+        } else if (refineLevel > 0 &&
+                   _UseLimitRefinement(sceneDelegate->GetRenderIndex())) {
+            refineMode = HdSt_MeshTopology::RefineModePatches;
+            _smoothNormalsEnabled = false;
         }
 
         HdSt_MeshTopologySharedPtr topology =
-                    HdSt_MeshTopology::New(meshTopology, refineLevel);
+                HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode);
         if (refineLevel > 0) {
             // add subdiv tags before compute hash
             // XXX: calling GetSubdivTags on implicit prims raises an error.
@@ -1131,6 +1139,25 @@ HdStMesh::_UseQuadIndices(
     // Fallback to the environment variable, which allows forcing of
     // quadrangulation for debugging/testing.
     return _IsEnabledForceQuadrangulate();
+}
+
+bool
+HdStMesh::_UseLimitRefinement(const HdRenderIndex &renderIndex) const
+{
+    const HdStMaterial *material =
+        static_cast<const HdStMaterial *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material,
+                                     GetMaterialId()));
+    if (material == nullptr) {
+        material = static_cast<const HdStMaterial *>(
+                    renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
+    }
+
+    if (material->HasLimitSurfaceEvaluation()) {
+        return true;
+    }
+
+    return false;
 }
 
 static std::string

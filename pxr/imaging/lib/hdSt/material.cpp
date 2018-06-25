@@ -37,9 +37,17 @@
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/uvTextureStorage.h"
 
+#include "pxr/base/tf/staticTokens.h"
+
 #include <boost/pointer_cast.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (limitSurfaceEvaluation)
+);
 
 // A bindless GL sampler buffer.
 // This identifies a texture as a 64-bit handle, passed to GLSL as "uvec2".
@@ -107,6 +115,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
  , _surfaceShader(new HdStSurfaceShader)
  , _hasPtex(false)
+ , _hasLimitSurfaceEvaluation(false)
 {
 }
 
@@ -129,6 +138,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
     HdDirtyBits bits = *dirtyBits;
 
+    bool needsRprimMaterialStateUpdate = false;
+
     if(bits & DirtySurfaceShader) {
         const std::string &fragmentSource =
                 GetSurfaceShaderSource(sceneDelegate);
@@ -145,6 +156,15 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         HdChangeTracker& changeTracker =
                              sceneDelegate->GetRenderIndex().GetChangeTracker();
         changeTracker.MarkAllCollectionsDirty();
+
+        bool hasLimitSurfaceEvaluation =
+            _GetHasLimitSurfaceEvaluation(GetMaterialMetadata(sceneDelegate));
+
+        if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
+            _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
+            needsRprimMaterialStateUpdate = true;
+        }
+
     }
 
     if(bits & DirtyParams) {
@@ -249,14 +269,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
         if (_hasPtex != hasPtex) {
             _hasPtex = hasPtex;
-
-            // XXX Forcing rprims to have a dirty material id to re-evaluate
-            // their material state as we don't know which rprims are bound to
-            // this one.
-            HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-            changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
+            needsRprimMaterialStateUpdate = true;
         }
+    }
+
+    if (needsRprimMaterialStateUpdate) {
+        // XXX Forcing rprims to have a dirty material id to re-evaluate
+        // their material state as we don't know which rprims are bound to
+        // this one.
+        HdChangeTracker& changeTracker =
+                         sceneDelegate->GetRenderIndex().GetChangeTracker();
+        changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
     }
 
     *dirtyBits = Clean;
@@ -326,6 +349,15 @@ HdStMaterial::_GetTextureResource(
     }
 
     return texResource;
+}
+
+bool
+HdStMaterial::_GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const
+{
+    VtValue value = TfMapLookupByValue(metadata,
+                                       _tokens->limitSurfaceEvaluation,
+                                       VtValue());
+    return value.IsHolding<bool>() && value.Get<bool>();
 }
 
 // virtual

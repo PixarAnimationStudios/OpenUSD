@@ -97,6 +97,8 @@ protected:
     bool _UseQuadIndices(const HdRenderIndex &renderIndex,
                          HdSt_MeshTopologySharedPtr const & topology) const;
 
+    bool _UseLimitRefinement(const HdRenderIndex &renderIndex) const;
+
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,

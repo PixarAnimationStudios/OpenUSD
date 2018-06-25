@@ -88,6 +88,10 @@ public:
     inline VtValue GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
                                          TfToken const &paramName) const;
 
+    /// Obtains the metadata dictionary for the material.
+    inline VtDictionary GetMaterialMetadata(
+        HdSceneDelegate* sceneDelegate) const;
+
     /// Obtain the scene delegates's globally unique id for the texture
     /// resource identified by textureId.
     inline HdTextureResource::ID GetTextureResourceID(
@@ -100,6 +104,9 @@ public:
     /// the method returns false.
     inline bool HasPtex() const;
 
+    /// Returns true if the material specifies limit surface evaluation.
+    inline bool HasLimitSurfaceEvaluation() const;
+
     /// Replaces the shader code object with an externally created one
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
@@ -111,9 +118,13 @@ private:
     _GetTextureResource(HdSceneDelegate *sceneDelegate,
                         HdMaterialParam const &param);
 
+    bool
+    _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
+
     HdStSurfaceShaderSharedPtr         _surfaceShader;
     HdStTextureResourceSharedPtrVector _fallbackTextureResources;
     bool                               _hasPtex;
+    bool                               _hasLimitSurfaceEvaluation;
 };
 
 inline std::string
@@ -141,6 +152,12 @@ HdStMaterial::GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
     return sceneDelegate->GetMaterialParamValue(GetId(), paramName);
 }
 
+inline VtDictionary
+HdStMaterial::GetMaterialMetadata(HdSceneDelegate* sceneDelegate) const
+{
+    return sceneDelegate->GetMaterialMetadata(GetId());
+}
+
 inline HdTextureResource::ID
 HdStMaterial::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
                                SdfPath const& textureId) const
@@ -151,6 +168,11 @@ HdStMaterial::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
 inline bool HdStMaterial::HasPtex() const
 {
     return _hasPtex;
+}
+
+inline bool HdStMaterial::HasLimitSurfaceEvaluation() const
+{
+    return _hasLimitSurfaceEvaluation;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

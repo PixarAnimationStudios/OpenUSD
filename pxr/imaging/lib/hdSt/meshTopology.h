@@ -56,8 +56,16 @@ typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
 ///
 class HdSt_MeshTopology final : public HdMeshTopology {
 public:
-    static HdSt_MeshTopologySharedPtr New(const HdMeshTopology &src,
-                                          int refineLevel);
+    /// Specifies how subdivision mesh topology is refined.
+    enum RefineMode {
+        RefineModeUniform = 0,
+        RefineModePatches
+    };
+
+    static HdSt_MeshTopologySharedPtr New(
+        const HdMeshTopology &src,
+        int refineLevel,
+        RefineMode refineMode = RefineModeUniform);
 
     virtual ~HdSt_MeshTopology();
 
@@ -186,11 +194,15 @@ private:
     HdSt_QuadInfoBuilderComputationPtr _quadInfoBuilder;
 
     // OpenSubdiv
+    RefineMode _refineMode;
     HdSt_Subdivision *_subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
 
     // Must be created through factory
-    explicit HdSt_MeshTopology(const HdMeshTopology &src, int refineLevel);
+    explicit HdSt_MeshTopology(
+        const HdMeshTopology &src,
+        int refineLevel,
+        RefineMode refineMode);
 
     // No default construction or copying.
     HdSt_MeshTopology()                                      = delete;

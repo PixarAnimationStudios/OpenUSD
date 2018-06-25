@@ -308,6 +308,13 @@ HdSceneDelegate::GetMaterialPrimvars(SdfPath const &materialId)
     return TfTokenVector();
 }
 
+/* virtual */
+VtDictionary
+HdSceneDelegate::GetMaterialMetadata(SdfPath const &materialId)
+{
+    return VtDictionary();
+}
+
 
 // -----------------------------------------------------------------------//
 /// \name Texture Aspects
