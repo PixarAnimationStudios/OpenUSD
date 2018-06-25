@@ -40,6 +40,7 @@
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MItMeshFaceVertex.h>
+#include <maya/MItMeshVertex.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -358,6 +359,7 @@ bool MayaMeshWriter::_GetMeshColorSetData(
 bool MayaMeshWriter::_createAlphaPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
+        const UsdTimeCode& usdTime,
         const VtArray<float>& data,
         const TfToken& interpolation,
         const VtArray<int>& assignmentIndices,
@@ -378,11 +380,11 @@ bool MayaMeshWriter::_createAlphaPrimVar(
         primSchema.CreatePrimvar(name,
                                  SdfValueTypeNames->FloatArray,
                                  interp);
-    _SetAttribute(primVar.GetAttr(), data);
+    _SetAttribute(primVar.GetAttr(), data, usdTime);
 
     if (!assignmentIndices.empty()) {
-        primVar.SetIndices(assignmentIndices);
-        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+        _SetAttribute(primVar.CreateIndicesAttr(), assignmentIndices, usdTime);
+        if (unassignedValueIndex == 0) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
         }
     }
@@ -397,6 +399,7 @@ bool MayaMeshWriter::_createAlphaPrimVar(
 bool MayaMeshWriter::_createRGBPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
+        const UsdTimeCode& usdTime,
         const VtArray<GfVec3f>& data,
         const TfToken& interpolation,
         const VtArray<int>& assignmentIndices,
@@ -417,11 +420,11 @@ bool MayaMeshWriter::_createRGBPrimVar(
         primSchema.CreatePrimvar(name,
                                  SdfValueTypeNames->Color3fArray,
                                  interp);
-    _SetAttribute(primVar.GetAttr(), data);
+    _SetAttribute(primVar.GetAttr(), data, usdTime);
 
     if (!assignmentIndices.empty()) {
-        primVar.SetIndices(assignmentIndices);
-        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+        _SetAttribute(primVar.CreateIndicesAttr(), assignmentIndices, usdTime);
+        if (unassignedValueIndex == 0) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
         }
     }
@@ -436,6 +439,7 @@ bool MayaMeshWriter::_createRGBPrimVar(
 bool MayaMeshWriter::_createRGBAPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
+        const UsdTimeCode& usdTime,
         const VtArray<GfVec3f>& rgbData,
         const VtArray<float>& alphaData,
         const TfToken& interpolation,
@@ -463,11 +467,11 @@ bool MayaMeshWriter::_createRGBAPrimVar(
         rgbaData[i] = GfVec4f(rgbData[i][0], rgbData[i][1], rgbData[i][2],
                               alphaData[i]);
     }
-    _SetAttribute(primVar.GetAttr(), rgbaData);
+    _SetAttribute(primVar.GetAttr(), rgbaData, usdTime);
 
     if (!assignmentIndices.empty()) {
-        primVar.SetIndices(assignmentIndices);
-        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+        _SetAttribute(primVar.CreateIndicesAttr(), assignmentIndices, usdTime);
+        if (unassignedValueIndex == 0) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
         }
     }
@@ -482,6 +486,7 @@ bool MayaMeshWriter::_createRGBAPrimVar(
 bool MayaMeshWriter::_createUVPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
+        const UsdTimeCode& usdTime,
         const VtArray<GfVec2f>& data,
         const TfToken& interpolation,
         const VtArray<int>& assignmentIndices,
@@ -502,11 +507,11 @@ bool MayaMeshWriter::_createUVPrimVar(
     UsdGeomPrimvar primVar = 
         primSchema.CreatePrimvar(name, uvValueType, interp);
     
-    _SetAttribute(primVar.GetAttr(), data);
+    _SetAttribute(primVar.GetAttr(), data, usdTime);
 
     if (!assignmentIndices.empty()) {
-        primVar.SetIndices(assignmentIndices);
-        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+        _SetAttribute(primVar.CreateIndicesAttr(), assignmentIndices, usdTime);
+        if (unassignedValueIndex == 0) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
         }
     }
@@ -516,6 +521,7 @@ bool MayaMeshWriter::_createUVPrimVar(
 
 bool MayaMeshWriter::_addDisplayPrimvars(
         UsdGeomGprim &primSchema,
+        const UsdTimeCode& usdTime,
         const MFnMesh::MColorRepresentation colorRep,
         const VtArray<GfVec3f>& RGBData,
         const VtArray<float>& AlphaData,
@@ -525,18 +531,21 @@ bool MayaMeshWriter::_addDisplayPrimvars(
         const bool clamped,
         const bool authored)
 {
+    // We are appending the default value to the primvar in the post export function
+    // so if the dataset is empty and the assignment indices are not, we still
+    // have to set an empty array.
     // If we already have an authored value, don't try to write a new one.
     UsdAttribute colorAttr = primSchema.GetDisplayColorAttr();
-    if (!colorAttr.HasAuthoredValueOpinion() && !RGBData.empty()) {
+    if (!colorAttr.HasAuthoredValueOpinion() && (!RGBData.empty() || !assignmentIndices.empty())) {
         UsdGeomPrimvar displayColor = primSchema.CreateDisplayColorPrimvar();
         if (interpolation != displayColor.GetInterpolation()) {
             displayColor.SetInterpolation(interpolation);
         }
-        _SetAttribute(displayColor.GetAttr(), RGBData);
+        _SetAttribute(displayColor.GetAttr(), RGBData, usdTime);
 
         if (!assignmentIndices.empty()) {
-            displayColor.SetIndices(assignmentIndices);
-            if (unassignedValueIndex != displayColor.GetUnauthoredValuesIndex()) {
+            _SetAttribute(displayColor.CreateIndicesAttr(), assignmentIndices, usdTime);
+            if (unassignedValueIndex == 0) {
                displayColor.SetUnauthoredValuesIndex(unassignedValueIndex);
             }
         }
@@ -555,7 +564,7 @@ bool MayaMeshWriter::_addDisplayPrimvars(
     }
 
     UsdAttribute alphaAttr = primSchema.GetDisplayOpacityAttr();
-    if (!alphaAttr.HasAuthoredValueOpinion() && !AlphaData.empty()) {
+    if (!alphaAttr.HasAuthoredValueOpinion() && (!AlphaData.empty() || !assignmentIndices.empty())) {
         // we consider a single alpha value that is 1.0 to be the "default"
         // value.  We only want to write values that are not the "default".
         bool hasDefaultAlpha = AlphaData.size() == 1 && GfIsClose(AlphaData[0], 1.0, 1e-9);
@@ -564,11 +573,11 @@ bool MayaMeshWriter::_addDisplayPrimvars(
             if (interpolation != displayOpacity.GetInterpolation()) {
                 displayOpacity.SetInterpolation(interpolation);
             }
-            _SetAttribute(displayOpacity.GetAttr(), AlphaData);
+            _SetAttribute(displayOpacity.GetAttr(), AlphaData, usdTime);
 
             if (!assignmentIndices.empty()) {
-                displayOpacity.SetIndices(assignmentIndices);
-                if (unassignedValueIndex != displayOpacity.GetUnauthoredValuesIndex()) {
+                _SetAttribute(displayOpacity.CreateIndicesAttr(), assignmentIndices, usdTime);
+                if (unassignedValueIndex == 0) {
                    displayOpacity.SetUnauthoredValuesIndex(unassignedValueIndex);
                 }
             }

@@ -528,6 +528,11 @@ public:
     /// an invalid attribute otherwise.
     USDGEOM_API
     UsdAttribute GetIndicesAttr() const;
+
+    /// Returns the existing indices attribute if the primvar is indexed
+    /// or creates a new one.
+    USDGEOM_API
+    UsdAttribute CreateIndicesAttr() const;
     
     /// Set the index that represents unauthored values in the indices array.
     /// 
