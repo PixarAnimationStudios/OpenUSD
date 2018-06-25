@@ -37,7 +37,8 @@ NdrNode::NdrNode(
     const TfToken& sourceType,
     const std::string& uri,
     NdrPropertyUniquePtrVec&& properties,
-    const NdrTokenMap& metadata)
+    const NdrTokenMap& metadata,
+    const std::string &sourceCode)
     : _identifier(identifier),
       _version(version),
       _name(name),
@@ -46,7 +47,8 @@ NdrNode::NdrNode(
       _sourceType(sourceType),
       _uri(uri),
       _properties(std::move(properties)),
-      _metadata(metadata)
+      _metadata(metadata),
+      _sourceCode(sourceCode)
 {
     // If the properties are not empty, that signifies that the node was parsed
     // successfully, and thus the node is valid.

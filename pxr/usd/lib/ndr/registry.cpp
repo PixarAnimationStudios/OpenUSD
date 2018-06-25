@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/usd/ndr/debugCodes.h"
@@ -31,6 +32,8 @@
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/registry.h"
+
+#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -112,6 +115,76 @@ _MatchesFamilyAndFilter(
     return true;
 }
 
+static NdrIdentifier 
+_GetIdentifierForAsset(const SdfAssetPath &asset,
+                       const NdrTokenMap &metadata) 
+{
+    size_t h = 0;
+    boost::hash_combine(h, asset);
+    for (const auto &i : metadata) { 
+        boost::hash_combine(h, i.first.GetString());
+        boost::hash_combine(h, i.second);
+    }
+    return NdrIdentifier(std::to_string(h));
+}
+
+static NdrIdentifier 
+_GetIdentifierForSourceCode(const std::string &sourceCode, 
+                            const NdrTokenMap &metadata) 
+{
+    size_t h = 0;
+    boost::hash_combine(h, sourceCode);
+    for (const auto &i : metadata) { 
+        boost::hash_combine(h, i.first.GetString());
+        boost::hash_combine(h, i.second);
+    }
+    return NdrIdentifier(std::to_string(h));
+}
+
+static 
+bool
+_ValidateNode(const NdrNodeUniquePtr &newNode, 
+              const NdrNodeDiscoveryResult &dr)
+{
+    // Validate the node.                                                                                                                                                                                                                                                                                                                                                                                            
+    if (!newNode) {
+        TF_RUNTIME_ERROR("Parser for asset @%s@ of type %s returned null",
+            dr.resolvedUri.c_str(), dr.discoveryType.GetText());
+        return false;
+    }
+    
+    // The node is invalid; continue without further error checking.
+    // 
+    // XXX -- WBN if these were just automatically copied and parser plugins
+    //        didn't have to deal with them.
+    if (newNode->IsValid() &&
+        !(newNode->GetIdentifier() == dr.identifier &&
+          newNode->GetName() == dr.name &&
+          newNode->GetVersion() == dr.version &&
+          newNode->GetFamily() == dr.family &&
+          newNode->GetSourceType() == dr.sourceType)) {
+        TF_RUNTIME_ERROR(
+               "Parsed node %s:%s:%s:%s:%s doesn't match discovery result "
+               "created for asset @%s@ - "
+               "%s:%s:%s:%s:%s (identifier:version:name:family:source type); "
+               "discarding.",
+               NdrGetIdentifierString(newNode->GetIdentifier()).c_str(),
+               newNode->GetVersion().GetString().c_str(),
+               newNode->GetName().c_str(),
+               newNode->GetFamily().GetText(),
+               newNode->GetSourceType().GetText(),
+               dr.resolvedUri.c_str(),
+               NdrGetIdentifierString(dr.identifier).c_str(),
+               dr.version.GetString().c_str(),
+               dr.name.c_str(),
+               dr.family.GetText(),
+               dr.sourceType.GetText());
+        return false;
+    }
+
+    return true;
+}
+
 } // anonymous namespace
 
 class NdrRegistry::_DiscoveryContext : public NdrDiscoveryPluginContext {
@@ -171,6 +244,145 @@ NdrRegistry::SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins)
                              std::make_move_iterator(plugins.end()));
 
     _RunDiscoveryPlugins(plugins);
+}
+
+NdrNodeConstPtr 
+NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
+                              const NdrTokenMap &metadata)
+{
+    // Ensure there is a parser plugin that can handle this asset.
+    TfToken discoveryType(TfGetExtension(asset.GetAssetPath()));
+    auto parserIt = _parserPluginMap.find(discoveryType);
+
+    // Ensure that there is a parser registered corresponding to the 
+    // discoveryType of the asset.
+    if (parserIt == _parserPluginMap.end()) {
+        TF_DEBUG(NDR_PARSING).Msg("Encountered a asset @%s@ of type [%s], but "
+                                  "a parser for the type could not be found; "
+                                  "ignoring.", asset.GetAssetPath().c_str(),
+                                  discoveryType.GetText());
+        return nullptr;
+    }
+
+    NdrIdentifier identifier = _GetIdentifierForAsset(asset, metadata);
+
+    // Get the sourceType from the parser plugin.
+    const TfToken &sourceType = parserIt->second->GetSourceType();
+    NodeMapKey key{identifier, sourceType};
+
+    // Return the existing node in the map if an entry for the constructed node 
+    // key already exists. 
+    std::unique_lock<std::mutex> nmLock(_nodeMapMutex);
+    auto it = _nodeMap.find(key);
+    if (it != _nodeMap.end()) {
+        // Get the raw ptr from the unique_ptr
+        return it->second.get();
+    }
+
+    // Ensure the map is not locked at this point. The parse is the bulk of the
+    // operation, and concurrency is the most valuable here.
+    nmLock.unlock();
+
+    // Construct a NdrNodeDiscoveryResult object to pass into the parser 
+    // plugin's Parse() method.
+    // XXX: Should we try resolving the assetPath if the resolved path is empty.
+    std::string resolvedUri = asset.GetResolvedPath().empty() ? 
+        asset.GetAssetPath() : asset.GetResolvedPath();
+
+    NdrNodeDiscoveryResult dr(identifier, 
+                              NdrVersion(), /* use an invalid version */
+                              /* name */ identifier, 
+                              /*family*/ TfToken(), 
+                              discoveryType, 
+                              sourceType, 
+                              /* uri */ asset.GetAssetPath(),
+                              resolvedUri, 
+                              /* sourceCode */ "",
+                              metadata);
+
+    NdrNodeUniquePtr newNode = parserIt->second->Parse(dr);
+
+    if (!_ValidateNode(newNode, dr)) {
+        return nullptr;
+    }
+
+    nmLock.lock();
+
+    NodeMap::const_iterator result =
+        _nodeMap.emplace(std::move(key), std::move(newNode));
+
+    // Get the unique_ptr from the iterator, then get its raw ptr
+    return result->second.get();
+}
+
+NdrNodeConstPtr 
+NdrRegistry::GetNodeFromSourceCode(const std::string &sourceCode,
+                                   const TfToken &sourceType,
+                                   const NdrTokenMap &metadata)
+{
+    // Ensure that there is a parser registered corresponding to the 
+    // given sourceType.
+    NdrParserPlugin *parserForSourceType = nullptr;
+    for (const auto &parserIt : _parserPlugins) {
+        if (parserIt->GetSourceType() == sourceType) {
+            parserForSourceType = parserIt.get();
+        }
+    }
+
+    if (!parserForSourceType) {
+        // XXX: Should we try looking for sourceType in _parserPluginMap, 
+        // in case it corresponds to a discovery type in Ndr?
+       
+        TF_DEBUG(NDR_PARSING).Msg("Encountered source code of type [%s], but "
+                                  "a parser for the type could not be found; "
+                                  "ignoring.", sourceType.GetText());
+        return nullptr;
+    }
+
+    NdrIdentifier identifier = _GetIdentifierForSourceCode(sourceCode, 
+            metadata);
+    NodeMapKey key{identifier, sourceType};
+
+    // Return the existing node in the map if an entry for the constructed node 
+    // key already exists. 
+    std::unique_lock<std::mutex> nmLock(_nodeMapMutex);
+    auto it = _nodeMap.find(key);
+    if (it != _nodeMap.end()) {
+        // Get the raw ptr from the unique_ptr
+        return it->second.get();
+    }
+
+    // Ensure the map is not locked at this point. The parse is the bulk of the
+    // operation, and concurrency is the most valuable here.
+    nmLock.unlock();
+
+    NdrNodeDiscoveryResult dr(identifier, 
+                              NdrVersion(), /* use an invalid version */
+                              /* name */ identifier, 
+                              /*family*/ TfToken(), 
+                              // XXX: Setting discoveryType also to sourceType.
+                              // Do ParserPlugins rely on it? If yes, should they?
+                              /* discoveryType */ sourceType, 
+                              sourceType, 
+                              /* uri */ "",
+                              /* resolvedUri */ "",
+                               sourceCode,
+                               metadata);
+
+    NdrNodeUniquePtr newNode = parserForSourceType->Parse(dr);
+    if (!newNode) {
+        TF_RUNTIME_ERROR("Could not create node for the given source code of "
+            "source type '%s'.", sourceType.GetText());
+        return nullptr;
+    }
+
+    nmLock.lock();
+
+    NodeMap::const_iterator result =
+        _nodeMap.emplace(std::move(key), std::move(newNode));
+
+    // Get the unique_ptr from the iterator, then get its raw ptr
+    return result->second.get();
 }
 
 NdrStringVec
@@ -435,9 +647,7 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
 
-        _discoveryPlugins.emplace_back(
-            pluginFactory->New()
-        );
+        _discoveryPlugins.emplace_back(pluginFactory->New());
     }
 }
 
@@ -522,38 +732,10 @@ NdrRegistry::_InsertNodeIntoCache(const NdrNodeDiscoveryResult& dr)
     NdrNodeUniquePtr newNode = i->second->Parse(dr);
 
     // Validate the node.
-    if (!newNode) {
-        TF_RUNTIME_ERROR(
-            "Parser for node %s of type %s returned null",
-            dr.name.c_str(), dr.discoveryType.GetText());
+    if (!_ValidateNode(newNode, dr)) {
         return nullptr;
     }
-    else if (!newNode->IsValid()) {
-        // The node is invalid; continue without further error checking.
-    }
-    // XXX -- WBN if these were just automatically copied and parser plugins
-    //        didn't have to deal with them.
-    else if (!(newNode->GetIdentifier() == dr.identifier &&
-               newNode->GetName() == dr.name &&
-               newNode->GetVersion() == dr.version &&
-               newNode->GetFamily() == dr.family &&
-               newNode->GetSourceType() == dr.sourceType)) {
-        TF_RUNTIME_ERROR(
-               "Parsed node %s:%s:%s:%s:%s doesn't match discovery result "
-               "%s:%s:%s:%s:%s (name:source type:family); discarding.",
-               NdrGetIdentifierString(newNode->GetIdentifier()).c_str(),
-               newNode->GetVersion().GetString().c_str(),
-               newNode->GetName().c_str(),
-               newNode->GetFamily().GetText(),
-               newNode->GetSourceType().GetText(),
-               NdrGetIdentifierString(dr.identifier).c_str(),
-               dr.version.GetString().c_str(),
-               dr.name.c_str(),
-               dr.family.GetText(),
-               dr.sourceType.GetText());
-        return nullptr;
-    }
-
+    
     nmLock.lock();
 
     NodeMap::const_iterator result =

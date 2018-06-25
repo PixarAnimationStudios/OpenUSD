@@ -58,7 +58,8 @@ public:
             const TfToken& sourceType,
             const std::string& uri,
             NdrPropertyUniquePtrVec&& properties,
-            const NdrTokenMap& metadata = NdrTokenMap());
+            const NdrTokenMap& metadata = NdrTokenMap(),
+            const std::string &sourceCode = std::string());
 
     /// Destructor.
     NDR_API
@@ -68,21 +69,17 @@ public:
     /// @{
 
     /// Return the identifier of the node.
-    NDR_API
-    virtual const NdrIdentifier& GetIdentifier() const { return _identifier; }
+    const NdrIdentifier& GetIdentifier() const { return _identifier; }
 
     /// Return the version of the node
-    NDR_API
     NdrVersion GetVersion() const { return _version; }
 
     /// Gets the name of the node.
-    NDR_API
-    virtual const std::string& GetName() const { return _name; }
+    const std::string& GetName() const { return _name; }
 
     /// Gets the name of the family that the node belongs to. An empty token
     /// will be returned if the node does not belong to a family.
-    NDR_API
-    virtual const TfToken& GetFamily() const { return _family; }
+    const TfToken& GetFamily() const { return _family; }
 
     /// Gets the context of the node.
     ///
@@ -96,8 +93,7 @@ public:
     /// `SdrArgsParser::SourceType` may declare itself as having a context of
     /// 'pattern', while another shader of the same source type may say it is
     /// used for lighting, and thus has a context of 'light'.
-    NDR_API
-    virtual const TfToken& GetContext() const { return _context; }
+    const TfToken& GetContext() const { return _context; }
 
     /// Gets the type of source that this node originated from.
     ///
@@ -111,22 +107,33 @@ public:
     /// under each source type may declare themselves as having a specific
     /// context (shaders can serve different roles). See `GetContext()` for
     /// more information on this.
-    NDR_API
-    virtual const TfToken& GetSourceType() const { return _sourceType; }
+    const TfToken& GetSourceType() const { return _sourceType; }
 
     /// Gets the URI to the resource that this node originated from. Could be a
     /// path to a file, or some other resource identifier.
-    NDR_API
-    virtual const std::string& GetSourceURI() const { return _uri; }
+    const std::string& GetSourceURI() const { return _uri; }
+
+    /// Returns  the source code for this node. This will be empty for most 
+    /// nodes. It will be non-empty only for the nodes that are constructed 
+    /// using \ref NdrRegistry::GetNodeFromSourceCode(), in which case, the 
+    /// source code has not been parsed (or even compiled) yet. 
+    /// 
+    /// An unparsed node with non-empty source-code but no properties is 
+    /// considered to be invalid. Once the node is parsed and the relevant 
+    /// properties and metadata are extracted from the source code, the node 
+    /// becomes valid.
+    /// 
+    /// \sa NdrNode::IsValid
+    const std::string &GetSourceCode() const { return _sourceCode; }
 
     /// Whether or not this node is valid. A node that is valid indicates that
     /// the parser plugin was able to successfully parse the contents of this
     /// node.
     ///
-    /// Note that if a node is not valid, some data like its name will still be
-    /// available (data that was obtained during the discovery process).
-    /// However, other data that must be gathered from the parsing process will
-    /// NOT be correct (eg, inputs/outputs).
+    /// Note that if a node is not valid, some data like its name, URI, source 
+    /// code etc. could still be available (data that was obtained during the 
+    /// discovery process). However, other data that must be gathered from the 
+    /// parsing process will NOT be available (eg, inputs and outputs).
     NDR_API
     virtual bool IsValid() const { return _isValid; }
 
@@ -144,21 +151,21 @@ public:
 
     /// Get an ordered list of all the input names on this node.
     NDR_API
-    virtual const NdrTokenVec& GetInputNames() const;
+    const NdrTokenVec& GetInputNames() const;
 
     /// Get an ordered list of all the output names on this node.
     NDR_API
-    virtual const NdrTokenVec& GetOutputNames() const;
+    const NdrTokenVec& GetOutputNames() const;
 
     /// Get an input property by name. `nullptr` is returned if an input with
     /// the given name does not exist.
     NDR_API
-    virtual NdrPropertyConstPtr GetInput(const TfToken& inputName) const;
+    NdrPropertyConstPtr GetInput(const TfToken& inputName) const;
 
     /// Get an output property by name. `nullptr` is returned if an output with
     /// the given name does not exist.
     NDR_API
-    virtual NdrPropertyConstPtr GetOutput(const TfToken& outputName) const;
+    NdrPropertyConstPtr GetOutput(const TfToken& outputName) const;
 
     /// @}
 
@@ -174,7 +181,7 @@ public:
     /// isolate values in the metadata (with possible manipulations and/or
     /// additional parsing) and expose those values in their API.
     NDR_API
-    virtual const NdrTokenMap& GetMetadata() const;
+    const NdrTokenMap& GetMetadata() const;
 
     /// @}
 
@@ -191,6 +198,8 @@ protected:
     std::string _uri;
     NdrPropertyUniquePtrVec _properties;
     NdrTokenMap _metadata;
+    std::string _sourceCode;
+
     NdrPropertyPtrMap _inputs;
     NdrTokenVec _inputNames;
     NdrPropertyPtrMap _outputs;

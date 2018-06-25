@@ -58,6 +58,7 @@ void wrapNode()
         .def("GetInputNames", &This::GetInputNames, copyRefPolicy)
         .def("GetOutput", &This::GetOutput, return_internal_reference<>())
         .def("GetOutputNames", &This::GetOutputNames, copyRefPolicy)
+        .def("GetSourceCode", &This::GetSourceCode, copyRefPolicy)
         .def("GetMetadata", &This::GetMetadata,
             return_value_policy<TfPyMapToDictionary>())
         ;

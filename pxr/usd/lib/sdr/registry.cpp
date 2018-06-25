@@ -86,6 +86,25 @@ SdrRegistry::GetShaderNodeByIdentifierAndType(
     );
 }
 
+SdrShaderNodeConstPtr 
+SdrRegistry::GetShaderNodeFromAsset(
+    const SdfAssetPath &shaderAsset,
+    const NdrTokenMap &metadata)
+{
+    return NdrNodeToShaderNode(
+        GetInstance().GetNodeFromAsset(shaderAsset, metadata));
+}
+
+SdrShaderNodeConstPtr 
+SdrRegistry::GetShaderNodeFromSourceCode(
+    const std::string &sourceCode,
+    const TfToken &sourceType,
+    const NdrTokenMap &metadata)
+{
+    return NdrNodeToShaderNode(GetInstance().GetNodeFromSourceCode(
+        sourceCode, sourceType, metadata));
+}
+
 SdrShaderNodeConstPtr
 SdrRegistry::GetShaderNodeByName(
     const std::string& name, const NdrTokenVec& typePriority,

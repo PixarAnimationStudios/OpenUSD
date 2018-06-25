@@ -36,6 +36,7 @@
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/parserPlugin.h"
+#include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -77,6 +78,44 @@ public:
     /// result.
     NDR_API
     void SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins);
+
+    /// Parses the given \p asset, constucts a NdrNode from it and adds it to 
+    /// the registry. 
+    /// 
+    /// Nodes created from an asset using this API can be looked up by the 
+    /// unique identifier and sourceType of the returned node, or by URI, 
+    /// which will be set to the unresolved asset path value.
+    /// 
+    /// \p metadata contains additional metadata needed for parsing and 
+    /// compiling the source code in the file pointed to by \p asset correctly.
+    /// This metadata supplements the metadata available in the asset and 
+    /// overrides it in cases where there are key collisions.
+    /// 
+    /// Returns a valid node if the asset is parsed successfully using one 
+    /// of the registered parser plugins.
+    NDR_API
+    NdrNodeConstPtr GetNodeFromAsset(const SdfAssetPath &asset,
+                                     const NdrTokenMap &metadata);
+
+    /// Parses the given \p sourceCode string, constructs a NdrNode from it and 
+    /// adds it to the registry. The parser to be used is determined by the 
+    /// specified \p sourceType.
+    /// 
+    /// Nodes created from source code using this API can be looked up by the 
+    /// unique identifier and sourceType of the returned node.
+    /// 
+    /// \p metadata contains additional metadata needed for parsing and 
+    /// compiling the source code correctly. This metadata supplements the 
+    /// metadata available in \p sourceCode and overrides it cases where there 
+    /// are key collisions.
+    /// 
+    /// Returns a valid node if the given source code is parsed successfully 
+    /// using the parser plugins that is registered for the specified 
+    /// \p sourceType.
+    NDR_API
+    NdrNodeConstPtr GetNodeFromSourceCode(const std::string &sourceCode,
+                                          const TfToken &sourceType,
+                                          const NdrTokenMap &metadata);
 
     /// Get the locations where the registry is searching for nodes.
     ///

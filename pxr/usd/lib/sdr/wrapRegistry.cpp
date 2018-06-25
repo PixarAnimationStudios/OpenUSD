@@ -58,6 +58,15 @@ void wrapRegistry()
             (args("identifier"),
              args("nodeType")),
             return_internal_reference<>())
+
+        .def("GetShaderNodeFromAsset", &This::GetShaderNodeFromAsset,
+             (arg("shaderAsset"), arg("metadata")=NdrTokenMap()),
+             return_internal_reference<>())
+        .def("GetShaderNodeFromSourceCode", &This::GetShaderNodeFromSourceCode,
+             (arg("sourceCode"), arg("sourceType"), 
+              arg("metadata")=NdrTokenMap()),
+             return_internal_reference<>())
+
         .def("GetShaderNodeByName", &This::GetShaderNodeByName,
             (args("name"),
              args("typePriority") = NdrTokenVec(),

@@ -79,7 +79,8 @@ public:
                   const TfToken& sourceType,
                   const std::string& uri,
                   NdrPropertyUniquePtrVec&& properties,
-                  const NdrTokenMap& metadata = NdrTokenMap());
+                  const NdrTokenMap& metadata = NdrTokenMap(),
+                  const std::string &sourceCode = std::string());
 
     /// \name Inputs and Outputs
     /// An input or output is also generically referred to as a "property".

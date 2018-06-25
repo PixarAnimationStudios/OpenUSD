@@ -99,6 +99,17 @@ void wrapRegistry()
              args("nodeType"),
              args("filter") = NdrVersionFilterDefaultOnly),
             return_internal_reference<>())
+
+        .def("GetNodeFromAsset", &This::GetNodeFromAsset,
+             (arg("asset"), 
+              arg("metadata")=NdrTokenMap()),
+             return_internal_reference<>())
+        .def("GetNodeFromSourceCode", &This::GetNodeFromSourceCode,
+             (arg("sourceCode"), 
+              arg("sourceType"),
+              arg("metadata")=NdrTokenMap()),
+             return_internal_reference<>())
+
         .def("GetNodeByURI", &This::GetNodeByURI,
             return_internal_reference<>())
         .def("GetNodesByIdentifier", &This::GetNodesByIdentifier,

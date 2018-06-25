@@ -64,8 +64,7 @@ NdrParserPlugin::GetInvalidNode(const NdrNodeDiscoveryResult& dr)
             NdrParserPlugin::DiscoveryTypes.front(),
             NdrParserPlugin::SourceType,
             dr.uri,
-            /* properties = */ NdrPropertyUniquePtrVec(),
-            /* metadata = */ NdrTokenMap()
+            /* properties = */ NdrPropertyUniquePtrVec()
         )
     );
 }

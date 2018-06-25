@@ -265,7 +265,6 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
         metadata.pop("category")
         metadata.pop("label")
         metadata.pop("uncategorizedMetadata")
-        metadata["pages"] = ""
 
         outputNames.add("vstruct1")
         outputNames.add("vstruct1_bump")
@@ -311,7 +310,14 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
         "invalidPrimvarNamingProperty"
     }
     assert set(node.GetOutputNames()) == outputNames
-    assert node.GetMetadata() == metadata
+
+    # There may be additional metadata passed in via the NdrNodeDiscoveryResult.
+    # So, ensure that the bits we expect to see are there instead of doing 
+    # an equality check.
+    nodeMetadata = node.GetMetadata()
+    for i,j in metadata.iteritems():
+        assert i in nodeMetadata
+        assert nodeMetadata[i] == metadata[i]
 
     # Test basic property correctness
     TestBasicProperties(node)

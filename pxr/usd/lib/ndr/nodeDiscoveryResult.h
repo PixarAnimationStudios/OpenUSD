@@ -42,6 +42,8 @@ struct NdrNodeDiscoveryResult {
         const TfToken& sourceType,
         const std::string& uri,
         const std::string& resolvedUri,
+        const std::string &sourceCode=std::string(),
+        const NdrTokenMap &metadata=NdrTokenMap(),
         const std::string& blindData = std::string()
     ) : identifier(identifier),
         version(version),
@@ -51,6 +53,8 @@ struct NdrNodeDiscoveryResult {
         sourceType(sourceType),
         uri(uri),
         resolvedUri(resolvedUri),
+        sourceCode(sourceCode),
+        metadata(metadata),
         blindData(blindData)
     { }
 
@@ -110,6 +114,20 @@ struct NdrNodeDiscoveryResult {
     /// `Resolve()` returns. In any case, this path should be locally
     /// accessible.
     std::string resolvedUri;
+
+    /// The node's entire source code.
+    ///  
+    /// The source code is parsed (if non-empty) by parser plugins when the 
+    /// resolvedUri value is empty.
+    std::string sourceCode;
+
+    /// The node's metadata collected during the discovery process.
+    /// 
+    /// Additional metadata may be present in the node's source, in the asset
+    /// pointed to by resolvedUri or in sourceCode (if resolvedUri is empty).
+    /// In general, parsers should override this data with metadata from the 
+    /// shader source. 
+    NdrTokenMap metadata;
 
     /// An optional detail for the parser plugin.  The parser plugin
     /// defines the meaning of this data so the discovery plugin must

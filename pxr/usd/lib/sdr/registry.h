@@ -76,6 +76,21 @@ public:
         const TfToken& nodeType,
         NdrVersionFilter filter = NdrVersionFilterDefaultOnly);
 
+    /// Wrapper method for NdrRegistry::GetNodeFromAsset(). 
+    /// Returns a valid SdrShaderNode pointer upon success.
+    SDR_API
+    SdrShaderNodeConstPtr GetShaderNodeFromAsset(
+        const SdfAssetPath &shaderAsset,
+        const NdrTokenMap &metadata=NdrTokenMap());
+
+    /// Wrapper method for NdrRegistry::GetNodeFromSourceCode(). 
+    /// Returns a valid SdrShaderNode pointer upon success.
+    SDR_API
+    SdrShaderNodeConstPtr GetShaderNodeFromSourceCode(
+        const std::string &sourceCode,
+        const TfToken &sourceType,
+        const NdrTokenMap &metadata=NdrTokenMap());
+
     /// Exactly like `NdrRegistry::GetNodeByURI()`, but returns a
     /// `SdrShaderNode` pointer instead of a `NdrNode` pointer.
     SDR_API

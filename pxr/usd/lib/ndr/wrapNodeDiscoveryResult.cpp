@@ -29,7 +29,7 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
+namespace bp = boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -53,17 +53,104 @@ _Repr(const NdrNodeDiscoveryResult& x)
                        x.blindData.empty() ? "" :TfPyRepr(x.blindData).c_str());
 }
 
+// XXX: WBN if Tf provided this sort of converter for stl maps.
+template <typename MAP>
+struct MapConverter
+{
+    typedef MAP Map;
+    typedef typename Map::key_type Key;
+    typedef typename Map::mapped_type Value;
+
+    MapConverter()
+    {
+        boost::python::type_info info = boost::python::type_id<Map>();
+        boost::python::converter::registry::push_back(&convertible, &construct, 
+                                                      info);
+
+        const boost::python::converter::registration* reg =
+                boost::python::converter::registry::query(info);
+        if (reg == NULL || reg->m_to_python == NULL) {
+            boost::python::to_python_converter<Map, MapConverter<Map>>();
+        }
+    }
+    static PyObject* convert(const Map& map)
+    {
+        boost::python::dict result;
+        for (const auto& entry : map) {
+            result[entry.first] = entry.second;
+        }
+        return boost::python::incref(result.ptr());
+    }
+
+    static void* convertible(PyObject* obj_ptr)
+    {
+        if (!PyDict_Check(obj_ptr)) {
+            return nullptr;
+        }
+
+        boost::python::dict map = boost::python::extract<boost::python::dict>(
+                obj_ptr);
+        boost::python::list keys = map.keys();
+        boost::python::list values = map.values();
+        for (int i = 0; i < len(keys); ++i) {
+
+            boost::python::object keyObj = keys[i];
+            if (!boost::python::extract<Key>(keyObj).check()) {
+                return nullptr;
+            }
+
+            boost::python::object valueObj = values[i];
+            if (!boost::python::extract<Value>(valueObj).check()) {
+                return nullptr;
+            }
+        }
+
+        return obj_ptr;
+    }
+    static void construct(PyObject* obj_ptr,
+        boost::python::converter::rvalue_from_python_stage1_data* data)
+    {
+        void* storage = (
+                (boost::python::converter::rvalue_from_python_storage<Map>*)data
+            )->storage.bytes;
+        new (storage)Map();
+        data->convertible = storage;
+
+        Map& result = *((Map*)storage);
+
+        boost::python::dict map = 
+                boost::python::extract<boost::python::dict>(obj_ptr);
+        boost::python::list keys = map.keys();
+        boost::python::list values = map.values();
+        for (int i = 0; i < len(keys); ++i) {
+
+            boost::python::object keyObj = keys[i];
+            boost::python::object valueObj = values[i];
+            result.emplace(boost::python::extract<Key>(keyObj),
+                           boost::python::extract<Value>(valueObj));
+        }
+    }
+};
+
 }
 
 void wrapNodeDiscoveryResult()
 {
-    typedef NdrNodeDiscoveryResult This;
+    MapConverter<NdrTokenMap>();
 
+    using namespace boost::python;
+
+    typedef NdrNodeDiscoveryResult This;
     class_<This>("NodeDiscoveryResult", no_init)
-        .def(init<NdrIdentifier, NdrVersion, std::string, TfToken,
-                  TfToken, TfToken, std::string, std::string>())
-        .def(init<NdrIdentifier, NdrVersion, std::string, TfToken,
-                  TfToken, TfToken, std::string, std::string, std::string>())
+        .def(init<NdrIdentifier, NdrVersion, std::string, TfToken, TfToken, 
+                  TfToken, std::string, std::string, std::string,
+                  NdrTokenMap, std::string>(
+                  (arg("identifier"), arg("version"), arg("name"), 
+                   arg("family"), arg("discoveryType"), arg("sourceType"), 
+                   arg("uri"), arg("resolvedUri"), 
+                   arg("sourceCode")=std::string(), 
+                   arg("metadata")=NdrTokenMap(),
+                   arg("blindData")=std::string())))
         .add_property("identifier", &This::identifier)
         .add_property("version", &This::version)
         .add_property("name", &This::name)
@@ -72,6 +159,8 @@ void wrapNodeDiscoveryResult()
         .add_property("sourceType", &This::sourceType)
         .add_property("uri", &This::uri)
         .add_property("resolvedUri", &This::resolvedUri)
+        .add_property("sourceCode", &This::sourceCode)
+        .add_property("metadata", &This::metadata)
         .add_property("blindData", &This::blindData)
         .def("__repr__", _Repr)
         ;
