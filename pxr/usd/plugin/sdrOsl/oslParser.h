@@ -117,7 +117,8 @@ public:
     ~SdrOslParserPlugin();
 
     SDROSL_API
-    NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult& discoveryResult) override;
+    NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult& discoveryResult) 
+        override;
 
     static const NdrTokenVec& DiscoveryTypes;
     static const TfToken& SourceType;
@@ -135,12 +136,13 @@ public:
 private:
     // Gets a vector of properties that are present on the specified OSL
     // query object
-    NdrPropertyUniquePtrVec _getNodeProperties(OSL::OSLQuery query,
+    NdrPropertyUniquePtrVec _getNodeProperties(const OSL::OSLQuery &query,
         const NdrNodeDiscoveryResult& discoveryResult) const;
 
     // Gets all metadata for the node that's present on the specified OSL
     // query object
-    NdrTokenMap _getNodeMetadata(OSL::OSLQuery query) const;
+    NdrTokenMap _getNodeMetadata(const OSL::OSLQuery &query,
+                                 const NdrTokenMap &baseMetadata) const;
 
     // Gets all metadata for the specified OSL parameter
     NdrTokenMap _getPropertyMetadata(const OslParameter* param,

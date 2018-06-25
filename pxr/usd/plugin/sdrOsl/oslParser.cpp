@@ -76,26 +76,39 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
     // Each call to `Parse` should have its own reference to an OSL query to
     // prevent multi-threading issues
-    OSL::OSLQuery _oslQuery;
+    OSL::OSLQuery oslQuery;
 
-    // Get the resolved URI to a location that it can be read by the OSL parser
-    bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
-        discoveryResult.uri,
-        discoveryResult.resolvedUri
-    );
+    bool parseSuccessful = true;
 
-    if (!localFetchSuccessful) {
-        TF_WARN("Could not localize the OSL at URI [%s] into a local path. "
-                "An invalid Sdr node definition will be created.", 
-                discoveryResult.uri.c_str());
+    if (!discoveryResult.uri.empty()) {
+        // Get the resolved URI to a location that it can be read by the OSL parser    
+        bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
+            discoveryResult.uri,
+            discoveryResult.resolvedUri
+        );
 
+        if (!localFetchSuccessful) {
+            TF_WARN("Could not localize the OSL at URI [%s] into a local path. "
+                    "An invalid Sdr node definition will be created.", 
+                    discoveryResult.uri.c_str());
+
+            return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        }
+
+       // Attempt to parse the node
+        parseSuccessful = oslQuery.open(discoveryResult.resolvedUri);
+
+    } else if (!discoveryResult.sourceCode.empty()) {
+
+        parseSuccessful = oslQuery.open_bytecode(discoveryResult.sourceCode);
+
+    } else {
+        TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
+            "and sourceCode are empty.", discoveryResult.identifier.GetText());
         return NdrParserPlugin::GetInvalidNode(discoveryResult);
     }
 
-    // Attempt to parse the node
-    bool parseSuccessful = _oslQuery.open(discoveryResult.resolvedUri);
-    std::string errors = _oslQuery.geterror();
-
+    std::string errors = oslQuery.geterror();
     if (!parseSuccessful || !errors.empty()) {
         TF_WARN("Could not parse OSL shader at URI [%s]. An invalid Sdr node "
                 "definition will be created. %s%s",
@@ -116,15 +129,16 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             _tokens->sourceType,    // OSL shaders don't declare different types
                                     // so use the same type as the source type
             discoveryResult.uri,
-            std::move(_getNodeProperties(_oslQuery, discoveryResult)),
-            _getNodeMetadata(_oslQuery)
+            std::move(_getNodeProperties(oslQuery, discoveryResult)),
+            _getNodeMetadata(oslQuery, discoveryResult.metadata),
+            discoveryResult.sourceCode
         )
     );
 }
 
 NdrPropertyUniquePtrVec
 SdrOslParserPlugin::_getNodeProperties(
-    OSL::OSLQuery query, const NdrNodeDiscoveryResult& discoveryResult) const
+    const OSL::OSLQuery &query, const NdrNodeDiscoveryResult& discoveryResult) const
 {
     NdrPropertyUniquePtrVec properties;
     const size_t nParams = query.nparams();
@@ -255,9 +269,11 @@ SdrOslParserPlugin::_injectParserMetadata(NdrTokenMap& metadata,
 }
 
 NdrTokenMap
-SdrOslParserPlugin::_getNodeMetadata(OSL::OSLQuery query) const
+SdrOslParserPlugin::_getNodeMetadata(
+    const OSL::OSLQuery &query,
+    const NdrTokenMap &baseMetadata) const
 {
-    NdrTokenMap nodeMetadata;
+    NdrTokenMap nodeMetadata = baseMetadata;
 
     // Convert the OSL metadata to a dict. Each entry in the metadata is stored
     // as an OslParameter.

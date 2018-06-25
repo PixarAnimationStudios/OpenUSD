@@ -33,6 +33,11 @@ class TestShaderNode(unittest.TestCase):
     def setUpClass(cls):
         cls.URI = "TestNodeOSL.oso"
 
+        cls.sourceCode="TestNode source code"
+        cls.metadata = {"extra": "extraMetadata", 
+                      "primvars":"a|b|c"}
+        cls.blindData = "unused blind data"
+
         discoveryResult = Ndr.NodeDiscoveryResult(
             "TestNodeOSL",   # Identifier
             Ndr.Version(),   # Version
@@ -41,11 +46,13 @@ class TestShaderNode(unittest.TestCase):
             "oso",           # Discovery type (extension)
             "OSL",           # Source type
             cls.URI,         # URI
-            cls.URI          # Resolved URI
+            cls.URI,          # Resolved URI
+            sourceCode=cls.sourceCode,
+            metadata=cls.metadata,
+            blindData=cls.blindData
         )
 
         cls.node = SdrOsl.OslParser().Parse(discoveryResult)
-
         assert cls.node is not None
 
     def test_Basic(self):
@@ -54,6 +61,14 @@ class TestShaderNode(unittest.TestCase):
         shading-specific, but still need to be tested to ensure the parser did
         its job correctly.
         """
+        nodeMetadata = self.node.GetMetadata()
+        assert nodeMetadata["extra"] == self.metadata["extra"]
+
+        # The primvars value will be overridden by the parser plugin.
+        assert nodeMetadata["primvars"] != self.metadata["primvars"]
+
+        # Ensure that the source code gets copied.
+        assert self.node.GetSourceCode() == self.sourceCode
 
         utils.TestBasicNode(self.node,
                             SdrOsl.OslParser.SourceType,
