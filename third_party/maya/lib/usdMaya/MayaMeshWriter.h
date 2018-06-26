@@ -53,6 +53,8 @@ class MayaMeshWriter : public MayaTransformWriter
 
     virtual void PostExport() override;
 
+    virtual void postExport() override;
+
   protected:
     bool writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema);
 

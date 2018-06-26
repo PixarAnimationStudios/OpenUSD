@@ -217,6 +217,82 @@ void MayaMeshWriter::PostExport()
     }
 }
 
+void MayaMeshWriter::_prependDefaultValue(UsdAttribute& attr, const UsdTimeCode& usdTime) {
+    const auto typeName = attr.GetTypeName();
+    if (typeName == SdfValueTypeNames->FloatArray) {
+        _prependValue(attr, usdTime, attr.GetName() == UsdGeomTokens->primvarsDisplayOpacity ?
+                                     MayaMeshWriter::_ShaderDefaultAlpha :
+                                     MayaMeshWriter::_ColorSetDefaultAlpha);
+    } else if (typeName == (PxrUsdMayaWriteUtil::WriteUVAsFloat2() ?
+                            SdfValueTypeNames->Float2Array : SdfValueTypeNames->TexCoord2fArray)) {
+        _prependValue(attr, usdTime, MayaMeshWriter::_DefaultUV);
+    } else if (typeName == SdfValueTypeNames->Color3fArray) {
+        _prependValue(attr, usdTime, attr.GetName() == UsdGeomTokens->primvarsDisplayColor ?
+                                     MayaMeshWriter::_ShaderDefaultRGB :
+                                     MayaMeshWriter::_ColorSetDefaultRGB);
+    } else if (typeName == SdfValueTypeNames->Color4fArray) {
+        _prependValue(attr, usdTime, MayaMeshWriter::_ColorSetDefaultRGBA);
+    }
+};
+
+// virtual
+void MayaMeshWriter::postExport()
+{
+    auto shiftPrimvar = [](const UsdGeomPrimvar& primvar) {
+        if (!primvar) {
+            return;
+        }
+        auto shiftIndices = [](UsdAttribute& attr, const UsdTimeCode& usdTime) {
+            VtArray<int> indices;
+            if (attr.Get(&indices, usdTime)) {
+                for (auto& id: indices) {
+                    id += 1;
+                }
+                attr.Set(indices, usdTime);
+            }
+        };
+
+        const auto unauthoredValueIndex = primvar.GetUnauthoredValuesIndex();
+        if (unauthoredValueIndex == -1) {
+            return;
+        }
+
+        // Either 0 or -1.
+        TF_AXIOM(unauthoredValueIndex == 0);
+
+        // At least one of the samples contain an unassigned value,
+        // we have to increase the indices by one, so unassigned values get to be 0
+        // and the rest shifts by one.
+        if (primvar.IsIndexed()) {
+            auto indicesAttr = primvar.GetIndicesAttr();
+            shiftIndices(indicesAttr, UsdTimeCode::Default());
+
+            std::vector<double> timeSamples;
+            if (indicesAttr.GetTimeSamples(&timeSamples)) {
+                for (auto timeSample: timeSamples) {
+                    shiftIndices(indicesAttr, timeSample);
+                }
+            }
+        }
+
+        // Also we have to prepend the default value to all the time samples.
+        auto attr = primvar.GetAttr();
+        _prependDefaultValue(attr, UsdTimeCode::Default());
+        std::vector<double> timeSamples;
+        if (attr.GetTimeSamples(&timeSamples)) {
+            for (auto timeSample: timeSamples) {
+                _prependDefaultValue(attr, timeSample);
+            }
+        }
+    };
+
+    UsdGeomMesh primSchema(mUsdPrim);
+
+    for (auto& primvar: primSchema.GetPrimvars()) {
+        shiftPrimvar(primvar);
+    }
+}
+
 //virtual 
 void MayaMeshWriter::Write(const UsdTimeCode &usdTime)
 {
