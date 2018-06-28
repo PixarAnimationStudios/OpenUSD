@@ -318,7 +318,9 @@ An instance proxy prim behaves the same as the corresponding prim in the
 master.  However, an instance proxy retains context about the instance being 
 traversed so they appear to be a prim beneath an instance: its path is a 
 descendant of the instance being traversed instead of a descendant of a master 
-prim.
+prim.  Consumers should generally be able to use instance proxies anywhere 
+a UsdPrim is used.  The primary exception is that editing scene description
+via instance proxies and their properties is not allowed.
 
 Calling UsdStage::GetPrimAtPath with a path to a descendant of an instance
 prim will return an instance proxy if a corresponding prim exists in that
@@ -355,10 +357,25 @@ Usd.Prim(</ParkingLot/Car_1/Body>)
 >>> car_1_body.IsInstanceProxy()
 True
 
+# Unlike prims in masters, you can walk up an instance proxy's parent prims
+# to find its owning instance.
+>>> car_1_body.GetParent()
+Usd.Prim(</ParkingLot/Car_1>)
+
 # From an instance proxy, you can retrieve the corresponding prim in the
 # instance's master.
 >>> car_1_body.GetPrimInMaster()
 Usd.Prim(</__Master_1/Body>)
+
+# Instance proxies can be used for read-only operations anywhere a Usd.Prim
+# is used.
+>>> img = UsdGeom.Imageable(car_1_body)
+>>> img.ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+Gf.Matrix4d(...)
+
+>>> xfCache = UsdGeom.XformCache()
+>>> xfCache.GetLocalToWorldTransform(car_1_body)
+Gf.Matrix4d(...)
 
 \endcode
 
