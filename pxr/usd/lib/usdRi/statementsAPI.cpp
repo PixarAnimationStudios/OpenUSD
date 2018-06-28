@@ -232,22 +232,36 @@ UsdRiStatementsAPI::GetRiAttributes(
         }
     }
 
-    // If none found yet, try to read as old-style regular attributes.
-    // We do not support a mix of old- and new-style.
-    if (validProps.empty() &&
-        TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
+    // If enabled, read the old-style encoding.
+    if (TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
+        const size_t numNewStylePrimvars = validProps.size();
         std::vector<UsdProperty> props = 
             GetPrim().GetPropertiesInNamespace(_tokens->fullAttributeNamespace);
         std::vector<string> names;
         bool requestedNameSpace = (nameSpace != "");
-        TF_FOR_ALL(propItr, props){
-            UsdProperty prop = *propItr;
+        for (UsdProperty const& prop: props) {
             names = prop.SplitName();
             if (requestedNameSpace && names[2] != nameSpace) {
                 // wrong namespace
                 continue;
             }
-            validProps.push_back(prop);
+            // If we encounter the same Ri attribute name encoded as both
+            // a new and old style attribute, return only the new-style one.
+            bool foundAsPrimvar = false;
+            for (size_t i=0; i < numNewStylePrimvars; ++i) {
+                const std::string &primvarName =
+                    validProps[i].GetName().GetString();
+                std::size_t nsOffset = primvarName.find(":");
+                if (nsOffset != std::string::npos &&
+                    primvarName.compare(nsOffset+1, std::string::npos,
+                                        prop.GetName().GetText()) == 0) {
+                    foundAsPrimvar = true;
+                    break;
+                }
+            }
+            if (!foundAsPrimvar) {
+                validProps.push_back(prop);
+            }
         }
     }
 

@@ -188,6 +188,29 @@ class TestUsdRiSchemata(unittest.TestCase):
         self.assertEqual(UsdRi.StatementsAPI(group).GetModelScopedCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelScopedCoordinateSystems(), [])
+
+        # Test mixed old & new style encodings
+        if (Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING') and
+            Tf.GetEnvSetting('USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING')):
+            prim  = stage.DefinePrim("/prim")
+            riStatements = UsdRi.StatementsAPI.Apply(prim)
+            self.assertEqual(len(riStatements.GetRiAttributes()), 0)
+            # Add new-style
+            newStyleAttr = riStatements.CreateRiAttribute('newStyle', 'string')
+            newStyleAttr.Set('new')
+            self.assertEqual(len(riStatements.GetRiAttributes()), 1)
+            # Add old-style (note that we can't use UsdRi API for this,
+            # since it doesn't let the caller choose the encoding)
+            oldStyleAttr = prim.CreateAttribute('ri:attributes:user:oldStyle',
+                Sdf.ValueTypeNames.String)
+            oldStyleAttr.Set('old')
+            self.assertEqual(len(riStatements.GetRiAttributes()), 2)
+            # Exercise the case of an Ri attribute encoded in both
+            # old and new styles.
+            ignoredAttr = prim.CreateAttribute('ri:attributes:user:newStyle',
+                Sdf.ValueTypeNames.String)
+            self.assertEqual(len(riStatements.GetRiAttributes()), 2)
+            self.assertFalse(ignoredAttr in riStatements.GetRiAttributes())
         
     def test_Metadata(self):
         stage = Usd.Stage.CreateInMemory()
