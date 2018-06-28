@@ -99,8 +99,12 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         parseSuccessful = oslQuery.open(discoveryResult.resolvedUri);
 
     } else if (!discoveryResult.sourceCode.empty()) {
-
+#if OSL_LIBRARY_VERSION_CODE < 10701
+        TF_WARN("Support for parsing OSL from an in-memory string is only "
+            "available in OSL version 1.7.1 or newer.");
+#else
         parseSuccessful = oslQuery.open_bytecode(discoveryResult.sourceCode);
+#endif
 
     } else {
         TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
