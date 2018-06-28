@@ -228,6 +228,16 @@
             "ts": 13000.0
         }, {
             "args": {
+                "value": 0.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 13000.0
+        }, {
+            "args": {
                 "value": -1.0
             },
             "cat": "",
