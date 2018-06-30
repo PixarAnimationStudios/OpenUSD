@@ -46,7 +46,7 @@ void wrapUsdSkelBinding()
 {
     using This = UsdSkelBinding;
 
-    class_<This, boost::noncopyable>("Binding", no_init)
+    class_<This>("Binding", init<>())
 
         .def(init<UsdSkelSkeleton,VtArray<UsdSkelSkinningQuery> >())
 
