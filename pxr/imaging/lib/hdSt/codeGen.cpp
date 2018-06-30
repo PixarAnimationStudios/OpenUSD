@@ -2025,6 +2025,13 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         // users to call them -- we really should restructure whatever is
         // necessary to avoid having to do this and thus guarantee that users
         // can never call bogus versions of these functions.
+
+        // Use a fallback of -1, so that points aren't selection highlighted
+        // when face 0 is selected. This would be the case if we returned 0,
+        // since the selection highlighting code is repr-agnostic.
+        // It is safe to do this for points, since  we don't generate accessors 
+        // for element primvars, and thus don't use it as an index into
+        // elementCoord.
         if (_geometricShader->IsPrimTypePoints()) {
             accessors
               << "int GetElementID() {\n"
@@ -2104,7 +2111,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             // nothing to do. meshShaderKey takes care of it.
         }
     } else {
-        // The functions below are used in picking (id render) and selection
+        // The functions below are used in picking (id render) and/or selection
         // highlighting, and are expected to be defined. Generate fallback
         // versions when we don't bind an edgeIndices buffer.
         accessors
@@ -2117,13 +2124,18 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             << "}\n";
         accessors
             << "bool IsFragmentOnEdge() {\n"
-            << "return false;\n"
+            << "  return false;\n"
+            << "}\n";
+        accessors
+            << "float GetSelectedEdgeOpacity() {\n"
+            << "  return 0.0;\n"
             << "}\n";
     }
     declarations
         << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
         << "int GetPrimitiveEdgeId();\n"
-        << "bool IsFragmentOnEdge();\n";
+        << "bool IsFragmentOnEdge();\n"
+        << "float GetSelectedEdgeOpacity();\n";
 
     // Uniform primvar data declarations & accessors
     if (!_geometricShader->IsPrimTypePoints()) {

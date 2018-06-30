@@ -342,9 +342,15 @@ vec4 GetSelectionColor(int mode)
     return s;
 }
 
+// fwd decl fn defined in edgeId.glslfx or generated via codeGen
+float GetSelectedEdgeOpacity();
+
 vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
 {
     vec4 s = GetSelectionColor(mode);
+    if (res.edgeSelected) {
+        s.a = GetSelectedEdgeOpacity();
+    }
     if (res.pointSelected && HasCustomizedPointColor(res)) {
         #if defined(HD_HAS_selectionPointColors)
         s = HdGet_selectionPointColors(res.pointColorId);

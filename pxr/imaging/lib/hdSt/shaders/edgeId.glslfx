@@ -55,7 +55,9 @@ void ProcessEdgeId(int index, vec2 faceUV)
 
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Fallback
-// Mixin version to use when the geometry shader stage is inactive.
+// Mixin version to use for meshes when the geometry shader stage is inactive.
+// Note: When rendering a mesh as points, this mixin isn't used. We handle it
+// in code gen.
 
 int GetPrimitiveEdgeId() {
     return -1;
@@ -65,25 +67,51 @@ bool IsFragmentOnEdge() {
     return false;
 }
 
+float GetSelectedEdgeOpacity() {
+    return 0.0;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.Common
+
+float GetMinEdgeDistance(); // meshWire.glslfx
+
+// Returns whether a fragment is on or close to an unhidden triangle edge.
+const float edgePickRadius = 2; // in viewport pixels
+bool IsFragmentOnEdge()
+{
+    float d = GetMinEdgeDistance();
+    if (d < edgePickRadius) return true;
+    return false;
+}
+
+// For smooth looking edges, use an exponential falloff for the opacity.
+// Note: We use a slower falloff fn than in meshWire.glslfx to make the selected
+// edges stand out.
+float GetSelectedEdgeOpacity() {
+    float d = GetMinEdgeDistance();
+    return exp2(-1 * d * d);
+}
+
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleParam
-
-noperspective in vec2 gsEdgeParam;
 
 vec3 ExpandBarycentricCoord(vec2 bc)
 {
     return vec3(bc.x, bc.y, 1 - bc.x - bc.y);
 }
 
-// XXX: The constant used below is in parametric space. We should expose this
-// in viewport pixel space. We'll need the edge distances to convert the
-// interpolated parametric coordinates to viewport pixels for comparison.
-const float pickRadius = 0.02;
+noperspective in vec2 gsEdgeParam;
 
-// called from hdSt/codeGen.cpp
+// called from hdx/renderPass.glslfx and selection.glslfx
 int GetPrimitiveEdgeId()
 {
-    vec3 baryCoord = ExpandBarycentricCoord(gsEdgeParam.xy);
+    // Use edge distance to reject fragments that aren't on/near
+    // (unhidden) triangle edges.
+    if (!IsFragmentOnEdge()) return -1;
+
+    // Find out which edge the fragment is on.
+    vec3 bc = ExpandBarycentricCoord(gsEdgeParam.xy);
 
     //              2 (0,1,0)
     //              ^
@@ -93,21 +121,17 @@ int GetPrimitiveEdgeId()
     //              e0
 
     int edgeId = -1;
-    if (baryCoord.y < pickRadius) {
+    float delta = 0.02;
+    bvec3 ltResult = lessThan(bc, vec3(delta));
+    if (ltResult.y && (bc.y < bc.x) && (bc.y < bc.z)) {
         edgeId = 0;
-    } else if (baryCoord.z < pickRadius) {
+    } else if (ltResult.z && (bc.z < bc.x)) {
         edgeId = 1;
-    } else if (baryCoord.x < pickRadius) {
+    } else if (ltResult.x) {
         edgeId = 2;
     }
 
     return edgeId;
-}
-
-bool IsFragmentOnEdge()
-{
-    vec3 bc = ExpandBarycentricCoord(gsEdgeParam.xy);
-    return any( lessThan(bc, vec3(pickRadius)) );
 }
 
 --- --------------------------------------------------------------------------
@@ -115,43 +139,36 @@ bool IsFragmentOnEdge()
 
 noperspective in vec2 gsEdgeParam;
 
-// XXX: The constant used below is in parametric space. We should expose this
-// in viewport pixel space. We'll need the edge distances to convert the
-// interpolated parametric coordinates to viewport pixels for comparison.
-const float pickRadius = 0.02;
-
-// called from hdSt/codeGen.cpp
+// called from hdx/renderPass.glslfx and selection.glslfx
 int GetPrimitiveEdgeId()
 {
-//              e2
-//     (0,1) 3 ------ 2 (1,1)
-//           |        |
-//       e3  |        |  e1
-//           |        |
-//     (0,0) 0 ------ 1 (1,0)
-//               e0
+    // Use edge distance to reject fragments that aren't on/near (unhidden)
+    // triangle edges.
+    if (!IsFragmentOnEdge()) return -1;
+
+    //              e2
+    //     (0,1) 3 ------ 2 (1,1)
+    //           |        |
+    //       e3  |        |  e1
+    //           |        |
+    //     (0,0) 0 ------ 1 (1,0)
+    //               e0
 
     int edgeId = -1;
-    const float delLow = pickRadius, delHigh = 1 - delLow;
+    const float delta = 0.02;
+    const float delLow = delta;
+    const float delHigh = 1 - delLow;
     vec2 uv = gsEdgeParam.xy;
 
-    if (uv.y < delLow) {
+    if (uv.y < delLow && uv.y < uv.x) {
         edgeId = 0;
-    } else if (uv.x > delHigh) {
+    } else if (uv.x < delLow) {
+        edgeId = 3;
+    } else if (uv.x > delHigh && uv.x > uv.y) {
         edgeId = 1;
     } else if (uv.y > delHigh) {
         edgeId = 2;
-    } else if (uv.x < delLow) {
-        edgeId = 3;
     }
 
     return edgeId;
-}
-
-bool IsFragmentOnEdge()
-{
-    vec2 uv = gsEdgeParam.xy;
-    bool e0_e3 = any( lessThan(uv, vec2(pickRadius)) );
-    bool e1_e2 = any( greaterThan(uv, vec2(1 - pickRadius)) );
-    return e0_e3 || e1_e2;
 }

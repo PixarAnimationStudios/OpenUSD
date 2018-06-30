@@ -46,6 +46,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // wireframe mixins
     ((edgeNoneGS,              "MeshWire.Geometry.NoEdge"))
     ((edgeNoneFS,              "MeshWire.Fragment.NoEdge"))
+    
+    ((edgeCommonFS,            "MeshWire.Fragment.EdgeCommon"))
 
     ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
@@ -69,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
     ((edgeIdEdgeParamGS,       "EdgeId.Geometry.EdgeParam"))
     ((edgeIdFallbackFS,        "EdgeId.Fragment.Fallback"))
+    ((edgeIdCommonFS,          "EdgeId.Fragment.Common"))
     ((edgeIdTriangleParamFS,   "EdgeId.Fragment.TriangleParam"))
     ((edgeIdRectangleParamFS,  "EdgeId.Fragment.RectangleParam"))
 
@@ -206,6 +209,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         GS[0] = TfToken();
     }
 
+    bool gsStageEnabled = !GS[0].IsEmpty();
     // fragment shader
      uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
@@ -214,9 +218,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     FS[fsIndex++] = (doubleSided   ? _tokens->doubleSidedFS
                            : _tokens->singleSidedFS);
 
+    // Wire (edge) related mixins
     if ((geomStyle == HdMeshGeomStyleEdgeOnly ||
          geomStyle == HdMeshGeomStyleHullEdgeOnly)) {
 
+        FS[fsIndex++] = _tokens->edgeCommonFS;
+        // Selection filter mixin(s)
         if (discardIfNotActiveSelected) {
             // We don't add 'selDecodeUtils' because it is part of the
             // render pass' FS mixin.
@@ -231,6 +238,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeNoFilterFS;
         }
 
+        // Edge mixin
         if (isPrimTypePatches) {
             FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
         } else {
@@ -241,6 +249,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     } else if ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                 geomStyle == HdMeshGeomStyleHullEdgeOnSurf)) {
 
+        FS[fsIndex++] = _tokens->edgeCommonFS;
         if (isPrimTypePatches) {
             FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
         } else {
@@ -251,6 +260,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         FS[fsIndex++] = _tokens->edgeNoneFS;
     }
 
+
+    // Shading terminal mixin
     TfToken terminalFS;
     if (shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
         terminalFS = _tokens->surfaceFS;
@@ -271,13 +282,13 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     } else {
         terminalFS = _tokens->surfaceFS;
     }
-
     FS[fsIndex++] = terminalFS;
     FS[fsIndex++] = _tokens->commonFS;
 
-    // edge id
-    if (!GS[0].IsEmpty()) {
+    // EdgeId mixin(s) for edge picking and selection
+    if (gsStageEnabled) {
         TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdEdgeParamGS);
+        FS[fsIndex++] = _tokens->edgeIdCommonFS;
         if (isPrimTypeTris) {
             // coarse and refined triangles and triangular parametric patches
             FS[fsIndex++] = _tokens->edgeIdTriangleParamFS;
@@ -303,8 +314,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         // we handle this scenario in hdStCodeGen since it has the binding info.
     }
 
+    // PointId mixin for point picking and selection
     FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
                                       _tokens->pointIdFallbackFS;
+
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }

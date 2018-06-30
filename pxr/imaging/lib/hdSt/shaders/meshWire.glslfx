@@ -200,6 +200,45 @@ void ApplySelectionFilter()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCommon
+
+in EdgeData
+{
+    noperspective vec3 edgeDistance;
+} inEdgeData;
+
+// Returns the distance of the current fragment (in viewport pixel units) from
+// the nearest edge.
+float GetMinEdgeDistance()
+{
+    vec3 edgeDistance = inEdgeData.edgeDistance;
+    return min(edgeDistance.x,
+               min(edgeDistance.y,
+                   edgeDistance.z));
+}
+
+// Use edge distance to compute a smooth opacity falloff for good looking edges.
+float GetEdgeOpacity() {
+    float d = GetMinEdgeDistance();
+    float p = exp2(-4 * d * d);
+    return p;
+}
+
+// Override for subdivided faces to make the boundary of the face stand out.
+float GetEdgeOpacity(vec2 patchCoord) {
+    float d = GetMinEdgeDistance();
+
+    // Is the fragment on a face boundary?
+    if (patchCoord.x < 0.01 ||
+        patchCoord.x > 0.99 ||
+        patchCoord.y < 0.01 ||
+        patchCoord.y > 0.99) d *= 0.25;
+
+    float p = exp2(-4 * d * d);
+    return p;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.NoEdge
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
@@ -207,22 +246,22 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     return Cfill;
 }
 
+// Return a large value, signifying that the fragment isn't near an edge.
+float GetMinEdgeDistance()
+{
+    return 1000.0;
+}
+
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeOnSurface
 
-in EdgeData
-{
-    noperspective vec3 edgeDistance;
-} inEdgeData;
-
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    vec3 edgeDistance = inEdgeData.edgeDistance;
-
-    float d = min(edgeDistance.x,
-                  min(edgeDistance.y,
-                      edgeDistance.z));
-    float p = exp2(-4 * d * d);
+    // Skip the selection filter since the line rasterization draw order issue 
+    // isn't relevant.
+    // XXX: We don't use the patchCoord below to make the face boundary
+    // stand out. Should we?
+    float p = GetEdgeOpacity(/*patchCoord.xy*/);
     
     vec4 wireColor = GetWireframeColor();
     
@@ -240,21 +279,11 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
 void ApplySelectionFilter();
 
-in EdgeData
-{
-    noperspective vec3 edgeDistance;
-} inEdgeData;
-
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
     ApplySelectionFilter();
 
-    vec3 edgeDistance = inEdgeData.edgeDistance;
-
-    float d = min(edgeDistance.x,
-                  min(edgeDistance.y,
-                      edgeDistance.z));
-    float p = exp2(-4 * d * d);
+    float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
     vec4 wireColor = GetWireframeColor();
@@ -272,21 +301,11 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
 void ApplySelectionFilter();
 
-in EdgeData
-{
-    noperspective vec3 edgeDistance;
-} inEdgeData;
-
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
     ApplySelectionFilter();
 
-    vec3 edgeDistance = inEdgeData.edgeDistance;
-
-    float d = min(edgeDistance.x,
-                  min(edgeDistance.y,
-                      edgeDistance.z));
-    float p = exp2(-4 * d * d);
+    float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
     Cfill.a = 1.0; // edges ignore input opacity and are opaque.
@@ -296,25 +315,11 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 --- --------------------------------------------------------------------------
 -- glsl MeshPatchWire.Fragment.EdgeOnSurface
 
-in EdgeData
-{
-    noperspective vec3 edgeDistance;
-} inEdgeData;
-
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    vec3 edgeDistance = inEdgeData.edgeDistance;
-
-    float d = min(edgeDistance.x,
-                  min(edgeDistance.y,
-                      edgeDistance.z));
-
-    if (patchCoord.x < 0.01 ||
-        patchCoord.x > 0.99 ||
-        patchCoord.y < 0.01 ||
-        patchCoord.y > 0.99) d *= 0.25;
-
-    float p = exp2(-4 * d * d);
+    // Skip the selection filter since the line rasterization draw order issue
+    // isn't relevant.
+    float p = GetEdgeOpacity(patchCoord.xy);
     
     vec4 wireColor = GetWireframeColor();
 
@@ -332,21 +337,11 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
 void ApplySelectionFilter();
 
-in EdgeData
-{
-    noperspective vec3 edgeDistance;
-} inEdgeData;
-
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
     ApplySelectionFilter();
 
-    vec3 edgeDistance = inEdgeData.edgeDistance;
-
-    float d = min(edgeDistance.x,
-                  min(edgeDistance.y,
-                      edgeDistance.z));
-    float p = exp2(-4 * d * d);
+    float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
     Cfill.a = 1.0; // edges ignore input opacity and are opaque.
