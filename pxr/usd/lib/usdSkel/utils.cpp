@@ -600,7 +600,7 @@ _NormalizeWeights(float* weights, size_t numWeights,
         /* forceSerial = */ false,
         [&](size_t start, size_t end)
         {
-            for(size_t i = 0; i < end; ++i) {
+            for(size_t i = start; i < end; ++i) {
                 float* weightSet = weights + i*numInfluencesPerComponent;
 
                 float sum = 0.0f;
