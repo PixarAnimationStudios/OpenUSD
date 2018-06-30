@@ -280,7 +280,7 @@ class TestUsdBugs(unittest.TestCase):
                     def Scope "scope20" {}
                 }
 
-                def Scope "Scene"
+                def Scope "Location"
                 {
 
                   def "asset1" (
@@ -297,12 +297,28 @@ class TestUsdBugs(unittest.TestCase):
                   }
 
                 }
+
+                def Scope "Loc1" (
+                    instanceable = True
+                    add references = </Location>
+                )
+                {
+
+                }
+
+                def Scope "Loc2" (
+                    add references = </Location>
+                )
+                {
+
+                }
                 ''')
 
             for i in range(1024):
                 stage = Usd.Stage.OpenMasked(
-                    l, Usd.StagePopulationMask(['/Scene/asset1/scope' +
-                                                str(random.randint(1,20))]))
+                    l, Usd.StagePopulationMask(['/Loc%s/asset1/scope%s' %
+                                                (str(random.randint(1,20)),
+                                                 str(random.randint(1,2)))]))
 
 if __name__ == '__main__':
     unittest.main()
