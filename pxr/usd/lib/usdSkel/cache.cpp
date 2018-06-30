@@ -119,21 +119,15 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
              VtArray<UsdSkelSkinningQuery>, 
              _CompareSkels> bindingMap;
 
-    // Traverse over the prims beneath \p skelRoot.
+    // Traverse over the prims beneath the skelRoot.
     // While traversing, we maintain a stack of 'bound' skeletons,
     // and map the last item on the stack to descendant prims.
     // This is done to handle inherited skel:skeleton bindings.
 
-    std::vector<std::pair<UsdSkelSkeleton,UsdPrim> > skelStack;
+    std::vector<UsdSkelSkeleton> skelStack(1);
     
     auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim());
     for (auto it = range.begin(); it != range.end(); ++it) {
-
-        if (it.IsPostVisit()) {
-            if (skelStack.size() > 0 && skelStack.back().second == *it)
-                skelStack.pop_back();
-            continue;
-        }
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
 
@@ -148,11 +142,20 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
             continue;
         }
 
+        if (it.IsPostVisit()) {
+            if (TF_VERIFY(!skelStack.empty())) {
+                skelStack.pop_back();
+            } else {
+                return false;
+            }
+            continue;
+        }
+
         UsdSkelBindingAPI binding(*it);
 
         UsdSkelSkeleton skel;
         if (!binding.GetSkeleton(&skel)) {
-            skel = skelStack.back().first;
+            skel = skelStack.back();
         } else  {
             TF_DEBUG(USDSKEL_CACHE).Msg(
                 "[UsdSkelCache]  Found skel binding at <%s> "
@@ -170,7 +173,7 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
                 bindingMap[skel].push_back(query);
             }
         }
-        skelStack.emplace_back(skel, *it);
+        skelStack.push_back(skel);
     }
 
     bindings->reserve(bindingMap.size());
