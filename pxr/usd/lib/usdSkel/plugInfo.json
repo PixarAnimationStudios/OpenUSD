@@ -13,7 +13,7 @@
                         "default": 0, 
                         "displayGroup": "BlendShape", 
                         "documentation": "The weight value at which an inbeteen shape is applied.", 
-                        "type": "int"
+                        "type": "float"
                     }
                 }, 
                 "Types": {
