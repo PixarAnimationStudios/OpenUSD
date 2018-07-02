@@ -351,7 +351,11 @@ SdfAttributeSpec::_FindOrCreateChildSpecForMarker(const SdfPath& key)
         // add it because the menva syntax does not support expressing
         // a marker without expressing existence of the corresponding
         // connection path.
-        GetConnectionPathList().Add(targetPath);
+        SdfConnectionsProxy connections = GetConnectionPathList();
+        if (!connections.ContainsItemEdit(targetPath,
+                                          /* onlyAddOrExplicit */ true)) {
+            connections.Append(targetPath);
+        }
     }
 
     return child;
