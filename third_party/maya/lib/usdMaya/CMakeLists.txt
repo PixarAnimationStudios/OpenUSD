@@ -171,6 +171,7 @@ pxr_test_scripts(
         testenv/testUsdExportCamera.py
         testenv/testUsdExportColorSets.py
         testenv/testUsdExportDisplayColor.py
+        testenv/testUsdExportEulerFilter.py
         testenv/testUsdExportFilterTypes.py
         testenv/testUsdExportFrameOffset.py
         testenv/testUsdExportInstances.py
@@ -299,6 +300,21 @@ pxr_register_test(testUsdExportDisplayColor
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportDisplayColor"
     TESTENV testUsdExportDisplayColor
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportEulerFilterTest
+    DEST testUsdExportEulerFilter
+)
+pxr_register_test(testUsdExportEulerFilter
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportEulerFilter"
+    TESTENV testUsdExportEulerFilter
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
