@@ -25,6 +25,7 @@
 
 #include <OP/OP_Node.h>
 #include <PRM/PRM_AutoDeleter.h>
+#include <PRM/PRM_Conditional.h>
 #include <PRM/PRM_Parm.h>
 #include <PRM/PRM_SpareData.h>
 #include <UT/UT_Singleton.h>
@@ -184,8 +185,8 @@ void _AppendTypes(const TfType& type, UT_Array<PRM_Name>& names,
     _MakePrefixedName(label, typeName.c_str(), depth, "|   ");
     
     names.append(PRM_Name(typeName.c_str(), deleter.appendCallback(
-#if HDK_API_VERSION >= 16050000
-	hboost::function<void (char *)>(free), label.steal())));
+#if SYS_VERSION_FULL_INT >= 0x10050000
+	boost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
 #endif
@@ -219,8 +220,8 @@ void _AppendKinds(const GusdUSD_Utils::KindNode* kind,
     _MakePrefixedName(label, name.c_str(), depth, "|   ");
 
     names.append(PRM_Name(name.c_str(), deleter.appendCallback(
-#if HDK_API_VERSION >= 16050000
-	hboost::function<void (char *)>(free), label.steal())));
+#if SYS_VERSION_FULL_INT >= 0x10050000
+	boost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
 #endif

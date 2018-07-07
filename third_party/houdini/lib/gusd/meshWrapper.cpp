@@ -1024,7 +1024,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
             for( auto it = primAttrs->begin(); !it.atEnd(); ++it ) {
 
-                if(!filter.matches( it.getName() )) 
+                if(!filter.matches( it.getName().toStdString() )) 
                     continue;
 
                 GT_DataArrayHandle data = it.getData();

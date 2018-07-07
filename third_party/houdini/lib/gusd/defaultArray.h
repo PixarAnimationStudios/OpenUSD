@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Simple array wrapper, providing an array that may either hold a
 /// single constant value, or an array of values.
 template <typename T>
-class GUSD_API GusdDefaultArray
+class GusdDefaultArray
 {
 public:
     using value_type = T;

@@ -56,21 +56,39 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// The follofing declarations are equivalent to using the TF_DEFINE_ENV_SETTING
+// macros. The difference is in the static initialization order. It is possible
+// for the registration function to be called before the static data's
+// initializer function is called. The the static initializer would overwrite
+// the value set by calling the registration function. Instead, rely on the
+// zero-init of all static data to avoid calling any initializer function at
+// all. This way the value set in the registration function is preserved.
+std::atomic<bool *> envVarGUSD_STAGEMASK_EXPANDRELS;
+TfEnvSetting<bool> GUSD_STAGEMASK_EXPANDRELS = {
+    &envVarGUSD_STAGEMASK_EXPANDRELS,
+    true,
+    "GUSD_STAGEMASK_EXPANDRELS",
+    "Expand stage masks to include targets of relationships. "
+    "It may be possible to disable this option, which may "
+    "provide performance gains, but correctness cannot be "
+    "guaranteed when doing so."
+};
+TF_REGISTRY_FUNCTION_WITH_TAG(Tf_EnvSettingRegistry, GUSD_STAGEMASK_EXPANDRELS)
+{ (void)TfGetEnvSetting(GUSD_STAGEMASK_EXPANDRELS); }
 
-TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_EXPANDRELS, true,
-                      "Expand stage masks to include targets of relationships. "
-                      "It may be possible to disable this option, which may "
-                      "provide performance gains, but correctness cannot be "
-                      "guaranteed when doing so.");
-
-
-TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_ENABLE, true,
-                      "Enable use of stage masks when accessing prims from "
-                      "the cache. Note that disabling this feature may "
-                      "be very detrimental to performance when separately "
-                      "querying many prims with variant selections "
-                      "(or other types of stage edits).");
-
+std::atomic<bool *> envVarGUSD_STAGEMASK_ENABLE;
+TfEnvSetting<bool> GUSD_STAGEMASK_ENABLE = {
+    &envVarGUSD_STAGEMASK_ENABLE,
+    true,
+    "GUSD_STAGEMASK_ENABLE",
+    "Enable use of stage masks when accessing prims from "
+    "the cache. Note that disabling this feature may "
+    "be very detrimental to performance when separately "
+    "querying many prims with variant selections "
+    "(or other types of stage edits)."
+};
+TF_REGISTRY_FUNCTION_WITH_TAG(Tf_EnvSettingRegistry, GUSD_STAGEMASK_ENABLE)
+{ (void)TfGetEnvSetting(GUSD_STAGEMASK_ENABLE); }
 
 namespace {
 
@@ -653,8 +671,9 @@ GusdStageCache::_Impl::FindOrOpenLayer(const UT_StringRef& path,
         "[GusdStageCache::FindOrOpenLayer] Returning layer %s for @%s@\n",
         (layer ? layer->GetIdentifier().c_str() : "(null)"), path.c_str());
 
-    if(!layer)
+    if(!layer) {
         GUSD_GENERIC_ERR(sev).Msg("Failed opening layer @%s@", path.c_str());
+    }
 
     return layer;
 }
@@ -898,7 +917,7 @@ struct _PrimLoadKey
                 return path < o.path ||
                        (path == o.path &&
                         (edit < o.edit ||
-                         edit == o.edit && primIndex < o.primIndex));
+                         (edit == o.edit && primIndex < o.primIndex)));
             }
 
     UT_StringHolder     path;

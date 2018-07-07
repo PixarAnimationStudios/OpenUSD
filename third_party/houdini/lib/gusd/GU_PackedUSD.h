@@ -28,6 +28,7 @@
 
 #include <GU/GU_PackedImpl.h>
 #include <GT/GT_Handles.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_Error.h>
 
 #include <pxr/pxr.h>
@@ -94,12 +95,13 @@ public:
     virtual ~GusdGU_PackedUSD();
 
     static void install(GA_PrimitiveFactory &factory);
+    GUSD_API
     static GA_PrimitiveTypeId typeId();
 
     const UT_StringHolder& fileName() const { return m_fileName; }
     UT_StringHolder intrinsicFileName() const { return m_fileName; }
     void setFileName( const UT_StringHolder& fileName );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     UT_StringHolder intrinsicFileName(const GU_PrimPacked *prim) const
     { return intrinsicFileName(); }
     void setFileName(GU_PrimPacked *prim, const UT_StringHolder& fileName)
@@ -109,7 +111,7 @@ public:
     const UT_StringHolder& altFileName() const { return m_altFileName; }
     UT_StringHolder intrinsicAltFileName() const { return m_altFileName; }
     void setAltFileName( const UT_StringHolder& fileName );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     UT_StringHolder intrinsicAltFileName(const GU_PrimPacked *prim) const
     { return intrinsicAltFileName(); }
     void setAltFileName(GU_PrimPacked *prim, const UT_StringHolder& fileName)
@@ -120,7 +122,7 @@ public:
     UT_StringHolder intrinsicPrimPath() const { return m_primPath.GetText(); }
     void setPrimPath( const UT_StringHolder& p );
     void setPrimPath( const SdfPath& primPath  );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     UT_StringHolder intrinsicPrimPath(const GU_PrimPacked *prim) const
     { return intrinsicPrimPath(); }
     void setPrimPath(GU_PrimPacked *prim, const UT_StringHolder& p)
@@ -133,7 +135,7 @@ public:
     UT_StringHolder intrinsicSrcPrimPath() const { return m_srcPrimPath.GetText(); }
     void setSrcPrimPath( const UT_StringHolder& p );
     void setSrcPrimPath( const SdfPath& primPath  );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     UT_StringHolder intrinsicSrcPrimPath(const GU_PrimPacked *prim) const
     { return intrinsicSrcPrimPath(); }
     void setSrcPrimPath(GU_PrimPacked *prim, const UT_StringHolder& p)
@@ -144,7 +146,7 @@ public:
     // index in the source point instancer.
     exint index() const { return m_index; }
     void setIndex( exint i );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     exint index(const GU_PrimPacked *prim) const
     { return index(); }
     void setIndex(GU_PrimPacked *prim, exint i)
@@ -156,14 +158,14 @@ public:
     
     // return the USD prim type
     UT_StringHolder intrinsicType() const;
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     UT_StringHolder intrinsicType(const GU_PrimPacked *prim) const
     { return intrinsicType(); }
 #endif
 
     GA_Size usdLocalToWorldTransformSize() const { return 16; }
     void usdLocalToWorldTransform(fpreal64* val, exint size) const;
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     GA_Size usdLocalToWorldTransformSize(const GU_PrimPacked *prim) const
     { return 16; }
     void usdLocalToWorldTransform(const GU_PrimPacked *prim,
@@ -175,7 +177,7 @@ public:
     fpreal intrinsicFrame() const { return GusdUSD_Utils::GetNumericTime(m_frame); }
     void setFrame( UsdTimeCode frame );
     void setFrame( fpreal frame );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     fpreal intrinsicFrame(const GU_PrimPacked *prim) const
     { return intrinsicFrame(); }
     void setFrame(GU_PrimPacked *prim, fpreal frame)
@@ -188,7 +190,7 @@ public:
     exint getNumPurposes() const;
     void getIntrinsicPurposes( UT_StringArray& purposes ) const;
     void setIntrinsicPurposes( const UT_StringArray& purposes );
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
     exint getNumPurposes(const GU_PrimPacked *prim) const
     { return getNumPurposes(); }
     void getIntrinsicPurposes(const GU_PrimPacked *prim,
@@ -205,7 +207,7 @@ public:
 
     virtual bool     isValid() const override;
     virtual bool     save(UT_Options &options, const GA_SaveMap &map) const override;
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
     virtual bool     load(const UT_Options &options, const GA_LoadMap &map) override;
     virtual void     update(const UT_Options &options) override;
 #else
@@ -227,8 +229,15 @@ public:
 
     virtual bool     getLocalTransform(UT_Matrix4D &m) const override;
 
+#if SYS_VERSION_FULL_INT < 0x11000000
     virtual bool     unpack(GU_Detail &destgdp) const override;
     virtual bool     unpackUsingPolygons(GU_Detail &destgdp) const override;
+#else
+    virtual bool     unpack(GU_Detail &destgdp,
+			    const UT_Matrix4D *transform) const override;
+    virtual bool     unpackUsingPolygons(GU_Detail &destgdp,
+			    const GU_PrimPacked *prim) const override;
+#endif
 
     bool visibleGT() const;   
     GT_PrimitiveHandle fullGT() const;
@@ -250,8 +259,16 @@ public:
     /// of \p sev.
     UsdPrim getUsdPrim(UT_ErrorSeverity sev=UT_ERROR_ABORT) const;
 
-    bool unpackGeometry( GU_Detail &destgdp,
-                         const char* primvarPattern ) const;
+#if SYS_VERSION_FULL_INT >= 0x11000000
+    bool unpackGeometry(
+        GU_Detail &destgdp,
+        const char* primvarPattern,
+        const UT_Matrix4D *transform) const;
+#else
+    bool unpackGeometry(
+        GU_Detail &destgdp,
+        const char* primvarPattern) const;
+#endif
 
     const UT_Matrix4D& getUsdTransform() const;
     

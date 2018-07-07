@@ -28,6 +28,7 @@
 #include <GT/GT_DataArray.h>
 #include <GT/GT_DANumeric.h>
 #include <SYS/SYS_Compiler.h>
+#include <SYS/SYS_Version.h>
 #include <SYS/SYS_Math.h>
 
 #include <pxr/pxr.h>
@@ -172,6 +173,8 @@ protected:                                                              \
                                         tsize, nrepeats, stride); }
 
     _DECL_GETTERS(U8,  uint8);
+    _DECL_GETTERS(I8,  int8);
+    _DECL_GETTERS(I16, int16);
     _DECL_GETTERS(I32, int32);
     _DECL_GETTERS(I64, int64);
     _DECL_GETTERS(F16, fpreal16);
@@ -267,7 +270,7 @@ GusdGT_VtArray<T>::getArrayT(GT_DataArrayHandle& buf) const
     if(SYS_IsSame<PODType,PODT>::value)
         return reinterpret_cast<const PODT*>(_data);
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
     typedef GT_DANumeric<PODT,
         GusdGT_Utils::StorageByType<PODT>::value> _GTArrayType;
 #else

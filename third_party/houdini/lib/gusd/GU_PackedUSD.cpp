@@ -163,6 +163,9 @@ GusdGU_PackedUSD::Build(
             // This is temporary code, we need to factor the usd read code into GT_Utils.cpp
             // to avoid duplicates and read for types GfHalf,double,int,string ...
             GT_DataArrayHandle gtData = GusdPrimWrapper::convertPrimvarData( primvar, frame );
+	    if (!gtData)
+		continue;
+
             const UT_String  name(primvar.GetPrimvarName());
             const GT_Storage gtStorage = gtData->getStorage();
             const GT_Size    gtTupleSize = gtData->getTupleSize();
@@ -185,7 +188,7 @@ GusdGU_PackedUSD::Build(
 
     if( lod )
     {
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
         impl->intrinsicSetViewportLOD( lod );
 #else
         impl->intrinsicSetViewportLOD( packedPrim, lod );
@@ -223,7 +226,7 @@ GusdGU_PackedUSD::Build(
     impl->m_usdPrim = prim;
     if( lod )
     {
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
         impl->intrinsicSetViewportLOD( lod );
 #else
         impl->intrinsicSetViewportLOD( packedPrim, lod );
@@ -459,16 +462,20 @@ GusdGU_PackedUSD::getUsdTransform() const
 
     UsdPrim prim = getUsdPrim();
 
-    if( !prim  ) {
+    if( !prim ) {
         TF_WARN( "Invalid prim! %s", m_primPath.GetText() );
         m_transformCache = UT_Matrix4D(1);
         return m_transformCache;
     }
 
-    if( GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform(
-             prim, m_frame, m_transformCache ) ) {
+    if( prim.IsA<UsdGeomXformable>() )
+    {
+        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+             prim, m_frame, m_transformCache );
         m_transformCacheValid = true;
     }
+    else
+        m_transformCache = UT_Matrix4D(1);
 
     return m_transformCache;
 }
@@ -670,7 +677,7 @@ GusdGU_PackedUSD::unpackPrim(
             primPath,
             xform,
             intrinsicFrame(),
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
 	    intrinsicViewportLOD(),
 #else
 	    intrinsicViewportLOD( getPrim() ),
@@ -693,7 +700,11 @@ GusdGU_PackedUSD::unpackPrim(
         for (exint i = 0; i < details.entries(); ++i)
         {
             copyPrimitiveGroups(*details(i), false);
+#if SYS_VERSION_FULL_INT < 0x11000000
             unpackToDetail(destgdp, details(i), true);
+#else
+            unpackToDetail(destgdp, details(i), &xform);
+#endif
             delete details(i);
         }
 
@@ -722,8 +733,13 @@ GusdGU_PackedUSD::unpackPrim(
 }
 
 bool
-GusdGU_PackedUSD::unpackGeometry(GU_Detail &destgdp,
-                                 const char* primvarPattern) const
+GusdGU_PackedUSD::unpackGeometry(
+    GU_Detail &destgdp,
+    const char* primvarPattern
+#if SYS_VERSION_FULL_INT >= 0x11000000
+    , const UT_Matrix4D *transform
+#endif
+) const
 {
     UsdPrim usdPrim = getUsdPrim();
 
@@ -733,11 +749,13 @@ GusdGU_PackedUSD::unpackGeometry(GU_Detail &destgdp,
         return false;
     }
 
+#if SYS_VERSION_FULL_INT < 0x11000000
     UT_Matrix4D xform(1);
     const GU_PrimPacked *prim = getPrim();
     if( prim ) {
         prim->getFullTransform4(xform);
     }
+#endif
 
     GT_RefineParms      rparms;
     // Need to manually force polysoup to be turned off.
@@ -751,11 +769,45 @@ GusdGU_PackedUSD::unpackGeometry(GU_Detail &destgdp,
 
     DBG( cerr << "GusdGU_PackedUSD::unpackGeometry: " << usdPrim.GetTypeName() << ", " << usdPrim.GetPath() << endl; )
     
+#if SYS_VERSION_FULL_INT >= 0x11000000
+    unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath, *transform, rparms, true );
+#else
     unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath, xform, rparms, true );
+#endif
 
     return true;
 }
 
+#if SYS_VERSION_FULL_INT >= 0x11000000
+bool
+GusdGU_PackedUSD::unpack(GU_Detail &destgdp, const UT_Matrix4D *transform) const
+{
+    // FIXME: The downstream code should support accepting a null transform.
+    //        We shouldn't have to make a redundant identity matrix here.
+    UT_Matrix4D temp;
+    if( !transform ) {
+        temp.identity();
+    }
+    // Unpack with "*" as the primvar pattern, meaning unpack all primvars.
+    return unpackGeometry( destgdp, "*", transform ? transform : &temp );
+}
+
+bool
+GusdGU_PackedUSD::unpackUsingPolygons(GU_Detail &destgdp, const GU_PrimPacked *prim) const
+{
+    UT_Matrix4D xform;
+    if( prim ) {
+        prim->getFullTransform4(xform);
+    }
+    else {
+        // FIXME: The downstream code should support accepting a null transform.
+        //        We shouldn't have to make a redundant identity matrix here.
+        xform.identity();
+    }
+    // Unpack with "*" as the primvar pattern, meaning unpack all primvars.
+    return unpackGeometry( destgdp, "*", &xform );
+}
+#else
 bool
 GusdGU_PackedUSD::unpack(GU_Detail &destgdp) const
 {
@@ -769,6 +821,7 @@ GusdGU_PackedUSD::unpackUsingPolygons(GU_Detail &destgdp) const
     // Unpack with "*" as the primvar pattern, meaning unpack all primvars.
     return unpackGeometry( destgdp, "*" );
 }
+#endif
 
 bool
 GusdGU_PackedUSD::getInstanceKey(UT_Options& key) const

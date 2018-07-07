@@ -41,9 +41,11 @@
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_CatPolygonMesh.h>
 #include <SYS/SYS_Hash.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_HDKVersion.h>
 
-#if HDK_API_VERSION >= 16050446
+// 0x100501BE corresponds to 16.5.446.
+#if SYS_VERSION_FULL_INT >= 0x100501BE
 #include <GT/GT_PackedAlembic.h>
 #endif
 
@@ -127,7 +129,7 @@ namespace {
         GT_PrimitiveHandle prim;
     };
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
     static inline void intrusive_ptr_add_ref(const CacheEntry *o) { const_cast<CacheEntry *>(o)->incref(); }
     static inline void intrusive_ptr_release(const CacheEntry *o) { const_cast<CacheEntry *>(o)->decref(); }
 #endif
@@ -438,7 +440,7 @@ CreateEntryFn::operator()(
             return new CacheEntry( refiner.getPrimCollect()->getPrim( 0 ) );
         }
         else {
-#if HDK_API_VERSION >= 16050446
+#if SYS_VERSION_FULL_INT >= 0x100501BE
             auto meshHndl = refiner.coalescedMeshes[0].result();
             // XXX In houdini 16.5 we'll crash if we don't wrap the output
             // of GT_CatPolygonMesh in a GT_PackedAlembicMesh, similar to 
@@ -455,7 +457,7 @@ CreateEntryFn::operator()(
     for( size_t i = 0; i < refiner.coalescedMeshes.size(); ++i ) {
         auto& catMesh = refiner.coalescedMeshes[i];
         GT_PrimitiveHandle meshPrim = catMesh.result();
-#if HDK_API_VERSION >= 16050446
+#if SYS_VERSION_FULL_INT >= 0x100501BE
         collect->appendPrimitive(
                 new GT_PackedAlembicMesh( meshPrim, refiner.coalescedIds[i] ) );
 #else

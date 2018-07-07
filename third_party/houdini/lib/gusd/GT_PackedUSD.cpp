@@ -36,6 +36,7 @@
 #include <GT/GT_GEODetailList.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_GEOPrimCollectBoxes.h>
+#include <GT/GT_Names.h>
 #include <GT/GT_PrimCollect.h>
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_PrimPointMesh.h>
@@ -45,6 +46,7 @@
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
 #include <GU/GU_PrimPacked.h>
+#include <GA/GA_Names.h>
 #include <UT/UT_Options.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -91,8 +93,8 @@ struct _ViewportAttrFilter : public GT_GEOAttributeFilter
     virtual bool isValid(const GA_Attribute& attrib) const
     {
         // TODO Verify atts have correct type and dimension.
-        return attrib.getName() == "__primitive_id"
-            || attrib.getName() == "Cd";
+        return attrib.getName() == GT_Names::primitive_id
+            || attrib.getName() == GA_Names::Cd;
     }
 };
 
@@ -148,14 +150,15 @@ public:
     appendAttrs( GT_AttributeListHandle dest, int i ) const
     {
         if( dest && m_uniformAttrs ) {
-            if( auto colorArray = m_uniformAttrs->get( "Cd", 0 )) {
+            if( auto colorArray = m_uniformAttrs->get( GA_Names::Cd, 0 )) {
                 dest = dest->addAttribute( 
-                    "Cd", 
+                    GA_Names::Cd, 
                     new GT_DASubArray( colorArray, i, 1), true );
             }
-            if( auto idArray = m_uniformAttrs->get( "__primitive_id", 0 )) {
+            auto idArray = m_uniformAttrs->get( GT_Names::primitive_id, 0 );
+            if( idArray ) {
                 dest = dest->addAttribute( 
-                    "__primitive_id",
+                    GT_Names::primitive_id,
                     new GT_DASubArray( idArray, i, 1), true );
             }
         }
@@ -334,7 +337,7 @@ public:
                     filter, primOffsetList, vtxOffsetList);
 
         GT_PrimInstance* gtInst;
-        if( uniformAttrs->hasName( "Cd" )) {
+        if( uniformAttrs->hasName( GA_Names::Cd )) {
             gtInst = new GT_PrimInstanceWithColor( 
                                 geo, 
                                 xformArray, 

@@ -530,12 +530,18 @@ const PRM_Template* _CreateTemplates()
     return templates;
 }
 
-GusdUSD_TraverseType _type(new GusdUSD_CustomTraverse,
+} /* namespace */
+
+void
+GusdUSD_CustomTraverse::Initialize()
+{
+    // Simply creating this object will register it with our traversal
+    // table.
+    static GusdUSD_TraverseType _type(new GusdUSD_CustomTraverse,
                            "std:custom", "Custom Traversal", _CreateTemplates(),
                            "Configurable traversal, allowing complex "
                            "discovery patterns.");
-
-} /*namespace*/
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
