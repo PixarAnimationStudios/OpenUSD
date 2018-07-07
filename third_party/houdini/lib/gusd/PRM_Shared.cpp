@@ -186,7 +186,7 @@ void _AppendTypes(const TfType& type, UT_Array<PRM_Name>& names,
     
     names.append(PRM_Name(typeName.c_str(), deleter.appendCallback(
 #if SYS_VERSION_FULL_INT >= 0x10050000
-	boost::function<void (char *)>(free), label.steal())));
+	hboost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
 #endif
@@ -221,7 +221,7 @@ void _AppendKinds(const GusdUSD_Utils::KindNode* kind,
 
     names.append(PRM_Name(name.c_str(), deleter.appendCallback(
 #if SYS_VERSION_FULL_INT >= 0x10050000
-	boost::function<void (char *)>(free), label.steal())));
+	hboost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
 #endif

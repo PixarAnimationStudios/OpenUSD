@@ -172,9 +172,11 @@ protected:                                                              \
                         { extendedFillT(dst, start, length,             \
                                         tsize, nrepeats, stride); }
 
-    _DECL_GETTERS(U8,  uint8);
+#if SYS_VERSION_FULL_INT >= 0x10050000
     _DECL_GETTERS(I8,  int8);
     _DECL_GETTERS(I16, int16);
+#endif
+    _DECL_GETTERS(U8,  uint8);
     _DECL_GETTERS(I32, int32);
     _DECL_GETTERS(I64, int64);
     _DECL_GETTERS(F16, fpreal16);

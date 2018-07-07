@@ -36,7 +36,6 @@
 #include <GT/GT_GEODetailList.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_GEOPrimCollectBoxes.h>
-#include <GT/GT_Names.h>
 #include <GT/GT_PrimCollect.h>
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_PrimPointMesh.h>
@@ -93,7 +92,7 @@ struct _ViewportAttrFilter : public GT_GEOAttributeFilter
     virtual bool isValid(const GA_Attribute& attrib) const
     {
         // TODO Verify atts have correct type and dimension.
-        return attrib.getName() == GT_Names::primitive_id
+        return attrib.getName() == "__primitive_id"
             || attrib.getName() == GA_Names::Cd;
     }
 };
@@ -155,10 +154,10 @@ public:
                     GA_Names::Cd, 
                     new GT_DASubArray( colorArray, i, 1), true );
             }
-            auto idArray = m_uniformAttrs->get( GT_Names::primitive_id, 0 );
+            auto idArray = m_uniformAttrs->get( "__primitive_id", 0 );
             if( idArray ) {
                 dest = dest->addAttribute( 
-                    GT_Names::primitive_id,
+                    "__primitive_id",
                     new GT_DASubArray( idArray, i, 1), true );
             }
         }

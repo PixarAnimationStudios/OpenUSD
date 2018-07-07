@@ -44,6 +44,7 @@
 #include <GT/GT_DASubArray.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_DAConstant.h>
+#include <SYS/SYS_Version.h>
 #include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -1023,9 +1024,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             // identical, write the value as constant.
 
             for( auto it = primAttrs->begin(); !it.atEnd(); ++it ) {
-
+#if SYS_VERSION_FULL_INT < 0x11000000
+                if(!filter.matches( it.getName() )) 
+                    continue;
+#else
                 if(!filter.matches( it.getName().toStdString() )) 
                     continue;
+#endif
 
                 GT_DataArrayHandle data = it.getData();
                 TfToken interpolation = UsdGeomTokens->uniform;
