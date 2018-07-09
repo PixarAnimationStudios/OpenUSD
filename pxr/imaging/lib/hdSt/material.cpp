@@ -293,21 +293,46 @@ HdStMaterial::_GetTextureResource(
     HdResourceRegistrySharedPtr const &resourceRegistry = 
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
-    // Create a fallback texture resource when the texture doesn't
-    // have a valid connection path or if the scene delegate returns
-    // and invalidate ID
-    bool useFallback = param.GetConnection().IsEmpty();
-
-    HdTextureResource::ID texID = HdTextureResource::ID(-1);
-
-    if (!param.GetConnection().IsEmpty()) {
-         texID = GetTextureResourceID(sceneDelegate, param.GetConnection());
-    }
-    useFallback |= (texID == HdTextureResource::ID(-1));
-
-    // XXX todo handle fallback Ptex textures
     HdStTextureResourceSharedPtr texResource;
-    if (useFallback) {
+
+    SdfPath const &connection = param.GetConnection();
+    if (!connection.IsEmpty()) {
+        HdTextureResource::ID texID =
+            GetTextureResourceID(sceneDelegate, connection);
+
+        if (texID != HdTextureResource::ID(-1)) {
+            HdInstance<HdTextureResource::ID,
+                        HdTextureResourceSharedPtr> texInstance;
+
+            bool textureResourceFound = false;
+            std::unique_lock<std::mutex> regLock =
+                resourceRegistry->FindTextureResource
+                (texID, &texInstance, &textureResourceFound);
+
+            // A bad asset can cause the texture resource to not
+            // be found. Hence, issue a warning and continue onto the
+            // next param.
+            if (!textureResourceFound) {
+                TF_WARN("No texture resource found with path %s",
+                    param.GetConnection().GetText());
+            } else {
+                texResource =
+                    boost::dynamic_pointer_cast<HdStTextureResource>
+                    (texInstance.GetValue());
+            }
+        }
+    }
+
+    // There are many reasons why texResource could be null here:
+    // - A missing or invalid connection path,
+    // - A deliberate (-1) or accidental invalid texture id
+    // - Scene delegate failed to return a texture resource (due to asset error)
+    //
+    // In all these cases fallback to a simple texture with the provided
+    // fallback value
+    //
+    // XXX todo handle fallback Ptex textures
+    if (!texResource) {
         GlfUVTextureStorageRefPtr texPtr = 
             GlfUVTextureStorage::New(1,1, param.GetFallbackValue());
         GlfTextureHandleRefPtr texture =
@@ -321,31 +346,6 @@ HdStMaterial::_GetTextureResource(
                                           HdMagFilterNearest,
                                           0));
         _fallbackTextureResources.push_back(texResource);
-    } else {
-        HdInstance<HdTextureResource::ID,
-                   HdTextureResourceSharedPtr> texInstance;
-
-        bool textureResourceFound = false;
-        std::unique_lock<std::mutex> regLock =
-            resourceRegistry->FindTextureResource
-            (texID, &texInstance, &textureResourceFound);
-        // A bad asset can cause the texture resource to not 
-        // be found. Hence, issue a warning and continue onto the 
-        // next param.
-        if (!textureResourceFound) {
-            TF_WARN("No texture resource found with path %s",
-                param.GetConnection().GetText());
-            return HdStTextureResourceSharedPtr();
-        }
-
-        texResource =
-            boost::dynamic_pointer_cast<HdStTextureResource>
-            (texInstance.GetValue());
-        if (!TF_VERIFY(texResource,
-                "Incorrect texture resource with path %s",
-                param.GetConnection().GetText())) {
-            return HdStTextureResourceSharedPtr();
-        }
     }
 
     return texResource;
