@@ -309,13 +309,6 @@ ArDefaultResolver::CreateDefaultContextForAsset(
     return ArResolverContext(ArDefaultResolverContext());
 }
 
-ArResolverContext
-ArDefaultResolver::CreateDefaultContextForDirectory(
-    const std::string& fileDirectory)
-{
-    return ArResolverContext(ArDefaultResolverContext());
-}
-
 void 
 ArDefaultResolver::RefreshContext(const ArResolverContext& context)
 {

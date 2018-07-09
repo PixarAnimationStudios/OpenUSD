@@ -149,10 +149,6 @@ public:
         const std::string& filePath) override;
 
     AR_API
-    virtual ArResolverContext CreateDefaultContextForDirectory(
-        const std::string& fileDirectory) override;
-
-    AR_API
     virtual void RefreshContext(const ArResolverContext& context) override;
 
     AR_API

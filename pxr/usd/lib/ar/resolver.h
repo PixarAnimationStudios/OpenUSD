@@ -167,16 +167,6 @@ public:
     virtual ArResolverContext CreateDefaultContextForAsset(
         const std::string& filePath) = 0;
 
-    /// Return a default ArResolverContext that may be bound to this resolver
-    /// to resolve assets located in the given \p fileDirectory when no other
-    /// context is explicitly specified.
-    ///
-    /// This function should not automatically bind this context, but should
-    /// create one that may be used later.
-    AR_API
-    virtual ArResolverContext CreateDefaultContextForDirectory(
-        const std::string& fileDirectory) = 0;
-
     /// Refresh any caches associated with the given context.
     AR_API
     virtual void RefreshContext(const ArResolverContext& context) = 0;
