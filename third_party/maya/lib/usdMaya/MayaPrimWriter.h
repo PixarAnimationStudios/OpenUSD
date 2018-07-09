@@ -89,14 +89,14 @@ public:
     PXRUSDMAYA_API
     virtual bool ShouldPruneChildren() const;
 
-    /// Whether visibility can be exported for this prim; overrides settings
-    /// from the export args.
+    /// Whether visibility can be exported for this prim.
+    /// By default, this is based off of the export visibility setting in the
+    /// export args.
     PXRUSDMAYA_API
     bool GetExportVisibility() const;
 
-    /// Sets whether visibility can be exported for this prim. If \c true,
-    /// then uses the setting from the export args. If \c false, then will
-    /// never export visibility on this prim.
+    /// Sets whether visibility can be exported for this prim.
+    /// This will override the export args.
     PXRUSDMAYA_API
     void SetExportVisibility(bool exportVis);
 
@@ -135,7 +135,7 @@ protected:
     /// Whether there is shape (not transform) animation.
     /// XXX This is really a helper method that needs to be moved
     /// elsewhere.
-    virtual bool _IsShapeAnimated() const = 0;
+    virtual bool _IsShapeAnimated() const;
 
     /// Sets the path on the USD stage where this prim writer should define its
     /// output prim.
@@ -151,13 +151,8 @@ protected:
     /// Writes the attributes that are common to all UsdGeomImageable prims.
     /// Subclasses should almost always invoke _WriteImageableAttrs somewhere
     /// in their Write() function.
-    /// The \p transformDagPath is useful only if merging shapes and transforms
-    /// and this prim writer's source node is a shape, in which case
-    /// \p transformDagPath should be the parent transform path. Otherwise,
-    /// \p transformDagPath can just be the empty DAG path.
     PXRUSDMAYA_API
     bool _WriteImageableAttrs(
-            const MDagPath& transformDagPath,
             const UsdTimeCode& usdTime,
             UsdGeomImageable& primSchema);
 
@@ -199,6 +194,14 @@ protected:
     usdWriteJobCtx& _writeJobCtx;
 
 private:
+    /// Whether this prim writer represents the transform portion of a merged
+    /// shape and transform.
+    bool _IsMergedTransform() const;
+
+    /// Whether this prim writer represents the shape portion of a merged shape
+    /// and transform.
+    bool _IsMergedShape() const;
+
     MDagPath _dagPath;
     SdfPath _usdPath;
 
@@ -206,6 +209,7 @@ private:
 
     bool _isValid;
     bool _exportVisibility;
+    bool _isShapeAnimated;
 };
 
 typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterPtr;

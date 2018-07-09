@@ -34,6 +34,7 @@
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include <maya/MPlugArray.h>
 #include <maya/MUintArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -128,7 +129,7 @@ MayaMeshWriter::MayaMeshWriter(
         const SdfPath& uPath,
         bool instanceSource,
         usdWriteJobCtx& jobCtx) :
-    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
+    MayaPrimWriter(iDag, uPath, jobCtx)
 {
     if ( !isMeshValid() ) {
         return;
@@ -231,7 +232,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     MStatus status = MS::kSuccess;
 
     // Write parent class attrs
-    _WriteXformableAttrs(usdTime, primSchema);
+    _WriteImageableAttrs(usdTime, primSchema);
 
     // Exporting reference object only once
     if (usdTime.IsDefault() && _GetExportArgs().exportReferenceObjects) {

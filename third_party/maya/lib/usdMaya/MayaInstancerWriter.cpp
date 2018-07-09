@@ -136,8 +136,7 @@ MayaInstancerWriter::_ExportPrototype(
     // The USD path of the prototype root if it were exported at its current
     // Maya location.
     const SdfPath prototypeComputedUsdPath =
-            PxrUsdMayaUtil::MDagPathToUsdPath(prototypeDagPath, false, 
-                _GetExportArgs().stripNamespaces);
+            _writeJobCtx.ConvertDagToUsdPath(prototypeDagPath);
 
     MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid);
     itDag.reset(prototypeDagPath);
@@ -153,8 +152,7 @@ MayaInstancerWriter::_ExportPrototype(
         // The USD path of this prototype descendant prim if it were exported
         // at its current Maya location.
         const SdfPath curComputedUsdPath =
-                PxrUsdMayaUtil::MDagPathToUsdPath(curDagPath, false, 
-                    _GetExportArgs().stripNamespaces);
+                _writeJobCtx.ConvertDagToUsdPath(curDagPath);
 
         // Compute the current prim's relative path w/r/t the prototype root,
         // and use this to re-anchor it under the USD stage location where
@@ -170,19 +168,14 @@ MayaInstancerWriter::_ExportPrototype(
             continue;
         }
 
-        if (writer->GetUsdPrim()) {
-            validPrimWritersOut->push_back(writer);
-
-            // The prototype root must be visible to match Maya's behavior,
-            // which always vis'es the prototype root, even if it is marked
-            // hidden.
-            // (This check is somewhat roundabout because we might be merging
-            // transforms and shapes, so it's difficult ahead-of-time to know
-            // which prim writer will write the root prim.)
-            if (writer->GetUsdPrim().GetPath() == prototypeUsdPath) {
-                writer->SetExportVisibility(false);
-            }
+        // The prototype root must be visible to match Maya's behavior,
+        // which always vis'es the prototype root, even if it is marked
+        // hidden.
+        if (writer->GetUsdPath() == prototypeUsdPath) {
+            writer->SetExportVisibility(false);
         }
+
+        validPrimWritersOut->push_back(writer);
 
         if (writer->ShouldPruneChildren()) {
             itDag.prune();

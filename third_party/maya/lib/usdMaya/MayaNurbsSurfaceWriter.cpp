@@ -52,7 +52,7 @@ MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
         const SdfPath& uPath,
         bool instanceSource,
         usdWriteJobCtx& jobCtx) :
-    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
+    MayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomNurbsPatch primSchema =
         UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
@@ -111,7 +111,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     MStatus status = MS::kSuccess;
 
     // Write parent class attrs
-    _WriteXformableAttrs(usdTimeCode, primSchema);
+    _WriteImageableAttrs(usdTimeCode, primSchema);
 
     // Return if usdTimeCode does not match if shape is animated
     if (usdTimeCode.IsDefault() == _IsShapeAnimated() ) {

@@ -25,7 +25,7 @@
 #define _usdExport_MayaCameraWriter_h_
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/MayaPrimWriter.h"
 #include "usdMaya/usdWriteJobCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomCamera;
 
 // Writes an MFnMesh as a poly mesh OR a subd mesh
-class MayaCameraWriter : public MayaTransformWriter
+class MayaCameraWriter : public MayaPrimWriter
 {
   public:
     MayaCameraWriter(

@@ -25,7 +25,7 @@
 #define PXRUSDMAYA_MAYAMESHWRITER_H
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/MayaPrimWriter.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -40,7 +40,7 @@ class UsdGeomGprim;
 
 
 // Writes an MFnMesh as a poly mesh OR a subd mesh
-class MayaMeshWriter : public MayaTransformWriter
+class MayaMeshWriter : public MayaPrimWriter
 {
   public:
     MayaMeshWriter(const MDagPath & iDag,

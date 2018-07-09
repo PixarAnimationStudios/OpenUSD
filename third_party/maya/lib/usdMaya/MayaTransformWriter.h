@@ -78,24 +78,7 @@ public:
     PXRUSDMAYA_API
     bool ExportsReferences() const override;
 
-    /// Gets the DAG path of the source transform node for this prim writer
-    /// if we are merging transforms and shapes. (In that case, the Maya nodes
-    /// given by GetDagPath() and GetTransformDagPath() are merged into one
-    /// USD prim.) If not merging transforms and shapes, the returned DAG path
-    /// is invalid.
-    PXRUSDMAYA_API
-    const MDagPath& GetTransformDagPath();
-
 protected:
-    /// Helper for determining whether the shape is animated, if this prim
-    /// writer's source is a shape node.
-    /// Always \c false if this prim writer's source is a transform.
-    /// The default implementation only considers nodes with animation curve
-    /// inputs as "animated". Prim writers for nodes that have time variation
-    /// but no anim curves (such as particles) may want to override this.
-    PXRUSDMAYA_API
-    bool _IsShapeAnimated() const override;
-
     /// Writes the attributes that are common to all UsdGeomXformable prims,
     /// such as xformOps and xformOpOrder.
     /// Subclasses should almost always invoke _WriteXformableAttrs somewhere
@@ -123,7 +106,6 @@ private:
 
     MDagPath _xformDagPath;
     std::vector<AnimChannel> _animChannels;
-    bool _isShapeAnimated;
     bool _isInstanceSource;
 };
 

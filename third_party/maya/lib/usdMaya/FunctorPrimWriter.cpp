@@ -40,6 +40,11 @@ FunctorPrimWriter::FunctorPrimWriter(
     _exportsReferences(false),
     _pruneChildren(false)
 {
+    // XXX We need to temporarily create a prim here because the
+    // TransformPrimWriter no longer does that for us. The system assumes that
+    // the prim is defined after the constructor is run.
+    // This might change as we do the instancing clean-up.
+    _usdPrim = GetUsdStage()->DefinePrim(uPath);
 }
 
 FunctorPrimWriter::~FunctorPrimWriter()
@@ -62,15 +67,14 @@ FunctorPrimWriter::Write(
     _pruneChildren = ctx.GetPruneChildren();
     _authoredPaths = ctx.GetAuthoredPaths();
 
-    _usdPrim = stage->GetPrimAtPath(authorPath);
-    if (!_usdPrim) {
-        return;
-    }
-
-    // Write "parent" class attrs
-    UsdGeomXformable primSchema(_usdPrim);
-    if (primSchema) {
+    // Since this class handles both shapes and transforms, the resulting
+    // prim might not be Xformable, so handle the case where it's just
+    // Imageable.
+    if (UsdGeomXformable primSchema = UsdGeomXformable(_usdPrim)) {
         _WriteXformableAttrs(usdTime, primSchema);
+    }
+    else if (UsdGeomImageable primSchema = UsdGeomImageable(_usdPrim)) {
+        _WriteImageableAttrs(usdTime, primSchema);
     }
 }
 

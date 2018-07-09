@@ -48,7 +48,7 @@ MayaCameraWriter::MayaCameraWriter(
     const SdfPath& uPath,
     bool instanceSource,
     usdWriteJobCtx& jobCtx)
-    : MayaTransformWriter(iDag, uPath, instanceSource, jobCtx) 
+    : MayaPrimWriter(iDag, uPath, jobCtx) 
 {
     UsdGeomCamera primSchema =
         UsdGeomCamera::Define(GetUsdStage(), GetUsdPath());
@@ -64,7 +64,7 @@ void MayaCameraWriter::Write(const UsdTimeCode &usdTime)
     UsdGeomCamera primSchema(_usdPrim);
 
     // Write parent class attrs
-    _WriteXformableAttrs(usdTime, primSchema);
+    _WriteImageableAttrs(usdTime, primSchema);
 
     // Write the attrs
     writeCameraAttrs(usdTime, primSchema);

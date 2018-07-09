@@ -42,8 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class FunctorPrimWriter
 /// \brief This class is scaffolding to hold the writer plugin and to adapt it
-/// to the MayaTransformWriter class.  This allows our writer plugins to be
-/// implemented without caring about the internal MayaTransformWriter interface.
+/// to the MayaPrimWriter or MayaTransformWriter interface (depending on whether
+/// the writer plugin is handling a shape or a transform node).
 ///
 /// This class can be used as a base for plugins that write user-defined Maya
 /// shape nodes to a USD prim. For other types of nodes, you may want to

@@ -73,10 +73,34 @@ MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
     _isValid(true),
     _exportVisibility(jobCtx.getArgs().exportVisibility)
 {
+    // Determine if shape is animated
+    // note that we can't use hasTransform, because we need to test the original
+    // dag, not the transform (if mergeTransformAndShape is on)!
+    if (!GetDagPath().hasFn(MFn::kTransform)) { // if is a shape
+        MObject obj = GetDagPath().node();
+        if (!_GetExportArgs().timeInterval.IsEmpty()) {
+            _isShapeAnimated = PxrUsdMayaUtil::isAnimated(obj);
+        }
+    }
 }
 
 MayaPrimWriter::~MayaPrimWriter()
 {
+}
+
+bool
+MayaPrimWriter::_IsMergedTransform() const
+{
+    return _writeJobCtx.IsMergedTransform(GetDagPath());
+}
+
+bool
+MayaPrimWriter::_IsMergedShape() const
+{
+    MDagPath parentPath = GetDagPath();
+    parentPath.pop();
+    return parentPath.isValid() &&
+            _writeJobCtx.IsMergedTransform(parentPath);
 }
 
 // In the future, we'd like to make this a plugin point.
@@ -98,90 +122,85 @@ _GetClassNamesToWrite(
 }
 
 bool
-MayaPrimWriter::_WriteImageableAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime, UsdGeomImageable &primSchema) 
+MayaPrimWriter::_WriteImageableAttrs(
+        const UsdTimeCode &usdTime,
+        UsdGeomImageable &primSchema)
 {
     MStatus status;
     MFnDependencyNode depFn(GetDagPath().node());
-    MFnDependencyNode depFnT(dagT.node()); // optionally also scan a shape's transform if merging transforms
 
-    if (_exportVisibility) {
+    // Visibility is unfortunately special when merging transforms and shapes in
+    // that visibility is "pruning" and cannot be overriden by descendants.
+    // Thus, we arbitrarily say that, when merging transforms and shapes, the
+    // _shape_ writer always writes visibility.
+    if (_exportVisibility && !_IsMergedTransform()) {
         bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
         bool isAnimated = false;  // if either shape or xform is animated, then animated
+        PxrUsdMayaUtil::getPlugValue(
+                depFn, "visibility", &isVisible, &isAnimated);
 
-        PxrUsdMayaUtil::getPlugValue(depFn, "visibility", &isVisible, &isAnimated);
+        if (_IsMergedShape()) {
+            MDagPath parentDagPath = GetDagPath();
+            parentDagPath.pop();
+            MFnDependencyNode parentDepFn(parentDagPath.node());
 
-        if ( dagT.isValid() ) {
-            bool isVis, isAnim;
-            if (PxrUsdMayaUtil::getPlugValue(depFnT, "visibility", &isVis, &isAnim)){
-                isVisible = isVisible && isVis;
-                isAnimated = isAnimated || isAnim;
-            }
+            bool parentVisible = true;
+            bool parentAnimated = false;
+            PxrUsdMayaUtil::getPlugValue(
+                    parentDepFn, "visibility", &parentVisible, &parentAnimated);
+            isVisible = isVisible && parentVisible;
+            isAnimated = isAnimated || parentAnimated;
         }
 
         TfToken const &visibilityTok = (isVisible ? UsdGeomTokens->inherited : 
                                         UsdGeomTokens->invisible);
-        if (usdTime.IsDefault() != isAnimated ) {
+        if (usdTime.IsDefault() != isAnimated) {
             _SetAttribute(primSchema.CreateVisibilityAttr(VtValue(), true), 
-                          visibilityTok, 
+                          visibilityTok,
                           usdTime);
         }
     }
 
     UsdPrim usdPrim = primSchema.GetPrim();
-
-    // There is no Gprim abstraction in this module, so process the few
-    // gprim attrs here.
-    UsdGeomGprim gprim = UsdGeomGprim(usdPrim);
-    if (gprim && usdTime.IsDefault()){
-
-        PxrUsdMayaPrimWriterContext* unused = NULL;
-        PxrUsdMayaTranslatorGprim::Write(
-                GetDagPath().node(),
-                gprim,
-                unused);
-
-    }
-
-    std::vector<std::string> classNames;
-    if (_GetClassNamesToWrite(
-            GetDagPath().node(),
-            usdPrim,
-            &classNames)) {
-        PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
-    }
-
-    // Write UsdGeomImageable typed schema attributes.
-    // Currently only purpose, which is uniform, so only export at default time.
     if (usdTime.IsDefault()) {
+        // There is no Gprim abstraction in this module, so process the few
+        // gprim attrs here.
+        if (UsdGeomGprim gprim = UsdGeomGprim(usdPrim)) {
+            PxrUsdMayaPrimWriterContext* unused = nullptr;
+            PxrUsdMayaTranslatorGprim::Write(
+                    GetDagPath().node(),
+                    gprim,
+                    unused);
+        }
+
+        // Only write class inherits once at default time.
+        std::vector<std::string> classNames;
+        if (_GetClassNamesToWrite(
+                GetDagPath().node(),
+                usdPrim,
+                &classNames)) {
+            PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
+        }
+
+        // Write UsdGeomImageable typed schema attributes.
+        // Currently only purpose, which is uniform, so only export at default
+        // time.
         PxrUsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
                 GetDagPath().node(),
-                dagT.node(),
                 usdPrim,
                 {UsdGeomTokens->purpose},
                 usdTime,
                 &_valueWriter);
-    }
 
-    // Write API schema attributes, strongly-typed metadata, and user-tagged
-    // export attributes.
-    // Write attributes on the transform first, and then attributes on the shape
-    // node. This means that attribute name collisions will always be handled by
-    // taking the shape node's value if we're merging transforms and shapes.
-    if (dagT.isValid() && !(dagT == GetDagPath())) {
-        if (usdTime.IsDefault()) {
-            PxrUsdMayaWriteUtil::WriteMetadataToPrim(dagT.node(), usdPrim);
-            PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
-                    dagT.node(), usdPrim, _GetSparseValueWriter());
-        }
-        PxrUsdMayaWriteUtil::WriteUserExportedAttributes(dagT, usdPrim, usdTime,
-                _GetSparseValueWriter());
-    }
-
-    if (usdTime.IsDefault()) {
+        // Write API schema attributes and strongly-typed metadata.
+        // We currently only support these at default time.
         PxrUsdMayaWriteUtil::WriteMetadataToPrim(GetDagPath().node(), usdPrim);
         PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                 GetDagPath().node(), usdPrim, _GetSparseValueWriter());
     }
+
+    // Write out user-tagged attributes, which are supported at default time and
+    // at animated time-samples.
     PxrUsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
             usdTime, _GetSparseValueWriter());
 
@@ -285,6 +304,12 @@ UsdUtilsSparseValueWriter*
 MayaPrimWriter::_GetSparseValueWriter()
 {
     return &_valueWriter;
+}
+
+bool
+MayaPrimWriter::_IsShapeAnimated() const
+{
+    return _isShapeAnimated;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

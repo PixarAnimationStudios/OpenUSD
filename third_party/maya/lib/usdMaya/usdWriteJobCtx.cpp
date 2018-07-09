@@ -63,6 +63,76 @@ usdWriteJobCtx::usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args)
 {
 
 }
+bool
+usdWriteJobCtx::IsMergedTransform(const MDagPath& path) const
+{
+    if (!mArgs.mergeTransformAndShape) {
+        return false;
+    }
+
+    // Only transforms are mergeable.
+    if (!path.hasFn(MFn::kTransform)) {
+        return false;
+    }
+
+    // Any transform with multiple (non-intermediate) shapes below is
+    // non-mergeable.
+    unsigned int numberOfShapesDirectlyBelow = 0u;
+    path.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
+    if (numberOfShapesDirectlyBelow != 1) {
+        return false;
+    }
+
+    // If the node has more than one exportable child, then it is
+    // non-mergeable. (I.e., we still want to collapse if it has two shapes
+    // below, but one of them is an intermediate object.)
+    // For efficiency reasons, since (# exportable children <= # children),
+    // check the total child count first before checking whether they're
+    // exportable.
+    const unsigned int childCount = path.childCount();
+    if (childCount != 1) {
+        MDagPath childDag(path);
+        unsigned int numExportableChildren = 0u;
+        for (unsigned int i = 0u; i < childCount; ++i) {
+            childDag.push(path.child(i));
+            if (needToTraverse(childDag)) {
+                ++numExportableChildren;
+                if (numExportableChildren > 1) {
+                    return false;
+                }
+            }
+            childDag.pop();
+        }
+    }
+
+    return true;
+}
+
+SdfPath
+usdWriteJobCtx::ConvertDagToUsdPath(const MDagPath& dagPath) const
+{
+    SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
+            dagPath, false, mArgs.stripNamespaces);
+
+    // If we're merging transforms and shapes and this is a shape node, then
+    // write to the parent (transform) path instead.
+    MDagPath parentDag(dagPath);
+    parentDag.pop();
+    if (!dagPath.isInstanced() && IsMergedTransform(parentDag)) {
+        path = path.GetParentPath();
+    }
+
+    if (!mParentScopePath.IsEmpty())
+    {
+        // Since path is from MDagPathToUsdPath, it will always be
+        // an absolute path...
+        path = path.ReplacePrefix(
+                SdfPath::AbsoluteRootPath(),
+                mParentScopePath);
+    }
+
+    return path;
+}
 
 SdfPath usdWriteJobCtx::getOrCreateMasterPath(const MDagPath& dg)
 {
@@ -116,7 +186,7 @@ usdWriteJobCtx::getMasterPrimWriter(const MDagPath& dg) const
     return nullptr;
 }
 
-bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag)
+bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag) const
 {
     MObject ob = curDag.node();
     // NOTE: Already skipping all intermediate objects
@@ -180,15 +250,7 @@ SdfPath usdWriteJobCtx::getUsdPathFromDagPath(const MDagPath& dagPath, bool inst
             return SdfPath();
         }
     } else {
-        path = PxrUsdMayaUtil::MDagPathToUsdPath(dagPath, false, mArgs.stripNamespaces);
-        if (!mParentScopePath.IsEmpty())
-        {
-            // Since path is from MDagPathToUsdPath, it will always be
-            // an absolute path...
-            path = path.ReplacePrefix(
-                    SdfPath::AbsoluteRootPath(),
-                    mParentScopePath);
-        }
+        path = ConvertDagToUsdPath(dagPath);
     }
     return rootOverridePath(mArgs, path);
 }

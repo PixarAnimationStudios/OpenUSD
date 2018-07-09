@@ -25,7 +25,7 @@
 #define _usdExport_MayaNurbsCurveWriter_h_
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/MayaPrimWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomNurbsCurves;
 
 // Writes an MFnMesh as a poly mesh OR a subd mesh
-class MayaNurbsCurveWriter : public MayaTransformWriter
+class MayaNurbsCurveWriter : public MayaPrimWriter
 {
   public:
     MayaNurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, bool instanceSource, usdWriteJobCtx& jobCtx);

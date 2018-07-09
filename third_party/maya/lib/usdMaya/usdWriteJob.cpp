@@ -268,19 +268,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                     MDagPath dag = primWriter->GetDagPath();
                     mDagPathToUsdPathMap[dag] = usdPrim.GetPath();
 
-                    // If we are merging transforms and the object derives from
-                    // MayaTransformWriter but isn't actually a transform node, we
-                    // need to add its parent.
-                    if (mJobCtx.mArgs.mergeTransformAndShape) {
-                        MayaTransformWriterPtr xformWriter =
-                            std::dynamic_pointer_cast<MayaTransformWriter>(primWriter);
-                        if (xformWriter) {
-                            MDagPath xformDag = xformWriter->GetTransformDagPath();
-                            mDagPathToUsdPathMap[xformDag] = usdPrim.GetPath();
-                        }
-                    }
-
-                     mModelKindWriter.OnWritePrim(usdPrim, primWriter);
+                    mModelKindWriter.OnWritePrim(usdPrim, primWriter);
                 }
 
                 if (primWriter->ShouldPruneChildren()) {

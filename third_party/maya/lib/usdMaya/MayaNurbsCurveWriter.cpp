@@ -47,7 +47,7 @@ MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
                                            const SdfPath& uPath,
                                            bool instanceSource,
                                            usdWriteJobCtx& jobCtx) :
-    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
+    MayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomNurbsCurves primSchema =
         UsdGeomNurbsCurves::Define(GetUsdStage(), GetUsdPath());
@@ -73,7 +73,7 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
     MStatus status = MS::kSuccess;
 
     // Write parent class attrs
-    _WriteXformableAttrs(usdTime, primSchema);
+    _WriteImageableAttrs(usdTime, primSchema);
 
     // Return if usdTime does not match if shape is animated
     if (usdTime.IsDefault() == _IsShapeAnimated() ) {

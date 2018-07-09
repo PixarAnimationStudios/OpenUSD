@@ -25,7 +25,7 @@
 #define _usdExport_MayaNurbsSurfaceWriter_h_
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/MayaPrimWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomNurbsPatch;
 
 // Writes an MFnMesh as a poly mesh OR a subd mesh
-class MayaNurbsSurfaceWriter : public MayaTransformWriter
+class MayaNurbsSurfaceWriter : public MayaPrimWriter
 {
   public:
     MayaNurbsSurfaceWriter(const MDagPath & iDag,

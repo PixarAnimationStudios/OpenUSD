@@ -73,6 +73,11 @@ setXformOp(const UsdGeomXformOp& op,
         const UsdTimeCode& usdTime,
         UsdUtilsSparseValueWriter *valueWriter)
 {
+    if (!op) {
+        TF_CODING_ERROR("Xform op is not valid");
+        return;
+    }
+    
     if (op.GetOpType() == UsdGeomXformOp::TypeTransform) {
         GfMatrix4d shearXForm(1.0);
         shearXForm[1][0] = value[0]; //xyVal
@@ -400,6 +405,10 @@ void MayaTransformWriter::_PushTransformStack(
             animChan.usdOpType, animChan.precision,
             TfToken(animChan.opName),
             animChan.isInverse);
+        if (!animChan.op) {
+            TF_CODING_ERROR("Could not add xform op");
+            animChan.op = UsdGeomXformOp();
+        }
     }
 }
 
@@ -410,7 +419,6 @@ MayaTransformWriter::MayaTransformWriter(
         usdWriteJobCtx& jobCtx) :
     MayaPrimWriter(iDag, uPath, jobCtx),
     _xformDagPath(iDag),
-    _isShapeAnimated(false),
     _isInstanceSource(instanceSource)
 {
     auto isInstance = false;
@@ -474,37 +482,18 @@ MayaTransformWriter::MayaTransformWriter(
                 copyDag.extendToShapeDirectlyBelow(0);
                 if (copyDag.isInstanced()) {
                     invalidate_transform();
-                } else if (_GetExportArgs().mergeTransformAndShape) {
-                    invalidate_transform();
                 }
             }
         } else {
             if (iDag.isInstanced()) {
                 isInstance = true;
                 setup_merged_shape();
-            } else if (_GetExportArgs().mergeTransformAndShape) {
-                setup_merged_shape();
             } else {
                 _xformDagPath = MDagPath();
             }
         }
-    } else {
-        // Merge shape and transform
-        // If is a transform, then do not write
-        // Return if has a single shape directly below xform
-        if (_GetExportArgs().mergeTransformAndShape) {
-            if (hasTransform) { // if is an actual transform
-                if (hasOnlyOneShapeBelow(iDag)) {
-                    invalidate_transform();
-                }
-            } else { // must be a shape then
-                setup_merged_shape();
-            }
-        } else {
-            if (!hasTransform) { // if is NOT an actual transform
-                _xformDagPath = MDagPath(); // make path invalid
-            }
-        }
+    } else if (!hasTransform) { // if is NOT an actual transform
+        _xformDagPath = MDagPath(); // make path invalid
     }
 
     // Determine if transform is animated
@@ -534,25 +523,19 @@ MayaTransformWriter::MayaTransformWriter(
             }
         }
     }
-
-    // Determine if shape is animated
-    // note that we can't use hasTransform, because we need to test the original
-    // dag, not the transform (if mergeTransformAndShape is on)!
-    if (!GetDagPath().hasFn(MFn::kTransform)) { // if is a shape
-        MObject obj = GetDagPath().node();
-        if (!_GetExportArgs().timeInterval.IsEmpty()) {
-            _isShapeAnimated = PxrUsdMayaUtil::isAnimated(obj);
-        }
-    }
 }
 
 //virtual 
 void MayaTransformWriter::Write(const UsdTimeCode &usdTime)
 {
-    if (!_isInstanceSource) {
-        UsdGeomXform primSchema(_usdPrim);
-        // Set attrs
+    if (_isInstanceSource) {
+        return;
+    }
+    if (UsdGeomXformable primSchema = UsdGeomXformable(_usdPrim)) {
         _WriteXformableAttrs(usdTime, primSchema);
+    }
+    else {
+        TF_CODING_ERROR("<%s> is not Xformable", _usdPrim.GetPath().GetText());
     }
 }
 
@@ -560,9 +543,8 @@ bool MayaTransformWriter::_WriteXformableAttrs(
         const UsdTimeCode &usdTime, UsdGeomXformable &xformSchema)
 {
     // Write parent class attrs
-    _WriteImageableAttrs(_xformDagPath, usdTime, xformSchema); // for the shape
+    _WriteImageableAttrs(usdTime, xformSchema);
 
-    // can this use xformSchema instead?  do we even need _usdXform?
     computeXFormOps(xformSchema, _animChannels, usdTime,
                     _GetSparseValueWriter());
     return true;
@@ -606,18 +588,6 @@ bool MayaTransformWriter::ExportsReferences() const
 
     return MayaPrimWriter::ExportsReferences();
 }
-
-const MDagPath&
-MayaTransformWriter::GetTransformDagPath()
-{
-    return _xformDagPath;
-};
-
-bool
-MayaTransformWriter::_IsShapeAnimated() const
-{
-    return _isShapeAnimated;
-};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

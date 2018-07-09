@@ -60,6 +60,20 @@ protected:
 public:
     const PxrUsdMayaJobExportArgs& getArgs() const { return mArgs; };
     const UsdStageRefPtr& getUsdStage() const { return mStage; };
+
+    /// Whether we will merge the transform at \p path with its single
+    /// exportable child shape, given its hierarchy and the current path
+    /// translation rules. (This always returns false if the export args
+    /// don't specify merge transform/shape.)
+    PXRUSDMAYA_API
+    bool IsMergedTransform(const MDagPath& path) const;
+
+    /// Convert DAG paths to USD paths, taking into account the current path
+    /// translation rules (such as merge transform/shape, strip namespaces,
+    /// visibility, etc).
+    PXRUSDMAYA_API
+    SdfPath ConvertDagToUsdPath(const MDagPath& dagPath) const;
+
     // Queries the master path for instancing.
     // This also creates the master shape if it doesn't exist.
     PXRUSDMAYA_API
@@ -77,12 +91,13 @@ public:
             const MDagPath& curDag,
             const SdfPath& usdPath = SdfPath());
     PXRUSDMAYA_API
-    bool needToTraverse(const MDagPath& curDag);
+    bool needToTraverse(const MDagPath& curDag) const;
     PXRUSDMAYA_API
     PxrUsdMaya_SkelBindingsWriter& getSkelBindingsWriter()
     {
         return mSkelBindingsWriter;
     }
+
 protected:
     PXRUSDMAYA_API
     bool openFile(const std::string& filename, bool append);
@@ -94,7 +109,10 @@ protected:
     std::vector<MayaPrimWriterPtr> mMayaPrimWriterList;
     // Stage used to write out USD file
     UsdStageRefPtr mStage;
+
 private:
+    // XXX: Unlike ConvertDagToUsdPath(), this also deals with instancing.
+    // I'm going to remove it in a future change that deals with instancing.
     PXRUSDMAYA_API
     SdfPath getUsdPathFromDagPath(const MDagPath& dagPath, bool instanceSource);
 
