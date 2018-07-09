@@ -160,8 +160,8 @@ _CreateResolver(const TfType& resolverType, std::string* debugMsg = nullptr)
                 resolverType.GetTypeName().c_str());
         }
         else {
-            ArResolverFactoryBase* factory =
-                resolverType.GetFactory<ArResolverFactoryBase>();
+            Ar_ResolverFactoryBase* factory =
+                resolverType.GetFactory<Ar_ResolverFactoryBase>();
             if (factory) {
                 tmpResolver.reset(factory->New());
             }
