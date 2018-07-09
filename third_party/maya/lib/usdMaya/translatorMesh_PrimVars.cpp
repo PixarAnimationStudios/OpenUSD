@@ -47,7 +47,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
+/// "Flattens out" the given \p interpolation onto face-vertexes of the given
+/// \p meshFn, returning a mapping of the face-vertex indices to data indices.
+/// Takes into account data authored sparsely if \p assignmentIndices and
+/// \p unauthoredValuesIndex are specified.
 static
 MIntArray
 _GetMayaFaceVertexAssignmentIds(
@@ -107,59 +110,51 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     }
 
     // This is the number of UV values assuming the primvar is NOT indexed.
-    size_t numUVs = uvValues.size();
-
     VtIntArray assignmentIndices;
-    int unauthoredValuesIndex = -1;
     if (primvar.GetIndices(&assignmentIndices)) {
         // The primvar IS indexed, so the indices array is what determines the
         // number of UV values.
-        numUVs = assignmentIndices.size();
-        unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+        int unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+
+        // Replace any index equal to unauthoredValuesIndex with -1.
+        if (unauthoredValuesIndex != -1) {
+            for (int& index : assignmentIndices) {
+                if (index == unauthoredValuesIndex) {
+                    index = -1;
+                }
+            }
+        }
+
+        // Furthermore, if unauthoredValuesIndex is valid for uvValues, then
+        // remove it from uvValues and shift the indices (we don't want to
+        // import the unauthored value into Maya, where it has no meaning).
+        if (unauthoredValuesIndex >= 0 &&
+                static_cast<size_t>(unauthoredValuesIndex) < uvValues.size()) {
+            // This moves [unauthoredValuesIndex + 1, end) to
+            // [unauthoredValuesIndex, end - 1), erasing the
+            // unauthoredValuesIndex.
+            std::move(
+                    uvValues.begin() + unauthoredValuesIndex + 1,
+                    uvValues.end(),
+                    uvValues.begin() + unauthoredValuesIndex);
+            uvValues.pop_back();
+
+            for (int& index : assignmentIndices) {
+                if (index > unauthoredValuesIndex) {
+                    index = index - 1;
+                }
+            }
+        }
     }
 
     // Go through the UV data and add the U and V values to separate
-    // MFloatArrays, taking into consideration that indexed data may have been
-    // authored sparsely. If the assignmentIndices array is empty then the data
-    // is NOT indexed, in which case we can use it directly.
-    // Note that with indexed data, the data is added to the arrays in ascending
-    // component ID order according to the primvar's interpolation (ascending
-    // face ID for uniform interpolation, ascending vertex ID for vertex
-    // interpolation, etc.). This ordering may be different from the way the
-    // values are ordered in the primvar. Because of this, we recycle the
-    // assignmentIndices array as we go to store the new mapping from component
-    // index to UV index.
+    // MFloatArrays.
     MFloatArray uCoords;
     MFloatArray vCoords;
-    for (size_t i = 0; i < numUVs; ++i) {
-        int uvIndex = i;
-
-        if (i < assignmentIndices.size()) {
-            // The data is indexed, so consult the indices array for the
-            // correct index into the data.
-            uvIndex = assignmentIndices[i];
-
-            if (uvIndex == unauthoredValuesIndex) {
-                // This component is unauthored, so just update the
-                // mapping in assignmentIndices and then skip the value.
-                // We don't actually use the value at the unassigned index.
-                assignmentIndices[i] = -1;
-                continue;
-            }
-
-            // We'll be appending a new value, so the current length of the
-            // array gives us the new value's index.
-            assignmentIndices[i] = uCoords.length();
-        }
-
-        uCoords.append(uvValues[uvIndex][0]);
-        vCoords.append(uvValues[uvIndex][1]);
+    for (const GfVec2f& v : uvValues) {
+        uCoords.append(v[0]);
+        vCoords.append(v[1]);
     }
-
-    // uCoords and vCoords now store all of the values and any unassigned
-    // components have had their indices set to -1, so update the unauthored
-    // values index.
-    unauthoredValuesIndex = -1;
 
     MStatus status;
     MString uvSetName(primvarName.GetText());
@@ -200,7 +195,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     MIntArray uvIds = _GetMayaFaceVertexAssignmentIds(meshFn,
                                                       interpolation,
                                                       assignmentIndices,
-                                                      unauthoredValuesIndex);
+                                                      -1);
 
     MIntArray vertexCounts;
     MIntArray vertexList;

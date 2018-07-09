@@ -137,7 +137,8 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=14)
 
     def testImportOneMissingFaceUVSet(self):
         """
@@ -169,7 +170,8 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=14)
 
     def testImportOneAssignedFaceUVSet(self):
         """
@@ -185,7 +187,8 @@ class testUsdImportUVSets(unittest.TestCase):
             11: Gf.Vec2f(0.375, 0.75)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=4)
 
     def testImportCompressibleUVSets(self):
         """
@@ -272,7 +275,8 @@ class testUsdImportUVSets(unittest.TestCase):
             expectedValues[i] = Gf.Vec2f(1.0, 1.0)
         for i in xrange(3, 24, 4):
             expectedValues[i] = Gf.Vec2f(0.0, 1.0)
-        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues)
+        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
+            expectedNumValues=4)
 
         # The faces alternate between ranges 0.0-0.5 and 0.5-1.0.
         uvSetName = 'PairedFacesSet'
@@ -293,7 +297,8 @@ class testUsdImportUVSets(unittest.TestCase):
             expectedValues[i] = Gf.Vec2f(1.0, 1.0)
         for i in xrange(7, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 1.0)
-        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues)
+        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
+            expectedNumValues=7)
     
     def testImportUVSetForMeshWithCreases(self):
         """
@@ -344,7 +349,8 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=14)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
