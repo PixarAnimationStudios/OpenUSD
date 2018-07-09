@@ -102,7 +102,7 @@ protected:
         }
 
         /// Returns the number of elements
-        virtual int GetNumElements() const {
+        virtual size_t GetNumElements() const {
             return _numElements;
         }
 
@@ -160,7 +160,7 @@ protected:
         enum { NOT_ALLOCATED = -1 };
         _StripedInterleavedBuffer *_stripedBuffer;
         int _index;
-        int _numElements;
+        size_t _numElements;
     };
 
     typedef boost::shared_ptr<_StripedInterleavedBuffer>

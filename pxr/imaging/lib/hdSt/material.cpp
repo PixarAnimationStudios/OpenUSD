@@ -85,7 +85,7 @@ public:
     virtual int GetGLElementDataType() const {
         return GL_UNSIGNED_INT64_ARB;
     }
-    virtual int GetNumElements() const {
+    virtual size_t GetNumElements() const {
         return 1;
     }
     virtual short GetNumComponents() const {

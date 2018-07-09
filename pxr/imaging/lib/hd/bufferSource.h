@@ -96,7 +96,7 @@ public:
 
     /// Returns the number of elements (e.g. VtVec3dArray().GetLength()) from
     /// the source array.
-    virtual int GetNumElements() const = 0;
+    virtual size_t GetNumElements() const = 0;
 
     /// Returns true it this computation has already been resolved.
     bool IsResolved() const {
@@ -222,7 +222,7 @@ public:
     HD_API
     virtual HdTupleType GetTupleType() const override;
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
 protected:
     void _SetResult(HdBufferSourceSharedPtr const &result) {
@@ -245,7 +245,7 @@ public:
     HD_API
     virtual size_t ComputeHash() const override;
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
     HD_API
     virtual HdTupleType GetTupleType() const override;
     HD_API

@@ -83,7 +83,7 @@ public:
 
     /// Returns a count of the number of elements.
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
 protected:
     /// Returns true if the binding to the source computation was successful.

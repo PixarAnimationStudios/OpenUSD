@@ -95,7 +95,7 @@ protected:
 
 private:
     std::mutex _instanceLock;
-    int _numInstancePrimvars;
+    size_t _numInstancePrimvars;
 
     HdBufferArrayRangeSharedPtr _instancePrimvarRange;
     TfHashMap<SdfPath,

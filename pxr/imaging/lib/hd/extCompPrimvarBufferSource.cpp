@@ -107,7 +107,7 @@ HdExtCompPrimvarBufferSource::GetTupleType() const
     return _tupleType;
 }
 
-int
+size_t
 HdExtCompPrimvarBufferSource::GetNumElements() const
 {
     return _source->GetNumElements();

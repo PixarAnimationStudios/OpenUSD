@@ -188,8 +188,7 @@ HdExtCompCpuComputation::Resolve()
     return true;
 }
 
-
-int
+size_t
 HdExtCompCpuComputation::GetNumElements() const
 {
     return _numElements;

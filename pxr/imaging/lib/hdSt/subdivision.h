@@ -165,7 +165,7 @@ public:
     virtual size_t ComputeHash() const override;
     virtual void const* GetData() const override;
     virtual HdTupleType GetTupleType() const override;
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
     virtual bool HasPreChainedBuffer() const override;
@@ -210,7 +210,7 @@ public:
 
         // bit confusing, osd expects 'GetNumElements()' returns the num components,
         // in hydra sense
-        int GetNumElements() const {
+        size_t GetNumElements() const {
             return HdGetComponentCount(_resource->GetTupleType().type);
         }
         GLuint BindVBO() {
@@ -273,7 +273,7 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetTupleType() const
 }
 
 template <typename VERTEX_BUFFER>
-int
+size_t
 HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetNumElements() const
 {
     return _cpuVertexBuffer->GetNumVertices();

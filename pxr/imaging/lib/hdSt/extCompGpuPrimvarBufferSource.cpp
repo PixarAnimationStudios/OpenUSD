@@ -63,7 +63,7 @@ HdStExtCompGpuPrimvarBufferSource::_CheckValid() const
 }
 
 /* virtual */
-int
+size_t
 HdStExtCompGpuPrimvarBufferSource::GetNumElements() const
 {
     return _numElements;

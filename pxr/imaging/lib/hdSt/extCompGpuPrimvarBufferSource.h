@@ -55,7 +55,7 @@ public:
     virtual TfToken const &GetName() const override;
 
     HDST_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
     HD_API
     virtual HdTupleType GetTupleType() const override;
@@ -69,7 +69,7 @@ protected:
 private:
     TfToken _name;
     HdTupleType _tupleType;
-    int _numElements;
+    size_t _numElements;
 
     HdStExtCompGpuPrimvarBufferSource()                = delete;
     HdStExtCompGpuPrimvarBufferSource(

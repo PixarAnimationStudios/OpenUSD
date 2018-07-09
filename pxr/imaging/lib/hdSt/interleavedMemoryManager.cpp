@@ -679,7 +679,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         const unsigned char *data =
             (const unsigned char*)bufferSource->GetData();
 
-        for (int i = 0; i < _numElements; ++i) {
+        for (size_t i = 0; i < _numElements; ++i) {
             HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
             // XXX: MapBuffer?

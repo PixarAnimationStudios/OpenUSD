@@ -90,7 +90,7 @@ public:
     /// part of the data to the hydra buffer system. numElements must be less
     /// than or equal to the current result of GetNumElements().
     HD_API
-    void Truncate(int numElements);
+    void Truncate(size_t numElements);
 
     /// Return the name of this buffer source.
     virtual TfToken const &GetName() const override {
@@ -110,7 +110,7 @@ public:
     /// Returns the number of elements (e.g. VtVec3dArray().GetLength()) from
     /// the source array.
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
     /// Add the buffer spec for this buffer source into given bufferspec vector.
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override {
@@ -145,7 +145,7 @@ private:
     // class should remain noncopyable.
     VtValue _value;
     HdTupleType _tupleType;
-    int _numElements;
+    size_t _numElements;
 };
 
 /// Diagnostic output.

@@ -130,11 +130,11 @@ HdVtBufferSource::~HdVtBufferSource()
 }
 
 void
-HdVtBufferSource::Truncate(int numElements)
+HdVtBufferSource::Truncate(size_t numElements)
 {
     if (numElements > _numElements) {
         TF_CODING_ERROR(
-            "Buffer '%s', cannot truncate from length %d to length %d",
+            "Buffer '%s', cannot truncate from length %zu to length %zu",
             _name.GetText(), _numElements, numElements);
         return;
     }
@@ -153,7 +153,7 @@ HdVtBufferSource::GetDefaultMatrixType()
 }
 
 /*virtual*/
-int
+size_t
 HdVtBufferSource::GetNumElements() const
 {
     return _numElements;
