@@ -49,6 +49,11 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_EXPORT_OLD_STYLE_FACESETS, false,
     "Whether maya/usdExport should create face-set bindings encoded in the "
     "old-style, using UsdGeomFaceSetAPI.");
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (surfaceShader)
+);
+
 PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
         const MObject& shadingEngine,
         const UsdStageRefPtr& stage,
@@ -57,7 +62,8 @@ PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
     _shadingEngine(shadingEngine),
     _stage(stage),
     _dagPathToUsdMap(dagPathToUsdMap),
-    _exportParams(exportParams)
+    _exportParams(exportParams),
+    _surfaceShaderPlugName(_tokens->surfaceShader)
 {
     if (exportParams.bindableRoots.empty()) {
         // if none specified, push back '/' which encompasses all
@@ -84,6 +90,13 @@ PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
     }
 }
 
+void
+PxrUsdMayaShadingModeExportContext::SetSurfaceShaderPlugName(
+        const TfToken& surfaceShaderPlugName)
+{
+    _surfaceShaderPlugName = surfaceShaderPlugName;
+}
+
 MObject
 PxrUsdMayaShadingModeExportContext::GetSurfaceShader() const
 {
@@ -93,7 +106,8 @@ PxrUsdMayaShadingModeExportContext::GetSurfaceShader() const
         return MObject();
     }
 
-    MPlug ssPlug = seDepNode.findPlug("surfaceShader", true, &status);
+    MPlug ssPlug = seDepNode.findPlug(
+            MString(_surfaceShaderPlugName.GetText()),  true, &status);
     if (!status) {
         return MObject();
     }

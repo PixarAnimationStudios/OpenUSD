@@ -39,7 +39,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
 class PxrUsdMayaShadingModeImportContext
 {
 public:
@@ -53,7 +52,8 @@ public:
             PxrUsdMayaPrimReaderContext* context) :
         _shadeMaterial(shadeMaterial),
         _boundPrim(boundPrim),
-        _context(context)
+        _context(context),
+        _surfaceShaderPlugName("surfaceShader")
     {
     }
 
@@ -87,10 +87,20 @@ public:
     MObject AddCreatedObject(const SdfPath& path, const MObject& obj);
     /// @}
 
+    PXRUSDMAYA_API
+    TfToken
+    GetSurfaceShaderPlugName() const;
+
+    PXRUSDMAYA_API
+    void
+    SetSurfaceShaderPlugName(const TfToken& plugName);
+
 private:
     const UsdShadeMaterial& _shadeMaterial;
     const UsdGeomGprim& _boundPrim;
     PxrUsdMayaPrimReaderContext* _context;
+
+    TfToken _surfaceShaderPlugName;
 };
 typedef boost::function< MPlug (PxrUsdMayaShadingModeImportContext*) > PxrUsdMayaShadingModeImporter;
 

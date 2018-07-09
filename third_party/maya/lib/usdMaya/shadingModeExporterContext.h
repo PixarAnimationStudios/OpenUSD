@@ -81,6 +81,8 @@ public:
         return _bindableRoots; 
     }
 
+    void SetSurfaceShaderPlugName(const TfToken& surfacedShaderPlugName);
+
     const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& GetDagPathToUsdMap() const
     { return _dagPathToUsdMap; }
 
@@ -140,6 +142,7 @@ private:
     const UsdStageRefPtr& _stage;
     const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& _dagPathToUsdMap;
     const PxrUsdMayaExportParams &_exportParams;
+    TfToken _surfaceShaderPlugName;
 
     // Bindable roots stored as an SdfPathSet.
     SdfPathSet _bindableRoots;

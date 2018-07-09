@@ -106,10 +106,13 @@ PxrUsdMayaTranslatorMaterial::Read(
         fnSet.setName(MString(shadingEngineName.c_str()),
             true /* createNamespace */);
 
-        MPlug seSurfaceShaderPlg = fnSet.findPlug("surfaceShader", &status);
-        PxrUsdMayaUtil::Connect(outColorPlug, seSurfaceShaderPlg, 
-                // Make sure that "surfaceShader" connection is open
-                true);
+        const TfToken surfaceShaderPlugName = c.GetSurfaceShaderPlugName();
+        if (!surfaceShaderPlugName.IsEmpty()) {
+            MPlug seSurfaceShaderPlg = fnSet.findPlug(MString(surfaceShaderPlugName.GetText()), &status);
+            PxrUsdMayaUtil::Connect(outColorPlug, seSurfaceShaderPlg, 
+                    // Make sure that "surfaceShader" connection is open
+                    true);
+        }
     }
 
     return c.AddCreatedObject(shadeMaterial.GetPrim(), shadingEngine);

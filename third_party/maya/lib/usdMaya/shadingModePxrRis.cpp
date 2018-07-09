@@ -60,6 +60,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((PxrShaderPrefix, "Pxr"))
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
+
+    // in r22, this is "rman__surface", added via extension attribute
+    ((RmanShadingPlug, "surfaceShader")) 
 );
 
 
@@ -68,6 +71,11 @@ class PxrRisShadingModeExporter : public PxrUsdMayaShadingModeExporter {
 public:
     PxrRisShadingModeExporter() {}
 private:
+
+    void PreExport(PxrUsdMayaShadingModeExportContext* context) override {
+        context->SetSurfaceShaderPlugName(_tokens->RmanShadingPlug);
+    }
+
     TfToken
     _GetShaderTypeName(const MFnDependencyNode& depNode)
     {
@@ -432,6 +440,10 @@ _CreateShaderObject(
 
 DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
+    // RenderMan for Maya wants the shader nodes to get hooked into the shading
+    // group via it's own plug.
+    context->SetSurfaceShaderPlugName(_tokens->RmanShadingPlug);
+
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();

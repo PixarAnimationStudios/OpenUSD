@@ -74,5 +74,17 @@ PxrUsdMayaShadingModeImportContext::AddCreatedObject(
     return obj;
 }
 
+TfToken
+PxrUsdMayaShadingModeImportContext::GetSurfaceShaderPlugName() const
+{
+    return _surfaceShaderPlugName;
+}
+
+void
+PxrUsdMayaShadingModeImportContext::SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName)
+{
+    _surfaceShaderPlugName = surfaceShaderPlugName;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -101,7 +101,7 @@ PxrUsdMayaShadingModeExporter::DoExport(
         dagPathToUsdMap, 
         exportParams);
 
-    PreExport(context);
+    PreExport(&context);
 
     using MaterialAssignments = std::vector<std::pair<TfToken, 
         SdfPathSet>>;
