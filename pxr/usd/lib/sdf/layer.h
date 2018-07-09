@@ -266,9 +266,10 @@ public:
 
     /// Returns \c true if successful, \c false if an error occurred.
     /// Returns \c false if the layer has no remembered file name or the 
-    /// layer type cannot be saved.
+    /// layer type cannot be saved. The layer will not be overwritten if the 
+    /// file exists and the layer is not dirty unless \p force is true.
     SDF_API
-    bool Save() const;
+    bool Save(bool force = false) const;
 
     /// Exports this layer to a file.
     /// Returns \c true if successful, \c false if an error occurred.

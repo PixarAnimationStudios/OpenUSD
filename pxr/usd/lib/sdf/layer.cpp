@@ -4025,9 +4025,9 @@ SdfLayer::Export(const string& newFileName, const string& comment,
 }
 
 bool
-SdfLayer::Save() const
+SdfLayer::Save(bool force) const
 {
-    return _Save(/* force = */ false);
+    return _Save(force);
 }
 
 bool
