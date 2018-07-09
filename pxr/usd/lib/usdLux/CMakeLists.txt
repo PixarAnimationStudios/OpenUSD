@@ -49,7 +49,7 @@ pxr_library(usdLux
         wrapSphereLight.cpp
         wrapTokens.cpp
 
-   PYMODULE_FILES 
+    PYMODULE_FILES 
         __init__.py
 
     RESOURCE_FILES
@@ -57,4 +57,39 @@ pxr_library(usdLux
         generatedSchema.usda
         schema.usda:usdLux/schema.usda
 )
+
+pxr_test_scripts(
+    testenv/testUsdLuxLight.py
+    testenv/testUsdLuxLinkingAPI.py
+    testenv/testUsdLuxListAPI.py
+)
+
+pxr_register_test(testUsdLuxLight
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLight"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_install_test_dir(
+    DEST testUsdLuxLinkingAPI
+    SRC testenv/testUsdLuxLinkingAPI
+)
+
+pxr_register_test(testUsdLuxLinkingAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLinkingAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_install_test_dir(
+    DEST testUsdLuxListAPI
+    SRC testenv/testUsdLuxListAPI
+)
+
+pxr_register_test(testUsdLuxListAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxListAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
 

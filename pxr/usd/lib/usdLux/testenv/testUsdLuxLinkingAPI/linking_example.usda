@@ -1,0 +1,125 @@
+#usda 1.0
+
+def Xform "Lights"
+{
+    def Xform "DefaultLinkage"
+    {
+        def SphereLight "include_all" (
+            """This light specifies no linkage and therefore links
+            everything."""
+        )
+        {
+        }
+    }
+
+    def Xform "SimpleInclude" (
+        """These lights use simple include linkage."""
+    )
+    {
+        double3 xformOp:translate = (0, 4, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def SphereLight "include_a"
+        {
+            rel collection:lightLink:includes = </Geom/a>
+            uniform bool collection:lightLink:includeRoot = 0
+        }
+
+        def SphereLight "include_b"
+        {
+            rel collection:lightLink:includes = </Geom/b>
+            uniform bool collection:lightLink:includeRoot = 0
+
+            double3 xformOp:translate = (2, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "MultiInclude" (
+        """These lights use include multiple targets."""
+    )
+    {
+        double3 xformOp:translate = (0, 4, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def SphereLight "include_ab"
+        {
+            rel collection:lightLink:includes = [</Geom/a>, </Geom/b>]
+            uniform bool collection:lightLink:includeRoot = 0
+        }
+    }
+
+    def Xform "SimpleExclude" (
+        """These lights use simple exclude linkage."""
+    )
+    {
+        double3 xformOp:translate = (0, 4, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def SphereLight "exclude_a"
+        {
+            rel collection:lightLink:excludes = </Geom/a>
+        }
+
+        def SphereLight "exclude_b"
+        {
+            rel collection:lightLink:excludes = </Geom/b>
+
+            double3 xformOp:translate = (2, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "FilterLinking" (
+        """These lights use light filters with linking."""
+    )
+    {
+        double3 xformOp:translate = (0, 4, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def SphereLight "filter_exclude_a"
+        {
+            rel filters = </Lights/FilterLinking/filter>
+        }
+
+        def LightFilter "filter"
+        {
+            rel collection:filterLink:excludes = </Geom/a>
+        }
+    }
+
+    def Xform "FaceSetLinking" (
+        """These lights use faceset links."""
+    )
+    {
+        double3 xformOp:translate = (0, 4, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def SphereLight "include_faceSet_example"
+        {
+            rel collection:lightLink:includes = [</Geom/meshWithFaceSet/faceSet>]
+            uniform bool collection:lightLink:includeRoot = 0
+        }
+    }
+}
+
+def Xform "Geom" (
+    """A set of test geometry against which to link lights."""
+)
+{
+    def Sphere "a"
+    {
+    }
+
+    def Sphere "b"
+    {
+        double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "meshWithFaceSet" (
+        references = @meshWithFaceSet.usda@
+    )
+    {
+    }
+}
