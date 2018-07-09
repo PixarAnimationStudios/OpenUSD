@@ -575,19 +575,6 @@ bool MayaTransformWriter::ExportsGprims() const
 
     return MayaPrimWriter::ExportsGprims();
 }
-    
-bool MayaTransformWriter::ExportsReferences() const
-{
-    if (_IsInstance()) {
-        MayaPrimWriterPtr primWriter = _writeJobCtx.getMasterPrimWriter(
-                GetDagPath());
-        if (primWriter) {
-            return primWriter->ExportsReferences();
-        }
-    }
-
-    return MayaPrimWriter::ExportsReferences();
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

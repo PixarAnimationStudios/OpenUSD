@@ -74,9 +74,6 @@ public:
 
     PXRUSDMAYA_API
     bool ExportsGprims() const override;
-    
-    PXRUSDMAYA_API
-    bool ExportsReferences() const override;
 
 protected:
     /// Writes the attributes that are common to all UsdGeomXformable prims,

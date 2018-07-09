@@ -96,8 +96,8 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     UsdTimeCode usdTime = context->GetTimeCode();
 
     context->SetExportsGprims(false);
-    context->SetExportsReferences(true);
     context->SetPruneChildren(true);
+    context->SetModelPaths({authorPath});
 
     UsdPrim prim = stage->DefinePrim(authorPath);
     if (!prim) {

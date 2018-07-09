@@ -212,12 +212,6 @@ MayaPrimWriter::ExportsGprims() const
 {
     return false;
 }
-    
-bool
-MayaPrimWriter::ExportsReferences() const
-{
-    return false;
-}
 
 bool
 MayaPrimWriter::ShouldPruneChildren() const
@@ -236,14 +230,11 @@ MayaPrimWriter::SetExportVisibility(bool exportVis)
     _exportVisibility = exportVis;
 }
 
-bool
-MayaPrimWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+const SdfPathVector&
+MayaPrimWriter::GetModelPaths() const
 {
-    if (!GetUsdPath().IsEmpty()) {
-        outPaths->push_back(GetUsdPath());
-        return true;
-    }
-    return false;
+    static const SdfPathVector empty;
+    return empty;
 }
 
 bool

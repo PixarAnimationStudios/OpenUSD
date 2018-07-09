@@ -74,12 +74,6 @@ public:
     /// gprim (shape) classes should override.
     PXRUSDMAYA_API
     virtual bool ExportsGprims() const;
-    
-    /// Whether this prim writer add references on the USD stage.
-    ///
-    /// Base implementation returns \c false.
-    PXRUSDMAYA_API
-    virtual bool ExportsReferences() const;
 
     /// Whether the traversal routine using this prim writer should skip all of
     /// the Maya node's descendants when continuing traversal.
@@ -100,15 +94,16 @@ public:
     PXRUSDMAYA_API
     void SetExportVisibility(bool exportVis);
 
-    /// Gets all of the prim paths that this prim writer has created.
-    /// The base implementation just gets the single generated prim's path.
-    /// Prim writers that generate more than one USD prim from a single Maya
-    /// node should override this function to indicate all the prims they
-    /// create.
-    /// Implementations should add to outPaths instead of replacing. The return
-    /// value should indicate whether any items were added to outPaths.
+    /// Gets all of the exported prim paths that are potentially models, i.e.
+    /// the prims on which this prim writer has authored kind metadata or
+    /// otherwise expects kind metadata to exist (e.g. via reference).
+    ///
+    /// The USD export process will attempt to "fix-up" kind metadata to ensure
+    /// contiguous model hierarchy for any potential model prims.
+    ///
+    /// The base implementation returns an empty vector.
     PXRUSDMAYA_API
-    virtual bool GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const;
+    virtual const SdfPathVector& GetModelPaths() const;
 
     /// The source Maya DAG path that we are consuming.
     PXRUSDMAYA_API

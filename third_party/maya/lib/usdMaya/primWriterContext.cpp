@@ -35,9 +35,7 @@ PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
     _authorPath(authorPath),
     _stage(stage),
     _exportsGprims(false),
-    _exportsReferences(false),
-    _pruneChildren(false),
-    _authoredPaths({authorPath})
+    _pruneChildren(false)
 {
 }
 
@@ -64,23 +62,11 @@ PxrUsdMayaPrimWriterContext::GetExportsGprims() const
 {
     return _exportsGprims;
 }
-    
-bool
-PxrUsdMayaPrimWriterContext::GetExportsReferences() const
-{
-    return _exportsReferences;
-}
-    
+
 void
 PxrUsdMayaPrimWriterContext::SetExportsGprims(bool exportsGprims)
 {
     _exportsGprims = exportsGprims;
-}
-
-void
-PxrUsdMayaPrimWriterContext::SetExportsReferences(bool exportsReferences)
-{
-    _exportsReferences = exportsReferences;
 }
 
 void
@@ -96,23 +82,23 @@ PxrUsdMayaPrimWriterContext::GetPruneChildren() const
 }
 
 const SdfPathVector&
-PxrUsdMayaPrimWriterContext::GetAuthoredPaths() const
+PxrUsdMayaPrimWriterContext::GetModelPaths() const
 {
-    return _authoredPaths;
+    return _modelPaths;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetAuthoredPaths(
-    const SdfPathVector& authoredPaths)
+PxrUsdMayaPrimWriterContext::SetModelPaths(
+    const SdfPathVector& modelPaths)
 {
-    _authoredPaths = authoredPaths;
+    _modelPaths = modelPaths;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetAuthoredPaths(
-    SdfPathVector&& authoredPaths)
+PxrUsdMayaPrimWriterContext::SetModelPaths(
+    SdfPathVector&& modelPaths)
 {
-    _authoredPaths = std::move(authoredPaths);
+    _modelPaths = std::move(modelPaths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

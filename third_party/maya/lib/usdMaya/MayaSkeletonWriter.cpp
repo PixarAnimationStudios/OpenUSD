@@ -588,23 +588,5 @@ MayaSkeletonWriter::_IsShapeAnimated() const
     return _animXformIsAnimated || _animatedJoints.size() > 0;
 }
 
-bool
-MayaSkeletonWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
-{
-    bool hasPrims = MayaPrimWriter::GetAllAuthoredUsdPaths(outPaths);
-
-    SdfPath skelPath = GetSkeletonPath(
-        GetDagPath(), _GetExportArgs().stripNamespaces);
-    SdfPath animPath = _GetAnimationPath(skelPath);
-    
-    for (const SdfPath& path : {skelPath, animPath}) {  
-        if (GetUsdStage()->GetPrimAtPath(path)) {
-            outPaths->push_back(path);
-            hasPrims = true;
-        }
-    }
-    return hasPrims;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

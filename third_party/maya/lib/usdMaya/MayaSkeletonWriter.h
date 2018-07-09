@@ -60,7 +60,6 @@ public:
     void Write(const UsdTimeCode &usdTime) override;
     bool ExportsGprims() const override;
     bool ShouldPruneChildren() const override;
-    bool GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
 
     /// Gets the joint name tokens for the given dag paths, assuming a joint
     /// hierarchy with the given root joint.

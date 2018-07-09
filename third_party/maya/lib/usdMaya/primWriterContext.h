@@ -66,14 +66,6 @@ public:
     PXRUSDMAYA_API
     bool GetExportsGprims() const;
     
-    /// \brief Returns the value provided by SetExportsReferences(), or \c false
-    /// if SetExportsReferences() is not called.  
-    ///
-    /// May be used by export processes to reason about what kind of asset we
-    /// are creating.
-    PXRUSDMAYA_API
-    bool GetExportsReferences() const;
-    
     /// Set the value that will be returned by GetExportsGprims().
     ///
     /// A plugin should set this to \c true if it directly creates any
@@ -83,16 +75,6 @@ public:
     /// \sa GetExportsGprims()
     PXRUSDMAYA_API
     void SetExportsGprims(bool exportsGprims);
-
-    /// Set the value that will be returned by GetExportsReferences().
-    ///
-    /// A plugin should set this to \c true if it adds any references,
-    /// and should return the same value each time its write() 
-    /// function is invoked.
-    ///
-    /// \sa GetExportsReferences
-    PXRUSDMAYA_API
-    void SetExportsReferences(bool exportsReferences);
 
     /// Set the value that will be returned by GetPruneChildren().
     ///
@@ -114,29 +96,33 @@ public:
     PXRUSDMAYA_API
     bool GetPruneChildren() const;
 
-    /// Gets the value provided by SetAuthoredPaths().
-    /// The default value is a vector containing GetAuthorPath()
-    /// if SetAuthoredPaths() was never called.
+    /// Gets the value provided by SetModelPaths().
+    /// The default value is an empty vector if SetModelPaths() was
+    /// never called.
     PXRUSDMAYA_API
-    const SdfPathVector& GetAuthoredPaths() const;
+    const SdfPathVector& GetModelPaths() const;
 
-    /// Sets the vector of prim paths that the prim writer declares
-    /// it has written.
+    /// Sets the vector of prim paths that the prim writer declares as
+    /// potentially being models. These are prims on which this prim writer has
+    /// authored kind metadata or otherwise expects kind metadata to exist
+    /// (e.g. via reference).
+    ///
+    /// The USD export process will attempt to "fix-up" kind metadata to ensure
+    /// contiguous model hierarchy.
     PXRUSDMAYA_API
-    void SetAuthoredPaths(const SdfPathVector& authoredPaths);
+    void SetModelPaths(const SdfPathVector& authoredPaths);
 
-    /// Overload of SetAuthoredPaths() that moves the input vector.
+    /// Overload of SetModelPaths() that moves the input vector.
     PXRUSDMAYA_API
-    void SetAuthoredPaths(SdfPathVector&& authoredPaths);
+    void SetModelPaths(SdfPathVector&& authoredPaths);
 
 private:
     const UsdTimeCode& _timeCode;
     const SdfPath& _authorPath;
     UsdStageRefPtr _stage;
     bool _exportsGprims;
-    bool _exportsReferences;
     bool _pruneChildren;
-    SdfPathVector _authoredPaths;
+    SdfPathVector _modelPaths;
 };
 
 

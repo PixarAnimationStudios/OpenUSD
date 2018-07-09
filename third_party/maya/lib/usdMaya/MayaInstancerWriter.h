@@ -72,6 +72,8 @@ class MayaInstancerWriter : public MayaTransformWriter
     /// Data used to write the instancerTranslate xformOp on prototypes that
     /// need it. There is at most one instancerTranslate op for each prototype.
     std::vector<MayaInstancerWriter_TranslateOpData> _instancerTranslateOps;
+    /// Cached list of model paths for point instancer.
+    SdfPathVector _modelPaths;
 
 public:
     MayaInstancerWriter(const MDagPath & iDag,
@@ -84,11 +86,9 @@ public:
     PXRUSDMAYA_API
     void PostExport() override;
     PXRUSDMAYA_API
-    bool ExportsReferences() const override;
-    PXRUSDMAYA_API
     bool ShouldPruneChildren() const override;
     PXRUSDMAYA_API
-    bool GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
+    const SdfPathVector& GetModelPaths() const override;
 
 protected:
     bool writeInstancerAttrs(

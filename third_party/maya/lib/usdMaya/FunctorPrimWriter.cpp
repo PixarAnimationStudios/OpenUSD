@@ -37,7 +37,6 @@ FunctorPrimWriter::FunctorPrimWriter(
     MayaTransformWriter(iDag, uPath, instanceSource, jobCtx),
     _plugFn(plugFn),
     _exportsGprims(false),
-    _exportsReferences(false),
     _pruneChildren(false)
 {
     // XXX We need to temporarily create a prim here because the
@@ -63,9 +62,8 @@ FunctorPrimWriter::Write(
     PxrUsdMayaPrimWriterContext ctx(usdTime, authorPath, stage);
     _plugFn(args, &ctx);
     _exportsGprims = ctx.GetExportsGprims();
-    _exportsReferences = ctx.GetExportsReferences();
     _pruneChildren = ctx.GetPruneChildren();
-    _authoredPaths = ctx.GetAuthoredPaths();
+    _modelPaths = ctx.GetModelPaths();
 
     // Since this class handles both shapes and transforms, the resulting
     // prim might not be Xformable, so handle the case where it's just
@@ -83,12 +81,6 @@ FunctorPrimWriter::ExportsGprims() const
 {
     return _exportsGprims;
 }
-    
-bool
-FunctorPrimWriter::ExportsReferences() const
-{
-    return _exportsReferences;
-}
 
 bool
 FunctorPrimWriter::ShouldPruneChildren() const
@@ -96,17 +88,10 @@ FunctorPrimWriter::ShouldPruneChildren() const
     return _pruneChildren;
 }
 
-bool
-FunctorPrimWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+const SdfPathVector&
+FunctorPrimWriter::GetModelPaths() const
 {
-    if (!_authoredPaths.empty()) {
-        outPaths->insert(
-                outPaths->end(),
-                _authoredPaths.begin(),
-                _authoredPaths.end());
-        return true;
-    }
-    return false;
+    return _modelPaths;
 }
 
 /* static */

@@ -66,7 +66,11 @@ MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
     TF_AXIOM(primSchema);
     _usdPrim = primSchema.GetPrim();
     TF_AXIOM(_usdPrim);
+
+    // Note that the instancer is a model -- it's an assembly by default, though
+    // the model kind writer is allowed to "fix" this up.
     UsdModelAPI(_usdPrim).SetKind(KindTokens->assembly);
+    _modelPaths.push_back(_usdPrim.GetPath());
 }
 
 /* virtual */
@@ -204,9 +208,13 @@ MayaInstancerWriter::writeInstancerAttrs(
                 &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
+        // Note that the "Prototypes" prim needs to be a model group to ensure
+        // contiguous model hierarchy.
         const UsdPrim prototypesGroupPrim = GetUsdStage()->DefinePrim(
                 instancer.GetPrim().GetPath().AppendChild(_tokens->Prototypes));
         UsdModelAPI(prototypesGroupPrim).SetKind(KindTokens->group);
+        _modelPaths.push_back(prototypesGroupPrim.GetPath());
+
         UsdRelationship prototypesRel = instancer.CreatePrototypesRel();
 
         const unsigned int numElements = inputHierarchy.numElements();
@@ -233,6 +241,7 @@ MayaInstancerWriter::writeInstancerAttrs(
                     .AppendChild(prototypeName);
             UsdPrim prototypePrim = GetUsdStage()->DefinePrim(
                     prototypeUsdPath);
+            _modelPaths.push_back(prototypeUsdPath);
 
             // Try to be conservative and only create an intermediary xformOp
             // with the instancerTranslate if we can ensure that we don't need
@@ -353,32 +362,15 @@ MayaInstancerWriter::PostExport()
 }
 
 bool
-MayaInstancerWriter::ExportsReferences() const
-{
-    return true;
-}
-
-bool
 MayaInstancerWriter::ShouldPruneChildren() const
 {
     return true;
 }
 
-bool
-MayaInstancerWriter::GetAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+const SdfPathVector&
+MayaInstancerWriter::GetModelPaths() const
 {
-    bool hasPrims = MayaPrimWriter::GetAllAuthoredUsdPaths(outPaths);
-    SdfPath protosPath = GetUsdPath().AppendChild(_tokens->Prototypes);
-    if (GetUsdStage()->GetPrimAtPath(protosPath)) {
-        outPaths->push_back(protosPath);
-        hasPrims = true;
-    }
-    for (const MayaPrimWriterPtr primWriter : _prototypeWriters) {
-        if (primWriter->GetAllAuthoredUsdPaths(outPaths)) {
-            hasPrims = true;
-        }
-    }
-    return hasPrims;
+    return _modelPaths;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

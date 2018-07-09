@@ -99,9 +99,12 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
         }
     }
 
-    if (primWriter->ExportsReferences()) {
-        TF_VERIFY(primWriter->GetAllAuthoredUsdPaths(&_pathsThatMayHaveKind));
-    }
+    const SdfPathVector& modelPaths =
+            primWriter->GetModelPaths();
+    _pathsThatMayHaveKind.insert(
+            _pathsThatMayHaveKind.end(),
+            modelPaths.begin(),
+            modelPaths.end());
 }
 
 bool
