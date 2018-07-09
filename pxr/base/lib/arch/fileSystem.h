@@ -328,6 +328,11 @@ ARCH_API
 ArchConstFileMapping
 ArchMapFileReadOnly(FILE *file, std::string *errMsg=nullptr);
 
+/// \overload
+ARCH_API
+ArchConstFileMapping
+ArchMapFileReadOnly(std::string const& path, std::string *errMsg=nullptr);
+
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// copy-on-write mapped contents.  If modified, the affected pages are
 /// dissociated from the underlying file and become backed by the system's swap
@@ -337,6 +342,11 @@ ArchMapFileReadOnly(FILE *file, std::string *errMsg=nullptr);
 ARCH_API
 ArchMutableFileMapping
 ArchMapFileReadWrite(FILE *file, std::string *errMsg=nullptr);
+
+/// \overload
+ARCH_API
+ArchMutableFileMapping
+ArchMapFileReadWrite(std::string const& path, std::string *errMsg=nullptr);
 
 enum ArchMemAdvice {
     ArchMemAdviceNormal,       // Treat range with default behavior.

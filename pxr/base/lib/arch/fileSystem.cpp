@@ -720,6 +720,49 @@ ArchMapFileReadWrite(FILE *file, std::string *errMsg)
     return Arch_MapFileImpl<ArchMutableFileMapping>(file, errMsg);
 }
 
+namespace
+{
+    
+struct _Fcloser
+{
+    void operator()(FILE *f) const
+    {
+        if (f) {
+            fclose(f);
+        }
+    }
+};
+
+using _UniqueFILE = std::unique_ptr<FILE, _Fcloser>;
+
+} // end anonymous namespace
+
+template <class Mapping>
+static inline Mapping
+Arch_MapFileImpl(std::string const& path, std::string *errMsg)
+{
+    _UniqueFILE f(ArchOpenFile(path.c_str(), "rb"));
+    if (!f) {
+        if (errMsg) {
+            *errMsg = ArchStrerror();
+        }
+        return Mapping();
+    }
+    return Arch_MapFileImpl<Mapping>(f.get(), errMsg);
+}
+
+ArchConstFileMapping
+ArchMapFileReadOnly(std::string const& path, std::string *errMsg)
+{
+    return Arch_MapFileImpl<ArchConstFileMapping>(path, errMsg);
+}
+
+ArchMutableFileMapping
+ArchMapFileReadWrite(std::string const& path, std::string *errMsg)
+{
+    return Arch_MapFileImpl<ArchMutableFileMapping>(path, errMsg);
+}
+
 ARCH_API
 void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv)
 {
