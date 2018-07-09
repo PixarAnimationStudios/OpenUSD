@@ -308,11 +308,12 @@ UsdImagingGLHydraMaterialAdapter::_GetSurfaceShaderPrim(
     const UsdShadeMaterial &material) const
 {
     // Determine the path to the preview shader and return it.
-    if (UsdShadeShader glslfxSurface =  material.ComputeSurfaceSource(
-            /* purpose */GlfGLSLFXTokens->glslfx)) {
+    const TfToken context = _GetMaterialNetworkSelector();
+    if (UsdShadeShader surface =  
+        material.ComputeSurfaceSource(context)) {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("\t GLSLFX surface: %s\n", 
-            glslfxSurface.GetPath().GetText());
-        return glslfxSurface.GetPrim();
+            surface.GetPath().GetText());
+        return surface.GetPrim();
     }
 
     return _GetDeprecatedSurfaceShaderPrim(material);
@@ -323,11 +324,12 @@ UsdImagingGLHydraMaterialAdapter::_GetDisplacementShaderPrim(
     const UsdShadeMaterial &material) const
 {
     // Determine the path to the preview displacement shader and return it.
-    if (UsdShadeShader glslfxDisplacement =  material.ComputeDisplacementSource(
-            /* purpose */GlfGLSLFXTokens->glslfx)) {
+    const TfToken context = _GetMaterialNetworkSelector();
+    if (UsdShadeShader displacement = 
+        material.ComputeDisplacementSource(context)) {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("\t GLSLFX displacement: %s\n", 
-            glslfxDisplacement.GetPath().GetText());
-        return glslfxDisplacement.GetPrim();
+            displacement.GetPath().GetText());
+        return displacement.GetPrim();
     }
 
     return UsdPrim();

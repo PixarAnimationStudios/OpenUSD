@@ -100,15 +100,16 @@ public:
     HDST_API
     virtual void CommitResources(HdChangeTracker *tracker) override;
 
+    HDST_API
+    virtual TfToken GetMaterialNetworkSelector() const override;
+
+    HDST_API
+    virtual TfTokenVector GetShaderSourceTypes() const override;
+
     // Returns whether or not HdStRenderDelegate can run on the current
     // hardware.
     HDST_API
     static bool IsSupported();
-
-    /// Returns the source type of the shader node that the render delegate 
-    /// must fetch from the shader registry.
-    HDST_API
-    virtual TfTokenVector GetShaderSourceTypes() const override;
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;

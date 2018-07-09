@@ -71,5 +71,11 @@ HdRenderDelegate::GetShaderSourceTypes() const
     return TfTokenVector();
 }
 
+TfToken 
+HdRenderDelegate::GetMaterialNetworkSelector() const
+{
+    return TfToken();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

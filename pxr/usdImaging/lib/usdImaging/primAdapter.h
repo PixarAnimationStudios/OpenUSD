@@ -420,25 +420,32 @@ protected:
     USDIMAGING_API
     SdfPath _GetPrimPathFromInstancerChain(SdfPathVector const& instancerChain);
 
+    USDIMAGING_API
     UsdTimeCode _GetTimeWithOffset(float offset) const;
 
     // Converts \p stagePath to the path in the render index
+    USDIMAGING_API
     SdfPath _GetPathForIndex(SdfPath const& usdPath) const;
 
     // Returns the rprim paths in the renderIndex rooted at \p indexPath.
+    USDIMAGING_API
     SdfPathVector _GetRprimSubtree(SdfPath const& indexPath) const;
 
     // Returns the material binding purpose from the renderer delegate.
+    USDIMAGING_API
     TfToken _GetMaterialBindingPurpose() const;
 
     // Returns the material context from the renderer delegate.
+    USDIMAGING_API
     TfToken _GetMaterialNetworkSelector() const;
 
     // Returns the shader source type from the render delegate.
+    USDIMAGING_API
     TfTokenVector _GetShaderSourceTypes() const;
 
     // Returns \c true if \p usdPath is included in the scene delegate's
     // invised path list.
+    USDIMAGING_API
     bool _IsInInvisedPaths(SdfPath const& usdPath) const;
 
     // Determines if an attribute is varying and if so, sets the given
@@ -450,6 +457,7 @@ protected:
            HdDirtyBits* dirtyFlags, bool isInherited) const;
 
     // Returns whether or not the rprim at \p cachePath is refined.
+    USDIMAGING_API
     bool _IsRefined(SdfPath const& cachePath) const;
 
     // Determines if the prim's transform (CTM) is varying and if so, sets the 
@@ -473,6 +481,7 @@ protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
 
+    USDIMAGING_API
     UsdImaging_CollectionCache& _GetCollectionCache() const;
 
 private:
