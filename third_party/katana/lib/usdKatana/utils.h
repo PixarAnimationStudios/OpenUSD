@@ -60,20 +60,15 @@ struct PxrUsdKatanaUtils {
     static void ConvertArrayToVector(const VtVec3fArray &a, std::vector<float> *r);
 
     /// Convert a VtValue to a Katana attribute.
-    /// If asShaderParam is true, it will use the special encoding
-    /// Katana uses for shading arguments.
-    /// The pathsAsModel argument is used when trying to resolve asset paths.
+    /// If asShaderParam is false, convert arrays to type + array pairs
     static FnKat::Attribute ConvertVtValueToKatAttr( const VtValue & val,
-                                                     bool asShaderParam,
-                                                     bool pathsAsModel = false,
-                                                     bool resolvePaths = true);
+                                                     bool asShaderParam = true);
 
     /// Extract the targets of a relationship to a Katana attribute.
-    /// If asShaderParam is true, it will use the special encoding
-    /// Katana uses for shading arguments.
+    /// If asShaderParam is false, convert arrays to type + array pairs
     static FnKat::Attribute ConvertRelTargetsToKatAttr(
             const UsdRelationship &rel, 
-            bool asShaderParam);
+            bool asShaderParam = true);
 
     /// Convert a VtValue to a Katana custom geometry attribute (primvar).
     /// Katana uses a different encoding here from other attributes, which

@@ -28,12 +28,9 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/tf/pathUtils.h"
 #include "pxr/usd/kind/registry.h"
-#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/attribute.h"
@@ -65,55 +62,14 @@ FnLogSetup("PxrUsdKatanaUtils::SGG");
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-static std::string
-_ResolvePath(const std::string& path)
+static const std::string&
+_ResolveAssetPath(const SdfAssetPath& assetPath)
 {
-    return ArGetResolver().Resolve(path);
-}
-
-static std::string
-_ResolveSearchPath(const std::string& searchPath)
-{
-    std::vector<std::string> splitPath = TfStringSplit(searchPath, "/");
-    if (splitPath.size() < 2)
-        return "";
-
-    std::string pathToResolve = _ResolvePath(splitPath[0]);
-    if (pathToResolve.empty())
-        return "";
-
-    std::vector<std::string> pathElemsRemain(++(splitPath.begin()), 
-                                             splitPath.end());
-    pathToResolve = TfStringCatPaths(pathToResolve,
-                                     TfStringJoin(pathElemsRemain, "/"));
-    return _ResolvePath(pathToResolve);
-}
-
-static std::string
-_ResolveAssetPath(const std::string &assetPath, bool asModel)
-{
-    // TODO: Implement same-model reference behavior (e.g. working on 
-    // src/OtterHair, resolving a path like OtterHair/hairman/Foo.ihair). It's 
-    // not clear how to handle same-model references with Ar as it's a very 
-    // specific Pr feature.
-    if (asModel && ArGetResolver().IsSearchPath(assetPath))
-    {
-        std::string resolvedPath = _ResolveSearchPath(assetPath);
-        if (!resolvedPath.empty())
-        {
-            return resolvedPath;
-        }
-    }
-
-    std::string modelName, relPath;
-    const std::string resolvedPath = _ResolvePath(assetPath);
-    if (!resolvedPath.empty())
-        return resolvedPath;
-
-    // If we could not resolve the path, return the given input-- i.e., this
-    // may be a new asset path to which a DSO is writing.
-    return assetPath;
+    if (! assetPath.GetResolvedPath().empty())
+        return assetPath.GetResolvedPath();
+    if (! assetPath.GetAssetPath().empty())
+        TF_WARN("No resolved path for @%s@", assetPath.GetAssetPath().c_str());
+    return assetPath.GetAssetPath();
 }
 
 double
@@ -245,7 +201,7 @@ _ConvertArrayToVector(const VtVec4dArray &a, std::vector<double> *r)
 FnKat::Attribute
 PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         const VtValue & val, 
-        bool asShaderParam, bool pathsAsModel, bool resolvePaths)
+        bool asShaderParam)
 {
     if (val.IsHolding<bool>()) {
         return FnKat::IntAttribute(int(val.UncheckedGet<bool>()));
@@ -268,10 +224,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         }
     }
     if (val.IsHolding<SdfAssetPath>()) {
-        std::string assetPath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
-        return FnKat::StringAttribute(
-            resolvePaths ?  _ResolveAssetPath(assetPath, pathsAsModel)
-            : assetPath );
+        const SdfAssetPath& assetPath(val.UncheckedGet<SdfAssetPath>());
+        return FnKat::StringAttribute(_ResolveAssetPath(assetPath));
     }
     if (val.IsHolding<TfToken>()) {
         const TfToken &myVal = val.UncheckedGet<TfToken>();
@@ -313,8 +267,32 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         std::vector<int> vec(rawVal.begin(), rawVal.end());
         FnKat::IntBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("int [%zu]",
-                                                         rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("int [%zu]", rawVal.size()));
+        valueAttr = builder.build();
+    }
+
+    else if (val.IsHolding<VtArray<unsigned> >()) {
+        // Lossy translation of array<unsigned> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<unsigned> rawVal = val.Get<VtArray<unsigned> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("unsigned [%zu]", rawVal.size()));
+        valueAttr = builder.build();
+    }
+
+    else if (val.IsHolding<VtArray<long> >()) {
+        // Lossy translation of array<long> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<long> rawVal = val.Get<VtArray<long> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("long [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
 
@@ -323,8 +301,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         std::vector<float> vec(rawVal.begin(), rawVal.end());
         FnKat::FloatBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("float [%zu]",
-                                                         rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("float [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
     else if (val.IsHolding<VtArray<double> >()) {
@@ -332,8 +310,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         std::vector<double> vec(rawVal.begin(), rawVal.end());
         FnKat::DoubleBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("double [%zu]",
-                                                         rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("double [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
 
@@ -354,8 +332,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
          FnKat::FloatBuilder builder(/* tupleSize = */ 16);
          builder.set(vec);
          valueAttr = builder.build();
-         typeAttr = FnKat::StringAttribute(TfStringPrintf("matrix [%zu]",
-                                                         rawVal.size()));
+         typeAttr = FnKat::StringAttribute(
+             TfStringPrintf("matrix [%zu]", rawVal.size()));
     }
 
     // GfVec2f
@@ -531,22 +509,16 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // VtArray<SdfAssetPath>
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
-        FnKat::StringBuilder stringBuilder;
-        const VtArray<SdfAssetPath> &assetArray = 
-            val.UncheckedGet<VtArray<SdfAssetPath> >();
-        TF_FOR_ALL(strItr, assetArray) {
-            stringBuilder.push_back(
-                resolvePaths ?
-                _ResolveAssetPath(strItr->GetAssetPath(), pathsAsModel)
-                : strItr->GetAssetPath());
+        // This will replicate the previous behavior:
+        // if (asShaderParam) return valueAttr; asShaderParam = false;
+        const VtArray<SdfAssetPath> &rawVal = val.UncheckedGet<VtArray<SdfAssetPath> >();
+        FnKat::StringBuilder builder;
+        TF_FOR_ALL(strItr, rawVal) {
+            builder.push_back(_ResolveAssetPath(*strItr));
         }
-        FnKat::GroupBuilder attrBuilder;
-        attrBuilder.set("type",
-                        FnKat::StringAttribute(
-                            TfStringPrintf("string [%zu]",assetArray.size())));
-        attrBuilder.set("value", stringBuilder.build());
-        // NOTE: needs typeAttr set?
-        valueAttr = attrBuilder.build();
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("string [%zu]", rawVal.size()));
+        valueAttr = builder.build();
     }
      
     // If being used as a shader param, the type will be provided elsewhere,
@@ -1050,6 +1022,34 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         builder.set(vec);
         *valueAttr = builder.build();
         *inputTypeAttr = FnKat::StringAttribute("int");
+        if (elementSize > 1) {
+            *elementSizeAttr = FnKat::IntAttribute(elementSize);
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<unsigned> >()) {
+        // Lossy translation of array<unsigned> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<unsigned> rawVal = val.Get<VtArray<unsigned> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        *valueAttr = builder.build();
+        *inputTypeAttr = FnKat::StringAttribute("unsigned");
+        if (elementSize > 1) {
+            *elementSizeAttr = FnKat::IntAttribute(elementSize);
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<long> >()) {
+        // Lossy translation of array<long> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<long> rawVal = val.Get<VtArray<long> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        *valueAttr = builder.build();
+        *inputTypeAttr = FnKat::StringAttribute("long");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
         }
@@ -1957,9 +1957,8 @@ PxrUsdKatanaUtilsLightListAccess::_Set(
     const std::string& name, const VtValue& value)
 {
     if (TF_VERIFY(!_key.empty(), "Light path not set or not absolute")) {
-        constexpr bool asShaderParam = true;
         FnKat::Attribute attr =
-            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(value, asShaderParam);
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(value);
         if (TF_VERIFY(attr.isValid(),
                       "Failed to convert value for %s", name.c_str())) {
             _lightListBuilder.set(_key + name, attr);

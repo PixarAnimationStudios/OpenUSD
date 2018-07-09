@@ -71,10 +71,7 @@ struct _UsdBuilder {
         if (attr.IsValid() && attr.HasAuthoredValueOpinion()
             && attr.Get(&val, _time)) {
             FnKat::Attribute kat_attr =
-                PxrUsdKatanaUtils::ConvertVtValueToKatAttr( val,
-                                        /* asShaderParam */ true,
-                                        /* pathAsModel */ false,
-                                        /* resolvePath */ false);
+                PxrUsdKatanaUtils::ConvertVtValueToKatAttr(val);
             _builder.set(kat_name.c_str(), kat_attr);
         }
         return *this;
