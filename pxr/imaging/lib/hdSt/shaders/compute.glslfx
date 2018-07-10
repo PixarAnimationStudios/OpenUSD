@@ -76,19 +76,19 @@
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormalsSrcFloat
 
-layout(binding=0) buffer Points { float points[]; };
-layout(binding=2) buffer Adjacency { int entry[]; };
+layout(std430, binding=0) buffer Points { float points[]; };
+layout(std430, binding=2) buffer Adjacency { int entry[]; };
 
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormalsSrcDouble
 
-layout(binding=0) buffer Points { double points[]; };
-layout(binding=2) buffer Adjacency { int entry[]; };
+layout(std430, binding=0) buffer Points { double points[]; };
+layout(std430, binding=2) buffer Adjacency { int entry[]; };
 
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormalsDstFloat
 
-layout(binding=1) buffer Normals { float normals[]; };
+layout(std430, binding=1) buffer Normals { float normals[]; };
 void writeNormal(int nIndex, vec3 normal)
 {
     normals[nIndex+0] = normal.x;
@@ -98,7 +98,7 @@ void writeNormal(int nIndex, vec3 normal)
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormalsDstDouble
 
-layout(binding=1) buffer Normals { double normals[]; };
+layout(std430, binding=1) buffer Normals { double normals[]; };
 void writeNormal(int nIndex, vec3 normal)
 {
     normals[nIndex+0] = normal.x;
@@ -108,7 +108,7 @@ void writeNormal(int nIndex, vec3 normal)
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormalsDstPacked
 
-layout(binding=1) buffer Normals { int normals[]; };
+layout(std430, binding=1) buffer Normals { int normals[]; };
 void writeNormal(int nIndex, vec3 normal)
 {
     normal *= 511.0;
@@ -172,16 +172,16 @@ void main()
 --- --------------------------------------------------------------------------
 -- glsl Compute.QuadrangulateFloat
 
-layout(binding=0) buffer Primvar { float primvar[]; };
-layout(binding=1) buffer QuadInfo { int quadInfo[]; };
+layout(std430, binding=0) buffer Primvar { float primvar[]; };
+layout(std430, binding=1) buffer QuadInfo { int quadInfo[]; };
 
 #define DATATYPE float
 
 --- --------------------------------------------------------------------------
 -- glsl Compute.QuadrangulateDouble
 
-layout(binding=0) buffer Primvar { double primvar[]; };
-layout(binding=1) buffer QuadInfo { int quadInfo[]; };
+layout(std430, binding=0) buffer Primvar { double primvar[]; };
+layout(std430, binding=1) buffer QuadInfo { int quadInfo[]; };
 
 #define DATATYPE double
 
