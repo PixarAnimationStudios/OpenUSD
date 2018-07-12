@@ -117,8 +117,14 @@ PxrUsdMayaEditUtil::GetEditFromString(
     string pathStr = TfStringReplace(attrSplit[0], "|", "/");
     if( !SdfPath::IsValidPathString(pathStr) )
         return false;
-        
-    *outEditPath = SdfPath(pathStr);
+
+    // Our output path must be a relative path.
+    SdfPath path(pathStr);
+    if (path.IsAbsolutePath()) {
+        return false;
+    }
+
+    *outEditPath = path;
 
     // Figure out what operation we're doing from the attribute name.
     //

@@ -96,6 +96,7 @@ public:
     typedef std::map< SdfPath, AvarValueMap > PathAvarMap;
     
     /// \brief Translates an edit string into a RefEdit structure.
+    /// The output edit path is relative to the root of the assembly.
     /// \returns true if translation was successful.
     PXRUSDMAYA_API
     static bool GetEditFromString(
@@ -105,7 +106,9 @@ public:
             RefEdit *outEdit );
         
     /// \brief Inspects all edits on \p assemblyObj and returns a parsed
-    /// set of proper edits in \p refEdits and invlaid edits in \p invalidEdits.
+    /// set of proper edits in \p refEdits and invalid edits in \p invalidEdits.
+    /// The proper edits are keyed by relative path to the root of the
+    /// assembly.
     PXRUSDMAYA_API
     static void GetEditsForAssembly(
             const MObject &assemblyObj,
