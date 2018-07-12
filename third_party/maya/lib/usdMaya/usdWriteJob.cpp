@@ -547,10 +547,10 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
                     // For all xformable usdPrims...
                     if (usdPrim && usdPrim.IsA<UsdGeomXformable>()) {
                         bool isActive=false;
-                        for (size_t j=0;j<activePaths.size();j++) {
+                        for (const auto& activePath : activePaths) {
                             //primPathD.HasPrefix(primPathA);
-                            SdfPath activePath=activePaths[j];
-                            if (usdPrim.GetPath().HasPrefix(activePath) || activePath.HasPrefix(usdPrim.GetPath())) {
+                            if (usdPrim.GetPath().HasPrefix(activePath) ||
+                                    activePath.HasPrefix(usdPrim.GetPath())) {
                                 isActive=true; break;
                             }
                         }

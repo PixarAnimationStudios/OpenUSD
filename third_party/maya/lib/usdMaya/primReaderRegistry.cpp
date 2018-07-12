@@ -83,7 +83,7 @@ PxrUsdMayaPrimReaderRegistry::Find(
     TfType tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
     std::string typeNameStr = tfType.GetTypeName();
     TfToken typeName(typeNameStr);
-    ReaderFactoryFn ret = NULL;
+    ReaderFactoryFn ret = nullptr;
     if (TfMapLookup(_reg, typeName, &ret)) {
         return ret;
     }
@@ -98,7 +98,7 @@ PxrUsdMayaPrimReaderRegistry::Find(
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
                 "No usdMaya reader plugin for TfType %s.  No maya plugin.\n", 
                 typeName.GetText());
-        _reg[typeName] = NULL;
+        _reg[typeName] = nullptr;
     }
     return ret;
 }

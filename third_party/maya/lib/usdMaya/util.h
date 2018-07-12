@@ -352,7 +352,7 @@ template <typename T>
 bool getPlugValue(MFnDependencyNode const &depNode, 
                   MString const &attr, 
                   T *val,
-                  bool *isAnimated = NULL)
+                  bool *isAnimated = nullptr)
 {
     MPlug plg = depNode.findPlug( attr, /* findNetworked = */ true );
     if ( !plg.isNull() ) {

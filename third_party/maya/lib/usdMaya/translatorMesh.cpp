@@ -604,7 +604,7 @@ PxrUsdMayaTranslatorMesh::Create(
             MPlug plg = plgAry.elementByLogicalIndex(ti, &status);
             MDoubleArray valueArray(pointsNumTimeSamples, 0.0);
             valueArray[ti] = 1.0; // Set the time value where this mesh's weight should be 1.0
-            MObject animObj = animFn.create(plg, NULL, &status);
+            MObject animObj = animFn.create(plg, nullptr, &status);
             animFn.addKeys(&timeArray, &valueArray);
             // We do *not* register the anim curve object for undo/redo,
             // since it will be handled automatically by deleting the blend

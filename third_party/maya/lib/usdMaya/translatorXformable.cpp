@@ -139,7 +139,7 @@ static void _setAnimPlugData(MPlug plg, std::vector<double> &value, MTimeArray &
     if (!plg.isKeyable()) {
         plg.setKeyable(true);
     }
-    MObject animObj = animFn.create(plg, NULL, &status);
+    MObject animObj = animFn.create(plg, nullptr, &status);
     if (status == MS::kSuccess ) {
         MDoubleArray valueArray( &value[0], value.size());
         animFn.addKeys(&timeArray, &valueArray);

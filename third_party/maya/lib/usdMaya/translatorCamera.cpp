@@ -207,7 +207,7 @@ _CreateAnimCurveForPlug(
 {
     MFnAnimCurve animFn;
     MStatus status;
-    MObject animObj = animFn.create(plug, NULL, &status);
+    MObject animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     status = animFn.addKeys(&timeArray, &valueArray);
@@ -393,7 +393,7 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
             PxrUsdMayaJobImportArgs::CreateFromDictionary(
                 PxrUsdMayaJobImportArgs::GetDefaultDictionary());
     PxrUsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
-    return _ReadToCamera(usdCamera, cameraObject, args, NULL);
+    return _ReadToCamera(usdCamera, cameraObject, args, nullptr);
 }
 
 bool

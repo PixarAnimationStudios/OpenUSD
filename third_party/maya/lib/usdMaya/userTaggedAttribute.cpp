@@ -169,10 +169,8 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
     // and issue warnings for the subsequent definitions. JsObject is really
     // just a std::map, so we'll be considering attributes in sorted order.
     const JsObject& exportedAttrs = jsValue.GetJsObject();
-    for (JsObject::const_iterator iter = exportedAttrs.begin();
-         iter != exportedAttrs.end();
-         ++iter) {
-        const std::string mayaAttrName = iter->first;
+    for (const auto& exportedAttr : exportedAttrs) {
+        const std::string mayaAttrName = exportedAttr.first;
 
         const MPlug attrPlug = depFn.findPlug(
                 mayaAttrName.c_str(), true, &status);
@@ -184,7 +182,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             continue;
         }
 
-        const JsObject& attrMetadata = iter->second.GetJsObject();
+        const JsObject& attrMetadata = exportedAttr.second.GetJsObject();
 
         // Check if this is a particular type of attribute (e.g. primvar or
         // usdRi attribute). If we don't recognize the type specified, we'll

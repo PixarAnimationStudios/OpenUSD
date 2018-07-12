@@ -174,8 +174,10 @@ usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     }
 
     // Set the variants on the usdRootPrim
-    for (std::map<std::string, std::string>::iterator it=mVariants.begin(); it!=mVariants.end(); ++it) {
-        usdRootPrim.GetVariantSet(it->first).SetVariantSelection(it->second);
+    for (auto& variant : mVariants) {
+        usdRootPrim
+                .GetVariantSet(variant.first)
+                .SetVariantSelection(variant.second);
     }
 
     bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
@@ -383,9 +385,9 @@ usdReadJob::undoIt()
         mDagModifierSeeded = true;
         MStatus dagStatus;
         // Construct list of top level DAG nodes to delete and any DG nodes
-        for (PathNodeMap::iterator it=mNewNodeRegistry.begin(); it!=mNewNodeRegistry.end(); ++it) {
-            if (it->second != mMayaRootDagPath.node() ) { // if not the parent root node
-                MFnDagNode dagFn(it->second, &dagStatus);
+        for (auto& it : mNewNodeRegistry) {
+            if (it.second != mMayaRootDagPath.node() ) { // if not the parent root node
+                MFnDagNode dagFn(it.second, &dagStatus);
                 if (dagStatus == MS::kSuccess) {
                     if (mMayaRootDagPath.node() != MObject::kNullObj) {
                         if (!dagFn.hasParent(mMayaRootDagPath.node() ))  { // skip if a DAG Node, but not under the root
@@ -398,7 +400,7 @@ usdReadJob::undoIt()
                         }
                     }
                 }
-                mDagModifierUndo.deleteNode(it->second);
+                mDagModifierUndo.deleteNode(it.second);
             }
         }
     }

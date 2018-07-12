@@ -100,7 +100,7 @@ PxrUsdMayaTranslatorPrim::Read(
         // Add the keys
         plg = depFn.findPlug( "visibility" );
         if ( !plg.isNull() ) {
-            MObject animObj = animFn.create(plg, NULL, &status);
+            MObject animObj = animFn.create(plg, nullptr, &status);
             animFn.addKeys(&timeArray, &valueArray);
             if (context) {
                 context->RegisterNewMayaNode(

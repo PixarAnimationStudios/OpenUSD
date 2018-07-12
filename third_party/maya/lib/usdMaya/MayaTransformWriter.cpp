@@ -107,9 +107,8 @@ computeXFormOps(
 {
     // Iterate over each AnimChannel, retrieve the default value and pull the
     // Maya data if needed. Then store it on the USD Ops
-    for (unsigned int channelIdx = 0; channelIdx < animChanList.size(); ++channelIdx) {
+    for (const auto& animChannel : animChanList) {
 
-        const AnimChannel& animChannel = animChanList[channelIdx];
         if (animChannel.isInverse) {
             continue;
         }

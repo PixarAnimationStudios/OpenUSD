@@ -432,9 +432,9 @@ bool PxrUsdMayaUtil::isAnimated(MObject & object, bool checkParent)
         nodesToCheckAnimCurve.push_back(node);
     }
 
-    for (size_t i = 0; i < nodesToCheckAnimCurve.size(); i++)
+    for (auto& node : nodesToCheckAnimCurve)
     {
-        if (MAnimUtil::isAnimated(nodesToCheckAnimCurve[i], checkParent))
+        if (MAnimUtil::isAnimated(node, checkParent))
         {
             return true;
         }
@@ -750,13 +750,13 @@ _getMayaShadersColor(
         // not, we try our next best guess.
         bool gotValues = _GetColorAndTransparencyFromLambert(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : NULL,
-                AlphaData ?  &(*AlphaData)[i] : NULL)
+                RGBData ?  &(*RGBData)[i] : nullptr,
+                AlphaData ?  &(*AlphaData)[i] : nullptr)
 
             || _GetColorAndTransparencyFromDepNode(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : NULL,
-                AlphaData ?  &(*AlphaData)[i] : NULL);
+                RGBData ?  &(*RGBData)[i] : nullptr,
+                AlphaData ?  &(*AlphaData)[i] : nullptr);
 
         if (!gotValues) {
             TF_RUNTIME_ERROR(
@@ -880,9 +880,7 @@ _MergeEquivalentIndexedValues(
     VtArray<T> uniqueValues;
     VtArray<int> uniqueIndices;
 
-    for (size_t i = 0; i < assignmentIndices->size(); ++i) {
-        int index = (*assignmentIndices)[i];
-
+    for (int index : *assignmentIndices) {
         if (index < 0 || static_cast<size_t>(index) >= numValues) {
             // This is an unassigned or otherwise unknown index, so just keep it.
             uniqueIndices.push_back(index);
@@ -1447,7 +1445,7 @@ PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
             if (argLists[0].length() == 1) {
                 for (const MArgList& argList : argLists) {
                     const std::string arg = argList.asString(0).asChar();
-                    val.push_back(VtValue(arg));
+                    val.emplace_back(arg);
                 }
             }
             else {
@@ -1455,9 +1453,9 @@ PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
                     std::vector<VtValue> subList;
                     for (unsigned int i = 0; i < argList.length(); ++i) {
                         const std::string arg = argList.asString(i).asChar();
-                        subList.push_back(VtValue(arg));
+                        subList.emplace_back(arg);
                     }
-                    val.push_back(VtValue(subList));
+                    val.emplace_back(subList);
                 }
             }
             args[key] = val;
@@ -1560,7 +1558,7 @@ PxrUsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
     std::vector<std::string> inheritedTypesVector;
     inheritedTypesVector.reserve(inheritedTypes.length());
     for (unsigned int i = 0; i < inheritedTypes.length(); ++i) {
-        inheritedTypesVector.push_back(inheritedTypes[i].asChar());
+        inheritedTypesVector.emplace_back(inheritedTypes[i].asChar());
     }
     return inheritedTypesVector;
 }

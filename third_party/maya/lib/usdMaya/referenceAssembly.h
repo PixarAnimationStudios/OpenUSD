@@ -139,14 +139,14 @@ public:
             const MString& input,
             const MString& type,
             const MString& representation,
-            MDagModifier* undoRedo = NULL,
-            MStatus* ReturnStatus = NULL) override;
+            MDagModifier* undoRedo = nullptr,
+            MStatus* ReturnStatus = nullptr) override;
 
     PXRUSDMAYA_API
     MString getActive() const override;
     PXRUSDMAYA_API
     MStringArray getRepresentations(
-            MStatus* ReturnStatus = NULL) const override;
+            MStatus* ReturnStatus = nullptr) const override;
     PXRUSDMAYA_API
     MString getRepType(const MString& representation) const override;
     PXRUSDMAYA_API
@@ -162,7 +162,7 @@ public:
     MString setRepName(
             const MString& representation,
             const MString& newName,
-            MStatus* ReturnStatus = NULL) override;
+            MStatus* ReturnStatus = nullptr) override;
     PXRUSDMAYA_API
     MStatus setRepLabel(
             const MString& representation,

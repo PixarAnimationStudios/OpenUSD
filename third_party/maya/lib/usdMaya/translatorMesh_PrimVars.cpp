@@ -376,7 +376,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     const bool clamped = PxrUsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
 
-    status = meshFn.createColorSet(colorSetName, NULL, clamped, colorRep);
+    status = meshFn.createColorSet(colorSetName, nullptr, clamped, colorRep);
     if (status != MS::kSuccess) {
         TF_WARN("Unable to create color set '%s' for mesh: %s",
                 colorSetName.asChar(),

@@ -79,7 +79,7 @@ PxrUsdMayaPrimWriterRegistry::Find(
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
-    WriterFactoryFn ret = NULL;
+    WriterFactoryFn ret = nullptr;
     if (TfMapLookup(_reg, mayaTypeName, &ret)) {
         return ret;
     }
@@ -94,7 +94,7 @@ PxrUsdMayaPrimWriterRegistry::Find(
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
                 "No usdMaya writer plugin for maya type %s.  No maya plugin found.\n", 
                 mayaTypeName.c_str());
-        _reg[mayaTypeName] = NULL;
+        _reg[mayaTypeName] = nullptr;
     }
     return ret;
 }
