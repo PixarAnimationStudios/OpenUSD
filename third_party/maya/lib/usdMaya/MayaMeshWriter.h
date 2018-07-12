@@ -39,7 +39,8 @@ class UsdGeomMesh;
 class UsdGeomGprim;
 
 
-// Writes an MFnMesh as a poly mesh OR a subd mesh
+/// Exports Maya mesh objects (MFnMesh)as UsdGeomMesh prims, taking into account
+/// subd/poly, skinning, reference objects, UVs, and color sets.
 class MayaMeshWriter : public MayaPrimWriter
 {
   public:

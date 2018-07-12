@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomNurbsPatch;
 
-// Writes an MFnMesh as a poly mesh OR a subd mesh
+/// Exports Maya nurbsSurface objects (MFnNurbsSurface) as UsdGeomNurbsPatch.
 class MayaNurbsSurfaceWriter : public MayaPrimWriter
 {
   public:

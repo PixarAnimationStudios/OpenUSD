@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomNurbsCurves;
 
-// Writes an MFnMesh as a poly mesh OR a subd mesh
+/// Exports Maya nurbsCurve objects (MFnNurbsCurve) as UsdGeomNurbsCurves.
 class MayaNurbsCurveWriter : public MayaPrimWriter
 {
   public:

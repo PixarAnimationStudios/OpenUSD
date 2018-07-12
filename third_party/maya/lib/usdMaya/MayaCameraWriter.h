@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomCamera;
 
-// Writes an MFnMesh as a poly mesh OR a subd mesh
+/// Exports Maya cameras to UsdGeomCamera.
 class MayaCameraWriter : public MayaPrimWriter
 {
   public:
