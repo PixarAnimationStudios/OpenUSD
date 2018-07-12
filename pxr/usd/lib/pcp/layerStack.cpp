@@ -783,7 +783,6 @@ PcpLayerStack::_BuildLayerStack(
             errors->push_back(err);
             continue;
         }
-        m.Clear();
 
         // Check for cycles.
         if (seenLayers->count(sublayer)) {

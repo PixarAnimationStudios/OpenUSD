@@ -1781,7 +1781,6 @@ _EvalNodeReferences(
                 indexer->RecordError(err);
                 continue;
             }
-            m.Clear();
 
             const ArResolverContext& pathResolverContext =
                 node.GetLayerStack()->GetIdentifier().pathResolverContext;
@@ -3725,7 +3724,6 @@ _EvalNodePayload(
         indexer->RecordError(err);
         return;
     }
-    m.Clear();
 
     // Check if the payload layer is in the root node's layer stack. 
     // If so, we report an error. (Internal payloads are disallowed.)
