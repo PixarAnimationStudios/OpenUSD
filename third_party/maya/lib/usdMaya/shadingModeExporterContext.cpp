@@ -258,6 +258,54 @@ _GetMaterialParent(const UsdStageRefPtr& stage,
     return UsdGeomScope::Define(stage, shaderExportLocation).GetPrim();
 }
 
+/// Determines if the \p path would be an instance proxy path on \p stage if
+/// it existed, i.e., if any of its ancestor paths are instances.
+/// (Note that if \p path itself is an instance, then it is _not_ an instance
+/// proxy path.)
+static bool
+_IsInstanceProxyPath(const UsdStageRefPtr& stage, const SdfPath& path)
+{
+    for (const SdfPath& prefix : path.GetParentPath().GetPrefixes()) {
+        if (const UsdPrim prim = stage->GetPrimAtPath(prefix)) {
+            if (prim.IsInstance()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/// Ensures that a prim exists at \p path on \p stage and that the prim is
+/// neither an instance nor an instance proxy.
+static UsdPrim
+_UninstancePrim(
+    const UsdStageRefPtr& stage,
+    const SdfPath& path,
+    const std::string& reason)
+{
+    bool didUninstance = false;
+    for (const SdfPath& prefix : path.GetPrefixes()) {
+        if (const UsdPrim prim = stage->GetPrimAtPath(prefix)) {
+            if (prim.IsInstance()) {
+                prim.SetInstanceable(false);
+                didUninstance = true;
+            }
+        }
+        else {
+            break;
+        }
+    }
+
+    if (didUninstance) {
+        TF_WARN("Uninstanced <%s> (and ancestors) because: %s",
+                path.GetText(),
+                reason.c_str());
+    }
+
+    return stage->OverridePrim(path);
+}
+
 UsdPrim
 PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         const AssignmentVector& assignmentsToBind,
@@ -292,31 +340,44 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             const SdfPath &boundPrimPath = iter->first;
             const VtIntArray &faceIndices = iter->second;
 
-            UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
+            // In the standard material binding case, skip if we're authoring
+            // direct (non-collection-based) bindings and we're an instance
+            // proxy.
+            // In the case of per-face bindings, un-instance the prim in order
+            // to author the append face sets or create a geom subset, since
+            // collection-based bindings won't help us here.
             if (faceIndices.empty()) {
                 if (!_exportParams.exportCollectionBasedBindings) {
-                    UsdShadeMaterialBindingAPI(boundPrim).Bind(material);
+                    if (_IsInstanceProxyPath(stage, boundPrimPath)) {
+                        // XXX: If we wanted to, we could try to author the
+                        // binding on the parent prim instead if it's an
+                        // instance prim with only one child (i.e. if it's the
+                        // transform prim corresponding to our shape prim).
+                        TF_WARN("Can't author direct material binding on "
+                                "instance proxy <%s>; try enabling "
+                                "collection-based material binding",
+                                boundPrimPath.GetText());
+                    }
+                    else {
+                        UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
+                        UsdShadeMaterialBindingAPI(boundPrim).Bind(material);
+                    }
                 }
 
                 if (boundPrimPaths) {
-                    boundPrimPaths->insert(boundPrim.GetPath());
+                    boundPrimPaths->insert(boundPrimPath);
                 }
             } else if (TfGetEnvSetting(PIXMAYA_EXPORT_OLD_STYLE_FACESETS)) {
+                UsdPrim boundPrim = _UninstancePrim(
+                        stage, boundPrimPath, "authoring old-style face set");
                 UsdGeomFaceSetAPI faceSet = 
                         material.CreateMaterialFaceSet(boundPrim);
                 faceSet.AppendFaceGroup(faceIndices, materialPath);
                 // XXX: don't bother updating boundPrimPaths in this case as 
                 // old style facesets will be deprecated soon.
             } else {
-                if (boundPrim.IsInstanceable()) {
-                    // We're going to create a GeomSubset prim underneath the
-                    // bound prim here, and that won't be possible if it's
-                    // an instance. So make sure it's not instanceable.
-                    boundPrim.SetInstanceable(false);
-                    TF_WARN("<%s> must be de-instanced because it has per-face "
-                            "material assignments",
-                            boundPrim.GetPath().GetText());
-                }
+                UsdPrim boundPrim = _UninstancePrim(
+                        stage, boundPrimPath, "authoring per-face materials");
                 UsdGeomSubset faceSubset = UsdShadeMaterialBindingAPI(
                         boundPrim).CreateMaterialBindSubset(
                             /* subsetName */ TfToken(materialName),

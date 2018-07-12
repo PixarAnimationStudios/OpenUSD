@@ -145,6 +145,12 @@ private:
                 continue;
             }
 
+            if (boundPrim.IsInstance() || boundPrim.IsInstanceProxy()) {
+                TF_WARN("Not authoring displayColor or displayOpacity for <%s> "
+                        "because it is instanced", boundPrimPath.GetText());
+                continue;
+            }
+
             UsdGeomGprim primSchema(boundPrim);
             // Set color if not already authored
             //

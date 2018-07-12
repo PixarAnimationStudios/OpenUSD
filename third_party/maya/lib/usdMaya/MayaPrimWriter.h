@@ -81,6 +81,9 @@ public:
 
     /// Whether the traversal routine using this prim writer should skip all of
     /// the Maya node's descendants when continuing traversal.
+    /// If you override this to return \c true, you may also want to override
+    /// GetDagToUsdPathMapping() if you handle export of descendant nodes
+    /// (though that is not required).
     ///
     /// Base implementation returns \c false; prim writers that handle export
     /// for their entire subtree should override.
@@ -108,6 +111,20 @@ public:
     /// The base implementation returns an empty vector.
     PXRUSDMAYA_API
     virtual const SdfPathVector& GetModelPaths() const;
+
+    /// Gets a mapping from MDagPaths to exported prim paths.
+    /// Useful only for prim writers that override ShouldPruneChildren() to
+    /// \c true but still want the export process to know about the Maya-to-USD
+    /// correspondence for their descendants, e.g., for material binding
+    /// purposes.
+    /// The result vector should only include paths for which there is a true,
+    /// one-to-one correspondence between the Maya node and USD prim; don't
+    /// include any mappings where the mapped value is an invalid path.
+    ///
+    /// The base implementation simply maps GetDagPath() to GetUsdPath().
+    PXRUSDMAYA_API
+    virtual const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+            GetDagToUsdPathMapping() const;
 
     /// The source Maya DAG path that we are consuming.
     PXRUSDMAYA_API
@@ -178,6 +195,7 @@ private:
 
     const MDagPath _dagPath;
     const SdfPath _usdPath;
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type _baseDagToUsdPaths;
 
     UsdUtilsSparseValueWriter _valueWriter;
 

@@ -49,11 +49,22 @@ public:
     bool ShouldPruneChildren() const override;
 
     PXRUSDMAYA_API
+    const SdfPathVector& GetModelPaths() const override;
+
+    PXRUSDMAYA_API
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+            GetDagToUsdPathMapping() const override;
+
+    PXRUSDMAYA_API
     void Write(const UsdTimeCode& usdTime) override;
 
 private:
     usdWriteJobCtx::_ExportAndRefPaths _masterPaths;
+
+    // All of the data below is cached when we construct/obtain prim writers.
+    bool _exportsGprims;
     std::vector<SdfPath> _modelPaths;
+    PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type _dagToUsdPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

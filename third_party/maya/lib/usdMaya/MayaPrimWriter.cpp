@@ -79,6 +79,7 @@ MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
     _writeJobCtx(jobCtx),
     _dagPath(iDag),
     _usdPath(uPath),
+    _baseDagToUsdPaths({{iDag, uPath}}),
     _exportVisibility(jobCtx.getArgs().exportVisibility),
     _hasAnimCurves(_IsAnimated(jobCtx.getArgs(), iDag))
 {
@@ -246,6 +247,12 @@ MayaPrimWriter::SetExportVisibility(bool exportVis)
     _exportVisibility = exportVis;
 }
 
+bool
+MayaPrimWriter::GetExportVisibility() const
+{
+    return _exportVisibility;
+}
+
 const SdfPathVector&
 MayaPrimWriter::GetModelPaths() const
 {
@@ -253,10 +260,10 @@ MayaPrimWriter::GetModelPaths() const
     return empty;
 }
 
-bool
-MayaPrimWriter::GetExportVisibility() const
+const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+MayaPrimWriter::GetDagToUsdPathMapping() const
 {
-    return _exportVisibility;
+    return _baseDagToUsdPaths;
 }
 
 const MDagPath&

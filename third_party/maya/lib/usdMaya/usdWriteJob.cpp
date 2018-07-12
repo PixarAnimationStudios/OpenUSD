@@ -260,13 +260,19 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                                         .asChar());
                             return false;
                         }
-                        mUsdPathToDagPathMap[usdPrim.GetPath()] = primWriter->GetDagPath();
+                        // Note that mUsdPathToDagPathMap is _only_ used for
+                        // stripping namespaces, so we only need to populate it
+                        // when stripping namespaces. (This is different from
+                        // mDagPathToUsdPathMap!)
+                        mUsdPathToDagPathMap[usdPrim.GetPath()] =
+                                primWriter->GetDagPath();
                     }
 
                     primWriter->Write(UsdTimeCode::Default());
 
-                    MDagPath dag = primWriter->GetDagPath();
-                    mDagPathToUsdPathMap[dag] = usdPrim.GetPath();
+                    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& mapping =
+                            primWriter->GetDagToUsdPathMapping();
+                    mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
 
                     mModelKindWriter.OnWritePrim(usdPrim, primWriter);
                 }
