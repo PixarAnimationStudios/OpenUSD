@@ -1,16 +1,19 @@
 global proc usdMaya_CreateUsdProxyShape()
 {
     string $fileName = `fileDialog -mode 0 -dm "*.usd *.usda *.usdc" -t "Choose a USD File"`;
-    
+    if (size(strip($fileName)) == 0) {
+        return;
+    }
+
     string $baseName = capitalizeString(`basenameEx $fileName`);
     if( isValidObjectName($baseName) )
         $baseName += "_usd";
     else
         $baseName = "UsdStage";
-    
+
     string $shapeNode = `createNode "pxrUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
     setAttr -type "string" ($shapeNode+".filePath") $fileName;
-    
+
     select -r $shapeNode;
 }
 
@@ -62,8 +65,8 @@ global proc string usdMaya_UsdMayaReferenceAssembly_repTypeLabel(string $repType
 
 global proc string[] usdMaya_UsdMayaReferenceAssembly_listRepTypes()
 {
-    string $repTypes[] = {"Collapsed", 
-                          "Expanded", 
+    string $repTypes[] = {"Collapsed",
+                          "Expanded",
                           "Full",
                           "Playback"
                          };
@@ -73,6 +76,6 @@ global proc string[] usdMaya_UsdMayaReferenceAssembly_listRepTypes()
 
 global proc usdMaya()
 {
-    // load plugins
-    catch ( `px_includeUtilities` );
+    // Load the USD plugin.
+    catch(`loadPlugin -quiet pxrUsd`);
 }
