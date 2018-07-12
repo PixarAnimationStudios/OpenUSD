@@ -23,7 +23,7 @@
 #
 from qt import QtCore, QtGui, QtWidgets
 from usdviewContextMenuItem import UsdviewContextMenuItem
-import os
+import os, subprocess
 
 #
 # Specialized context menu for running commands in the layer stack view.
@@ -78,6 +78,8 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         import platform
         from distutils.spawn import find_executable
         usdedit = find_executable('usdedit')
+        if not usdedit:
+            usdedit = find_executable('usdedit', path=os.path.abspath(os.path.dirname(sys.argv[0])))
 
         if not usdedit and (platform.system() == 'Windows'):
             for path in os.environ['PATH'].split(os.pathsep):
@@ -120,7 +122,10 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
             return
 
         print "Opening file: %s" % layerPath
-        os.system("%s -n %s -p %s &" % (usdeditExe, layerPath, layerName))
+
+        command =  [usdeditExe,'-n',layerPath,'-p',layerName]
+
+        subprocess.Popen(command, close_fds=True)
 
 #
 # Opens the layer using usdview.

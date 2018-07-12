@@ -32,6 +32,11 @@ def _findExe(name):
     cmd = find_executable(name)
     if cmd:
         return cmd
+    else:
+        cmd = find_executable(name, path=os.path.abspath(os.path.dirname(sys.argv[0])))
+        if cmd:
+            return cmd
+    
     if isWindows:
         # find_executable under Windows only returns *.EXE files
         # so we need to traverse PATH.
