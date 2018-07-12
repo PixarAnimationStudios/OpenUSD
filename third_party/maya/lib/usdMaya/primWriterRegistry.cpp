@@ -21,11 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primWriterRegistry.h"
+
 #include "usdMaya/debugCodes.h"
+#include "usdMaya/functorPrimWriter.h"
 #include "usdMaya/registryHelper.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 
@@ -57,6 +59,15 @@ PxrUsdMayaPrimWriterRegistry::Register(
         TF_CODING_ERROR("Multiple writer for type %s", mayaTypeName.c_str());
         insertStatus.first->second = fn;
     }
+}
+
+/* static */
+void
+PxrUsdMayaPrimWriterRegistry::RegisterRaw(
+        const std::string& mayaTypeName,
+        PxrUsdMayaPrimWriterRegistry::WriterFn fn)
+{
+    Register(mayaTypeName, PxrUsdMaya_FunctorPrimWriter::CreateFactory(fn));
 }
 
 /* static */

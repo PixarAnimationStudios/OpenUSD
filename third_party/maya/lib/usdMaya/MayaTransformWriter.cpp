@@ -426,7 +426,7 @@ MayaTransformWriter::MayaTransformWriter(
 
     // There are special cases where you might subclass MayaTransformWriter
     // without actually having a transform (e.g. the internal
-    // FunctorPrimWriter), so accomodate those here.
+    // PxrUsdMaya_FunctorPrimWriter), so accomodate those here.
     if (iDag.hasFn(MFn::kTransform)) {
         MFnTransform transFn(iDag);
         // Create a vector of AnimChannels based on the Maya transformation
@@ -442,7 +442,7 @@ void MayaTransformWriter::Write(const UsdTimeCode& usdTime)
 
     // There are special cases where you might subclass MayaTransformWriter
     // without actually having a transform (e.g. the internal
-    // FunctorPrimWriter), so accomodate those here.
+    // PxrUsdMaya_FunctorPrimWriter), so accomodate those here.
     if (GetDagPath().hasFn(MFn::kTransform)) {
         if (UsdGeomXformable xformSchema = UsdGeomXformable(_usdPrim)) {
             computeXFormOps(xformSchema, _animChannels, usdTime,

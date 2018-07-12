@@ -22,17 +22,17 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/FunctorPrimWriter.h"
+#include "usdMaya/functorPrimWriter.h"
 #include "pxr/usd/usdGeom/xformable.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-FunctorPrimWriter::FunctorPrimWriter(
+PxrUsdMaya_FunctorPrimWriter::PxrUsdMaya_FunctorPrimWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
         usdWriteJobCtx& jobCtx,
-        WriterFn plugFn) :
+        PxrUsdMayaPrimWriterRegistry::WriterFn plugFn) :
     MayaTransformWriter(iDag, uPath, jobCtx),
     _plugFn(plugFn),
     _exportsGprims(false),
@@ -40,12 +40,12 @@ FunctorPrimWriter::FunctorPrimWriter(
 {
 }
 
-FunctorPrimWriter::~FunctorPrimWriter()
+PxrUsdMaya_FunctorPrimWriter::~PxrUsdMaya_FunctorPrimWriter()
 {
 }
 
 void
-FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
+PxrUsdMaya_FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 {
     MayaTransformWriter::Write(usdTime);
 
@@ -62,39 +62,41 @@ FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 }
 
 bool
-FunctorPrimWriter::ExportsGprims() const
+PxrUsdMaya_FunctorPrimWriter::ExportsGprims() const
 {
     return _exportsGprims;
 }
 
 bool
-FunctorPrimWriter::ShouldPruneChildren() const
+PxrUsdMaya_FunctorPrimWriter::ShouldPruneChildren() const
 {
     return _pruneChildren;
 }
 
 const SdfPathVector&
-FunctorPrimWriter::GetModelPaths() const
+PxrUsdMaya_FunctorPrimWriter::GetModelPaths() const
 {
     return _modelPaths;
 }
 
 /* static */
 MayaPrimWriterPtr
-FunctorPrimWriter::Create(
+PxrUsdMaya_FunctorPrimWriter::Create(
     const MDagPath& dag,
     const SdfPath& path,
     usdWriteJobCtx& jobCtx,
-    WriterFn plugFn)
+    PxrUsdMayaPrimWriterRegistry::WriterFn plugFn)
 {
-    return MayaPrimWriterPtr(new FunctorPrimWriter(dag, path, jobCtx, plugFn));
+    return MayaPrimWriterPtr(
+            new PxrUsdMaya_FunctorPrimWriter(dag, path, jobCtx, plugFn));
 }
 
 /* static */
 std::function< MayaPrimWriterPtr(const MDagPath&,
                                  const SdfPath&,
                                  usdWriteJobCtx&) >
-FunctorPrimWriter::CreateFactory(WriterFn fn)
+PxrUsdMaya_FunctorPrimWriter::CreateFactory(
+    PxrUsdMayaPrimWriterRegistry::WriterFn fn)
 {
     return std::bind(
             Create,

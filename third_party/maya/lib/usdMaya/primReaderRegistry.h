@@ -27,11 +27,11 @@
 /// \file primReaderRegistry.h
 
 #include "pxr/pxr.h"
+
 #include "usdMaya/api.h"
 #include "usdMaya/primReader.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
-#include "usdMaya/functorPrimReader.h"
 
 #include "pxr/base/tf/registryManager.h" 
 
@@ -61,8 +61,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \endcode
 struct PxrUsdMayaPrimReaderRegistry
 {
+    /// Reader factory function, i.e. a function that creates a prim reader
+    /// for the given prim reader args.
     typedef std::function< PxrUsdMayaPrimReaderPtr (
             const PxrUsdMayaPrimReaderArgs&) > ReaderFactoryFn;
+
+    /// Reader function, i.e. a function that reads a prim. This is the
+    /// signature of the function declared in the PXRUSDMAYA_DEFINE_READER
+    /// macro.
+    typedef std::function< bool (
+            const PxrUsdMayaPrimReaderArgs&,
+            PxrUsdMayaPrimReaderContext*) > ReaderFn;
 
     /// \brief Register \p fn as a reader provider for \p type.
     PXRUSDMAYA_API
@@ -93,6 +102,29 @@ struct PxrUsdMayaPrimReaderRegistry
         }
     }
 
+    /// \brief Wraps \p fn in a ReaderFactoryFn and registers that factory
+    /// function as a reader provider for \p T.
+    /// This is a helper method for the macro PXRUSDMAYA_DEFINE_READER;
+    /// you probably want to use PXRUSDMAYA_DEFINE_READER directly instead.
+    PXRUSDMAYA_API
+    static void RegisterRaw(const TfType& type, ReaderFn fn);
+
+    /// \brief Wraps \p fn in a ReaderFactoryFn and registers that factory
+    /// function as a reader provider for \p T.
+    /// This is a helper method for the macro PXRUSDMAYA_DEFINE_READER;
+    /// you probably want to use PXRUSDMAYA_DEFINE_READER directly instead.
+    template <typename T>
+    static void RegisterRaw(ReaderFn fn)
+    {
+        if (TfType t = TfType::Find<T>()) {
+            RegisterRaw(t, fn);
+        }
+        else {
+            TF_CODING_ERROR("Cannot register unknown TfType: %s.",
+                    ArchGetDemangled<T>().c_str());
+        }
+    }
+
     // takes a usdType (i.e. prim.GetTypeName())
     /// \brief Finds a reader factory if one exists for \p usdTypeName.
     ///
@@ -103,16 +135,13 @@ struct PxrUsdMayaPrimReaderRegistry
     PXRUSDMAYA_API
     static ReaderFactoryFn Find(
             const TfToken& usdTypeName);
-
 };
 
 #define PXRUSDMAYA_DEFINE_READER(T, argsVarName, ctxVarName)\
 static bool PxrUsdMaya_PrimReader_##T(const PxrUsdMayaPrimReaderArgs&, PxrUsdMayaPrimReaderContext*); \
 TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, T) \
 {\
-    PxrUsdMayaPrimReaderRegistry::Register<T>( \
-            PxrUsdMayaFunctorPrimReader::CreateFactory(\
-            PxrUsdMaya_PrimReader_##T));\
+    PxrUsdMayaPrimReaderRegistry::RegisterRaw<T>(PxrUsdMaya_PrimReader_##T);\
 }\
 bool PxrUsdMaya_PrimReader_##T(const PxrUsdMayaPrimReaderArgs& argsVarName, PxrUsdMayaPrimReaderContext* ctxVarName)
 

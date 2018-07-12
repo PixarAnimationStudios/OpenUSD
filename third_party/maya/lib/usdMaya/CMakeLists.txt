@@ -74,10 +74,8 @@ pxr_shared_library(${PXR_PACKAGE}
 
         MayaPrimWriter
         MayaTransformWriter
-        FunctorPrimWriter
 
         primReader
-        functorPrimReader
 
         jobArgs
         usdReadJob
@@ -100,6 +98,8 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PRIVATE_CLASSES
         debugCodes
+        functorPrimReader
+        functorPrimWriter
         instancedNodeWriter
         modelKindWriter
         registryHelper

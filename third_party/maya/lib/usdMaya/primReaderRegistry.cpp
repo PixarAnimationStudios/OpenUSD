@@ -21,17 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primReaderRegistry.h"
+
 #include "usdMaya/debugCodes.h"
+#include "usdMaya/functorPrimReader.h"
 #include "usdMaya/registryHelper.h"
 
 #include "pxr/base/plug/registry.h"
-
-#include "pxr/usd/usd/schemaBase.h"
-
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/usd/usd/schemaBase.h"
 
 #include <boost/assign.hpp>
 
@@ -61,6 +60,15 @@ PxrUsdMayaPrimReaderRegistry::Register(
         TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
         insertStatus.first->second = fn;
     }
+}
+
+/* static */
+void
+PxrUsdMayaPrimReaderRegistry::RegisterRaw(
+        const TfType& t,
+        PxrUsdMayaPrimReaderRegistry::ReaderFn fn)
+{
+    Register(t, PxrUsdMaya_FunctorPrimReader::CreateFactory(fn));
 }
 
 /* static */
