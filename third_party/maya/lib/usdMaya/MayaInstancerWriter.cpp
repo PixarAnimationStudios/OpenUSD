@@ -104,16 +104,18 @@ _GetTransformedOriginInLocalSpace(
 /// (This function may return false positives, which are OK but will simply
 /// contribute extra data. It should never return false negatives, which
 /// would cause correctness problems.)
-AnimChannelSampleType
-MayaInstancerWriter::_GetInstancerTranslateSampleType(
-    const MDagPath& prototypeDagPath) const
+bool
+MayaInstancerWriter::_NeedsExtraInstancerTranslate(
+    const MDagPath& prototypeDagPath,
+    bool* instancerTranslateAnimated) const
 {
     // XXX: Maybe we could be smarter here and figure out if the animation
     // affects instancerTranslate?
     bool animated = !_GetExportArgs().timeInterval.IsEmpty() &&
             MAnimUtil::isAnimated(prototypeDagPath.node(), false);
     if (animated) {
-        return ANIMATED;
+        *instancerTranslateAnimated = true;
+        return true;
     }
 
     GfVec3d origin;
@@ -121,10 +123,11 @@ MayaInstancerWriter::_GetInstancerTranslateSampleType(
             _GetTransformedOriginInLocalSpace(prototypeDagPath, &origin) &&
             !GfIsClose(origin, GfVec3d(0.0), _EPSILON);
     if (translated) {
-        return STATIC;
+        *instancerTranslateAnimated = false;
+        return true;
     }
 
-    return NO_XFORM;
+    return false;
 }
 
 bool
@@ -195,15 +198,15 @@ MayaInstancerWriter::writeInstancerAttrs(
             // behavior in PxrUsdMayaTranslatorModelAssembly. If we fix the
             // behavior there, we need to make sure that this is also
             // fixed to match.
-            const AnimChannelSampleType instancerTranslateSampleType =
-                    _GetInstancerTranslateSampleType(prototypeDagPath);
-            if (instancerTranslateSampleType != NO_XFORM) {
+            bool instancerTranslateAnimated = false;
+            if (_NeedsExtraInstancerTranslate(
+                    prototypeDagPath, &instancerTranslateAnimated)) {
                 UsdGeomXformable xformable(prototypePrim);
                 UsdGeomXformOp newOp = xformable.AddTranslateOp(
                         UsdGeomXformOp::PrecisionDouble,
                         _tokens->instancerTranslate);
-                _instancerTranslateOps.emplace_back(
-                        prototypeDagPath, newOp, instancerTranslateSampleType);
+                _instancerTranslateOps.push_back(
+                        {prototypeDagPath, newOp, instancerTranslateAnimated});
             }
 
             // Two notes:
@@ -256,10 +259,8 @@ MayaInstancerWriter::writeInstancerAttrs(
     // Write the instancerTranslate xformOp for all prims that need it.
     // (This should happen @ default time or animated time depending on whether
     // the xform is animated.)
-    for (const MayaInstancerWriter_TranslateOpData& opData :
-                _instancerTranslateOps) {
-        if ((opData.sampleType == STATIC && usdTime.IsDefault()) ||
-                (opData.sampleType == ANIMATED && !usdTime.IsDefault())) {
+    for (const _TranslateOpData& opData : _instancerTranslateOps) {
+        if (opData.isAnimated != usdTime.IsDefault()) {
             GfVec3d origin;
             if (_GetTransformedOriginInLocalSpace(opData.mayaPath, &origin)) {
                 UsdGeomXformOp translateOp = opData.op;

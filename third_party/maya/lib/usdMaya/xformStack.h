@@ -62,9 +62,6 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaXformStackTokens,
         PXRUSDMAYA_API,
         PXRUSDMAYA_XFORM_STACK_TOKENS);
 
-class _PxrUsdMayaXformOpClassificationData;
-class _PxrUsdMayaXformStackData;
-
 /// \class PxrUsdMayaXformOpClassification
 /// \brief Defines a named "class" of xform operation
 ///
@@ -107,13 +104,14 @@ public:
     std::vector<TfToken> CompatibleAttrNames() const;
 
 private:
+    class _Data;
+
     // Because this is an immutable type, we keep a pointer to shared
     // data; this allows us to only have overhead associated with
     // a RefPtr, while having easy-python-wrapping (without overhead
     // of WeakPtr)
-    typedef TfRefPtr<_PxrUsdMayaXformOpClassificationData> DataRefPtr;
-
-    DataRefPtr _sharedData;
+    typedef TfRefPtr<_Data> _DataRefPtr;
+    _DataRefPtr _sharedData;
 };
 
 /// \class PxrUsdMayaXformStack
@@ -304,13 +302,14 @@ public:
             const std::vector<UsdGeomXformOp>& xformops);
 
 private:
+    class _Data;
+
     // Because this is an immutable type, we keep a pointer to shared
     // data; this allows us to only have overhead associated with
     // a RefPtr, while having easy-python-wrapping (without overhead
     // of WeakPtr)
-    typedef TfRefPtr<_PxrUsdMayaXformStackData> DataRefPtr;
-
-    DataRefPtr _sharedData;
+    typedef TfRefPtr<_Data> _DataRefPtr;
+    _DataRefPtr _sharedData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

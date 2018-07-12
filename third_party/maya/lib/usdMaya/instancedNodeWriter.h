@@ -36,26 +36,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// author nodes that are directly instanced in Maya.
 class PxrUsdMaya_InstancedNodeWriter : public MayaPrimWriter {
 public:
-    PXRUSDMAYA_API
     PxrUsdMaya_InstancedNodeWriter(
         const MDagPath& srcPath,
         const SdfPath& instancePath,
         usdWriteJobCtx& ctx);
 
-    PXRUSDMAYA_API
     bool ExportsGprims() const override;
-
-    PXRUSDMAYA_API
     bool ShouldPruneChildren() const override;
-
-    PXRUSDMAYA_API
     const SdfPathVector& GetModelPaths() const override;
-
-    PXRUSDMAYA_API
     const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
             GetDagToUsdPathMapping() const override;
-
-    PXRUSDMAYA_API
     void Write(const UsdTimeCode& usdTime) override;
 
 private:

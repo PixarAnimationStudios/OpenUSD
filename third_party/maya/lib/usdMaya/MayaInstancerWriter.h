@@ -34,23 +34,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomPointInstancer;
 
-/// Used internally by MayaInstancerWriter to keep track of the
-/// instancerTranslate xformOp for compensating Maya's instancer position
-/// behavior.
-struct MayaInstancerWriter_TranslateOpData {
-    MDagPath mayaPath;
-    UsdGeomXformOp op;
-    AnimChannelSampleType sampleType;
-
-    MayaInstancerWriter_TranslateOpData(
-            const MDagPath& mayaPath,
-            const UsdGeomXformOp& op,
-            AnimChannelSampleType sampleType)
-            : mayaPath(mayaPath), op(op), sampleType(sampleType)
-    {
-    }
-};
-
 /// \brief Exporter for Maya particle instancer nodes (MFnInstancer).
 /// The instancer node is used in both nParticles and MASH networks.
 ///
@@ -64,30 +47,15 @@ struct MayaInstancerWriter_TranslateOpData {
 /// hierarchy, and another time as a prototype of the UsdGeomPointInstancer.
 class MayaInstancerWriter : public MayaTransformWriter
 {
-    /// Number of prototypes that have been set up so far.
-    int _numPrototypes;
-    /// All valid prim writers for all prototypes. The size of this will most
-    /// likely be larger than _numPrototypes.
-    std::vector<MayaPrimWriterPtr> _prototypeWriters;
-    /// Data used to write the instancerTranslate xformOp on prototypes that
-    /// need it. There is at most one instancerTranslate op for each prototype.
-    std::vector<MayaInstancerWriter_TranslateOpData> _instancerTranslateOps;
-    /// Cached list of model paths for point instancer.
-    SdfPathVector _modelPaths;
-
 public:
     MayaInstancerWriter(
             const MDagPath & iDag,
             const SdfPath& uPath,
             usdWriteJobCtx& jobCtx);
     
-    PXRUSDMAYA_API
     void Write(const UsdTimeCode &usdTime) override;
-    PXRUSDMAYA_API
     void PostExport() override;
-    PXRUSDMAYA_API
     bool ShouldPruneChildren() const override;
-    PXRUSDMAYA_API
     const SdfPathVector& GetModelPaths() const override;
 
 protected:
@@ -95,8 +63,29 @@ protected:
             const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer);
 
 private:
-    AnimChannelSampleType _GetInstancerTranslateSampleType(
-            const MDagPath& prototypeDagPath) const;
+    bool _NeedsExtraInstancerTranslate(
+            const MDagPath& prototypeDagPath,
+            bool* instancerTranslateAnimated) const;
+
+    /// Used internally by MayaInstancerWriter to keep track of the
+    /// instancerTranslate xformOp for compensating Maya's instancer position
+    /// behavior.
+    struct _TranslateOpData {
+        MDagPath mayaPath;
+        UsdGeomXformOp op;
+        bool isAnimated;
+    };
+
+    /// Number of prototypes that have been set up so far.
+    int _numPrototypes;
+    /// All valid prim writers for all prototypes. The size of this will most
+    /// likely be larger than _numPrototypes.
+    std::vector<MayaPrimWriterPtr> _prototypeWriters;
+    /// Data used to write the instancerTranslate xformOp on prototypes that
+    /// need it. There is at most one instancerTranslate op for each prototype.
+    std::vector<_TranslateOpData> _instancerTranslateOps;
+    /// Cached list of model paths for point instancer.
+    SdfPathVector _modelPaths;
 };
 
 typedef std::shared_ptr<MayaInstancerWriter> MayaInstancerWriterPtr;

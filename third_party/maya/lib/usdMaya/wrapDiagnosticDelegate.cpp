@@ -32,9 +32,11 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
+namespace {
+
 // This exposes PxrUsdMayaDiagnosticBatchContext as a Python "context manager"
 // object that can be used with the "with"-statement.
-class PxrUsdMaya_PyDiagnosticBatchContext {
+class _PyDiagnosticBatchContext {
 public:
     void __enter__() {
         _context.reset(new PxrUsdMayaDiagnosticBatchContext());
@@ -47,6 +49,8 @@ private:
     std::unique_ptr<PxrUsdMayaDiagnosticBatchContext> _context;
 };
 
+} // anonymous namespace
+
 void wrapDiagnosticDelegate()
 {
     typedef PxrUsdMayaDiagnosticDelegate This;
@@ -55,7 +59,7 @@ void wrapDiagnosticDelegate()
         .staticmethod("GetBatchCount")
         ;
 
-    typedef PxrUsdMaya_PyDiagnosticBatchContext Context;
+    typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")
         .def("__enter__", &Context::__enter__, return_self<>())
         .def("__exit__", &Context::__exit__)

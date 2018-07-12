@@ -41,6 +41,8 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_DIAGNOSTICS_BATCH, true,
 // Globally-shared delegate. Uses shared_ptr so we can have weak ptrs.
 static std::shared_ptr<PxrUsdMayaDiagnosticDelegate> _sharedDelegate;
 
+namespace {
+
 class _StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate {
     void IssueWarning(const TfWarning&) override {}
     void IssueFatalError(const TfCallContext&, const std::string&) override {}
@@ -50,6 +52,8 @@ class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate {
     void IssueStatus(const TfStatus&) override {}
     void IssueFatalError(const TfCallContext&, const std::string&) override {}
 };
+
+} // anonymous namespace
 
 static MString
 _FormatDiagnostic(const TfDiagnosticBase& d)

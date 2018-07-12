@@ -53,14 +53,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
     // We wrap this class, instead of PxrUsdMayaXformOpClassification directly, mostly
     // just so we can handle the .IsNull() -> None conversion
-    class Usd_PyXformOpClassification {
+    class _PyXformOpClassification {
     public:
-        Usd_PyXformOpClassification(const PxrUsdMayaXformOpClassification& opClass)
+        _PyXformOpClassification(const PxrUsdMayaXformOpClassification& opClass)
             : _opClass(opClass)
         {
         }
 
-        bool operator == (const Usd_PyXformOpClassification& other)
+        bool operator == (const _PyXformOpClassification& other)
         {
             return _opClass == other._opClass;
         }
@@ -112,7 +112,7 @@ namespace {
             }
             else
             {
-                object obj((Usd_PyXformOpClassification(opClass)));
+                object obj((_PyXformOpClassification(opClass)));
                 // Incref because ~object does a decref
                 return boost::python::incref(obj.ptr());
             }
@@ -122,7 +122,7 @@ namespace {
         PxrUsdMayaXformOpClassification _opClass;
     };
 
-    class Usd_PyXformStack
+    class _PyXformStack
     {
     public:
         static inline object
@@ -136,7 +136,7 @@ namespace {
         }
 
         // Don't want to make this into a generic conversion rule, via
-        //    to_python_converter<PxrUsdMayaXformStack::IndexPair, Usd_PyXformStack>(),
+        //    to_python_converter<PxrUsdMayaXformStack::IndexPair, _PyXformStack>(),
         // because that would make this apply to ANY pair of unsigned ints, which
         // could be dangerous
         static object
@@ -210,34 +210,34 @@ namespace {
 
 void wrapXformStack()
 {
-    class_<Usd_PyXformOpClassification>("XformOpClassification", no_init)
+    class_<_PyXformOpClassification>("XformOpClassification", no_init)
         .def(self == self)
-        .def("GetName", &Usd_PyXformOpClassification::GetName,
+        .def("GetName", &_PyXformOpClassification::GetName,
                 return_value_policy<return_by_value>())
-        .def("GetOpType", &Usd_PyXformOpClassification::GetOpType)
-        .def("IsInvertedTwin", &Usd_PyXformOpClassification::IsInvertedTwin)
-        .def("IsCompatibleType", &Usd_PyXformOpClassification::IsCompatibleType)
-        .def("CompatibleAttrNames", &Usd_PyXformOpClassification::CompatibleAttrNames)
+        .def("GetOpType", &_PyXformOpClassification::GetOpType)
+        .def("IsInvertedTwin", &_PyXformOpClassification::IsInvertedTwin)
+        .def("IsCompatibleType", &_PyXformOpClassification::IsCompatibleType)
+        .def("CompatibleAttrNames", &_PyXformOpClassification::CompatibleAttrNames)
         ;
 
     boost::python::to_python_converter<PxrUsdMayaXformOpClassification,
-            Usd_PyXformOpClassification>();
+            _PyXformOpClassification>();
 
     class_<PxrUsdMayaXformStack>("XformStack", no_init)
         .def("GetOps", &PxrUsdMayaXformStack::GetOps,
                 return_value_policy<TfPySequenceToList>())
-        .def("GetInversionTwins", &Usd_PyXformStack::GetInversionTwins)
+        .def("GetInversionTwins", &_PyXformStack::GetInversionTwins)
         .def("GetNameMatters", &PxrUsdMayaXformStack::GetNameMatters)
-        .def("__getitem__", &Usd_PyXformStack::getitem,
+        .def("__getitem__", &_PyXformStack::getitem,
                 return_value_policy<return_by_value>())
         .def("__len__", &PxrUsdMayaXformStack::GetSize)
         .def("GetSize", &PxrUsdMayaXformStack::GetSize)
-        .def("FindOpIndex", &Usd_PyXformStack::FindOpIndex,
+        .def("FindOpIndex", &_PyXformStack::FindOpIndex,
                 (boost::python::arg("opName"), boost::python::arg("isInvertedTwin")=false))
         .def("FindOp", &PxrUsdMayaXformStack::FindOp,
                 (boost::python::arg("opName"), boost::python::arg("isInvertedTwin")=false),
                 return_value_policy<copy_const_reference>())
-        .def("FindOpIndexPair", &Usd_PyXformStack::FindOpIndexPair)
+        .def("FindOpIndexPair", &_PyXformStack::FindOpIndexPair)
         .def("FindOpPair", &PxrUsdMayaXformStack::FindOpPair)
         .def("MatchingSubstack", &PxrUsdMayaXformStack::MatchingSubstack)
         .def("MayaStack", &PxrUsdMayaXformStack::MayaStack,
@@ -254,7 +254,7 @@ void wrapXformStack()
     ;
 
     boost::python::to_python_converter<PxrUsdMayaXformStack::OpClassPair,
-            Usd_PyXformStack>();
+            _PyXformStack>();
 
     boost::python::to_python_converter<std::vector<PxrUsdMayaXformStack::OpClass >,
         TfPySequenceToPython<std::vector<PxrUsdMayaXformStack::OpClass > > >();

@@ -828,8 +828,10 @@ PxrUsdMayaUtil::GetLinearShaderColor(
                                  assignmentIndices);
 }
 
+namespace {
+
 template <typename T>
-struct ValueHash
+struct _ValuesHash
 {
     std::size_t operator() (const T& value) const {
         return hash_value(value);
@@ -839,7 +841,7 @@ struct ValueHash
 // There is no globally defined hash_value for numeric types
 // so we need an explicit opt-in here.
 template <>
-struct ValueHash<float>
+struct _ValuesHash<float>
 {
     std::size_t operator() (const float& value) const {
         return boost::hash_value(value);
@@ -847,12 +849,14 @@ struct ValueHash<float>
 };
 
 template <typename T>
-struct ValuesEqual
+struct _ValuesEqual
 {
     bool operator() (const T& a, const T& b) const {
         return GfIsClose(a, b, 1e-9);
     }
 };
+
+} // anonymous namespace
 
 template <typename T>
 static
@@ -872,7 +876,7 @@ _MergeEquivalentIndexedValues(
 
     // We maintain a map of values to that value's index in our uniqueValues
     // array.
-    std::unordered_map<T, size_t, ValueHash<T>, ValuesEqual<T> > valuesMap;
+    std::unordered_map<T, size_t, _ValuesHash<T>, _ValuesEqual<T> > valuesMap;
     VtArray<T> uniqueValues;
     VtArray<int> uniqueIndices;
 

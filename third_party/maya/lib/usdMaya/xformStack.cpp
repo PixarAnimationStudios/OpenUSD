@@ -163,20 +163,17 @@ namespace {
 
 }
 
-class _PxrUsdMayaXformOpClassificationData : public TfRefBase
+class PxrUsdMayaXformOpClassification::_Data : public TfRefBase
 {
 public:
-    typedef TfRefPtr<_PxrUsdMayaXformOpClassificationData> RefPtr;
-
-    RefPtr static Create(const TfToken &name,
+    _DataRefPtr static Create(const TfToken &name,
             UsdGeomXformOp::Type opType,
             bool isInvertedTwin)
     {
-        return RefPtr(new _PxrUsdMayaXformOpClassificationData(
-                name, opType, isInvertedTwin));
+        return _DataRefPtr(new _Data(name, opType, isInvertedTwin));
     }
 
-    bool operator ==(const _PxrUsdMayaXformOpClassificationData& other) const
+    bool operator ==(const _Data& other) const
     {
         return (m_name == other.m_name
                 && m_opType == other.m_opType
@@ -188,12 +185,10 @@ public:
     const bool m_isInvertedTwin;
 
 private:
-    _PxrUsdMayaXformOpClassificationData(const TfToken &name,
-            UsdGeomXformOp::Type opType,
-            bool isInvertedTwin) :
-                    m_name(name),
-                    m_opType(opType),
-                    m_isInvertedTwin(isInvertedTwin)
+    _Data(const TfToken &name, UsdGeomXformOp::Type opType, bool isInvertedTwin)
+        : m_name(name),
+          m_opType(opType),
+          m_isInvertedTwin(isInvertedTwin)
     {
     }
 };
@@ -207,8 +202,7 @@ PxrUsdMayaXformOpClassification::PxrUsdMayaXformOpClassification(
         const TfToken &name,
         UsdGeomXformOp::Type opType,
         bool isInvertedTwin) :
-                _sharedData(_PxrUsdMayaXformOpClassificationData::Create(
-                        name, opType, isInvertedTwin))
+                _sharedData(_Data::Create(name, opType, isInvertedTwin))
 {
 }
 
@@ -327,20 +321,17 @@ bool PxrUsdMayaXformOpClassification::operator ==(const PxrUsdMayaXformOpClassif
 // linker symbol...
 constexpr size_t PxrUsdMayaXformStack::NO_INDEX;
 
-class _PxrUsdMayaXformStackData : public TfRefBase
+class PxrUsdMayaXformStack::_Data : public TfRefBase
 {
 public:
-    typedef TfRefPtr<_PxrUsdMayaXformStackData> RefPtr;
-
-    RefPtr static Create(const OpClassList& ops,
+    _DataRefPtr static Create(const OpClassList& ops,
             const std::vector<IndexPair>& inversionTwins,
             bool nameMatters)
     {
-        return RefPtr(new _PxrUsdMayaXformStackData(
-                ops, inversionTwins, nameMatters));
+        return _DataRefPtr(new _Data(ops, inversionTwins, nameMatters));
     }
 
-    _PxrUsdMayaXformStackData(
+    _Data(
             const OpClassList& ops,
             const std::vector<IndexPair>& inversionTwins,
             bool nameMatters) :
@@ -417,8 +408,7 @@ PxrUsdMayaXformStack::PxrUsdMayaXformStack(
         const OpClassList& ops,
         const std::vector<IndexPair>& inversionTwins,
         bool nameMatters) :
-        _sharedData(_PxrUsdMayaXformStackData::Create(
-                        ops, inversionTwins, nameMatters))
+        _sharedData(_Data::Create(ops, inversionTwins, nameMatters))
 {
 }
 
