@@ -63,6 +63,15 @@ TF_DEFINE_PRIVATE_TOKENS(
         (USD_inheritClassNames)
 );
 
+static bool
+_IsAnimated(const PxrUsdMayaJobExportArgs& args, const MDagPath& dagPath)
+{
+    MObject obj = dagPath.node();
+    if (!args.timeInterval.IsEmpty()) {
+        return PxrUsdMayaUtil::isAnimated(obj);
+    }
+    return false;
+}
 
 MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
                                const SdfPath& uPath,
@@ -70,8 +79,8 @@ MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
     _writeJobCtx(jobCtx),
     _dagPath(iDag),
     _usdPath(uPath),
-    _isValid(true),
-    _exportVisibility(jobCtx.getArgs().exportVisibility)
+    _exportVisibility(jobCtx.getArgs().exportVisibility),
+    _hasAnimCurves(_IsAnimated(jobCtx.getArgs(), iDag))
 {
     // Determine if shape is animated
     // note that we can't use hasTransform, because we need to test the original
@@ -121,11 +130,17 @@ _GetClassNamesToWrite(
     return false;
 }
 
-bool
-MayaPrimWriter::_WriteImageableAttrs(
-        const UsdTimeCode &usdTime,
-        UsdGeomImageable &primSchema)
+void
+MayaPrimWriter::Write(const UsdTimeCode &usdTime)
 {
+    // We imagine that most prim writers will be writing Imageable prims
+    // (all of the ones thus far do), but this might not be true in
+    // generality, so it's OK to skip writing if this isn't Imageable.
+    UsdGeomImageable primSchema(_usdPrim);
+    if (!primSchema) {
+        return;
+    }
+
     MStatus status;
     MFnDependencyNode depFn(GetDagPath().node());
 
@@ -164,7 +179,10 @@ MayaPrimWriter::_WriteImageableAttrs(
     UsdPrim usdPrim = primSchema.GetPrim();
     if (usdTime.IsDefault()) {
         // There is no Gprim abstraction in this module, so process the few
-        // gprim attrs here.
+        // Gprim attrs here.
+        // Similar to the Imageable check above, we imagine that many, but not
+        // all, prim writers will write Gprims, so it's OK to skip writing
+        // if this isn't a Gprim.
         if (UsdGeomGprim gprim = UsdGeomGprim(usdPrim)) {
             PxrUsdMayaPrimWriterContext* unused = nullptr;
             PxrUsdMayaTranslatorGprim::Write(
@@ -203,8 +221,6 @@ MayaPrimWriter::_WriteImageableAttrs(
     // at animated time-samples.
     PxrUsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
             usdTime, _GetSparseValueWriter());
-
-    return true;
 }
 
 bool
@@ -255,12 +271,6 @@ MayaPrimWriter::GetUsdPath() const
     return _usdPath;
 }
 
-void
-MayaPrimWriter::_SetUsdPath(const SdfPath &newPath)
-{
-    _usdPath = newPath;
-};
-
 const UsdPrim&
 MayaPrimWriter::GetUsdPrim() const
 {
@@ -272,18 +282,6 @@ MayaPrimWriter::GetUsdStage() const
 {
     return _writeJobCtx.getUsdStage();
 }
-
-bool
-MayaPrimWriter::IsValid() const
-{
-    return _isValid;
-}
-
-void
-MayaPrimWriter::_SetValid(bool isValid)
-{
-    _isValid = isValid;
-};
 
 const PxrUsdMayaJobExportArgs&
 MayaPrimWriter::_GetExportArgs() const
@@ -298,9 +296,9 @@ MayaPrimWriter::_GetSparseValueWriter()
 }
 
 bool
-MayaPrimWriter::_IsShapeAnimated() const
+MayaPrimWriter::_HasAnimCurves() const
 {
-    return _isShapeAnimated;
+    return _hasAnimCurves;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

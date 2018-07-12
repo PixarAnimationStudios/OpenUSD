@@ -36,7 +36,7 @@ class UsdGeomNurbsCurves;
 class MayaNurbsCurveWriter : public MayaPrimWriter
 {
   public:
-    MayaNurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, bool instanceSource, usdWriteJobCtx& jobCtx);
+    MayaNurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;
 

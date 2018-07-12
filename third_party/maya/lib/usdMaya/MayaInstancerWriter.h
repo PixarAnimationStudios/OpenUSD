@@ -76,9 +76,9 @@ class MayaInstancerWriter : public MayaTransformWriter
     SdfPathVector _modelPaths;
 
 public:
-    MayaInstancerWriter(const MDagPath & iDag,
+    MayaInstancerWriter(
+            const MDagPath & iDag,
             const SdfPath& uPath,
-            bool instanceSource,
             usdWriteJobCtx& jobCtx);
     
     PXRUSDMAYA_API
@@ -97,10 +97,6 @@ protected:
 private:
     AnimChannelSampleType _GetInstancerTranslateSampleType(
             const MDagPath& prototypeDagPath) const;
-    void _ExportPrototype(
-            const MDagPath& prototypeDagPath,
-            const SdfPath& prototypeUsdPath,
-            std::vector<MayaPrimWriterPtr>* validPrimWritersOut);
 };
 
 typedef std::shared_ptr<MayaInstancerWriter> MayaInstancerWriterPtr;

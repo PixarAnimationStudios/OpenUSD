@@ -54,7 +54,6 @@ class MayaSkeletonWriter : public MayaPrimWriter
 public:
     MayaSkeletonWriter(const MDagPath& iDag,
                        const SdfPath& uPath,
-                       bool instanceSource,
                        usdWriteJobCtx& jobCtx);
     
     void Write(const UsdTimeCode &usdTime) override;
@@ -72,9 +71,6 @@ public:
     /// holds root transformations of the joint hierarchy.
     static SdfPath GetSkeletonPath(const MDagPath& rootJoint,
                                    bool stripNamespaces);
-
-protected:
-    bool _IsShapeAnimated() const override;
 
 private:
     bool _WriteRestState();

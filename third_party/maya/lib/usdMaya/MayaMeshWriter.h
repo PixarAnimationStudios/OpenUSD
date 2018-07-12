@@ -45,7 +45,6 @@ class MayaMeshWriter : public MayaPrimWriter
   public:
     MayaMeshWriter(const MDagPath & iDag,
                    const SdfPath& uPath,
-                   bool instanceSource,
                    usdWriteJobCtx& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;

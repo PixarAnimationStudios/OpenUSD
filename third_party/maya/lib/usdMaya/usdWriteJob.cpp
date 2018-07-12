@@ -242,7 +242,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            MayaPrimWriterPtr primWriter = mJobCtx.createPrimWriter(curDagPath);
+            MayaPrimWriterPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
 
             if (primWriter) {
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);

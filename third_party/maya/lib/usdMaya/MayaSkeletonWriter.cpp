@@ -133,11 +133,8 @@ _GetJointHierarchyComponents(const MDagPath& dagPath,
 }
 
 
-// Note: we currently don't support instanceSource for joints, but we have to
-// have the argument in order to register the writer plugin.
 MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
                                        const SdfPath& uPath,
-                                       bool /*instanceSource */,
                                        usdWriteJobCtx& jobCtx)
     : MayaPrimWriter(iDag, uPath, jobCtx),
       _valid(false), _animXformIsAnimated(false)
@@ -578,14 +575,6 @@ bool
 MayaSkeletonWriter::ShouldPruneChildren() const
 {
     return true;
-}
-
-bool
-MayaSkeletonWriter::_IsShapeAnimated() const
-{
-    // Either the root xform or the SkelAnimation beneath it
-    // may be animated.
-    return _animXformIsAnimated || _animatedJoints.size() > 0;
 }
 
 

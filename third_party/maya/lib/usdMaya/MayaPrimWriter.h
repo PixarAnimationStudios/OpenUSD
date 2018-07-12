@@ -57,7 +57,11 @@ public:
     virtual ~MayaPrimWriter();
 
     /// Main export function that runs when the traversal hits the node.
-    virtual void Write(const UsdTimeCode &usdTime) = 0;
+    /// The default implementation writes attributes for the UsdGeomImageable
+    /// and UsdGeomGprim schemas if the prim conforms to one or both; in most
+    /// cases, subclasses will want to invoke the base class Write() method
+    /// when overriding.
+    virtual void Write(const UsdTimeCode &usdTime);
 
     /// Post export function that runs before saving the stage.
     ///
@@ -121,35 +125,10 @@ public:
     PXRUSDMAYA_API
     const UsdStageRefPtr& GetUsdStage() const;
 
-    /// Whether this prim writer is valid or not.
-    /// Invalid prim writers shouldn't be used, and they shouldn't do anything.
-    PXRUSDMAYA_API
-    bool IsValid() const;
-
 protected:
-    /// Whether there is shape (not transform) animation.
-    /// XXX This is really a helper method that needs to be moved
-    /// elsewhere.
-    virtual bool _IsShapeAnimated() const;
-
-    /// Sets the path on the USD stage where this prim writer should define its
-    /// output prim.
-    /// \sa GetUsdPath()
-    PXRUSDMAYA_API
-    void _SetUsdPath(const SdfPath& newPath);
-
-    /// Sets whether this prim writer is valid or not.
-    /// \sa IsValid()
-    PXRUSDMAYA_API
-    void _SetValid(bool isValid);
-
-    /// Writes the attributes that are common to all UsdGeomImageable prims.
-    /// Subclasses should almost always invoke _WriteImageableAttrs somewhere
-    /// in their Write() function.
-    PXRUSDMAYA_API
-    bool _WriteImageableAttrs(
-            const UsdTimeCode& usdTime,
-            UsdGeomImageable& primSchema);
+    /// Helper function for determining whether the current node has input
+    /// animation curves.
+    virtual bool _HasAnimCurves() const;
 
     /// Gets the current global export args in effect.
     PXRUSDMAYA_API
@@ -197,13 +176,13 @@ private:
     /// and transform.
     bool _IsMergedShape() const;
 
-    MDagPath _dagPath;
-    SdfPath _usdPath;
+    const MDagPath _dagPath;
+    const SdfPath _usdPath;
 
     UsdUtilsSparseValueWriter _valueWriter;
 
-    bool _isValid;
     bool _exportVisibility;
+    bool _hasAnimCurves;
     bool _isShapeAnimated;
 };
 

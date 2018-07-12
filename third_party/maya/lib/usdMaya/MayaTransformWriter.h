@@ -66,32 +66,15 @@ public:
     MayaTransformWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
-            bool instanceSource,
             usdWriteJobCtx& jobCtx);
-    
+
+    /// Main export function that runs when the traversal hits the node.
+    /// This extends MayaPrimWriter::Write() by exporting xform ops for
+    /// UsdGeomXformable if the Maya node has transform data.
     PXRUSDMAYA_API
     void Write(const UsdTimeCode &usdTime) override;
 
-    PXRUSDMAYA_API
-    bool ExportsGprims() const override;
-
-protected:
-    /// Writes the attributes that are common to all UsdGeomXformable prims,
-    /// such as xformOps and xformOpOrder.
-    /// Subclasses should almost always invoke _WriteXformableAttrs somewhere
-    /// in their Write() function.
-    PXRUSDMAYA_API
-    bool _WriteXformableAttrs(
-            const UsdTimeCode& usdTime, 
-            UsdGeomXformable& primSchema);
-
 private:
-    /// Whether this is an instance for the purposes of USD export.
-    /// May exclude some "true" Maya instances that aren't treated as such
-    /// during export.
-    /// Does not include instance sources.
-    bool _IsInstance() const;
-
     /// Populates the AnimChannel vector with various ops based on
     /// the Maya
     /// transformation logic. If scale and/or rotate pivot are declared, creates
@@ -101,9 +84,7 @@ private:
             const UsdGeomXformable& usdXForm, 
             bool writeAnim);
 
-    MDagPath _xformDagPath;
     std::vector<AnimChannel> _animChannels;
-    bool _isInstanceSource;
 };
 
 typedef std::shared_ptr<MayaTransformWriter> MayaTransformWriterPtr;

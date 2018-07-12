@@ -40,7 +40,6 @@ class MayaCameraWriter : public MayaPrimWriter
     MayaCameraWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        bool instanceSource,
         usdWriteJobCtx& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;

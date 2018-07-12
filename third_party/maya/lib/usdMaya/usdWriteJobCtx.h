@@ -71,27 +71,51 @@ public:
     /// Convert DAG paths to USD paths, taking into account the current path
     /// translation rules (such as merge transform/shape, strip namespaces,
     /// visibility, etc).
+    /// Note that this does *not* take into account instancing; the returned
+    /// path is translated as if \p dagPath were un-instanced.
     PXRUSDMAYA_API
     SdfPath ConvertDagToUsdPath(const MDagPath& dagPath) const;
 
-    // Queries the master path for instancing.
-    // This also creates the master shape if it doesn't exist.
+    /// Creates a prim writer that writes the Maya node at \p curDag, excluding
+    /// its descendants, to the given \p usdPath.
+    /// If \usdPath is the empty path, then the USD path will be inferred from
+    /// the Maya DAG path.
+    /// If \p forceUninstance is \c true, then the node will be un-instanced
+    /// during export, even if the export args have instancing enabled.
+    /// Note that you must call MayaPrimWriter::Write() on the returned prim
+    /// writer in order to author its USD attributes.
     PXRUSDMAYA_API
-    SdfPath getOrCreateMasterPath(const MDagPath& dg);
-    /// Gets the existing prim writer for the instance master of the given
-    /// DAG path. If it doesn't exist, returns nullptr.
-    PXRUSDMAYA_API
-    const MayaPrimWriterPtr getMasterPrimWriter(const MDagPath& dg) const;
-    /// Creates a prim writer that writes the given prim (and descendants) to
-    /// the USD namespace hierarchy anchored at the given path.
-    /// If the given path is empty, then the USD path will be inferred from the
-    /// Maya DAG path.
-    PXRUSDMAYA_API
-    MayaPrimWriterPtr createPrimWriter(
+    MayaPrimWriterPtr CreatePrimWriter(
             const MDagPath& curDag,
-            const SdfPath& usdPath = SdfPath());
+            const SdfPath& usdPath = SdfPath(),
+            const bool forceUninstance = false);
+
+    /// Creates all prim writers necessary for writing the Maya node hierarchy
+    /// rooted at \p rootDag to the USD namespace hierarchy rooted at
+    /// \p rootUsdPath.
+    /// If \p rootUsdPath is the empty path, then the USD path will be inferred
+    /// from the root Maya DAG path.
+    /// \p forceUninstance controls whether the root node will be un-instanced;
+    /// nodes further down in the hierarchy will _never_ be un-instanced if
+    /// the export args have instancing enabled.
+    /// \p exportRootVisibility controls whether visibility is allowed to be
+    /// exported for the rootmost node of the hierarchy; this is only useful
+    /// for Maya instancers, which have special behavior on prototype roots.
+    /// \p primWritersOut must be non-null; all of the valid prim writers
+    /// for this prototype's hierarchy will be appended to the vector.
+    /// Note that you must call MayaPrimWriter::Write() on all the returned prim
+    /// writers in order to author their USD attributes.
+    PXRUSDMAYA_API
+    void CreatePrimWriterHierarchy(
+        const MDagPath& rootDag,
+        const SdfPath& rootUsdPath,
+        const bool forceUninstance,
+        const bool exportRootVisibility,
+        std::vector<MayaPrimWriterPtr>* primWritersOut);
+
     PXRUSDMAYA_API
     bool needToTraverse(const MDagPath& curDag) const;
+
     PXRUSDMAYA_API
     PxrUsdMaya_SkelBindingsWriter& getSkelBindingsWriter()
     {
@@ -111,10 +135,35 @@ protected:
     UsdStageRefPtr mStage;
 
 private:
-    // XXX: Unlike ConvertDagToUsdPath(), this also deals with instancing.
-    // I'm going to remove it in a future change that deals with instancing.
-    PXRUSDMAYA_API
-    SdfPath getUsdPathFromDagPath(const MDagPath& dagPath, bool instanceSource);
+    /// A pair of paths, the first being the "export path", or where the
+    /// master is authored on the stage, and the second being the "reference
+    /// path", or the path that you should reference from any instances.
+    /// They might be the same path.
+    typedef std::pair<SdfPath, SdfPath> _ExportAndRefPaths;
+
+    /// Gets the export path and reference path for an instance master of the
+    /// given DAG path.
+    /// In most cases, the two paths are the same, but is \p instancePath
+    /// represents a directly-instanced gprim, the two paths may be different.
+    /// The reference path is _always_ a prefix of the export path.
+    _ExportAndRefPaths _GetInstanceMasterPaths(
+            const MDagPath& instancePath) const;
+
+    /// If the instance master for \p instancePath already exists, returns its
+    /// USD path pair. Otherwise, creates the instance master (including its
+    /// descendants) and returns the new USD path pair.
+    _ExportAndRefPaths _FindOrCreateInstanceMaster(
+            const MDagPath& instancePath);
+
+    /// Gets the existing prim writers for the instance master of
+    /// \p instancePath if that instance master has already been created.
+    /// If successful, returns \c true and populates the iterators; the
+    /// requested prim writers are in the range [\p begin, \p end).
+    /// Otherwise, returns \c false and does nothing with the iterators.
+    bool _GetInstanceMasterPrimWriters(
+            const MDagPath& instancePath,
+            std::vector<MayaPrimWriterPtr>::const_iterator* begin,
+            std::vector<MayaPrimWriterPtr>::const_iterator* end) const;
 
     /// Prim writer search with ancestor type resolution behavior.
     PxrUsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(
@@ -125,20 +174,23 @@ private:
             return rhs.hashCode() < lhs.hashCode();
         }
     };
-    // Map Maya object handles to the instance source SdfPath.
-    std::map<MObjectHandle, SdfPath, MObjectHandleComp> mMasterToUsdPath;
-    // Map Maya object handles to the instance source prim writer's index
-    // in mMayaPrimWriterList. Avoids having to manage two containers of
-    // shared pointers.
-    std::map<MObjectHandle, size_t, MObjectHandleComp> mMasterToPrimWriter;
-    PXRUSDMAYA_API
-    MayaPrimWriterPtr _createPrimWriter(
-            const MDagPath& curDag,
-            const SdfPath& usdPath,
-            bool instanceSource);
+
+    /// Mapping of Maya object handles to the corresponding instance master's
+    /// USD export path and reference path. A pair of empty USD paths means that
+    /// we previously tried, but failed, to create the instance master.
+    std::map<MObjectHandle, _ExportAndRefPaths, MObjectHandleComp>
+            _objectsToMasterPaths;
+
+    // Mapping of Maya object handles to the indices of the instance master's
+    // prim writers in mMayaPrimWriterList. An instance master has a prim writer
+    // for each node in its hierarchy; thus, the value represents an interval
+    // of indices [first, last) in mMayaPrimWriterList. This avoids having to
+    // manage two containers of shared pointers.
+    std::map<MObjectHandle, std::pair<size_t, size_t>, MObjectHandleComp>
+            _objectsToMasterWriters;
+
     UsdPrim mInstancesPrim;
     SdfPath mParentScopePath;
-    bool mNoInstances;
     PxrUsdMaya_SkelBindingsWriter mSkelBindingsWriter;
     // Cache of node type names mapped to their "resolved" writer factory,
     // taking into account Maya's type hierarchy (note that this means that
@@ -146,6 +198,10 @@ private:
     // resolved in this map).
     std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFactoryFn>
             mWriterFactoryCache;
+
+    // PxrUsdMaya_InstancedNodeWriter is in a separate file, but functions as
+    // an internal helper for usdWriteJobCtx.
+    friend class PxrUsdMaya_InstancedNodeWriter;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

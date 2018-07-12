@@ -182,9 +182,8 @@ namespace {
 MayaParticleWriter::MayaParticleWriter(
     const MDagPath & iDag,
     const SdfPath& uPath,
-    bool instanceSource,
     usdWriteJobCtx& jobCtx)
-    : MayaTransformWriter(iDag, uPath, instanceSource, jobCtx),
+    : MayaTransformWriter(iDag, uPath, jobCtx),
       mInitialFrameDone(false) {
     auto primSchema = UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
@@ -195,13 +194,15 @@ MayaParticleWriter::MayaParticleWriter(
 }
 
 void MayaParticleWriter::Write(const UsdTimeCode &usdTime) {
+    MayaTransformWriter::Write(usdTime);
+
     UsdGeomPoints primSchema(_usdPrim);
-    _WriteXformableAttrs(usdTime, primSchema);
     writeParams(usdTime, primSchema);
 }
 
 void MayaParticleWriter::writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points) {
-    if (usdTime.IsDefault() == _IsShapeAnimated()) {
+    // XXX: Check this properly, static particles are uncommon, but used.
+    if (usdTime.IsDefault()) {
         return;
     }
 

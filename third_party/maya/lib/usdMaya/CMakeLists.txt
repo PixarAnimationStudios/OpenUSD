@@ -100,6 +100,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PRIVATE_CLASSES
         debugCodes
+        instancedNodeWriter
         modelKindWriter
         registryHelper
 

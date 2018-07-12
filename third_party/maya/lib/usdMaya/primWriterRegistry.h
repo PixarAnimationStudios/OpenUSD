@@ -71,7 +71,7 @@ struct PxrUsdMayaPrimWriterRegistry
 {
     typedef std::function< MayaPrimWriterPtr (
             const MDagPath&,
-            const SdfPath&, bool,
+            const SdfPath&,
             usdWriteJobCtx&) > WriterFactoryFn;
 
     /// \brief Register \p fn as a factory function providing a MayaPrimWriter
@@ -85,7 +85,6 @@ struct PxrUsdMayaPrimWriterRegistry
     ///     static MayaPrimWriterPtr Create(
     ///             MDagPath &curDag,
     ///             const SdfPath& uPath,
-    ///             bool instanceSource,
     ///             usdWriteJobCtx& jobCtx);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, MyWriter) {
@@ -135,10 +134,9 @@ bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
     PxrUsdMayaPrimWriterContext* ctxVarName)
 
 /// \brief Registers a pre-existing writer class for the given Maya type;
-/// the writer class should be a subclass of MayaPrimWriter with a four-place
+/// the writer class should be a subclass of MayaPrimWriter with a three-place
 /// constructor that takes <tt>(const MDagPath& mayaPath,
-/// const SdfPath& usdPath, bool instanceSource, usdWriteJobCtx& jobCtx)</tt>
-/// as arguments.
+/// const SdfPath& usdPath, usdWriteJobCtx& jobCtx)</tt> as arguments.
 ///
 /// Example:
 /// \code{.cpp}
@@ -146,7 +144,6 @@ bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
 ///     MyWriter(
 ///             const MDagPath& mayaPath,
 ///             const SdfPath& usdPath,
-///             bool instanceSource,
 ///             usdWriteJobCtx& jobCtx) {
 ///         // ...
 ///     }
@@ -160,10 +157,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG( \
 { \
     PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, \
         [](const MDagPath& mayaPath, const SdfPath& usdPath, \
-                bool instanceSource, \
                 usdWriteJobCtx& jobCtx) { \
-            return std::make_shared<writerClass>( \
-                mayaPath, usdPath, instanceSource, jobCtx); \
+            return std::make_shared<writerClass>(mayaPath, usdPath, jobCtx); \
         }); \
 }
 

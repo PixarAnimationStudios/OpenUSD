@@ -59,7 +59,6 @@ public:
     FunctorPrimWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
-            bool instanceSource,
             usdWriteJobCtx& jobCtx,
             WriterFn plugFn);
 
@@ -83,7 +82,6 @@ public:
     static MayaPrimWriterPtr Create(
             const MDagPath& dag,
             const SdfPath& path,
-            bool instanceSource,
             usdWriteJobCtx& jobCtx,
             WriterFn plugFn);
 
@@ -91,7 +89,6 @@ public:
     static std::function< MayaPrimWriterPtr(
             const MDagPath&,
             const SdfPath&,
-            bool,
             usdWriteJobCtx&) >
             CreateFactory(WriterFn plugFn);
 

@@ -45,7 +45,6 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsCurve, UsdGeomNurbsCurves);
 
 MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
                                            const SdfPath& uPath,
-                                           bool instanceSource,
                                            usdWriteJobCtx& jobCtx) :
     MayaPrimWriter(iDag, uPath, jobCtx)
 {
@@ -56,27 +55,20 @@ MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
     TF_AXIOM(_usdPrim);
 }
 
-
-//virtual 
-void MayaNurbsCurveWriter::Write(const UsdTimeCode &usdTime)
+void MayaNurbsCurveWriter::Write(const UsdTimeCode& usdTime)
 {
-    // == Write
-    UsdGeomNurbsCurves primSchema(_usdPrim);
+    MayaPrimWriter::Write(usdTime);
 
-    // Write the attrs
+    UsdGeomNurbsCurves primSchema(_usdPrim);
     writeNurbsCurveAttrs(usdTime, primSchema);
 }
 
-// virtual
 bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema)
 {
     MStatus status = MS::kSuccess;
 
-    // Write parent class attrs
-    _WriteImageableAttrs(usdTime, primSchema);
-
     // Return if usdTime does not match if shape is animated
-    if (usdTime.IsDefault() == _IsShapeAnimated() ) {
+    if (usdTime.IsDefault() == _HasAnimCurves() ) {
         // skip shape as the usdTime does not match if shape isAnimated value
         return true; 
     }

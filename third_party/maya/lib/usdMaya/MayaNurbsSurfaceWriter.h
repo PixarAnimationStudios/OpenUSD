@@ -36,9 +36,9 @@ class UsdGeomNurbsPatch;
 class MayaNurbsSurfaceWriter : public MayaPrimWriter
 {
   public:
-    MayaNurbsSurfaceWriter(const MDagPath & iDag,
+    MayaNurbsSurfaceWriter(
+            const MDagPath & iDag,
             const SdfPath& uPath,
-            bool instanceSource,
             usdWriteJobCtx& jobCtx);
     
     void Write(const UsdTimeCode &usdTime) override;

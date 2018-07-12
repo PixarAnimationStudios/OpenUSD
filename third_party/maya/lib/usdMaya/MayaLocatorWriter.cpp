@@ -45,9 +45,8 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(locator, UsdGeomXform);
 MayaLocatorWriter::MayaLocatorWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        const bool instanceSource,
         usdWriteJobCtx& jobCtx) :
-    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
+    MayaTransformWriter(iDag, uPath, jobCtx)
 {
     UsdGeomXform xformSchema = UsdGeomXform::Define(GetUsdStage(),
                                                     GetUsdPath());
@@ -55,16 +54,6 @@ MayaLocatorWriter::MayaLocatorWriter(
 
     _usdPrim = xformSchema.GetPrim();
     TF_AXIOM(_usdPrim);
-}
-
-/* virtual */
-void
-MayaLocatorWriter::Write(const UsdTimeCode& usdTime)
-{
-    UsdGeomXform xformSchema(_usdPrim);
-
-    // Write parent class attrs.
-    _WriteXformableAttrs(usdTime, xformSchema);
 }
 
 

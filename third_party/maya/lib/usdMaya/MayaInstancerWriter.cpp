@@ -56,9 +56,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
     const SdfPath& uPath,
-    bool instanceSource,
     usdWriteJobCtx& jobCtx)
-    : MayaTransformWriter(iDag, uPath, instanceSource, jobCtx),
+    : MayaTransformWriter(iDag, uPath, jobCtx),
       _numPrototypes(0)
 {
     UsdGeomPointInstancer primSchema =
@@ -77,8 +76,9 @@ MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
 void
 MayaInstancerWriter::Write(const UsdTimeCode &usdTime)
 {
+    MayaTransformWriter::Write(usdTime);
+
     UsdGeomPointInstancer primSchema(_usdPrim);
-    _WriteXformableAttrs(usdTime, primSchema);
     writeInstancerAttrs(usdTime, primSchema);
 }
 
@@ -127,67 +127,6 @@ MayaInstancerWriter::_GetInstancerTranslateSampleType(
     return NO_XFORM;
 }
 
-/// Exports a single prototype whose original Maya location is prototypeDagPath,
-/// and whose exported prototype location is prototypeUsdPath.
-/// validPrimWritersOut needs to be provided; all of the valid prim writers
-/// for this prototype's hierarchy will be appended to the vector.
-void
-MayaInstancerWriter::_ExportPrototype(
-    const MDagPath& prototypeDagPath,
-    const SdfPath& prototypeUsdPath,
-    std::vector<MayaPrimWriterPtr>* validPrimWritersOut)
-{
-    // The USD path of the prototype root if it were exported at its current
-    // Maya location.
-    const SdfPath prototypeComputedUsdPath =
-            _writeJobCtx.ConvertDagToUsdPath(prototypeDagPath);
-
-    MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid);
-    itDag.reset(prototypeDagPath);
-    for (; !itDag.isDone(); itDag.next()) {
-        MDagPath curDagPath;
-        itDag.getPath(curDagPath);
-
-        if (!_writeJobCtx.needToTraverse(curDagPath)) {
-            itDag.prune();
-            continue;
-        }
-
-        // The USD path of this prototype descendant prim if it were exported
-        // at its current Maya location.
-        const SdfPath curComputedUsdPath =
-                _writeJobCtx.ConvertDagToUsdPath(curDagPath);
-
-        // Compute the current prim's relative path w/r/t the prototype root,
-        // and use this to re-anchor it under the USD stage location where
-        // we want to write out the prototype.
-        const SdfPath curRelPath = curComputedUsdPath.MakeRelativePath(
-                prototypeComputedUsdPath);
-        const SdfPath curActualUsdPath = prototypeUsdPath
-                .AppendPath(curRelPath);
-
-        MayaPrimWriterPtr writer = _writeJobCtx.createPrimWriter(
-                curDagPath, curActualUsdPath);
-        if (!writer) {
-            continue;
-        }
-
-        // The prototype root must be visible to match Maya's behavior,
-        // which always vis'es the prototype root, even if it is marked
-        // hidden.
-        if (writer->GetUsdPath() == prototypeUsdPath) {
-            writer->SetExportVisibility(false);
-        }
-
-        validPrimWritersOut->push_back(writer);
-
-        if (writer->ShouldPruneChildren()) {
-            itDag.prune();
-        }
-    }
-}
-
-/* virtual */
 bool
 MayaInstancerWriter::writeInstancerAttrs(
     const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer)
@@ -202,6 +141,9 @@ MayaInstancerWriter::writeInstancerAttrs(
     // they came from. Another reason is that it only provides computed matrices
     // and not separate position, rotation, scale attrs.
 
+    const SdfPath prototypesGroupPath =
+            instancer.GetPrim().GetPath().AppendChild(_tokens->Prototypes);
+
     // At the default time, setup all the prototype instances.
     if (usdTime.IsDefault()) {
         const MPlug inputHierarchy = dagNode.findPlug("inputHierarchy", true,
@@ -211,9 +153,9 @@ MayaInstancerWriter::writeInstancerAttrs(
         // Note that the "Prototypes" prim needs to be a model group to ensure
         // contiguous model hierarchy.
         const UsdPrim prototypesGroupPrim = GetUsdStage()->DefinePrim(
-                instancer.GetPrim().GetPath().AppendChild(_tokens->Prototypes));
+                prototypesGroupPath);
         UsdModelAPI(prototypesGroupPrim).SetKind(KindTokens->group);
-        _modelPaths.push_back(prototypesGroupPrim.GetPath());
+        _modelPaths.push_back(prototypesGroupPath);
 
         UsdRelationship prototypesRel = instancer.CreatePrototypesRel();
 
@@ -264,8 +206,19 @@ MayaInstancerWriter::writeInstancerAttrs(
                         prototypeDagPath, newOp, instancerTranslateSampleType);
             }
 
-            _ExportPrototype(
-                    prototypeDagPath, prototypeUsdPath, &_prototypeWriters);
+            // Two notes:
+            // (1) We don't un-instance here, because it's OK for the prototype
+            // to just be a reference to an instance master if the prototype
+            // participates in Maya native instancing.
+            // (2) The prototype root must be visible to match Maya's behavior,
+            // which always vis'es the prototype root, even if it is marked
+            // hidden.
+            _writeJobCtx.CreatePrimWriterHierarchy(
+                    prototypeDagPath,
+                    prototypeUsdPath,
+                    /*forceUninstance*/ false,
+                    /*exportRootVisibility*/ false,
+                    &_prototypeWriters);
             prototypesRel.AddTarget(prototypeUsdPath);
         }
 
@@ -283,15 +236,18 @@ MayaInstancerWriter::writeInstancerAttrs(
         writer->Write(usdTime);
 
         if (usdTime.IsDefault()) {
-            // Prototypes should have kind component or derived (don't stomp
-            // over existing component-derived kinds).
+            // Prototype roots should have kind component or derived.
+            // Calling Write() above may have populated kinds, so don't stomp
+            // over existing component-derived kinds.
             // (Note that ModelKindWriter's fix-up stage might change this.)
-            if (const UsdPrim writerPrim = writer->GetUsdPrim()) {
-                UsdModelAPI primModelAPI(writerPrim);
-                TfToken kind;
-                primModelAPI.GetKind(&kind);
-                if (!KindRegistry::IsA(kind, KindTokens->component)) {
-                    primModelAPI.SetKind(KindTokens->component);
+            if (writer->GetUsdPath().GetParentPath() == prototypesGroupPath) {
+                if (const UsdPrim writerPrim = writer->GetUsdPrim()) {
+                    UsdModelAPI primModelAPI(writerPrim);
+                    TfToken kind;
+                    primModelAPI.GetKind(&kind);
+                    if (!KindRegistry::IsA(kind, KindTokens->component)) {
+                        primModelAPI.SetKind(KindTokens->component);
+                    }
                 }
             }
         }

@@ -21,43 +21,41 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXRUSDMAYA_INSTANCED_NODE_WRITER_H
+#define PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 
-#ifndef PXRUSDMAYA_MAYAPARTICLE_WRITER_H
-#define PXRUSDMAYA_MAYAPARTICLE_WRITER_H
+#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/usdWriteJobCtx.h"
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "pxr/usd/usd/references.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdGeomPoints;
-
-class MayaParticleWriter : public MayaTransformWriter
-{
+/// This is a "helper" prim writer used internally by usdWriteJobCtx to
+/// author nodes that are directly instanced in Maya.
+class PxrUsdMaya_InstancedNodeWriter : public MayaPrimWriter {
 public:
-    MayaParticleWriter(const MDagPath & iDag,
-                       const SdfPath& uPath,
-                       usdWriteJobCtx& jobCtx);
+    PXRUSDMAYA_API
+    PxrUsdMaya_InstancedNodeWriter(
+        const MDagPath& srcPath,
+        const SdfPath& instancePath,
+        usdWriteJobCtx& ctx);
 
-    void Write(const UsdTimeCode &usdTime) override;
+    PXRUSDMAYA_API
+    bool ExportsGprims() const override;
+
+    PXRUSDMAYA_API
+    bool ShouldPruneChildren() const override;
+
+    PXRUSDMAYA_API
+    void Write(const UsdTimeCode& usdTime) override;
 
 private:
-    void writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points);
-
-    enum ParticleType {
-        PER_PARTICLE_INT,
-        PER_PARTICLE_DOUBLE,
-        PER_PARTICLE_VECTOR
-    };
-
-    std::vector<std::tuple<TfToken, MString, ParticleType>> mUserAttributes;
-    bool mInitialFrameDone;
-
-    void initializeUserAttributes();
+    usdWriteJobCtx::_ExportAndRefPaths _masterPaths;
+    std::vector<SdfPath> _modelPaths;
 };
-
-typedef std::shared_ptr<MayaParticleWriter> MayaParticleWriterPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MAYAPARTICLE_WRITER_H
+#endif

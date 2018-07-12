@@ -31,19 +31,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 FunctorPrimWriter::FunctorPrimWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        bool instanceSource,
         usdWriteJobCtx& jobCtx,
         WriterFn plugFn) :
-    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx),
+    MayaTransformWriter(iDag, uPath, jobCtx),
     _plugFn(plugFn),
     _exportsGprims(false),
     _pruneChildren(false)
 {
-    // XXX We need to temporarily create a prim here because the
-    // TransformPrimWriter no longer does that for us. The system assumes that
-    // the prim is defined after the constructor is run.
-    // This might change as we do the instancing clean-up.
-    _usdPrim = GetUsdStage()->DefinePrim(uPath);
 }
 
 FunctorPrimWriter::~FunctorPrimWriter()
@@ -51,9 +45,10 @@ FunctorPrimWriter::~FunctorPrimWriter()
 }
 
 void
-FunctorPrimWriter::Write(
-        const UsdTimeCode& usdTime)
+FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 {
+    MayaTransformWriter::Write(usdTime);
+
     SdfPath authorPath = GetUsdPath();
     UsdStageRefPtr stage = GetUsdStage();
 
@@ -64,16 +59,6 @@ FunctorPrimWriter::Write(
     _exportsGprims = ctx.GetExportsGprims();
     _pruneChildren = ctx.GetPruneChildren();
     _modelPaths = ctx.GetModelPaths();
-
-    // Since this class handles both shapes and transforms, the resulting
-    // prim might not be Xformable, so handle the case where it's just
-    // Imageable.
-    if (UsdGeomXformable primSchema = UsdGeomXformable(_usdPrim)) {
-        _WriteXformableAttrs(usdTime, primSchema);
-    }
-    else if (UsdGeomImageable primSchema = UsdGeomImageable(_usdPrim)) {
-        _WriteImageableAttrs(usdTime, primSchema);
-    }
 }
 
 bool
@@ -99,16 +84,15 @@ MayaPrimWriterPtr
 FunctorPrimWriter::Create(
     const MDagPath& dag,
     const SdfPath& path,
-    bool instanceSource,
     usdWriteJobCtx& jobCtx,
     WriterFn plugFn)
 {
-    return MayaPrimWriterPtr(new FunctorPrimWriter(dag, path, instanceSource, jobCtx, plugFn));
+    return MayaPrimWriterPtr(new FunctorPrimWriter(dag, path, jobCtx, plugFn));
 }
 
 /* static */
 std::function< MayaPrimWriterPtr(const MDagPath&,
-                                 const SdfPath&, bool,
+                                 const SdfPath&,
                                  usdWriteJobCtx&) >
 FunctorPrimWriter::CreateFactory(WriterFn fn)
 {
@@ -117,7 +101,6 @@ FunctorPrimWriter::CreateFactory(WriterFn fn)
             std::placeholders::_1,
             std::placeholders::_2,
             std::placeholders::_3,
-            std::placeholders::_4,
             fn);
 }
 
