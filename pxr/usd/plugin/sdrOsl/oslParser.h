@@ -34,11 +34,11 @@
 #include "pxr/usd/sdr/declare.h"
 #include "OSL/oslquery.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Forward declarations
 class NdrNode;
 struct NdrNodeDiscoveryResult;
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdrOslParserPlugin
 ///
