@@ -70,5 +70,11 @@ PxrUsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
     return _jobArgs.excludePrimvarNames;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+bool
+PxrUsdMayaPrimReaderArgs::GetUseAsAnimationCache() const
+{
+    return _jobArgs.useAsAnimationCache;
+}
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

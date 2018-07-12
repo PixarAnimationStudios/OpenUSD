@@ -46,10 +46,12 @@ global proc usdTranslatorImport_AnimationCB() {
         int $vis = (`checkBox -q -v customFrameRangeCheckBox` == 1);
         intFieldGrp -e -vis $vis startTimeField;
         intFieldGrp -e -vis $vis endTimeField;
+        checkBox -e -vis true useAsAnimationCacheCheckBox;
     } else {
         checkBox -e -vis false customFrameRangeCheckBox;
         intFieldGrp -e -vis false startTimeField;
         intFieldGrp -e -vis false endTimeField;
+        checkBox -e -vis false useAsAnimationCacheCheckBox;
     }
 }
 
@@ -110,6 +112,8 @@ global proc int usdTranslatorImport (string $parent,
             intFieldGrp -l "Start Time:" startTimeField;
             intFieldGrp -l "End Time:" endTimeField;
 
+        checkBox -l "Use As Animation Cache" -cc ("usdTranslatorImport_AnimationCB") useAsAnimationCacheCheckBox;
+
         optionMenuGrp -l "Assembly Representation:" assemblyRepPopup;
             menuItem -l "Collapsed" -ann "Collapsed";
             menuItem -l "Full" -ann "Full";
@@ -127,6 +131,8 @@ global proc int usdTranslatorImport (string $parent,
                     usdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
                 } else if ($optionBreakDown[0] == "readAnimData") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "readAnimDataCheckBox");
+                } else if ($optionBreakDown[0] == "useAsAnimationCache") {
+                    usdTranslatorImport_SetCheckbox($optionBreakDown[1], "useAsAnimationCacheCheckBox");
                 } else if ($optionBreakDown[0] == "assemblyRep") {
                     usdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "assemblyRepPopup");
                 } else if ($optionBreakDown[0] == "startTime") {
@@ -147,6 +153,7 @@ global proc int usdTranslatorImport (string $parent,
     
         $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "readAnimData", "readAnimDataCheckBox");
+        $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useAsAnimationCache", "useAsAnimationCacheCheckBox");
         $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "assemblyRep", "assemblyRepPopup");
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "endTime", "endTimeField");

@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_JOB_ARGS_H
 #define PXRUSDMAYA_JOB_ARGS_H
 
-/// \file jobArgs.h
+/// \file usdMaya/jobArgs.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -104,6 +104,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
     (excludePrimvar) \
     (metadata) \
     (shadingMode) \
+    (useAsAnimationCache) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
@@ -219,6 +220,7 @@ struct PxrUsdMayaJobImportArgs
     const TfToken::Set includeAPINames;
     const TfToken::Set includeMetadataKeys;
     TfToken shadingMode; // XXX can we make this const?
+    const bool useAsAnimationCache;
 
     const bool importWithProxyShapes;
     /// The interval over which to import animated data.

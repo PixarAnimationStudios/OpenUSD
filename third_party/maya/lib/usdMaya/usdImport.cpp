@@ -84,6 +84,9 @@ usdImport::createSyntax()
                    MSyntax::kString);
     syntax.makeFlagMultiUse(
             PxrUsdImportJobArgsTokens->excludePrimvar.GetText());
+    syntax.addFlag("-uac",
+                   PxrUsdImportJobArgsTokens->useAsAnimationCache.GetText(),
+                   MSyntax::kBoolean);
 
     // These are additional flags under our control.
     syntax.addFlag("-f" , "-file", MSyntax::kString);

@@ -71,6 +71,9 @@ public:
     PXRUSDMAYA_API
     const TfToken::Set& GetExcludePrimvarNames() const;
 
+    PXRUSDMAYA_API
+    bool GetUseAsAnimationCache() const;
+
     bool ShouldImportUnboundShaders() const {
         // currently this is disabled.
         return false;

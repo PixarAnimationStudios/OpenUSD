@@ -503,6 +503,9 @@ PxrUsdMayaJobImportArgs::PxrUsdMayaJobImportArgs(
                 PxrUsdImportJobArgsTokens->shadingMode,
                 PxrUsdMayaShadingModeTokens->none,
                 PxrUsdMayaShadingModeRegistry::ListImporters())),
+        useAsAnimationCache(
+            _Boolean(userArgs,
+                PxrUsdImportJobArgsTokens->useAsAnimationCache)),
 
         importWithProxyShapes(importWithProxyShapes),
         timeInterval(timeInterval)
@@ -540,6 +543,7 @@ const VtDictionary& PxrUsdMayaJobImportArgs::GetDefaultDictionary()
                 });
         d[PxrUsdImportJobArgsTokens->shadingMode] =
                 PxrUsdMayaShadingModeTokens->displayColor.GetString();
+        d[PxrUsdImportJobArgsTokens->useAsAnimationCache] = false;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -559,6 +563,7 @@ operator <<(std::ostream& out, const PxrUsdMayaJobImportArgs& importArgs)
     out << "shadingMode: " << importArgs.shadingMode << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
+        << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;
 
     return out;
