@@ -115,7 +115,7 @@ TfSafeOutputFile::Update(std::string const &fileName)
 {
     TfSafeOutputFile result;
     result._targetFileName = fileName;
-    FILE *file = ArchOpenFile(fileName.c_str(), "r+");
+    FILE *file = ArchOpenFile(fileName.c_str(), "rb+");
     if (!file) {
         TF_RUNTIME_ERROR("Unable to open file '%s' for writing",
                          fileName.c_str());
@@ -140,7 +140,7 @@ TfSafeOutputFile::Replace(std::string const &fileName)
     }
 
     // Obtain a FILE *.
-    result._file = ArchFdOpen(tmpFd, "w");
+    result._file = ArchFdOpen(tmpFd, "wb");
     if (!result._file) {
         TF_RUNTIME_ERROR("Unable to obtain writable FILE pointer: %s",
                          ArchStrerror(errno).c_str());

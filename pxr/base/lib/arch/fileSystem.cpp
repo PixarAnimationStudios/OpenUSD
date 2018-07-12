@@ -536,7 +536,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
     int fd = -1;
     auto cTemplate =
         MakeUnique(sTemplate, [&fd](const char* name){
-            _sopen_s(&fd, name, _O_CREAT | _O_EXCL | _O_RDWR,
+            _sopen_s(&fd, name, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
                      _SH_DENYNO, _S_IREAD | _S_IWRITE);
             return fd != -1;
         });
