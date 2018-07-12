@@ -78,7 +78,7 @@ public:
     /// Stages and layers may be reloaded during an active sessions, but it's
     /// important to understand the full implications of doing so.
     /// When a layer is reloaded, change notifications are sent to any stages
-    /// referncing that layer, causing those stages to recompose, if necessary.
+    /// referencing that layer, causing those stages to recompose, if necessary.
     /// This operation is not thread-safe, and may result in a crash if another
     /// thread is attempting to read from an affected stage at the same time.
     /// Further, it must be noted that simply loading stages within separate
@@ -94,7 +94,7 @@ public:
     /// held internally in a GusdStageCache, not for stages referenced from
     /// other caches -- we prefer to address the problem by requiring that
     /// reloading only be performed at certain points of Houdini's main event
-    /// loop, where it known to be safe.
+    /// loop, where it is known to be safe.
     /// An example of a 'safe' way to exec stage reloads is via a callback
     /// triggered by a button in a node's GUI.
     /// Users should never attempt to reload stages or layers during node
