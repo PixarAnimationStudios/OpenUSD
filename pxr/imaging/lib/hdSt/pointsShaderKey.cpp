@@ -58,8 +58,9 @@ HdSt_PointsShaderKey::HdSt_PointsShaderKey()
     VS[2] = _tokens->pointIdVS;
     VS[3] = TfToken();
 
-    FS[0] = _tokens->surfaceFS;
-    FS[1] = _tokens->commonFS;
+    // Common must be first as it defines terminal interfaces
+    FS[0] = _tokens->commonFS;
+    FS[1] = _tokens->surfaceFS;
     FS[2] = _tokens->mainFS;
     FS[3] = _tokens->pointIdFS;
     FS[4] = TfToken();

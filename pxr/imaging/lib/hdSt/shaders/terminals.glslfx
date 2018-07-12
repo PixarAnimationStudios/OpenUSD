@@ -48,19 +48,71 @@ vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 --- --------------------------------------------------------------------------
 -- glsl Fragment.CommonTerminals
 
+struct ReprStyle
+{
+    vec4  color;
+    bool  usePrimvarColor;
+    bool  usePrimvarAlpha;
+    bool  applyColorOverride;
+    bool  useSurfaceShaderColor;
+    bool  useSurfaceShaderAlpha;
+};
+
+ReprStyle GetReprStyle();
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
+
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    color.rgb = ApplyColorOverrides(color).rgb;
-
+    ReprStyle reprStyle = GetReprStyle();
+    
+    // Apply scalar override.
 #if defined(HD_HAS_scalarOverride)
+    color.rgb = ApplyColorOverrides(color).rgb;
     return color;
-#else
-    vec4 litColor = mix(color,
-                        _ShadingTerminal(Peye, Neye, color, patchCoord),
+#endif
+
+    // Draw mode can override face color
+    vec4 reprColor;
+    
+    reprColor.rgb = reprStyle.usePrimvarColor ? color.rgb : reprStyle.color.rgb;
+    reprColor.a   = reprStyle.usePrimvarAlpha ? color.a   : reprStyle.color.a; 
+
+    // Compute color overrides
+    vec4 colorOverride = ApplyColorOverrides(reprColor);
+    reprColor = reprStyle.applyColorOverride ? colorOverride : reprColor;
+    
+ 
+    // Surface shading can be expensive and also can contain undesirable
+    // side effects (like discards).  So only run it for reprs that require it.
+
+    if (reprStyle.useSurfaceShaderColor ||
+        reprStyle.useSurfaceShaderAlpha) {
+        vec4 shadingColor;
+
+        shadingColor = surfaceShader(Peye,
+                                     Neye,
+                                     reprColor,
+                                     patchCoord);
+    
+        reprColor.rgb = reprStyle.useSurfaceShaderColor ? 
+                        shadingColor.rgb :
+                        reprColor.rgb;
+                        
+        reprColor.a   = reprStyle.useSurfaceShaderAlpha ? 
+                        shadingColor.a :
+                        reprColor.a;
+    }
+
+    vec4 baseColor = color;
+    baseColor = ApplyColorOverrides(baseColor);
+    
+    vec4 litColor = mix(baseColor,
+                        reprColor,
                         GetLightingBlendAmount());
 
-    return ApplyColorOverridesPostLighting(litColor);
-#endif
+    // Final overrides.
+
+    return ApplyColorOverridesPostLighting(litColor); 
 }
 
 --- --------------------------------------------------------------------------
@@ -79,11 +131,18 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #endif // HD_HAS_definedIntegrateLights
 #endif
 
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+ReprStyle GetReprStyle()
 {
-    return surfaceShader(Peye, Neye, color, patchCoord);
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = vec4(0.0, 0.0, 0.0, 1.0);
+    reprStyle.usePrimvarColor          = true;
+    reprStyle.usePrimvarAlpha          = true;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = true;
+    reprStyle.useSurfaceShaderAlpha    = true;
+    
+    return reprStyle; 
 }
 
 --- --------------------------------------------------------------------------
@@ -102,11 +161,18 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #endif // HD_HAS_definedIntegrateLights
 #endif
 
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+ReprStyle GetReprStyle()
 {
-    return surfaceShader(Peye, Neye, color, patchCoord);
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = vec4(0.0, 0.0, 0.0, 1.0);
+    reprStyle.usePrimvarColor          = true;
+    reprStyle.usePrimvarAlpha          = true;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = true;
+    reprStyle.useSurfaceShaderAlpha    = true;
+    
+    return reprStyle; 
 }
 
 --- --------------------------------------------------------------------------
@@ -125,12 +191,8 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #endif // HD_HAS_definedIntegrateLights
 #endif
 
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+ReprStyle GetReprStyle()
 {
-    vec4 surf = surfaceShader(Peye, Neye, color, patchCoord);
-
     // shade only every 2nd pixel in x and y
     // creating a thin stippled mesh grid 
     float factor = step(0.5, fract((gl_FragCoord.x + 1.0) * 0.5))
@@ -138,8 +200,19 @@ vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     
     // make the surface translucent so that the lines of
     // the mesh edges are visible even from the back faces.
-    surf.a = 0.2 * (1.0 - factor);
-    return surf;
+    float alpha = 0.2 * (1.0 - factor);
+
+
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = vec4(0.0, 0.0, 0.0, alpha);
+    reprStyle.usePrimvarColor          = true;
+    reprStyle.usePrimvarAlpha          = false;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = true;
+    reprStyle.useSurfaceShaderAlpha    = false;
+    
+    return reprStyle; 
 }
 
 --- --------------------------------------------------------------------------
@@ -158,25 +231,67 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #endif // HD_HAS_definedIntegrateLights
 #endif
 
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+ReprStyle GetReprStyle()
 {
-    return vec4(0.0, 0.0, 0.0, 1.0);
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = vec4(0.0, 0.0, 0.0, 1.0);
+    reprStyle.usePrimvarColor          = false;
+    reprStyle.usePrimvarAlpha          = false;
+    reprStyle.applyColorOverride       = false;
+    reprStyle.useSurfaceShaderColor    = false;
+    reprStyle.useSurfaceShaderAlpha    = false;
+    
+    return reprStyle; 
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Fragment.ConstantColor
 
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 {
-    return ApplyColorOverrides(color);
+    return integrateLightsConstant(Peye, Neye, props);
+}
+
+#endif // HD_HAS_definedIntegrateLights
+#endif
+
+ReprStyle GetReprStyle()
+{
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = vec4(0.0, 0.0, 0.0, 1.0);
+    reprStyle.usePrimvarColor          = true;
+    reprStyle.usePrimvarAlpha          = true;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = false;
+    reprStyle.useSurfaceShaderAlpha    = false;
+
+    return reprStyle; 
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Fragment.HullColor
 
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    return integrateLightsConstant(Peye, Neye, props);
+}
+
+#endif // HD_HAS_definedIntegrateLights
+#endif
+
+ReprStyle GetReprStyle()
 {
     vec4 hullColor = vec4(vec3(0.18), 1.0);
 
@@ -210,17 +325,49 @@ vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     hullColor = HdGet_hullColor();
 #endif
 
-    return ApplyColorOverrides(hullColor);
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = hullColor;
+    reprStyle.usePrimvarColor          = false;
+    reprStyle.usePrimvarAlpha          = false;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = false;
+    reprStyle.useSurfaceShaderAlpha    = false;
+    
+    return reprStyle;
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Fragment.PointColor
 
-vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    return integrateLightsConstant(Peye, Neye, props);
+}
+
+#endif // HD_HAS_definedIntegrateLights
+#endif
+
+ReprStyle GetReprStyle()
 {
     vec4 pointColor = vec4(vec3(0.18), 1.0);
 #if defined(HD_HAS_pointColor)
     pointColor = HdGet_pointColor();
 #endif
-    return ApplyColorOverrides(pointColor);
+
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = pointColor;
+    reprStyle.usePrimvarColor          = false;
+    reprStyle.usePrimvarAlpha          = false;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = false;
+    reprStyle.useSurfaceShaderAlpha    = false;
+    
+    return reprStyle; 
 }

@@ -282,8 +282,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     } else {
         terminalFS = _tokens->surfaceFS;
     }
-    FS[fsIndex++] = terminalFS;
+
+    // Common must be first as it defines terminal interfaces
     FS[fsIndex++] = _tokens->commonFS;
+    FS[fsIndex++] = terminalFS;
 
     // EdgeId mixin(s) for edge picking and selection
     if (gsStageEnabled) {
