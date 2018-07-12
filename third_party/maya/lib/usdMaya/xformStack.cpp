@@ -33,14 +33,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaXformStackTokens,
         PXRUSDMAYA_XFORM_STACK_TOKENS);
 
-typedef PxrUsdMayaXformStack::OpClassList OpClassList;
-typedef PxrUsdMayaXformStack::OpClass OpClass;
-typedef PxrUsdMayaXformStack::OpClassPair OpClassPair;
-
-typedef PxrUsdMayaXformStack::IndexPair IndexPair;
-typedef PxrUsdMayaXformStack::TokenIndexPairMap TokenIndexPairMap;
-typedef PxrUsdMayaXformStack::IndexMap IndexMap;
-
 namespace {
     const UsdGeomXformOp::Type RotateOpTypes[] = {
         UsdGeomXformOp::TypeRotateX,
@@ -77,10 +69,11 @@ namespace {
                 || opType == UsdGeomXformOp::TypeRotateZ);
     }
 
-    IndexMap _buildInversionMap(
-            const std::vector<IndexPair>& inversionTwins)
+    PxrUsdMayaXformStack::IndexMap
+    _buildInversionMap(
+            const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins)
     {
-        IndexMap result;
+        PxrUsdMayaXformStack::IndexMap result;
         for (const auto& twinPair : inversionTwins)
         {
             result[twinPair.first] = twinPair.second;
@@ -94,10 +87,10 @@ namespace {
     //     { opIndex, NO_INDEX }     if opIndex has no inversion twin
     //     { opIndex, opIndexTwin }  if opIndex has an inversion twin, and opIndex < opIndexTwin
     //     { opIndexTwin, opIndex }  if opIndex has an inversion twin, and opIndex > opIndexTwin
-    IndexPair
+    PxrUsdMayaXformStack::IndexPair
     _makeInversionIndexPair(
             size_t opIndex,
-            const IndexMap& inversionMap)
+            const PxrUsdMayaXformStack::IndexMap& inversionMap)
     {
         auto foundTwin = inversionMap.find(opIndex);
         if (foundTwin == inversionMap.end())
@@ -118,11 +111,12 @@ namespace {
         }
     }
 
-    TokenIndexPairMap _buildAttrNamesToIdxs(
-            const OpClassList& ops,
-            const IndexMap& inversionMap)
+    PxrUsdMayaXformStack::TokenIndexPairMap
+    _buildAttrNamesToIdxs(
+            const PxrUsdMayaXformStack::OpClassList& ops,
+            const PxrUsdMayaXformStack::IndexMap& inversionMap)
     {
-        TokenIndexPairMap result;
+        PxrUsdMayaXformStack::TokenIndexPairMap result;
         for (size_t i = 0; i < ops.size(); ++i)
         {
             const PxrUsdMayaXformOpClassification& op = ops[i];
@@ -131,7 +125,8 @@ namespace {
 
             for (auto attrName : op.CompatibleAttrNames())
             {
-                auto indexPair = _makeInversionIndexPair(i, inversionMap);
+                PxrUsdMayaXformStack::IndexPair indexPair =
+                        _makeInversionIndexPair(i, inversionMap);
                 // Insert, and check if it already existed
                 TF_VERIFY(result.insert({attrName, indexPair}).second,
                         "AttrName %s already found in attrName lookup map",
@@ -141,18 +136,19 @@ namespace {
         return result;
     }
 
-    TokenIndexPairMap _buildOpNamesToIdxs(
-            const OpClassList& ops,
-            const IndexMap& inversionMap)
+    PxrUsdMayaXformStack::TokenIndexPairMap _buildOpNamesToIdxs(
+            const PxrUsdMayaXformStack::OpClassList& ops,
+            const PxrUsdMayaXformStack::IndexMap& inversionMap)
     {
-        TokenIndexPairMap result;
+        PxrUsdMayaXformStack::TokenIndexPairMap result;
         for (size_t i = 0; i < ops.size(); ++i)
         {
             const PxrUsdMayaXformOpClassification& op = ops[i];
             // Inverted twin pairs will always have same name, so can skip one
             if (op.IsInvertedTwin()) continue;
 
-            auto indexPair = _makeInversionIndexPair(i, inversionMap);
+            PxrUsdMayaXformStack::IndexPair indexPair =
+                    _makeInversionIndexPair(i, inversionMap);
             // Insert, and check if it already existed
             TF_VERIFY(result.insert({op.GetName(), indexPair}).second,
                     "Op classification name %s already found in op lookup map",
@@ -324,16 +320,17 @@ constexpr size_t PxrUsdMayaXformStack::NO_INDEX;
 class PxrUsdMayaXformStack::_Data : public TfRefBase
 {
 public:
-    _DataRefPtr static Create(const OpClassList& ops,
-            const std::vector<IndexPair>& inversionTwins,
+    _DataRefPtr static Create(
+            const PxrUsdMayaXformStack::OpClassList& ops,
+            const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins,
             bool nameMatters)
     {
         return _DataRefPtr(new _Data(ops, inversionTwins, nameMatters));
     }
 
     _Data(
-            const OpClassList& ops,
-            const std::vector<IndexPair>& inversionTwins,
+            const PxrUsdMayaXformStack::OpClassList& ops,
+            const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins,
             bool nameMatters) :
                     m_ops(ops),
                     m_inversionTwins(inversionTwins),
@@ -364,25 +361,27 @@ public:
         }
     }
 
-    inline const OpClass&
+    inline const PxrUsdMayaXformStack::OpClass&
     GetOpClassFromIndex(
             const size_t i) const
     {
-        return i == PxrUsdMayaXformStack::NO_INDEX ? OpClass::NullInstance() : m_ops[i];
+        return i == PxrUsdMayaXformStack::NO_INDEX
+                ? PxrUsdMayaXformStack::OpClass::NullInstance()
+                : m_ops[i];
     }
 
-    inline OpClassPair
+    inline PxrUsdMayaXformStack::OpClassPair
     MakeOpClassPairFromIndexPair(
-            const IndexPair& indexPair) const
+            const PxrUsdMayaXformStack::IndexPair& indexPair) const
     {
         return std::make_pair(
                 GetOpClassFromIndex(indexPair.first),
                 GetOpClassFromIndex(indexPair.second));
     }
 
-    const OpClassList m_ops;
-    std::vector<IndexPair> m_inversionTwins;
-    IndexMap m_inversionMap;
+    const PxrUsdMayaXformStack::OpClassList m_ops;
+    std::vector<PxrUsdMayaXformStack::IndexPair> m_inversionTwins;
+    PxrUsdMayaXformStack::IndexMap m_inversionMap;
 
     // We store lookups from raw attribute name - use full attribute
     // name because it's the only "piece" we know we have a pre-generated
@@ -396,28 +395,28 @@ public:
     //     { opIndex, NO_INDEX }     if opIndex has no inversion twin
     //     { opIndex, opIndexTwin }  if opIndex has an inversion twin, and opIndex < opIndexTwin
     //     { opIndexTwin, opIndex }  if opIndex has an inversion twin, and opIndex > opIndexTwin
-    TokenIndexPairMap m_attrNamesToIdxs;
+    PxrUsdMayaXformStack::TokenIndexPairMap m_attrNamesToIdxs;
 
     // Also have a lookup by op name, for use by FindOp
-    TokenIndexPairMap m_opNamesToIdxs;
+    PxrUsdMayaXformStack::TokenIndexPairMap m_opNamesToIdxs;
 
     bool m_nameMatters = true;
 };
 
 PxrUsdMayaXformStack::PxrUsdMayaXformStack(
-        const OpClassList& ops,
-        const std::vector<IndexPair>& inversionTwins,
+        const PxrUsdMayaXformStack::OpClassList& ops,
+        const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins,
         bool nameMatters) :
         _sharedData(_Data::Create(ops, inversionTwins, nameMatters))
 {
 }
 
-OpClassList const &
+PxrUsdMayaXformStack::OpClassList const &
 PxrUsdMayaXformStack::GetOps() const {
     return _sharedData->m_ops;
 }
 
-std::vector<IndexPair> const &
+std::vector<PxrUsdMayaXformStack::IndexPair> const &
 PxrUsdMayaXformStack::GetInversionTwins() const {
     return _sharedData->m_inversionTwins;
 }
@@ -440,7 +439,8 @@ PxrUsdMayaXformStack::GetSize() const {
 size_t
 PxrUsdMayaXformStack::FindOpIndex(const TfToken& opName, bool isInvertedTwin) const
 {
-    const IndexPair& foundIdxPair = FindOpIndexPair(opName);
+    const PxrUsdMayaXformStack::IndexPair& foundIdxPair =
+            FindOpIndexPair(opName);
 
     if(foundIdxPair.first == NO_INDEX) return NO_INDEX;
 
@@ -459,17 +459,18 @@ PxrUsdMayaXformStack::FindOpIndex(const TfToken& opName, bool isInvertedTwin) co
     }
 }
 
-const OpClass&
+const PxrUsdMayaXformStack::OpClass&
 PxrUsdMayaXformStack::FindOp(const TfToken& opName, bool isInvertedTwin) const
 {
     return _sharedData->GetOpClassFromIndex(FindOpIndex(opName, isInvertedTwin));
 }
 
-const IndexPair&
+const PxrUsdMayaXformStack::IndexPair&
 PxrUsdMayaXformStack::FindOpIndexPair(const TfToken& opName) const
 {
-    static IndexPair _NO_MATCH = std::make_pair(NO_INDEX, NO_INDEX);
-    TokenIndexPairMap::const_iterator foundTokenIdxPair =
+    static PxrUsdMayaXformStack::IndexPair _NO_MATCH =
+            std::make_pair(NO_INDEX, NO_INDEX);
+    PxrUsdMayaXformStack::TokenIndexPairMap::const_iterator foundTokenIdxPair =
             _sharedData->m_opNamesToIdxs.find(opName);
     if (foundTokenIdxPair == _sharedData->m_opNamesToIdxs.end())
     {
@@ -479,21 +480,21 @@ PxrUsdMayaXformStack::FindOpIndexPair(const TfToken& opName) const
     return foundTokenIdxPair->second;
 }
 
-const OpClassPair
+const PxrUsdMayaXformStack::OpClassPair
 PxrUsdMayaXformStack::FindOpPair(const TfToken& opName) const
 {
     return _sharedData->MakeOpClassPairFromIndexPair(FindOpIndexPair(opName));
 }
 
-OpClassList
+PxrUsdMayaXformStack::OpClassList
 PxrUsdMayaXformStack::MatchingSubstack(
         const std::vector<UsdGeomXformOp>& xformops) const
 {
-    static const OpClassList _NO_MATCH;
+    static const PxrUsdMayaXformStack::OpClassList _NO_MATCH;
 
     if (xformops.empty()) return _NO_MATCH;
 
-    OpClassList ret;
+    PxrUsdMayaXformStack::OpClassList ret;
 
     // nextOp keeps track of where we will start looking for matches.  It
     // will only move forward.
@@ -507,9 +508,9 @@ PxrUsdMayaXformStack::MatchingSubstack(
 
         if(GetNameMatters()) {
             // First try the fast attrName lookup...
-            TokenIndexPairMap::const_iterator foundTokenIdxPair =
+            const auto foundTokenIdxPairIter =
                     _sharedData->m_attrNamesToIdxs.find(xformOp.GetName());
-            if (foundTokenIdxPair == _sharedData->m_attrNamesToIdxs.end())
+            if (foundTokenIdxPairIter == _sharedData->m_attrNamesToIdxs.end())
             {
                 // Couldn't find the xformop in our stack, abort
                 return _NO_MATCH;
@@ -517,7 +518,8 @@ PxrUsdMayaXformStack::MatchingSubstack(
 
             // we found a pair of opPtrs... make sure one is
             // not less than nextOp...
-            const IndexPair& foundIdxPair = foundTokenIdxPair->second;
+            const PxrUsdMayaXformStack::IndexPair& foundIdxPair =
+                    foundTokenIdxPairIter->second;
 
             if (foundIdxPair.first >= nextOpIndex)
             {
@@ -576,12 +578,14 @@ PxrUsdMayaXformStack::MatchingSubstack(
     return ret;
 }
 
-OpClassList
+PxrUsdMayaXformStack::OpClassList
 PxrUsdMayaXformStack::FirstMatchingSubstack(
         const std::vector<PxrUsdMayaXformStack const *>& stacks,
         const std::vector<UsdGeomXformOp>& xformops)
 {
-    if (xformops.empty() || stacks.empty()) return OpClassList();
+    if (xformops.empty() || stacks.empty()) {
+        return PxrUsdMayaXformStack::OpClassList();
+    }
 
     for (auto& stackPtr : stacks)
     {
@@ -593,7 +597,7 @@ PxrUsdMayaXformStack::FirstMatchingSubstack(
         }
     }
 
-    return OpClassList();
+    return PxrUsdMayaXformStack::OpClassList();
 }
 
 const PxrUsdMayaXformStack&

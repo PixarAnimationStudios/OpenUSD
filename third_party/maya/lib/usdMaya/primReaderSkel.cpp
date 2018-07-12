@@ -66,7 +66,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelSkeleton) {
     PxrUsdMayaPrimReaderRegistry::Register<UsdSkelSkeleton>(
         [](const PxrUsdMayaPrimReaderArgs& args)
         {
-            return PxrUsdMayaPrimReaderPtr(
+            return PxrUsdMayaPrimReaderSharedPtr(
                 new PxrUsdMayaPrimReaderSkeleton(args));
         });
 }
@@ -101,7 +101,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelRoot) {
     PxrUsdMayaPrimReaderRegistry::Register<UsdSkelRoot>(
         [](const PxrUsdMayaPrimReaderArgs& args)
         {
-            return PxrUsdMayaPrimReaderPtr(
+            return PxrUsdMayaPrimReaderSharedPtr(
                 new PxrUsdMayaPrimReaderSkelRoot(args));
         });
 }

@@ -235,7 +235,7 @@ MayaInstancerWriter::writeInstancerAttrs(
     }
 
     // Actual write of prototypes (@ both default time and animated time).
-    for (MayaPrimWriterPtr& writer : _prototypeWriters) {
+    for (MayaPrimWriterSharedPtr& writer : _prototypeWriters) {
         writer->Write(usdTime);
 
         if (usdTime.IsDefault()) {
@@ -313,7 +313,7 @@ MayaInstancerWriter::writeInstancerAttrs(
 void
 MayaInstancerWriter::PostExport()
 {
-    for (MayaPrimWriterPtr& writer : _prototypeWriters) {
+    for (MayaPrimWriterSharedPtr& writer : _prototypeWriters) {
         writer->PostExport();
     }
 }

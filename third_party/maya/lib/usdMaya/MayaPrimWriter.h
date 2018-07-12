@@ -123,7 +123,7 @@ public:
     ///
     /// The base implementation simply maps GetDagPath() to GetUsdPath().
     PXRUSDMAYA_API
-    virtual const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+    virtual const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
             GetDagToUsdPathMapping() const;
 
     /// The source Maya DAG path that we are consuming.
@@ -195,7 +195,7 @@ private:
 
     const MDagPath _dagPath;
     const SdfPath _usdPath;
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type _baseDagToUsdPaths;
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
 
     UsdUtilsSparseValueWriter _valueWriter;
 
@@ -204,7 +204,7 @@ private:
     bool _isShapeAnimated;
 };
 
-typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterPtr;
+typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

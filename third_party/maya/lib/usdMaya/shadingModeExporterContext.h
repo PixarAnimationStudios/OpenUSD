@@ -59,7 +59,7 @@ struct PxrUsdMayaExportParams {
 
     /// Shaders that are bound to prims under \p bindableRoot paths will get
     /// exported.  If \p bindableRoots is empty, it will export all.
-    PxrUsdMayaUtil::ShapeSet bindableRoots;
+    PxrUsdMayaUtil::MDagPathSet bindableRoots;
 
     /// Sets up the parentScope for creating materials.
     SdfPath parentScope;
@@ -83,7 +83,7 @@ public:
 
     void SetSurfaceShaderPlugName(const TfToken& surfacedShaderPlugName);
 
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& GetDagPathToUsdMap() const
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const
     { return _dagPathToUsdMap; }
 
     PXRUSDMAYA_API
@@ -135,12 +135,12 @@ public:
     PxrUsdMayaShadingModeExportContext(
             const MObject& shadingEngine,
             const UsdStageRefPtr& stage,
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
             const PxrUsdMayaExportParams &exportParams);
 private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& _dagPathToUsdMap;
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>& _dagPathToUsdMap;
     const PxrUsdMayaExportParams &_exportParams;
     TfToken _surfaceShaderPlugName;
 

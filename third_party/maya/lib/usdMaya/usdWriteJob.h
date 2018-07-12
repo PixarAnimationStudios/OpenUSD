@@ -79,7 +79,7 @@ class usdWriteJob
     // List of renderLayerObjects. Currently used for variants
     MObjectArray mRenderLayerObjs;
 
-    PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type mDagPathToUsdPathMap;
+    PxrUsdMayaUtil::MDagPathMap<SdfPath> mDagPathToUsdPathMap;
 
     // Currently only used if stripNamespaces is on, to ensure we don't have clashes
     TfHashMap<SdfPath, MDagPath, SdfPath::Hash> mUsdPathToDagPathMap;
@@ -91,7 +91,6 @@ class usdWriteJob
     usdWriteJobCtx mJobCtx;
 };
 
-typedef std::shared_ptr<usdWriteJob> usdWriteJobPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

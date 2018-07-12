@@ -57,7 +57,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
         const MObject& shadingEngine,
         const UsdStageRefPtr& stage,
-        const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+        const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
         const PxrUsdMayaExportParams &exportParams) :
     _shadingEngine(shadingEngine),
     _stage(stage),

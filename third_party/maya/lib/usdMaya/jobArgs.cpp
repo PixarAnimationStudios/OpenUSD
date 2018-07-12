@@ -211,7 +211,7 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 
 PxrUsdMayaJobExportArgs::PxrUsdMayaJobExportArgs(
     const VtDictionary& userArgs,
-    const PxrUsdMayaUtil::ShapeSet& dagPaths,
+    const PxrUsdMayaUtil::MDagPathSet& dagPaths,
     const GfInterval& timeInterval) :
         defaultMeshScheme(
             _Token(userArgs,
@@ -380,7 +380,7 @@ operator <<(std::ostream& out, const PxrUsdMayaJobExportArgs& exportArgs)
 /* static */
 PxrUsdMayaJobExportArgs PxrUsdMayaJobExportArgs::CreateFromDictionary(
     const VtDictionary& userArgs,
-    const PxrUsdMayaUtil::ShapeSet& dagPaths,
+    const PxrUsdMayaUtil::MDagPathSet& dagPaths,
     const GfInterval& timeInterval)
 {
     return PxrUsdMayaJobExportArgs(

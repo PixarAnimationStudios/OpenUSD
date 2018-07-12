@@ -97,8 +97,7 @@ class usdReadJob
     std::map<std::string,std::string> mVariants;
     MDagModifier mDagModifierUndo;
     bool mDagModifierSeeded;
-    typedef PxrUsdMayaPrimReaderContext::ObjectRegistry PathNodeMap;
-    PathNodeMap mNewNodeRegistry;
+    PxrUsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
     MDagPath mMayaRootDagPath;
 };
 

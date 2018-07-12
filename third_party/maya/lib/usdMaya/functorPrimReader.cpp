@@ -40,7 +40,7 @@ PxrUsdMaya_FunctorPrimReader::Read(PxrUsdMayaPrimReaderContext* context)
 }
 
 /* static */
-PxrUsdMayaPrimReaderPtr
+PxrUsdMayaPrimReaderSharedPtr
 PxrUsdMaya_FunctorPrimReader::Create(
     const PxrUsdMayaPrimReaderArgs& args, 
     PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn)
@@ -49,7 +49,7 @@ PxrUsdMaya_FunctorPrimReader::Create(
 }
 
 /* static */
-std::function<PxrUsdMayaPrimReaderPtr(const PxrUsdMayaPrimReaderArgs&)>
+PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn
 PxrUsdMaya_FunctorPrimReader::CreateFactory(
     PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn)
 {

@@ -46,7 +46,7 @@ public:
 
     PXRUSDMAYA_API
     void DoExport(const UsdStageRefPtr& stage,
-                  const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+                  const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
                   const PxrUsdMayaExportParams &exportParams);
 
     /// Called once, before any exports are started.

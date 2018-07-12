@@ -96,8 +96,6 @@ private:
     bool _skelXformIsAnimated, _animXformIsAnimated;
 };
 
-typedef std::shared_ptr<MayaSkeletonWriter> MayaSkeletonWriterPtr;
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

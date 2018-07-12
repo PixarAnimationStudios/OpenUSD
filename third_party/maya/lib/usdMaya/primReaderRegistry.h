@@ -63,7 +63,7 @@ struct PxrUsdMayaPrimReaderRegistry
 {
     /// Reader factory function, i.e. a function that creates a prim reader
     /// for the given prim reader args.
-    typedef std::function< PxrUsdMayaPrimReaderPtr (
+    typedef std::function< PxrUsdMayaPrimReaderSharedPtr (
             const PxrUsdMayaPrimReaderArgs&) > ReaderFactoryFn;
 
     /// Reader function, i.e. a function that reads a prim. This is the
@@ -83,7 +83,7 @@ struct PxrUsdMayaPrimReaderRegistry
     /// that MyType is registered with the TfType system:
     /// \code{.cpp}
     /// class MyReader : public PxrUsdMayaPrimReader {
-    ///     static PxrUsdMayaPrimReaderPtr Create(
+    ///     static PxrUsdMayaPrimReaderSharedPtr Create(
     ///             const PxrUsdMayaPrimReaderArgs&);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, MyType) {

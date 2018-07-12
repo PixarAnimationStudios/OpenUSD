@@ -132,12 +132,12 @@ PxrUsdMaya_InstancedNodeWriter::PxrUsdMaya_InstancedNodeWriter(
     const MDagPath dagMasterRootPath = allInstances[0];
 
     // Loop through our prim writers and compute cached data.
-    std::vector<MayaPrimWriterPtr>::const_iterator begin;
-    std::vector<MayaPrimWriterPtr>::const_iterator end;
+    std::vector<MayaPrimWriterSharedPtr>::const_iterator begin;
+    std::vector<MayaPrimWriterSharedPtr>::const_iterator end;
     const MDagPath path = GetDagPath();
     if (_writeJobCtx._GetInstanceMasterPrimWriters(path, &begin, &end)) {
         for (auto it = begin; it != end; ++it) {
-            const MayaPrimWriterPtr writer = *it;
+            const MayaPrimWriterSharedPtr writer = *it;
 
             // We export gprims if any of the subtree writers does.
             if (writer->ExportsGprims()) {
@@ -152,7 +152,7 @@ PxrUsdMaya_InstancedNodeWriter::PxrUsdMaya_InstancedNodeWriter(
                     writerModelPaths.end());
 
             // Replace prefixes to obtain DAG-USD path mapping.
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& writerMapping =
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>& writerMapping =
                     writer->GetDagToUsdPathMapping();
             for (const std::pair<MDagPath, SdfPath>& pair : writerMapping) {
                 const MDagPath& dagPathInMaster = pair.first;
@@ -186,7 +186,7 @@ PxrUsdMaya_InstancedNodeWriter::GetModelPaths() const
     return _modelPaths;
 }
 
-const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
 PxrUsdMaya_InstancedNodeWriter::GetDagToUsdPathMapping() const
 {
     return _dagToUsdPaths;

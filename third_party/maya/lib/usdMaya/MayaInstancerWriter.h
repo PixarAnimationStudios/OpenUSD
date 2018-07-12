@@ -80,15 +80,13 @@ private:
     int _numPrototypes;
     /// All valid prim writers for all prototypes. The size of this will most
     /// likely be larger than _numPrototypes.
-    std::vector<MayaPrimWriterPtr> _prototypeWriters;
+    std::vector<MayaPrimWriterSharedPtr> _prototypeWriters;
     /// Data used to write the instancerTranslate xformOp on prototypes that
     /// need it. There is at most one instancerTranslate op for each prototype.
     std::vector<_TranslateOpData> _instancerTranslateOps;
     /// Cached list of model paths for point instancer.
     SdfPathVector _modelPaths;
 };
-
-typedef std::shared_ptr<MayaInstancerWriter> MayaInstancerWriterPtr;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

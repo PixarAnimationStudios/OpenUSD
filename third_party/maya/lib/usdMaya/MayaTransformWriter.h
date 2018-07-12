@@ -87,8 +87,6 @@ private:
     std::vector<AnimChannel> _animChannels;
 };
 
-typedef std::shared_ptr<MayaTransformWriter> MayaTransformWriterPtr;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // _usdExport_MayaTransformWriter_h_

@@ -56,8 +56,6 @@ private:
     void initializeUserAttributes();
 };
 
-typedef std::shared_ptr<MayaParticleWriter> MayaParticleWriterPtr;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_MAYAPARTICLE_WRITER_H

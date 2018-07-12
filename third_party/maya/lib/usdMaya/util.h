@@ -60,21 +60,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace PxrUsdMayaUtil
 {
 
-struct cmpDag
+struct _CmpDag
 {
     bool operator()( const MDagPath& lhs, const MDagPath& rhs ) const
     {
         return strcmp(lhs.fullPathName().asChar(), rhs.fullPathName().asChar()) < 0;
     }
 };
-typedef std::set< MDagPath, cmpDag > ShapeSet;
 
-// can't have a templated typedef.  this is the best we can do.
+using MDagPathSet = std::set<MDagPath, _CmpDag>;
+
 template <typename V>
-struct MDagPathMap
-{
-    typedef std::map<MDagPath, V, cmpDag> Type;
-};
+using MDagPathMap = std::map<MDagPath, V, _CmpDag>;
 
 /// RAII-style helper for destructing an MDataHandle obtained from a plug
 /// once it goes out of scope.

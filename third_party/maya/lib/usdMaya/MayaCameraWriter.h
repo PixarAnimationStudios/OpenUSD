@@ -48,8 +48,6 @@ class MayaCameraWriter : public MayaPrimWriter
     bool writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamera &primSchema);
 };
 
-typedef std::shared_ptr<MayaCameraWriter> MayaCameraWriterPtr;
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

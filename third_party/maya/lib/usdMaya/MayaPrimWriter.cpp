@@ -260,7 +260,7 @@ MayaPrimWriter::GetModelPaths() const
     return empty;
 }
 
-const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
 MayaPrimWriter::GetDagToUsdPathMapping() const
 {
     return _baseDagToUsdPaths;

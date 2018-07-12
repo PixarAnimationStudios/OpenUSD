@@ -49,8 +49,6 @@ class MayaNurbsSurfaceWriter : public MayaPrimWriter
     bool writeNurbsSurfaceAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsPatch &primSchema);
 };
 
-typedef std::shared_ptr<MayaNurbsSurfaceWriter> MayaNurbsSurfaceWriterPtr;
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

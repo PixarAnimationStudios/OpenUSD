@@ -71,7 +71,7 @@ struct PxrUsdMayaPrimWriterRegistry
 {
     /// Writer factory function, i.e. a function that creates a prim writer
     /// for the given DAG/USD paths and context.
-    typedef std::function< MayaPrimWriterPtr (
+    typedef std::function< MayaPrimWriterSharedPtr (
             const MDagPath&,
             const SdfPath&,
             usdWriteJobCtx&) > WriterFactoryFn;
@@ -91,7 +91,7 @@ struct PxrUsdMayaPrimWriterRegistry
     /// Example for registering a writer factory in your custom plugin:
     /// \code{.cpp}
     /// class MyWriter : public MayaPrimWriter {
-    ///     static MayaPrimWriterPtr Create(
+    ///     static MayaPrimWriterSharedPtr Create(
     ///             MDagPath &curDag,
     ///             const SdfPath& uPath,
     ///             usdWriteJobCtx& jobCtx);

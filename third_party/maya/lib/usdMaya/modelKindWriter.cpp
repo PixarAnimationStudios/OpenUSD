@@ -65,7 +65,7 @@ _FindAncestorRootPrimOrComponent(const UsdPrim& prim)
 void
 PxrUsdMaya_ModelKindWriter::OnWritePrim(
     const UsdPrim& prim,
-    const MayaPrimWriterPtr& primWriter)
+    const MayaPrimWriterSharedPtr& primWriter)
 {
     const SdfPath& path = prim.GetPath();
 
@@ -127,7 +127,7 @@ PxrUsdMaya_ModelKindWriter::MakeModelHierarchy(UsdStageRefPtr& stage)
     // analysis we have done about gprims and references authored is global,
     // so all trees will get the same treatment/kind.
 
-    SdfPathBoolMap rootPrimIsComponent;
+    _PathBoolMap rootPrimIsComponent;
 
     // One pass through root prims to fill in root-kinds.
     if (!_AuthorRootPrimKinds(stage, rootPrimIsComponent)) {
@@ -144,7 +144,7 @@ PxrUsdMaya_ModelKindWriter::MakeModelHierarchy(UsdStageRefPtr& stage)
 bool
 PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
     UsdStageRefPtr& stage,
-    SdfPathBoolMap& rootPrimIsComponent)
+    _PathBoolMap& rootPrimIsComponent)
 {
     UsdPrimSiblingRange usdRootPrims = stage->GetPseudoRoot().GetChildren();
     for (UsdPrim const& prim : usdRootPrims) {
@@ -231,7 +231,7 @@ PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
 bool
 PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
     UsdStageRefPtr& stage,
-    const SdfPathBoolMap& rootPrimIsComponent)
+    const _PathBoolMap& rootPrimIsComponent)
 {
     std::unordered_set<SdfPath, SdfPath::Hash> pathsToBeGroup;
     for (SdfPath const &path : _pathsThatMayHaveKind) {

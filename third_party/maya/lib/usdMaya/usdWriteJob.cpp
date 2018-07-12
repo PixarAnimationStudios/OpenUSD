@@ -86,8 +86,8 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
-    PxrUsdMayaUtil::ShapeSet::const_iterator m, n;
-    PxrUsdMayaUtil::ShapeSet::const_iterator endPath = mJobCtx.mArgs.dagPaths.end();
+    PxrUsdMayaUtil::MDagPathSet::const_iterator m, n;
+    PxrUsdMayaUtil::MDagPathSet::const_iterator endPath = mJobCtx.mArgs.dagPaths.end();
     for (m = mJobCtx.mArgs.dagPaths.begin(); m != endPath; ) {
         MDagPath path1 = *m; m++;
         for (n = m; n != endPath; n++) {
@@ -171,8 +171,8 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
     // less work to hash and compare than full path names.
     TfHashSet<std::string, TfHash> argDagPaths;
     TfHashSet<std::string, TfHash> argDagPathParents;
-    PxrUsdMayaUtil::ShapeSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
-    for (PxrUsdMayaUtil::ShapeSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
+    PxrUsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
+    for (PxrUsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
             it != end; ++it) {
         MDagPath curDagPath = *it;
         MStatus status;
@@ -242,7 +242,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            MayaPrimWriterPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
+            MayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
 
             if (primWriter) {
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);
@@ -270,7 +270,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
 
                     primWriter->Write(UsdTimeCode::Default());
 
-                    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& mapping =
+                    const PxrUsdMayaUtil::MDagPathMap<SdfPath>& mapping =
                             primWriter->GetDagToUsdPathMapping();
                     mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
 
@@ -344,7 +344,7 @@ void usdWriteJob::evalJob(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
-    for (const MayaPrimWriterPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
+    for (const MayaPrimWriterSharedPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
         const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
             primWriter->Write(usdTime);
@@ -467,7 +467,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     SdfPath usdVariantRootPrimPath;
     if (mJobCtx.mParentScopePath.IsEmpty()) {
         // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
-        MayaPrimWriterPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
+        MayaPrimWriterSharedPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
         std::string firstPrimWriterPathStr( firstPrimWriterPtr->GetDagPath().fullPathName().asChar() );
         std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
         std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), ':', '_'); // replace namespace ":" with "_"

@@ -51,12 +51,11 @@ public:
 
     bool Read(PxrUsdMayaPrimReaderContext* context) override;
 
-    static PxrUsdMayaPrimReaderPtr Create(
+    static PxrUsdMayaPrimReaderSharedPtr Create(
             const PxrUsdMayaPrimReaderArgs&,
             PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn);
 
-    static std::function<PxrUsdMayaPrimReaderPtr(
-            const PxrUsdMayaPrimReaderArgs&)>
+    static PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn
             CreateFactory(PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn);
 
 private:

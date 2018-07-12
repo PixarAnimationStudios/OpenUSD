@@ -28,6 +28,7 @@
 
 #include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/MayaPrimWriter.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/skelBindingsWriter.h"
 
@@ -40,8 +41,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MayaPrimWriter;
-typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterPtr;
 
 class usdWriteJob;
 
@@ -85,7 +84,7 @@ public:
     /// Note that you must call MayaPrimWriter::Write() on the returned prim
     /// writer in order to author its USD attributes.
     PXRUSDMAYA_API
-    MayaPrimWriterPtr CreatePrimWriter(
+    MayaPrimWriterSharedPtr CreatePrimWriter(
             const MDagPath& curDag,
             const SdfPath& usdPath = SdfPath(),
             const bool forceUninstance = false);
@@ -111,7 +110,7 @@ public:
         const SdfPath& rootUsdPath,
         const bool forceUninstance,
         const bool exportRootVisibility,
-        std::vector<MayaPrimWriterPtr>* primWritersOut);
+        std::vector<MayaPrimWriterSharedPtr>* primWritersOut);
 
     PXRUSDMAYA_API
     bool needToTraverse(const MDagPath& curDag) const;
@@ -130,7 +129,7 @@ protected:
 
     PxrUsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over
-    std::vector<MayaPrimWriterPtr> mMayaPrimWriterList;
+    std::vector<MayaPrimWriterSharedPtr> mMayaPrimWriterList;
     // Stage used to write out USD file
     UsdStageRefPtr mStage;
 
@@ -162,8 +161,8 @@ private:
     /// Otherwise, returns \c false and does nothing with the iterators.
     bool _GetInstanceMasterPrimWriters(
             const MDagPath& instancePath,
-            std::vector<MayaPrimWriterPtr>::const_iterator* begin,
-            std::vector<MayaPrimWriterPtr>::const_iterator* end) const;
+            std::vector<MayaPrimWriterSharedPtr>::const_iterator* begin,
+            std::vector<MayaPrimWriterSharedPtr>::const_iterator* end) const;
 
     /// Prim writer search with ancestor type resolution behavior.
     PxrUsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(

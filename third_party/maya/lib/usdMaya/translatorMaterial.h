@@ -77,7 +77,7 @@ struct PxrUsdMayaTranslatorMaterial
     ExportShadingEngines(
             const UsdStageRefPtr& stage,
             const TfToken& shadingMode,
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
             const PxrUsdMayaExportParams &exportParams);
 };
 

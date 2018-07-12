@@ -149,7 +149,7 @@ struct PxrUsdMayaJobExportArgs
     const std::string pythonPerFrameCallback;
     const std::string pythonPostCallback;
 
-    const PxrUsdMayaUtil::ShapeSet dagPaths;
+    const PxrUsdMayaUtil::MDagPathSet dagPaths;
     /// The interval over which to export animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
     /// animated (time-sampled) data should be exported.
@@ -171,7 +171,7 @@ struct PxrUsdMayaJobExportArgs
     PXRUSDMAYA_API
     static PxrUsdMayaJobExportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
-        const PxrUsdMayaUtil::ShapeSet& dagPaths,
+        const PxrUsdMayaUtil::MDagPathSet& dagPaths,
         const GfInterval& timeInterval = GfInterval());
 
     /// Gets the default arguments dictionary for PxrUsdMayaJobExportArgs.
@@ -196,7 +196,7 @@ private:
     PXRUSDMAYA_API
     PxrUsdMayaJobExportArgs(
         const VtDictionary& userArgs,
-        const PxrUsdMayaUtil::ShapeSet& dagPaths,
+        const PxrUsdMayaUtil::MDagPathSet& dagPaths,
         const GfInterval& timeInterval);
 
     // Maya type ids to avoid exporting; these are

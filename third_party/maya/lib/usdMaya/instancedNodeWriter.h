@@ -44,7 +44,7 @@ public:
     bool ExportsGprims() const override;
     bool ShouldPruneChildren() const override;
     const SdfPathVector& GetModelPaths() const override;
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
             GetDagToUsdPathMapping() const override;
     void Write(const UsdTimeCode& usdTime) override;
 
@@ -54,7 +54,7 @@ private:
     // All of the data below is cached when we construct/obtain prim writers.
     bool _exportsGprims;
     std::vector<SdfPath> _modelPaths;
-    PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type _dagToUsdPaths;
+    PxrUsdMayaUtil::MDagPathMap<SdfPath> _dagToUsdPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

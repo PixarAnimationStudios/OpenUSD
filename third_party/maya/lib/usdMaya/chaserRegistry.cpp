@@ -63,8 +63,7 @@ PxrUsdMayaChaserRegistry::FactoryContext::GetJobArgs() const
 
 TF_INSTANTIATE_SINGLETON(PxrUsdMayaChaserRegistry);
 
-typedef std::map<std::string, PxrUsdMayaChaserRegistry::FactoryFn> _ChaserFnRegistry;
-_ChaserFnRegistry _reg;
+std::map<std::string, PxrUsdMayaChaserRegistry::FactoryFn> _factoryRegistry;
 
 bool
 PxrUsdMayaChaserRegistry::RegisterFactory(
@@ -72,7 +71,7 @@ PxrUsdMayaChaserRegistry::RegisterFactory(
         FactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("registering chaser '%s'.\n", name.c_str());
-    auto ret = _reg.insert(std::make_pair(name, fn));
+    auto ret = _factoryRegistry.insert(std::make_pair(name, fn));
     return ret.second;
 }
 
@@ -82,7 +81,7 @@ PxrUsdMayaChaserRegistry::Create(
         const FactoryContext& context) const
 {
     TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaChaserRegistry>();
-    if (PxrUsdMayaChaserRegistry::FactoryFn fn = _reg[name]) {
+    if (PxrUsdMayaChaserRegistry::FactoryFn fn = _factoryRegistry[name]) {
         return TfCreateRefPtr(fn(context));
     }
     else {
@@ -94,7 +93,7 @@ std::vector<std::string>
 PxrUsdMayaChaserRegistry::GetAllRegisteredChasers() const 
 {
     std::vector<std::string> ret;
-    for (const auto& p: _reg) {
+    for (const auto& p : _factoryRegistry) {
         ret.push_back(p.first);
     }
     return ret;

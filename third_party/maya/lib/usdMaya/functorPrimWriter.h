@@ -62,16 +62,13 @@ public:
     bool ShouldPruneChildren() const override;    
     const SdfPathVector& GetModelPaths() const override;
 
-    static MayaPrimWriterPtr Create(
+    static MayaPrimWriterSharedPtr Create(
             const MDagPath& dag,
             const SdfPath& path,
             usdWriteJobCtx& jobCtx,
             PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
 
-    static std::function< MayaPrimWriterPtr(
-            const MDagPath&,
-            const SdfPath&,
-            usdWriteJobCtx&) >
+    static PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
             CreateFactory(PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
 
 private:

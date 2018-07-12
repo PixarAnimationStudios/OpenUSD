@@ -80,21 +80,19 @@ PxrUsdMaya_FunctorPrimWriter::GetModelPaths() const
 }
 
 /* static */
-MayaPrimWriterPtr
+MayaPrimWriterSharedPtr
 PxrUsdMaya_FunctorPrimWriter::Create(
     const MDagPath& dag,
     const SdfPath& path,
     usdWriteJobCtx& jobCtx,
     PxrUsdMayaPrimWriterRegistry::WriterFn plugFn)
 {
-    return MayaPrimWriterPtr(
+    return MayaPrimWriterSharedPtr(
             new PxrUsdMaya_FunctorPrimWriter(dag, path, jobCtx, plugFn));
 }
 
 /* static */
-std::function< MayaPrimWriterPtr(const MDagPath&,
-                                 const SdfPath&,
-                                 usdWriteJobCtx&) >
+PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
 PxrUsdMaya_FunctorPrimWriter::CreateFactory(
     PxrUsdMayaPrimWriterRegistry::WriterFn fn)
 {

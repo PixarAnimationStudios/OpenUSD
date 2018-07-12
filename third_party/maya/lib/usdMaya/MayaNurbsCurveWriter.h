@@ -46,8 +46,6 @@ class MayaNurbsCurveWriter : public MayaPrimWriter
     bool writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema);
 };
 
-typedef std::shared_ptr<MayaNurbsCurveWriter> MayaNurbsCurveWriterPtr;
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

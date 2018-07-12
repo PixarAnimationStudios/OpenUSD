@@ -282,8 +282,8 @@ usdReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
         const UsdPrim& rootPrim = *rootIt;
         rootIt.PruneChildren();
 
-        std::unordered_map<SdfPath, PxrUsdMayaPrimReaderPtr, SdfPath::Hash>
-                primReaders;
+        std::unordered_map<SdfPath, PxrUsdMayaPrimReaderSharedPtr,
+                SdfPath::Hash> primReaders;
         const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(rootPrim);
         for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
             const UsdPrim& prim = *primIt;
@@ -342,7 +342,7 @@ usdReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
                 TfToken typeName = prim.GetTypeName();
                 if (PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
                         = PxrUsdMayaPrimReaderRegistry::Find(typeName)) {
-                    PxrUsdMayaPrimReaderPtr primReader = factoryFn(args);
+                    PxrUsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
                     if (primReader) {
                         primReader->Read(&readCtx);
                         if (primReader->HasPostReadSubtree()) {

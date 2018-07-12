@@ -66,7 +66,7 @@ public:
     /// construct.  
     class FactoryContext {
     public:
-        typedef PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type DagToUsdMap;
+        typedef PxrUsdMayaUtil::MDagPathMap<SdfPath> DagToUsdMap;
 
         PXRUSDMAYA_API
         FactoryContext(

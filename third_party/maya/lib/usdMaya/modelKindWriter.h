@@ -54,7 +54,7 @@ public:
     /// prim writer.
     /// Note: this assumes DFS traversal, i.e. parent prims should be traversed
     /// before child prims.
-    void OnWritePrim(const UsdPrim& prim, const MayaPrimWriterPtr& primWriter);
+    void OnWritePrim(const UsdPrim& prim, const MayaPrimWriterSharedPtr& primWriter);
 
     /// Writes model hierarchy for the given stage based on the information
     /// collected by OnWritePrim.
@@ -70,9 +70,9 @@ public:
 
 private:
     typedef std::unordered_map<SdfPath, std::vector<SdfPath>, SdfPath::Hash>
-            SdfPathVectorMap;
-    typedef std::unordered_map<SdfPath, bool, SdfPath::Hash> SdfPathBoolMap;
-    typedef std::unordered_set<SdfPath, SdfPath::Hash> SdfPathSet;
+            _PathVectorMap;
+    typedef std::unordered_map<SdfPath, bool, SdfPath::Hash> _PathBoolMap;
+    typedef std::unordered_set<SdfPath, SdfPath::Hash> _PathSet;
 
     PxrUsdMayaJobExportArgs _args;
 
@@ -87,18 +87,18 @@ private:
     // (either because _args.rootKind=assembly or kind=assembly was previously
     // authored).
     // These are just used for error messages.
-    SdfPathVectorMap _pathsToExportedGprimsMap;
+    _PathVectorMap _pathsToExportedGprimsMap;
 
     // Set of all root paths that contain exported gprims.
-    SdfPathSet _pathsWithExportedGprims;
+    _PathSet _pathsWithExportedGprims;
 
     bool _AuthorRootPrimKinds(
             UsdStageRefPtr& stage,
-            SdfPathBoolMap& rootPrimIsComponent);
+            _PathBoolMap& rootPrimIsComponent);
 
     bool _FixUpPrimKinds(
             UsdStageRefPtr& stage,
-            const SdfPathBoolMap& rootPrimIsComponent);
+            const _PathBoolMap& rootPrimIsComponent);
 };
 
 

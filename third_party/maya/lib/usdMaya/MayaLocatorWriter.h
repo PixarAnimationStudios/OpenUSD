@@ -64,8 +64,6 @@ public:
             usdWriteJobCtx& jobCtx);
 };
 
-typedef std::shared_ptr<MayaLocatorWriter> MayaLocatorWriterPtr;
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

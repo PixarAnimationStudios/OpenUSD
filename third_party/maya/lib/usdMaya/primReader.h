@@ -64,7 +64,7 @@ private:
     const PxrUsdMayaPrimReaderArgs _args;
 };
 
-typedef std::shared_ptr<PxrUsdMayaPrimReader> PxrUsdMayaPrimReaderPtr;
+typedef std::shared_ptr<PxrUsdMayaPrimReader> PxrUsdMayaPrimReaderSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

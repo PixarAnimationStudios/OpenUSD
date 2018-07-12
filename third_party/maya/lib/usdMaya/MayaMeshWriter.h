@@ -170,8 +170,6 @@ class MayaMeshWriter : public MayaPrimWriter
     std::set<std::string> _excludeColorSets;
 };
 
-typedef std::shared_ptr<MayaMeshWriter> MayaMeshWriterPtr;
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
