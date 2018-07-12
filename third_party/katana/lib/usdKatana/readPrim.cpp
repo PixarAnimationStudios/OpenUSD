@@ -31,6 +31,7 @@
 
 
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/inherits.h"
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
@@ -990,6 +991,18 @@ PxrUsdKatanaReadPrim(
             return token.GetString();
         });
         attrs.set("info.usd.apiSchemas", FnKat::StringAttribute(appliedSchemas));
+    }
+
+    // 
+    // Store the composed inherits metadata as a group attribute
+    //
+    SdfPathVector inheritPaths = prim.GetInherits().GetAllDirectInherits();
+    if (!inheritPaths.empty()){
+        FnKat::GroupBuilder inheritPathsBuilder;
+        for (const auto& path : inheritPaths){
+            inheritPathsBuilder.set(path.GetName(), FnKat::IntAttribute(1));
+        }
+        attrs.set("info.usd.inheritPaths", inheritPathsBuilder.build());
     }
 }
 
