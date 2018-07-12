@@ -297,7 +297,7 @@ _NormPath(string const &inPath)
 } // anon
 
 string
-ArchNormPath(const string& inPath)
+ArchNormPath(const string& inPath, bool stripDriveSpecifier)
 {
 #if defined(ARCH_OS_WINDOWS)
     // Convert backslashes to forward slashes.
@@ -312,8 +312,10 @@ ArchNormPath(const string& inPath)
     // paths as keys in tables, etc.
     string prefix;
     if (path.size() >= 2 && path[1] == ':') {
-        prefix.assign(2, ':');
-        prefix[0] = std::tolower(path[0]);
+        if (!stripDriveSpecifier) {
+            prefix.assign(2, ':');
+            prefix[0] = std::tolower(path[0]);
+        }
         path.erase(0, 2);
     }
 
