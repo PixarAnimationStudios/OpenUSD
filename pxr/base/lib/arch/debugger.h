@@ -90,6 +90,7 @@ bool ArchDebuggerIsAttached() ARCH_NOINLINE;
 /// is in the environment and the debugger isn't already attached.  In that
 /// case it will _exit(134).  If \p logging is \c false then this will
 /// attempt to bypass any crash logging.
+[[noreturn]]
 ARCH_API
 void ArchAbort(bool logging = true);
 
