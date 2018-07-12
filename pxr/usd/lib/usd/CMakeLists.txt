@@ -60,6 +60,7 @@ pxr_library(usd
         usdaFileFormat
         usdcFileFormat
         variantSets
+        zipFile
 
     PYTHON_PUBLIC_CLASSES
         pyEditContext
@@ -123,6 +124,7 @@ pxr_library(usd
         wrapUtils.cpp
         wrapVariantSets.cpp
         wrapVersion.cpp 
+        wrapZipFile.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -193,6 +195,7 @@ pxr_test_scripts(
     testenv/testUsdVariantEditing.py
     testenv/testUsdVariantFallbacks.py
     testenv/testUsdVariants.py
+    testenv/testUsdZipFile.py
 )
 
 pxr_build_test(testUsdAttributeBlockingCpp
@@ -440,6 +443,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdCollectionAPI
     DEST testUsdCollectionAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdZipFile.testenv
+    DEST testUsdZipFile
 )
 
 pxr_register_test(testUsdAttributeBlocking
@@ -768,5 +776,11 @@ pxr_register_test(testUsdSchemaBase
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdZipFile
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdZipFile"
     EXPECTED_RETURN_CODE 0
 )
