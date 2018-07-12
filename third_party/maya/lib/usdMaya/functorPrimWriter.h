@@ -55,12 +55,12 @@ public:
             usdWriteJobCtx& jobCtx,
             PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
 
-    virtual ~PxrUsdMaya_FunctorPrimWriter();
+    ~PxrUsdMaya_FunctorPrimWriter() override;
 
-    virtual void Write(const UsdTimeCode &usdTime) override;
-    virtual bool ExportsGprims() const override;
-    virtual bool ShouldPruneChildren() const override;    
-    virtual const SdfPathVector& GetModelPaths() const override;
+    void Write(const UsdTimeCode &usdTime) override;
+    bool ExportsGprims() const override;
+    bool ShouldPruneChildren() const override;    
+    const SdfPathVector& GetModelPaths() const override;
 
     static MayaPrimWriterPtr Create(
             const MDagPath& dag,

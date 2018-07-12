@@ -50,7 +50,7 @@ class MayaMeshWriter : public MayaPrimWriter
     void Write(const UsdTimeCode &usdTime) override;
     bool ExportsGprims() const override;
 
-    virtual void PostExport() override;
+    void PostExport() override;
 
   protected:
     bool writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema);

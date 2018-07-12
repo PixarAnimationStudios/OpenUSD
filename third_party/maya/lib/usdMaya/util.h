@@ -88,7 +88,7 @@ public:
 
 private:
     MDataHandleHolder(const MPlug& plug, MDataHandle dataHandle);
-    ~MDataHandleHolder();
+    ~MDataHandleHolder() override;
 };
 
 // safely inverse a scale component

@@ -53,21 +53,21 @@ class usdTranslatorExport : public MPxFileTranslator
         MStatus writer(
                 const MFileObject& file, 
                 const MString& optionsString,
-                MPxFileTranslator::FileAccessMode mode);
+                MPxFileTranslator::FileAccessMode mode) override;
 
-        bool haveReadMethod() const { return false; }
-        bool haveWriteMethod() const { return true; }
+        bool haveReadMethod() const override { return false; }
+        bool haveWriteMethod() const override { return true; }
 
         PXRUSDMAYA_API
         MFileKind identifyFile(
                 const MFileObject& file,
                 const char* buffer,
-                short size) const;
+                short size) const override;
 
-        MString defaultExtension() const {
+        MString defaultExtension() const override {
             return PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
         }
-        MString filter() const {
+        MString filter() const override {
             return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
         }
 
@@ -78,7 +78,7 @@ class usdTranslatorExport : public MPxFileTranslator
 
         usdTranslatorExport();
         usdTranslatorExport(const usdTranslatorExport&);
-        ~usdTranslatorExport();
+        ~usdTranslatorExport() override;
         usdTranslatorExport& operator=(const usdTranslatorExport&);
 };
 

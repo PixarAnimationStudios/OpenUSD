@@ -60,7 +60,7 @@ class PxrUsdMayaDiagnosticBatchContext;
 class PxrUsdMayaDiagnosticDelegate : TfDiagnosticMgr::Delegate {
 public:
     PXRUSDMAYA_API
-    virtual ~PxrUsdMayaDiagnosticDelegate() override;
+    ~PxrUsdMayaDiagnosticDelegate() override;
 
     PXRUSDMAYA_API
     void IssueError(const TfError& err) override;

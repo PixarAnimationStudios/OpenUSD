@@ -55,7 +55,7 @@ TF_DECLARE_REF_PTRS(PxrUsdMayaChaser);
 class PxrUsdMayaChaser : public TfRefBase
 {
 public:
-    virtual ~PxrUsdMayaChaser() { }
+    ~PxrUsdMayaChaser() override { }
 
     /// \brief Export the default data.
     ///

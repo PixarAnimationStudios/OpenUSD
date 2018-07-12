@@ -51,7 +51,7 @@ public:
     PxrUsdMayaPrimReaderSkeleton(const PxrUsdMayaPrimReaderArgs& args)
         : PxrUsdMayaPrimReader(args) {}
 
-    virtual ~PxrUsdMayaPrimReaderSkeleton() {}
+    ~PxrUsdMayaPrimReaderSkeleton() override {}
 
     bool Read(PxrUsdMayaPrimReaderContext* context) override;
 
@@ -81,7 +81,7 @@ public:
     PxrUsdMayaPrimReaderSkelRoot(const PxrUsdMayaPrimReaderArgs& args)
         : PxrUsdMayaPrimReader(args) {}
 
-    virtual ~PxrUsdMayaPrimReaderSkelRoot() {}
+    ~PxrUsdMayaPrimReaderSkelRoot() override {}
 
     bool Read(PxrUsdMayaPrimReaderContext* context) override;
 

@@ -37,11 +37,11 @@ class usdExport : public MPxCommand
     PXRUSDMAYA_API
     usdExport();
     PXRUSDMAYA_API
-    virtual ~usdExport();
+    ~usdExport() override;
 
     PXRUSDMAYA_API
-    virtual MStatus doIt(const MArgList& args);
-    virtual bool  isUndoable () const { return false; };
+    MStatus doIt(const MArgList& args) override;
+    bool  isUndoable () const override { return false; };
 
     PXRUSDMAYA_API
     static MSyntax  createSyntax();

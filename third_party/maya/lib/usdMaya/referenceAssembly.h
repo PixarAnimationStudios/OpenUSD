@@ -125,17 +125,17 @@ public:
 
     // == Base Class Virtuals ==
     PXRUSDMAYA_API
-    virtual MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
     PXRUSDMAYA_API
-    virtual bool setInternalValueInContext(
+    bool setInternalValueInContext(
             const MPlug& plug,
             const MDataHandle& dataHandle,
             MDGContext& ctx) override;
 
     // Required overrides
     PXRUSDMAYA_API
-    virtual MString createRepresentation(
+    MString createRepresentation(
             const MString& input,
             const MString& type,
             const MString& representation,
@@ -143,54 +143,54 @@ public:
             MStatus* ReturnStatus = NULL) override;
 
     PXRUSDMAYA_API
-    virtual MString getActive() const override;
+    MString getActive() const override;
     PXRUSDMAYA_API
-    virtual MStringArray getRepresentations(
+    MStringArray getRepresentations(
             MStatus* ReturnStatus = NULL) const override;
     PXRUSDMAYA_API
-    virtual MString getRepType(const MString& representation) const override;
+    MString getRepType(const MString& representation) const override;
     PXRUSDMAYA_API
-    virtual MString getRepLabel(const MString& representation) const override;
+    MString getRepLabel(const MString& representation) const override;
     PXRUSDMAYA_API
-    virtual MStringArray repTypes() const override;
+    MStringArray repTypes() const override;
     PXRUSDMAYA_API
-    virtual MStatus deleteRepresentation(
+    MStatus deleteRepresentation(
             const MString& representation) override;
     PXRUSDMAYA_API
-    virtual MStatus deleteAllRepresentations() override;
+    MStatus deleteAllRepresentations() override;
     PXRUSDMAYA_API
-    virtual MString setRepName(
+    MString setRepName(
             const MString& representation,
             const MString& newName,
             MStatus* ReturnStatus = NULL) override;
     PXRUSDMAYA_API
-    virtual MStatus setRepLabel(
+    MStatus setRepLabel(
             const MString& representation,
             const MString& label) override;
     PXRUSDMAYA_API
-    virtual bool activateRep(const MString& representation) override;
+    bool activateRep(const MString& representation) override;
 
     // Optional overrides
     PXRUSDMAYA_API
-    virtual bool supportsEdits() const override { return true; };
+    bool supportsEdits() const override { return true; };
     PXRUSDMAYA_API
-    virtual bool supportsMemberChanges() const override { return false; };
+    bool supportsMemberChanges() const override { return false; };
     PXRUSDMAYA_API
-    virtual bool canRepApplyEdits(const MString& rep) const override {
+    bool canRepApplyEdits(const MString& rep) const override {
         return (rep.length() > 0);
     };
 
     PXRUSDMAYA_API
-    virtual void postLoad() override;
+    void postLoad() override;
     PXRUSDMAYA_API
-    virtual bool inactivateRep() override;
+    bool inactivateRep() override;
     PXRUSDMAYA_API
-    virtual MString getRepNamespace() const override;
+    MString getRepNamespace() const override;
     PXRUSDMAYA_API
-    virtual void updateRepNamespace(const MString& repNamespace) override;
+    void updateRepNamespace(const MString& repNamespace) override;
 
     PXRUSDMAYA_API
-    virtual MStatus setDependentsDirty(
+    MStatus setDependentsDirty(
             const MPlug& plug,
             MPlugArray& plugArray) override;
 
@@ -285,7 +285,7 @@ class UsdMayaRepresentationBase : public MPxRepresentation
     PXRUSDMAYA_API
     UsdMayaRepresentationBase(MPxAssembly *assembly, const MString &name);
     PXRUSDMAYA_API
-    virtual ~UsdMayaRepresentationBase() {};
+    ~UsdMayaRepresentationBase() override {};
 
     bool activate() override = 0;
     PXRUSDMAYA_API

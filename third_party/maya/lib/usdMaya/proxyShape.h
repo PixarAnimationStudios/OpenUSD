@@ -145,17 +145,17 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
 
         // Virtual function overrides
         PXRUSDMAYA_API
-        virtual void postConstructor() override;
+        void postConstructor() override;
         PXRUSDMAYA_API
-        virtual MStatus compute(
+        MStatus compute(
                 const MPlug& plug,
                 MDataBlock& dataBlock) override;
         PXRUSDMAYA_API
-        virtual bool isBounded() const override;
+        bool isBounded() const override;
         PXRUSDMAYA_API
-        virtual MBoundingBox boundingBox() const override;
+        MBoundingBox boundingBox() const override;
         PXRUSDMAYA_API
-        virtual MSelectionMask getShapeSelectionMask() const override;
+        MSelectionMask getShapeSelectionMask() const override;
 
         PXRUSDMAYA_API
         bool closestPoint(
@@ -209,18 +209,18 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
                 GfVec4f* tintColor);
 
         PXRUSDMAYA_API
-        virtual MStatus setDependentsDirty(
+        MStatus setDependentsDirty(
                 const MPlug& plug,
                 MPlugArray& plugArray) override;
 
         PXRUSDMAYA_API
-        virtual bool setInternalValueInContext(
+        bool setInternalValueInContext(
                 const MPlug& plug,
                 const MDataHandle& dataHandle,
                 MDGContext& ctx) override;
 
         PXRUSDMAYA_API
-        virtual bool getInternalValueInContext(
+        bool getInternalValueInContext(
                 const MPlug& plug,
                 MDataHandle& dataHandle,
                 MDGContext& ctx) override;
@@ -233,7 +233,7 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         UsdMayaProxyShape();
 
         UsdMayaProxyShape(const UsdMayaProxyShape&);
-        virtual ~UsdMayaProxyShape();
+        ~UsdMayaProxyShape() override;
         UsdMayaProxyShape& operator=(const UsdMayaProxyShape&);
 
         MStatus computeInStageDataCached(MDataBlock& dataBlock);
