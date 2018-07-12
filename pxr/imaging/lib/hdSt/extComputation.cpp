@@ -143,6 +143,9 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
             _inputRange = _AllocateComputationDataRange(inputs,
                                                         resourceRegistry);
         }
+
+        // Make sure that we also release any stale input range data
+        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
     }
 }
 
