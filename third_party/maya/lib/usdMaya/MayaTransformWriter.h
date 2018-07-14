@@ -30,8 +30,11 @@
 
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformOp.h"
+#include <maya/MEulerRotation.h>
 #include <maya/MFnTransform.h>
 #include <maya/MPlugArray.h>
+
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,13 +49,15 @@ struct AnimChannel
 {
     MPlug plug[3];
     AnimChannelSampleType sampleType[3];
-    // defValue should always be in "usd" space.  that is, if it's a rotation
-    // it should be a degree not radians.
+    // defValue should always be in "maya" space.  that is, if it's a rotation
+    // it should be radians, not degrees. (This is done so we only need to do
+    // conversion in one place, and so that, if we need to do euler filtering,
+    // we don't do conversions, and then undo them to use MEulerRotation).
     GfVec3d defValue; 
     XFormOpType opType;
     UsdGeomXformOp::Type usdOpType;
     UsdGeomXformOp::Precision precision;
-    std::string opName;
+    TfToken opName;
     bool isInverse;
     UsdGeomXformOp op;
 };
@@ -62,6 +67,8 @@ struct AnimChannel
 class MayaTransformWriter : public MayaPrimWriter
 {
 public:
+    typedef std::unordered_map<const TfToken, MEulerRotation, TfToken::HashFunctor> TokenRotationMap;
+
     PXRUSDMAYA_API
     MayaTransformWriter(
             const MDagPath& iDag,
@@ -85,6 +92,7 @@ private:
             bool writeAnim);
 
     std::vector<AnimChannel> _animChannels;
+    TokenRotationMap _previousRotates;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

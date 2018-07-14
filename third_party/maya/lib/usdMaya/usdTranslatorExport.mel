@@ -1,11 +1,13 @@
 
 global proc usdTranslatorExport_AnimationCB() {
     if (`checkBox -q -v animationCheckBox` == 1) {
+        checkBox -e -vis true eulerFilterCheckBox;
         intFieldGrp -e -vis true startTimeField;
         intFieldGrp -e -vis true endTimeField;
         floatFieldGrp -e -vis true frameStrideField; 
         button -e -vis true animRangeButton;
     } else {
+        checkBox -e -vis false eulerFilterCheckBox;
         intFieldGrp -e -vis false startTimeField;
         intFieldGrp -e -vis false endTimeField;
         floatFieldGrp -e -vis false frameStrideField; 
@@ -181,6 +183,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Export Animation" -cc ("usdTranslatorExport_AnimationCB") animationCheckBox;
 
+        checkBox -l "Apply Euler Filter" eulerFilterCheckBox;
+
         columnLayout -width 100 animOptsCol;
         intFieldGrp -l "Start Time:" -v1 1 startTimeField;
         intFieldGrp -l "End Time:" -v1 1 endTimeField;
@@ -237,6 +241,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "stripNamespacesCheckBox");
                 } else if ($optionBreakDown[0] == "animation") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
+                } else if ($optionBreakDown[0] == "eulerFilter") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "eulerFilterCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime=$optionBreakDown[1];
                     intFieldGrp -e -v1 $startTime startTimeField;
@@ -279,6 +285,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "stripNamespaces", "stripNamespacesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");

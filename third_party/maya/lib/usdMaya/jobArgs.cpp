@@ -222,6 +222,8 @@ PxrUsdMayaJobExportArgs::PxrUsdMayaJobExportArgs(
                     UsdGeomTokens->bilinear,
                     UsdGeomTokens->none
                 })),
+        eulerFilter(
+            _Boolean(userArgs, PxrUsdExportJobArgsTokens->eulerFilter)),
         excludeInvisible(
             _Boolean(userArgs, PxrUsdExportJobArgsTokens->renderableOnly)),
         exportCollectionBasedBindings(
@@ -324,6 +326,7 @@ operator <<(std::ostream& out, const PxrUsdMayaJobExportArgs& exportArgs)
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
         << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
         << "timeInterval: " << exportArgs.timeInterval << std::endl
+        << "eulerFilter: " << TfStringify(exportArgs.eulerFilter) << std::endl
         << "excludeInvisible: " << TfStringify(exportArgs.excludeInvisible) << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
@@ -430,6 +433,7 @@ const VtDictionary& PxrUsdMayaJobExportArgs::GetDefaultDictionary()
         d[PxrUsdExportJobArgsTokens->shadingMode] =
                 PxrUsdMayaShadingModeTokens->displayColor.GetString();
         d[PxrUsdExportJobArgsTokens->stripNamespaces] = false;
+        d[PxrUsdExportJobArgsTokens->eulerFilter] = false;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
