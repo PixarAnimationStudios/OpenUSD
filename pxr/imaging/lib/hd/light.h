@@ -39,14 +39,35 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-#define HD_LIGHT_TOKENS                         \
-    (angle)                                     \
-    (exposure)                                  \
-    (intensity)                                 \
-    (params)                                    \
-    (shadowCollection)                          \
-    (shadowParams)                              \
+#define HD_LIGHT_TOKENS                                     \
+    (angle)                                                 \
+    (color)                                                 \
+    (colorTemperature)                                      \
+    (enableColorTemperature)                                \
+    (exposure)                                              \
+    (height)                                                \
+    (intensity)                                             \
+    (radius)                                                \
+    ((textureFile, "texture:file"))                         \
+    (width)                                                 \
+    (diffuse)                                               \
+    (specular)                                              \
+    (normalize)                                             \
+    ((shapingFocus, "shaping:focus"))                       \
+    ((shapingFocusTint, "shaping:focusTint"))               \
+    ((shapingConeAngle, "shaping:cone:angle"))              \
+    ((shapingConeSoftness, "shaping:cone:softness"))        \
+    ((shapingIesFile, "shaping:ies:file"))                  \
+    ((shapingIesAngleScale, "shaping:ies:angleScale"))      \
+    ((shadowEnable, "shadow:enable"))                       \
+    ((shadowColor, "shadow:color"))                         \
+    ((shadowDistance, "shadow:distance"))                   \
+    ((shadowFalloff, "shadow:falloff"))                     \
+    ((shadowFalloffGamma, "shadow:falloffGamma"))           \
+                                                            \
+    (params)                                                \
+    (shadowCollection)                                      \
+    (shadowParams)                                          \
     (transform)
 
 TF_DECLARE_PUBLIC_TOKENS(HdLightTokens, HD_API, HD_LIGHT_TOKENS);
