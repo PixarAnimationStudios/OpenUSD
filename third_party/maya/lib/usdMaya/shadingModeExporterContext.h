@@ -68,7 +68,7 @@ struct PxrUsdMayaExportParams {
 class PxrUsdMayaShadingModeExportContext
 {
 public:
-    void SetShadingEngine(MObject shadingEngine) { _shadingEngine = shadingEngine; }
+    void SetShadingEngine(const MObject& shadingEngine) { _shadingEngine = shadingEngine; }
     MObject GetShadingEngine() const { return _shadingEngine; }
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
     bool GetMergeTransformAndShape() const { 
@@ -81,7 +81,7 @@ public:
         return _bindableRoots; 
     }
 
-    void SetSurfaceShaderPlugName(const TfToken& surfacedShaderPlugName);
+    void SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName);
 
     const PxrUsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const
     { return _dagPathToUsdMap; }

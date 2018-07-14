@@ -624,7 +624,7 @@ PxrUsdMayaAdaptor::SchemaAdaptor::operator bool() const
 
 std::string
 PxrUsdMayaAdaptor::SchemaAdaptor::_GetMayaAttrNameOrAlias(
-    const SdfAttributeSpecHandle attrSpec) const
+    const SdfAttributeSpecHandle& attrSpec) const
 {
     if (!*this) {
         TF_CODING_ERROR("Schema adaptor is not valid");

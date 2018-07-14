@@ -88,7 +88,7 @@ PxrUsdMayaTranslatorCurves::Create(
     // XXX:
     // Only supporting single curve for now.
     // Sanity Checks
-    if (curveVertexCounts.size() == 0) {
+    if (curveVertexCounts.empty()) {
         TF_RUNTIME_ERROR(
                 "vertexCount array is empty on NurbsCurves <%s>. Skipping...",
                 prim.GetPath().GetText());
@@ -116,7 +116,7 @@ PxrUsdMayaTranslatorCurves::Create(
     }
     curves.GetPointsAttr().Get(&points, pointsTimeSample);
     
-    if (points.size() == 0) {
+    if (points.empty()) {
         TF_RUNTIME_ERROR(
                 "points array is empty on NurbsCurves <%s>. Skipping...",
                 prim.GetPath().GetText());

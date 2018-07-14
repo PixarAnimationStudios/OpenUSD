@@ -159,7 +159,7 @@ static bool _isArrayVarying(std::vector<double> &value)
 {
     bool isVarying=false;
     for (unsigned int i=1;i<value.size();i++) {
-        if (GfIsClose(value[0], value[i], 1e-9)==false) { isVarying=true; break; }
+        if (!GfIsClose(value[0], value[i], 1e-9)) { isVarying=true; break; }
     }
     return isVarying;
 }
@@ -171,26 +171,26 @@ static void _setMayaAttribute(
         MFnDagNode &depFn, 
         std::vector<double> &xVal, std::vector<double> &yVal, std::vector<double> &zVal, 
         MTimeArray &timeArray, 
-        MString opName, 
-        MString x, MString y, MString z,
+        const MString& opName, 
+        const MString& x, const MString& y, const MString& z,
         const PxrUsdMayaPrimReaderContext* context)
 {
     MPlug plg;
-    if (x!="" && xVal.size()>0) {
+    if (x!="" && !xVal.empty()) {
         plg = depFn.findPlug(opName+x);
         if ( !plg.isNull() ) {
             plg.setDouble(xVal[0]);
             if (xVal.size()>1 && _isArrayVarying(xVal)) _setAnimPlugData(plg, xVal, timeArray, context);
         }
     }
-    if (y!="" && yVal.size()>0) {
+    if (y!="" && !yVal.empty()) {
         plg = depFn.findPlug(opName+y);
         if ( !plg.isNull() ) {
             plg.setDouble(yVal[0]);
             if (yVal.size()>1 && _isArrayVarying(yVal)) _setAnimPlugData(plg, yVal, timeArray, context);
         }
     }
-    if (z!="" && zVal.size()>0) {
+    if (z!="" && !zVal.empty()) {
         plg = depFn.findPlug(opName+z);
         if ( !plg.isNull() ) {
             plg.setDouble(zVal[0]);
@@ -250,7 +250,7 @@ static bool _pushUSDXformOpToMayaXform(
                     xformop.GetName().GetText());
         }
     }
-    if (xValue.size()) {
+    if (!xValue.empty()) {
         if (opName==PxrUsdMayaXformStackTokens->shear) {
             _setMayaAttribute(MdagNode, xValue, yValue, zValue, timeArray, MString(opName.GetText()), "XY", "XZ", "YZ", context);
         } 
@@ -315,8 +315,8 @@ static bool _isIdentityMatrix(GfMatrix4d m)
     bool isIdentity=true;
     for (unsigned int i=0; i<4; i++) {
         for (unsigned int j=0; j<4; j++) {
-            if ((i==j && GfIsClose(m[i][j], 1.0, 1e-9)==false) ||
-                (i!=j && GfIsClose(m[i][j], 0.0, 1e-9)==false)) {
+            if ((i==j && !GfIsClose(m[i][j], 1.0, 1e-9)) ||
+                (i!=j && !GfIsClose(m[i][j], 0.0, 1e-9))) {
                 isIdentity=false; break;
             }
         }
@@ -392,7 +392,7 @@ static bool _pushUSDXformToMayaXform(
     }
 
     // All of these vectors should have the same size and greater than 0 to set their values
-    if (TxVal.size()==TyVal.size() && TxVal.size()==TzVal.size() && TxVal.size()>0) {
+    if (TxVal.size()==TyVal.size() && TxVal.size()==TzVal.size() && !TxVal.empty()) {
         _setMayaAttribute(MdagNode, TxVal, TyVal, TzVal, timeArray, MString("translate"), "X", "Y", "Z", context);
         _setMayaAttribute(MdagNode, RxVal, RyVal, RzVal, timeArray, MString("rotate"), "X", "Y", "Z", context);
         _setMayaAttribute(MdagNode, SxVal, SyVal, SzVal, timeArray, MString("scale"), "X", "Y", "Z", context);
@@ -452,8 +452,7 @@ PxrUsdMayaTranslatorXformable::Read(
             _pushUSDXformOpToMayaXform(xformop, opName, MdagNode, args, context);
         }
     } else {
-        if (_pushUSDXformToMayaXform(xformSchema, MdagNode, args, context) == 
-                false) {
+        if (!_pushUSDXformToMayaXform(xformSchema, MdagNode, args, context)) {
             TF_RUNTIME_ERROR(
                     "Unable to successfully decompose matrix at USD prim <%s>",
                     xformSchema.GetPath().GetText());

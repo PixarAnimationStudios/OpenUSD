@@ -50,7 +50,7 @@ std::mutex _sharedSessionLayersMutex;
 
 static
 void
-_OnMayaNewOrOpenSceneCallback(void* clientData)
+_OnMayaNewOrOpenSceneCallback(void*  /*clientData*/)
 {
     if (MFileIO::isImportingFile() || MFileIO::isReferencingFile()) {
         return;
@@ -125,7 +125,7 @@ UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& layerPath)
 SdfLayerRefPtr
 UsdMayaStageCache::GetSharedSessionLayer(
     const SdfPath& rootPath,
-    const std::map<std::string, std::string> variantSelections,
+    const std::map<std::string, std::string>& variantSelections,
     const TfToken& drawMode)
 {
     // Example key: "/Root/Path:modelingVariant=round|shadingVariant=red|:cards"

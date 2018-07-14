@@ -516,7 +516,7 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
 
             std::vector<std::string> primPathEltStrs =
                 TfStringTokenize(primPathMString.asChar(),"/");
-            if (primPathEltStrs.size() > 0) {
+            if (!primPathEltStrs.empty()) {
                 sessionLayer =
                     UsdUtilsStageCache::GetSessionLayerForVariantSelections(
                         TfToken(primPathEltStrs[0]), variantSelections);
@@ -1053,8 +1053,8 @@ UsdMayaProxyShape::closestPoint(
     const MVector& rayDirection,
     MPoint& theClosestPoint,
     MVector& theClosestNormal,
-    bool findClosestOnMiss,
-    double tolerance)
+    bool  /*findClosestOnMiss*/,
+    double  /*tolerance*/)
 {
     if (_sharedClosestPointDelegate) {
         GfRay ray(

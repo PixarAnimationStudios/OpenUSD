@@ -66,8 +66,8 @@ _RotMatToRotTriplet(
 static void
 _MatrixToVectorsWithPivotInvariant(
     const GfMatrix4d &m,
-    const GfVec3d pivotPosition,
-    const GfVec3d pivotOrientation,
+    const GfVec3d& pivotPosition,
+    const GfVec3d& pivotOrientation,
     GfVec3d *translation, 
     GfVec3d *rotation, 
     GfVec3d *scale, 

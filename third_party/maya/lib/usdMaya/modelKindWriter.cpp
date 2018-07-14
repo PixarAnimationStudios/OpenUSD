@@ -251,7 +251,7 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
         
         SdfPathVector ancestorPaths;
         path.GetParentPath().GetPrefixes(&ancestorPaths);
-        if (ancestorPaths.size() < 1) {
+        if (ancestorPaths.empty()) {
             continue;
         }
 

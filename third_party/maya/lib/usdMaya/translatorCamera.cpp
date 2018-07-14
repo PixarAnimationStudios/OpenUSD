@@ -291,7 +291,7 @@ bool
 _TranslateUsdAttributeToPlug(
         const UsdAttribute& usdAttr,
         const MFnCamera& cameraFn,
-        TfToken plugName,
+        const TfToken& plugName,
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context,
         const MDistance::Unit convertToUnit = MDistance::kMillimeters)

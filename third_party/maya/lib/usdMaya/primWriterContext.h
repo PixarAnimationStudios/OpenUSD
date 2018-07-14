@@ -110,11 +110,11 @@ public:
     /// The USD export process will attempt to "fix-up" kind metadata to ensure
     /// contiguous model hierarchy.
     PXRUSDMAYA_API
-    void SetModelPaths(const SdfPathVector& authoredPaths);
+    void SetModelPaths(const SdfPathVector& modelPaths);
 
     /// Overload of SetModelPaths() that moves the input vector.
     PXRUSDMAYA_API
-    void SetModelPaths(SdfPathVector&& authoredPaths);
+    void SetModelPaths(SdfPathVector&& modelPaths);
 
 private:
     const UsdTimeCode& _timeCode;

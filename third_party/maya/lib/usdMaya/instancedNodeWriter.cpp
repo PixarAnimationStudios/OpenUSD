@@ -193,7 +193,7 @@ PxrUsdMaya_InstancedNodeWriter::GetDagToUsdPathMapping() const
 }
 
 void
-PxrUsdMaya_InstancedNodeWriter::Write(const UsdTimeCode& usdTime)
+PxrUsdMaya_InstancedNodeWriter::Write(const UsdTimeCode&  /*usdTime*/)
 {
 }
 

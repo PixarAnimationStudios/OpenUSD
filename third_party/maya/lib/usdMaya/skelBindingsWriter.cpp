@@ -136,7 +136,7 @@ PxrUsdMaya_SkelBindingsWriter::_VerifyOrMakeSkelRoots(
         const _Entry& entry = pair.second;
         SdfPath skelRootPath =
             _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
-        success &= !skelRootPath.IsEmpty();
+        success = success && !skelRootPath.IsEmpty();
     }
     return success;
 }

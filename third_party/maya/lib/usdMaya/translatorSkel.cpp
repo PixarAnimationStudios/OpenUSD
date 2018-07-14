@@ -887,7 +887,7 @@ _SetVaryingJointInfluences(const MFnMesh& meshFn,
                            int numInfluencesPerPoint,
                            unsigned int numPoints)
 {
-    if(joints.size() == 0)
+    if (joints.empty())
         return true;
 
     MStatus status;

@@ -902,11 +902,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     aovLightSchema.GetUseThroughputAttr().Get(&lightUseThroughput);
 
     status = lightUseThroughputPlug.setValue(lightUseThroughput);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -1312,11 +1308,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     envDayLightSchema.GetZoneAttr().Get(&lightZone);
 
     status = lightZonePlug.setValue(lightZone);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -1546,11 +1538,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     shapingAPI.GetShapingIesAngleScaleAttr().Get(&lightProfileScale);
 
     status = lightProfileScalePlug.setValue(lightProfileScale);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -1756,11 +1744,7 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     shadowAPI.GetShadowFalloffGammaAttr().Get(&lightShadowFalloffGamma);
 
     status = lightShadowFalloffGammaPlug.setValue(lightShadowFalloffGamma);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 

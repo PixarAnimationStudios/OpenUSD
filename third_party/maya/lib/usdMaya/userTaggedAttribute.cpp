@@ -49,7 +49,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 PxrUsdMayaUserTaggedAttribute::PxrUsdMayaUserTaggedAttribute(
-        const MPlug plug,
+        const MPlug& plug,
         const std::string& name,
         const TfToken& type,
         const TfToken& interpolation,

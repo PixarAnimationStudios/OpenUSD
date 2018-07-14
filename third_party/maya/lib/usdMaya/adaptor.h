@@ -322,7 +322,7 @@ public:
         /// definition. The name may come from the registered aliases if one
         /// exists and is already present on the node.
         std::string _GetMayaAttrNameOrAlias(
-                const SdfAttributeSpecHandle attrSpec) const;
+                const SdfAttributeSpecHandle& attrSpec) const;
     };
 
     PXRUSDMAYA_API

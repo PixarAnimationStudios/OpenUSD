@@ -338,7 +338,7 @@ PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAn
 
 /// Convenience function to retrieve custom data
 PXRUSDMAYA_API
-bool GetBoolCustomData(PXR_NS::UsdAttribute obj, PXR_NS::TfToken key, bool defaultValue);
+bool GetBoolCustomData(const PXR_NS::UsdAttribute& obj, const PXR_NS::TfToken& key, bool defaultValue);
 
 // Compute the value of \p attr, returning true upon success.
 //

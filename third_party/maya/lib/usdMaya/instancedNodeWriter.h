@@ -37,8 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrUsdMaya_InstancedNodeWriter : public MayaPrimWriter {
 public:
     PxrUsdMaya_InstancedNodeWriter(
-        const MDagPath& srcPath,
-        const SdfPath& instancePath,
+        const MDagPath& mayaInstancePath,
+        const SdfPath& usdInstancePath,
         usdWriteJobCtx& ctx);
 
     bool ExportsGprims() const override;

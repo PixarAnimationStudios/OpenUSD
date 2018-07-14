@@ -519,7 +519,7 @@ MayaSkeletonWriter::Write(const UsdTimeCode &usdTime)
     // time code. We do want to run this @ default time also so that any
     // deviations from the rest pose are exported as the default values on the
     // SkelAnimation.
-    if (_animatedJoints.size() > 0) {
+    if (!_animatedJoints.empty()) {
 
         if (!_skelAnim) {
 

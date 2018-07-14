@@ -261,7 +261,7 @@ private:
 PXRUSDMAYA_API
 std::ostream& operator <<(
     std::ostream& out,
-    const PxrUsdMayaJobImportArgs& exportArgs);
+    const PxrUsdMayaJobImportArgs& importArgs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

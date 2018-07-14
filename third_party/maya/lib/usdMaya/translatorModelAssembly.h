@@ -81,7 +81,7 @@ struct PxrUsdMayaTranslatorModelAssembly
             const UsdPrim& prim,
             const std::string& assetIdentifier,
             const SdfPath& assetPrimPath,
-            MObject parentNode,
+            const MObject& parentNode,
             const PxrUsdMayaPrimReaderArgs& args,
             PxrUsdMayaPrimReaderContext* context,
             const TfToken& assemblyRep);

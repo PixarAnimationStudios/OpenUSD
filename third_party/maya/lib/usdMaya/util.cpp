@@ -1167,7 +1167,7 @@ PxrUsdMayaUtil::MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAn
     return usdPath;
 }
 
-bool PxrUsdMayaUtil::GetBoolCustomData(UsdAttribute obj, TfToken key, bool defaultValue)
+bool PxrUsdMayaUtil::GetBoolCustomData(const UsdAttribute& obj, const TfToken& key, bool defaultValue)
 {
     bool returnValue=defaultValue;
     VtValue data = obj.GetCustomDataByKey(key);

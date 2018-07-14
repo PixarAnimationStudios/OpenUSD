@@ -41,7 +41,7 @@ PxrUsdMayaUndoHelperCmd::~PxrUsdMayaUndoHelperCmd()
 }
 
 MStatus
-PxrUsdMayaUndoHelperCmd::doIt(const MArgList&)
+PxrUsdMayaUndoHelperCmd::doIt(const MArgList& /*args*/)
 {
     if (!_dgModifierFunc) {
         _undoable = false;

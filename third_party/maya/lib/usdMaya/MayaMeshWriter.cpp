@@ -434,7 +434,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     // opacities from the shaders assigned to the mesh and/or its faces.
     // If we find a displayColor color set, the shader colors and opacities
     // will be used to fill in unauthored/unpainted faces in the color set.
-    if (_GetExportArgs().exportDisplayColor || colorSetNames.size() > 0) {
+    if (_GetExportArgs().exportDisplayColor || !colorSetNames.empty()) {
         PxrUsdMayaUtil::GetLinearShaderColor(finalMesh,
                                              &shadersRGBData,
                                              &shadersAlphaData,

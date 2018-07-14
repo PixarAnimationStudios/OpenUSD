@@ -84,7 +84,7 @@ usdTranslatorExport::writer(const MFileObject &file,
 
             std::string argName(theOption[0].asChar());
             if (argName == "animation") {
-                exportAnimation = theOption[1].asInt();
+                exportAnimation = (theOption[1].asInt() != 0);
             }
             else if (argName == "startTime") {
                 timeInterval.SetMin(theOption[1].asDouble());
@@ -138,7 +138,7 @@ usdTranslatorExport::writer(const MFileObject &file,
         }
     }
     
-    if (dagPaths.size()) {
+    if (!dagPaths.empty()) {
         PxrUsdMayaJobExportArgs jobArgs =
                 PxrUsdMayaJobExportArgs::CreateFromDictionary(
                     userArgs, dagPaths, timeInterval);
@@ -175,8 +175,8 @@ usdTranslatorExport::writer(const MFileObject &file,
 MPxFileTranslator::MFileKind
 usdTranslatorExport::identifyFile(
         const MFileObject& file,
-        const char* buffer,
-        short size) const
+        const char*  /*buffer*/,
+        short  /*size*/) const
 {
     MFileKind retValue = kNotMyFileType;
     const MString fileName = file.fullName();
@@ -211,7 +211,7 @@ usdTranslatorExport::GetDefaultOptions()
             if (keyValue.second.IsHolding<bool>()) {
                 entries.push_back(TfStringPrintf("%s=%d",
                         keyValue.first.c_str(),
-                        keyValue.second.Get<bool>()));
+                        static_cast<int>(keyValue.second.Get<bool>())));
             }
             else if (keyValue.second.IsHolding<std::string>()) {
                 entries.push_back(TfStringPrintf("%s=%s",

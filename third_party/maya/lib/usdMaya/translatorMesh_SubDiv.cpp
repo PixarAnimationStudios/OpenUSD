@@ -138,7 +138,7 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
     VtArray<float> subdCornerSharpnesses;
     primSchema.GetCornerIndicesAttr().Get(&subdCornerIndices); // not animatable
     primSchema.GetCornerSharpnessesAttr().Get(&subdCornerSharpnesses); // not animatable
-    if (subdCornerIndices.size()) {
+    if (!subdCornerIndices.empty()) {
         if (subdCornerIndices.size() == subdCornerSharpnesses.size() ) {
             statusOK.clear();
             
@@ -201,7 +201,7 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
     primSchema.GetCreaseLengthsAttr().Get(&subdCreaseLengths);
     primSchema.GetCreaseIndicesAttr().Get(&subdCreaseIndices);
     primSchema.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses);
-    if (subdCreaseLengths.size()) {
+    if (!subdCreaseLengths.empty()) {
         if (subdCreaseLengths.size() == subdCreaseSharpnesses.size() ) {
             MUintArray   mayaCreaseEdgeIds;
             MDoubleArray mayaCreaseEdgeValues;

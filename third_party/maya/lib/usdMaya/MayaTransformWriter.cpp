@@ -101,13 +101,14 @@ setXformOp(const UsdGeomXformOp& op,
 // from if needed and set the XFormOps values
 static void 
 computeXFormOps(
-        const UsdGeomXformable& usdXformable, 
         const std::vector<AnimChannel>& animChanList, 
         const UsdTimeCode &usdTime,
         bool eulerFilter,
-        MayaTransformWriter::TokenRotationMap& previousRotates,
+        MayaTransformWriter::TokenRotationMap* previousRotates,
         UsdUtilsSparseValueWriter *valueWriter)
 {
+    TF_AXIOM(previousRotates);
+
     // Iterate over each AnimChannel, retrieve the default value and pull the
     // Maya data if needed. Then store it on the USD Ops
     for (const auto& animChannel : animChanList) {
@@ -144,14 +145,14 @@ computeXFormOps(
                     const TfToken& lookupName = animChannel.opName.IsEmpty() ?
                             UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType) :
                             animChannel.opName;
-                    auto findResult = previousRotates.find(lookupName);
-                    if (findResult == previousRotates.end()) {
+                    auto findResult = previousRotates->find(lookupName);
+                    if (findResult == previousRotates->end()) {
                         MEulerRotation::RotationOrder rotOrder =
                                 PxrUsdMayaXformStack::RotateOrderFromOpType(
                                         animChannel.usdOpType,
                                         MEulerRotation::kXYZ);
                         MEulerRotation currentRotate(value[0], value[1], value[2], rotOrder);
-                        previousRotates[lookupName] = currentRotate;
+                        (*previousRotates)[lookupName] = currentRotate;
                     }
                     else {
                         MEulerRotation& previousRotate = findResult->second;
@@ -164,7 +165,7 @@ computeXFormOps(
                         for (unsigned int i = 0; i<3; i++) {
                             value[i] = currentRotate[i];
                         }
-                        previousRotates[lookupName] = currentRotate;
+                        (*previousRotates)[lookupName] = currentRotate;
                     }
                 }
                 for (unsigned int i = 0; i<3; i++) {
@@ -187,7 +188,7 @@ _GatherAnimChannel(
         XFormOpType opType, 
         const MFnTransform& iTrans, 
         const TfToken& parentName,
-        MString xName, MString yName, MString zName, 
+        const MString& xName, const MString& yName, const MString& zName, 
         std::vector<AnimChannel>* oAnimChanList, 
         bool isWritingAnimation,
         bool setOpName)
@@ -477,8 +478,8 @@ void MayaTransformWriter::Write(const UsdTimeCode& usdTime)
     // PxrUsdMaya_FunctorPrimWriter), so accomodate those here.
     if (GetDagPath().hasFn(MFn::kTransform)) {
         if (UsdGeomXformable xformSchema = UsdGeomXformable(_usdPrim)) {
-            computeXFormOps(xformSchema, _animChannels, usdTime, 
-                    _GetExportArgs().eulerFilter, _previousRotates, 
+            computeXFormOps(_animChannels, usdTime, 
+                    _GetExportArgs().eulerFilter, &_previousRotates, 
                     _GetSparseValueWriter());
         }
         else {

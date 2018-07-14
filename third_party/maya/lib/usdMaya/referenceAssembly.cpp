@@ -339,11 +339,11 @@ UsdMayaReferenceAssembly::~UsdMayaReferenceAssembly()
 //
 
 MString UsdMayaReferenceAssembly::createRepresentation(
-    const MString& input,
-    const MString& type,
-    const MString& representation,
-    MDagModifier*  undoRedo,
-    MStatus*       status)
+    const MString&  /*input*/,
+    const MString&  /*type*/,
+    const MString&  /*representation*/,
+    MDagModifier*   /*undoRedo*/,
+    MStatus*        /*status*/)
 {
     // New representations cannot be created.
     return MString("");
@@ -354,7 +354,7 @@ MString UsdMayaReferenceAssembly::getActive() const
     return (_activeRep) ? _activeRep->getName() : MString("");
 }
 
-MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus* status) const
+MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus*  /*status*/) const
 {
     MStringArray repTypes;
     std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator it;
@@ -392,7 +392,7 @@ MStringArray UsdMayaReferenceAssembly::repTypes() const
     return repTypes;
 }
 
-MStatus UsdMayaReferenceAssembly::deleteRepresentation(const MString& representation)
+MStatus UsdMayaReferenceAssembly::deleteRepresentation(const MString&  /*representation*/)
 {
     return MS::kFailure;
 }
@@ -403,15 +403,15 @@ MStatus UsdMayaReferenceAssembly::deleteAllRepresentations()
 }
 
 
-MString UsdMayaReferenceAssembly::setRepName(const MString& representation,
-                                const MString& newName,
-                                MStatus*       ReturnStatus)
+MString UsdMayaReferenceAssembly::setRepName(const MString&  /*representation*/,
+                                const MString&  /*newName*/,
+                                MStatus*        /*ReturnStatus*/)
 {
     return MString("");
 }
 
-MStatus UsdMayaReferenceAssembly::setRepLabel(const MString& representation,
-                                 const MString& label)
+MStatus UsdMayaReferenceAssembly::setRepLabel(const MString&  /*representation*/,
+                                 const MString&  /*label*/)
 {
     return MS::kFailure;
 }

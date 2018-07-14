@@ -74,7 +74,7 @@ public:
 
     PXRUSDMAYA_API
     PxrUsdMayaUserTaggedAttribute(
-            MPlug plug,
+            const MPlug& plug,
             const std::string& name,
             const TfToken& type,
             const TfToken& interpolation,

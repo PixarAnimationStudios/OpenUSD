@@ -237,7 +237,7 @@ usdWriteJobCtx::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
                 /*exportRootVisibility*/ true,
                 &primWriters);
 
-        if (!primWriters.size()) {
+        if (primWriters.empty()) {
             _objectsToMasterPaths[handle] = _ExportAndRefPaths();
             return _ExportAndRefPaths();
         }
@@ -317,7 +317,7 @@ bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag) const
         }
     }
 
-    if (mArgs.GetFilteredTypeIds().size() > 0) {
+    if (!mArgs.GetFilteredTypeIds().empty()) {
         MFnDependencyNode mfnNode(ob);
         if (mArgs.GetFilteredTypeIds().find(mfnNode.typeId().id())
                 != mArgs.GetFilteredTypeIds().end()) {

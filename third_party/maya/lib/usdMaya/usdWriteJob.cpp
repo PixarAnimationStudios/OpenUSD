@@ -554,7 +554,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
                                 isActive=true; break;
                             }
                         }
-                        if (isActive==false) {
+                        if (!isActive) {
                             primsToDeactivate.push_back(usdPrim);
                             it.PruneChildren();
                         }
@@ -582,7 +582,7 @@ bool usdWriteJob::needToTraverse(const MDagPath& curDag)
     return mJobCtx.needToTraverse(curDag);
 }
 
-void usdWriteJob::perFrameCallback(double iFrame)
+void usdWriteJob::perFrameCallback(double  /*iFrame*/)
 {
     if (!mJobCtx.mArgs.melPerFrameCallback.empty()) {
         MGlobal::executeCommand(mJobCtx.mArgs.melPerFrameCallback.c_str(), true);

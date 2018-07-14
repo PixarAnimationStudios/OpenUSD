@@ -172,7 +172,7 @@ namespace {
     }
 
     bool _isValidAttr(const std::string& attrName) {
-        if (attrName.size() == 0) { return false; }
+        if (attrName.empty()) { return false; }
         if (_isInitialAttribute(attrName)) { return false; }
         if (_isCachedAttribute(attrName)) { return false; }
         return _supressedAttrs.find(attrName) == _supressedAttrs.end();

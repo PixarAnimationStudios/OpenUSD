@@ -117,7 +117,6 @@ MayaPrimWriter::_IsMergedShape() const
 static bool 
 _GetClassNamesToWrite(
         MObject mObj,
-        const UsdPrim& usdPrim,
         std::vector<std::string>* outClassNames)
 {
     std::vector<std::string> ret;
@@ -196,7 +195,6 @@ MayaPrimWriter::Write(const UsdTimeCode &usdTime)
         std::vector<std::string> classNames;
         if (_GetClassNamesToWrite(
                 GetDagPath().node(),
-                usdPrim,
                 &classNames)) {
             PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
         }

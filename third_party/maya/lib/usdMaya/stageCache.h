@@ -66,7 +66,7 @@ public:
     /// The stage is cached for the lifetime of the current Maya scene.
     static SdfLayerRefPtr GetSharedSessionLayer(
             const SdfPath& rootPath,
-            const std::map<std::string, std::string> variantSelections,
+            const std::map<std::string, std::string>& variantSelections,
             const TfToken& drawMode);
 };
 

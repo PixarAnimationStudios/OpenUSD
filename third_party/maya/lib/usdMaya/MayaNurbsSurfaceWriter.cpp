@@ -147,7 +147,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 }
             }
             if (AlphaData.size() > 0 && 
-                GfIsClose(AlphaData[0], 1.0, 1e-9)==false) {
+                !GfIsClose(AlphaData[0], 1.0, 1e-9)) {
                 UsdGeomPrimvar dispOpacity = primSchema.CreateDisplayOpacityPrimvar();
                 if (interpolation != dispOpacity.GetInterpolation()) {
                     dispOpacity.SetInterpolation(interpolation);
@@ -253,7 +253,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             // Extract CV location and weight
             sampPos[cvIndex].Set(cvArray[index].x, cvArray[index].y, cvArray[index].z);
             sampPosWeights[cvIndex] = cvArray[index].w;
-            if (GfIsClose(cvArray[index].w, 1.0, 1e-9)==false) {
+            if (!GfIsClose(cvArray[index].w, 1.0, 1e-9)) {
                 setWeights = true;
             }
             

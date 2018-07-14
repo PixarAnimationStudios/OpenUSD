@@ -54,7 +54,7 @@ public:
     /// Because it is called before the per-shading-engine loop, the shadingEngine
     /// in the passed PxrUsdMayaShadingModeExportContext will be a null MObject.
     PXRUSDMAYA_API
-    virtual void PreExport(PxrUsdMayaShadingModeExportContext* context) {};
+    virtual void PreExport(PxrUsdMayaShadingModeExportContext*  /*context*/) {};
 
     /// Called inside of a loop, per-shading-engine
     PXRUSDMAYA_API
@@ -67,7 +67,7 @@ public:
     /// Because it is called after the per-shading-engine loop, the shadingEngine
     /// in the passed PxrUsdMayaShadingModeExportContext will be a null MObject.
     PXRUSDMAYA_API
-    virtual void PostExport(const PxrUsdMayaShadingModeExportContext& context) {};
+    virtual void PostExport(const PxrUsdMayaShadingModeExportContext&  /*context*/) {};
 
 };
 
