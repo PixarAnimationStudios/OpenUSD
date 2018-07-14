@@ -121,12 +121,6 @@ void
 HdxDrawTargetRenderPass::Execute(
     HdRenderPassStateSharedPtr const &renderPassState)
 {
-    static const TfTokenVector DRAW_TARGET_RENDER_TAGS =
-    {
-        HdTokens->geometry,
-        HdxRenderTagsTokens->interactiveOnlyGeom
-    };
-
     if (!_drawTarget) {
         return;
     }
@@ -144,7 +138,7 @@ HdxDrawTargetRenderPass::Execute(
     glViewport(0, 0, resolution[0], resolution[1]);
 
     // Perform actual draw
-    _renderPass.Execute(renderPassState, DRAW_TARGET_RENDER_TAGS);
+    _renderPass.Execute(renderPassState, TfTokenVector());
 
     // restore viewport
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
