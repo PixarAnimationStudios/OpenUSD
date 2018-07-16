@@ -133,6 +133,7 @@ struct HdxRenderTaskParams : public HdTaskParams
         , stencilFailOp(HdStencilOpKeep)
         , stencilZFailOp(HdStencilOpKeep)
         , stencilZPassOp(HdStencilOpKeep)
+        , stencilEnable(false)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
         , geomStyle(HdGeomStylePolygons)
         , complexity(HdComplexityLow)
