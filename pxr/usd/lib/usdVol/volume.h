@@ -27,7 +27,7 @@
 /// \file usdVol/volume.h
 
 #include "pxr/pxr.h"
-#include "./api.h"
+#include "pxr/usd/usdVol/api.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -52,23 +52,29 @@ class SdfAssetPath;
 /// \class UsdVolVolume
 ///
 /// A renderable volume primitive. A volume is made up of any number
-/// of FieldBase primitive bound together in this volume. Each
+/// of FieldBase primitives bound together in this volume. Each
 /// FieldBase primitive is specified as a relationship with a
 /// namespace prefix of "field".
+/// 
+/// The relationship name is used by the renderer to associate
+/// individual fields with the named input parameters on the volume
+/// shader. Using this indirect approach to connecting fields to
+/// shader parameters (rather than using the field prim's name)
+/// allows a single field to be reused for different shader inputs, or
+/// to be used as different shader parameters when rendering different
+/// Volumes. This means that the name of the field prim is not
+/// relevant to its contribution to the volume prims which refer to
+/// it. Nor does the field prim's location in the scene graph have
+/// any relevance. Volumes may refer to fields anywhere in the
+/// scene graph.
 ///
 class UsdVolVolume : public UsdGeomGprim
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdVolVolume on UsdPrim \p prim .
     /// Equivalent to UsdVolVolume::Get(prim.GetStage(), prim.GetPath())
@@ -137,6 +143,13 @@ public:
     static UsdVolVolume
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDVOL_API
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -160,6 +173,57 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    // --------------------------------------------------------------------- //
+    /// \name Field Attachment and Inspection
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Return a map of field relationship names to the fields themselves.
+    /// This map provides all the information that should be needed to tie
+    /// fields to shader parameters and render this volume.
+    ///
+    /// The field relationship names that server as the map keys will have
+    /// the field namespace stripped from them.
+    USDVOL_API
+    std::map<TfToken, SdfPath> GetFieldRelationships() const;
+
+    /// Checks if there is an existing relationship to a field with a given
+    /// relationship name.
+    ///
+    /// The name lookup automatically applies the field relationship
+    /// namespacing, if it isn't specified in the name token.
+    USDVOL_API
+    bool HasFieldRelationship(const TfToken &name) const;
+
+    /// Creates a relationship on this volume that targets the specified field.
+    /// If an existing relationship exists with the same name, it is replaced
+    /// (since only one target is allowed for each named relationship).
+    ///
+    /// Returns the created relationship so that it's validity can be verified.
+    ///
+    /// The name lookup automatically applies the field relationship
+    /// namespacing, if it isn't specified in the name token.
+    USDVOL_API
+    UsdRelationship CreateFieldRelationship(const TfToken &name,
+                                            const SdfPath &fieldPath) const;
+
+    /// Eliminates an existing field relationship on this volume.
+    ///
+    /// Returns true if the relationship existed, false if it did not. In other
+    /// words the return value indicates whether the volume prim was changed.
+    ///
+    /// The name lookup automatically applies the field relationship
+    /// namespacing, if it isn't specified in the name token.
+    USDVOL_API
+    bool RemoveFieldRelationship(const TfToken &name) const;
+
+private:
+    /// Return \p name prepended with the field namespace, if it isn't
+    /// already prefixed.
+    ///
+    /// Does not validate name as a legal relationship identifier.
+    static TfToken _MakeNamespaced(const TfToken& name);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -77,8 +77,7 @@ public:
 
 private:
     bool _GatherVolumeData(UsdPrim const& prim, 
-			   SdfPathVector *fieldProperties,
-			   SdfPathVector *fields) const;
+			   std::map<TfToken, SdfPath> *fieldMap) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

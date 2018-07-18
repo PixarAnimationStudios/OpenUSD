@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,10 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/field.h"
-#include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-
-#include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

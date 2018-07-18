@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "./fieldBase.h"
+#include "pxr/usd/usdVol/fieldBase.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -54,6 +54,11 @@ UsdVolFieldBase::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdVolFieldBase(stage->GetPrimAtPath(path));
 }
 
+
+/* virtual */
+UsdSchemaType UsdVolFieldBase::_GetSchemaType() const {
+    return UsdVolFieldBase::schemaType;
+}
 
 /* static */
 const TfType &

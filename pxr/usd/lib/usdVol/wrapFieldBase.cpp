@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "./fieldBase.h"
+#include "pxr/usd/usdVol/fieldBase.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -65,14 +65,6 @@ void wrapUsdVolFieldBase()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,

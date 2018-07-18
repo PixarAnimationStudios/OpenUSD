@@ -24,9 +24,21 @@ over "GLOBAL" (
 class Volume "Volume" (
     inherits = </Gprim>
     doc = """A renderable volume primitive. A volume is made up of any number
-             of FieldBase primitive bound together in this volume. Each
+             of FieldBase primitives bound together in this volume. Each
              FieldBase primitive is specified as a relationship with a
-             namespace prefix of "field"."""
+             namespace prefix of "field".
+
+             The relationship name is used by the renderer to associate
+             individual fields with the named input parameters on the volume
+             shader. Using this indirect approach to connecting fields to
+             shader parameters (rather than using the field prim's name)
+             allows a single field to be reused for different shader inputs, or
+             to be used as different shader parameters when rendering different
+             Volumes. This means that the name of the field prim is not
+             relevant to its contribution to the volume prims which refer to
+             it. Nor does the field prim's location in the scene graph have
+             any relevance. Volumes may refer to fields anywhere in the
+             scene graph."""
 )
 {
 }
@@ -44,13 +56,19 @@ class "FieldAsset" (
 )
 {
     asset filePath (
-	doc = """An asset path attribute that points to a file on disk."""
+	doc = """An asset path attribute that points to a file on disk.
+                 For each supported file format, a separate FieldAsset
+                 subclass is required. Any further information required to
+                 extract the field from the file (such as a name or index to
+                 choose a single field from a file that can store multiple
+                 fields) will be defined on the FieldAsset subclass."""
     )
 }
 
 class Field3DAsset "Field3DAsset" (
     inherits = </FieldAsset>
-    doc = """Field3D field primitive."""
+    doc = """Field3D field primitive. The FieldAsset filePath attribute must
+             specify a file in the Field3D format on disk."""
 )
 {
     token fieldName (
@@ -59,14 +77,16 @@ class Field3DAsset "Field3DAsset" (
     )
 
     int fieldIndex (
-	doc = """Numeric index to disambiguate between multiple fields stored
-                 in the same Field3D file."""
+	doc = """A Field3D file can contain multiple fields with the same
+                 name. This attribute is an index used to disambiguate
+                 between these multiple fields with the same name."""
     )
 }
 
 class OpenVDBAsset "OpenVDBAsset" (
     inherits = </FieldAsset>
-    doc = """OpenVDB field primitive."""
+    doc = """OpenVDB field primitive. The FieldAsset filePath attribute must
+             specify a file in the OpenVDB format on disk."""
 )
 {
     token fieldName (

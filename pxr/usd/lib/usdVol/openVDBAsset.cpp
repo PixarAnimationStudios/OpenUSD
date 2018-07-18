@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "./openVDBAsset.h"
+#include "pxr/usd/usdVol/openVDBAsset.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -72,6 +72,11 @@ UsdVolOpenVDBAsset::Define(
     }
     return UsdVolOpenVDBAsset(
         stage->DefinePrim(path, usdPrimTypeName));
+}
+
+/* virtual */
+UsdSchemaType UsdVolOpenVDBAsset::_GetSchemaType() const {
+    return UsdVolOpenVDBAsset::schemaType;
 }
 
 /* static */

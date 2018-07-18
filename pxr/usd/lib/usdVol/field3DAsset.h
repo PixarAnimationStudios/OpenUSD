@@ -27,11 +27,11 @@
 /// \file usdVol/field3DAsset.h
 
 #include "pxr/pxr.h"
-#include "./api.h"
-#include "./fieldAsset.h"
+#include "pxr/usd/usdVol/api.h"
+#include "pxr/usd/usdVol/fieldAsset.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "./tokens.h"
+#include "pxr/usd/usdVol/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -52,7 +52,8 @@ class SdfAssetPath;
 
 /// \class UsdVolField3DAsset
 ///
-/// Field3D field primitive.
+/// Field3D field primitive. The FieldAsset filePath attribute must
+/// specify a file in the Field3D format on disk.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdVolTokens.
@@ -62,16 +63,10 @@ class SdfAssetPath;
 class UsdVolField3DAsset : public UsdVolFieldAsset
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdVolField3DAsset on UsdPrim \p prim .
     /// Equivalent to UsdVolField3DAsset::Get(prim.GetStage(), prim.GetPath())
@@ -140,6 +135,13 @@ public:
     static UsdVolField3DAsset
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDVOL_API
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -178,8 +180,9 @@ public:
     // --------------------------------------------------------------------- //
     // FIELDINDEX 
     // --------------------------------------------------------------------- //
-    /// Numeric index to disambiguate between multiple fields stored
-    /// in the same Field3D file.
+    /// A Field3D file can contain multiple fields with the same
+    /// name. This attribute is an index used to disambiguate
+    /// between these multiple fields with the same name.
     ///
     /// \n  C++ Type: int
     /// \n  Usd Type: SdfValueTypeNames->Int

@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "./volume.h"
+#include "pxr/usd/usdVol/volume.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -69,14 +69,6 @@ void wrapUsdVolVolume()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -117,6 +109,16 @@ void wrapUsdVolVolume()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetFieldRelationships", &UsdVolVolume::GetFieldRelationships,
+             return_value_policy<TfPyMapToDictionary>())
+        .def("HasFieldRelationship", &UsdVolVolume::HasFieldRelationship,
+             arg("name"))
+        .def("CreateFieldRelationship", &UsdVolVolume::CreateFieldRelationship,
+             (arg("name"), arg("fieldPath")))
+        .def("RemoveFieldRelationship", &UsdVolVolume::RemoveFieldRelationship,
+             arg("name"))
+        ;
 }
 
 }

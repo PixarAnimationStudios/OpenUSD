@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "./openVDBAsset.h"
+#include "pxr/usd/usdVol/openVDBAsset.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -75,14 +75,6 @@ void wrapUsdVolOpenVDBAsset()
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,

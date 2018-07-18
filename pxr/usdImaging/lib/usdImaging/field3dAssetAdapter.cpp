@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,11 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/field3dAssetAdapter.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/indexProxy.h"
-#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

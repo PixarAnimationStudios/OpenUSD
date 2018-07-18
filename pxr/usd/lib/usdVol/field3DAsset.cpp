@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "./field3DAsset.h"
+#include "pxr/usd/usdVol/field3DAsset.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -72,6 +72,11 @@ UsdVolField3DAsset::Define(
     }
     return UsdVolField3DAsset(
         stage->DefinePrim(path, usdPrimTypeName));
+}
+
+/* virtual */
+UsdSchemaType UsdVolField3DAsset::_GetSchemaType() const {
+    return UsdVolField3DAsset::schemaType;
 }
 
 /* static */

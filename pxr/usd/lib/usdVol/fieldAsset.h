@@ -27,11 +27,11 @@
 /// \file usdVol/fieldAsset.h
 
 #include "pxr/pxr.h"
-#include "./api.h"
-#include "./fieldBase.h"
+#include "pxr/usd/usdVol/api.h"
+#include "pxr/usd/usdVol/fieldBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "./tokens.h"
+#include "pxr/usd/usdVol/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -57,16 +57,10 @@ class SdfAssetPath;
 class UsdVolFieldAsset : public UsdVolFieldBase
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::AbstractTyped;
 
     /// Construct a UsdVolFieldAsset on UsdPrim \p prim .
     /// Equivalent to UsdVolFieldAsset::Get(prim.GetStage(), prim.GetPath())
@@ -110,6 +104,13 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDVOL_API
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -127,6 +128,11 @@ public:
     // FILEPATH 
     // --------------------------------------------------------------------- //
     /// An asset path attribute that points to a file on disk.
+    /// For each supported file format, a separate FieldAsset
+    /// subclass is required. Any further information required to
+    /// extract the field from the file (such as a name or index to
+    /// choose a single field from a file that can store multiple
+    /// fields) will be defined on the FieldAsset subclass.
     ///
     /// \n  C++ Type: SdfAssetPath
     /// \n  Usd Type: SdfValueTypeNames->Asset
