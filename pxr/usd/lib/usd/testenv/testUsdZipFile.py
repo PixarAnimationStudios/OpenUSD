@@ -29,9 +29,12 @@ import zipfile
 from pxr import Usd
 
 class TestUsdZipFile(unittest.TestCase):
-    def _ValidateSourceAndZippedFile(self, srcFile, zipFile, fileInZip):
+    def _ValidateSourceAndZippedFile(self, srcFile, zipFile, fileInZip, 
+                                     fixLineEndings=False):
         with open(srcFile, "rb") as f:
             srcData = bytearray(f.read())
+            if fixLineEndings:
+                srcData = srcData.replace("\r\n", "\n")
 
         if isinstance(zipFile, Usd.ZipFile):
             self.assertEqual(
@@ -52,12 +55,19 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertIsNone(zf.GetFile("nonexistent.txt"))
         self.assertIsNone(zf.GetFileInfo("nonexistent.txt"))
 
+        # test_reader.usdz was created with text files with Unix-style
+        # line endings. Fix up line endings in the baseline files to
+        # accommodate this, in case those files had line ending
+        # translations applied.
+        fixLineEndings = True
+
         fileInfo = zf.GetFileInfo("a.txt")
         self.assertEqual(fileInfo.dataOffset, 64)
         self.assertEqual(fileInfo.size, 82)
         self.assertEqual(fileInfo.uncompressedSize, 82)
         self.assertEqual(fileInfo.compressionMethod, 0)
-        self._ValidateSourceAndZippedFile("src/a.txt", zf, "a.txt")
+        self._ValidateSourceAndZippedFile(
+            "src/a.txt", zf, "a.txt", fixLineEndings)
 
         fileInfo = zf.GetFileInfo("b.png")
         self.assertEqual(fileInfo.dataOffset, 192)
@@ -78,7 +88,8 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.size, 87)
         self.assertEqual(fileInfo.uncompressedSize, 87)
         self.assertEqual(fileInfo.compressionMethod, 0)
-        self._ValidateSourceAndZippedFile("src/sub/d.txt", zf, "sub/d.txt")
+        self._ValidateSourceAndZippedFile(
+            "src/sub/d.txt", zf, "sub/d.txt", fixLineEndings)
         
     def test_Writer(self):
         """Test Usd.ZipFileWriter"""
@@ -104,10 +115,18 @@ class TestUsdZipFile(unittest.TestCase):
         zf = Usd.ZipFile.Open("test_writer.usdz")
         self.assertEqual(zf.GetFileNames(), ["src/a.txt", "b.png"])
 
+        # Since we're writing files into a .usdz and then extracting
+        # and comparing them to the original file, we don't need to
+        # do any line ending fix-ups.
+        dontFixLineEndings = False
+
+        def _GetFileSize(file):
+            return os.stat(file).st_size
+
         fileInfo = zf.GetFileInfo("src/a.txt")
         self.assertEqual(fileInfo.dataOffset, 64)
-        self.assertEqual(fileInfo.size, 82)
-        self.assertEqual(fileInfo.uncompressedSize, 82)
+        self.assertEqual(fileInfo.size, _GetFileSize("src/a.txt"))
+        self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.txt"))
         self.assertEqual(fileInfo.compressionMethod, 0)
 
         fileInfo = zf.GetFileInfo("b.png")
@@ -116,7 +135,8 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.uncompressedSize, 7228)
         self.assertEqual(fileInfo.compressionMethod, 0)
 
-        self._ValidateSourceAndZippedFile("src/a.txt", zf, "src/a.txt")
+        self._ValidateSourceAndZippedFile(
+            "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
 
         # Verify that the data offset for all files in the archive are
@@ -130,7 +150,8 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(zf.namelist(), ["src/a.txt", "b.png"])
         self.assertIsNone(zf.testzip())
 
-        self._ValidateSourceAndZippedFile("src/a.txt", zf, "src/a.txt")
+        self._ValidateSourceAndZippedFile(
+            "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
             
     def test_WriterDiscard(self):
