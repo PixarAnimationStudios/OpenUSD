@@ -23,6 +23,7 @@ pxr_library(ar
         resolverContext.h
         resolverContextBinder.h
         resolverScopedCache.h
+        threadLocalScopedCache.h
         defineResolver.h
         defineResolverContext.h
 

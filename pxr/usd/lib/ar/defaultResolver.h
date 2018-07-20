@@ -30,6 +30,7 @@
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/threadLocalScopedCache.h"
 
 #include <tbb/enumerable_thread_specific.h>
 
@@ -178,7 +179,8 @@ public:
 
 private:
     struct _Cache;
-    using _CachePtr = std::shared_ptr<_Cache>;
+    using _PerThreadCache = ArThreadLocalScopedCache<_Cache>;
+    using _CachePtr = _PerThreadCache::CachePtr;
     _CachePtr _GetCurrentCache();
 
     const ArDefaultResolverContext* _GetCurrentContext();
@@ -188,10 +190,7 @@ private:
 private:
     ArDefaultResolverContext _fallbackContext;
 
-    using _CachePtrStack = std::vector<_CachePtr>;
-    using _PerThreadCachePtrStack = 
-        tbb::enumerable_thread_specific<_CachePtrStack>;
-    _PerThreadCachePtrStack _threadCacheStack;
+    _PerThreadCache _threadCache;
 
     using _ContextStack = std::vector<const ArDefaultResolverContext*>;
     using _PerThreadContextStack = 

@@ -339,47 +339,20 @@ void
 ArDefaultResolver::BeginCacheScope(
     VtValue* cacheScopeData)
 {
-    // cacheScopeData is held by ArResolverScopedCache instances
-    // but is only populated by this function, so we know it must 
-    // be empty (when constructing a regular ArResolverScopedCache)
-    // or holding on to a _CachePtr (when constructing an 
-    // ArResolverScopedCache that shares data with another one).
-    TF_VERIFY(cacheScopeData &&
-              (cacheScopeData->IsEmpty() ||
-               cacheScopeData->IsHolding<_CachePtr>()));
-
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-
-    if (cacheScopeData->IsHolding<_CachePtr>()) {
-        cacheStack.push_back(cacheScopeData->UncheckedGet<_CachePtr>());
-    }
-    else {
-        if (cacheStack.empty()) {
-            cacheStack.push_back(std::make_shared<_Cache>());
-        }
-        else {
-            cacheStack.push_back(cacheStack.back());
-        }
-    }
-
-    *cacheScopeData = cacheStack.back();
+    _threadCache.BeginCacheScope(cacheScopeData);
 }
 
 void 
 ArDefaultResolver::EndCacheScope(
     VtValue* cacheScopeData)
 {
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-    if (TF_VERIFY(!cacheStack.empty())) {
-        cacheStack.pop_back();
-    }
+    _threadCache.EndCacheScope(cacheScopeData);
 }
 
 ArDefaultResolver::_CachePtr 
 ArDefaultResolver::_GetCurrentCache()
 {
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-    return (cacheStack.empty() ? _CachePtr() : cacheStack.back());
+    return _threadCache.GetCurrentCache();
 }
 
 void 
