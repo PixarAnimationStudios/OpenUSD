@@ -79,10 +79,10 @@ public:
     bool HasAuthoredWeight() const;
 
     USDSKEL_API
-    bool GetPoints(VtVec3fArray* points) const;
+    bool GetOffsets(VtVec3fArray* offsets) const;
 
     USDSKEL_API
-    bool SetPoints(const VtVec3fArray& points) const;
+    bool SetOffsets(const VtVec3fArray& offsets) const;
 
     /// Test whether a given UsdAttribute represents a valid Inbetween, which
     /// implies that creating a UsdSkelInbetweenShape from the attribute will

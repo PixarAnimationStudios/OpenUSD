@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
@@ -59,7 +59,7 @@ class SdfAssetPath;
 /// documentation for more information.
 /// 
 ///
-class UsdSkelAnimation : public UsdGeomXformable
+class UsdSkelAnimation : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -72,7 +72,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSkelAnimation(const UsdPrim& prim=UsdPrim())
-        : UsdGeomXformable(prim)
+        : UsdTyped(prim)
     {
     }
 
@@ -80,7 +80,7 @@ public:
     /// Should be preferred over UsdSkelAnimation(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSkelAnimation(const UsdSchemaBase& schemaObj)
-        : UsdGeomXformable(schemaObj)
+        : UsdTyped(schemaObj)
     {
     }
 

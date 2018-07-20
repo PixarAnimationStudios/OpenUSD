@@ -38,6 +38,21 @@ using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
+namespace {
+
+
+VtVec3fArray
+_GetOffsets(const UsdSkelInbetweenShape& self)
+{
+    VtVec3fArray points;
+    self.GetOffsets(&points);
+    return points;
+}
+
+
+} // namespace
+
+
 void wrapUsdSkelInbetweenShape()
 {
     using This = UsdSkelInbetweenShape;
@@ -51,8 +66,8 @@ void wrapUsdSkelInbetweenShape()
         .def("SetWeight", &This::SetWeight, arg("weight"))
         .def("HasAuthoredWeight", &This::HasAuthoredWeight)
 
-        .def("GetPoints", &This::GetPoints)
-        .def("SetPoints", &This::SetPoints, arg("points"))
+        .def("GetOffsets", &_GetOffsets)
+        .def("SetOffsts", &This::SetOffsets, arg("offsets"))
 
         .def("IsInbetween", &This::IsInbetween, arg("attr"))
         .staticmethod("IsInbetween")

@@ -15,6 +15,7 @@ def SkelRoot "Root" (
 
     def Skeleton "Skeleton"
     {
+        uniform matrix4d[] bindTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (2, 0, 0, 1) )]
         uniform token[] joints = ["joint1", "joint1/joint2", "joint1/joint2/joint3"]
         uniform matrix4d[] restTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (1, 0, 0, 1) )]
 

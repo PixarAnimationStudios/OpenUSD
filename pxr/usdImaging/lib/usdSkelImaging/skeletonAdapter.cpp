@@ -146,18 +146,10 @@ UsdSkelImagingSkeletonAdapter::TrackVariability(
     }
 
     // Discover time-varying transforms.
-    if (!_IsTransformVarying(prim, HdChangeTracker::DirtyTransform,
-                             UsdImagingTokens->usdVaryingXform,
-                             timeVaryingBits)) {
-        if (const UsdSkelAnimQuery& animQuery =
-            skelData->skelQuery.GetAnimQuery()) {
-            
-            if (animQuery.TransformMightBeTimeVarying()) {
-                (*timeVaryingBits) |= HdChangeTracker::DirtyTransform;
-                HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingExtent);
-            }
-        }
-    }
+    _IsTransformVarying(prim,
+                        HdChangeTracker::DirtyTransform,
+                        UsdImagingTokens->usdVaryingXform,
+                        timeVaryingBits);
 
     valueCache->GetVisible(cachePath) = GetVisible(prim, time);
     // Discover time-varying visibility.
@@ -205,16 +197,7 @@ UsdSkelImagingSkeletonAdapter::UpdateForTime(
     }
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
-
-        // World transform of a skeleton instance is:
-        //    animTransform * primLocalToWorldTransform
-        GfMatrix4d xform;
-        if(skelData->skelQuery.ComputeAnimTransform(&xform, time)) {
-            xform *= GetTransform(prim, time);
-        } else {
-            xform = GetTransform(prim, time);
-        }
-        valueCache->GetTransform(cachePath) = xform;
+        valueCache->GetTransform(cachePath) = GetTransform(prim, time);
     }
 
     if (requestedBits & HdChangeTracker::DirtyExtent) {
@@ -427,8 +410,7 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputeTopologyAndRestState()
     // While computing topology, we also compute the 'rest pose'
     // of the bone mesh, along with joint influences.
     VtMatrix4dArray xforms; 
-    skelQuery.ComputeJointSkelTransforms(&xforms, UsdTimeCode::Default(),
-                                         /*atRest*/ true);
+    skelQuery.GetJointWorldBindTransforms(&xforms);
 
     UsdSkelImagingComputeBonePoints(skelQuery.GetTopology(), xforms,
                                     numPoints, &_boneMeshPoints);

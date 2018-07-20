@@ -86,11 +86,6 @@ public:
     USDSKEL_API
     UsdPrim GetPrim() const;
 
-    /// Compute a root transform of the entire animation at \p time.
-    USDSKEL_API
-    bool ComputeTransform(GfMatrix4d* xform,
-                          UsdTimeCode time=UsdTimeCode::Default()) const;
-
     /// Compute joint transforms in joint-local space.
     /// Transforms are returned in the order specified by the joint ordering
     /// of the animation primitive itself.
@@ -144,13 +139,6 @@ public:
     /// \sa UsdAttribute::ValueMightBeTimeVayring
     USDSKEL_API
     bool JointTransformsMightBeTimeVarying() const;
-
-    /// Return true if it possible, but not certain, that the root transform
-    /// of the animation query changes over time, false otherwise.
-    ///
-    /// \sa UsdAttribute::ValueMightBeTimeVayring
-    USDSKEL_API
-    bool TransformMightBeTimeVarying() const;
 
     /// Returns an array of tokens describing the ordering of joints in the
     /// animation.

@@ -46,16 +46,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-GfMatrix4d
-_ComputeTransform(const UsdSkelAnimQuery& self, UsdTimeCode time)
-{
-    GfMatrix4d xform;
-    if(!self.ComputeTransform(&xform, time))
-        xform.SetIdentity();
-    return xform;
-}
-
-
 VtMatrix4dArray
 _ComputeJointLocalTransforms(const UsdSkelAnimQuery& self, UsdTimeCode time)
 {
@@ -122,9 +112,6 @@ void wrapUsdSkelAnimQuery()
 
         .def("GetPrim", &This::GetPrim)
 
-        .def("ComputeTransform", &_ComputeTransform,
-             (arg("time")=UsdTimeCode::Default()))
-
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default()))
 
@@ -143,8 +130,6 @@ void wrapUsdSkelAnimQuery()
         
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
-
-        .def("TransformMightBeTimeVarying", &This::TransformMightBeTimeVarying)
 
         .def("GetJointOrder", &This::GetJointOrder)
 

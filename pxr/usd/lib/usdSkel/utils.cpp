@@ -1259,14 +1259,8 @@ _BakeSkinnedPoints(const UsdPrim& prim,
             GfMatrix4d gprimLocalToWorld =
                 xfCache->GetLocalToWorldTransform(prim);
 
-            GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeLocalToWorldTransform(
-                   &skelLocalToWorld, xfCache)) {
-                TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
-                    "[UsdSkelBakeSkinning]   Failed computing "
-                    "skel local-to-world transform\n");
-                return false;
-            }
+            GfMatrix4d skelLocalToWorld =
+                xfCache->GetLocalToWorldTransform(skelQuery.GetPrim());
 
             GfMatrix4d skelToGprimXf =
                 skelLocalToWorld*gprimLocalToWorld.GetInverse();
@@ -1352,14 +1346,8 @@ _BakeSkinnedTransform(const UsdPrim& prim,
 
             xfCache->SetTime(time);
 
-            GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeLocalToWorldTransform(
-                   &skelLocalToWorld, xfCache)) {
-                TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
-                    "[UsdSkelBakeSkinning]   Failed computing "
-                    "skel local-to-world transform\n");
-                return false;
-            }
+            GfMatrix4d skelLocalToWorld =
+                xfCache->GetLocalToWorldTransform(skelQuery.GetPrim());
 
             GfMatrix4d newLocalXform;
             

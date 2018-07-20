@@ -80,12 +80,6 @@ public:
    
     virtual bool JointTransformsMightBeTimeVarying() const = 0;
 
-    virtual bool TransformMightBeTimeVarying() const = 0;
-
-    virtual bool
-    ComputeTransform(GfMatrix4d* xform,
-                     UsdTimeCode time=UsdTimeCode::Default()) const = 0;
-
     virtual bool
     ComputeBlendShapeWeights(VtFloatArray* weights,
                              UsdTimeCode time=UsdTimeCode::Default()) const = 0;

@@ -43,17 +43,6 @@ UsdSkelAnimQuery::GetPrim() const
 
 
 bool
-UsdSkelAnimQuery::ComputeTransform(GfMatrix4d* xform,
-                                       UsdTimeCode time) const
-{
-    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
-        return _impl->ComputeTransform(xform, time);
-    }
-    return false;
-}
-
-
-bool
 UsdSkelAnimQuery::ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                               UsdTimeCode time) const
 {
@@ -125,16 +114,6 @@ UsdSkelAnimQuery::JointTransformsMightBeTimeVarying() const
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
         return _impl->JointTransformsMightBeTimeVarying();
-    }
-    return false;
-}
-
-
-bool
-UsdSkelAnimQuery::TransformMightBeTimeVarying() const
-{
-    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
-        return _impl->TransformMightBeTimeVarying();
     }
     return false;
 }

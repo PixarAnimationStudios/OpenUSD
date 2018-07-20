@@ -31,6 +31,20 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace {
+
+
+enum _Flags {
+    _HaveBindPose = 0x1,
+    _HaveRestPose = 0x2,
+    _SkelRestXformsComputed = 0x4,
+    _WorldInverseBindXformsComputed = 0x8
+};
+
+
+} // namespace
+
+
 UsdSkel_SkelDefinitionRefPtr
 UsdSkel_SkelDefinition::New(const UsdSkelSkeleton& skel)
 {
@@ -45,7 +59,7 @@ UsdSkel_SkelDefinition::New(const UsdSkelSkeleton& skel)
 
 
 UsdSkel_SkelDefinition::UsdSkel_SkelDefinition()
-    :  _computeFlags(0)
+    :  _flags(0)
 {}
 
 
@@ -55,57 +69,78 @@ UsdSkel_SkelDefinition::_Init(const UsdSkelSkeleton& skel)
     TRACE_FUNCTION();
 
     skel.GetJointsAttr().Get(&_jointOrder);
+
+    _topology = UsdSkelTopology(_jointOrder);
+    std::string reason;
+    if (!_topology.Validate(&reason)) {
+        TF_WARN("%s -- invalid topology: %s",
+                skel.GetPrim().GetPath().GetText(), reason.c_str());
+        return false;
+    }
+
+    skel.GetBindTransformsAttr().Get(&_jointWorldBindXforms);
+    if (_jointWorldBindXforms.size() == _jointOrder.size()) {
+        _flags = _flags|_HaveBindPose;
+    } else {
+        TF_WARN("%s -- size of 'bindTransforms' attr [%zu] does not "
+                "match the number of joints in the 'joints' attr [%zu].",
+                skel.GetPrim().GetPath().GetText(),
+                _jointWorldBindXforms.size(), _jointOrder.size());
+    }
+
     skel.GetRestTransformsAttr().Get(&_jointLocalRestXforms);
-
-    if(_jointLocalRestXforms.size() == _jointOrder.size()) {
-
-        _topology = UsdSkelTopology(_jointOrder);
-
-        std::string reason;
-        if(_topology.Validate(&reason)) {
-            _skel = skel;
-            return true;
-        } else {
-            TF_WARN("%s -- invalid topology: %s",
-                    skel.GetPrim().GetPath().GetText(), reason.c_str());
-        }
+    if (_jointLocalRestXforms.size() == _jointOrder.size()) {
+        _flags = _flags|_HaveRestPose;
     } else {
         TF_WARN("%s -- size of 'restTransforms' attr [%zu] does not "
-                "match the number of joints in the 'joints' rel [%zu].",
+                "match the number of joints in the 'joints' attr [%zu].",
                 skel.GetPrim().GetPath().GetText(),
                 _jointLocalRestXforms.size(), _jointOrder.size());
+    }
+    
+    _skel = skel;
+    return true;
+}
+
+
+bool
+UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4dArray* xforms)
+{
+    int flags = _flags;
+    
+    if (flags&_HaveRestPose) {
+
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+
+        *xforms = _jointLocalRestXforms;
+        return true;
     }
     return false;
 }
 
 
-namespace {
-
-
-enum _ComputeFlags {
-    _SkelXformsComputed = 0x1,
-    _SkelInverseXformsComputed = 0x2
-};
-
-
-} // namespace
-
-
-const VtMatrix4dArray&
-UsdSkel_SkelDefinition::GetJointLocalRestTransforms() const
+bool
+UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4dArray* xforms)
 {
-    return _jointLocalRestXforms;
-}
+    int flags = _flags;
+    if (flags&_HaveRestPose) {
 
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
 
-const VtMatrix4dArray&
-UsdSkel_SkelDefinition::GetJointSkelRestTransforms()
-{
-    int flags = _computeFlags;
-    if(ARCH_UNLIKELY(!(flags&_SkelXformsComputed))) {
-        _ComputeJointSkelRestTransforms();
+        if (ARCH_UNLIKELY(!(flags&_SkelRestXformsComputed))) {
+
+            _ComputeJointSkelRestTransforms();
+        }
+        *xforms = _jointSkelRestXforms;
+        return true;
     }
-    return _jointSkelRestXforms;
+    return false;
 }
 
 
@@ -123,37 +158,67 @@ UsdSkel_SkelDefinition::_ComputeJointSkelRestTransforms()
     /// so this should not have failed.
     TF_VERIFY(success);
 
-    _computeFlags = _computeFlags|_SkelXformsComputed;
+    _flags = _flags|_SkelRestXformsComputed;
 }
 
 
-const VtMatrix4dArray&
-UsdSkel_SkelDefinition::GetJointSkelInverseRestTransforms()
+bool
+UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4dArray* xforms)
 {
-    int flags = _computeFlags;
-    if(ARCH_UNLIKELY(!(flags&_SkelInverseXformsComputed))) {
-        _ComputeJointSkelInverseRestTransforms();
+    int flags = _flags;
+    
+    if (flags&_HaveBindPose) {
+
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+
+        *xforms = _jointWorldBindXforms;
+        return true;
     }
-    return _jointSkelInverseRestXforms;
+    return false;
+}
+
+
+bool
+UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
+    VtMatrix4dArray* xforms)
+{
+    int flags = _flags;
+    if (flags&_HaveBindPose) {
+
+        if (ARCH_UNLIKELY(!(flags&_WorldInverseBindXformsComputed))) {
+
+            if (!xforms) {
+                TF_CODING_ERROR("'xforms' pointer is null.");
+                return false;
+            }
+
+            _ComputeJointWorldInverseBindTransforms();
+
+        }
+        *xforms = _jointWorldInverseBindXforms;
+        return true;
+    }
+    return false;
 }
 
 
 void
-UsdSkel_SkelDefinition::_ComputeJointSkelInverseRestTransforms()
+UsdSkel_SkelDefinition::_ComputeJointWorldInverseBindTransforms()
 {
     TRACE_FUNCTION();
 
-    // XXX: querying skel-space xforms may require a lock.
-    // Be careful not to lock early.
-    VtMatrix4dArray xforms = GetJointSkelRestTransforms();
-
     std::lock_guard<std::mutex> lock(_mutex);
+
+    VtMatrix4dArray xforms(_jointWorldBindXforms);
     for(auto& xf : xforms) {
         xf = xf.GetInverse();
     }
-    _jointSkelInverseRestXforms = xforms;
+    _jointWorldInverseBindXforms = xforms;
 
-    _computeFlags = _computeFlags|_SkelInverseXformsComputed;
+    _flags = _flags|_WorldInverseBindXformsComputed;
 }
 
 

@@ -58,10 +58,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdSkelTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdSkelTokens->blendShapes);
+///     gprim.GetMyTokenValuedAttr().Set(UsdSkelTokens->bindTransforms);
 /// \endcode
 struct UsdSkelTokensType {
     USDSKEL_API UsdSkelTokensType();
+    /// \brief "bindTransforms"
+    /// 
+    /// UsdSkelSkeleton
+    const TfToken bindTransforms;
     /// \brief "blendShapes"
     /// 
     /// UsdSkelAnimation

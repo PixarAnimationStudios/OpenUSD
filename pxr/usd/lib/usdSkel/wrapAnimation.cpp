@@ -97,7 +97,7 @@ void wrapUsdSkelAnimation()
 {
     typedef UsdSkelAnimation This;
 
-    class_<This, bases<UsdGeomXformable> >
+    class_<This, bases<UsdTyped> >
         cls("Animation");
 
     cls

@@ -123,10 +123,12 @@ PxrUsdMayaPrimReaderSkeleton::Read(PxrUsdMayaPrimReaderContext* context)
         VtArray<MObject> joints;
         if (PxrUsdMayaTranslatorSkel::CreateJointHierarchy(
                 skelQuery, parentNode, _GetArgs(), context, &joints)) {
-            
-            // Add a bind pose. This is not necessary for skinning to function
-            // in Maya, but may be a requirement of some exporters. The dagPose
-            // command also functions based on the definition of the bind pose.
+
+            // Add a dagPose node to hold the rest pose.
+            // This is not necessary for skinning to function i Maya, but is not
+            // necessary in order to properly round-trip the Skeleton's
+            // restTransforms, and is a requirement of some exporters.
+            // The dagPose command also will not work without this.  
             MObject bindPose;
             if (PxrUsdMayaTranslatorSkel::CreateBindPose(
                     skelQuery, joints, context, &bindPose)) {
@@ -225,8 +227,8 @@ PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree(
                     }
                 }
 
-                MObject bindPose =
-                    PxrUsdMayaTranslatorSkel::GetBindPose(skelQuery, context);
+                MObject bindPose
+                    = PxrUsdMayaTranslatorSkel::GetBindPose(skelQuery, context);
 
                 // Add a skin cluster to skin this prim.
                 PxrUsdMayaTranslatorSkel::CreateSkinCluster(

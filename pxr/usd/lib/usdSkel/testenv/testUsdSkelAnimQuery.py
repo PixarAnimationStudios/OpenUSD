@@ -86,11 +86,6 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
             anim.GetRotationsAttr().Set(r, frame)
             anim.GetScalesAttr().Set(s, frame)
 
-        animRootXforms = [_RandomXf() for _ in xrange(numFrames)]
-        animRootXfAttr = anim.MakeMatrixXform()
-        for frame,xf in enumerate(animRootXforms):
-            animRootXfAttr.Set(xf, frame)
-
         weightsPerFrame = [[random.random() for _ in xrange(len(blendshapes))]
                            for _ in xrange(numFrames)]
         
@@ -106,7 +101,6 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         self.assertEqual(query.GetPrim(), anim.GetPrim())
         self.assertEqual(query.GetJointOrder(), joints)
         self.assertEqual(query.GetBlendShapeOrder(), blendshapes)
-        self.assertTrue(query.TransformMightBeTimeVarying())
         self.assertTrue(query.JointTransformsMightBeTimeVarying())
         self.assertEqual(query.GetJointTransformTimeSamples(),
                          list(xrange(numFrames)))
@@ -116,12 +110,7 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
             computedXforms = query.ComputeJointLocalTransforms(frame)
             self.assertArrayIsClose(computedXforms, xforms)
 
-        for frame,xf in enumerate(animRootXforms):
-            computedXf = query.ComputeTransform(frame)
-            self.assertTrue(Gf.IsClose(computedXf, xf, 1e-5))
-
         for frame,weights in enumerate(weightsPerFrame):
-            
             computedWeights = query.ComputeBlendShapeWeights(frame)
             self.assertArrayIsClose(computedWeights, weights)
 

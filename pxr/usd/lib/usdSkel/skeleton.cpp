@@ -120,6 +120,23 @@ UsdSkelSkeleton::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsel
 }
 
 UsdAttribute
+UsdSkelSkeleton::GetBindTransformsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->bindTransforms);
+}
+
+UsdAttribute
+UsdSkelSkeleton::CreateBindTransformsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->bindTransforms,
+                       SdfValueTypeNames->Matrix4dArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelSkeleton::GetRestTransformsAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->restTransforms);
@@ -154,6 +171,7 @@ UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->joints,
+        UsdSkelTokens->bindTransforms,
         UsdSkelTokens->restTransforms,
     };
     static TfTokenVector allNames =
@@ -208,31 +226,13 @@ _ComputeExtent(const UsdGeomBoundable& boundable,
     UsdSkelSkeletonQuery skelQuery =
         skelCache.GetSkelQuery(UsdSkelSkeleton(boundable.GetPrim()));
 
-    // We compute joint transforms in skel space, which is given as:
-    //
-    //    animationSource.animTransform * skelPrim.localToWorldTransform
-    //
-    // UsdGeomBoundable, however, wants extent with respect to the skel
-    // primitive itself (I.e., with the animation source's transform baked in).
-    // Compute a root transform that accounts for the animation source.
-    GfMatrix4d rootXform;
-    if (skelQuery.ComputeAnimTransform(&rootXform, time)) {
-        if(transform)
-            rootXform *= *transform;
-    } else {
-        if(transform)
-            rootXform = *transform;
-        else
-            rootXform.SetIdentity();
-    }
-    
     if (TF_VERIFY(skelQuery)) {
         // Compute skel-space joint transforms.
         // The extent for this skel is based on the pivots of all joints.
         VtMatrix4dArray skelXforms;
         if (skelQuery.ComputeJointSkelTransforms(&skelXforms, time)) {
             return UsdSkelComputeJointsExtent(skelXforms, extent,
-                                              /*padding*/ 0, &rootXform);
+                                              /*padding*/ 0, transform);
         }
     }
     return true;

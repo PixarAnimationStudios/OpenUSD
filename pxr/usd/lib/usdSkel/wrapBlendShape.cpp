@@ -145,7 +145,8 @@ WRAP_CUSTOM {
         .def("GetInbetween", &This::GetInbetween, arg("name"))
         .def("HasInbetween", &This::HasInbetween, arg("name"))
         
-        .def("GetInbetweens", &This::GetInbetweens)
+        .def("GetInbetweens", &This::GetInbetweens,
+             return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens)
         ;
 }

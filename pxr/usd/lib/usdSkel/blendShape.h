@@ -181,7 +181,7 @@ public:
     // --------------------------------------------------------------------- //
     // POINTINDICES 
     // --------------------------------------------------------------------- //
-    /// **Optional property**>. Indices into the original mesh that
+    /// **Optional property**. Indices into the original mesh that
     /// correspond to the values in *offsets* and of any inbetween shapes. If
     /// authored, the number of elements must be equal to the number of elements
     /// in the *offsets* array.

@@ -462,56 +462,6 @@ the animation at `</Anim1>`, and one at `</A/C>`, referencing the animation
 at `</Anim2>`. The _skel:animationSource_ relationship at `</A/B>` has no
 effect.
 
-\subsection UsdSkel_BindingAPI_JointInfluences BindingAPI: Joint Influences
-
-Joint influences for skinning points are defined via primvars,
-_primvars:skel:jointIndices_ and _primvars:skel:jointWeights_.
-The _jointIndices_ primvar provides an array giving the joint index of an
-influence, while the _jointWeights_ primvar provides a weight value
-corresponding to each of those indices.
-
-The indices in the _jointIndices_ primvar refer to joints based on the
-bound \ref UsdSkel_JointOrder "joint order". If the _skel:joints_
-attribute has been set, each index refers to the corresponding target
-of that token array. Otherwise, each index refers to a joint using the
-joint order of the bound _Skeleton_.
-
-In the common case, these primvars are configured with _vertex_ interpolation,
-and provide a run of N influences per point, where N is the _elementSize_
-of the primvars. See UsdGeomPrimvar for more information on the meaning
-of primvar interpolation and elementSize.
-
-No restrictions are placed on the _elementSize_ when defining joint influences.
-Because such a limit may vary among different DCC applications, we feel that
-it is inappropriate to hard-code any such restrictions at the file storage
-level. Instead, for clients that require a strict limit on the number of
-influences per point, UsdSkel provides helper method,
-\ref UsdSkelResizeInfluences, that can be used to enforce such limits
-within each client, as necessary.
-
-
-See the \ref UsdSkel_CE_Skinning "skinning coding examples" for an example
-of how resolved joint influences may be read.
-
-
-\subsection UsdSkel_BindingAPI_RigidDeformations BindingAPI: Rigid Deformations
-
-In addition to defining influences that vary per point, joint influences may be
-also defined with _constant_ interpolation. In this form, the _jointIndices_
-and _jointWeights_ arrays hold N scalar values, which apply to all points.
-Constant joint influences are supported both as a form of storage optimization,
-as well as for the sake of encoding _rigid deformations_. By identifying
-rigid deformations, some clients may be able to retain instancing properties
-that would otherwise be lost by skinning, by affecting only the transform of
-an instance rather than the deforming points of that instance.
-
-It is not expected that all clients know how to deal with rigid deformations.
-For those clients that don't understand rigid deformations, UsdSkel provides
-helper methods UsdSkelSkinningQuery::ComputeVaryingJointInfluences and
-\ref UsdSkelExpandConstantInfluencesToVarying which both provide a means of
-querying rigid deformations as if they had been encoded with influences
-per-point.
-
 \subsection UsdSkel_BindingAPI_StoringInfluences BindingAPI: Storing Influences
 
 To ensure correct skinning, joint influences should be normalized when they

@@ -23,7 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 import unittest, os
-
 from pxr import Gf, Usd, UsdSkel
 
 from maya import cmds
@@ -126,6 +125,9 @@ class testUsdImportSkeleton(unittest.TestCase):
         bindPose = _GetDepNode(name)
         self.assertEqual(bindPose.typeName, "dagPose")
 
+        bindXforms = usdSkelQuery.GetJointWorldBindTransforms()
+        restXforms = usdSkelQuery.ComputeJointLocalTransforms(atRest=True)
+
         for i,joint in enumerate(joints):
 
             parentIdx = usdSkelQuery.GetTopology().GetParentIndices()[i]
@@ -135,10 +137,15 @@ class testUsdImportSkeleton(unittest.TestCase):
                 destination=False, source=True, plugs=True)
             self.assertEqual(connections, [u"%s.message"%joint.name()])
 
-            connections = cmds.listConnections(
-                "%s.worldMatrix[%d]"%(name, i),
-                destination=False, source=True, plugs=True)
-            self.assertEqual(connections, [u"%s.bindPose"%joint.name()])
+            worldMatrix = Gf.Matrix4d(
+                *cmds.getAttr("%s.worldMatrix[%d]"%(name,i)))
+
+            self.assertTrue(Gf.IsClose(bindXforms[i], worldMatrix, 1e-5))
+
+            xformMatrix = Gf.Matrix4d(
+                *cmds.getAttr("%s.xformMatrix[%d]"%(name,i)))
+            
+            self.assertTrue(Gf.IsClose(restXforms[i], xformMatrix, 1e-5))
 
             connections = cmds.listConnections(
                 "%s.parents[%d]"%(name, i),

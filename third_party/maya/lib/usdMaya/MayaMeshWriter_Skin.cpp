@@ -230,83 +230,21 @@ _GetCompressedSkinWeights(
 }
 
 
-// Brief primer on our transformation stack:
-//
-// A skin cluster defines the following important spaces:
-//  geomMatrix: inclusive matrix of geom at time of bind
-//  bindPreMatrix: array of *inverse* inclusive joint matrices
-//  matrix: array of inclusive joint matrices
-// For clarity, we will refer to these as geomWorldRestXf,
-// jointWorldInverseRestXf, and jointWorldXf, respectively.
-//
-// To match Maya's deformations in USD, we must determine the complete transform
-// for transforming a point given in geometry space into world space, as
-// deformed by a joint, and match it.
-// Skinning in Maya happens in the space of the geometry. The resulting deformed
-// mesh is then connected as the input mesh of another shape, the transform of
-// which  further affect the result.
-// If a transform affected both the transform of the mesh that holds the result
-// of the deformation, as well as a joint that influences the mesh, we would end
-// up double transforming. Because of this, a rig typically must be structured
-// to prevent such double transformations -- for example, by specifying
-// inheritsTransform=false on geometry prims.
-// Moreover, the resulting mesh transform is usually equivalent to the
-// geomWorldBindXf (or geomMatrix), since if it is not, deformations tend to get
-// a little wonky and disjoint.
-// Accounting for the full transformation stack, a point given in geometry space
-// may be deformed and transformed into world space as follows:
-//
-//   geomWorldRestXf * jointWorldInverseRestXf * jointWorldXf * 
-//      inv(geomWorldRestXf) * geomWorldXf
-//
-// Where geomWorldXf is the inclusive matrix of the resulting deformation,
-// -- a post-deformation transform -- and as previously stated, it is
-// common that:
-//
-//   geomWorldXf = geomWorldRestXf
-//
-// Such that the last two terms cancel (_usually_!).
-// In UsdSkel, the equivalent xform for deforming a point is:
-//
-//   geomBindTransform * inv(jointSkelSpaceRestXf) *
-//      jointSkelSpaceXf * skelLocalToWorld
-//
-// Note that the only post-deformation UsdSkel defines is the global skeleton
-// instance transform, and affects every object skinned by the skeleton.
-// This implies that in order to preserve any of the post-deformations of Maya,
-// we must define a unique skeleton instance per mesh.
-// That is quite undesirable! At the same time, a per-mesh post-deformation
-// transform is not something that is widely supported across different DCC
-// apps; if we could encode it in USD, we would have hard time interchanging
-// the result. Because multi-app interchange is one of UsdSkel's primary goals,
-// and since it is usually the case that a deformed mesh's transform is
-// equivalent to its the 'geomMatrix', we choose to ignore these
-// post-deformation transforms.
-//
-// So, we assume 'geomWorldXf = geomWorldRestXf', and have:
-//
-//  geomWorldRestXf * jointWorldInverseRestXf * jointWorldXf =
-//   geomBindTransform * inv(jointSkelSpaceRestXf) *
-//      jointSkelSpaceXf * skelLocalToWorld
-//
-// The world space transformation of a joint in UsdSkel is defined as:
-//
-//      jointWorldXf = jointSkelSpaceXf * skelLocalToWorld
-//
-// Plugging this into the equation above, we get:
-//
-//  geomWorldRestXf * jointWorldInverseRestXf * jointWorldXf =
-//      geomBindTransform * inv(jointSkelSpaceRestXf) * jointWorldXf
-//
-// From this, it's clear that:
-//
-//      geomBindTransform = geomWorldRestXf
-//      jointWorldInverseRestXf = inv(jointSkelSpaceRestXf)
-//
-
-
 /// Check if a skinned primitive has an unsupported post-deformation
 /// transformation. These transformations aren't represented in UsdSkel.
+///
+/// When a SkinCluster deforms meshes, the results are transformed back into the
+/// space of the mesh. The output is then plugged up to the final mesh, which
+/// has its own transform. Usually this change in transformation -- from putting
+/// the deformation results back into the space of the source mesh, and then
+/// transforming the result by the output mesh -- share the same transformation,
+/// such that there's no overall change in transformation. This is not always
+/// the case. In particular, 'broken' rigs may have the transformations out of
+/// sync (the result of which being that the deformed meshes drift away from the
+/// skeleton that drives them).
+///
+/// We have no nice way of encoding a mesh-specific post-deformation transform
+/// in UsdSkel, and so can only try and warn the user.
 static void
 _WarnForPostDeformationTransform(const SdfPath& path,
                                  const MDagPath& deformedMeshDag,

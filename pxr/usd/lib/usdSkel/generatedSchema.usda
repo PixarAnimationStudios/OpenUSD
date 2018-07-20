@@ -121,6 +121,10 @@ class Skeleton "Skeleton" (
     '''
 )
 {
+    uniform matrix4d[] bindTransforms (
+        doc = """Specifies the bind-pose transforms of each joint in
+        **world space**, in the ordering imposed by *joints*."""
+    )
     float3[] extent (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
@@ -202,10 +206,11 @@ class Skeleton "Skeleton" (
         a better tool for dynamic, interactive complexity management.'''
     )
     uniform matrix4d[] restTransforms (
-        doc = """Specifies rest transforms of each joint in 
-        **joint-local space**, in the ordering imposed by *joints*.
-        Joint transforms should all be given as orthogonal, affine
-        transformations."""
+        doc = """Specifies the rest-pose transforms of each joint in
+        **local space**, in the ordering imposed by *joints*. This provides
+        fallback values for joint transforms when a Skeleton either has no
+        bound animation source, or when that animation source only contains
+        animation for a subset of a Skeleton's joints."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -256,66 +261,6 @@ class SkelAnimation "SkelAnimation" (
         Skeleton primitives. The order of the joints as listed here may
         vary from the order of joints on the Skeleton itself."""
     )
-    rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
-    )
-    uniform token purpose = "default" (
-        allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = '''Purpose is a concept we have found useful in our pipeline for 
-        classifying geometry into categories that can each be independently
-        included or excluded from traversals of prims on a stage, such as
-        rendering or bounding-box computation traversals.  The fallback
-        purpose, default indicates that a prim has "no special purpose"
-        and should generally be included in all traversals.  Subtrees rooted
-        at a prim with purpose render should generally only be included
-        when performing a "final quality" render.  Subtrees rooted at a prim
-        with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
-        subtrees rooted at a prim with purpose guide should generally
-        only be included when an interactive application has been explicitly
-        asked to "show guides". 
-        
-        In the previous paragraph, when we say "subtrees rooted at a prim",
-        we mean the most ancestral or tallest subtree that has an authored,
-        non-default opinion.  If the purpose of </RootPrim> is set to 
-        "render", then the effective purpose of </RootPrim/ChildPrim> will
-        be "render" even if that prim has a different authored value for
-        purpose.  <b>See ComputePurpose() for details of how purpose 
-        inherits down namespace</b>.
-        
-        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
-        accept combinations of included purposes as an input.
-        
-        Purpose render can be useful in creating "light blocker"
-        geometry for raytracing interior scenes.  Purposes render and
-        proxy can be used together to partition a complicated model
-        into a lightweight proxy representation for interactive use, and a
-        fully realized, potentially quite heavy, representation for rendering.
-        One can use UsdVariantSets to create proxy representations, but doing
-        so requires that we recompose parts of the UsdStage in order to change
-        to a different runtime level of detail, and that does not interact
-        well with the needs of multithreaded rendering. Purpose provides us with
-        a better tool for dynamic, interactive complexity management.'''
-    )
     quatf[] rotations (
         doc = """Joint-local unit quaternion rotations of all affected joints, 
         in 32-bit precision. Array length should match the size of the 
@@ -329,26 +274,6 @@ class SkelAnimation "SkelAnimation" (
     float3[] translations (
         doc = """Joint-local translations of all affected joints. Array length 
         should match the size of the *joints* attribute."""
-    )
-    token visibility = "inherited" (
-        allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
-    )
-    uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
     )
 }
 
@@ -374,66 +299,6 @@ class PackedJointAnimation "PackedJointAnimation" (
         Skeleton primitives. The order of the joints as listed here may
         vary from the order of joints on the Skeleton itself."""
     )
-    rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
-    )
-    uniform token purpose = "default" (
-        allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = '''Purpose is a concept we have found useful in our pipeline for 
-        classifying geometry into categories that can each be independently
-        included or excluded from traversals of prims on a stage, such as
-        rendering or bounding-box computation traversals.  The fallback
-        purpose, default indicates that a prim has "no special purpose"
-        and should generally be included in all traversals.  Subtrees rooted
-        at a prim with purpose render should generally only be included
-        when performing a "final quality" render.  Subtrees rooted at a prim
-        with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
-        subtrees rooted at a prim with purpose guide should generally
-        only be included when an interactive application has been explicitly
-        asked to "show guides". 
-        
-        In the previous paragraph, when we say "subtrees rooted at a prim",
-        we mean the most ancestral or tallest subtree that has an authored,
-        non-default opinion.  If the purpose of </RootPrim> is set to 
-        "render", then the effective purpose of </RootPrim/ChildPrim> will
-        be "render" even if that prim has a different authored value for
-        purpose.  <b>See ComputePurpose() for details of how purpose 
-        inherits down namespace</b>.
-        
-        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
-        accept combinations of included purposes as an input.
-        
-        Purpose render can be useful in creating "light blocker"
-        geometry for raytracing interior scenes.  Purposes render and
-        proxy can be used together to partition a complicated model
-        into a lightweight proxy representation for interactive use, and a
-        fully realized, potentially quite heavy, representation for rendering.
-        One can use UsdVariantSets to create proxy representations, but doing
-        so requires that we recompose parts of the UsdStage in order to change
-        to a different runtime level of detail, and that does not interact
-        well with the needs of multithreaded rendering. Purpose provides us with
-        a better tool for dynamic, interactive complexity management.'''
-    )
     quatf[] rotations (
         doc = """Joint-local unit quaternion rotations of all affected joints, 
         in 32-bit precision. Array length should match the size of the 
@@ -448,26 +313,6 @@ class PackedJointAnimation "PackedJointAnimation" (
         doc = """Joint-local translations of all affected joints. Array length 
         should match the size of the *joints* attribute."""
     )
-    token visibility = "inherited" (
-        allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
-    )
-    uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
-    )
 }
 
 class "BindingAPI" (
@@ -481,14 +326,11 @@ class "BindingAPI" (
 )
 {
     matrix4d primvars:skel:geomBindTransform (
-        doc = """Encodes the transform that positions gprims in the space in
-        which it is bound to a Skeleton.  If the transform is identical for a
-        group of gprims that share a common ancestor, the transform may be
-        authored on the ancestor, to \"inherit\" down to all the leaf gprims.
-        The *geomBindTransform* is defined as moving a gprim from its own
-        object space (untransformed by the gprim's own transform) out into
-        Skeleton space. If this transform is unset, an identity transform
-        is used instead."""
+        doc = '''Encodes the bind-time world space transforms of the prim.
+        If the transform is identical for a group of gprims that share a common
+        ancestor, the transform may be authored on the ancestor, to "inherit"
+        down to all the leaf gprims. If this transform is unset, an identity
+        transform is used instead.'''
     )
     int[] primvars:skel:jointIndices (
         doc = """Indices into the *joints* attribute of the closest
@@ -554,7 +396,7 @@ class BlendShape "BlendShape" (
         base pose, provides the target shape."""
     )
     uniform uint[] pointIndices (
-        doc = """**Optional property**>. Indices into the original mesh that
+        doc = """**Optional property**. Indices into the original mesh that
         correspond to the values in *offsets* and of any inbetween shapes. If
         authored, the number of elements must be equal to the number of elements
         in the *offsets* array."""

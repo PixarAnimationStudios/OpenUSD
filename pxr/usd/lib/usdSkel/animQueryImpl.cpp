@@ -70,11 +70,6 @@ public:
     
     virtual bool JointTransformsMightBeTimeVarying() const override;
 
-    virtual bool TransformMightBeTimeVarying() const override;
-
-    virtual bool ComputeTransform(GfMatrix4d* xform,
-                                  UsdTimeCode time) const override;
-
     virtual bool ComputeBlendShapeWeights(VtFloatArray* weights,
                                           UsdTimeCode time) const override;
 
@@ -82,7 +77,6 @@ public:
 private:
     UsdSkelAnimation _anim;
     UsdAttributeQuery _translations, _rotations, _scales, _blendShapeWeights;
-    UsdGeomXformable::XformQuery _xformQuery;
 };
 
 
@@ -92,8 +86,7 @@ UsdSkel_SkelAnimationQueryImpl::UsdSkel_SkelAnimationQueryImpl(
       _translations(anim.GetTranslationsAttr()),
       _rotations(anim.GetRotationsAttr()),
       _scales(anim.GetScalesAttr()),
-      _blendShapeWeights(anim.GetBlendShapeWeightsAttr()),
-      _xformQuery(anim)
+      _blendShapeWeights(anim.GetBlendShapeWeightsAttr())
 {
     if(TF_VERIFY(anim)) {
         anim.GetJointsAttr().Get(&_jointOrder);
@@ -184,24 +177,6 @@ UsdSkel_SkelAnimationQueryImpl::JointTransformsMightBeTimeVarying() const
     return _translations.ValueMightBeTimeVarying() ||
            _rotations.ValueMightBeTimeVarying() ||
            _scales.ValueMightBeTimeVarying();
-}
-
-
-bool
-UsdSkel_SkelAnimationQueryImpl::TransformMightBeTimeVarying() const
-{
-    return _xformQuery.TransformMightBeTimeVarying();
-}
-
-
-bool
-UsdSkel_SkelAnimationQueryImpl::ComputeTransform(GfMatrix4d* xform,
-                                                        UsdTimeCode time) const
-{
-    if(TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.")) {
-        return _xformQuery.GetLocalTransformation(xform, time);
-    }
-    return false;
 }
 
 

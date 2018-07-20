@@ -4,35 +4,19 @@
 
 \section UsdSkel_ScopeAndIntent Overview and Purpose
 
-It is a goal of UsdSkel to provide both a robust means of interchange
-for clients like game studios, as well as to provide the foundation for
-performant, scalable interchange of large-scale crowds, wherein undeformed
-geometry and skeletal animations directly feed preview and final-quality
-render engines, pulling from sequencing libraries of animations.
-
-Additionally, our interests are not exclusively around the problem of the
-interchange of skinned meshes. The interchange of an *animated skeleton* is
-also important, as there are many contexts where the interchange of joint
-animations is the only concern.
+UsdSkel provides an encoding of simple skeletons and blend shapes, with the goal
+of interchanging basic skinned models both for game studios as well for the
+performant, scalable interchange of large-scale crowds.
 
 At a very high level, the interchange of skinned models involves identifying
 the following properties:
 
-- The **topology** of a skeleton that drives a model.
-- The **animated joints transforms** corresponding to a skeleton.
-- A **rest pose** of a skeleton (a requirement of some DCC apps,
-  as well as a debugging aid).
-- A set of **joint influences** on each geometry primitive, describing
-  how to skin the primitive.
-- The set of **skinnable prims** that should be skinned by a given skeleton.
-
-
-The aim of UsdSkel is to provide a robust, modular and scalable encoding of
-these properties. Further, it is desired that skinned models may be encoded
-without requiring restructuring of a scene graph, such that the same
-<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-CompositionArcs">composition arcs</a>
-apply to primitives, regardless of whether those primitives consist of normal
-baked meshes, or UsdSkel-skinned primitives.
+- The parent<->child relationships between a set of joints.
+- A set of animated joint transforms.
+- The bind pose of a skeleton
+- Joint influences on each affected geometry primitive, describing
+  how joints affect that primitive.
+- A mapping of skinned prims to a Skeleton that affects them.
 
 \subsection UsdSkel_IsNot What UsdSkel Is Not
 
@@ -42,6 +26,8 @@ beyond the scope of USD's core concerns.
 
 In other words, UsdSkel neither currently encodes nor has plans to later
 support inverse kinematics (of any form), or any additional deformers.
+But of course, users are free to develop their own customschemas for
+interchanging arbitrary deformers.
 
 
 \section UsdSkel_Term Terminology
@@ -51,32 +37,24 @@ common terminology:
 
 - \anchor UsdSkel_Term_Skeleton **Skeleton**:
 
-  An encoding of the topological aspects of skinning, defined in terms
-  of an ordered set of _Joints_.
+  An encoding of an animated joint hierarchy.
+  A Skeleton may additional hold other properties that affect deformations,
+  such as weights for a set of blend shapes.
 
-  A _Skeleton_ itself is a shared unit, and does not itself describe any
-  animation.
-
-  A _Skeleton_ also defines a _Rest Pose_, which provides fallback 
-  values for a sparse _Animation_, and which is also used in computing
-  the change in joint transformation, as is needed for skinning.
+  A _Skeleton_ defines an explicit encoding of a _Bind Pose_, which provides
+  fallback values for a sparse joint animation, and which is also used
+  in compute the change in joint transformation, as is needed for skinning.
+  Other applications may sometimes refer to the _Bind Pose_ as the _Rest Pose_.
 
 - \anchor UsdSkel_Term_SkeletonTopology **Skeleton Topology**:
-  
-  The distinct components of a _Skeleton_ that describe a joint hierarchy.
+
+  The topology is the description of the paren<->child relationships of
+  all joints in a joint hierarchy.
 
 - **Animation**:
 
   An encoding of the motion of a _Skeleton's_ _Joints_ over time. 
   A skeleton is animated by application of an _Animation_.
-
-- \anchor UsdSkel_Term_SkeletonInstance **Skeleton Instance**:
-
-  This refers to the notion of a bound _Skeleton_ which may also
-  have an _Animation_.
-  In UsdSkel, we consider each _skel:skeleton_ binding relationship,
-  as set through the UsdSkelBindingAPI schema, as identifying a
-  _Skeleton Instance_.
 
 - **Binding**:
   
@@ -131,11 +109,11 @@ referenced:
   
   The root transform of an _Animation_.
 
-- **Skeleton Instance Transform**
+- **Skeleton Transform**
 
-  The transform defined on a _Skeleton Instance_.
+  The transform defined on a _Skeleton_.
   This is concatenated against a skeleton's _Animation Transform_ when
-  computing a complete local-to-world transform of a skeleton instance.
+  computing a complete local-to-world transform of a skeleton.
 
 - \anchor UsdSkel_Transforms_GeomBindTransform **Geom Bind Transform**:
 
@@ -165,12 +143,12 @@ The _World Space_ transform of a joint is computed as:
 
 \code
     jointWorldSpaceTransform = jointLocalSpaceTransform *
-        parentJointSkelSpaceTransform * skelInstanceLocalToWorldTransform
+        parentJointSkelSpaceTransform * animTransform * skelLocalToWorldTransform
 \endcode
 
-Where _skelInstanceLocalToWorldTransform_ is computed as:
+Where _skelLocalToWorldTransform_ is computed as:
 \code
-    skelInstanceLocalToWorldTransform = animTransform * skelInstanceTransform
+    skelLocalToWorldTransform = animTransform * skelTransform
 \endcode
     
 

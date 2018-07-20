@@ -26,6 +26,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdSkelTokensType::UsdSkelTokensType() :
+    bindTransforms("bindTransforms", TfToken::Immortal),
     blendShapes("blendShapes", TfToken::Immortal),
     blendShapeWeights("blendShapeWeights", TfToken::Immortal),
     joints("joints", TfToken::Immortal),
@@ -45,6 +46,7 @@ UsdSkelTokensType::UsdSkelTokensType() :
     translations("translations", TfToken::Immortal),
     weight("weight", TfToken::Immortal),
     allTokens({
+        bindTransforms,
         blendShapes,
         blendShapeWeights,
         joints,

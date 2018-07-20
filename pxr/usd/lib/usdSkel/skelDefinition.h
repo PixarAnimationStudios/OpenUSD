@@ -51,7 +51,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdSkel_SkelDefinition);
 ///
 /// Structure storing the core definition of a Skeleton.
 /// A definition is a simple cache of the *validated* structure
-/// of a skeleton, including its topology and rest pose.
+/// of a skeleton, including its topology, bind pose and rest pose.
 /// Skeleton definitions are meant to shared across instances.
 class UsdSkel_SkelDefinition : public TfRefBase, public TfWeakBase
 {
@@ -68,18 +68,21 @@ public:
 
     const UsdSkelSkeleton& GetSkeleton() const { return _skel; }
 
-    const VtTokenArray&   GetJointOrder() const { return _jointOrder; }
+    const VtTokenArray&    GetJointOrder() const { return _jointOrder; }
 
     const UsdSkelTopology& GetTopology() const { return _topology; }
 
     /// Returns rest pose joint transforms in joint-local space.
-    const VtMatrix4dArray& GetJointLocalRestTransforms() const;
+    bool GetJointLocalRestTransforms(VtMatrix4dArray* xforms);
 
     /// Returns rest pose joint transforms in skel space.
-    const VtMatrix4dArray& GetJointSkelRestTransforms();
+    bool GetJointSkelRestTransforms(VtMatrix4dArray* xforms);
 
-    /// Returns the inverse of rest pose joint transforms in skel space.
-    const VtMatrix4dArray& GetJointSkelInverseRestTransforms();
+    /// Returns bind pose joint transforms in world space.
+    bool GetJointWorldBindTransforms(VtMatrix4dArray* xforms);
+
+    /// Returns the inverse of the world-space joint bind transforms.
+    bool GetJointWorldInverseBindTransforms(VtMatrix4dArray* xforms);
 
 private:
     UsdSkel_SkelDefinition();
@@ -88,21 +91,22 @@ private:
 
     void _ComputeJointSkelRestTransforms();
     
-    void _ComputeJointSkelInverseRestTransforms();
+    void _ComputeJointWorldInverseBindTransforms();
 
 private:
     UsdSkelSkeleton _skel;
     VtTokenArray    _jointOrder;
     UsdSkelTopology _topology;
     VtMatrix4dArray _jointLocalRestXforms;
+    VtMatrix4dArray _jointWorldBindXforms;
     // Properties computed (and cached) on-demand.
     // Different forms of transforms are cached because different
     // consumption tasks generally require different transforms.    
     // They are cached on the definition in order to provide cache
     // sharing across instanced skeletons.
     VtMatrix4dArray _jointSkelRestXforms;
-    VtMatrix4dArray _jointSkelInverseRestXforms;
-    std::atomic<int> _computeFlags;
+    VtMatrix4dArray _jointWorldInverseBindXforms;
+    std::atomic<int> _flags;
     std::mutex _mutex;
 };
 

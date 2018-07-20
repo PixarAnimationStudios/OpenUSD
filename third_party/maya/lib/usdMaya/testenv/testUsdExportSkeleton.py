@@ -96,6 +96,13 @@ class testUsdExportSkeleton(unittest.TestCase):
         # frameRange = [1, 30]
         frameRange = [1, 3]
 
+        # TODO: The joint hierarchy intentionally includes non-joint nodes,
+        # which are expected to be ignored. However, when we try to extract
+        # restTransforms from the dagPose, the intermediate transforms cause
+        # problems, since they are not members of the dagPose. As a result,
+        # no dag pose is exported. Need to come up with a way to handle this
+        # correctly in export.
+        print "Expect warnings about invalid restTransforms"
         usdFile = os.path.abspath('UsdExportSkeleton.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,
@@ -120,8 +127,7 @@ class testUsdExportSkeleton(unittest.TestCase):
             cmds.currentTime(frame, edit=True)
             xfCache.SetTime(frame)
 
-            skelLocalToWorld = \
-                skelQuery.ComputeLocalToWorldTransform(xfCache)
+            skelLocalToWorld = xfCache.GetLocalToWorldTransform(skelQuery.GetPrim())
 
             usdJointXforms = skelQuery.ComputeJointSkelTransforms(frame)
 

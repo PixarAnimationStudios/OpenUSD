@@ -77,6 +77,13 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         # Configure the skel.
         skel.GetJointsAttr().Set(skelOrder)
         restXforms = [_RandomXf() for _ in skelOrder]
+
+        topology = UsdSkel.Topology(skelOrder)
+
+        bindWorldXforms = UsdSkel.ConcatJointTransforms(
+            topology, Vt.Matrix4dArray(restXforms))
+
+        skel.GetBindTransformsAttr().Set(bindWorldXforms)
         skel.GetRestTransformsAttr().Set(restXforms)
 
         # Configure root xforms.
@@ -89,11 +96,6 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         # Leave last element off of anim (tests remapping)
         animOrder = skelOrder[:-1]
         anim.GetJointsAttr().Set(animOrder)
-
-        animRootXforms = [_RandomXf() for _ in xrange(numFrames)]
-        animRootXfAttr = anim.MakeMatrixXform()
-        for frame,xf in enumerate(animRootXforms):
-            animRootXfAttr.Set(xf, frame)
 
         # Apply joint animations.
         animXforms = {i:[_RandomXf() for _ in xrange(len(animOrder))]
@@ -159,11 +161,6 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
             computedXforms = query.ComputeJointSkelTransforms(0, atRest=True)
             self.assertArrayIsClose(computedXforms, expectedXforms)
 
-
-        # Validate anim root transforms.
-        for frame,expectedXf in enumerate(animRootXforms):
-            animXf = query.ComputeAnimTransform(frame)
-            self.assertTrue(Gf.IsClose(animXf, expectedXf, 1e-5))
 
         # Validate skel instance transforms.
         for frame,expectedXf in enumerate(rootXforms):

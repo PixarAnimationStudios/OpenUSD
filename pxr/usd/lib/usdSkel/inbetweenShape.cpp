@@ -142,16 +142,16 @@ UsdSkelInbetweenShape::HasAuthoredWeight() const
 
 
 bool
-UsdSkelInbetweenShape::GetPoints(VtVec3fArray* points) const
+UsdSkelInbetweenShape::GetOffsets(VtVec3fArray* offsets) const
 {
-    return _attr.Get(points);
+    return _attr.Get(offsets);
 }
 
 
 bool
-UsdSkelInbetweenShape::SetPoints(const VtVec3fArray& points) const
+UsdSkelInbetweenShape::SetOffsets(const VtVec3fArray& offsets) const
 {
-    return _attr.Set(points);
+    return _attr.Set(offsets);
 }
 
 

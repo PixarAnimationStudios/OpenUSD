@@ -181,12 +181,35 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // BINDTRANSFORMS 
+    // --------------------------------------------------------------------- //
+    /// Specifies the bind-pose transforms of each joint in
+    /// **world space**, in the ordering imposed by *joints*.
+    ///
+    /// \n  C++ Type: VtArray<GfMatrix4d>
+    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetBindTransformsAttr() const;
+
+    /// See GetBindTransformsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateBindTransformsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // RESTTRANSFORMS 
     // --------------------------------------------------------------------- //
-    /// Specifies rest transforms of each joint in 
-    /// **joint-local space**, in the ordering imposed by *joints*.
-    /// Joint transforms should all be given as orthogonal, affine
-    /// transformations.
+    /// Specifies the rest-pose transforms of each joint in
+    /// **local space**, in the ordering imposed by *joints*. This provides
+    /// fallback values for joint transforms when a Skeleton either has no
+    /// bound animation source, or when that animation source only contains
+    /// animation for a subset of a Skeleton's joints.
     ///
     /// \n  C++ Type: VtArray<GfMatrix4d>
     /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray

@@ -46,27 +46,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-GfMatrix4d
-_ComputeAnimTransform(UsdSkelSkeletonQuery& self, UsdTimeCode time)
-{
-    GfMatrix4d xform;
-    if(!self.ComputeAnimTransform(&xform, time))
-        xform.SetIdentity();
-    return xform;
-}
-
-
-GfMatrix4d
-_ComputeLocalToWorldTransform(UsdSkelSkeletonQuery& self,
-                              UsdGeomXformCache& xfCache)
-{
-    GfMatrix4d xform;
-    if(!self.ComputeLocalToWorldTransform(&xform, &xfCache))
-        xform.SetIdentity();
-    return xform;
-}
-
-
 VtMatrix4dArray
 _ComputeJointLocalTransforms(UsdSkelSkeletonQuery& self,
                              UsdTimeCode time, bool atRest)
@@ -92,6 +71,15 @@ _ComputeSkinningTransforms(UsdSkelSkeletonQuery& self, UsdTimeCode time)
 {
     VtMatrix4dArray xforms;
     self.ComputeSkinningTransforms(&xforms, time);
+    return xforms;
+}
+
+
+VtMatrix4dArray
+_GetJointWorldBindTransforms(UsdSkelSkeletonQuery& self)
+{
+    VtMatrix4dArray xforms;
+    self.GetJointWorldBindTransforms(&xforms);
     return xforms;
 }
  
@@ -125,11 +113,7 @@ void wrapUsdSkelSkeletonQuery()
 
         .def("GetJointOrder", &This::GetJointOrder)
         
-        .def("ComputeAnimTransform", &_ComputeAnimTransform,
-             (arg("time")=UsdTimeCode::Default()))
-
-        .def("ComputeLocalToWorldTransform", &_ComputeLocalToWorldTransform,
-             (arg("xfCache")))
+        .def("GetJointWorldBindTransforms", &_GetJointWorldBindTransforms)
         
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))

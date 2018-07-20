@@ -82,18 +82,14 @@ private:
     /// The dag path defining the root transform of the Skeleton.
     MDagPath _skelXformPath;
 
-    /// The dag path providing the comopnent of root transformation
-    /// that comes from an animatio source.
-    MDagPath _animXformPath;
-
     /// The common parent path of all proper joints.
     MDagPath _jointHierarchyRootPath;
 
     UsdSkelTopology _topology;
     UsdSkelAnimMapper _skelToAnimMapper;
     std::vector<MDagPath> _joints, _animatedJoints;
-    UsdAttribute _skelXformAttr, _animXformAttr;
-    bool _skelXformIsAnimated, _animXformIsAnimated;
+    UsdAttribute _skelXformAttr;
+    bool _skelXformIsAnimated;
 };
 
 

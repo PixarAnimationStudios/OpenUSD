@@ -68,17 +68,22 @@ class Skeleton "Skeleton" (
         joint."""
     )
 
+    uniform matrix4d[] bindTransforms (
+        doc = """Specifies the bind-pose transforms of each joint in
+        **world space**, in the ordering imposed by *joints*."""
+    )
     uniform matrix4d[] restTransforms (
-        doc = """Specifies rest transforms of each joint in 
-        **joint-local space**, in the ordering imposed by *joints*.
-        Joint transforms should all be given as orthogonal, affine
-        transformations."""
+        doc = """Specifies the rest-pose transforms of each joint in
+        **local space**, in the ordering imposed by *joints*. This provides
+        fallback values for joint transforms when a Skeleton either has no
+        bound animation source, or when that animation source only contains
+        animation for a subset of a Skeleton's joints."""
     )
 }
 
 
 class SkelAnimation "SkelAnimation" (
-    inherits = </Xformable>
+    inherits = </Typed>
     doc = """Describes a skel animation, where joint animation is stored in a
     vectorized form.
 
@@ -174,14 +179,11 @@ class "BindingAPI" (
         customData = {
             string apiName = "geomBindTransform"
         } 
-        doc = """Encodes the transform that positions gprims in the space in
-        which it is bound to a Skeleton.  If the transform is identical for a
-        group of gprims that share a common ancestor, the transform may be
-        authored on the ancestor, to "inherit" down to all the leaf gprims.
-        The *geomBindTransform* is defined as moving a gprim from its own
-        object space (untransformed by the gprim's own transform) out into
-        Skeleton space. If this transform is unset, an identity transform
-        is used instead."""
+        doc = """Encodes the bind-time world space transforms of the prim.
+        If the transform is identical for a group of gprims that share a common
+        ancestor, the transform may be authored on the ancestor, to "inherit"
+        down to all the leaf gprims. If this transform is unset, an identity
+        transform is used instead."""
     )
 
     uniform token[] skel:joints (
@@ -263,7 +265,7 @@ class BlendShape "BlendShape" (
     )
 
     uniform uint[] pointIndices (
-        doc = """**Optional property**>. Indices into the original mesh that
+        doc = """**Optional property**. Indices into the original mesh that
         correspond to the values in *offsets* and of any inbetween shapes. If
         authored, the number of elements must be equal to the number of elements
         in the *offsets* array."""

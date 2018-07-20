@@ -15,7 +15,7 @@ def SkelRoot "Root" (
     def Skeleton "Skeleton"
     {
         rel skel:animationSource = <Animation>
-
+        uniform matrix4d[] bindTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (2, 0, 0, 1) )]
         uniform token[] joints = ["joint1", "joint1/joint2", "joint1/joint2/joint3"]
 
         uniform matrix4d[] restTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (1, 0, 0, 1) )]
@@ -89,9 +89,7 @@ def SkelRoot "Root" (
                 29: [(-0.30484766, -1, 0), (0, 0.8949245, 0.32584968)],
                 30: [(-0.30484766, -1, 0), (0, 0.8949245, 0.3258497)],
             }
-
             uniform token[] joints = ["joint1", "joint1/joint2", "joint1/joint2/joint3"]
-
             quatf[] rotations.timeSamples = {
                 1: [(0.5, 0.5, 0.5, 0.5), (1, 0, 0, 0), (0.5, -0.5, -0.5, -0.5)],
                 2: [(0.5, 0.5, 0.5, 0.5), (0.99998206, 0, 0, 0.0059874505), (0.5, -0.5, -0.5, -0.5)],
@@ -246,7 +244,6 @@ def SkelRoot "Root" (
             elementSize = 1
             interpolation = "constant"
         )
-
         uniform token[] skel:joints = ["joint1/joint2/joint3"]
     }
 }
