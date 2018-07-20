@@ -5,6 +5,7 @@ set(DIRS
     usdedit
     usdstitch
     usdstitchclips
+    usdzip
     sdfdump
     sdffilter
 )
