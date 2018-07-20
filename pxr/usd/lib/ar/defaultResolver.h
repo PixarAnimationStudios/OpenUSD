@@ -132,6 +132,10 @@ public:
         const std::string& resolvedPath) override;
 
     AR_API
+    virtual std::shared_ptr<ArAsset> OpenAsset(
+        const std::string& resolvedPath) override;
+
+    AR_API
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override;

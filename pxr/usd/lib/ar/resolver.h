@@ -35,8 +35,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class ArResolverContext;
+class ArAsset;
 class ArAssetInfo;
+class ArResolverContext;
 class TfType;
 class VtValue;
 
@@ -244,6 +245,21 @@ public:
     AR_API
     virtual bool FetchToLocalResolvedPath(
         const std::string& path,
+        const std::string& resolvedPath) = 0;
+
+    /// Returns an ArAsset object for the asset located at \p resolvedPath. 
+    /// Returns an invalid std::shared_ptr if object could not be created.
+    ///
+    /// The returned ArAsset object provides functions for accessing the
+    /// contents of the specified asset. 
+    ///
+    /// Note that clients may still be using the data associated with 
+    /// this object even after the last shared_ptr has been destroyed. For 
+    /// example, a client may have created a memory mapping using the FILE* 
+    /// presented in the ArAsset object; this would preclude truncating or
+    /// overwriting any of the contents of that file.
+    AR_API
+    virtual std::shared_ptr<ArAsset> OpenAsset(
         const std::string& resolvedPath) = 0;
 
     /// Returns true if a file may be written to the given \p path, false

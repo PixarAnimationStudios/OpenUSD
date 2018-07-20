@@ -24,8 +24,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
+
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/defineResolver.h"
+#include "pxr/usd/ar/filesystemAsset.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -278,6 +280,18 @@ ArDefaultResolver::FetchToLocalResolvedPath(
     // by the given path already exists on the filesystem at 
     // resolvedPath, so no further data fetching is needed.
     return true;
+}
+
+std::shared_ptr<ArAsset> 
+ArDefaultResolver::OpenAsset(
+    const std::string& resolvedPath)
+{
+    FILE* f = ArchOpenFile(resolvedPath.c_str(), "rb");
+    if (!f) {
+        return nullptr;
+    }
+
+    return std::shared_ptr<ArAsset>(new ArFilesystemAsset(f));
 }
 
 bool
