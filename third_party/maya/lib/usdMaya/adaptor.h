@@ -590,8 +590,9 @@ private:
 /// is mapped to a single \p schemaType; the last registration wins.
 ///
 /// The convention in the UsdMaya library is to place the registration macro
-/// in the prim writer if both a prim writer and reader exist for the same
-/// node type.
+/// in the prim writer that exports \p mayaTypeName nodes as \p schemaType
+/// prims. This will ensure that the registrations are properly invoked by the
+/// UsdMaya adaptor system.
 ///
 /// Example usage:
 /// \code
@@ -607,6 +608,11 @@ TF_REGISTRY_FUNCTION(PxrUsdMayaAdaptor)\
 }
 
 /// Registers an \p alias string for the given \p attrName token or string.
+///
+/// You should invoke this macro in the same place that you invoke any
+/// PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA macros for your type. This will ensure
+/// that all the aliases are registered at the correct time.
+///
 /// \sa PxrUsdMayaAdaptor::RegisterAttributeAlias()
 #define PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(attrName, alias)\
 TF_REGISTRY_FUNCTION(PxrUsdMayaAdaptor)\

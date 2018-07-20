@@ -23,13 +23,15 @@
 //
 #include "usdMaya/adaptor.h"
 
+#include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/readUtil.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeUtil.h"
+
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/tokens.h"
-#include "usdMaya/util.h"
-#include "usdMaya/readUtil.h"
-#include "usdMaya/writeUtil.h"
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -126,11 +128,16 @@ PxrUsdMayaAdaptor::GetUsdType() const
         return TfType();
     }
 
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaAdaptor>();
-
     MObject object = _handle.object();
     MFnDependencyNode depNode(object);
-    auto iter = _schemaLookup.find(depNode.typeName().asChar());
+
+    // The adaptor type mapping might be registered externally in a prim writer
+    // plugin. This simply pokes the prim writer registry to load the prim
+    // writer plugin in order to pull in the adaptor mapping.
+    PxrUsdMayaPrimWriterRegistry::Find(depNode.typeName().asChar());
+    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaAdaptor>();
+
+    const auto iter = _schemaLookup.find(depNode.typeName().asChar());
     if (iter != _schemaLookup.end()) {
         return iter->second;
     }
