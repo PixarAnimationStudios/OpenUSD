@@ -108,6 +108,13 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                /*isInherited*/false);
 
+    // Discover time-varying normals.
+    _IsVarying(prim, UsdGeomTokens->normals,
+                       HdChangeTracker::DirtyNormals,
+                       UsdImagingTokens->usdVaryingNormals,
+                       timeVaryingBits,
+                       /*isInherited*/false);
+
     // Discover time-varying topology.
     if (!_IsVarying(prim,
                        UsdGeomTokens->faceVertexCounts,
@@ -219,6 +226,26 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
+    }
+
+    if (requestedBits & HdChangeTracker::DirtyNormals) {
+        UsdGeomMesh mesh(prim);
+	UsdAttribute normalsAttrib = mesh.GetNormalsAttr();
+        VtVec3fArray normals;
+        if (normalsAttrib.Get(&normals, time)) {
+	    TfToken interpToken;
+
+	    // Took this code from UsdGeomPrimvar::GetInterpolation().
+	    if (!normalsAttrib.GetMetadata(
+		    UsdGeomTokens->interpolation, &interpToken)) {
+		interpToken = UsdGeomTokens->constant;
+	    }
+            _MergePrimvar(&primvars,
+                          UsdGeomTokens->normals,
+                          _UsdToHdInterpolation(interpToken),
+                          HdPrimvarRoleTokens->normal);
+            valueCache->GetNormals(cachePath) = VtValue(normals);
+        }
     }
 
     // Subdiv tags are only needed if the mesh is refined.  So

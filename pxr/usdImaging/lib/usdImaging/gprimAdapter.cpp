@@ -52,25 +52,6 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, GprimAdapter is abstract.
 }
 
-static HdInterpolation
-_UsdToHdInterpolation(TfToken const& usdInterp)
-{
-    if (usdInterp == UsdGeomTokens->uniform) {
-        return HdInterpolationUniform;
-    } else if (usdInterp == UsdGeomTokens->vertex) {
-        return HdInterpolationVertex;
-    } else if (usdInterp == UsdGeomTokens->varying) {
-        return HdInterpolationVarying;
-    } else if (usdInterp == UsdGeomTokens->faceVarying) {
-        return HdInterpolationFaceVarying;
-    } else if (usdInterp == UsdGeomTokens->constant) {
-        return HdInterpolationConstant;
-    }
-    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
-                    usdInterp.GetText());
-    return HdInterpolationConstant;
-}
-
 static TfToken
 _UsdToHdRole(TfToken const& usdRole)
 {
@@ -122,6 +103,26 @@ UsdImagingGprimAdapter::_ResolveCachePath(SdfPath const& primPath,
         }
     }
     return cachePath;
+}
+
+/* static */
+HdInterpolation
+UsdImagingGprimAdapter::_UsdToHdInterpolation(TfToken const& usdInterp)
+{
+    if (usdInterp == UsdGeomTokens->uniform) {
+        return HdInterpolationUniform;
+    } else if (usdInterp == UsdGeomTokens->vertex) {
+        return HdInterpolationVertex;
+    } else if (usdInterp == UsdGeomTokens->varying) {
+        return HdInterpolationVarying;
+    } else if (usdInterp == UsdGeomTokens->faceVarying) {
+        return HdInterpolationFaceVarying;
+    } else if (usdInterp == UsdGeomTokens->constant) {
+        return HdInterpolationConstant;
+    }
+    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
+                    usdInterp.GetText());
+    return HdInterpolationConstant;
 }
 
 /* static */
