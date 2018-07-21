@@ -249,7 +249,7 @@ PRM_Name* _GetPurposeNames()
 {
     static UT_Array<PRM_Name> names;
     for(const auto& p : UsdGeomImageable::GetOrderedPurposeTokens())
-        names.append(PRM_Name(p.GetString().c_str()));
+        names.append(PRM_Name(p.GetString().c_str(), p.GetString().c_str()));
     names.append(PRM_Name());
     return &names(0);
 }
