@@ -135,6 +135,12 @@ public:
     static SdfPath _ResolveCachePath(SdfPath const& cachePath,
             UsdImagingInstancerContext const* instancerContext);
 
+    // Helper function to convert an interpolation metadat token into an
+    // HdInterpolation value.
+    USDIMAGING_API
+    static HdInterpolation
+    _UsdToHdInterpolation(TfToken const& usdInterp);
+
 protected:
 
     USDIMAGING_API
