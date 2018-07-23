@@ -933,6 +933,45 @@
            </spacer>
           </item>
           <item>
+           <widget class="QCheckBox" name="linearInterpolationOn">
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="toolTip">
+             <string>If unchecked, held interpolation will be used.</string>
+            </property>
+            <property name="text">
+             <string>Linear Interpolation</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_LinearInterp">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+
+          <item>
            <widget class="QCheckBox" name="redrawOnScrub">
             <property name="maximumSize">
              <size>
@@ -1289,11 +1328,6 @@
      <addaction name="separator"/>
      <addaction name="useExtentsHint"/>
     </widget>
-    <widget class="QMenu" name="menuInterpolation">
-     <property name="title">
-      <string>Interpolation</string>
-     </property>
-    </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
       <string>Hydra Renderer</string>
@@ -1332,7 +1366,6 @@
     <addaction name="menuCamera"/>
     <addaction name="menuCameraGuides"/>
     <addaction name="menuDisplay"/>
-    <addaction name="menuInterpolation"/>
     <addaction name="actionEnable_Hardware_Shading"/>
     <addaction name="actionDisplay_PrimId"/>
     <addaction name="actionCull_Backfaces"/>
