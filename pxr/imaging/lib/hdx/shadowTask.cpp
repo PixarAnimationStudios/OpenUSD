@@ -153,44 +153,19 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
     if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
         return;
     }
-    
-    // Extract the HD lights used to render the scene from the 
-    // task context, we will use them to find out what
-    // lights are dirty and if we need to update the
-    // collection for shadows mapping
 
-    // XXX: This is inefficient, need to be optimized
-    SdfPathVector lightPaths;
-    SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
-        HdPrimTypeTokens->simpleLight, SdfPath::AbsoluteRootPath());
-
-    HdPrimGather gather;
-
-    gather.Filter(sprimPaths,
-                  _params.lightIncludePaths,
-                  _params.lightExcludePaths,
-                  &lightPaths);
-
-    HdStLightPtrConstVector lights;
-    TF_FOR_ALL (it, lightPaths) {
-         const HdStLight *light = static_cast<const HdStLight *>(
-                                     renderIndex.GetSprim(
-                                             HdPrimTypeTokens->simpleLight, 
-                                             *it));
-
-         if (light != nullptr) {
-            lights.push_back(light);
-        }
-    }
-
-    if (!TF_VERIFY(lights.size() == glfLights.size())) {
-        return;
-    }
-    
     // Iterate through all lights and for those that have shadows enabled
     // and ensure we have enough passes to render the shadows.
     size_t passCount = 0;
     for (size_t lightId = 0; lightId < glfLights.size(); lightId++) {
+        const HdStLight* light = static_cast<const HdStLight*>(
+            renderIndex.GetSprim(HdPrimTypeTokens->simpleLight,
+                                 glfLights[lightId].GetID()));
+        // This happens if a non simple light is translated
+        // into the simple light without an SPrim in the render index.
+        if (light == nullptr) {
+            continue;
+        }
 
         if (!glfLights[lightId].HasShadow()) {
             continue;
@@ -198,7 +173,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
 
         // Extract the collection from the HD light
         VtValue vtShadowCollection =
-            lights[lightId]->Get(HdLightTokens->shadowCollection);
+            light->Get(HdLightTokens->shadowCollection);
         const HdRprimCollection &col =
             vtShadowCollection.IsHolding<HdRprimCollection>() ?
                 vtShadowCollection.Get<HdRprimCollection>() : HdRprimCollection();
