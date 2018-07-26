@@ -48,6 +48,9 @@ class TestArDefaultResolver(unittest.TestCase):
             os.path.abspath('test1/test2')
         ])
 
+        # Verify that the underlying resolver is an Ar.DefaultResolver.
+        assert(isinstance(Ar.GetUnderlyingResolver(), Ar.DefaultResolver))
+
     def test_AnchorRelativePath(self):
         r = Ar.GetResolver()
 

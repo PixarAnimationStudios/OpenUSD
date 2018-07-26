@@ -364,12 +364,16 @@ protected:
 ///   selected. 
 ///
 /// - The plugin for the selected subclass will be loaded and an instance
-///   of the subclass will be constructed and returned.
+///   of the subclass will be constructed.
 ///
-/// - If an error occurs, an ArDefaultResolver will be constructed and returned.
+/// - If an error occurs, an ArDefaultResolver will be constructed.
 ///
-/// The constructed ArResolver subclass will be cached and returned by all
-/// subsequent calls to this function.
+/// The constructed ArResolver subclass will be cached and used to service
+/// function calls made on the returned resolver.
+///
+/// Note that this function may not return the constructed subclass itself, 
+/// meaning that dynamic casts to the subclass type may fail. See
+/// ArGetUnderlyingResolver if access to this object is needed.
 AR_API
 ArResolver& ArGetResolver();
 
@@ -393,10 +397,18 @@ void ArSetPreferredResolver(const std::string& resolverTypeName);
 /// in very specific cases. Consumers who want to retrieve an ArResolver to
 /// perform asset resolution should use \ref ArGetResolver.
 /// 
-/// These special-purpose functions are intended to help with the creation
-/// of ArResolver subclasses that wrap around other ArResolver subclasses.
-/// 
 /// @{
+
+/// Returns the underlying ArResolver instance used by ArGetResolver.
+///
+/// This function returns the instance of the ArResolver subclass used by 
+/// ArGetResolver and can be dynamic_cast to that type.
+///
+/// \warning This functions should typically not be used by consumers except
+/// in very specific cases. Consumers who want to retrieve an ArResolver to
+/// perform asset resolution should use \ref ArGetResolver.
+AR_API
+ArResolver& ArGetUnderlyingResolver();
 
 /// Returns list of TfTypes for available ArResolver subclasses.
 ///
@@ -425,7 +437,7 @@ std::vector<TfType> ArGetAvailableResolvers();
 /// If an error occurs, coding errors will be emitted and this function
 /// will return an ArDefaultResolver instance.
 ///
-/// Note that this function *does not* change the resolver returned by 
+/// Note that this function *does not* change the resolver used by 
 /// \ref ArGetResolver to an instance of \p resolverType.
 ///
 /// This function is not safe to call concurrently with itself or 

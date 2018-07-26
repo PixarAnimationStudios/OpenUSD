@@ -192,9 +192,176 @@ _CreateResolver(const TfType& resolverType, std::string* debugMsg = nullptr)
     return tmpResolver;
 }
 
-struct _ResolverHolder
+// Private ArResolver implementation that owns and forwards calls to the 
+// plugin asset resolver implementation. This is used to overlay additional
+// behaviors on top of the plugin resolver.
+class _Resolver final
+    : public ArResolver
 {
-    _ResolverHolder()
+public:
+    _Resolver()
+    {
+        _InitializeUnderlyingResolver();
+    }
+
+    ArResolver& GetUnderlyingResolver()
+    {
+        return *_resolver;
+    }
+
+    virtual void ConfigureResolverForAsset(const std::string& path) override
+    { 
+        _resolver->ConfigureResolverForAsset(path); 
+    }
+
+    virtual std::string AnchorRelativePath(
+        const std::string& anchorPath, 
+        const std::string& path) override
+    {
+        return _resolver->AnchorRelativePath(anchorPath, path);
+    }
+
+    virtual bool IsRelativePath(const std::string& path) override
+    {
+        return _resolver->IsRelativePath(path);
+    }
+
+    virtual bool IsRepositoryPath(const std::string& path) override
+    {
+        return _resolver->IsRepositoryPath(path);
+    }
+
+    virtual bool IsSearchPath(const std::string& path) override
+    {
+        return _resolver->IsSearchPath(path);
+    }
+
+    virtual std::string GetExtension(const std::string& path) override
+    {
+        return _resolver->GetExtension(path);
+    }
+
+    virtual std::string ComputeNormalizedPath(const std::string& path) override
+    {
+        return _resolver->ComputeNormalizedPath(path);
+    }
+
+    virtual std::string ComputeRepositoryPath(const std::string& path) override
+    {
+        return _resolver->ComputeRepositoryPath(path);
+    }
+
+    virtual std::string ComputeLocalPath(const std::string& path) override
+    {
+        return _resolver->ComputeLocalPath(path);
+    }
+
+    virtual std::string Resolve(const std::string& path) override
+    {
+        return _resolver->Resolve(path);
+    }
+
+    virtual void BindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData) override
+    {
+        _resolver->BindContext(context, bindingData);
+    }
+
+    virtual void UnbindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData) override
+    {
+        _resolver->UnbindContext(context, bindingData);
+    }
+
+    virtual ArResolverContext CreateDefaultContext() override
+    {
+        return _resolver->CreateDefaultContext();
+    }
+
+    virtual ArResolverContext CreateDefaultContextForAsset(
+        const std::string& filePath) override
+    {
+        return _resolver->CreateDefaultContextForAsset(filePath);
+    }
+
+    virtual void RefreshContext(const ArResolverContext& context) override
+    {
+        _resolver->RefreshContext(context);
+    }
+
+    virtual ArResolverContext GetCurrentContext() override
+    {
+        return _resolver->GetCurrentContext();
+    }
+
+    virtual std::string ResolveWithAssetInfo(
+        const std::string& path, 
+        ArAssetInfo* assetInfo) override
+    {
+        return _resolver->ResolveWithAssetInfo(path, assetInfo);
+    }
+
+    virtual void UpdateAssetInfo(
+        const std::string& identifier,
+        const std::string& filePath,
+        const std::string& fileVersion,
+        ArAssetInfo* assetInfo) override
+    {
+        _resolver->UpdateAssetInfo(
+            identifier, filePath, fileVersion, assetInfo);
+    }
+
+    virtual VtValue GetModificationTimestamp(
+        const std::string& path,
+        const std::string& resolvedPath) override
+    {
+        return _resolver->GetModificationTimestamp(path, resolvedPath);
+    }
+
+    virtual bool FetchToLocalResolvedPath(
+        const std::string& path,
+        const std::string& resolvedPath) override
+    {
+        return _resolver->FetchToLocalResolvedPath(path, resolvedPath);
+    }
+
+    virtual std::shared_ptr<ArAsset> OpenAsset(
+        const std::string& resolvedPath) override
+    { 
+        return _resolver->OpenAsset(resolvedPath);
+    }
+
+    virtual bool CanWriteLayerToPath(
+        const std::string& path,
+        std::string* whyNot) override
+    {
+        return _resolver->CanWriteLayerToPath(path, whyNot);
+    }
+
+    virtual bool CanCreateNewLayerWithIdentifier(
+        const std::string& identifier, 
+        std::string* whyNot) override
+    {
+        return _resolver->CanCreateNewLayerWithIdentifier(
+            identifier, whyNot);
+    }
+
+    virtual void BeginCacheScope(
+        VtValue* cacheScopeData) override
+    {
+        _resolver->BeginCacheScope(cacheScopeData);
+    }
+
+    virtual void EndCacheScope(
+        VtValue* cacheScopeData) override
+    {
+        _resolver->EndCacheScope(cacheScopeData);
+    }
+
+private:
+    void _InitializeUnderlyingResolver()
     {
         const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
 
@@ -252,29 +419,44 @@ struct _ResolverHolder
                     resolverType.GetTypeName().c_str());
             }
 
-            resolver = _CreateResolver(resolverType, &debugMsg);
+            _resolver = _CreateResolver(resolverType, &debugMsg);
         }
 
-        if (!resolver) {
-            resolver = _CreateResolver(defaultResolverType, &debugMsg);
+        if (!_resolver) {
+            _resolver = _CreateResolver(defaultResolverType, &debugMsg);
         }
 
         TF_DEBUG(AR_RESOLVER_INIT).Msg(
             "ArGetResolver(): %s\n", debugMsg.c_str());
     }
 
-    std::unique_ptr<ArResolver> resolver;
+    std::unique_ptr<ArResolver> _resolver;
 };
+
+_Resolver&
+_GetResolver()
+{
+    // If other threads enter this function while another thread is 
+    // constructing the resolver, it's guaranteed that those threads
+    // will wait until the resolver is constructed.
+    static _Resolver resolver;
+    return resolver;
+}
+
 } // end anonymous namespace
+
+
 
 ArResolver& 
 ArGetResolver()
 {
-    // If other threads enter this function while another thread is 
-    // constructing the holder, it's guaranteed that those threads
-    // will wait until the holder is constructed.
-    static _ResolverHolder holder;
-    return *holder.resolver;
+    return _GetResolver();
+}
+
+ArResolver&
+ArGetUnderlyingResolver()
+{
+    return _GetResolver().GetUnderlyingResolver();
 }
 
 std::vector<TfType>
