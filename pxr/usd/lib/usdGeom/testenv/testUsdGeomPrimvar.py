@@ -428,5 +428,25 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         # also get found as an inherited primvar.
         self.assertFalse(s4p.FindInheritedPrimvar('u3'))
 
+        # Confirm that only constant-interpolation primvars inherit.
+        self.assertEqual(len(s2p.FindInheritedPrimvars()), 1)
+        self.assertTrue(s2p.FindInheritedPrimvar('u1'))
+        self.assertTrue(s2p.HasInheritedPrimvar('u1'))
+        u1.SetInterpolation(UsdGeom.Tokens.varying)
+        self.assertEqual(len(s2p.FindInheritedPrimvars()), 0)
+        self.assertFalse(s2p.FindInheritedPrimvar('u1'))
+        self.assertFalse(s2p.HasInheritedPrimvar('u1'))
+
+        # Confirm that a non-constant primvar blocks inheritance
+        # of ancestral constant primvars of the same name.
+        self.assertEqual(len(s4p.FindInheritedPrimvars()), 1)
+        self.assertTrue(s4p.FindInheritedPrimvar('u2'))
+        self.assertTrue(s4p.HasInheritedPrimvar('u2'))
+        u2_on_s3 = s4p.CreatePrimvar('u2', Sdf.ValueTypeNames.Float)
+        u2.SetInterpolation(UsdGeom.Tokens.varying)
+        self.assertEqual(len(s4p.FindInheritedPrimvars()), 0)
+        self.assertFalse(s4p.FindInheritedPrimvar('u2'))
+        self.assertFalse(s4p.HasInheritedPrimvar('u2'))
+
 if __name__ == "__main__":
     unittest.main()
