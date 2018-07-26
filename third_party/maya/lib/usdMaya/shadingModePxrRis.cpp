@@ -299,7 +299,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeExportContext, pxrRis)
     );
 }
 
-namespace _importer {
+namespace {
 
 static
 MObject
@@ -436,7 +436,7 @@ _CreateShaderObject(
     return shaderObj;
 }
 
-}; // namespace _importer
+}; // anonymous namespace
 
 DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
@@ -447,6 +447,9 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
+    if (!shadeMaterial) {
+        return MPlug();
+    }
 
     // First try the "surface" output of the material.
     UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(
@@ -461,8 +464,8 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
     }
 
     MStatus status;
-    MObject shaderObj = _importer::_GetOrCreateShaderObject(surfaceShader,
-                                                            context);
+    MObject shaderObj = _GetOrCreateShaderObject(surfaceShader,
+                                                 context);
     MFnDependencyNode shaderDepFn(shaderObj, &status);
     if (status != MS::kSuccess) {
         return MPlug();
