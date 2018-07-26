@@ -27,10 +27,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/debugCodes.h"
+#include "pxr/usd/sdf/fileFormat.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -365,7 +367,44 @@ Sdf_GetLayerDisplayName(
 
     string layerPath, arguments;
     Sdf_SplitIdentifier(identifier, &layerPath, &arguments);
+
+    // If the layer path is a package-relative path, we want
+    // the basename of the outermost package combined with
+    // the packaged path. For example, given:
+    //    "/tmp/asset.package[sub/dir/file.sdf]", 
+    // we want:
+    //    "asset.package[sub/dir/file.sdf]".
+    if (ArIsPackageRelativePath(layerPath)) {
+        std::pair<std::string, std::string> packagePath =
+            ArSplitPackageRelativePathOuter(layerPath);
+        packagePath.first = TfGetBaseName(packagePath.first);
+        return ArJoinPackageRelativePath(packagePath);
+    }
+
     return TfGetBaseName(layerPath);
+}
+
+string
+Sdf_GetExtension(
+    const string& identifier)
+{
+    return ArGetResolver().GetExtension(identifier);
+}
+
+bool
+Sdf_IsPackageOrPackagedLayer(
+    const SdfLayerHandle& layer)
+{
+    return Sdf_IsPackageOrPackagedLayer(
+        layer->GetFileFormat(), layer->GetIdentifier());
+}
+
+bool
+Sdf_IsPackageOrPackagedLayer(
+    const SdfFileFormatConstPtr& fileFormat,
+    const std::string& identifier)
+{
+    return fileFormat->IsPackage() || ArIsPackageRelativePath(identifier);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

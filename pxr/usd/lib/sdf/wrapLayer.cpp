@@ -469,6 +469,10 @@ void wrapLayer()
            arg("args") = boost::python::dict()),
          return_value_policy<TfPyRefPtrFactory<ThisHandle> >());
 
+    def("ComputeAssetPathRelativeToLayer", &SdfComputeAssetPathRelativeToLayer,
+        ( arg("anchor"),
+          arg("assetPath")));
+
     scope s = class_<This,
                      ThisHandle,
                      bases<SdfLayerBase>,

@@ -148,6 +148,22 @@ bool Sdf_IdentifierContainsArguments(
 std::string Sdf_GetLayerDisplayName(
     const std::string& identifier);
 
+/// Returns the extension of the given identifier used to identify the
+/// associated file format. 
+std::string Sdf_GetExtension(
+    const std::string& identifier);
+
+/// Returns true if \p layer is a package layer or packaged within a package 
+/// layer.
+bool Sdf_IsPackageOrPackagedLayer(
+    const SdfLayerHandle& layer);
+
+/// Returns true if \p fileFormat is a package file format or \p identifier
+/// is a package-relative path. This is just a convenience function.
+bool Sdf_IsPackageOrPackagedLayer(
+    const SdfFileFormatConstPtr& fileFormat,
+    const std::string& identifier);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_ASSET_PATH_RESOLVER_H

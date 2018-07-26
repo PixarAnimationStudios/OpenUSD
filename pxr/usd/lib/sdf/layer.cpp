@@ -285,6 +285,13 @@ SdfLayerRefPtr
 SdfLayer::_CreateAnonymousWithFormat(
     const SdfFileFormatConstPtr &fileFormat, const std::string& tag)
 {
+    if (fileFormat->IsPackage()) {
+        TF_CODING_ERROR("Cannot create anonymous layer: creating package %s "
+                        "layer is not allowed through this API.",
+                        fileFormat->GetFormatId().GetText());
+        return SdfLayerRefPtr();
+    }
+
     tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
 
     SdfLayerRefPtr layer =
@@ -348,7 +355,7 @@ _GetFileFormatForPath(const std::string &filePath,
                       const SdfLayer::FileFormatArguments &args)
 {
     // Determine which file extension to use.
-    const string ext = ArGetResolver().GetExtension(filePath);
+    const string ext = Sdf_GetExtension(filePath);
     if (ext.empty()) {
         return TfNullPtr;
     }
@@ -392,6 +399,36 @@ SdfLayer::_CreateNew(
     const string absIdentifier = 
         isRelativePath ? TfAbsPath(identifier) : identifier;
 
+    // Direct newly created layers to a local path.
+    const string localPath = realPath.empty() ? 
+        resolver.ComputeLocalPath(absIdentifier) : realPath;
+    if (localPath.empty()) {
+        TF_CODING_ERROR(
+            "Failed to compute local path for new layer with "
+            "identifier '%s'", absIdentifier.c_str());
+        return TfNullPtr;
+    }
+
+    // If not explicitly supplied one, try to determine the fileFormat 
+    // based on the local path suffix,
+    if (!fileFormat) {
+        fileFormat = _GetFileFormatForPath(localPath, args);
+        // XXX: This should be a coding error, not a failed verify.
+        if (!TF_VERIFY(fileFormat))
+            return TfNullPtr;
+    }
+
+    // Restrict creating package layers via the Sdf API. These layers
+    // are expected to be created via other libraries or external programs.
+    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
+        TF_CODING_ERROR("Cannot create new layer '%s': creating %s %s "
+                        "layer is not allowed through this API.",
+                        identifier.c_str(), 
+                        fileFormat->IsPackage() ? "package" : "packaged",
+                        fileFormat->GetFormatId().GetText());
+        return TfNullPtr;
+    }
+
     // In case of failure below, we want to release the layer
     // registry mutex lock before destroying the layer.
     SdfLayerRefPtr layer;
@@ -403,24 +440,6 @@ SdfLayer::_CreateNew(
             TF_CODING_ERROR("A layer already exists with identifier '%s'",
                 absIdentifier.c_str());
             return TfNullPtr;
-        }
-
-        // Direct newly created layers to a local path.
-        const string localPath = realPath.empty() ? 
-            resolver.ComputeLocalPath(absIdentifier) : realPath;
-        if (localPath.empty()) {
-            TF_CODING_ERROR(
-                "Failed to compute local path for new layer with "
-                "identifier '%s'", absIdentifier.c_str());
-            return TfNullPtr;
-        }
-
-        // If not explicitly supplied one, try to determine the fileFormat 
-        // based on the local path suffix,
-        if (!fileFormat) {
-            fileFormat = _GetFileFormatForPath(localPath, args);
-            if (!TF_VERIFY(fileFormat))
-                return TfNullPtr;
         }
 
         layer = _CreateNewWithFormat(
@@ -468,6 +487,13 @@ SdfLayer::New(
 
     if (identifier.empty()) {
         TF_CODING_ERROR("Cannot construct a layer with an empty identifier.");
+        return TfNullPtr;
+    }
+
+    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
+        TF_CODING_ERROR("Cannot construct new %s %s layer", 
+                        fileFormat->IsPackage() ? "package" : "packaged",
+                        fileFormat->GetFormatId().GetText());
         return TfNullPtr;
     }
 
@@ -523,7 +549,7 @@ _CanonicalizeFileFormatArguments(const std::string& filePath,
         //
         // These are larger changes that require updating some clients, so
         // I don't want to do this yet.
-        if (ArGetResolver().GetExtension(filePath).empty()) {
+        if (Sdf_GetExtension(filePath).empty()) {
             args.erase(SdfFileFormatTokens->TargetArg);
         }
         return args;
@@ -2349,7 +2375,7 @@ SdfLayer::GetRealPath() const
 string
 SdfLayer::GetFileExtension() const
 {
-    string ext = ArGetResolver().GetExtension(GetRealPath());
+    string ext = Sdf_GetExtension(GetRealPath());
 
     if (ext.empty())
         ext = GetFileFormat()->GetPrimaryFileExtension();
@@ -3978,18 +4004,10 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
 
-    string layerDir = TfGetPathName(newFileName);
-    if (!(layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir))) {
-        TF_RUNTIME_ERROR(
-            "Cannot create destination directory %s",
-            layerDir.c_str());
-        return false;
-    }
-
     // If a file format was explicitly provided, use that regardless of the 
-    // file extesion, else discover the file format from the file extension.
+    // file extension, else discover the file format from the file extension.
     if (!fileFormat) {
-        const string ext = ArGetResolver().GetExtension(newFileName);
+        const string ext = Sdf_GetExtension(newFileName);
         if (!ext.empty()) 
             fileFormat = SdfFileFormat::FindByExtension(ext);
 
@@ -4002,9 +4020,27 @@ SdfLayer::_WriteToFile(const string & newFileName,
         }
     }
 
+    // Disallow saving or exporting package layers via the Sdf API.
+    if (Sdf_IsPackageOrPackagedLayer(fileFormat, newFileName)) {
+        TF_CODING_ERROR("Cannot save layer @%s@: writing %s %s layer "
+                        "is not allowed through this API.",
+                        newFileName.c_str(), 
+                        fileFormat->IsPackage() ? "package" : "packaged",
+                        fileFormat->GetFormatId().GetText());
+        return false;
+    }
+
     if (!TF_VERIFY(fileFormat)) {
         TF_RUNTIME_ERROR("Unknown file format when attempting to write '%s'",
             newFileName.c_str());
+        return false;
+    }
+
+    string layerDir = TfGetPathName(newFileName);
+    if (!(layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir))) {
+        TF_RUNTIME_ERROR(
+            "Cannot create destination directory %s",
+            layerDir.c_str());
         return false;
     }
     

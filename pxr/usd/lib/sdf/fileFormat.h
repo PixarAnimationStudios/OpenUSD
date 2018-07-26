@@ -90,6 +90,21 @@ public:
     /// GetFileExtensions.
     SDF_API bool IsSupportedExtension(const std::string& extension) const;
 
+    /// Returns true if this file format is a package containing other
+    /// assets.
+    SDF_API 
+    virtual bool IsPackage() const;
+
+    /// Returns the path of the "root" layer contained in the package
+    /// layer at \p resolvedPath produced by this file format. If this 
+    /// file format is not a package, returns the empty string.
+    ///
+    /// The package root layer is the layer in the package layer that 
+    /// is used when that package is opened via SdfLayer.
+    SDF_API
+    virtual std::string GetPackageRootLayerPath(
+        const std::string& resolvedPath) const;
+
     /// Type for specifying additional file format-specific arguments
     /// to the various API below.
     typedef std::map<std::string, std::string> FileFormatArguments;
