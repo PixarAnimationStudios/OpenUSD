@@ -28,8 +28,10 @@ if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
     list(APPEND optionalLibs ${OIIO_LIBRARIES})
     list(APPEND optionalIncludeDirs ${OIIO_INCLUDE_DIRS})
 endif()
+
 pxr_library(glf
     LIBRARIES
+        ar
         arch
         garch
         gf

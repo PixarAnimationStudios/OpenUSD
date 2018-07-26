@@ -30,6 +30,8 @@
 #include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/glf/image.h"
 
+#include "pxr/usd/ar/resolver.h"
+
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stl.h"
@@ -195,7 +197,7 @@ GlfTextureFactoryBase*
 GlfTextureRegistry::_GetTextureFactory(const TfToken &filename)
 {
     // Lookup the plug-in type name based on the file extension.
-    TfToken fileExtension(TfStringGetSuffix(filename));
+    TfToken fileExtension(ArGetResolver().GetExtension(filename));
 
     TfType pluginType = _typeMap->Find(fileExtension);
     if (!pluginType) {

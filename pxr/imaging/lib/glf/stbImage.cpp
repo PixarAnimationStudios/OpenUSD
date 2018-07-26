@@ -25,6 +25,9 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
+
 // use gf types to read and write metadata
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -165,8 +168,7 @@ Glf_StbImage::_IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRi
 std::string 
 Glf_StbImage::_GetFilenameExtension()
 {
-    std::string fileExtension = 
-        _filename.substr(_filename.rfind(std::string(".")) + 1);
+    std::string fileExtension = ArGetResolver().GetExtension(_filename);
     //convert to lowercase
     transform(fileExtension.begin(), 
               fileExtension.end(), 
@@ -372,10 +374,21 @@ Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
     } else {
         _outputType = GL_UNSIGNED_BYTE;
     }
-    
 
     //read the header file to obtain width, height, and bpp info
-    return stbi_info(_filename.c_str(), &_width, &_height, &_nchannels); 
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    if (!asset) { 
+        return false;
+    }
+
+    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    if (!buffer) {
+        return false;
+    }
+
+    return stbi_info_from_memory(
+        reinterpret_cast<stbi_uc const*>(buffer.get()), asset->GetSize(), 
+        &_width, &_height, &_nchannels);
 }
 
 /* virtual */
@@ -410,13 +423,27 @@ Glf_StbImage::ReadCropped(int const cropTop,
     } else {
         stbi_set_flip_vertically_on_load(false);
     }
-    
-    if (_outputType == GL_FLOAT) {
-        imageData = stbi_loadf(_filename.c_str(), 
-                           &_width, &_height, &_nchannels, 0);
-    } else {
-        imageData = stbi_load(_filename.c_str(), 
-                           &_width, &_height, &_nchannels, 0);
+
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    if (!asset) 
+    {
+        TF_CODING_ERROR("Cannot open image %s for reading", _filename.c_str());
+        return false;
+    }
+
+    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    if (buffer) {
+        size_t bufferSize = asset->GetSize();
+        if (_outputType == GL_FLOAT) {
+            imageData = stbi_loadf_from_memory(
+                reinterpret_cast<stbi_uc const *>(buffer.get()), bufferSize,
+                &_width, &_height, &_nchannels, 0);
+        }
+        else {
+            imageData = stbi_load_from_memory(
+                reinterpret_cast<stbi_uc const *>(buffer.get()), bufferSize,
+                &_width, &_height, &_nchannels, 0);
+        }
     }
 
     //// Read pixel data
