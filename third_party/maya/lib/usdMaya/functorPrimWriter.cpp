@@ -33,7 +33,7 @@ PxrUsdMaya_FunctorPrimWriter::PxrUsdMaya_FunctorPrimWriter(
         const SdfPath& uPath,
         usdWriteJobCtx& jobCtx,
         PxrUsdMayaPrimWriterRegistry::WriterFn plugFn) :
-    MayaTransformWriter(iDag, uPath, jobCtx),
+    UsdMayaTransformWriter(iDag, uPath, jobCtx),
     _plugFn(plugFn),
     _exportsGprims(false),
     _pruneChildren(false)
@@ -47,7 +47,7 @@ PxrUsdMaya_FunctorPrimWriter::~PxrUsdMaya_FunctorPrimWriter()
 void
 PxrUsdMaya_FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 {
-    MayaTransformWriter::Write(usdTime);
+    UsdMayaTransformWriter::Write(usdTime);
 
     SdfPath authorPath = GetUsdPath();
     UsdStageRefPtr stage = GetUsdStage();
@@ -80,14 +80,14 @@ PxrUsdMaya_FunctorPrimWriter::GetModelPaths() const
 }
 
 /* static */
-MayaPrimWriterSharedPtr
+UsdMayaPrimWriterSharedPtr
 PxrUsdMaya_FunctorPrimWriter::Create(
     const MDagPath& dag,
     const SdfPath& path,
     usdWriteJobCtx& jobCtx,
     PxrUsdMayaPrimWriterRegistry::WriterFn plugFn)
 {
-    return MayaPrimWriterSharedPtr(
+    return UsdMayaPrimWriterSharedPtr(
             new PxrUsdMaya_FunctorPrimWriter(dag, path, jobCtx, plugFn));
 }
 

@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaNurbsSurfaceWriter.h"
+#include "pxrUsdTranslators/nurbsSurfaceWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -44,14 +44,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(nurbsSurface, MayaNurbsSurfaceWriter);
+PXRUSDMAYA_REGISTER_WRITER(nurbsSurface, PxrUsdTranslators_NurbsSurfaceWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsSurface, UsdGeomNurbsPatch);
 
-MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
+PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
         const MDagPath & iDag,
         const SdfPath& uPath,
         usdWriteJobCtx& jobCtx) :
-    MayaPrimWriter(iDag, uPath, jobCtx)
+    UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomNurbsPatch primSchema =
         UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
@@ -93,16 +93,16 @@ _FixNormalizedKnotRange(
 }
 
 //virtual 
-void MayaNurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
+void PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
 {
-    MayaPrimWriter::Write(usdTimeCode);
+    UsdMayaPrimWriter::Write(usdTimeCode);
 
     UsdGeomNurbsPatch primSchema(_usdPrim);
     writeNurbsSurfaceAttrs(usdTimeCode, primSchema);
 }
 
 // virtual
-bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
+bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     const UsdTimeCode &usdTimeCode,
     UsdGeomNurbsPatch &primSchema)
 {
@@ -448,7 +448,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 }
 
 bool
-MayaNurbsSurfaceWriter::ExportsGprims() const
+PxrUsdTranslators_NurbsSurfaceWriter::ExportsGprims() const
 {
     return true;
 }

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "usdMaya/MayaParticleWriter.h"
+#include "pxrUsdTranslators/particleWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -47,10 +47,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(particle, MayaParticleWriter);
+PXRUSDMAYA_REGISTER_WRITER(particle, PxrUsdTranslators_ParticleWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(particle, UsdGeomPoints);
 
-PXRUSDMAYA_REGISTER_WRITER(nParticle, MayaParticleWriter);
+PXRUSDMAYA_REGISTER_WRITER(nParticle, PxrUsdTranslators_ParticleWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nParticle, UsdGeomPoints);
 
 namespace {
@@ -179,11 +179,11 @@ namespace {
     }
 }
 
-MayaParticleWriter::MayaParticleWriter(
+PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
     const MDagPath & iDag,
     const SdfPath& uPath,
     usdWriteJobCtx& jobCtx)
-    : MayaTransformWriter(iDag, uPath, jobCtx),
+    : UsdMayaTransformWriter(iDag, uPath, jobCtx),
       mInitialFrameDone(false) {
     auto primSchema = UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
@@ -193,14 +193,14 @@ MayaParticleWriter::MayaParticleWriter(
     initializeUserAttributes();
 }
 
-void MayaParticleWriter::Write(const UsdTimeCode &usdTime) {
-    MayaTransformWriter::Write(usdTime);
+void PxrUsdTranslators_ParticleWriter::Write(const UsdTimeCode &usdTime) {
+    UsdMayaTransformWriter::Write(usdTime);
 
     UsdGeomPoints primSchema(_usdPrim);
     writeParams(usdTime, primSchema);
 }
 
-void MayaParticleWriter::writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points) {
+void PxrUsdTranslators_ParticleWriter::writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points) {
     // XXX: Check this properly, static particles are uncommon, but used.
     if (usdTime.IsDefault()) {
         return;
@@ -343,7 +343,7 @@ void MayaParticleWriter::writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& 
                 _GetSparseValueWriter());
 }
 
-void MayaParticleWriter::initializeUserAttributes() {
+void PxrUsdTranslators_ParticleWriter::initializeUserAttributes() {
     const auto particleNode = GetDagPath().node();
     MFnParticleSystem particleSys(particleNode);
 

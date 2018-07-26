@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,32 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_MayaNurbsCurveWriter_h_
-#define _usdExport_MayaNurbsCurveWriter_h_
+#include "pxrUsdTranslators/locatorWriter.h"
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaPrimWriter.h"
+
+#include "usdMaya/adaptor.h"
+#include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/usdWriteJobCtx.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/xform.h"
+
+#include <maya/MDagPath.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+PXRUSDMAYA_REGISTER_WRITER(locator, PxrUsdTranslators_LocatorWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(locator, UsdGeomXform);
 
-class UsdGeomNurbsCurves;
-
-/// Exports Maya nurbsCurve objects (MFnNurbsCurve) as UsdGeomNurbsCurves.
-class MayaNurbsCurveWriter : public MayaPrimWriter
+PxrUsdTranslators_LocatorWriter::PxrUsdTranslators_LocatorWriter(
+        const MDagPath& iDag,
+        const SdfPath& uPath,
+        usdWriteJobCtx& jobCtx) :
+    UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
-  public:
-    MayaNurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx);
+    UsdGeomXform xformSchema = UsdGeomXform::Define(GetUsdStage(),
+                                                    GetUsdPath());
+    TF_AXIOM(xformSchema);
 
-    void Write(const UsdTimeCode &usdTime) override;
-
-    bool ExportsGprims() const override;
-
-  protected:
-    bool writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema);
-};
+    _usdPrim = xformSchema.GetPrim();
+    TF_AXIOM(_usdPrim);
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif  // _usdExport_MayaNurbsCurveWriter_h_

@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,41 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
-#ifndef PXRUSDMAYA_MAYAPARTICLE_WRITER_H
-#define PXRUSDMAYA_MAYAPARTICLE_WRITER_H
+#ifndef PXRUSDTRANSLATORS_NURBS_SURFACE_WRITER_H
+#define PXRUSDTRANSLATORS_NURBS_SURFACE_WRITER_H
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/primWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdGeomPoints;
 
-class MayaParticleWriter : public MayaTransformWriter
+class UsdGeomNurbsPatch;
+
+/// Exports Maya nurbsSurface objects (MFnNurbsSurface) as UsdGeomNurbsPatch.
+class PxrUsdTranslators_NurbsSurfaceWriter : public UsdMayaPrimWriter
 {
-public:
-    MayaParticleWriter(const MDagPath & iDag,
-                       const SdfPath& uPath,
-                       usdWriteJobCtx& jobCtx);
-
+  public:
+    PxrUsdTranslators_NurbsSurfaceWriter(
+            const MDagPath & iDag,
+            const SdfPath& uPath,
+            usdWriteJobCtx& jobCtx);
+    
     void Write(const UsdTimeCode &usdTime) override;
 
-private:
-    void writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points);
+    bool ExportsGprims() const override;
 
-    enum ParticleType {
-        PER_PARTICLE_INT,
-        PER_PARTICLE_DOUBLE,
-        PER_PARTICLE_VECTOR
-    };
-
-    std::vector<std::tuple<TfToken, MString, ParticleType>> mUserAttributes;
-    bool mInitialFrameDone;
-
-    void initializeUserAttributes();
+  protected:
+    bool writeNurbsSurfaceAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsPatch &primSchema);
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MAYAPARTICLE_WRITER_H
+#endif

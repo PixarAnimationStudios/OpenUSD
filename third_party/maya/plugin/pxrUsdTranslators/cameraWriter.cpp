@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaCameraWriter.h"
+#include "pxrUsdTranslators/cameraWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/jobArgs.h"
@@ -40,14 +40,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(camera, MayaCameraWriter);
+PXRUSDMAYA_REGISTER_WRITER(camera, PxrUsdTranslators_CameraWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(camera, UsdGeomCamera);
 
-MayaCameraWriter::MayaCameraWriter(
+PxrUsdTranslators_CameraWriter::PxrUsdTranslators_CameraWriter(
     const MDagPath & iDag,
     const SdfPath& uPath,
     usdWriteJobCtx& jobCtx)
-    : MayaPrimWriter(iDag, uPath, jobCtx) 
+    : UsdMayaPrimWriter(iDag, uPath, jobCtx) 
 {
     UsdGeomCamera primSchema =
         UsdGeomCamera::Define(GetUsdStage(), GetUsdPath());
@@ -56,15 +56,15 @@ MayaCameraWriter::MayaCameraWriter(
     TF_AXIOM(_usdPrim);
 }
 
-void MayaCameraWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_CameraWriter::Write(const UsdTimeCode& usdTime)
 {
-    MayaPrimWriter::Write(usdTime);
+    UsdMayaPrimWriter::Write(usdTime);
 
     UsdGeomCamera primSchema(_usdPrim);
     writeCameraAttrs(usdTime, primSchema);
 }
 
-bool MayaCameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamera &primSchema)
+bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamera &primSchema)
 {
     // Since write() above will take care of any animation on the camera's
     // transform, we only want to proceed here if:

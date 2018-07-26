@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 
@@ -71,7 +71,7 @@ struct PxrUsdMayaPrimWriterRegistry
 {
     /// Writer factory function, i.e. a function that creates a prim writer
     /// for the given DAG/USD paths and context.
-    typedef std::function< MayaPrimWriterSharedPtr (
+    typedef std::function< UsdMayaPrimWriterSharedPtr (
             const MDagPath&,
             const SdfPath&,
             usdWriteJobCtx&) > WriterFactoryFn;
@@ -83,15 +83,15 @@ struct PxrUsdMayaPrimWriterRegistry
             const PxrUsdMayaPrimWriterArgs&,
             PxrUsdMayaPrimWriterContext*) > WriterFn;
 
-    /// \brief Register \p fn as a factory function providing a MayaPrimWriter
+    /// \brief Register \p fn as a factory function providing a UsdMayaPrimWriter
     /// subclass that can be used to write \p mayaType.
-    /// If you can't provide a valid MayaPrimWriter for the given arguments,
+    /// If you can't provide a valid UsdMayaPrimWriter for the given arguments,
     /// return a null pointer from the factory function \p fn.
     ///
     /// Example for registering a writer factory in your custom plugin:
     /// \code{.cpp}
-    /// class MyWriter : public MayaPrimWriter {
-    ///     static MayaPrimWriterSharedPtr Create(
+    /// class MyWriter : public UsdMayaPrimWriter {
+    ///     static UsdMayaPrimWriterSharedPtr Create(
     ///             MDagPath &curDag,
     ///             const SdfPath& uPath,
     ///             usdWriteJobCtx& jobCtx);
@@ -149,13 +149,13 @@ bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
     PxrUsdMayaPrimWriterContext* ctxVarName)
 
 /// \brief Registers a pre-existing writer class for the given Maya type;
-/// the writer class should be a subclass of MayaPrimWriter with a three-place
+/// the writer class should be a subclass of UsdMayaPrimWriter with a three-place
 /// constructor that takes <tt>(const MDagPath& mayaPath,
 /// const SdfPath& usdPath, usdWriteJobCtx& jobCtx)</tt> as arguments.
 ///
 /// Example:
 /// \code{.cpp}
-/// class MyWriter : public MayaPrimWriter {
+/// class MyWriter : public UsdMayaPrimWriter {
 ///     MyWriter(
 ///             const MDagPath& mayaPath,
 ///             const SdfPath& usdPath,

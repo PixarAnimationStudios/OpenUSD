@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/transformWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -42,7 +42,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(transform, MayaTransformWriter);
+PXRUSDMAYA_REGISTER_WRITER(transform, UsdMayaTransformWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(transform, UsdGeomXform);
 
 template <typename GfVec3_T>
@@ -104,7 +104,7 @@ computeXFormOps(
         const std::vector<AnimChannel>& animChanList, 
         const UsdTimeCode &usdTime,
         bool eulerFilter,
-        MayaTransformWriter::TokenRotationMap* previousRotates,
+        UsdMayaTransformWriter::TokenRotationMap* previousRotates,
         UsdUtilsSparseValueWriter *valueWriter)
 {
     TF_AXIOM(previousRotates);
@@ -296,7 +296,7 @@ _GatherAnimChannel(
     return false;
 }
 
-void MayaTransformWriter::_PushTransformStack(
+void UsdMayaTransformWriter::_PushTransformStack(
         const MFnTransform& iTrans, 
         const UsdGeomXformable& usdXformable, 
         bool writeAnim)
@@ -445,11 +445,11 @@ void MayaTransformWriter::_PushTransformStack(
     }
 }
 
-MayaTransformWriter::MayaTransformWriter(
+UsdMayaTransformWriter::UsdMayaTransformWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
         usdWriteJobCtx& jobCtx)
-        : MayaPrimWriter(iDag, uPath, jobCtx)
+        : UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     // Even though we define an Xform here, it's OK for subclassers to
     // re-define the prim as another type.
@@ -457,7 +457,7 @@ MayaTransformWriter::MayaTransformWriter(
     _usdPrim = primSchema.GetPrim();
     TF_VERIFY(_usdPrim);
 
-    // There are special cases where you might subclass MayaTransformWriter
+    // There are special cases where you might subclass UsdMayaTransformWriter
     // without actually having a transform (e.g. the internal
     // PxrUsdMaya_FunctorPrimWriter), so accomodate those here.
     if (iDag.hasFn(MFn::kTransform)) {
@@ -469,11 +469,11 @@ MayaTransformWriter::MayaTransformWriter(
     }
 }
 
-void MayaTransformWriter::Write(const UsdTimeCode& usdTime)
+void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
 {
-    MayaPrimWriter::Write(usdTime);
+    UsdMayaPrimWriter::Write(usdTime);
 
-    // There are special cases where you might subclass MayaTransformWriter
+    // There are special cases where you might subclass UsdMayaTransformWriter
     // without actually having a transform (e.g. the internal
     // PxrUsdMaya_FunctorPrimWriter), so accomodate those here.
     if (GetDagPath().hasFn(MFn::kTransform)) {

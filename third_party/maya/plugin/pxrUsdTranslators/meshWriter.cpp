@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaMeshWriter.h"
+#include "pxrUsdTranslators/meshWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/meshUtil.h"
@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(mesh, MayaMeshWriter);
+PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
 
 namespace {
@@ -110,25 +110,25 @@ void _prependValue(UsdAttribute& attr, const UsdTimeCode& usdTime, const T& valu
 
 }
 
-const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(0.f);
+const GfVec2f PxrUsdTranslators_MeshWriter::_DefaultUV = GfVec2f(0.f);
 
-const GfVec3f MayaMeshWriter::_ShaderDefaultRGB = GfVec3f(0.5);
-const float MayaMeshWriter::_ShaderDefaultAlpha = 0.0;
+const GfVec3f PxrUsdTranslators_MeshWriter::_ShaderDefaultRGB = GfVec3f(0.5);
+const float PxrUsdTranslators_MeshWriter::_ShaderDefaultAlpha = 0.0;
 
-const GfVec3f MayaMeshWriter::_ColorSetDefaultRGB = GfVec3f(1.0);
-const float MayaMeshWriter::_ColorSetDefaultAlpha = 1.0;
-const GfVec4f MayaMeshWriter::_ColorSetDefaultRGBA = GfVec4f(
-    MayaMeshWriter::_ColorSetDefaultRGB[0],
-    MayaMeshWriter::_ColorSetDefaultRGB[1],
-    MayaMeshWriter::_ColorSetDefaultRGB[2],
-    MayaMeshWriter::_ColorSetDefaultAlpha);
+const GfVec3f PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB = GfVec3f(1.0);
+const float PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha = 1.0;
+const GfVec4f PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGBA = GfVec4f(
+    PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB[0],
+    PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB[1],
+    PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB[2],
+    PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha);
 
 
-MayaMeshWriter::MayaMeshWriter(
+PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
         const MDagPath & iDag,
         const SdfPath& uPath,
         usdWriteJobCtx& jobCtx) :
-    MayaPrimWriter(iDag, uPath, jobCtx)
+    UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     if ( !isMeshValid() ) {
         return;
@@ -141,26 +141,41 @@ MayaMeshWriter::MayaMeshWriter(
     TF_AXIOM(_usdPrim);
 }
 
-void MayaMeshWriter::_prependDefaultValue(UsdAttribute& attr, const UsdTimeCode& usdTime) {
+void PxrUsdTranslators_MeshWriter::_prependDefaultValue(
+        UsdAttribute& attr,
+        const UsdTimeCode& usdTime) {
     const auto typeName = attr.GetTypeName();
     if (typeName == SdfValueTypeNames->FloatArray) {
-        _prependValue(attr, usdTime, attr.GetName() == UsdGeomTokens->primvarsDisplayOpacity ?
-                                     MayaMeshWriter::_ShaderDefaultAlpha :
-                                     MayaMeshWriter::_ColorSetDefaultAlpha);
-    } else if (typeName == (PxrUsdMayaWriteUtil::WriteUVAsFloat2() ?
-                            SdfValueTypeNames->Float2Array : SdfValueTypeNames->TexCoord2fArray)) {
-        _prependValue(attr, usdTime, MayaMeshWriter::_DefaultUV);
+        _prependValue(
+                attr,
+                usdTime,
+                attr.GetName() == UsdGeomTokens->primvarsDisplayOpacity
+                    ? PxrUsdTranslators_MeshWriter::_ShaderDefaultAlpha
+                    : PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha);
+    } else if (typeName == (PxrUsdMayaWriteUtil::WriteUVAsFloat2()
+                            ? SdfValueTypeNames->Float2Array
+                            : SdfValueTypeNames->TexCoord2fArray)) {
+        _prependValue(
+                attr,
+                usdTime,
+                PxrUsdTranslators_MeshWriter::_DefaultUV);
     } else if (typeName == SdfValueTypeNames->Color3fArray) {
-        _prependValue(attr, usdTime, attr.GetName() == UsdGeomTokens->primvarsDisplayColor ?
-                                     MayaMeshWriter::_ShaderDefaultRGB :
-                                     MayaMeshWriter::_ColorSetDefaultRGB);
+        _prependValue(
+                attr,
+                usdTime,
+                attr.GetName() == UsdGeomTokens->primvarsDisplayColor
+                    ? PxrUsdTranslators_MeshWriter::_ShaderDefaultRGB
+                    : PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB);
     } else if (typeName == SdfValueTypeNames->Color4fArray) {
-        _prependValue(attr, usdTime, MayaMeshWriter::_ColorSetDefaultRGBA);
+        _prependValue(
+                attr,
+                usdTime,
+                PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGBA);
     }
 };
 
 // virtual
-void MayaMeshWriter::PostExport()
+void PxrUsdTranslators_MeshWriter::PostExport()
 {
     auto shiftPrimvar = [](const UsdGeomPrimvar& primvar) {
         if (!primvar) {
@@ -218,16 +233,16 @@ void MayaMeshWriter::PostExport()
 }
 
 //virtual 
-void MayaMeshWriter::Write(const UsdTimeCode &usdTime)
+void PxrUsdTranslators_MeshWriter::Write(const UsdTimeCode &usdTime)
 {
-    MayaPrimWriter::Write(usdTime);
+    UsdMayaPrimWriter::Write(usdTime);
 
     UsdGeomMesh primSchema(_usdPrim);
     writeMeshAttrs(usdTime, primSchema);
 }
 
 // virtual
-bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema)
+bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema)
 {
     MStatus status = MS::kSuccess;
 
@@ -271,7 +286,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     // Return if usdTime does not match if shape is animated.
     // XXX In theory you could have an animated input mesh before the
     // skinCluster is applied but we don't support that right now.
-    // Note that _HasAnimCurves() as computed by MayaTransformWriter is
+    // Note that _HasAnimCurves() as computed by UsdMayaTransformWriter is
     // whether the finalMesh is animated.
     bool isAnimated = _skelInputMesh.isNull() ? _HasAnimCurves() : false;
     if (usdTime.IsDefault() == isAnimated) {
@@ -585,7 +600,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     return true;
 }
 
-bool MayaMeshWriter::isMeshValid() 
+bool PxrUsdTranslators_MeshWriter::isMeshValid() 
 {
     MStatus status = MS::kSuccess;
 
@@ -614,7 +629,7 @@ bool MayaMeshWriter::isMeshValid()
 }
 
 bool
-MayaMeshWriter::ExportsGprims() const
+PxrUsdTranslators_MeshWriter::ExportsGprims() const
 {
     return true;
 }

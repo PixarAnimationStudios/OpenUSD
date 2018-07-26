@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_MAYAMESHWRITER_H
-#define PXRUSDMAYA_MAYAMESHWRITER_H
+#ifndef PXRUSDTRANSLATORS_MESH_WRITER_H
+#define PXRUSDTRANSLATORS_MESH_WRITER_H
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -41,10 +41,10 @@ class UsdGeomGprim;
 
 /// Exports Maya mesh objects (MFnMesh)as UsdGeomMesh prims, taking into account
 /// subd/poly, skinning, reference objects, UVs, and color sets.
-class MayaMeshWriter : public MayaPrimWriter
+class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
 {
   public:
-    MayaMeshWriter(const MDagPath & iDag,
+    PxrUsdTranslators_MeshWriter(const MDagPath & iDag,
                    const SdfPath& uPath,
                    usdWriteJobCtx& jobCtx);
 
@@ -173,4 +173,4 @@ class MayaMeshWriter : public MayaPrimWriter
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXRUSDMAYA_MAYAMESHWRITER_H
+#endif

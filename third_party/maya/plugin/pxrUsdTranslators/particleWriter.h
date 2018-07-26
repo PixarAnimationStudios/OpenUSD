@@ -21,40 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/MayaLocatorWriter.h"
+
+#ifndef PXRUSDTRANSLATORS_PARTICLE_WRITER_H
+#define PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 
 #include "pxr/pxr.h"
 
-#include "usdMaya/MayaTransformWriter.h"
-#include "usdMaya/adaptor.h"
-#include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/usdWriteJobCtx.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xform.h"
-
-#include <maya/MDagPath.h>
-
+#include "usdMaya/transformWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(locator, MayaLocatorWriter);
-PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(locator, UsdGeomXform);
+class UsdGeomPoints;
 
-MayaLocatorWriter::MayaLocatorWriter(
-        const MDagPath& iDag,
-        const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx) :
-    MayaTransformWriter(iDag, uPath, jobCtx)
+class PxrUsdTranslators_ParticleWriter : public UsdMayaTransformWriter
 {
-    UsdGeomXform xformSchema = UsdGeomXform::Define(GetUsdStage(),
-                                                    GetUsdPath());
-    TF_AXIOM(xformSchema);
+public:
+    PxrUsdTranslators_ParticleWriter(const MDagPath & iDag,
+                       const SdfPath& uPath,
+                       usdWriteJobCtx& jobCtx);
 
-    _usdPrim = xformSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
-}
+    void Write(const UsdTimeCode &usdTime) override;
 
+private:
+    void writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points);
+
+    enum ParticleType {
+        PER_PARTICLE_INT,
+        PER_PARTICLE_DOUBLE,
+        PER_PARTICLE_VECTOR
+    };
+
+    std::vector<std::tuple<TfToken, MString, ParticleType>> mUserAttributes;
+    bool mInitialFrameDone;
+
+    void initializeUserAttributes();
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

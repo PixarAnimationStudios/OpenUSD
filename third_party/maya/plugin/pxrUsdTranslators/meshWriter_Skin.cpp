@@ -22,8 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaMeshWriter.h"
-#include "usdMaya/MayaSkeletonWriter.h"
+#include "pxrUsdTranslators/meshWriter.h"
+
+#include "pxrUsdTranslators/jointWriter.h"
+
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/usdWriteJobCtx.h"
@@ -329,9 +331,9 @@ _WriteJointOrder(const MDagPath& rootJoint,
                  const UsdSkelBindingAPI& binding,
                  const bool stripNamespaces)
 {
-    // Get joint name tokens how MayaSkeletonWriter would generate them.
-    // We don't need to check that they actually exist.
-    VtTokenArray jointNames = MayaSkeletonWriter::GetJointNames(
+    // Get joint name tokens how PxrUsdTranslators_JointWriter would generate
+    // them. We don't need to check that they actually exist.
+    VtTokenArray jointNames = PxrUsdTranslators_JointWriter::GetJointNames(
         jointDagPaths, rootJoint, stripNamespaces);
 
     binding.CreateJointsAttr().Set(jointNames);
@@ -340,7 +342,7 @@ _WriteJointOrder(const MDagPath& rootJoint,
 
 
 MObject
-MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
+PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 {
     const TfToken& exportSkin = _GetExportArgs().exportSkin;
     if (exportSkin != PxrUsdExportJobArgsTokens->auto_ &&
@@ -384,7 +386,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     if (!rootJoint.isValid()) {
         // No roots or multiple roots!
         // XXX: This is a somewhat arbitrary restriction due to the way that
-        // we currently export skeletons in MayaSkeletonWriter. We treat an
+        // we currently export skeletons in PxrUsdTranslators_JointWriter. We treat an
         // entire joint hierarchy rooted at a single joint as a single skeleton,
         // so when binding the mesh to a skeleton, we have to make sure that
         // we're only binding to a single skeleton.
@@ -414,7 +416,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     _WarnForPostDeformationTransform(GetUsdPath(), GetDagPath(), skinCluster);
 
     const SdfPath skelPath =
-        MayaSkeletonWriter::GetSkeletonPath(
+        PxrUsdTranslators_JointWriter::GetSkeletonPath(
             rootJoint, _GetExportArgs().stripNamespaces);
 
     // Export will create a Skeleton at the location corresponding to

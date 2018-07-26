@@ -26,10 +26,12 @@
 
 /// \file skelBindingsWriter.h
 
+#include "usdMaya/api.h"
+#include "usdMaya/util.h"
+
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathTable.h"
-#include "usdMaya/util.h"
 
 #include <maya/MDagPath.h>
 
@@ -48,6 +50,9 @@ public:
     /// Mark \p path as containing bindings utilizing the skeleton
     /// at \p skelPath.
     /// Bindings are marked so that SkelRoots may be post-processed.
+    /// XXX There is an external dependency in pxrUsdTranslators that needs to
+    /// be removed.
+    PXRUSDMAYA_API
     void MarkBindings(const SdfPath& path,
                       const SdfPath& skelPath,
                       const TfToken& config);

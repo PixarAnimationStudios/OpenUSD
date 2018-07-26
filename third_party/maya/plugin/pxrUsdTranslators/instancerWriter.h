@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_MayaInstancerWriter_h_
-#define _usdExport_MayaInstancerWriter_h_
+#ifndef PXRUSDTRANSLATORS_INSTANCER_WRITER_H
+#define PXRUSDTRANSLATORS_INSTANCER_WRITER_H
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaTransformWriter.h"
+
+#include "usdMaya/transformWriter.h"
 
 #include <map>
 
@@ -37,7 +38,8 @@ class UsdGeomPointInstancer;
 /// \brief Exporter for Maya particle instancer nodes (MFnInstancer).
 /// The instancer node is used in both nParticles and MASH networks.
 ///
-/// The MayaInstancerWriter exports instancers to UsdGeomPointInstancers.
+/// The PxrUsdTranslators_InstancerWriter exports instancers to
+/// UsdGeomPointInstancers.
 /// It collects all of the prototypes used by the instancer (the "instanced
 /// objects" or "input hierarchies") and places them underneath a new
 /// "Prototypes" prim that lives underneath the UsdGeomPointInstancer.
@@ -45,10 +47,10 @@ class UsdGeomPointInstancer;
 /// Prototypes may thus be exported twice if they are included in the
 /// selection of nodes to export -- once at their original location in the
 /// hierarchy, and another time as a prototype of the UsdGeomPointInstancer.
-class MayaInstancerWriter : public MayaTransformWriter
+class PxrUsdTranslators_InstancerWriter : public UsdMayaTransformWriter
 {
 public:
-    MayaInstancerWriter(
+    PxrUsdTranslators_InstancerWriter(
             const MDagPath & iDag,
             const SdfPath& uPath,
             usdWriteJobCtx& jobCtx);
@@ -67,7 +69,7 @@ private:
             const MDagPath& prototypeDagPath,
             bool* instancerTranslateAnimated) const;
 
-    /// Used internally by MayaInstancerWriter to keep track of the
+    /// Used internally by PxrUsdTranslators_InstancerWriter to keep track of the
     /// instancerTranslate xformOp for compensating Maya's instancer position
     /// behavior.
     struct _TranslateOpData {
@@ -80,7 +82,7 @@ private:
     int _numPrototypes;
     /// All valid prim writers for all prototypes. The size of this will most
     /// likely be larger than _numPrototypes.
-    std::vector<MayaPrimWriterSharedPtr> _prototypeWriters;
+    std::vector<UsdMayaPrimWriterSharedPtr> _prototypeWriters;
     /// Data used to write the instancerTranslate xformOp on prototypes that
     /// need it. There is at most one instancerTranslate op for each prototype.
     std::vector<_TranslateOpData> _instancerTranslateOps;
@@ -91,4 +93,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // _usdExport_MayaInstancerWriter_h_
+#endif

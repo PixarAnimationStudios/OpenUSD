@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_MAYA_LOCATOR_WRITER_H
-#define PXRUSDMAYA_MAYA_LOCATOR_WRITER_H
+#ifndef PXRUSDTRANSLATORS_LOCATOR_WRITER_H
+#define PXRUSDTRANSLATORS_LOCATOR_WRITER_H
 
-/// \file MayaLocatorWriter.h
+/// \file locatorWriter.h
 
 #include "pxr/pxr.h"
 
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/usdWriteJobCtx.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -45,9 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A simple USD prim writer for Maya locator shape nodes.
 ///
 /// Having this dedicated prim writer for locators ensures that we get the
-/// correct resulting USD whether mergeTransformAndShape is turned on or off,
-/// and it avoids further complicating the logic for node collapsing and
-/// exporting transforms in the MayaTransformWriter.
+/// correct resulting USD whether mergeTransformAndShape is turned on or off.
 ///
 /// Note that there is currently no "Locator" type in USD and that Maya locator
 /// nodes are exported as UsdGeomXform prims. This means that locators will not
@@ -55,10 +53,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// not able to differentiate between Xform prims that were the result of
 /// exporting Maya "transform" type nodes and those that were the result of
 /// exporting Maya "locator" type nodes.
-class MayaLocatorWriter : public MayaTransformWriter
+class PxrUsdTranslators_LocatorWriter : public UsdMayaPrimWriter
 {
 public:
-    MayaLocatorWriter(
+    PxrUsdTranslators_LocatorWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
             usdWriteJobCtx& jobCtx);
@@ -68,4 +66,4 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYA_MAYA_LOCATOR_WRITER_H
+#endif

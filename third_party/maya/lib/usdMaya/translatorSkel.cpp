@@ -903,7 +903,6 @@ PxrUsdMayaTranslatorSkel::CreateBindPose(
 
     SdfPath path = _GetBindPosePrimPath(skelQuery.GetPrim().GetPath());
 
-    std::cerr << "Create bind pose: " << path << "\n";
     return _CreateDagPose(path, joints,
                           skelQuery.GetTopology().GetParentIndices(),
                           localXforms, worldXforms, context, bindPoseNode);

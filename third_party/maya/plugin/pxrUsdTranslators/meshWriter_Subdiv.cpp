@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaMeshWriter.h"
+#include "pxrUsdTranslators/meshWriter.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 
@@ -61,7 +61,7 @@ _CompressCreases(
     }
 }
 
-void MayaMeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &primSchema)
+void PxrUsdTranslators_MeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &primSchema)
 {
 
     // Vert Creasing

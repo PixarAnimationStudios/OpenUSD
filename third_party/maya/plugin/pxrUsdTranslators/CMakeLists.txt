@@ -4,13 +4,44 @@ pxr_plugin(${PXR_PACKAGE}
     MAYA_PLUGIN
 
     LIBRARIES
+        arch
+        gf
+        tf
+        usd
+        usdGeom
+        usdMaya
+        usdShade
+        usdSkel
+        usdUtils
+        vt
+        ${Boost_PYTHON_LIBRARY}
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
 
+    PRIVATE_CLASSES
+        cameraWriter
+        instancerWriter
+        jointWriter
+        locatorWriter
+        meshWriter
+        nurbsCurveWriter
+        nurbsSurfaceWriter
+        particleWriter
+
     CPPFILES
+        cameraReader.cpp
+        materialReader.cpp
+        meshReader.cpp
+        meshWriter_Primvars.cpp
+        meshWriter_Skin.cpp
+        meshWriter_Subdiv.cpp
+        nurbsCurvesReader.cpp
+        nurbsPatchReader.cpp
         plugin.cpp
+        skelReader.cpp
+        xformReader.cpp
 
     PRIVATE_HEADERS
         api.h

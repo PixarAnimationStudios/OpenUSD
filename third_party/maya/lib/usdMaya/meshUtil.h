@@ -46,6 +46,7 @@ class UsdGeomMesh;
     ((DisplayOpacityColorSetName, "displayOpacity"))
 
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+    PXRUSDMAYA_API,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
 /// Utilities for dealing with USD and RenderMan for Maya mesh/subdiv tags.

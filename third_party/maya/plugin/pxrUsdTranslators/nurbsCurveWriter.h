@@ -21,35 +21,32 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_MayaNurbsSurfaceWriter_h_
-#define _usdExport_MayaNurbsSurfaceWriter_h_
+#ifndef PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
+#define PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdGeomNurbsPatch;
+class UsdGeomNurbsCurves;
 
-/// Exports Maya nurbsSurface objects (MFnNurbsSurface) as UsdGeomNurbsPatch.
-class MayaNurbsSurfaceWriter : public MayaPrimWriter
+/// Exports Maya nurbsCurve objects (MFnNurbsCurve) as UsdGeomNurbsCurves.
+class PxrUsdTranslators_NurbsCurveWriter : public UsdMayaPrimWriter
 {
   public:
-    MayaNurbsSurfaceWriter(
-            const MDagPath & iDag,
-            const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
-    
+    PxrUsdTranslators_NurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx);
+
     void Write(const UsdTimeCode &usdTime) override;
 
     bool ExportsGprims() const override;
 
   protected:
-    bool writeNurbsSurfaceAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsPatch &primSchema);
+    bool writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // _usdExport_MayaNurbsSurfaceWriter_h_
+#endif

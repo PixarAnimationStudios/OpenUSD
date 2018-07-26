@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_MayaTransformWriter_h_
-#define _usdExport_MayaTransformWriter_h_
+#ifndef USDMAYA_TRANSFORM_WRITER_H
+#define USDMAYA_TRANSFORM_WRITER_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformOp.h"
@@ -64,19 +64,19 @@ struct AnimChannel
 
 /// Writes transforms and serves as the base class for most shape writers.
 /// Handles instancing as well as merging transforms and shapes during export.
-class MayaTransformWriter : public MayaPrimWriter
+class UsdMayaTransformWriter : public UsdMayaPrimWriter
 {
 public:
     typedef std::unordered_map<const TfToken, MEulerRotation, TfToken::HashFunctor> TokenRotationMap;
 
     PXRUSDMAYA_API
-    MayaTransformWriter(
+    UsdMayaTransformWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
             usdWriteJobCtx& jobCtx);
 
     /// Main export function that runs when the traversal hits the node.
-    /// This extends MayaPrimWriter::Write() by exporting xform ops for
+    /// This extends UsdMayaPrimWriter::Write() by exporting xform ops for
     /// UsdGeomXformable if the Maya node has transform data.
     PXRUSDMAYA_API
     void Write(const UsdTimeCode &usdTime) override;
@@ -97,4 +97,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // _usdExport_MayaTransformWriter_h_
+#endif

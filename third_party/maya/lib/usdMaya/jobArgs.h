@@ -52,8 +52,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UsdFileExtensionCrate, "usdc")) \
     ((UsdFileFilter, "*.usd *.usda *.usdc"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
-        PXRUSDMAYA_TRANSLATOR_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    PxrUsdMayaTranslatorTokens,
+    PXRUSDMAYA_API,
+    PXRUSDMAYA_TRANSLATOR_TOKENS);
 
 #define PXRUSDMAYA_JOBEXPORTARGS_TOKENS \
     /* Dictionary keys */ \
@@ -95,8 +97,10 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
     ((auto_, "auto")) \
     ((explicit_, "explicit"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens, 
-        PXRUSDMAYA_JOBEXPORTARGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    PxrUsdExportJobArgsTokens,
+    PXRUSDMAYA_API,
+    PXRUSDMAYA_JOBEXPORTARGS_TOKENS);
 
 #define PXRUSDMAYA_JOBIMPORTARGS_TOKENS \
     /* Dictionary keys */ \
@@ -112,8 +116,10 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
     (Import) \
     ((Unloaded, ""))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdImportJobArgsTokens,
-        PXRUSDMAYA_JOBIMPORTARGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    PxrUsdImportJobArgsTokens,
+    PXRUSDMAYA_API,
+    PXRUSDMAYA_JOBIMPORTARGS_TOKENS);
 
 struct PxrUsdMayaJobExportArgs
 {

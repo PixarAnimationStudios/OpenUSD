@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaMeshWriter.h"
+#include "pxrUsdTranslators/meshWriter.h"
 
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/roundTripUtil.h"
@@ -45,7 +45,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-MayaMeshWriter::_GetMeshUVSetData(
+PxrUsdTranslators_MeshWriter::_GetMeshUVSetData(
         const MFnMesh& mesh,
         const MString& uvSetName,
         VtArray<GfVec2f>* uvArray,
@@ -194,7 +194,7 @@ _LinearColorFromColorSet(
 /// Values are gathered per face vertex, but then the data is compressed to
 /// vertex, uniform, or constant interpolation if possible.
 /// Unauthored/unpainted values will be given the index -1.
-bool MayaMeshWriter::_GetMeshColorSetData(
+bool PxrUsdTranslators_MeshWriter::_GetMeshColorSetData(
         MFnMesh& mesh,
         const MString& colorSet,
         bool isDisplayColor,
@@ -356,7 +356,7 @@ bool MayaMeshWriter::_GetMeshColorSetData(
     return true;
 }
 
-bool MayaMeshWriter::_createAlphaPrimVar(
+bool PxrUsdTranslators_MeshWriter::_createAlphaPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
         const UsdTimeCode& usdTime,
@@ -396,7 +396,7 @@ bool MayaMeshWriter::_createAlphaPrimVar(
     return true;
 }
 
-bool MayaMeshWriter::_createRGBPrimVar(
+bool PxrUsdTranslators_MeshWriter::_createRGBPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
         const UsdTimeCode& usdTime,
@@ -436,7 +436,7 @@ bool MayaMeshWriter::_createRGBPrimVar(
     return true;
 }
 
-bool MayaMeshWriter::_createRGBAPrimVar(
+bool PxrUsdTranslators_MeshWriter::_createRGBAPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
         const UsdTimeCode& usdTime,
@@ -483,7 +483,7 @@ bool MayaMeshWriter::_createRGBAPrimVar(
     return true;
 }
 
-bool MayaMeshWriter::_createUVPrimVar(
+bool PxrUsdTranslators_MeshWriter::_createUVPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
         const UsdTimeCode& usdTime,
@@ -519,7 +519,7 @@ bool MayaMeshWriter::_createUVPrimVar(
     return true;
 }
 
-bool MayaMeshWriter::_addDisplayPrimvars(
+bool PxrUsdTranslators_MeshWriter::_addDisplayPrimvars(
         UsdGeomGprim &primSchema,
         const UsdTimeCode& usdTime,
         const MFnMesh::MColorRepresentation colorRep,

@@ -1124,7 +1124,7 @@ PxrUsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
     return MPlug();
 }
 
-// XXX: see logic in MayaTransformWriter.  It's unfortunate that this
+// XXX: see logic in UsdMayaTransformWriter.  It's unfortunate that this
 // logic is in 2 places.  we should merge.
 static bool
 _IsShape(const MDagPath& dagPath) {

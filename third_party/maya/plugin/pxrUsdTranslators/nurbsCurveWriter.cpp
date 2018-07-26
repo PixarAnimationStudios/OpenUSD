@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaNurbsCurveWriter.h"
+#include "pxrUsdTranslators/nurbsCurveWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -40,13 +40,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(nurbsCurve, MayaNurbsCurveWriter);
+PXRUSDMAYA_REGISTER_WRITER(nurbsCurve, PxrUsdTranslators_NurbsCurveWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsCurve, UsdGeomNurbsCurves);
 
-MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
+PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(const MDagPath & iDag,
                                            const SdfPath& uPath,
                                            usdWriteJobCtx& jobCtx) :
-    MayaPrimWriter(iDag, uPath, jobCtx)
+    UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomNurbsCurves primSchema =
         UsdGeomNurbsCurves::Define(GetUsdStage(), GetUsdPath());
@@ -55,15 +55,17 @@ MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
     TF_AXIOM(_usdPrim);
 }
 
-void MayaNurbsCurveWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_NurbsCurveWriter::Write(const UsdTimeCode& usdTime)
 {
-    MayaPrimWriter::Write(usdTime);
+    UsdMayaPrimWriter::Write(usdTime);
 
     UsdGeomNurbsCurves primSchema(_usdPrim);
     writeNurbsCurveAttrs(usdTime, primSchema);
 }
 
-bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema)
+bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
+    const UsdTimeCode &usdTime,
+    UsdGeomNurbsCurves &primSchema)
 {
     MStatus status = MS::kSuccess;
 
@@ -183,7 +185,7 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
 }
 
 bool
-MayaNurbsCurveWriter::ExportsGprims() const
+PxrUsdTranslators_NurbsCurveWriter::ExportsGprims() const
 {
     return true;
 }

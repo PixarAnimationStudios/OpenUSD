@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 
 #include "usdMaya/jobArgs.h"
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -54,7 +54,7 @@ public:
     /// prim writer.
     /// Note: this assumes DFS traversal, i.e. parent prims should be traversed
     /// before child prims.
-    void OnWritePrim(const UsdPrim& prim, const MayaPrimWriterSharedPtr& primWriter);
+    void OnWritePrim(const UsdPrim& prim, const UsdMayaPrimWriterSharedPtr& primWriter);
 
     /// Writes model hierarchy for the given stage based on the information
     /// collected by OnWritePrim.

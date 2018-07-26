@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_MAYAPRIMWRITER_H
-#define PXRUSDMAYA_MAYAPRIMWRITER_H
+#ifndef USDMAYA_PRIM_WRITER_H
+#define USDMAYA_PRIM_WRITER_H
 
 #include "pxr/pxr.h"
 
@@ -44,23 +44,24 @@ class UsdUtilsSparseValueWriter;
 
 /// Base class for all built-in and user-defined prim writers. Translates Maya
 /// node data into USD prim(s).
-class MayaPrimWriter
+class UsdMayaPrimWriter
 {
 public:
     PXRUSDMAYA_API
-    MayaPrimWriter(
+    UsdMayaPrimWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
             usdWriteJobCtx& jobCtx);
 
     PXRUSDMAYA_API
-    virtual ~MayaPrimWriter();
+    virtual ~UsdMayaPrimWriter();
 
     /// Main export function that runs when the traversal hits the node.
     /// The default implementation writes attributes for the UsdGeomImageable
     /// and UsdGeomGprim schemas if the prim conforms to one or both; in most
     /// cases, subclasses will want to invoke the base class Write() method
     /// when overriding.
+    PXRUSDMAYA_API
     virtual void Write(const UsdTimeCode &usdTime);
 
     /// Post export function that runs before saving the stage.
@@ -145,6 +146,7 @@ public:
 protected:
     /// Helper function for determining whether the current node has input
     /// animation curves.
+    PXRUSDMAYA_API
     virtual bool _HasAnimCurves() const;
 
     /// Gets the current global export args in effect.
@@ -204,8 +206,8 @@ private:
     bool _isShapeAnimated;
 };
 
-typedef std::shared_ptr<MayaPrimWriter> MayaPrimWriterSharedPtr;
+typedef std::shared_ptr<UsdMayaPrimWriter> UsdMayaPrimWriterSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MAYAPRIMWRITER_H
+#endif

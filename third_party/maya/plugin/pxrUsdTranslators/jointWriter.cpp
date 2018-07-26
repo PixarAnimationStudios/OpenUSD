@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/MayaSkeletonWriter.h"
+#include "pxrUsdTranslators/jointWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -51,7 +51,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(joint, MayaSkeletonWriter);
+PXRUSDMAYA_REGISTER_WRITER(joint, PxrUsdTranslators_JointWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(joint, UsdSkelSkeleton);
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -119,10 +119,10 @@ _GetJointHierarchyComponents(const MDagPath& dagPath,
 }
 
 
-MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
+PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(const MDagPath& iDag,
                                        const SdfPath& uPath,
                                        usdWriteJobCtx& jobCtx)
-    : MayaPrimWriter(iDag, uPath, jobCtx), _valid(false)
+    : UsdMayaPrimWriter(iDag, uPath, jobCtx), _valid(false)
 {
     const TfToken& exportSkels = _GetExportArgs().exportSkels;
     if (exportSkels != PxrUsdExportJobArgsTokens->auto_ &&
@@ -142,7 +142,7 @@ MayaSkeletonWriter::MayaSkeletonWriter(const MDagPath& iDag,
 
 
 VtTokenArray
-MayaSkeletonWriter::GetJointNames(
+PxrUsdTranslators_JointWriter::GetJointNames(
     const std::vector<MDagPath>& joints,
     const MDagPath& rootDagPath,
     bool stripNamespaces)
@@ -171,7 +171,7 @@ MayaSkeletonWriter::GetJointNames(
 
 
 SdfPath
-MayaSkeletonWriter::GetSkeletonPath(const MDagPath& rootJoint,
+PxrUsdTranslators_JointWriter::GetSkeletonPath(const MDagPath& rootJoint,
                                     bool stripNamespaces)
 {
     return PxrUsdMayaUtil::MDagPathToUsdPath(
@@ -539,7 +539,7 @@ _GetAnimatedJoints(
 
 
 bool
-MayaSkeletonWriter::_WriteRestState()
+PxrUsdTranslators_JointWriter::_WriteRestState()
 {
     // Check if the root joint is the special root joint created
     // for round-tripping UsdSkel data.
@@ -631,7 +631,7 @@ MayaSkeletonWriter::_WriteRestState()
 
 
 void
-MayaSkeletonWriter::Write(const UsdTimeCode &usdTime)
+PxrUsdTranslators_JointWriter::Write(const UsdTimeCode &usdTime)
 {
     if (usdTime.IsDefault()) {
         _valid = _WriteRestState();
@@ -699,14 +699,14 @@ MayaSkeletonWriter::Write(const UsdTimeCode &usdTime)
 }
 
 bool
-MayaSkeletonWriter::ExportsGprims() const
+PxrUsdTranslators_JointWriter::ExportsGprims() const
 {
     // Nether the Skeleton nor its animation sources are gprims.
     return false;
 }
 
 bool
-MayaSkeletonWriter::ShouldPruneChildren() const
+PxrUsdTranslators_JointWriter::ShouldPruneChildren() const
 {
     return true;
 }

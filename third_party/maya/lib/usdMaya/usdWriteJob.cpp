@@ -25,8 +25,8 @@
 #include "usdMaya/usdWriteJob.h"
 
 #include "usdMaya/jobArgs.h"
-#include "usdMaya/MayaPrimWriter.h"
-#include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/primWriter.h"
+#include "usdMaya/transformWriter.h"
 
 #include "usdMaya/translatorMaterial.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -242,7 +242,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            MayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
+            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
 
             if (primWriter) {
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);
@@ -344,7 +344,7 @@ void usdWriteJob::evalJob(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
-    for (const MayaPrimWriterSharedPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
+    for (const UsdMayaPrimWriterSharedPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
         const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
             primWriter->Write(usdTime);
@@ -467,7 +467,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     SdfPath usdVariantRootPrimPath;
     if (mJobCtx.mParentScopePath.IsEmpty()) {
         // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
-        MayaPrimWriterSharedPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
+        UsdMayaPrimWriterSharedPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
         std::string firstPrimWriterPathStr( firstPrimWriterPtr->GetDagPath().fullPathName().asChar() );
         std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
         std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), ':', '_'); // replace namespace ":" with "_"

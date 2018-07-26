@@ -100,7 +100,7 @@ PxrUsdMaya_InstancedNodeWriter::PxrUsdMaya_InstancedNodeWriter(
     const MDagPath& mayaInstancePath,
     const SdfPath& usdInstancePath,
     usdWriteJobCtx& ctx)
-    : MayaPrimWriter(mayaInstancePath, usdInstancePath, ctx),
+    : UsdMayaPrimWriter(mayaInstancePath, usdInstancePath, ctx),
       _masterPaths(ctx._FindOrCreateInstanceMaster(mayaInstancePath)),
       _exportsGprims(false)
 {
@@ -132,12 +132,12 @@ PxrUsdMaya_InstancedNodeWriter::PxrUsdMaya_InstancedNodeWriter(
     const MDagPath dagMasterRootPath = allInstances[0];
 
     // Loop through our prim writers and compute cached data.
-    std::vector<MayaPrimWriterSharedPtr>::const_iterator begin;
-    std::vector<MayaPrimWriterSharedPtr>::const_iterator end;
+    std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator begin;
+    std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator end;
     const MDagPath path = GetDagPath();
     if (_writeJobCtx._GetInstanceMasterPrimWriters(path, &begin, &end)) {
         for (auto it = begin; it != end; ++it) {
-            const MayaPrimWriterSharedPtr writer = *it;
+            const UsdMayaPrimWriterSharedPtr writer = *it;
 
             // We export gprims if any of the subtree writers does.
             if (writer->ExportsGprims()) {

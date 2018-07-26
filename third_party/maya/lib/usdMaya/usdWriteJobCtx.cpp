@@ -23,9 +23,9 @@
 //
 #include "usdMaya/usdWriteJobCtx.h"
 
-#include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/instancedNodeWriter.h"
 #include "usdMaya/stageCache.h"
+#include "usdMaya/transformWriter.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -229,7 +229,7 @@ usdWriteJobCtx::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
         // Force un-instancing when exporting to avoid an infinite loop (we've
         // got to actually export the prims un-instanced somewhere at least
         // once).
-        std::vector<MayaPrimWriterSharedPtr> primWriters;
+        std::vector<UsdMayaPrimWriterSharedPtr> primWriters;
         CreatePrimWriterHierarchy(
                 allInstances[0],
                 exportPath,
@@ -242,7 +242,7 @@ usdWriteJobCtx::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
             return _ExportAndRefPaths();
         }
 
-        for (MayaPrimWriterSharedPtr& primWriter : primWriters) {
+        for (UsdMayaPrimWriterSharedPtr& primWriter : primWriters) {
             primWriter->Write(UsdTimeCode::Default());
         }
 
@@ -273,8 +273,8 @@ usdWriteJobCtx::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
 bool
 usdWriteJobCtx::_GetInstanceMasterPrimWriters(
     const MDagPath& instancePath,
-    std::vector<MayaPrimWriterSharedPtr>::const_iterator* begin,
-    std::vector<MayaPrimWriterSharedPtr>::const_iterator* end) const
+    std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* begin,
+    std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const
 {
     const MObjectHandle handle(instancePath.node());
     const auto it = _objectsToMasterWriters.find(handle);
@@ -385,7 +385,7 @@ void usdWriteJobCtx::processInstances()
     }
 }
 
-MayaPrimWriterSharedPtr usdWriteJobCtx::CreatePrimWriter(
+UsdMayaPrimWriterSharedPtr usdWriteJobCtx::CreatePrimWriter(
     const MDagPath& curDag,
     const SdfPath& usdPath,
     const bool forceUninstance)
@@ -416,7 +416,7 @@ MayaPrimWriterSharedPtr usdWriteJobCtx::CreatePrimWriter(
         std::string mayaTypeName(depNodeFn.typeName().asChar());
         if (PxrUsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
                 _FindWriter(mayaTypeName)) {
-            if (MayaPrimWriterSharedPtr primPtr = primWriterFactory(
+            if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(
                     curDag, writePath, *this)) {
                 // We found a registered user prim writer that handles this node
                 // type, so return now.
@@ -460,7 +460,7 @@ usdWriteJobCtx::CreatePrimWriterHierarchy(
     const SdfPath& rootUsdPath,
     const bool forceUninstance,
     const bool exportRootVisibility,
-    std::vector<MayaPrimWriterSharedPtr>* primWritersOut)
+    std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut)
 {
     if (!primWritersOut) {
         TF_CODING_ERROR("primWritersOut is null");
@@ -504,7 +504,7 @@ usdWriteJobCtx::CreatePrimWriterHierarchy(
         // Currently, forceUninstance only applies to the root DAG path but not
         // to descendant nodes (i.e. nested instancing will always occur).
         // Its purpose is to allow us to do the actual write of the master.
-        MayaPrimWriterSharedPtr writer = this->CreatePrimWriter(
+        UsdMayaPrimWriterSharedPtr writer = this->CreatePrimWriter(
                 curDagPath,
                 curActualUsdPath,
                 curDagPath == rootDag ? forceUninstance : false);

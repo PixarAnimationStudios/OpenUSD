@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 #define PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/usdWriteJobCtx.h"
 
 #include "pxr/pxr.h"
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// This is a "helper" prim writer used internally by usdWriteJobCtx to
 /// author nodes that are directly instanced in Maya.
-class PxrUsdMaya_InstancedNodeWriter : public MayaPrimWriter {
+class PxrUsdMaya_InstancedNodeWriter : public UsdMayaPrimWriter {
 public:
     PxrUsdMaya_InstancedNodeWriter(
         const MDagPath& mayaInstancePath,

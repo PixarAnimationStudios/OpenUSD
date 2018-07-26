@@ -42,9 +42,11 @@ public:
     /// modifying the prim reader context as a result.
     /// Callers must ensure \p context is non-null.
     /// Returns true if successful.
+    PXRUSDMAYA_API
     virtual bool Read(PxrUsdMayaPrimReaderContext* context) = 0;
 
     /// Whether this prim reader specifies a PostReadSubtree step.
+    PXRUSDMAYA_API
     virtual bool HasPostReadSubtree() const;
 
     /// An additional import step that runs after all descendants of this prim
@@ -54,10 +56,12 @@ public:
     /// are run in the order:
     /// (1) Read A (2) Read B (3) PostReadSubtree B (4) PostReadSubtree A,
     /// (5) Read C (6) PostReadSubtree C
+    PXRUSDMAYA_API
     virtual void PostReadSubtree(PxrUsdMayaPrimReaderContext* context);
 
 protected:
     /// Input arguments. Read data about the input USD prim from here.
+    PXRUSDMAYA_API
     const PxrUsdMayaPrimReaderArgs& _GetArgs();
 
 private:

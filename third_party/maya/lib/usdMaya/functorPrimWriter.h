@@ -29,10 +29,10 @@
 #include "pxr/pxr.h"
 
 #include "usdMaya/api.h"
-#include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/transformWriter.h"
 
 #include "pxr/usd/usd/stage.h"
 
@@ -42,11 +42,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class PxrUsdMaya_FunctorPrimWriter
 /// \brief This class is scaffolding to hold bare prim writer functions and
-/// adapt them to the MayaPrimWriter or MayaTransformWriter interface
+/// adapt them to the UsdMayaPrimWriter or UsdMayaTransformWriter interface
 /// (depending on whether the writer plugin is handling a shape or a transform).
 ///
 /// It is used by the PXRUSDMAYA_DEFINE_WRITER macro.
-class PxrUsdMaya_FunctorPrimWriter final : public MayaTransformWriter
+class PxrUsdMaya_FunctorPrimWriter final : public UsdMayaTransformWriter
 {
 public:
     PxrUsdMaya_FunctorPrimWriter(
@@ -62,7 +62,7 @@ public:
     bool ShouldPruneChildren() const override;    
     const SdfPathVector& GetModelPaths() const override;
 
-    static MayaPrimWriterSharedPtr Create(
+    static UsdMayaPrimWriterSharedPtr Create(
             const MDagPath& dag,
             const SdfPath& path,
             usdWriteJobCtx& jobCtx,

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterArgs.h"
@@ -73,7 +73,7 @@ _IsAnimated(const PxrUsdMayaJobExportArgs& args, const MDagPath& dagPath)
     return false;
 }
 
-MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
+UsdMayaPrimWriter::UsdMayaPrimWriter(const MDagPath& iDag,
                                const SdfPath& uPath,
                                usdWriteJobCtx& jobCtx) :
     _writeJobCtx(jobCtx),
@@ -94,18 +94,18 @@ MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
     }
 }
 
-MayaPrimWriter::~MayaPrimWriter()
+UsdMayaPrimWriter::~UsdMayaPrimWriter()
 {
 }
 
 bool
-MayaPrimWriter::_IsMergedTransform() const
+UsdMayaPrimWriter::_IsMergedTransform() const
 {
     return _writeJobCtx.IsMergedTransform(GetDagPath());
 }
 
 bool
-MayaPrimWriter::_IsMergedShape() const
+UsdMayaPrimWriter::_IsMergedShape() const
 {
     MDagPath parentPath = GetDagPath();
     parentPath.pop();
@@ -131,7 +131,7 @@ _GetClassNamesToWrite(
 }
 
 void
-MayaPrimWriter::Write(const UsdTimeCode &usdTime)
+UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
 {
     // We imagine that most prim writers will be writing Imageable prims
     // (all of the ones thus far do), but this might not be true in
@@ -223,85 +223,85 @@ MayaPrimWriter::Write(const UsdTimeCode &usdTime)
 }
 
 bool
-MayaPrimWriter::ExportsGprims() const
+UsdMayaPrimWriter::ExportsGprims() const
 {
     return false;
 }
 
 bool
-MayaPrimWriter::ShouldPruneChildren() const
+UsdMayaPrimWriter::ShouldPruneChildren() const
 {
     return false;
 }
 
 void
-MayaPrimWriter::PostExport()
+UsdMayaPrimWriter::PostExport()
 { 
 }
 
 void
-MayaPrimWriter::SetExportVisibility(bool exportVis)
+UsdMayaPrimWriter::SetExportVisibility(bool exportVis)
 {
     _exportVisibility = exportVis;
 }
 
 bool
-MayaPrimWriter::GetExportVisibility() const
+UsdMayaPrimWriter::GetExportVisibility() const
 {
     return _exportVisibility;
 }
 
 const SdfPathVector&
-MayaPrimWriter::GetModelPaths() const
+UsdMayaPrimWriter::GetModelPaths() const
 {
     static const SdfPathVector empty;
     return empty;
 }
 
 const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
-MayaPrimWriter::GetDagToUsdPathMapping() const
+UsdMayaPrimWriter::GetDagToUsdPathMapping() const
 {
     return _baseDagToUsdPaths;
 }
 
 const MDagPath&
-MayaPrimWriter::GetDagPath() const
+UsdMayaPrimWriter::GetDagPath() const
 {
     return _dagPath;
 }
 
 const SdfPath&
-MayaPrimWriter::GetUsdPath() const
+UsdMayaPrimWriter::GetUsdPath() const
 {
     return _usdPath;
 }
 
 const UsdPrim&
-MayaPrimWriter::GetUsdPrim() const
+UsdMayaPrimWriter::GetUsdPrim() const
 {
     return _usdPrim;
 }
 
 const UsdStageRefPtr&
-MayaPrimWriter::GetUsdStage() const
+UsdMayaPrimWriter::GetUsdStage() const
 {
     return _writeJobCtx.getUsdStage();
 }
 
 const PxrUsdMayaJobExportArgs&
-MayaPrimWriter::_GetExportArgs() const
+UsdMayaPrimWriter::_GetExportArgs() const
 {
     return _writeJobCtx.getArgs();
 }
 
 UsdUtilsSparseValueWriter*
-MayaPrimWriter::_GetSparseValueWriter()
+UsdMayaPrimWriter::_GetSparseValueWriter()
 {
     return &_valueWriter;
 }
 
 bool
-MayaPrimWriter::_HasAnimCurves() const
+UsdMayaPrimWriter::_HasAnimCurves() const
 {
     return _hasAnimCurves;
 }

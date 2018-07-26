@@ -40,9 +40,11 @@ pxr_shared_library(${PXR_PACKAGE}
         stageData
         meshUtil
         pointBasedDeformerNode
+        primReader
         primReaderArgs
         primReaderContext
         primReaderRegistry
+        primWriter
         primWriterArgs
         primWriterContext
         primWriterRegistry
@@ -67,15 +69,11 @@ pxr_shared_library(${PXR_PACKAGE}
         shadingModeRegistry
         skelBindingsWriter
         stageNode
+        transformWriter
         util
         usdPrimProvider
         writeUtil
         xformStack
-
-        MayaPrimWriter
-        MayaTransformWriter
-
-        primReader
 
         jobArgs
         usdReadJob
@@ -104,29 +102,10 @@ pxr_shared_library(${PXR_PACKAGE}
         modelKindWriter
         registryHelper
 
-        MayaCameraWriter
-        MayaInstancerWriter
-        MayaLocatorWriter
-        MayaMeshWriter
-        MayaNurbsCurveWriter
-        MayaNurbsSurfaceWriter
-        MayaParticleWriter
-        MayaSkeletonWriter
-
     PRIVATE_HEADERS
         shadingModePxrRis_rfm_map.h
 
     CPPFILES
-        MayaMeshWriter_PrimVars.cpp
-        MayaMeshWriter_Skin.cpp
-        MayaMeshWriter_SubDiv.cpp
-        primReaderCamera.cpp
-        primReaderMaterial.cpp
-        primReaderMesh.cpp
-        primReaderNurbsCurves.cpp
-        primReaderNurbsPatch.cpp
-        primReaderSkel.cpp
-        primReaderXform.cpp
         shadingModeDisplayColor.cpp
         shadingModePxrRis.cpp
         translatorMesh_PrimVars.cpp

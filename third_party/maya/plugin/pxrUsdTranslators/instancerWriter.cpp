@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/MayaInstancerWriter.h"
+#include "pxrUsdTranslators/instancerWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -45,7 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static constexpr double _EPSILON = 1e-3;
 
-PXRUSDMAYA_REGISTER_WRITER(instancer, MayaInstancerWriter);
+PXRUSDMAYA_REGISTER_WRITER(instancer, PxrUsdTranslators_InstancerWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(instancer, UsdGeomPointInstancer);
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -54,10 +54,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (instancerTranslate)
 );
 
-MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
+PxrUsdTranslators_InstancerWriter::PxrUsdTranslators_InstancerWriter(const MDagPath & iDag,
     const SdfPath& uPath,
     usdWriteJobCtx& jobCtx)
-    : MayaTransformWriter(iDag, uPath, jobCtx),
+    : UsdMayaTransformWriter(iDag, uPath, jobCtx),
       _numPrototypes(0)
 {
     UsdGeomPointInstancer primSchema =
@@ -74,9 +74,9 @@ MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
 
 /* virtual */
 void
-MayaInstancerWriter::Write(const UsdTimeCode &usdTime)
+PxrUsdTranslators_InstancerWriter::Write(const UsdTimeCode &usdTime)
 {
-    MayaTransformWriter::Write(usdTime);
+    UsdMayaTransformWriter::Write(usdTime);
 
     UsdGeomPointInstancer primSchema(_usdPrim);
     writeInstancerAttrs(usdTime, primSchema);
@@ -105,7 +105,7 @@ _GetTransformedOriginInLocalSpace(
 /// contribute extra data. It should never return false negatives, which
 /// would cause correctness problems.)
 bool
-MayaInstancerWriter::_NeedsExtraInstancerTranslate(
+PxrUsdTranslators_InstancerWriter::_NeedsExtraInstancerTranslate(
     const MDagPath& prototypeDagPath,
     bool* instancerTranslateAnimated) const
 {
@@ -131,7 +131,7 @@ MayaInstancerWriter::_NeedsExtraInstancerTranslate(
 }
 
 bool
-MayaInstancerWriter::writeInstancerAttrs(
+PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
     const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer)
 {
     MStatus status = MS::kSuccess;
@@ -235,7 +235,7 @@ MayaInstancerWriter::writeInstancerAttrs(
     }
 
     // Actual write of prototypes (@ both default time and animated time).
-    for (MayaPrimWriterSharedPtr& writer : _prototypeWriters) {
+    for (UsdMayaPrimWriterSharedPtr& writer : _prototypeWriters) {
         writer->Write(usdTime);
 
         if (usdTime.IsDefault()) {
@@ -311,21 +311,21 @@ MayaInstancerWriter::writeInstancerAttrs(
 }
 
 void
-MayaInstancerWriter::PostExport()
+PxrUsdTranslators_InstancerWriter::PostExport()
 {
-    for (MayaPrimWriterSharedPtr& writer : _prototypeWriters) {
+    for (UsdMayaPrimWriterSharedPtr& writer : _prototypeWriters) {
         writer->PostExport();
     }
 }
 
 bool
-MayaInstancerWriter::ShouldPruneChildren() const
+PxrUsdTranslators_InstancerWriter::ShouldPruneChildren() const
 {
     return true;
 }
 
 const SdfPathVector&
-MayaInstancerWriter::GetModelPaths() const
+PxrUsdTranslators_InstancerWriter::GetModelPaths() const
 {
     return _modelPaths;
 }

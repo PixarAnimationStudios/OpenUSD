@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_MayaCameraWriter_h_
-#define _usdExport_MayaCameraWriter_h_
+#ifndef PXRUSDTRANSLATORS_CAMERA_WRITER_H
+#define PXRUSDTRANSLATORS_CAMERA_WRITER_H
 
 #include "pxr/pxr.h"
-#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/usdWriteJobCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,10 +34,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomCamera;
 
 /// Exports Maya cameras to UsdGeomCamera.
-class MayaCameraWriter : public MayaPrimWriter
+class PxrUsdTranslators_CameraWriter : public UsdMayaPrimWriter
 {
   public:
-    MayaCameraWriter(
+    PxrUsdTranslators_CameraWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
         usdWriteJobCtx& jobCtx);
@@ -51,4 +51,4 @@ class MayaCameraWriter : public MayaPrimWriter
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // _usdExport_MayaCameraWriter_h_
+#endif

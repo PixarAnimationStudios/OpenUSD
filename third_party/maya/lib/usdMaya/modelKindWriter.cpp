@@ -65,7 +65,7 @@ _FindAncestorRootPrimOrComponent(const UsdPrim& prim)
 void
 PxrUsdMaya_ModelKindWriter::OnWritePrim(
     const UsdPrim& prim,
-    const MayaPrimWriterSharedPtr& primWriter)
+    const UsdMayaPrimWriterSharedPtr& primWriter)
 {
     const SdfPath& path = prim.GetPath();
 
