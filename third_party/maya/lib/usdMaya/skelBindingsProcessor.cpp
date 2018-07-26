@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/skelBindingsWriter.h"
+#include "usdMaya/skelBindingsProcessor.h"
 
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrUsdMaya_SkelBindingsWriter::PxrUsdMaya_SkelBindingsWriter()
+UsdMaya_SkelBindingsProcessor::UsdMaya_SkelBindingsProcessor()
 {
 }
 
@@ -118,7 +118,7 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
 
 
 void
-PxrUsdMaya_SkelBindingsWriter::MarkBindings(
+UsdMaya_SkelBindingsProcessor::MarkBindings(
     const SdfPath& path,
     const SdfPath& skelPath,
     const TfToken& config)
@@ -128,7 +128,7 @@ PxrUsdMaya_SkelBindingsWriter::MarkBindings(
 
 
 bool
-PxrUsdMaya_SkelBindingsWriter::_VerifyOrMakeSkelRoots(
+UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(
     const UsdStagePtr& stage) const
 {
     bool success = true;
@@ -143,7 +143,7 @@ PxrUsdMaya_SkelBindingsWriter::_VerifyOrMakeSkelRoots(
 
 
 bool
-PxrUsdMaya_SkelBindingsWriter::PostProcessSkelBindings(
+UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(
     const UsdStagePtr& stage) const
 {
     bool success = _VerifyOrMakeSkelRoots(stage);

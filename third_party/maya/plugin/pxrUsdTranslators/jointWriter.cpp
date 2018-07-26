@@ -581,7 +581,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
     _SetAttribute(_skel.GetJointsAttr(), skelJointNames);
 
     SdfPath skelPath = _skel.GetPrim().GetPath();
-    _writeJobCtx.getSkelBindingsWriter().MarkBindings(
+    _writeJobCtx.MarkSkelBindings(
         skelPath, skelPath, _GetExportArgs().exportSkels);
         
     VtMatrix4dArray bindXforms =

@@ -33,7 +33,7 @@ from maya import cmds
 from maya import standalone
 
 
-class testUsdMayaModelKindWriter(unittest.TestCase):
+class testUsdMayaModelKindProcessor(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):

@@ -25,12 +25,12 @@
 #include "usdMaya/usdWriteJob.h"
 
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/modelKindProcessor.h"
 #include "usdMaya/primWriter.h"
-#include "usdMaya/transformWriter.h"
-
-#include "usdMaya/translatorMaterial.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/transformWriter.h"
+#include "usdMaya/translatorMaterial.h"
 
 #include "usdMaya/chaser.h"
 #include "usdMaya/chaserRegistry.h"
@@ -72,8 +72,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-usdWriteJob::usdWriteJob(const PxrUsdMayaJobExportArgs & iArgs) :
-    mModelKindWriter(iArgs), mJobCtx(iArgs)
+usdWriteJob::usdWriteJob(const PxrUsdMayaJobExportArgs& iArgs)
+    : mJobCtx(iArgs),
+      _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
 }
 
@@ -136,8 +137,6 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
         mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeInterval.GetMin());
         mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeInterval.GetMax());
     }
-
-    mModelKindWriter.Reset();
 
     // Setup the requested render layer mode:
     //     defaultLayer    - Switch to the default render layer before exporting,
@@ -274,7 +273,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                             primWriter->GetDagToUsdPathMapping();
                     mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
 
-                    mModelKindWriter.OnWritePrim(usdPrim, primWriter);
+                    _modelKindProcessor->OnWritePrim(usdPrim, primWriter);
                 }
 
                 if (primWriter->ShouldPruneChildren()) {
@@ -305,16 +304,14 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
                 mDagPathToUsdPathMap,
                 exportParams);
 
+    // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
     // want to cleanup the InstanceSources prim before writing model hierarchy.
-    mJobCtx.processInstances();
-
-    if (!mModelKindWriter.MakeModelHierarchy(mJobCtx.mStage)) {
+    if (!mJobCtx.PostProcess()) {
         return false;
     }
 
-    if (!mJobCtx.getSkelBindingsWriter().PostProcessSkelBindings(
-            mJobCtx.mStage)) {
+    if (!_modelKindProcessor->MakeModelHierarchy(mJobCtx.mStage)) {
         return false;
     }
 

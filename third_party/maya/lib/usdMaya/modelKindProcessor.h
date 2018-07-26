@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_MODEL_KIND_WRITER_H
-#define PXRUSDMAYA_MODEL_KIND_WRITER_H
+#ifndef USDMAYA_MODEL_KIND_PROCESSOR_H
+#define USDMAYA_MODEL_KIND_PROCESSOR_H
 
-/// \file modelKindWriter.h
+/// \file usdMaya/modelKindProcessor.h
 
 #include "pxr/pxr.h"
 
@@ -45,16 +45,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// usdWriteJob. It is a "black box" that reads each newly-written prim, one
 /// by one, saving information that is used to determine model hierarchy at the
 /// end of writing to the USD stage.
-class PxrUsdMaya_ModelKindWriter {
+class UsdMaya_ModelKindProcessor
+{
 public:
-    PxrUsdMaya_ModelKindWriter(const PxrUsdMayaJobExportArgs& args);
+    UsdMaya_ModelKindProcessor(const PxrUsdMayaJobExportArgs& args);
 
     /// Processes the given prim in order to collect model hierarchy data.
     /// This should be called after the prim has been written with the given
     /// prim writer.
     /// Note: this assumes DFS traversal, i.e. parent prims should be traversed
     /// before child prims.
-    void OnWritePrim(const UsdPrim& prim, const UsdMayaPrimWriterSharedPtr& primWriter);
+    void OnWritePrim(
+            const UsdPrim& prim,
+            const UsdMayaPrimWriterSharedPtr& primWriter);
 
     /// Writes model hierarchy for the given stage based on the information
     /// collected by OnWritePrim.
@@ -64,9 +67,6 @@ public:
     /// \returns true if the model hierarchy was written successfully, or
     ///          false if there was a problem verifying or writing model kinds
     bool MakeModelHierarchy(UsdStageRefPtr& stage);
-
-    /// Clears all state, as if it were initiailly constructed.
-    void Reset();
 
 private:
     typedef std::unordered_map<SdfPath, std::vector<SdfPath>, SdfPath::Hash>
@@ -104,4 +104,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MODEL_KIND_WRITER_H
+#endif

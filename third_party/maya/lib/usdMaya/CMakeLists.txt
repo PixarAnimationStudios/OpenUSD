@@ -67,7 +67,6 @@ pxr_shared_library(${PXR_PACKAGE}
         shadingModeExporterContext
         shadingModeImporter
         shadingModeRegistry
-        skelBindingsWriter
         stageNode
         transformWriter
         util
@@ -99,8 +98,9 @@ pxr_shared_library(${PXR_PACKAGE}
         functorPrimReader
         functorPrimWriter
         instancedNodeWriter
-        modelKindWriter
+        modelKindProcessor
         registryHelper
+        skelBindingsProcessor
 
     PRIVATE_HEADERS
         shadingModePxrRis_rfm_map.h
@@ -190,7 +190,7 @@ pxr_test_scripts(
         testenv/testUsdMayaAppDir.py
         testenv/testUsdMayaDiagnosticDelegate.py
         testenv/testUsdMayaGetVariantSetSelections.py
-        testenv/testUsdMayaModelKindWriter.py
+        testenv/testUsdMayaModelKindProcessor.py
         testenv/testUsdMayaProxyShape.py
         testenv/testUsdMayaReadWriteUtils.py
         testenv/testUsdMayaReferenceAssemblyEdits.py
@@ -862,13 +862,13 @@ pxr_register_test(testUsdMayaGetVariantSetSelections
 )
 
 pxr_install_test_dir(
-    SRC testenv/UsdMayaModelKindWriterTest
-    DEST testUsdMayaModelKindWriter
+    SRC testenv/UsdMayaModelKindProcessorTest
+    DEST testUsdMayaModelKindProcessor
 )
-pxr_register_test(testUsdMayaModelKindWriter
+pxr_register_test(testUsdMayaModelKindProcessor
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaModelKindWriter"
-    TESTENV testUsdMayaModelKindWriter
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaModelKindProcessor"
+    TESTENV testUsdMayaModelKindProcessor
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

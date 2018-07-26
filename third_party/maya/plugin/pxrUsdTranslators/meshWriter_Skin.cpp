@@ -430,7 +430,7 @@ PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
                               _tokens->skelGeomBindTransform});
 
     // Mark the bindings for post processing.
-    _writeJobCtx.getSkelBindingsWriter().MarkBindings(
+    _writeJobCtx.MarkSkelBindings(
         primSchema.GetPrim().GetPath(),
         skelPath, exportSkin);
 

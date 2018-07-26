@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/modelKindWriter.h"
+#include "usdMaya/modelKindProcessor.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMaya_ModelKindWriter::PxrUsdMaya_ModelKindWriter(
+UsdMaya_ModelKindProcessor::UsdMaya_ModelKindProcessor(
     const PxrUsdMayaJobExportArgs& args)
     : _args(args),
       _rootIsAssembly(KindRegistry::IsA(args.rootKind, KindTokens->assembly))
@@ -63,7 +63,7 @@ _FindAncestorRootPrimOrComponent(const UsdPrim& prim)
 
 
 void
-PxrUsdMaya_ModelKindWriter::OnWritePrim(
+UsdMaya_ModelKindProcessor::OnWritePrim(
     const UsdPrim& prim,
     const UsdMayaPrimWriterSharedPtr& primWriter)
 {
@@ -108,7 +108,7 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
 }
 
 bool
-PxrUsdMaya_ModelKindWriter::MakeModelHierarchy(UsdStageRefPtr& stage)
+UsdMaya_ModelKindProcessor::MakeModelHierarchy(UsdStageRefPtr& stage)
 {
     // For any root-prim that doesn't already have an authored kind 
     // (thinking ahead to being able to specify USD_kind per bug/128430),
@@ -142,7 +142,7 @@ PxrUsdMaya_ModelKindWriter::MakeModelHierarchy(UsdStageRefPtr& stage)
 }
 
 bool
-PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
+UsdMaya_ModelKindProcessor::_AuthorRootPrimKinds(
     UsdStageRefPtr& stage,
     _PathBoolMap& rootPrimIsComponent)
 {
@@ -229,7 +229,7 @@ PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
 }
 
 bool
-PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
+UsdMaya_ModelKindProcessor::_FixUpPrimKinds(
     UsdStageRefPtr& stage,
     const _PathBoolMap& rootPrimIsComponent)
 {
@@ -238,9 +238,10 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
         // The kind of the root prim under which each reference was authored
         // informs how we will fix-up/fill-in kind on it and its ancestors.
         UsdPrim prim = stage->GetPrimAtPath(path);
-        if (!prim) {
+        if (!prim || !prim.IsDefined()) {
             continue;
         }
+
         UsdModelAPI usdModel(prim);
         TfToken kind;
         
@@ -301,14 +302,6 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
     }
 
     return true;
-}
-
-void
-PxrUsdMaya_ModelKindWriter::Reset()
-{
-    _pathsThatMayHaveKind.clear();
-    _pathsToExportedGprimsMap.clear();
-    _pathsWithExportedGprims.clear();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

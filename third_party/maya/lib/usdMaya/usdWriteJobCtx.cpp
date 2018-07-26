@@ -24,6 +24,7 @@
 #include "usdMaya/usdWriteJobCtx.h"
 
 #include "usdMaya/instancedNodeWriter.h"
+#include "usdMaya/skelBindingsProcessor.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/transformWriter.h"
 
@@ -70,9 +71,12 @@ namespace {
 }
 
 usdWriteJobCtx::usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args)
-        : mArgs(args)
+    : mArgs(args),
+      _skelBindingsProcessor(new UsdMaya_SkelBindingsProcessor())
 {
 }
+
+usdWriteJobCtx::~usdWriteJobCtx() = default;
 
 bool
 usdWriteJobCtx::IsMergedTransform(const MDagPath& path) const
@@ -374,7 +378,7 @@ bool usdWriteJobCtx::openFile(const std::string& filename, bool append)
     return true;
 }
 
-void usdWriteJobCtx::processInstances()
+bool usdWriteJobCtx::PostProcess()
 {
     if (mArgs.exportInstances) {
         if (_objectsToMasterWriters.empty()) {
@@ -383,6 +387,12 @@ void usdWriteJobCtx::processInstances()
             mInstancesPrim.SetSpecifier(SdfSpecifierOver);
         }
     }
+
+    if (!_skelBindingsProcessor->PostProcessSkelBindings(mStage)) {
+        return false;
+    }
+
+    return true;
 }
 
 UsdMayaPrimWriterSharedPtr usdWriteJobCtx::CreatePrimWriter(
@@ -522,6 +532,15 @@ usdWriteJobCtx::CreatePrimWriterHierarchy(
 
         primWritersOut->push_back(writer);
     }
+}
+
+void
+usdWriteJobCtx::MarkSkelBindings(
+    const SdfPath& path,
+    const SdfPath& skelPath,
+    const TfToken& config)
+{
+    _skelBindingsProcessor->MarkBindings(path, skelPath, config);
 }
 
 

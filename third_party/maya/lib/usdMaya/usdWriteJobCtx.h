@@ -30,7 +30,6 @@
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/skelBindingsWriter.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -42,6 +41,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class UsdMaya_SkelBindingsProcessor;
 class usdWriteJob;
 
 /// \class usdWriteJobCtx
@@ -56,6 +56,10 @@ protected:
 
     PXRUSDMAYA_API
     usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args);
+
+    PXRUSDMAYA_API
+    ~usdWriteJobCtx();
+
 public:
     const PxrUsdMayaJobExportArgs& getArgs() const { return mArgs; };
     const UsdStageRefPtr& getUsdStage() const { return mStage; };
@@ -115,17 +119,27 @@ public:
     PXRUSDMAYA_API
     bool needToTraverse(const MDagPath& curDag) const;
 
+    /// Mark \p path as containing bindings utilizing the skeleton
+    /// at \p skelPath.
+    /// Bindings are marked so that SkelRoots may be post-processed.
+    /// Valid values for \p config are:
+    /// - PxrUsdExportJobArgsTokens->explicit_: search for an existing SkelRoot
+    /// - PxrUsdExportJobArgsTokens->auto_: create a SkelRoot if needed
+    /// PxrUsdExportJobArgsTokens->none is not valid for \p config; it will
+    /// mark an invalid binding.
     PXRUSDMAYA_API
-    PxrUsdMaya_SkelBindingsWriter& getSkelBindingsWriter()
-    {
-        return mSkelBindingsWriter;
-    }
+    void MarkSkelBindings(
+            const SdfPath& path,
+            const SdfPath& skelPath,
+            const TfToken& config);
 
 protected:
     PXRUSDMAYA_API
     bool openFile(const std::string& filename, bool append);
+
+    /// Perform any necessary cleanup; call this before you save the stage.
     PXRUSDMAYA_API
-    void processInstances();
+    bool PostProcess();
 
     PxrUsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over
@@ -190,7 +204,9 @@ private:
 
     UsdPrim mInstancesPrim;
     SdfPath mParentScopePath;
-    PxrUsdMaya_SkelBindingsWriter mSkelBindingsWriter;
+
+    std::unique_ptr<UsdMaya_SkelBindingsProcessor> _skelBindingsProcessor;
+
     // Cache of node type names mapped to their "resolved" writer factory,
     // taking into account Maya's type hierarchy (note that this means that
     // some types not resolved by the PxrUsdMayaPrimWriterRegistry will get

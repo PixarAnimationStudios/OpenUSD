@@ -31,7 +31,6 @@
 #include "usdMaya/chaser.h"
 
 #include "usdMaya/util.h"
-#include "usdMaya/modelKindWriter.h"
 
 #include "usdMaya/usdWriteJobCtx.h"
 
@@ -43,6 +42,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class UsdMaya_ModelKindProcessor;
 
 class usdWriteJob
 {
@@ -86,9 +86,9 @@ class usdWriteJob
 
     PxrUsdMayaChaserRefPtrVector mChasers;
 
-    PxrUsdMaya_ModelKindWriter mModelKindWriter;
-
     usdWriteJobCtx mJobCtx;
+
+    std::unique_ptr<UsdMaya_ModelKindProcessor> _modelKindProcessor;
 };
 
 

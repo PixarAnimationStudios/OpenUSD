@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_SKELBINDINGSWRITER_H
-#define PXRUSDMAYA_SKELBINDINGSWRITER_H
+#ifndef USDMAYA_SKEL_BINDINGS_PROCESSOR_H
+#define USDMAYA_SKEL_BINDINGS_PROCESSOR_H
 
-/// \file skelBindingsWriter.h
+/// \file usdMaya/skelBindingsProcessor.h
 
 #include "usdMaya/api.h"
 #include "usdMaya/util.h"
@@ -43,16 +43,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// This class encapsulates all of the logic for writing or modifying
 /// SkelRoot prims for all scopes that have skel bindings.
-class PxrUsdMaya_SkelBindingsWriter {
+class UsdMaya_SkelBindingsProcessor
+{
 public:
-    PxrUsdMaya_SkelBindingsWriter();
+    UsdMaya_SkelBindingsProcessor();
 
     /// Mark \p path as containing bindings utilizing the skeleton
     /// at \p skelPath.
     /// Bindings are marked so that SkelRoots may be post-processed.
-    /// XXX There is an external dependency in pxrUsdTranslators that needs to
-    /// be removed.
-    PXRUSDMAYA_API
+    /// Valid values for \p config are:
+    /// - PxrUsdExportJobArgsTokens->explicit_: search for an existing SkelRoot
+    /// - PxrUsdExportJobArgsTokens->auto_: create a SkelRoot if needed
+    /// PxrUsdExportJobArgsTokens->none is not valid for \p config; it will
+    /// mark an invalid binding.
     void MarkBindings(const SdfPath& path,
                       const SdfPath& skelPath,
                       const TfToken& config);
@@ -72,4 +75,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_SKELBINDINGSWRITER_H
+#endif
