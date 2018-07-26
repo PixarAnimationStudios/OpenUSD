@@ -1312,11 +1312,13 @@ PxrUsdMayaUtil::setPlugValue(
             status = attrPlug.setNumElements(vecArray.size());
             CHECK_MSTATUS_AND_RETURN(status, false);
 
-            for (int j = 0; j  < vecArray.size(); ++j) {
+            for (size_t j = 0u; j < vecArray.size(); ++j) {
                 GfVec3f vec3fVal = vecArray[j];
-                MPlug elemPlug = attrPlug.elementByPhysicalIndex(j,&status);
-                for (int i = 0; i < 3; ++i) {
-                    MPlug childPlug = elemPlug.child(i, &status);
+                MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                        static_cast<unsigned int>(j), &status);
+                for (size_t i = 0u; i < 3u; ++i) {
+                    MPlug childPlug = elemPlug.child(
+                            static_cast<unsigned int>(i), &status);
                     CHECK_MSTATUS_AND_RETURN(status, false);
                     status = childPlug.setFloat(vec3fVal[i]);
                     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1327,13 +1329,17 @@ PxrUsdMayaUtil::setPlugValue(
             VtArray<float> floatArray = val.UncheckedGet<VtArray<float> >();
             status = attrPlug.setNumElements(floatArray.size());
             CHECK_MSTATUS_AND_RETURN(status, false);
-            for (int i = 0; i < floatArray.size(); ++i) {
-                status = attrPlug.elementByPhysicalIndex(i).setFloat(floatArray[i]);
+            for (size_t i = 0u; i < floatArray.size(); ++i) {
+                status = attrPlug
+                        .elementByPhysicalIndex(static_cast<unsigned int>(i))
+                        .setFloat(floatArray[i]);
                 CHECK_MSTATUS_AND_RETURN(status, false);
             }
         }
         else {
-            MGlobal::displayError("Unimplemented shader param type for "+ MString(usdAttr.GetBaseName().GetText()));
+            TF_RUNTIME_ERROR(
+                    "Unimplemented shader param type for %s",
+                    usdAttr.GetBaseName().GetText());
         }
     }
 
