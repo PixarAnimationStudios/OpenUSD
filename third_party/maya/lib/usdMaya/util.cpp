@@ -1273,6 +1273,9 @@ PxrUsdMayaUtil::setPlugValue(
         if (val.IsHolding<float>()) {
             status = attrPlug.setFloat(val.UncheckedGet<float>());
         }
+        else if (val.IsHolding<int>()) {
+            status = attrPlug.setInt(val.UncheckedGet<int>());
+        }
         else if (val.IsHolding<GfVec3f>()) {
             if (attrPlug.isCompound()) {
                 GfVec3f vec3fVal = _GetVec<GfVec3f>(usdAttr, val);
@@ -1303,6 +1306,34 @@ PxrUsdMayaUtil::setPlugValue(
                 CHECK_MSTATUS_AND_RETURN(status, false);
                 status = attrPlug.setShort(enumVal);
             }
+        }
+        else if (val.IsHolding<VtArray<GfVec3f> >()) {
+            VtArray<GfVec3f> vecArray = val.UncheckedGet<VtArray<GfVec3f> >();
+            status = attrPlug.setNumElements(vecArray.size());
+            CHECK_MSTATUS_AND_RETURN(status, false);
+
+            for (int j = 0; j  < vecArray.size(); ++j) {
+                GfVec3f vec3fVal = vecArray[j];
+                MPlug elemPlug = attrPlug.elementByPhysicalIndex(j,&status);
+                for (int i = 0; i < 3; ++i) {
+                    MPlug childPlug = elemPlug.child(i, &status);
+                    CHECK_MSTATUS_AND_RETURN(status, false);
+                    status = childPlug.setFloat(vec3fVal[i]);
+                    CHECK_MSTATUS_AND_RETURN(status, false);
+                } 
+            }
+        } 
+        else if (val.IsHolding<VtArray<float> >()) {
+            VtArray<float> floatArray = val.UncheckedGet<VtArray<float> >();
+            status = attrPlug.setNumElements(floatArray.size());
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (int i = 0; i < floatArray.size(); ++i) {
+                status = attrPlug.elementByPhysicalIndex(i).setFloat(floatArray[i]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+        else {
+            MGlobal::displayError("Unimplemented shader param type for "+ MString(usdAttr.GetBaseName().GetText()));
         }
     }
 
