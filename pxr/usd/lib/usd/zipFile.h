@@ -34,6 +34,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class ArAsset;
+
 /// \class UsdZipFile
 ///
 /// Class for reading a zip file. This class is primarily intended to support
@@ -62,18 +64,10 @@ public:
     USD_API
     static UsdZipFile Open(const std::string& filePath);
 
-    /// Opens the zip archive in \p file at offset \p offset with size \p size.
-    /// Clients are responsible for managing the lifetime of \p file. It is 
-    /// safe to close \p file once this function returns.
-    ///
+    /// Opens the zip archive \p asset.
     /// Returns invalid object on error.
     USD_API
-    static UsdZipFile Open(FILE* file, size_t offset, size_t size);
-
-    /// Opens the zip archive contained in \p buffer with size \p size.
-    /// Returns invalid object on error.
-    USD_API
-    static UsdZipFile Open(const char* buffer, size_t size);
+    static UsdZipFile Open(const std::shared_ptr<ArAsset>& asset);
 
     /// Create an invalid UsdZipFile object.
     USD_API

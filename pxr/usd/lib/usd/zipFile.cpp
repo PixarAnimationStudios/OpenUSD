@@ -23,6 +23,8 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/zipFile.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -503,25 +505,16 @@ _WriteEndOfCentralDirectoryRecord(
 class UsdZipFile::_Impl
 {
 public:
-    _Impl(ArchConstFileMapping&& mapping_)
-        : mapping(std::move(mapping_))
-        , buffer(mapping.get())
-        , size(ArchGetFileMappingLength(mapping))
+    _Impl(std::shared_ptr<const char>&& buffer_, size_t size_)
+        : storage(std::move(buffer_))
+        , buffer(storage.get())
+        , size(size_)
     { }
 
-    _Impl(ArchConstFileMapping&& mapping_, size_t offset, size_t size)
-        : mapping(std::move(mapping_))
-        , buffer(mapping.get() + offset)
-        , size(size)
-    { }
+    std::shared_ptr<const char> storage;
 
-    _Impl(const char* buffer_, size_t size)
-        : buffer(buffer_)
-        , size(size)
-    { }
-
-    ArchConstFileMapping mapping;
-
+    // This is the same as storage.get(), but saved separately to simplify
+    // code so they don't have to call storage.get() all the time.
     const char* buffer;
     size_t size;
 };
@@ -529,42 +522,30 @@ public:
 UsdZipFile
 UsdZipFile::Open(const std::string& filePath)
 {
-    struct _Fcloser {
-        void operator()(FILE *f) const { 
-            if (f) {
-                fclose(f);
-            }
-        }
-    };
-
-    std::unique_ptr<FILE, _Fcloser> file(ArchOpenFile(filePath.c_str(), "rb"));
-    if (!file) {
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    if (!asset) {
         return UsdZipFile();
     }
 
-    return Open(file.get(), 
-        /* offset = */ 0, /* size = */ ArchGetFileLength(file.get()));
+    return Open(asset);
 }
 
 UsdZipFile
-UsdZipFile::Open(FILE* file, size_t offset, size_t size)
+UsdZipFile::Open(const std::shared_ptr<ArAsset>& asset)
 {
-    std::string errMsg;
-    ArchConstFileMapping zipMap = ArchMapFileReadOnly(file, &errMsg);
-    if (!zipMap) {
-        TF_RUNTIME_ERROR("Failed to map file: %s", errMsg.c_str());
+    if (!asset) {
+        TF_CODING_ERROR("Invalid asset");
+        return UsdZipFile();
+    }
+
+    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    if (!buffer) {
+        TF_RUNTIME_ERROR("Could not retrieve buffer from asset");
         return UsdZipFile();
     }
 
     return UsdZipFile(std::shared_ptr<_Impl>(
-        new _Impl(std::move(zipMap), offset, size)));
-}
-
-UsdZipFile
-UsdZipFile::Open(const char* buffer, size_t size)
-{
-    return UsdZipFile(std::shared_ptr<_Impl>(
-        new _Impl(buffer, size)));
+        new _Impl(std::move(buffer), asset->GetSize())));
 }
 
 UsdZipFile::UsdZipFile(std::shared_ptr<_Impl>&& impl)
