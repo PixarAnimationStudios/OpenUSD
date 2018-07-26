@@ -353,8 +353,23 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #endif // HD_HAS_definedIntegrateLights
 #endif
 
+int GetPointId(); // pointId.glslfx
+
 ReprStyle GetReprStyle()
 {
+#if defined(HD_HAS_pointVisibility)
+    // Point visibility is expected to be encoded as an array of bitmasks
+    // (uint32). So, point 0's visibility is represented by bit 0 of element 0,
+    // while point 32's visibility is represented by bit 0 of element 1.
+    int pointId = GetPointId();
+    if (pointId != -1) {
+        int arrayIndex = pointId / 32;
+        int bitIndex = pointId % 32;
+        uint pv = HdGet_pointVisibility(arrayIndex);
+        bool isVisible = bool(pv & (1 << bitIndex));
+        if (!isVisible) discard;
+    }
+#endif
     vec4 pointColor = vec4(vec3(0.18), 1.0);
 #if defined(HD_HAS_pointColor)
     pointColor = HdGet_pointColor();
