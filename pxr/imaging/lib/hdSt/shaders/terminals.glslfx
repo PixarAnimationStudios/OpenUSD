@@ -58,7 +58,14 @@ struct ReprStyle
     bool  useSurfaceShaderAlpha;
 };
 
+struct ScalarOverride
+{
+    bool enabled;
+    vec3 color;
+};
+
 ReprStyle GetReprStyle();
+ScalarOverride GetScalarOverride();
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
@@ -66,10 +73,18 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     ReprStyle reprStyle = GetReprStyle();
     
     // Apply scalar override.
-#if defined(HD_HAS_scalarOverride)
-    color.rgb = ApplyColorOverrides(color).rgb;
-    return color;
-#endif
+    ScalarOverride scalarOverride = GetScalarOverride();
+    if (scalarOverride.enabled) {
+        vec4 result;
+        
+        result.rgb = scalarOverride.color;
+        result.a   = reprStyle.usePrimvarAlpha ? color.a: reprStyle.color.a;
+
+        vec4 colorOverride = ApplyColorOverrides(result);
+        result = reprStyle.applyColorOverride ? colorOverride : result;
+
+        return result;
+    }
 
     // Draw mode can override face color
     vec4 reprColor;
@@ -81,7 +96,7 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     vec4 colorOverride = ApplyColorOverrides(reprColor);
     reprColor = reprStyle.applyColorOverride ? colorOverride : reprColor;
     
- 
+
     // Surface shading can be expensive and also can contain undesirable
     // side effects (like discards).  So only run it for reprs that require it.
 
@@ -113,6 +128,39 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     // Final overrides.
 
     return ApplyColorOverridesPostLighting(litColor); 
+}
+
+
+ScalarOverride GetScalarOverride()
+{
+    ScalarOverride result;
+
+#if defined(HD_HAS_scalarOverride)
+    result.enabled = true;
+
+    // Allow a scalar value to override the color from the surface
+    // for previewing heatmaps. This is useful for editing workflows.
+#if defined(HD_HAS_scalarOverrideColorRamp)
+    int rampCount = constantPrimvars[GetDrawingCoord().constantCoord].
+                scalarOverrideColorRamp.length();
+    float scalar = HdGet_scalarOverride() * float(rampCount - 1);
+    float baseIndex = floor(scalar);
+    float nextIndex = min(float(rampCount - 1), baseIndex + 1.0);
+    float interp = scalar - baseIndex;
+    result.color = mix(HdGet_scalarOverrideColorRamp(int(baseIndex)).rgb,
+                       HdGet_scalarOverrideColorRamp(int(nextIndex)).rgb,
+                       interp);
+#else
+    // If no ramp is given just gamma correct the scalar as greyscale.
+    result.color = vec3(pow(HdGet_scalarOverride(), 2.2));
+#endif // HD_HAS_scalarOverrideColorRamp
+
+#else // HD_HAS_scalarOverride
+    result.enabled = false;
+    result.color   = vec3(0.0, 0.0, 0.0); 
+#endif
+
+    return result;
 }
 
 --- --------------------------------------------------------------------------
