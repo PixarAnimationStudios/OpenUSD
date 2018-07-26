@@ -21,23 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXRUSDMAYA_SHADING_MODE_EXPORTER_H
+#define PXRUSDMAYA_SHADING_MODE_EXPORTER_H
 
-#ifndef PXRUSDMAYA_SHADINGMODEEXPORTER_H
-#define PXRUSDMAYA_SHADINGMODEEXPORTER_H
+/// \file usdMaya/shadingModeExporter.h
 
 #include "pxr/pxr.h"
 
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/util.h"
 
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include <functional>
 #include <memory>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdMayaShadingModeExporter {
+
+class PxrUsdMayaShadingModeExporter
+{
 public:
     PXRUSDMAYA_API
     PxrUsdMayaShadingModeExporter();
@@ -45,9 +52,10 @@ public:
     virtual ~PxrUsdMayaShadingModeExporter();
 
     PXRUSDMAYA_API
-    void DoExport(const UsdStageRefPtr& stage,
-                  const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-                  const PxrUsdMayaExportParams &exportParams);
+    void DoExport(
+            const UsdStageRefPtr& stage,
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+            const PxrUsdMayaExportParams& exportParams);
 
     /// Called once, before any exports are started.
     ///
@@ -58,9 +66,10 @@ public:
 
     /// Called inside of a loop, per-shading-engine
     PXRUSDMAYA_API
-    virtual void Export(const PxrUsdMayaShadingModeExportContext& context,
-                        UsdShadeMaterial * const mat, 
-                        SdfPathSet * const boundPrimPaths)=0;
+    virtual void Export(
+            const PxrUsdMayaShadingModeExportContext& context,
+            UsdShadeMaterial* const mat,
+            SdfPathSet* const boundPrimPaths) = 0;
 
     /// Called once, after Export is called for all shading engines.
     ///
@@ -74,6 +83,8 @@ public:
 using PxrUsdMayaShadingModeExporterPtr = std::shared_ptr<PxrUsdMayaShadingModeExporter>;
 using PxrUsdMayaShadingModeExporterCreator = std::function<std::shared_ptr<PxrUsdMayaShadingModeExporter>()>;
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_SHADINGMODEEXPORTER_H
+
+#endif

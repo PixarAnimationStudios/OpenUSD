@@ -26,6 +26,7 @@
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/shadingModeImporter.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
@@ -33,10 +34,13 @@
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
 #include "usdMaya/shadingModePxrRis_rfm_map.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdRi/materialAPI.h"
@@ -48,11 +52,16 @@
 #include "pxr/usd/usdShade/tokens.h"
 
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnNumericAttribute.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -61,8 +70,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
 
-    // in r22, this is "rman__surface", added via extension attribute
-    ((RmanShadingPlug, "surfaceShader")) 
+    // XXX: In RenderMan 22, these look like "rman__surface", and are added via
+    // extension attribute.
+    ((RmanSurfaceShaderPlugName, "surfaceShader"))
+    ((RmanVolumeShaderPlugName, "volumeShader"))
+    ((RmanDisplacementShaderPlugName, "displacementShader"))
 );
 
 
@@ -72,8 +84,12 @@ public:
     PxrRisShadingModeExporter() {}
 private:
 
-    void PreExport(PxrUsdMayaShadingModeExportContext* context) override {
-        context->SetSurfaceShaderPlugName(_tokens->RmanShadingPlug);
+    void
+    PreExport(PxrUsdMayaShadingModeExportContext* context) override
+    {
+        context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
+        context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
+        context->SetDisplacementShaderPlugName(_tokens->RmanDisplacementShaderPlugName);
     }
 
     TfToken
@@ -94,10 +110,11 @@ private:
     }
 
     UsdPrim
-    _ExportShadingNodeHelper(const UsdPrim& materialPrim,
-                             const MFnDependencyNode& depNode,
-                             const PxrUsdMayaShadingModeExportContext& context,
-                             SdfPathSet* processedPaths)
+    _ExportShadingNodeHelper(
+            const UsdPrim& materialPrim,
+            const MFnDependencyNode& depNode,
+            const PxrUsdMayaShadingModeExportContext& context,
+            SdfPathSet* processedPaths)
     {
         UsdStagePtr stage = materialPrim.GetStage();
 
@@ -227,9 +244,10 @@ private:
     }
 
     UsdPrim
-    _ExportShadingNode(const UsdPrim& materialPrim,
-                       const MFnDependencyNode& depNode,
-                       const PxrUsdMayaShadingModeExportContext& context)
+    _ExportShadingNode(
+            const UsdPrim& materialPrim,
+            const MFnDependencyNode& depNode,
+            const PxrUsdMayaShadingModeExportContext& context)
     {
         SdfPathSet processedNodes;
         return _ExportShadingNodeHelper(materialPrim,
@@ -238,9 +256,11 @@ private:
                                         &processedNodes);
     }
 
-    void Export(const PxrUsdMayaShadingModeExportContext& context,
-                UsdShadeMaterial* const mat,
-                SdfPathSet* const boundPrimPaths) override
+    void
+    Export(
+            const PxrUsdMayaShadingModeExportContext& context,
+            UsdShadeMaterial* const mat,
+            SdfPathSet* const boundPrimPaths) override
     {
         const PxrUsdMayaShadingModeExportContext::AssignmentVector& assignments =
             context.GetAssignments();
@@ -260,29 +280,69 @@ private:
             *mat = material;
         }
 
-        MStatus status;
-        const MFnDependencyNode ssDepNode(context.GetSurfaceShader(), &status);
-        if (status != MS::kSuccess) {
-            return;
-        }
-
-        UsdPrim shaderPrim = _ExportShadingNode(materialPrim,
-                                                ssDepNode,
-                                                context);
-        UsdShadeShader shaderSchema(shaderPrim);
-        if (!shaderSchema) {
-            return;
-        }
-
-        UsdShadeOutput shaderDefaultOutput =
-            shaderSchema.CreateOutput(_tokens->DefaultShaderOutputName,
-                                      SdfValueTypeNames->Token);
-        if (!shaderDefaultOutput) {
-            return;
-        }
-
         UsdRiMaterialAPI riMaterialAPI(materialPrim);
-        riMaterialAPI.SetSurfaceSource(shaderDefaultOutput.GetAttr().GetPath());
+
+        MStatus status;
+
+        const MFnDependencyNode surfaceDepNodeFn(
+            context.GetSurfaceShader(),
+            &status);
+        if (status == MS::kSuccess) {
+            UsdPrim surfaceShaderPrim =
+                _ExportShadingNode(materialPrim,
+                                   surfaceDepNodeFn,
+                                   context);
+            UsdShadeShader surfaceShaderSchema(surfaceShaderPrim);
+            if (surfaceShaderSchema) {
+                UsdShadeOutput surfaceShaderOutput =
+                    surfaceShaderSchema.CreateOutput(
+                        _tokens->DefaultShaderOutputName,
+                        SdfValueTypeNames->Token);
+
+                riMaterialAPI.SetSurfaceSource(
+                    surfaceShaderOutput.GetAttr().GetPath());
+            }
+        }
+
+        const MFnDependencyNode volumeDepNodeFn(
+            context.GetVolumeShader(),
+            &status);
+        if (status == MS::kSuccess) {
+            UsdPrim volumeShaderPrim =
+                _ExportShadingNode(materialPrim,
+                                   volumeDepNodeFn,
+                                   context);
+            UsdShadeShader volumeShaderSchema(volumeShaderPrim);
+            if (volumeShaderSchema) {
+                UsdShadeOutput volumeShaderOutput =
+                    volumeShaderSchema.CreateOutput(
+                        _tokens->DefaultShaderOutputName,
+                        SdfValueTypeNames->Token);
+
+                riMaterialAPI.SetVolumeSource(
+                    volumeShaderOutput.GetAttr().GetPath());
+            }
+        }
+
+        const MFnDependencyNode displacementDepNodeFn(
+            context.GetDisplacementShader(),
+            &status);
+        if (status == MS::kSuccess) {
+            UsdPrim displacementShaderPrim =
+                _ExportShadingNode(materialPrim,
+                                   displacementDepNodeFn,
+                                   context);
+            UsdShadeShader displacementShaderSchema(displacementShaderPrim);
+            if (displacementShaderSchema) {
+                UsdShadeOutput displacementShaderOutput =
+                    displacementShaderSchema.CreateOutput(
+                        _tokens->DefaultShaderOutputName,
+                        SdfValueTypeNames->Token);
+
+                riMaterialAPI.SetDisplacementSource(
+                    displacementShaderOutput.GetAttr().GetPath());
+            }
+        }
     }
 };
 }
@@ -441,8 +501,8 @@ _CreateShaderObject(
 DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
     // RenderMan for Maya wants the shader nodes to get hooked into the shading
-    // group via it's own plug.
-    context->SetSurfaceShaderPlugName(_tokens->RmanShadingPlug);
+    // group via its own plugs.
+    context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
 
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
