@@ -29,6 +29,8 @@
 #include "pxr/usd/sdf/fileIO.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
@@ -51,7 +53,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // Our interface to the YACC menva parser for parsing to SdfData.
 extern bool Sdf_ParseMenva(
     const string& context, 
-    FILE *f,
+    const std::shared_ptr<PXR_NS::ArAsset>& asset,
     const string& token,
     const string& version,
     bool metadataOnly,
@@ -99,47 +101,39 @@ SdfTextFileFormat::~SdfTextFileFormat()
     // Do Nothing.
 }
 
+namespace
+{
+
+bool
+_CanReadImpl(const std::shared_ptr<ArAsset>& asset,
+             const std::string& cookie)
+{
+    TfErrorMark mark;
+
+    char aLine[512];
+
+    size_t numToRead = std::min(sizeof(aLine), cookie.length());
+    if (asset->Read(aLine, numToRead, /* offset = */ 0) != numToRead) {
+        return false;
+    }
+
+    aLine[numToRead] = '\0';
+
+    // Don't allow errors to escape this function, since this function is
+    // just trying to answer whether the asset can be read.
+    return !mark.Clear() && TfStringStartsWith(aLine, cookie);
+}
+
+} // end anonymous namespace
+
 bool
 SdfTextFileFormat::CanRead(const string& filePath) const
 {
     TRACE_FUNCTION();
 
-    bool canRead = false;
-    if (FILE *f = ArchOpenFile(filePath.c_str(), "rb")) {
-        canRead = _CanReadImpl(f);
-        fclose(f);
-    }
-
-    return canRead;
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    return asset && _CanReadImpl(asset, GetFileCookie());
 }
-
-bool
-SdfTextFileFormat::_CanReadImpl(FILE *fp) const
-{
-    const string &cookie = GetFileCookie();
-    char aLine[512];
-    return fgets(aLine, sizeof(aLine), fp) && TfStringStartsWith(aLine, cookie);
-}
-
-class Sdf_ScopedFilePointer : boost::noncopyable
-{
-public:
-    explicit Sdf_ScopedFilePointer(const string& filePath)
-        : _fp(ArchOpenFile(filePath.c_str(), "rb"))
-    { }
-
-    ~Sdf_ScopedFilePointer() {
-        if (_fp)
-            fclose(_fp);
-    }
-
-    FILE* operator *() const {
-        return _fp;
-    }
-
-private:
-    FILE* _fp;
-};
 
 bool
 SdfTextFileFormat::Read(
@@ -149,9 +143,10 @@ SdfTextFileFormat::Read(
 {
     TRACE_FUNCTION();
 
-    Sdf_ScopedFilePointer fp(resolvedPath);
-    if (!*fp)
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    if (!asset) {
         return false;
+    }
 
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
     if (!TF_VERIFY(layer)) {
@@ -160,20 +155,17 @@ SdfTextFileFormat::Read(
 
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
-    if (!_CanReadImpl(*fp)) {
-        TF_RUNTIME_ERROR("File <%s> is not a valid %s file",
+    if (!_CanReadImpl(asset, GetFileCookie())) {
+        TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
                          resolvedPath.c_str(),
                          GetFormatId().GetText());
         return false;
     }
-    fseek(*fp, 0, SEEK_SET);
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
-    if (!Sdf_ParseMenva(resolvedPath, *fp, 
-                           GetFormatId(),
-                           GetVersionString(),
-                           metadataOnly,
-                           TfDynamic_cast<SdfDataRefPtr>(data))) {
+    if (!Sdf_ParseMenva(
+            resolvedPath, asset, GetFormatId(), GetVersionString(), 
+            metadataOnly, TfDynamic_cast<SdfDataRefPtr>(data))) {
         return false;
     }
 

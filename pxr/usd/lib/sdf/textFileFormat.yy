@@ -29,6 +29,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
+#include "pxr/usd/ar/asset.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
@@ -3256,7 +3257,8 @@ static void _ReportParseError(Sdf_TextParserContext *context,
 struct Sdf_MemoryFlexBuffer : public boost::noncopyable
 {
 public:
-    Sdf_MemoryFlexBuffer(FILE* file, const std::string& name, yyscan_t scanner);
+    Sdf_MemoryFlexBuffer(const std::shared_ptr<ArAsset>& asset,
+                         const std::string& name, yyscan_t scanner);
     ~Sdf_MemoryFlexBuffer();
 
     yy_buffer_state *GetBuffer() { return _flexBuffer; }
@@ -3269,55 +3271,32 @@ private:
     yyscan_t _scanner;
 };
 
-Sdf_MemoryFlexBuffer::Sdf_MemoryFlexBuffer(FILE* file, 
-                                           const std::string& name,
-                                           yyscan_t scanner)
+Sdf_MemoryFlexBuffer::Sdf_MemoryFlexBuffer(
+    const std::shared_ptr<ArAsset>& asset,
+    const std::string& name, yyscan_t scanner)
     : _flexBuffer(nullptr)
     , _scanner(scanner)
 {
-    int64_t fileSize = ArchGetFileLength(file);
-    if (fileSize == -1) {
-        TF_RUNTIME_ERROR("Error retrieving file size for @%s@: %s", 
-                         name.c_str(), ArchStrerror(errno).c_str());
-        return;
-    }
-
     // flex requires 2 bytes of null padding at the end of any buffers it is
     // given.  We'll allocate a buffer with 2 padding bytes, then read the
     // entire file in.
     static const size_t paddingBytesRequired = 2;
 
-    std::unique_ptr<char[]> buffer(new char[fileSize + paddingBytesRequired]);
+    size_t size = asset->GetSize();
+    std::unique_ptr<char[]> buffer(new char[size + paddingBytesRequired]);
 
-    fseek(file, 0, SEEK_SET);
-    clearerr(file);
-    if (fread(buffer.get(), 1, fileSize, file) !=
-        static_cast<size_t>(fileSize)) {
-        if (feof(file)) {
-            TF_RUNTIME_ERROR("Failed to read file contents @%s@: "
-                             "premature end-of-file",
-                             name.c_str());
-        }
-        else if (ferror(file)) {
-            TF_RUNTIME_ERROR("Failed to read file contents @%s@: "
-                             "an error occurred while reading",
-                             name.c_str());
-        }
-        else {
-            TF_RUNTIME_ERROR("Failed to read file contents @%s@: "
-                             "fread() reported incomplete read but "
-                             "neither feof() nor ferror() returned "
-                             "nonzero",
-                             name.c_str());
-        }
+    if (asset->Read(buffer.get(), size, 0) != size) {
+        TF_RUNTIME_ERROR("Failed to read asset contents @%s@: "
+                         "an error occurred while reading",
+                         name.c_str());
         return;
     }
 
     // Set null padding.
-    memset(buffer.get() + fileSize, '\0', paddingBytesRequired);
+    memset(buffer.get() + size, '\0', paddingBytesRequired);
     _fileBuffer = std::move(buffer);
     _flexBuffer = textFileFormatYy_scan_buffer(
-        _fileBuffer.get(), fileSize + paddingBytesRequired, _scanner);
+        _fileBuffer.get(), size + paddingBytesRequired, _scanner);
 }
 
 Sdf_MemoryFlexBuffer::~Sdf_MemoryFlexBuffer()
@@ -3342,11 +3321,13 @@ private:
 }
 
 /// Parse a .menva file into an SdfData
-bool Sdf_ParseMenva(const std::string & fileContext, FILE *fin,
-                   const std::string & magicId,
-                   const std::string & versionString,
-                   bool metadataOnly,
-                   SdfDataRefPtr data)
+bool Sdf_ParseMenva(
+     const std::string& fileContext, 
+     const std::shared_ptr<ArAsset>& asset,
+     const std::string& magicId,
+     const std::string& versionString,
+     bool metadataOnly,
+     SdfDataRefPtr data)
 {
     TfAutoMallocTag2 tag("Menva", "Menva_Parse");
 
@@ -3372,7 +3353,7 @@ bool Sdf_ParseMenva(const std::string & fileContext, FILE *fin,
 
     int status = -1;
     {
-        Sdf_MemoryFlexBuffer input(fin, fileContext, context.scanner);
+        Sdf_MemoryFlexBuffer input(asset, fileContext, context.scanner);
         yy_buffer_state *buf = input.GetBuffer();
 
         // Continue parsing if we have a valid input buffer. If there 
