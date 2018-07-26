@@ -22,16 +22,25 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
+#include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
@@ -43,8 +52,8 @@
 #include <maya/MFnLambertShader.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnNumericAttribute.h>
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItDependencyNodes.h>
@@ -62,11 +71,15 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+
 // return seconds per frame
-double PxrUsdMayaUtil::spf()
+double
+PxrUsdMayaUtil::spf()
 {
     static const MTime sec(1.0, MTime::kSeconds);
     return 1.0 / sec.as(MTime::uiUnit());
@@ -167,15 +180,17 @@ PxrUsdMayaUtil::GetMayaTimePlug()
     return timePlug;
 }
 
-bool PxrUsdMayaUtil::isAncestorDescendentRelationship(const MDagPath & path1,
-    const MDagPath & path2)
+bool
+PxrUsdMayaUtil::isAncestorDescendentRelationship(
+        const MDagPath& path1,
+        const MDagPath& path2)
 {
     unsigned int length1 = path1.length();
     unsigned int length2 = path2.length();
     unsigned int diff;
 
     if (length1 == length2 && !(path1 == path2))
-        return false; 
+        return false;
     MDagPath ancestor, descendent;
     if (length1 > length2)
     {
@@ -195,10 +210,11 @@ bool PxrUsdMayaUtil::isAncestorDescendentRelationship(const MDagPath & path1,
     return ancestor == descendent;
 }
 
-
-
 // returns 0 if static, 1 if sampled, and 2 if a curve
-int PxrUsdMayaUtil::getSampledType(const MPlug& iPlug, bool includeConnectedChildren)
+int
+PxrUsdMayaUtil::getSampledType(
+        const MPlug& iPlug,
+        const bool includeConnectedChildren)
 {
     MPlugArray conns;
 
@@ -213,10 +229,13 @@ int PxrUsdMayaUtil::getSampledType(const MPlug& iPlug, bool includeConnectedChil
             unsigned int numConnectedElements = iPlug.numConnectedElements();
             for (unsigned int e = 0; e < numConnectedElements; e++)
             {
-                // For now we assume that when you encounter an array of plugs we want always to include connected children
-                int retVal = getSampledType(iPlug.connectionByPhysicalIndex(e), true);
-                if (retVal > 0)
+                // For now we assume that when you encounter an array of plugs,
+                // we always want to include connected children.
+                int retVal = getSampledType(iPlug.connectionByPhysicalIndex(e),
+                                            true);
+                if (retVal > 0) {
                     return retVal;
+                }
             }
         }
         else if (iPlug.isCompound() && iPlug.numConnectedChildren() > 0
@@ -282,8 +301,12 @@ int PxrUsdMayaUtil::getSampledType(const MPlug& iPlug, bool includeConnectedChil
     return 1;
 }
 
-bool PxrUsdMayaUtil::getRotOrder(MTransformationMatrix::RotationOrder iOrder,
-    unsigned int & oXAxis, unsigned int & oYAxis, unsigned int & oZAxis)
+bool
+PxrUsdMayaUtil::getRotOrder(
+        const MTransformationMatrix::RotationOrder iOrder,
+        unsigned int& oXAxis,
+        unsigned int& oYAxis,
+        unsigned int& oZAxis)
 {
     switch (iOrder)
     {
@@ -344,7 +367,8 @@ bool PxrUsdMayaUtil::getRotOrder(MTransformationMatrix::RotationOrder iOrder,
 }
 
 // 0 dont write, 1 write static 0, 2 write anim 0, 3 write anim -1
-int PxrUsdMayaUtil::getVisibilityType(const MPlug & iPlug)
+int
+PxrUsdMayaUtil::getVisibilityType(const MPlug& iPlug)
 {
     int type = getSampledType(iPlug, true);
 
@@ -370,10 +394,13 @@ int PxrUsdMayaUtil::getVisibilityType(const MPlug & iPlug)
 }
 
 // does this cover all cases?
-bool PxrUsdMayaUtil::isAnimated(MObject & object, bool checkParent)
+bool
+PxrUsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
 {
     MStatus stat;
-    MItDependencyGraph iter(object, MFn::kInvalid,
+    MItDependencyGraph iter(
+        object,
+        MFn::kInvalid,
         MItDependencyGraph::kUpstream,
         MItDependencyGraph::kDepthFirst,
         MItDependencyGraph::kNodeLevel,
@@ -443,7 +470,8 @@ bool PxrUsdMayaUtil::isAnimated(MObject & object, bool checkParent)
     return false;
 }
 
-bool PxrUsdMayaUtil::isPlugAnimated(const MPlug& plug)
+bool
+PxrUsdMayaUtil::isPlugAnimated(const MPlug& plug)
 {
     if (plug.isNull()) {
         return false;
@@ -460,7 +488,8 @@ bool PxrUsdMayaUtil::isPlugAnimated(const MPlug& plug)
     return false;
 }
 
-bool PxrUsdMayaUtil::isIntermediate(const MObject & object)
+bool
+PxrUsdMayaUtil::isIntermediate(const MObject& object)
 {
     MStatus stat;
     MFnDagNode mFn(object);
@@ -472,7 +501,8 @@ bool PxrUsdMayaUtil::isIntermediate(const MObject & object)
         return false;
 }
 
-bool PxrUsdMayaUtil::isRenderable(const MObject & object)
+bool
+PxrUsdMayaUtil::isRenderable(const MObject& object)
 {
     MStatus stat;
     MFnDagNode mFn(object);
@@ -513,7 +543,8 @@ bool PxrUsdMayaUtil::isRenderable(const MObject & object)
     return true;
 }
 
-MString PxrUsdMayaUtil::stripNamespaces(const MString & iNodeName, int iDepth)
+MString
+PxrUsdMayaUtil::stripNamespaces(const MString& iNodeName, const int iDepth)
 {
     if (iDepth == 0) {
         return iNodeName;
@@ -546,19 +577,24 @@ MString PxrUsdMayaUtil::stripNamespaces(const MString & iNodeName, int iDepth)
     }
 }
 
-std::string PxrUsdMayaUtil::SanitizeName(const std::string& name)
+std::string
+PxrUsdMayaUtil::SanitizeName(const std::string& name)
 {
     return TfStringReplace(name, ":", "_");
 }
 
 // This to allow various pipeline to sanitize the colorset name for output
-std::string PxrUsdMayaUtil::SanitizeColorSetName(const std::string& name)
+std::string
+PxrUsdMayaUtil::SanitizeColorSetName(const std::string& name)
 {
-    //We sanitize the name since certain pipeline like Pixar's, we have rman_ in front of all color sets that need to be exportred. We now export all colosets
-    size_t namePos=0;
+    // We sanitize the name since certain pipeline like Pixar's, we have rman_
+    // in front of all color sets that need to be exportred. We now export all
+    // colorsets.
+    size_t namePos = 0u;
     static const std::string RMAN_PREFIX("rman_");
-    if (name.find(RMAN_PREFIX) == 0)
-        namePos=RMAN_PREFIX.size();
+    if (name.find(RMAN_PREFIX) == 0) {
+        namePos = RMAN_PREFIX.size();
+    }
     return name.substr(namePos);
 }
 
@@ -573,10 +609,10 @@ std::string PxrUsdMayaUtil::SanitizeColorSetName(const std::string& name)
 static
 bool
 _getAttachedMayaShaderObjects(
-        const MFnDagNode &node,
+        const MFnDagNode& node,
         const unsigned int numComponents,
-        MObjectArray *shaderObjs,
-        VtArray<int> *assignmentIndices)
+        MObjectArray* shaderObjs,
+        VtIntArray* assignmentIndices)
 {
     bool hasShader=false;
     MStatus status;
@@ -597,8 +633,8 @@ _getAttachedMayaShaderObjects(
     // only a subset of the object in it, we'll keep track of the assignments
     // for all components in assignmentIndices. We initialize all of the
     // assignments as unassigned using a value of -1.
-    if (numComponents > 1 && 
-            (setObjs.length() > 1 || 
+    if (numComponents > 1 &&
+            (setObjs.length() > 1 ||
              (setObjs.length() == 1 && !compObjs[0].isNull()))) {
         assignmentIndices->assign((size_t)numComponents, -1);
     }
@@ -648,7 +684,7 @@ _GetColorAndTransparencyFromLambert(
         float* alpha)
 {
     MStatus status;
-    MFnLambertShader lambertFn(shaderObj, &status );
+    MFnLambertShader lambertFn(shaderObj, &status);
     if (status == MS::kSuccess ) {
         if (rgb) {
             GfVec3f displayColor;
@@ -661,13 +697,13 @@ _GetColorAndTransparencyFromLambert(
         }
         if (alpha) {
             MColor trn = lambertFn.transparency();
-            // Assign Alpha as 1.0 - average of shader trasparency 
+            // Assign Alpha as 1.0 - average of shader trasparency
             // and check if they are all the same
             *alpha = 1.0 - ((trn[0] + trn[1] + trn[2]) / 3.0);
         }
         return true;
-    } 
-    
+    }
+
     return false;
 }
 
@@ -708,11 +744,12 @@ _GetColorAndTransparencyFromDepNode(
     return true;
 }
 
-static void 
+static
+void
 _getMayaShadersColor(
-        const MObjectArray &shaderObjs, 
-        VtArray<GfVec3f> *RGBData,
-        VtArray<float> *AlphaData)
+        const MObjectArray& shaderObjs,
+        VtVec3fArray* RGBData,
+        VtFloatArray* AlphaData)
 {
     MStatus status;
 
@@ -772,10 +809,10 @@ bool
 _GetLinearShaderColor(
         const MFnDagNode& node,
         const unsigned int numComponents,
-        VtArray<GfVec3f> *RGBData,
-        VtArray<float> *AlphaData,
-        TfToken *interpolation,
-        VtArray<int> *assignmentIndices)
+        VtVec3fArray* RGBData,
+        VtFloatArray* AlphaData,
+        TfToken* interpolation,
+        VtIntArray* assignmentIndices)
 {
     MObjectArray shaderObjs;
     bool hasAttachedShader = _getAttachedMayaShaderObjects(
@@ -798,10 +835,10 @@ _GetLinearShaderColor(
 bool
 PxrUsdMayaUtil::GetLinearShaderColor(
         const MFnDagNode& node,
-        VtArray<GfVec3f> *RGBData,
-        VtArray<float> *AlphaData,
-        TfToken *interpolation,
-        VtArray<int> *assignmentIndices)
+        VtVec3fArray* RGBData,
+        VtFloatArray* AlphaData,
+        TfToken* interpolation,
+        VtIntArray* assignmentIndices)
 {
     return _GetLinearShaderColor(node,
                                  0,
@@ -814,10 +851,10 @@ PxrUsdMayaUtil::GetLinearShaderColor(
 bool
 PxrUsdMayaUtil::GetLinearShaderColor(
         const MFnMesh& mesh,
-        VtArray<GfVec3f> *RGBData,
-        VtArray<float> *AlphaData,
-        TfToken *interpolation,
-        VtArray<int> *assignmentIndices)
+        VtVec3fArray* RGBData,
+        VtFloatArray* AlphaData,
+        TfToken* interpolation,
+        VtIntArray* assignmentIndices)
 {
     unsigned int numComponents = mesh.numPolygons();
     return _GetLinearShaderColor(mesh,
@@ -863,14 +900,14 @@ static
 void
 _MergeEquivalentIndexedValues(
         VtArray<T>* valueData,
-        VtArray<int>* assignmentIndices)
+        VtIntArray* assignmentIndices)
 {
     if (!valueData || !assignmentIndices) {
         return;
     }
 
     const size_t numValues = valueData->size();
-    if (numValues == 0) {
+    if (numValues == 0u) {
         return;
     }
 
@@ -878,7 +915,7 @@ _MergeEquivalentIndexedValues(
     // array.
     std::unordered_map<T, size_t, _ValuesHash<T>, _ValuesEqual<T> > valuesMap;
     VtArray<T> uniqueValues;
-    VtArray<int> uniqueIndices;
+    VtIntArray uniqueIndices;
 
     for (int index : *assignmentIndices) {
         if (index < 0 || static_cast<size_t>(index) >= numValues) {
@@ -914,52 +951,52 @@ _MergeEquivalentIndexedValues(
 
 void
 PxrUsdMayaUtil::MergeEquivalentIndexedValues(
-        VtArray<float>* valueData,
-        VtArray<int>* assignmentIndices) {
+        VtFloatArray* valueData,
+        VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<float>(valueData, assignmentIndices);
 }
 
 void
 PxrUsdMayaUtil::MergeEquivalentIndexedValues(
-        VtArray<GfVec2f>* valueData,
-        VtArray<int>* assignmentIndices) {
+        VtVec2fArray* valueData,
+        VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<GfVec2f>(valueData, assignmentIndices);
 }
 
 void
 PxrUsdMayaUtil::MergeEquivalentIndexedValues(
-        VtArray<GfVec3f>* valueData,
-        VtArray<int>* assignmentIndices) {
+        VtVec3fArray* valueData,
+        VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<GfVec3f>(valueData, assignmentIndices);
 }
 
 void
 PxrUsdMayaUtil::MergeEquivalentIndexedValues(
-        VtArray<GfVec4f>* valueData,
-        VtArray<int>* assignmentIndices) {
+        VtVec4fArray* valueData,
+        VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<GfVec4f>(valueData, assignmentIndices);
 }
 
 void
 PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(
         const MFnMesh& mesh,
-        TfToken *interpolation,
-        VtArray<int>* assignmentIndices)
+        TfToken* interpolation,
+        VtIntArray* assignmentIndices)
 {
-    if (!interpolation     || 
-        !assignmentIndices || 
-         assignmentIndices->size() == 0) {
+    if (!interpolation ||
+            !assignmentIndices ||
+            assignmentIndices->size() == 0u) {
         return;
     }
 
     // Use -2 as the initial "un-stored" sentinel value, since -1 is the
     // default unauthored value index for primvars.
     int numPolygons = mesh.numPolygons();
-    VtArray<int> uniformAssignments;
+    VtIntArray uniformAssignments;
     uniformAssignments.assign((size_t)numPolygons, -2);
 
     int numVertices = mesh.numVertices();
-    VtArray<int> vertexAssignments;
+    VtIntArray vertexAssignments;
     vertexAssignments.assign((size_t)numVertices, -2);
 
     // We assume that the data is constant/uniform/vertex until we can
@@ -1022,8 +1059,9 @@ PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(
 
 bool
 PxrUsdMayaUtil::SetUnassignedValueIndex(
-    VtArray<int>* assignmentIndices,
-    int* unassignedValueIndex) {
+        VtIntArray* assignmentIndices,
+        int* unassignedValueIndex)
+{
     if (assignmentIndices == nullptr || unassignedValueIndex == nullptr) {
         return false;
     }
@@ -1081,7 +1119,7 @@ void
 PxrUsdMayaUtil::Connect(
         const MPlug& srcPlug,
         const MPlug& dstPlug,
-        bool clearDstPlug)
+        const bool clearDstPlug)
 {
     MStatus status;
     MDGModifier dgMod;
@@ -1113,7 +1151,7 @@ PxrUsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
         if(childName.length() > name.length()) {
             int index = childName.rindex('.');
             if(index >= 0) {
-                MString childSuffix = 
+                MString childSuffix =
                     childName.substring(index+1, childName.length());
                 if(childSuffix == name) {
                     return child;
@@ -1126,8 +1164,10 @@ PxrUsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
 
 // XXX: see logic in UsdMayaTransformWriter.  It's unfortunate that this
 // logic is in 2 places.  we should merge.
-static bool
-_IsShape(const MDagPath& dagPath) {
+static
+bool
+_IsShape(const MDagPath& dagPath)
+{
     if (dagPath.hasFn(MFn::kTransform)) {
         return false;
     }
@@ -1145,7 +1185,10 @@ _IsShape(const MDagPath& dagPath) {
 }
 
 SdfPath
-PxrUsdMayaUtil::MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape, bool stripNamespaces)
+PxrUsdMayaUtil::MDagPathToUsdPath(
+        const MDagPath& dagPath,
+        const bool mergeTransformAndShape,
+        const bool stripNamespaces)
 {
     std::string usdPathStr;
 
@@ -1167,9 +1210,13 @@ PxrUsdMayaUtil::MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAn
     return usdPath;
 }
 
-bool PxrUsdMayaUtil::GetBoolCustomData(const UsdAttribute& obj, const TfToken& key, bool defaultValue)
+bool
+PxrUsdMayaUtil::GetBoolCustomData(
+        const UsdAttribute& obj,
+        const TfToken& key,
+        const bool defaultValue)
 {
-    bool returnValue=defaultValue;
+    bool returnValue = defaultValue;
     VtValue data = obj.GetCustomDataByKey(key);
     if (!data.IsEmpty()) {
         if (data.IsHolding<bool>()) {
@@ -1185,16 +1232,15 @@ bool PxrUsdMayaUtil::GetBoolCustomData(const UsdAttribute& obj, const TfToken& k
 
 template <typename T>
 static T
-_GetVec(
-        const UsdAttribute& attr,
-        const VtValue& val)
+_GetVec(const UsdAttribute& attr, const VtValue& val)
 {
-    T ret = val.UncheckedGet<T>();
-    if (attr.GetRoleName() == SdfValueRoleNames->Color)  {
-        return PxrUsdMayaColorSpace::ConvertMayaToLinear(ret);
-    }   
-    return ret;
+    const T ret = val.UncheckedGet<T>();
 
+    if (attr.GetRoleName() == SdfValueRoleNames->Color) {
+        return PxrUsdMayaColorSpace::ConvertMayaToLinear(ret);
+    }
+
+    return ret;
 }
 
 MMatrix
@@ -1232,9 +1278,10 @@ PxrUsdMayaUtil::getPlugMatrix(
 }
 
 bool
-PxrUsdMayaUtil::setPlugMatrix(const MFnDependencyNode& depNode,
-                              const MString& attr,
-                              const GfMatrix4d& mx)
+PxrUsdMayaUtil::setPlugMatrix(
+        const MFnDependencyNode& depNode,
+        const MString& attr,
+        const GfMatrix4d& mx)
 {
     MStatus status;
     MPlug plug = depNode.findPlug(attr, &status);
@@ -1254,9 +1301,7 @@ PxrUsdMayaUtil::setPlugMatrix(const GfMatrix4d& mx, MPlug& plug)
 }
 
 bool
-PxrUsdMayaUtil::setPlugValue(
-        const UsdAttribute& usdAttr,
-        MPlug& attrPlug)
+PxrUsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, MPlug& attrPlug)
 {
     return setPlugValue(usdAttr, UsdTimeCode::Default(), attrPlug);
 }
@@ -1264,83 +1309,328 @@ PxrUsdMayaUtil::setPlugValue(
 bool
 PxrUsdMayaUtil::setPlugValue(
         const UsdAttribute& usdAttr,
-        UsdTimeCode time,
+        const UsdTimeCode time,
         MPlug& attrPlug)
 {
-    MStatus status = MStatus::kFailure;
     VtValue val;
-    if (usdAttr.Get(&val, time)) {
-        if (val.IsHolding<float>()) {
-            status = attrPlug.setFloat(val.UncheckedGet<float>());
-        }
-        else if (val.IsHolding<int>()) {
-            status = attrPlug.setInt(val.UncheckedGet<int>());
-        }
-        else if (val.IsHolding<GfVec3f>()) {
-            if (attrPlug.isCompound()) {
-                GfVec3f vec3fVal = _GetVec<GfVec3f>(usdAttr, val);
-                for (int i = 0; i < 3; i++) {
-                    MPlug childPlug = attrPlug.child(i, &status);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                    status = childPlug.setFloat(vec3fVal[i]);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                }
-            }
-        }
-        else if (val.IsHolding<bool>()) {
-            status = attrPlug.setBool(
-                val.UncheckedGet<bool>());
-        }
-        else if (val.IsHolding<std::string>()) {
-            status = attrPlug.setString(
-                MString(val.UncheckedGet<std::string>().c_str()));
-        }
-        else if (val.IsHolding<TfToken>()) {
-            TfToken token(val.UncheckedGet<TfToken>());
-            MObject attrObj = attrPlug.attribute(&status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
-            if (attrObj.hasFn(MFn::kEnumAttribute)) {
-                MFnEnumAttribute attrEnumFn(attrObj, &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-                short enumVal = attrEnumFn.fieldIndex(MString(token.GetText()), &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-                status = attrPlug.setShort(enumVal);
-            }
-        }
-        else if (val.IsHolding<VtArray<GfVec3f> >()) {
-            VtArray<GfVec3f> vecArray = val.UncheckedGet<VtArray<GfVec3f> >();
-            status = attrPlug.setNumElements(vecArray.size());
-            CHECK_MSTATUS_AND_RETURN(status, false);
+    if (!usdAttr.Get(&val, time)) {
+        return false;
+    }
 
-            for (size_t j = 0u; j < vecArray.size(); ++j) {
-                GfVec3f vec3fVal = vecArray[j];
-                MPlug elemPlug = attrPlug.elementByPhysicalIndex(
-                        static_cast<unsigned int>(j), &status);
-                for (size_t i = 0u; i < 3u; ++i) {
-                    MPlug childPlug = elemPlug.child(
-                            static_cast<unsigned int>(i), &status);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                    status = childPlug.setFloat(vec3fVal[i]);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                } 
-            }
-        } 
-        else if (val.IsHolding<VtArray<float> >()) {
-            VtArray<float> floatArray = val.UncheckedGet<VtArray<float> >();
-            status = attrPlug.setNumElements(floatArray.size());
+    MStatus status = MStatus::kFailure;
+
+    if (val.IsHolding<double>()) {
+        status = attrPlug.setDouble(val.UncheckedGet<double>());
+    }
+    else if (val.IsHolding<float>()) {
+        status = attrPlug.setFloat(val.UncheckedGet<float>());
+    }
+    else if (val.IsHolding<int>()) {
+        status = attrPlug.setInt(val.UncheckedGet<int>());
+    }
+    else if (val.IsHolding<short>()) {
+        status = attrPlug.setShort(val.UncheckedGet<short>());
+    }
+    else if (val.IsHolding<bool>()) {
+        status = attrPlug.setBool(val.UncheckedGet<bool>());
+    }
+    else if (val.IsHolding<std::string>()) {
+        status = attrPlug.setString(val.UncheckedGet<std::string>().c_str());
+    }
+    else if (val.IsHolding<TfToken>()) {
+        const TfToken token(val.UncheckedGet<TfToken>());
+        const MObject attrObj = attrPlug.attribute(&status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        if (attrObj.hasFn(MFn::kEnumAttribute)) {
+            MFnEnumAttribute attrEnumFn(attrObj, &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
-            for (size_t i = 0u; i < floatArray.size(); ++i) {
-                status = attrPlug
-                        .elementByPhysicalIndex(static_cast<unsigned int>(i))
-                        .setFloat(floatArray[i]);
+            short enumVal = attrEnumFn.fieldIndex(token.GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = attrPlug.setShort(enumVal);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<GfVec2d>()) {
+        if (attrPlug.isCompound()) {
+            const GfVec2d& vecVal = val.UncheckedGet<GfVec2d>();
+            for (size_t i = 0u; i < GfVec2d::dimension; ++i) {
+                MPlug childPlug = attrPlug.child(static_cast<unsigned int>(i),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setDouble(vecVal[i]);
                 CHECK_MSTATUS_AND_RETURN(status, false);
             }
         }
-        else {
-            TF_RUNTIME_ERROR(
-                    "Unimplemented shader param type for %s",
-                    usdAttr.GetBaseName().GetText());
+    }
+    else if (val.IsHolding<GfVec2f>()) {
+        if (attrPlug.isCompound()) {
+            const GfVec2f& vecVal = val.UncheckedGet<GfVec2f>();
+            for (size_t i = 0u; i < GfVec2f::dimension; ++i) {
+                MPlug childPlug = attrPlug.child(static_cast<unsigned int>(i),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setFloat(vecVal[i]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
         }
+    }
+    else if (val.IsHolding<GfVec3d>()) {
+        if (attrPlug.isCompound()) {
+            const GfVec3d vecVal = _GetVec<GfVec3d>(usdAttr, val);
+            for (size_t i = 0u; i < GfVec3d::dimension; ++i) {
+                MPlug childPlug = attrPlug.child(static_cast<unsigned int>(i),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setDouble(vecVal[i]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<GfVec3f>()) {
+        if (attrPlug.isCompound()) {
+            const GfVec3f vecVal = _GetVec<GfVec3f>(usdAttr, val);
+            for (size_t i = 0u; i < GfVec3f::dimension; ++i) {
+                MPlug childPlug = attrPlug.child(static_cast<unsigned int>(i),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setFloat(vecVal[i]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<GfVec4d>()) {
+        if (attrPlug.isCompound()) {
+            const GfVec4d vecVal = _GetVec<GfVec4d>(usdAttr, val);
+            for (size_t i = 0u; i < GfVec4d::dimension; ++i) {
+                MPlug childPlug = attrPlug.child(static_cast<unsigned int>(i),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setDouble(vecVal[i]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<GfVec4f>()) {
+        if (attrPlug.isCompound()) {
+            const GfVec4f vecVal = _GetVec<GfVec4f>(usdAttr, val);
+            for (size_t i = 0u; i < GfVec4f::dimension; ++i) {
+                MPlug childPlug = attrPlug.child(static_cast<unsigned int>(i),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setFloat(vecVal[i]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<VtDoubleArray>()) {
+        const VtDoubleArray& valArray = val.UncheckedGet<VtDoubleArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = elemPlug.setDouble(valArray[i]);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<VtFloatArray>()) {
+        const VtFloatArray& valArray = val.UncheckedGet<VtFloatArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = elemPlug.setFloat(valArray[i]);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<VtIntArray>()) {
+        const VtIntArray& valArray = val.UncheckedGet<VtIntArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = elemPlug.setInt(valArray[i]);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<VtShortArray>()) {
+        const VtShortArray& valArray = val.UncheckedGet<VtShortArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = elemPlug.setShort(valArray[i]);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<VtBoolArray>()) {
+        const VtBoolArray& valArray = val.UncheckedGet<VtBoolArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = elemPlug.setBool(valArray[i]);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<VtStringArray>()) {
+        const VtStringArray& valArray = val.UncheckedGet<VtStringArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            status = elemPlug.setString(valArray[i].c_str());
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+    }
+    else if (val.IsHolding<VtVec2dArray>()) {
+        const VtVec2dArray valArray = val.UncheckedGet<VtVec2dArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            const GfVec2d& vecVal = valArray[i];
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (size_t j = 0u; j < GfVec2d::dimension; ++j) {
+                MPlug childPlug = elemPlug.child(static_cast<unsigned int>(j),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setDouble(vecVal[j]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<VtVec2fArray>()) {
+        const VtVec2fArray valArray = val.UncheckedGet<VtVec2fArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            const GfVec2f& vecVal = valArray[i];
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (size_t j = 0u; j < GfVec2f::dimension; ++j) {
+                MPlug childPlug = elemPlug.child(static_cast<unsigned int>(j),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setFloat(vecVal[j]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<VtVec3dArray>()) {
+        const VtVec3dArray valArray = val.UncheckedGet<VtVec3dArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            GfVec3d vecVal = valArray[i];
+            if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
+                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+            }
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (size_t j = 0u; j < GfVec3d::dimension; ++j) {
+                MPlug childPlug = elemPlug.child(static_cast<unsigned int>(j),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setDouble(vecVal[j]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<VtVec3fArray>()) {
+        const VtVec3fArray valArray = val.UncheckedGet<VtVec3fArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            GfVec3f vecVal = valArray[i];
+            if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
+                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+            }
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (size_t j = 0u; j < GfVec3f::dimension; ++j) {
+                MPlug childPlug = elemPlug.child(static_cast<unsigned int>(j),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setFloat(vecVal[j]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<VtVec4dArray>()) {
+        const VtVec4dArray valArray = val.UncheckedGet<VtVec4dArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            GfVec4d vecVal = valArray[i];
+            if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
+                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+            }
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (size_t j = 0u; j < GfVec4d::dimension; ++j) {
+                MPlug childPlug = elemPlug.child(static_cast<unsigned int>(j),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setDouble(vecVal[j]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else if (val.IsHolding<VtVec4fArray>()) {
+        const VtVec4fArray valArray = val.UncheckedGet<VtVec4fArray>();
+        status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0u; i < valArray.size(); ++i) {
+            GfVec4f vecVal = valArray[i];
+            if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
+                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+            }
+            MPlug elemPlug = attrPlug.elementByPhysicalIndex(
+                static_cast<unsigned int>(i),
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            for (size_t j = 0u; j < GfVec4f::dimension; ++j) {
+                MPlug childPlug = elemPlug.child(static_cast<unsigned int>(j),
+                                                 &status);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+                status = childPlug.setFloat(vecVal[j]);
+                CHECK_MSTATUS_AND_RETURN(status, false);
+            }
+        }
+    }
+    else {
+        TF_CODING_ERROR("Unsupported type '%s' for USD attribute '%s'",
+                        usdAttr.GetTypeName().GetAsToken().GetText(),
+                        usdAttr.GetPath().GetText());
+        return false;
     }
 
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1351,20 +1641,21 @@ PxrUsdMayaUtil::setPlugValue(
 bool
 PxrUsdMayaUtil::createStringAttribute(
         MFnDependencyNode& depNode,
-        const MString& attr) {
+        const MString& attr)
+{
     MStatus status = MStatus::kFailure;
     MFnTypedAttribute typedAttrFn;
     MObject attrObj = typedAttrFn.create(
-            attr,
-            attr,
-            MFnData::kString,
-            MObject::kNullObj,
-            &status);
+        attr,
+        attr,
+        MFnData::kString,
+        MObject::kNullObj,
+        &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    
+
     status = depNode.addAttribute(attrObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    
+
     return true;
 }
 
@@ -1372,26 +1663,29 @@ bool
 PxrUsdMayaUtil::createNumericAttribute(
         MFnDependencyNode& depNode,
         const MString& attr,
-        MFnNumericData::Type type) {
+        const MFnNumericData::Type type)
+{
     MStatus status = MStatus::kFailure;
     MFnNumericAttribute numericAttrFn;
     MObject attrObj = numericAttrFn.create(
-            attr,
-            attr,
-            type,
-            0,
-            &status);
+        attr,
+        attr,
+        type,
+        0,
+        &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    
+
     status = depNode.addAttribute(attrObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    
+
     return true;
 }
 
 PxrUsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
-    const MPlug& plug, MDataHandle dataHandle)
-    : _plug(plug), _dataHandle(dataHandle)
+        const MPlug& plug,
+        MDataHandle dataHandle) :
+    _plug(plug),
+    _dataHandle(dataHandle)
 {
 }
 
@@ -1430,8 +1724,8 @@ PxrUsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
 
 VtDictionary
 PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
-    const MArgDatabase& argData,
-    const VtDictionary& guideDict)
+        const MArgDatabase& argData,
+        const VtDictionary& guideDict)
 {
     // We handle three types of arguments:
     // 1 - bools: Some bools are actual boolean flags (t/f) in Maya, and others
@@ -1508,9 +1802,9 @@ PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
 
 VtValue
 PxrUsdMayaUtil::ParseArgumentValue(
-    const std::string& key,
-    const std::string& value,
-    const VtDictionary& guideDict)
+        const std::string& key,
+        const std::string& value,
+        const VtDictionary& guideDict)
 {
     // We handle two types of arguments:
     // 1 - bools: Should be encoded by translator UI as a "1" or "0" string.
