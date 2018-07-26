@@ -67,6 +67,12 @@ private:
             const UsdGeomMesh& primSchema,
             const UsdGeomPrimvar& primvar,
             MFnMesh& meshFn);
+
+    static bool _AssignConstantPrimvarToMesh(
+            const UsdGeomPrimvar& primvar, 
+            MFnMesh& meshFn);
+
+
 };
 
 

@@ -26,6 +26,7 @@
 
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/meshUtil.h"
+#include "usdMaya/readUtil.h"
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
 
@@ -412,6 +413,57 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     }
 
     return true;
+}
+bool
+PxrUsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
+        const UsdGeomPrimvar& primvar, 
+        MFnMesh& meshFn)
+{
+
+    const TfToken& name = primvar.GetBaseName();
+    const SdfValueTypeName& typeName = primvar.GetTypeName();
+    const SdfVariability& variability = SdfVariabilityUniform;
+    const TfToken& interpolation = primvar.GetInterpolation();
+
+    if (interpolation != UsdGeomTokens->constant) {
+        return false;
+    }
+
+    // create attribute
+    MObject attrObj = 
+        PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+            typeName, 
+            variability, 
+            meshFn, 
+            name.GetText(),
+            name.GetText());
+
+    if (attrObj.isNull()) {
+        return false;
+    }
+
+    // set attribute value
+    VtValue primvarData;
+    MDGModifier modifier;
+
+    primvar.Get(&primvarData);
+
+    MStatus status;
+    MPlug plug = meshFn.findPlug(
+        name.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+
+    if (status != MS::kSuccess || plug.isNull()) {
+        return false;
+    }
+
+    if (!PxrUsdMayaReadUtil::SetMayaAttr(plug, primvarData, modifier)) {
+        return false;
+    }
+
+    return true;
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

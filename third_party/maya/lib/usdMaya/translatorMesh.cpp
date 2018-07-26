@@ -55,9 +55,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
-#include <maya/MObject.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
 #include <maya/MUintArray.h>
 
 #include <string>
@@ -438,6 +435,8 @@ PxrUsdMayaTranslatorMesh::Create(
         const TfToken name = primvar.GetBaseName();
         const TfToken fullName = primvar.GetPrimvarName();
         const SdfValueTypeName typeName = primvar.GetTypeName();
+        const TfToken& interpolation = primvar.GetInterpolation();
+
 
         // Exclude primvars using the full primvar name without "primvars:".
         // This applies to all primvars; we don't care if it's a color set, a
@@ -486,7 +485,17 @@ PxrUsdMayaTranslatorMesh::Create(
                         name.GetText(),
                         mesh.GetPrim().GetPath().GetText());
             }
+        // 
+        // constant primvars get added as attributes on mesh
+        //
+        } else if (interpolation == UsdGeomTokens->constant){
+            if (!_AssignConstantPrimvarToMesh(primvar, meshFn)) {
+                TF_WARN("Unable to assign constant primvars as attributes, <%s> for mesh <%s>",
+                        name.GetText(),
+                        mesh.GetPrim().GetPath().GetText());
+            }
         }
+
     }
 
     // We only vizualize the colorset by default if it is "displayColor".
