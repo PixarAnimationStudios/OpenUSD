@@ -180,7 +180,7 @@ void _ExtractPrimvarsFromNode(UsdShadeShader const & shadeNode,
 {
     // Check if it is a node that reads primvars.
     // XXX : We could be looking at more stuff here like manifolds..
-    if (node.type == TfToken("Primvar_3")) {
+    if (node.identifier == TfToken("Primvar_3")) {
         // Extract the primvar name from the usd shade node
         // and store it in the list of primvars in the network
         UsdShadeInput nameAttrib = shadeNode.GetInput(TfToken("varname"));
@@ -237,7 +237,7 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
         }
     }
 
-    // Extract the type of the node
+    // Extract the identifier of the node
     TfToken id;
     if (!shadeNode.GetShaderId(&id)) {
         for (auto &sourceType : shaderSourceTypes) {
@@ -250,7 +250,7 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
     }
 
     if (!id.IsEmpty()) {
-        node.type = id;
+        node.identifier = id;
 
         // If a node is recognizable, we will try to extract the primvar 
         // names that is using since this can help render delegates 
@@ -259,7 +259,7 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
         _ExtractPrimvarsFromNode(shadeNode, node, materialNetwork);
     } else {
         TF_WARN("UsdShade Shader without an id: %s.", node.path.GetText());
-        node.type = TfToken("PbsNetworkMaterialStandIn_2");
+        node.identifier = TfToken("PbsNetworkMaterialStandIn_2");
     }
 
     // Add the parameters and the relationships of this node

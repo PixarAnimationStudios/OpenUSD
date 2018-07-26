@@ -99,11 +99,11 @@ bool operator==(const HdMaterialRelationship& lhs,
 
 /// \struct HdMaterialNode
 ///
-/// Describes a material node which is made of a path, a type and
+/// Describes a material node which is made of a path, an identifier and
 /// a list of parameters.
 struct HdMaterialNode {
     SdfPath path;
-    TfToken type;
+    TfToken identifier;
     std::map<TfToken, VtValue> parameters;
 };
 

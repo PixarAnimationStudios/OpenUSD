@@ -59,7 +59,7 @@ bool operator==(const HdMaterialRelationship& lhs,
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
 {
     return lhs.path == rhs.path &&
-           lhs.type == rhs.type &&
+           lhs.identifier == rhs.identifier &&
            lhs.parameters == rhs.parameters;
 }
 
