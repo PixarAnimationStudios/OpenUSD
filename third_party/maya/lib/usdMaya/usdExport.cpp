@@ -25,7 +25,7 @@
 #include "usdMaya/usdExport.h"
 
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/usdWriteJob.h"
+#include "usdMaya/writeJob.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -309,13 +309,13 @@ try
     }
 
     // Create WriteJob object
-    usdWriteJob usdWriteJob(jobArgs);
+    UsdMaya_WriteJob UsdMaya_WriteJob(jobArgs);
 
     MComputation computation;
     computation.beginComputation();
 
     // Create stage and process static data
-    if (usdWriteJob.beginJob(fileName, append)) {
+    if (UsdMaya_WriteJob.beginJob(fileName, append)) {
         std::vector<double> timeSamples =
                 PxrUsdMayaWriteUtil::GetTimeSamples(
                 jobArgs.timeInterval, frameSamples, frameStride);
@@ -327,7 +327,7 @@ try
                 }
                 MGlobal::viewFrame(t);
                 // Process per frame data
-                usdWriteJob.evalJob(t);
+                UsdMaya_WriteJob.evalJob(t);
                 if (computation.isInterruptRequested()) {
                     break;
                 }
@@ -338,7 +338,7 @@ try
         }
 
         // Finalize the export, close the stage
-        usdWriteJob.endJob();
+        UsdMaya_WriteJob.endJob();
     } else {
         computation.endComputation();
         return MS::kFailure;

@@ -52,7 +52,7 @@ public:
     PxrUsdMaya_FunctorPrimWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx,
+            UsdMayaWriteJobContext& jobCtx,
             PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
 
     ~PxrUsdMaya_FunctorPrimWriter() override;
@@ -65,7 +65,7 @@ public:
     static UsdMayaPrimWriterSharedPtr Create(
             const MDagPath& dag,
             const SdfPath& path,
-            usdWriteJobCtx& jobCtx,
+            UsdMayaWriteJobContext& jobCtx,
             PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
 
     static PxrUsdMayaPrimWriterRegistry::WriterFactoryFn

@@ -53,7 +53,7 @@ public:
     PxrUsdTranslators_InstancerWriter(
             const MDagPath & iDag,
             const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
+            UsdMayaWriteJobContext& jobCtx);
     
     void Write(const UsdTimeCode &usdTime) override;
     void PostExport() override;

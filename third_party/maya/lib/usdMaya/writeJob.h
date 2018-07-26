@@ -21,18 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_USDWRITEJOB_H
-#define PXRUSDMAYA_USDWRITEJOB_H
+#ifndef USDMAYA_WRITE_JOB_H
+#define USDMAYA_WRITE_JOB_H
 
-/// \file usdWriteJob.h
+/// \file usdMaya/writeJob.h
 
 #include "pxr/pxr.h"
+
 #include "usdMaya/api.h"
 #include "usdMaya/chaser.h"
-
 #include "usdMaya/util.h"
-
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/hashmap.h"
 
@@ -44,15 +43,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMaya_ModelKindProcessor;
 
-class usdWriteJob
+class UsdMaya_WriteJob
 {
   public:
 
     PXRUSDMAYA_API
-    usdWriteJob(const PxrUsdMayaJobExportArgs & iArgs);
+    UsdMaya_WriteJob(const PxrUsdMayaJobExportArgs & iArgs);
 
     PXRUSDMAYA_API
-    ~usdWriteJob();
+    ~UsdMaya_WriteJob();
 
     // returns true if the stage can be created successfully
     PXRUSDMAYA_API
@@ -86,7 +85,7 @@ class usdWriteJob
 
     PxrUsdMayaChaserRefPtrVector mChasers;
 
-    usdWriteJobCtx mJobCtx;
+    UsdMayaWriteJobContext mJobCtx;
 
     std::unique_ptr<UsdMaya_ModelKindProcessor> _modelKindProcessor;
 };
@@ -94,4 +93,4 @@ class usdWriteJob
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_USDWRITEJOB_H
+#endif

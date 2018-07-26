@@ -38,7 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class usdReadJob;
+class UsdMaya_ReadJob;
 
 class usdImport : public MPxCommand
 {
@@ -62,7 +62,7 @@ class usdImport : public MPxCommand
     static void* creator();
 
   private:
-    usdReadJob* mUsdReadJob;
+    UsdMaya_ReadJob* mUsdReadJob;
 };
 
 

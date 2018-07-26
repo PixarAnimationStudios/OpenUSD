@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/usdReadJob.h"
+#include "usdMaya/readJob.h"
 
 #include "usdMaya/primReaderRegistry.h"
 #include "usdMaya/shadingModeRegistry.h"
@@ -72,7 +72,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 const static TfToken ASSEMBLY_SHADING_MODE = PxrUsdMayaShadingModeTokens->displayColor;
 
 
-usdReadJob::usdReadJob(
+UsdMaya_ReadJob::UsdMaya_ReadJob(
         const std::string &iFileName,
         const std::string &iPrimPath,
         const std::map<std::string, std::string>& iVariants,
@@ -87,12 +87,12 @@ usdReadJob::usdReadJob(
 {
 }
 
-usdReadJob::~usdReadJob()
+UsdMaya_ReadJob::~UsdMaya_ReadJob()
 {
 }
 
 bool
-usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
+UsdMaya_ReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 {
     MStatus status;
 
@@ -273,7 +273,7 @@ usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 
 
 bool
-usdReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
+UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
     // We want both pre- and post- visit iterations over the prims in this
     // method. To do so, iterate over all the root prims of the input range,
@@ -370,7 +370,7 @@ usdReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 }
 
 bool
-usdReadJob::redoIt()
+UsdMaya_ReadJob::redoIt()
 {
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
@@ -379,7 +379,7 @@ usdReadJob::redoIt()
 }
 
 bool
-usdReadJob::undoIt()
+UsdMaya_ReadJob::undoIt()
 {
     if (!mDagModifierSeeded) {
         mDagModifierSeeded = true;

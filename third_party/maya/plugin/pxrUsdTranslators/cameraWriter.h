@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,7 +40,7 @@ class PxrUsdTranslators_CameraWriter : public UsdMayaPrimWriter
     PxrUsdTranslators_CameraWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx);
+        UsdMayaWriteJobContext& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;
     

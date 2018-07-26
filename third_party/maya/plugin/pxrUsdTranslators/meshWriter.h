@@ -46,7 +46,7 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
   public:
     PxrUsdTranslators_MeshWriter(const MDagPath & iDag,
                    const SdfPath& uPath,
-                   usdWriteJobCtx& jobCtx);
+                   UsdMayaWriteJobContext& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;
     bool ExportsGprims() const override;

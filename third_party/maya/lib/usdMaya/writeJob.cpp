@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/usdWriteJob.h"
+#include "usdMaya/writeJob.h"
 
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/modelKindProcessor.h"
@@ -72,18 +72,18 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-usdWriteJob::usdWriteJob(const PxrUsdMayaJobExportArgs& iArgs)
+UsdMaya_WriteJob::UsdMaya_WriteJob(const PxrUsdMayaJobExportArgs& iArgs)
     : mJobCtx(iArgs),
       _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
 }
 
 
-usdWriteJob::~usdWriteJob()
+UsdMaya_WriteJob::~UsdMaya_WriteJob()
 {
 }
 
-bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
+bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -337,7 +337,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
     return true;
 }
 
-void usdWriteJob::evalJob(double iFrame)
+void UsdMaya_WriteJob::evalJob(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
@@ -355,7 +355,7 @@ void usdWriteJob::evalJob(double iFrame)
     perFrameCallback(iFrame);
 }
 
-void usdWriteJob::endJob()
+void UsdMaya_WriteJob::endJob()
 {
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -416,7 +416,7 @@ void usdWriteJob::endJob()
     TF_STATUS("Saving stage");
 }
 
-TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
+TfToken UsdMaya_WriteJob::writeVariants(const UsdPrim &usdRootPrim)
 {
     // Some notes about the expected structure that this function will create:
 
@@ -574,12 +574,12 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     return defaultPrim;
 }
 
-bool usdWriteJob::needToTraverse(const MDagPath& curDag)
+bool UsdMaya_WriteJob::needToTraverse(const MDagPath& curDag)
 {
     return mJobCtx.needToTraverse(curDag);
 }
 
-void usdWriteJob::perFrameCallback(double  /*iFrame*/)
+void UsdMaya_WriteJob::perFrameCallback(double  /*iFrame*/)
 {
     if (!mJobCtx.mArgs.melPerFrameCallback.empty()) {
         MGlobal::executeCommand(mJobCtx.mArgs.melPerFrameCallback.c_str(), true);
@@ -593,7 +593,7 @@ void usdWriteJob::perFrameCallback(double  /*iFrame*/)
 
 // write the frame ranges and statistic string on the root
 // Also call the post callbacks
-void usdWriteJob::postCallback()
+void UsdMaya_WriteJob::postCallback()
 {
     if (!mJobCtx.mArgs.melPostCallback.empty()) {
         MGlobal::executeCommand(mJobCtx.mArgs.melPostCallback.c_str(), true);

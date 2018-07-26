@@ -46,7 +46,7 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(camera, UsdGeomCamera);
 PxrUsdTranslators_CameraWriter::PxrUsdTranslators_CameraWriter(
     const MDagPath & iDag,
     const SdfPath& uPath,
-    usdWriteJobCtx& jobCtx)
+    UsdMayaWriteJobContext& jobCtx)
     : UsdMayaPrimWriter(iDag, uPath, jobCtx) 
 {
     UsdGeomCamera primSchema =

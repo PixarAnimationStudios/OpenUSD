@@ -25,8 +25,8 @@
 #include "usdMaya/usdImport.h"
 
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/readJob.h"
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/usdReadJob.h"
 
 #include "pxr/usd/ar/resolver.h"
 
@@ -210,7 +210,7 @@ usdImport::doIt(const MArgList & args)
                 /* importWithProxyShapes = */ false,
                 timeInterval);
 
-    mUsdReadJob = new usdReadJob(mFileName, mPrimPath, mVariants, jobArgs);
+    mUsdReadJob = new UsdMaya_ReadJob(mFileName, mPrimPath, mVariants, jobArgs);
 
     // Add optional command params
     if (argData.isFlagSet("parent")) {

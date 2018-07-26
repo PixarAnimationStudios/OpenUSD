@@ -31,7 +31,7 @@
 
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/usdWriteJob.h"
+#include "usdMaya/writeJob.h"
 #include "usdMaya/writeUtil.h"
 
 #include <maya/MAnimControl.h>
@@ -145,7 +145,7 @@ usdTranslatorExport::writer(const MFileObject &file,
         for (unsigned int i=0; i < filteredTypes.length(); ++i) {
             jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
         }
-        usdWriteJob writeJob(jobArgs);
+        UsdMaya_WriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append)) {
             std::vector<double> timeSamples =
                     PxrUsdMayaWriteUtil::GetTimeSamples(

@@ -27,7 +27,7 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -44,7 +44,7 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(locator, UsdGeomXform);
 PxrUsdTranslators_LocatorWriter::PxrUsdTranslators_LocatorWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx) :
+        UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomXform xformSchema = UsdGeomXform::Define(GetUsdStage(),

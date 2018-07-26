@@ -28,8 +28,8 @@
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/translatorGprim.h"
-#include "usdMaya/usdWriteJobCtx.h"
 #include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -75,7 +75,7 @@ _IsAnimated(const PxrUsdMayaJobExportArgs& args, const MDagPath& dagPath)
 
 UsdMayaPrimWriter::UsdMayaPrimWriter(const MDagPath& iDag,
                                const SdfPath& uPath,
-                               usdWriteJobCtx& jobCtx) :
+                               UsdMayaWriteJobContext& jobCtx) :
     _writeJobCtx(jobCtx),
     _dagPath(iDag),
     _usdPath(uPath),

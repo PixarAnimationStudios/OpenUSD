@@ -36,8 +36,7 @@ pxr_shared_library(${PXR_PACKAGE}
         colorSpace
         diagnosticDelegate
         editUtil
-        stageCache
-        stageData
+        jobArgs
         meshUtil
         pointBasedDeformerNode
         primReader
@@ -49,6 +48,16 @@ pxr_shared_library(${PXR_PACKAGE}
         primWriterContext
         primWriterRegistry
         query
+        readUtil
+        roundTripUtil
+        shadingModeExporter
+        shadingModeExporterContext
+        shadingModeImporter
+        shadingModeRegistry
+        stageCache
+        stageData
+        stageNode
+        transformWriter
         translatorCamera
         translatorCurves
         translatorGprim
@@ -61,23 +70,11 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorSkel
         translatorUtil
         translatorXformable
-        readUtil
-        roundTripUtil
-        shadingModeExporter
-        shadingModeExporterContext
-        shadingModeImporter
-        shadingModeRegistry
-        stageNode
-        transformWriter
         util
         usdPrimProvider
+        writeJobContext
         writeUtil
         xformStack
-
-        jobArgs
-        usdReadJob
-        usdWriteJob
-        usdWriteJobCtx
 
         proxyShape
         referenceAssembly
@@ -99,8 +96,10 @@ pxr_shared_library(${PXR_PACKAGE}
         functorPrimWriter
         instancedNodeWriter
         modelKindProcessor
+        readJob
         registryHelper
         skelBindingsProcessor
+        writeJob
 
     PRIVATE_HEADERS
         shadingModePxrRis_rfm_map.h
@@ -111,7 +110,7 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorMesh_PrimVars.cpp
         translatorMesh_SubDiv.cpp
         translatorXformable_decompose.cpp
-        usdReadJob_ImportWithProxies.cpp
+        readJob_ImportWithProxies.cpp
 
     PYMODULE_CPPFILES
         module.cpp

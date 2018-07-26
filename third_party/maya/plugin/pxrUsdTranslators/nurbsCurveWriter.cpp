@@ -45,7 +45,7 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsCurve, UsdGeomNurbsCurves);
 
 PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(const MDagPath & iDag,
                                            const SdfPath& uPath,
-                                           usdWriteJobCtx& jobCtx) :
+                                           UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomNurbsCurves primSchema =

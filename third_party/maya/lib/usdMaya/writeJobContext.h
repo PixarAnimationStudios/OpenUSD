@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_USDWRITEJOBCTX_H
-#define PXRUSDMAYA_USDWRITEJOBCTX_H
+#ifndef USDMAYA_WRITE_JOB_CONTEXT_H
+#define USDMAYA_WRITE_JOB_CONTEXT_H
+
+/// \file usdMaya/writeJobContext.h
 
 #include "pxr/pxr.h"
 
@@ -42,23 +44,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdMaya_SkelBindingsProcessor;
-class usdWriteJob;
+class UsdMaya_WriteJob;
 
-/// \class usdWriteJobCtx
+/// \class UsdMayaWriteJobContext
 /// \brief Provides basic functionality and access to shared data for MayaPrimWriters.
 ///
 /// The main purpose of this class is to handle source prim creation for instancing,
 /// and to avoid storing the PxrUsdMayaJobExportArgs and UsdStage on each prim writer.
 ///
-class usdWriteJobCtx {
+class UsdMayaWriteJobContext {
 protected:
-    friend class usdWriteJob;
+    friend class UsdMaya_WriteJob;
 
     PXRUSDMAYA_API
-    usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args);
+    UsdMayaWriteJobContext(const PxrUsdMayaJobExportArgs& args);
 
     PXRUSDMAYA_API
-    ~usdWriteJobCtx();
+    ~UsdMayaWriteJobContext();
 
 public:
     const PxrUsdMayaJobExportArgs& getArgs() const { return mArgs; };
@@ -215,7 +217,7 @@ private:
             mWriterFactoryCache;
 
     // PxrUsdMaya_InstancedNodeWriter is in a separate file, but functions as
-    // an internal helper for usdWriteJobCtx.
+    // an internal helper for UsdMayaWriteJobContext.
     friend class PxrUsdMaya_InstancedNodeWriter;
 };
 

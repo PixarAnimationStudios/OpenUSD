@@ -73,7 +73,7 @@ public:
     UsdMayaTransformWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
+            UsdMayaWriteJobContext& jobCtx);
 
     /// Main export function that runs when the traversal hits the node.
     /// This extends UsdMayaPrimWriter::Write() by exporting xform ops for

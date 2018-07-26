@@ -74,7 +74,7 @@ struct PxrUsdMayaPrimWriterRegistry
     typedef std::function< UsdMayaPrimWriterSharedPtr (
             const MDagPath&,
             const SdfPath&,
-            usdWriteJobCtx&) > WriterFactoryFn;
+            UsdMayaWriteJobContext&) > WriterFactoryFn;
 
     /// Writer function, i.e. a function that writes a prim. This is the
     /// signature of the function defined by the PXRUSDMAYA_DEFINE_WRITER
@@ -94,7 +94,7 @@ struct PxrUsdMayaPrimWriterRegistry
     ///     static UsdMayaPrimWriterSharedPtr Create(
     ///             MDagPath &curDag,
     ///             const SdfPath& uPath,
-    ///             usdWriteJobCtx& jobCtx);
+    ///             UsdMayaWriteJobContext& jobCtx);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, MyWriter) {
     ///     PxrUsdMayaPrimWriterRegistry::Register("myCustomMayaNode",
@@ -151,7 +151,7 @@ bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
 /// \brief Registers a pre-existing writer class for the given Maya type;
 /// the writer class should be a subclass of UsdMayaPrimWriter with a three-place
 /// constructor that takes <tt>(const MDagPath& mayaPath,
-/// const SdfPath& usdPath, usdWriteJobCtx& jobCtx)</tt> as arguments.
+/// const SdfPath& usdPath, UsdMayaWriteJobContext& jobCtx)</tt> as arguments.
 ///
 /// Example:
 /// \code{.cpp}
@@ -159,7 +159,7 @@ bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
 ///     MyWriter(
 ///             const MDagPath& mayaPath,
 ///             const SdfPath& usdPath,
-///             usdWriteJobCtx& jobCtx) {
+///             UsdMayaWriteJobContext& jobCtx) {
 ///         // ...
 ///     }
 /// };
@@ -172,7 +172,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG( \
 { \
     PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, \
         [](const MDagPath& mayaPath, const SdfPath& usdPath, \
-                usdWriteJobCtx& jobCtx) { \
+                UsdMayaWriteJobContext& jobCtx) { \
             return std::make_shared<writerClass>(mayaPath, usdPath, jobCtx); \
         }); \
 }

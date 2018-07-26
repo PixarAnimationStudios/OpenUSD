@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/usdReadJob.h"
+#include "usdMaya/readJob.h"
 
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
@@ -180,7 +180,7 @@ _CreateParentTransformNodes(
 }
 
 bool
-usdReadJob::_ProcessProxyPrims(
+UsdMaya_ReadJob::_ProcessProxyPrims(
         const std::vector<UsdPrim>& proxyPrims,
         const UsdPrim& pxrGeomRoot,
         const std::vector<std::string>& collapsePointPathStrings)
@@ -235,7 +235,7 @@ usdReadJob::_ProcessProxyPrims(
 }
 
 bool
-usdReadJob::_ProcessSubAssemblyPrims(
+UsdMaya_ReadJob::_ProcessSubAssemblyPrims(
             const std::vector<UsdPrim>& subAssemblyPrims)
 {
     TF_FOR_ALL(iter, subAssemblyPrims) {
@@ -269,7 +269,7 @@ usdReadJob::_ProcessSubAssemblyPrims(
 }
 
 bool
-usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
+UsdMaya_ReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 {
     TF_FOR_ALL(iter, cameraPrims) {
         const UsdPrim cameraPrim = *iter;
@@ -293,7 +293,7 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 }
 
 bool
-usdReadJob::_DoImportWithProxies(UsdPrimRange& range)
+UsdMaya_ReadJob::_DoImportWithProxies(UsdPrimRange& range)
 {
     MStatus status;
 

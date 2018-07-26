@@ -28,7 +28,7 @@
 
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"

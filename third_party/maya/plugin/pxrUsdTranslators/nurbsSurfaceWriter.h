@@ -39,7 +39,7 @@ class PxrUsdTranslators_NurbsSurfaceWriter : public UsdMayaPrimWriter
     PxrUsdTranslators_NurbsSurfaceWriter(
             const MDagPath & iDag,
             const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
+            UsdMayaWriteJobContext& jobCtx);
     
     void Write(const UsdTimeCode &usdTime) override;
 

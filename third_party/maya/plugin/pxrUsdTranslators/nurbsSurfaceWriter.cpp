@@ -50,7 +50,7 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsSurface, UsdGeomNurbsPatch);
 PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
         const MDagPath & iDag,
         const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx) :
+        UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     UsdGeomNurbsPatch primSchema =

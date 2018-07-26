@@ -182,7 +182,7 @@ namespace {
 PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
     const MDagPath & iDag,
     const SdfPath& uPath,
-    usdWriteJobCtx& jobCtx)
+    UsdMayaWriteJobContext& jobCtx)
     : UsdMayaTransformWriter(iDag, uPath, jobCtx),
       mInitialFrameDone(false) {
     auto primSchema = UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());

@@ -30,9 +30,9 @@
 #include "usdMaya/usdTranslatorImport.h"
 
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/readJob.h"
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/usdReadJob.h"
-#include "usdMaya/usdWriteJob.h"
+#include "usdMaya/writeJob.h"
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/vt/dictionary.h"
@@ -126,8 +126,8 @@ usdTranslatorImport::reader(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
-    usdReadJob* mUsdReadJob =
-        new usdReadJob(fileName,
+    UsdMaya_ReadJob* mUsdReadJob =
+        new UsdMaya_ReadJob(fileName,
                        primPath,
                        variants,
                        jobArgs);

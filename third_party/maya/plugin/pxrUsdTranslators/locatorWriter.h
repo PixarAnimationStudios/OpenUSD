@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 
 #include "usdMaya/primWriter.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -59,7 +59,7 @@ public:
     PxrUsdTranslators_LocatorWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
+            UsdMayaWriteJobContext& jobCtx);
 };
 
 

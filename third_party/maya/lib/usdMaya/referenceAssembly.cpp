@@ -28,9 +28,9 @@
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
+#include "usdMaya/readJob.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
-#include "usdMaya/usdReadJob.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -1516,7 +1516,7 @@ bool UsdMayaRepresentationHierBase::activate()
             PxrUsdMayaJobImportArgs::CreateFromDictionary(
                 userArgs, shouldImportWithProxies,
                 GfInterval::GetFullInterval());
-    usdReadJob readJob(usdFilePath.asChar(),
+    UsdMaya_ReadJob readJob(usdFilePath.asChar(),
                        usdPrimPath.asChar(),
                        variantSetSelections,
                        importArgs);

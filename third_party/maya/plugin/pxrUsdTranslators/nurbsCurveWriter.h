@@ -36,7 +36,7 @@ class UsdGeomNurbsCurves;
 class PxrUsdTranslators_NurbsCurveWriter : public UsdMayaPrimWriter
 {
   public:
-    PxrUsdTranslators_NurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx);
+    PxrUsdTranslators_NurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, UsdMayaWriteJobContext& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;
 

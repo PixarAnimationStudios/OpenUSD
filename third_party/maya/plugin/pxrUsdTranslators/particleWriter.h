@@ -38,7 +38,7 @@ class PxrUsdTranslators_ParticleWriter : public UsdMayaTransformWriter
 public:
     PxrUsdTranslators_ParticleWriter(const MDagPath & iDag,
                        const SdfPath& uPath,
-                       usdWriteJobCtx& jobCtx);
+                       UsdMayaWriteJobContext& jobCtx);
 
     void Write(const UsdTimeCode &usdTime) override;
 

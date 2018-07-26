@@ -36,9 +36,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class usdWriteJobCtx;
 struct PxrUsdMayaJobExportArgs;
 class UsdGeomImageable;
+class UsdMayaWriteJobContext;
 class UsdTimeCode;
 class UsdUtilsSparseValueWriter;
 
@@ -51,7 +51,7 @@ public:
     UsdMayaPrimWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
-            usdWriteJobCtx& jobCtx);
+            UsdMayaWriteJobContext& jobCtx);
 
     PXRUSDMAYA_API
     virtual ~UsdMayaPrimWriter();
@@ -184,7 +184,7 @@ protected:
     UsdUtilsSparseValueWriter *_GetSparseValueWriter();
 
     UsdPrim _usdPrim;
-    usdWriteJobCtx& _writeJobCtx;
+    UsdMayaWriteJobContext& _writeJobCtx;
 
 private:
     /// Whether this prim writer represents the transform portion of a merged

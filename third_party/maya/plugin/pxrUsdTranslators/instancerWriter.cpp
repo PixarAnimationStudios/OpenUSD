@@ -25,7 +25,7 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -56,7 +56,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 PxrUsdTranslators_InstancerWriter::PxrUsdTranslators_InstancerWriter(const MDagPath & iDag,
     const SdfPath& uPath,
-    usdWriteJobCtx& jobCtx)
+    UsdMayaWriteJobContext& jobCtx)
     : UsdMayaTransformWriter(iDag, uPath, jobCtx),
       _numPrototypes(0)
 {

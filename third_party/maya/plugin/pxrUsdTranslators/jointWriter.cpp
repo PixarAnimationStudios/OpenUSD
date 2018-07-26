@@ -27,7 +27,7 @@
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -121,7 +121,7 @@ _GetJointHierarchyComponents(const MDagPath& dagPath,
 
 PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(const MDagPath& iDag,
                                        const SdfPath& uPath,
-                                       usdWriteJobCtx& jobCtx)
+                                       UsdMayaWriteJobContext& jobCtx)
     : UsdMayaPrimWriter(iDag, uPath, jobCtx), _valid(false)
 {
     const TfToken& exportSkels = _GetExportArgs().exportSkels;

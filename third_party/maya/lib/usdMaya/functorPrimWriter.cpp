@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 PxrUsdMaya_FunctorPrimWriter::PxrUsdMaya_FunctorPrimWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx,
+        UsdMayaWriteJobContext& jobCtx,
         PxrUsdMayaPrimWriterRegistry::WriterFn plugFn) :
     UsdMayaTransformWriter(iDag, uPath, jobCtx),
     _plugFn(plugFn),
@@ -84,7 +84,7 @@ UsdMayaPrimWriterSharedPtr
 PxrUsdMaya_FunctorPrimWriter::Create(
     const MDagPath& dag,
     const SdfPath& path,
-    usdWriteJobCtx& jobCtx,
+    UsdMayaWriteJobContext& jobCtx,
     PxrUsdMayaPrimWriterRegistry::WriterFn plugFn)
 {
     return UsdMayaPrimWriterSharedPtr(

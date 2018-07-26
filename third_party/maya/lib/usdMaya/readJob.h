@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_USD_READ_JOB_H
-#define PXRUSDMAYA_USD_READ_JOB_H
+#ifndef USDMAYA_READ_JOB_H
+#define USDMAYA_READ_JOB_H
 
-/// \file usdMaya/usdReadJob.h
+/// \file usdMaya/readJob.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -45,19 +45,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-class usdReadJob
+class UsdMaya_ReadJob
 {
   public:
 
     PXRUSDMAYA_API
-    usdReadJob(
+    UsdMaya_ReadJob(
             const std::string& iFileName,
             const std::string& iPrimPath,
             const std::map<std::string, std::string>& iVariants,
             const PxrUsdMayaJobImportArgs & iArgs);
 
     PXRUSDMAYA_API
-    ~usdReadJob();
+    ~UsdMaya_ReadJob();
 
     PXRUSDMAYA_API
     bool doIt(std::vector<MDagPath>* addedDagPaths);
@@ -73,7 +73,7 @@ class usdReadJob
 
   private:
     // XXX: Activating the 'Expanded' representation of a USD reference
-    // assembly node is very much like performing a regular usdReadJob but with
+    // assembly node is very much like performing a regular UsdMaya_ReadJob but with
     // a few key differences (e.g. creating proxy shapes at collapse points).
     // These private helper methods cover the functionality of a regular
     // usdImport, and an 'Expanded' representation-style import, respectively.

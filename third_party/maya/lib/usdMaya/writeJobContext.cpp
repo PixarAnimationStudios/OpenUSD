@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/usdWriteJobCtx.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "usdMaya/instancedNodeWriter.h"
 #include "usdMaya/skelBindingsProcessor.h"
@@ -70,16 +70,16 @@ namespace {
     const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
 }
 
-usdWriteJobCtx::usdWriteJobCtx(const PxrUsdMayaJobExportArgs& args)
+UsdMayaWriteJobContext::UsdMayaWriteJobContext(const PxrUsdMayaJobExportArgs& args)
     : mArgs(args),
       _skelBindingsProcessor(new UsdMaya_SkelBindingsProcessor())
 {
 }
 
-usdWriteJobCtx::~usdWriteJobCtx() = default;
+UsdMayaWriteJobContext::~UsdMayaWriteJobContext() = default;
 
 bool
-usdWriteJobCtx::IsMergedTransform(const MDagPath& path) const
+UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
     if (!mArgs.mergeTransformAndShape) {
         return false;
@@ -137,7 +137,7 @@ usdWriteJobCtx::IsMergedTransform(const MDagPath& path) const
 }
 
 SdfPath
-usdWriteJobCtx::ConvertDagToUsdPath(const MDagPath& dagPath) const
+UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
 {
     SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
             dagPath, false, mArgs.stripNamespaces);
@@ -161,8 +161,8 @@ usdWriteJobCtx::ConvertDagToUsdPath(const MDagPath& dagPath) const
     return _GetRootOverridePath(mArgs, path);
 }
 
-usdWriteJobCtx::_ExportAndRefPaths
-usdWriteJobCtx::_GetInstanceMasterPaths(const MDagPath& instancePath) const
+UsdMayaWriteJobContext::_ExportAndRefPaths
+UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) const
 {
     TF_AXIOM(mInstancesPrim);
 
@@ -204,8 +204,8 @@ usdWriteJobCtx::_GetInstanceMasterPaths(const MDagPath& instancePath) const
     }
 }
 
-usdWriteJobCtx::_ExportAndRefPaths
-usdWriteJobCtx::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
+UsdMayaWriteJobContext::_ExportAndRefPaths
+UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
 {
     const MObjectHandle handle(instancePath.node());
     const auto it = _objectsToMasterPaths.find(handle);
@@ -275,7 +275,7 @@ usdWriteJobCtx::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
 }
 
 bool
-usdWriteJobCtx::_GetInstanceMasterPrimWriters(
+UsdMayaWriteJobContext::_GetInstanceMasterPrimWriters(
     const MDagPath& instancePath,
     std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* begin,
     std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const
@@ -295,7 +295,7 @@ usdWriteJobCtx::_GetInstanceMasterPrimWriters(
     return false;
 }
 
-bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag) const
+bool UsdMayaWriteJobContext::needToTraverse(const MDagPath& curDag) const
 {
     MObject ob = curDag.node();
     // NOTE: Already skipping all intermediate objects
@@ -332,7 +332,7 @@ bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag) const
     return true;
 }
 
-bool usdWriteJobCtx::openFile(const std::string& filename, bool append)
+bool UsdMayaWriteJobContext::openFile(const std::string& filename, bool append)
 {
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
@@ -378,7 +378,7 @@ bool usdWriteJobCtx::openFile(const std::string& filename, bool append)
     return true;
 }
 
-bool usdWriteJobCtx::PostProcess()
+bool UsdMayaWriteJobContext::PostProcess()
 {
     if (mArgs.exportInstances) {
         if (_objectsToMasterWriters.empty()) {
@@ -395,7 +395,7 @@ bool usdWriteJobCtx::PostProcess()
     return true;
 }
 
-UsdMayaPrimWriterSharedPtr usdWriteJobCtx::CreatePrimWriter(
+UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
     const MDagPath& curDag,
     const SdfPath& usdPath,
     const bool forceUninstance)
@@ -440,7 +440,7 @@ UsdMayaPrimWriterSharedPtr usdWriteJobCtx::CreatePrimWriter(
 }
 
 PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
-usdWriteJobCtx::_FindWriter(const std::string& mayaNodeType)
+UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
 {
     // Check if type is already cached locally.
     auto iter = mWriterFactoryCache.find(mayaNodeType);
@@ -465,7 +465,7 @@ usdWriteJobCtx::_FindWriter(const std::string& mayaNodeType)
 }
 
 void
-usdWriteJobCtx::CreatePrimWriterHierarchy(
+UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
     const MDagPath& rootDag,
     const SdfPath& rootUsdPath,
     const bool forceUninstance,
@@ -535,7 +535,7 @@ usdWriteJobCtx::CreatePrimWriterHierarchy(
 }
 
 void
-usdWriteJobCtx::MarkSkelBindings(
+UsdMayaWriteJobContext::MarkSkelBindings(
     const SdfPath& path,
     const SdfPath& skelPath,
     const TfToken& config)

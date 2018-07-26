@@ -54,7 +54,7 @@ class PxrUsdTranslators_JointWriter : public UsdMayaPrimWriter
 public:
     PxrUsdTranslators_JointWriter(const MDagPath& iDag,
                        const SdfPath& uPath,
-                       usdWriteJobCtx& jobCtx);
+                       UsdMayaWriteJobContext& jobCtx);
     
     void Write(const UsdTimeCode &usdTime) override;
     bool ExportsGprims() const override;

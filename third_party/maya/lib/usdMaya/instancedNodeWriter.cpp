@@ -99,7 +99,7 @@ _ReplaceInstancePrefix(
 PxrUsdMaya_InstancedNodeWriter::PxrUsdMaya_InstancedNodeWriter(
     const MDagPath& mayaInstancePath,
     const SdfPath& usdInstancePath,
-    usdWriteJobCtx& ctx)
+    UsdMayaWriteJobContext& ctx)
     : UsdMayaPrimWriter(mayaInstancePath, usdInstancePath, ctx),
       _masterPaths(ctx._FindOrCreateInstanceMaster(mayaInstancePath)),
       _exportsGprims(false)

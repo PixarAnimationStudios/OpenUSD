@@ -127,7 +127,7 @@ const GfVec4f PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGBA = GfVec4f(
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
         const MDagPath & iDag,
         const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx) :
+        UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     if ( !isMeshValid() ) {

@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// This class encapsulates all of the logic for writing model kinds from
-/// usdWriteJob. It is a "black box" that reads each newly-written prim, one
+/// UsdMaya_WriteJob. It is a "black box" that reads each newly-written prim, one
 /// by one, saving information that is used to determine model hierarchy at the
 /// end of writing to the USD stage.
 class UsdMaya_ModelKindProcessor

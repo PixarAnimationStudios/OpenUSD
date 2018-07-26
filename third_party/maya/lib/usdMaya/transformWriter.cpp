@@ -27,7 +27,7 @@
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/util.h"
-#include "usdMaya/usdWriteJob.h"
+#include "usdMaya/writeJobContext.h"
 #include "usdMaya/xformStack.h"
 
 #include "pxr/usd/usdGeom/xform.h"
@@ -448,7 +448,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
 UsdMayaTransformWriter::UsdMayaTransformWriter(
         const MDagPath& iDag,
         const SdfPath& uPath,
-        usdWriteJobCtx& jobCtx)
+        UsdMayaWriteJobContext& jobCtx)
         : UsdMayaPrimWriter(iDag, uPath, jobCtx)
 {
     // Even though we define an Xform here, it's OK for subclassers to
