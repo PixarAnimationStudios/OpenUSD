@@ -74,6 +74,16 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
             index->AddPrimInfo(subset.GetPath(),
                                subset.GetPrim().GetParent(),
                                shared_from_this());
+            // Ensure the bound material has been populated.
+            if (UsdPrim materialPrim =
+                prim.GetStage()->GetPrimAtPath(
+                GetMaterialId(subset.GetPrim()))) {
+                UsdImagingPrimAdapterSharedPtr materialAdapter =
+                    index->GetMaterialAdapter(materialPrim);
+                if (materialAdapter) {
+                    materialAdapter->Populate(materialPrim, index, nullptr);
+                }
+            }
         }
     }
     return _AddRprim(HdPrimTypeTokens->mesh,
@@ -168,6 +178,20 @@ UsdImagingMeshAdapter::MarkDirty(UsdPrim const& prim,
         index->MarkRprimDirty(cachePath, dirty);
     }
 }
+
+void
+UsdImagingMeshAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (cachePath.IsPrimPath() && cachePath.GetParentPath() == prim.GetPath()) {
+        return;
+    }
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyDisplayStyle);
+}
+
 
 void
 UsdImagingMeshAdapter::_RemovePrim(SdfPath const& cachePath,
