@@ -676,7 +676,15 @@ bool
 UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    // Only imageable prims participate in child bounds accumulation.
+    
+    // If the prim is typeless or has an unknown type, it may have descendants 
+    // that are imageable. Hence, we include it in bbox computations.
+    if (!prim.IsA<UsdTyped>()) {
+        return true;
+    }
+
+    // If the prim is typed it can participate in child bound accumulation only 
+    // if it is imageable.
     if (!prim.IsA<UsdGeomImageable>()) {
         TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded, not IMAGEABLE type. "
                                    "prim: %s, primType: %s\n",
