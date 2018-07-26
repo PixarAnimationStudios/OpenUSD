@@ -152,6 +152,26 @@
                         "formatId": "usdc", 
                         "primary": true, 
                         "target": "usd"
+                    }, 
+                    "UsdUsdzFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ], 
+                        "displayName": "USDZ File Format", 
+                        "extensions": [
+                            "usdz"
+                        ], 
+                        "formatId": "usdz", 
+                        "primary": true, 
+                        "target": "usd"
+                    }, 
+                    "Usd_UsdzResolver": {
+                        "bases": [
+                            "ArPackageResolver"
+                        ], 
+                        "extensions": [
+                            "usdz"
+                        ]
                     }
                 }
             }, 

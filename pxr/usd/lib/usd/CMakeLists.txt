@@ -59,6 +59,7 @@ pxr_library(usd
         usdFileFormat
         usdaFileFormat
         usdcFileFormat
+        usdzFileFormat
         variantSets
         zipFile
 
@@ -75,6 +76,7 @@ pxr_library(usd
         instanceKey
         integerCoding
         interpolators
+        usdzResolver
         valueUtils
 
     PUBLIC_HEADERS
