@@ -32,6 +32,7 @@
 #include "usdMaya/translatorGprim.h"
 #include "usdMaya/translatorMaterial.h"
 #include "usdMaya/translatorUtil.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
@@ -52,7 +53,11 @@
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MPlug.h>
 #include <maya/MPointArray.h>
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 #include <maya/MUintArray.h>
 
 #include <string>
@@ -83,15 +88,14 @@ _SetupPointBasedDeformerForMayaNode(
         return false;
     }
 
-    // Get the outTime plug for Maya's global time object.
-    MObject timeNode;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName("time1", timeNode);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    // Get the output time plug and node for Maya's global time object.
+    MPlug timePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    if (timePlug.isNull()) {
+        return false;
+    }
 
-    MFnDependencyNode depNodeFn(timeNode, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    MPlug timePlug = depNodeFn.findPlug("outTime", true, &status);
+    MStatus status;
+    MObject timeNode = timePlug.node(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Clear the selection list so that the deformer command doesn't try to add
@@ -124,7 +128,7 @@ _SetupPointBasedDeformerForMayaNode(
     context->RegisterNewMayaNode(newPointBasedDeformerName.asChar(),
                                  pointBasedDeformerNode);
 
-    status = depNodeFn.setObject(pointBasedDeformerNode);
+    MFnDependencyNode depNodeFn(pointBasedDeformerNode, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MDGModifier dgMod;
