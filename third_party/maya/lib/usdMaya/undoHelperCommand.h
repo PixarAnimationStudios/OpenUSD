@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_UNDO_HELPER_CMD_H
-#define PXRUSDMAYA_UNDO_HELPER_CMD_H
+#ifndef USDMAYA_UNDO_HELPER_CMD_H
+#define USDMAYA_UNDO_HELPER_CMD_H
+
+/// \file usdMaya/undoHelperCommand.h
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
@@ -42,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// run functions that take an MDGModifier; the command will use the MDGModifier
 /// for future undo and redo. Do not run the command directly (it will fail and
 /// do nothing in that case).
-class PxrUsdMayaUndoHelperCmd : public MPxCommand
+class UsdMayaUndoHelperCommand : public MPxCommand
 {
 public:
     template <typename T>
@@ -50,9 +52,9 @@ public:
     using UndoableFunction = UndoableResultFunction<void>;
 
     PXRUSDMAYA_API
-    PxrUsdMayaUndoHelperCmd();
+    UsdMayaUndoHelperCommand();
     PXRUSDMAYA_API
-    ~PxrUsdMayaUndoHelperCmd() override;
+    ~UsdMayaUndoHelperCommand() override;
 
     PXRUSDMAYA_API
     MStatus doIt(const MArgList& args) override;
@@ -97,4 +99,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXRUSDMAYA_UNDO_HELPER_CMD_H
+#endif

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/usdExport.h"
+#include "usdMaya/exportCommand.h"
 
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/writeJob.h"
@@ -46,15 +46,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-usdExport::usdExport()
+UsdMayaExportCommand::UsdMayaExportCommand()
 {
 }
 
-usdExport::~usdExport()
+UsdMayaExportCommand::~UsdMayaExportCommand()
 {
 }
 
-MSyntax usdExport::createSyntax()
+MSyntax UsdMayaExportCommand::createSyntax()
 {
     MSyntax syntax;
 
@@ -180,13 +180,13 @@ MSyntax usdExport::createSyntax()
 }
 
 
-void* usdExport::creator()
+void* UsdMayaExportCommand::creator()
 {
-    return new usdExport();
+    return new UsdMayaExportCommand();
 }
 
 
-MStatus usdExport::doIt(const MArgList & args)
+MStatus UsdMayaExportCommand::doIt(const MArgList & args)
 {
 try
 {

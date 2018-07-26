@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/undoHelperCmd.h"
+#include "usdMaya/undoHelperCommand.h"
 
 #include "pxr/base/tf/errorMark.h"
 
@@ -29,19 +29,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const PxrUsdMayaUndoHelperCmd::UndoableFunction*
-PxrUsdMayaUndoHelperCmd::_dgModifierFunc = nullptr;
+const UsdMayaUndoHelperCommand::UndoableFunction*
+UsdMayaUndoHelperCommand::_dgModifierFunc = nullptr;
 
-PxrUsdMayaUndoHelperCmd::PxrUsdMayaUndoHelperCmd() : _undoable(false)
+UsdMayaUndoHelperCommand::UsdMayaUndoHelperCommand() : _undoable(false)
 {
 }
 
-PxrUsdMayaUndoHelperCmd::~PxrUsdMayaUndoHelperCmd()
+UsdMayaUndoHelperCommand::~UsdMayaUndoHelperCommand()
 {
 }
 
 MStatus
-PxrUsdMayaUndoHelperCmd::doIt(const MArgList& /*args*/)
+UsdMayaUndoHelperCommand::doIt(const MArgList& /*args*/)
 {
     if (!_dgModifierFunc) {
         _undoable = false;
@@ -57,24 +57,24 @@ PxrUsdMayaUndoHelperCmd::doIt(const MArgList& /*args*/)
 }
 
 MStatus
-PxrUsdMayaUndoHelperCmd::redoIt()
+UsdMayaUndoHelperCommand::redoIt()
 {
     return _modifier.doIt();
 }
 
 MStatus
-PxrUsdMayaUndoHelperCmd::undoIt()
+UsdMayaUndoHelperCommand::undoIt()
 {
     return _modifier.undoIt();
 }
 
 bool
-PxrUsdMayaUndoHelperCmd::isUndoable() const {
+UsdMayaUndoHelperCommand::isUndoable() const {
     return _undoable;
 };
 
 MSyntax
-PxrUsdMayaUndoHelperCmd::createSyntax()
+UsdMayaUndoHelperCommand::createSyntax()
 {
     MSyntax syntax;
     syntax.enableQuery(false);
@@ -83,14 +83,14 @@ PxrUsdMayaUndoHelperCmd::createSyntax()
 }
 
 void*
-PxrUsdMayaUndoHelperCmd::creator()
+UsdMayaUndoHelperCommand::creator()
 {
-    return new PxrUsdMayaUndoHelperCmd();
+    return new UsdMayaUndoHelperCommand();
 }
 
 /* static */
 void
-PxrUsdMayaUndoHelperCmd::ExecuteWithUndo(const UndoableFunction& func)
+UsdMayaUndoHelperCommand::ExecuteWithUndo(const UndoableFunction& func)
 {
     int cmdExists = 0;
     MGlobal::executeCommand("exists usdUndoHelperCmd", cmdExists);

@@ -21,35 +21,52 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_usdExport_h_
-#define _usdExport_usdExport_h_
+#ifndef USDMAYA_IMPORT_COMMAND_H
+#define USDMAYA_IMPORT_COMMAND_H
+
+/// \file usdMaya/importCommand.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include <maya/MArgList.h>
 #include <maya/MPxCommand.h>
+#include <maya/MStatus.h>
+#include <maya/MSyntax.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class usdExport : public MPxCommand
+class UsdMaya_ReadJob;
+
+class UsdMayaImportCommand : public MPxCommand
 {
   public:
     PXRUSDMAYA_API
-    usdExport();
+    UsdMayaImportCommand();
     PXRUSDMAYA_API
-    ~usdExport() override;
+    ~UsdMayaImportCommand() override;
 
     PXRUSDMAYA_API
     MStatus doIt(const MArgList& args) override;
-    bool  isUndoable () const override { return false; };
+    PXRUSDMAYA_API
+    MStatus redoIt() override;
+    PXRUSDMAYA_API
+    MStatus undoIt() override;
+    bool isUndoable() const override { return true; };
 
     PXRUSDMAYA_API
-    static MSyntax  createSyntax();
+    static MSyntax createSyntax();
     PXRUSDMAYA_API
     static void* creator();
+
+  private:
+    UsdMaya_ReadJob* mUsdReadJob;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // _usdExport_usdExport_h_
+
+#endif

@@ -76,14 +76,14 @@ pxr_shared_library(${PXR_PACKAGE}
         writeUtil
         xformStack
 
+        exportCommand
+        exportTranslator
+        importCommand
+        importTranslator
+        listShadingModesCommand
         proxyShape
         referenceAssembly
-        undoHelperCmd
-        usdImport
-        usdExport
-        usdListShadingModes
-        usdTranslatorExport
-        usdTranslatorImport
+        undoHelperCommand
 
         chaser
         chaserRegistry

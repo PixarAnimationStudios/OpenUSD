@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_USD_LIST_SHADING_MODES_H
-#define PXRUSDMAYA_USD_LIST_SHADING_MODES_H
+#ifndef USDMAYA_EXPORT_COMMAND_H
+#define USDMAYA_EXPORT_COMMAND_H
+
+/// \file usdMaya/exportCommand.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -30,13 +32,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class usdListShadingModes : public MPxCommand
+
+class UsdMayaExportCommand : public MPxCommand
 {
-public:
+  public:
     PXRUSDMAYA_API
-    usdListShadingModes();
+    UsdMayaExportCommand();
     PXRUSDMAYA_API
-    ~usdListShadingModes() override;
+    ~UsdMayaExportCommand() override;
 
     PXRUSDMAYA_API
     MStatus doIt(const MArgList& args) override;
@@ -48,6 +51,7 @@ public:
     static void* creator();
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXRUSDMAYA_USD_LIST_SHADING_MODES_H
+#endif

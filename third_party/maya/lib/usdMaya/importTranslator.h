@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef PXRUSDMAYA_USD_TRANSLATOR_IMPORT_H
-#define PXRUSDMAYA_USD_TRANSLATOR_IMPORT_H
+#ifndef USDMAYA_IMPORT_TRANSLATOR_H
+#define USDMAYA_IMPORT_TRANSLATOR_H
 
-/// \file usdMaya/usdTranslatorImport.h
+/// \file usdMaya/importTranslator.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -42,7 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class usdTranslatorImport : public MPxFileTranslator
+class UsdMayaImportTranslator : public MPxFileTranslator
 {
     public:
 
@@ -76,10 +76,10 @@ class usdTranslatorImport : public MPxFileTranslator
 
     private:
 
-        usdTranslatorImport();
-        usdTranslatorImport(const usdTranslatorImport&);
-        ~usdTranslatorImport() override;
-        usdTranslatorImport& operator=(const usdTranslatorImport&);
+        UsdMayaImportTranslator();
+        UsdMayaImportTranslator(const UsdMayaImportTranslator&);
+        ~UsdMayaImportTranslator() override;
+        UsdMayaImportTranslator& operator=(const UsdMayaImportTranslator&);
 };
 
 

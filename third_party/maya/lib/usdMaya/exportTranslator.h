@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef PXRUSDMAYA_TRANSLATOR_EXPORT_H
-#define PXRUSDMAYA_TRANSLATOR_EXPORT_H
+#ifndef USDMAYA_EXPORT_TRANSLATOR_H
+#define USDMAYA_EXPORT_TRANSLATOR_H
 
-/// \file usdTranslatorExport.h
+/// \file usdMaya/exportTranslator.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -39,12 +39,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class usdTranslatorExport : public MPxFileTranslator
+class UsdMayaExportTranslator : public MPxFileTranslator
 {
     public:
 
         /**
-         * method to create usdTranslatorExport file translator
+         * method to create UsdMayaExportTranslator file translator
          */
         PXRUSDMAYA_API
         static void* creator();
@@ -76,10 +76,10 @@ class usdTranslatorExport : public MPxFileTranslator
 
     private:
 
-        usdTranslatorExport();
-        usdTranslatorExport(const usdTranslatorExport&);
-        ~usdTranslatorExport() override;
-        usdTranslatorExport& operator=(const usdTranslatorExport&);
+        UsdMayaExportTranslator();
+        UsdMayaExportTranslator(const UsdMayaExportTranslator&);
+        ~UsdMayaExportTranslator() override;
+        UsdMayaExportTranslator& operator=(const UsdMayaExportTranslator&);
 };
 
 

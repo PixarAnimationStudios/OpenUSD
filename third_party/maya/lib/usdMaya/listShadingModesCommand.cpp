@@ -1,4 +1,4 @@
-#include "usdMaya/usdListShadingModes.h"
+#include "usdMaya/listShadingModesCommand.h"
 
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/registryHelper.h"
@@ -13,16 +13,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-usdListShadingModes::usdListShadingModes() {
+UsdMayaListShadingModesCommand::UsdMayaListShadingModesCommand() {
 
 }
 
-usdListShadingModes::~usdListShadingModes() {
+UsdMayaListShadingModesCommand::~UsdMayaListShadingModesCommand() {
 
 }
 
 MStatus
-usdListShadingModes::doIt(const MArgList& args) {    
+UsdMayaListShadingModesCommand::doIt(const MArgList& args) {    
     MStatus status;
     MArgDatabase argData(syntax(), args, &status);
 
@@ -48,7 +48,7 @@ usdListShadingModes::doIt(const MArgList& args) {
 }
 
 MSyntax
-usdListShadingModes::createSyntax() {
+UsdMayaListShadingModesCommand::createSyntax() {
     MSyntax syntax;
     syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
     syntax.addFlag("-im", "-import", MSyntax::kNoArg);
@@ -59,8 +59,8 @@ usdListShadingModes::createSyntax() {
     return syntax;
 }
 
-void* usdListShadingModes::creator() {
-    return new usdListShadingModes();
+void* UsdMayaListShadingModesCommand::creator() {
+    return new UsdMayaListShadingModesCommand();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

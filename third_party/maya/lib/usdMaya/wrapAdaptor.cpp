@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/adaptor.h"
-#include "usdMaya/undoHelperCmd.h"
+#include "usdMaya/undoHelperCommand.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
@@ -68,7 +68,7 @@ _Adaptor_SetMetadata(
     const TfToken& key,
     const VtValue& value)
 {
-    return PxrUsdMayaUndoHelperCmd::ExecuteWithUndo<bool>(
+    return UsdMayaUndoHelperCommand::ExecuteWithUndo<bool>(
             [&self, &key, &value](MDGModifier& modifier) {
                 return self.SetMetadata(key, value, modifier);
             });
@@ -79,7 +79,7 @@ _Adaptor_ClearMetadata(
     PxrUsdMayaAdaptor& self,
     const TfToken& key)
 {
-    PxrUsdMayaUndoHelperCmd::ExecuteWithUndo(
+    UsdMayaUndoHelperCommand::ExecuteWithUndo(
             [&self, &key](MDGModifier& modifier) {
                 self.ClearMetadata(key, modifier);
             });
@@ -91,7 +91,7 @@ _Adaptor_ApplySchema(
     const TfType& ty)
 {
     typedef PxrUsdMayaAdaptor::SchemaAdaptor Result;
-    return PxrUsdMayaUndoHelperCmd::ExecuteWithUndo<Result>(
+    return UsdMayaUndoHelperCommand::ExecuteWithUndo<Result>(
             [&self, &ty](MDGModifier& modifier) {
                 return self.ApplySchema(ty, modifier);
             });
@@ -103,7 +103,7 @@ _Adaptor_ApplySchemaByName(
     const TfToken& schemaName)
 {
     typedef PxrUsdMayaAdaptor::SchemaAdaptor Result;
-    return PxrUsdMayaUndoHelperCmd::ExecuteWithUndo<Result>(
+    return UsdMayaUndoHelperCommand::ExecuteWithUndo<Result>(
             [&self, &schemaName](MDGModifier& modifier) {
                 return self.ApplySchemaByName(schemaName, modifier);
             });
@@ -114,7 +114,7 @@ _Adaptor_UnapplySchema(
     PxrUsdMayaAdaptor& self,
     const TfType& ty)
 {
-    PxrUsdMayaUndoHelperCmd::ExecuteWithUndo(
+    UsdMayaUndoHelperCommand::ExecuteWithUndo(
             [&self, &ty](MDGModifier& modifier) {
                 self.UnapplySchema(ty, modifier);
             });
@@ -125,7 +125,7 @@ _Adaptor_UnapplySchemaByName(
     PxrUsdMayaAdaptor& self,
     const TfToken& schemaName)
 {
-    PxrUsdMayaUndoHelperCmd::ExecuteWithUndo(
+    UsdMayaUndoHelperCommand::ExecuteWithUndo(
             [&self, &schemaName](MDGModifier& modifier) {
                 self.UnapplySchemaByName(schemaName, modifier);
             });
@@ -150,7 +150,7 @@ _SchemaAdaptor_CreateAttribute(
     const TfToken& attrName)
 {
     typedef PxrUsdMayaAdaptor::AttributeAdaptor Result;
-    return PxrUsdMayaUndoHelperCmd::ExecuteWithUndo<Result>(
+    return UsdMayaUndoHelperCommand::ExecuteWithUndo<Result>(
             [&self, &attrName](MDGModifier& modifier) {
                 return self.CreateAttribute(attrName, modifier);
             });
@@ -161,7 +161,7 @@ _SchemaAdaptor_RemoveAttribute(
     PxrUsdMayaAdaptor::SchemaAdaptor& self,
     const TfToken& attrName)
 {
-    PxrUsdMayaUndoHelperCmd::ExecuteWithUndo(
+    UsdMayaUndoHelperCommand::ExecuteWithUndo(
             [&self, &attrName](MDGModifier& modifier) {
                 return self.RemoveAttribute(attrName, modifier);
             });
@@ -195,7 +195,7 @@ _AttributeAdaptor_Set(
     PxrUsdMayaAdaptor::AttributeAdaptor& self,
     const VtValue& value)
 {
-    return PxrUsdMayaUndoHelperCmd::ExecuteWithUndo<bool>(
+    return UsdMayaUndoHelperCommand::ExecuteWithUndo<bool>(
             [&self, &value](MDGModifier& modifier) {
                 return self.Set(value, modifier);
             });

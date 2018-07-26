@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 /**
- * \class usdTranslatorImport
+ * \class UsdMayaImportTranslator
  * \brief file translator for USD files
  */
 
 #include "pxr/pxr.h"
-#include "usdMaya/usdTranslatorImport.h"
+#include "usdMaya/importTranslator.h"
 
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/readJob.h"
@@ -51,23 +51,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 void*
-usdTranslatorImport::creator()
+UsdMayaImportTranslator::creator()
 {
-    return new usdTranslatorImport();
+    return new UsdMayaImportTranslator();
 }
 
-usdTranslatorImport::usdTranslatorImport() : MPxFileTranslator()
+UsdMayaImportTranslator::UsdMayaImportTranslator() : MPxFileTranslator()
 {
 }
 
 /* virtual */
-usdTranslatorImport::~usdTranslatorImport()
+UsdMayaImportTranslator::~UsdMayaImportTranslator()
 {
 }
 
 /* virtual */
 MStatus
-usdTranslatorImport::reader(
+UsdMayaImportTranslator::reader(
         const MFileObject& file,
         const MString& optionsString,
         MPxFileTranslator::FileAccessMode  /*mode*/)
@@ -138,7 +138,7 @@ usdTranslatorImport::reader(
 
 /* virtual */
 MPxFileTranslator::MFileKind
-usdTranslatorImport::identifyFile(
+UsdMayaImportTranslator::identifyFile(
         const MFileObject& file,
         const char*  /*buffer*/,
         short  /*size*/) const
@@ -165,7 +165,7 @@ usdTranslatorImport::identifyFile(
 
 /* static */
 const std::string&
-usdTranslatorImport::GetDefaultOptions()
+UsdMayaImportTranslator::GetDefaultOptions()
 {
     static std::string defaultOptions;
     static std::once_flag once;

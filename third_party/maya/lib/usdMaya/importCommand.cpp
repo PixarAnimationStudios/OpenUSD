@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/usdImport.h"
+#include "usdMaya/importCommand.h"
 
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/readJob.h"
@@ -44,13 +44,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-usdImport::usdImport() :
+UsdMayaImportCommand::UsdMayaImportCommand() :
     mUsdReadJob(nullptr)
 {
 }
 
 /* virtual */
-usdImport::~usdImport()
+UsdMayaImportCommand::~UsdMayaImportCommand()
 {
     if (mUsdReadJob) {
         delete mUsdReadJob;
@@ -59,7 +59,7 @@ usdImport::~usdImport()
 
 /* static */
 MSyntax
-usdImport::createSyntax()
+UsdMayaImportCommand::createSyntax()
 {
     MSyntax syntax;
 
@@ -107,14 +107,14 @@ usdImport::createSyntax()
 
 /* static */
 void*
-usdImport::creator()
+UsdMayaImportCommand::creator()
 {
-    return new usdImport();
+    return new UsdMayaImportCommand();
 }
 
 /* virtual */
 MStatus
-usdImport::doIt(const MArgList & args)
+UsdMayaImportCommand::doIt(const MArgList & args)
 {
     MStatus status;
 
@@ -246,7 +246,7 @@ usdImport::doIt(const MArgList & args)
 
 /* virtual */
 MStatus
-usdImport::redoIt()
+UsdMayaImportCommand::redoIt()
 {
     if (!mUsdReadJob) {
         return MS::kFailure;
@@ -259,7 +259,7 @@ usdImport::redoIt()
 
 /* virtual */
 MStatus
-usdImport::undoIt()
+UsdMayaImportCommand::undoIt()
 {
     if (!mUsdReadJob) {
         return MS::kFailure;

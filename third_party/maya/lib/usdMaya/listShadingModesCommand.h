@@ -21,52 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_USD_IMPORT_H
-#define PXRUSDMAYA_USD_IMPORT_H
+#ifndef USDMAYA_LIST_SHADING_MODES_COMMAND_H
+#define USDMAYA_LIST_SHADING_MODES_COMMAND_H
 
-/// \file usdMaya/usdImport.h
+/// \file usdMaya/listShadingModesCommand.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-
-#include <maya/MArgList.h>
 #include <maya/MPxCommand.h>
-#include <maya/MStatus.h>
-#include <maya/MSyntax.h>
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class UsdMaya_ReadJob;
-
-class usdImport : public MPxCommand
+class UsdMayaListShadingModesCommand : public MPxCommand
 {
-  public:
+public:
     PXRUSDMAYA_API
-    usdImport();
+    UsdMayaListShadingModesCommand();
     PXRUSDMAYA_API
-    ~usdImport() override;
+    ~UsdMayaListShadingModesCommand() override;
 
     PXRUSDMAYA_API
     MStatus doIt(const MArgList& args) override;
-    PXRUSDMAYA_API
-    MStatus redoIt() override;
-    PXRUSDMAYA_API
-    MStatus undoIt() override;
-    bool isUndoable() const override { return true; };
+    bool  isUndoable () const override { return false; };
 
     PXRUSDMAYA_API
-    static MSyntax createSyntax();
+    static MSyntax  createSyntax();
     PXRUSDMAYA_API
     static void* creator();
-
-  private:
-    UsdMaya_ReadJob* mUsdReadJob;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif
