@@ -547,11 +547,11 @@ HdResourceRegistry::GetResourceAllocation() const
 
     TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
         HdTextureResourceSharedPtr textureResource = textureResourceIt->second;
-        if (!TF_VERIFY(textureResource)) {
-            continue;
-        }
 
-        hydraTexturesMemory += textureResource->GetMemoryUsed();
+        // In the event of an asset error, texture resources can be null
+        if (textureResource) {
+            hydraTexturesMemory += textureResource->GetMemoryUsed();
+        }
     }
     result[HdPerfTokens->textureResourceMemory] = VtValue(hydraTexturesMemory);
     gpuMemoryUsed += hydraTexturesMemory;
