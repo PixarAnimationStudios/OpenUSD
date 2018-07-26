@@ -321,8 +321,8 @@ PxrUsdMayaEditUtil::_ApplyEditToAvars(
         const GfVec3d &toSet = refEdit.value.Get<GfVec3d>();
         
         _ApplyEditToAvar( refEdit.op, SET_X, toSet[0], valueMap );
-        _ApplyEditToAvar( refEdit.op, SET_Y, toSet[0], valueMap );
-        _ApplyEditToAvar( refEdit.op, SET_Z, toSet[0], valueMap );
+        _ApplyEditToAvar( refEdit.op, SET_Y, toSet[1], valueMap );
+        _ApplyEditToAvar( refEdit.op, SET_Z, toSet[2], valueMap );
     }
     else
     {
