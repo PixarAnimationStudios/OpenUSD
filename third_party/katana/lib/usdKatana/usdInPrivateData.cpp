@@ -252,6 +252,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
                 }
             }
         }
+        else if (parentData)
+        {
+            _motionSampleTimesOverride =
+                    parentData->_motionSampleTimesOverride;
+        }
     }
     if (parentData)
     {
