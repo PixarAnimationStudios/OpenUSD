@@ -376,10 +376,15 @@ nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
     .set('location', '')
     .set('args.variantSetName', '')
     .set('args.variantSelection', '')
+    .set('additionalLocations', FnAttribute.StringAttribute([]))
     .build())
 
 nb.setHintsForParameter('location', {
     'widget' : 'scenegraphLocation',
+})
+
+nb.setHintsForParameter('additionalLocations', {
+    'widget' : 'scenegraphLocationArray',
 })
 
 nb.setGenericAssignRoots('args', '__variantUI')
@@ -408,8 +413,18 @@ def buildOpChain(self, interface):
         entryName = FnAttribute.DelimiterEncode(location)
         entryPath = "variants." + entryName + "." + variantSetName
         
+        valueAttr = FnAttribute.StringAttribute(variantSelection)
         gb = FnAttribute.GroupBuilder()
-        gb.set(entryPath, FnAttribute.StringAttribute(variantSelection))
+        gb.set(entryPath, valueAttr)
+        
+        for addLocParam in self.getParameter(
+                'additionalLocations').getChildren():
+            location = addLocParam.getValue(frameTime)
+            if location:
+                entryName = FnAttribute.DelimiterEncode(location)
+                entryPath = "variants." + entryName + "." + variantSetName
+                gb.set(entryPath, valueAttr)
+        
         
         existingValue = (
                 interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
