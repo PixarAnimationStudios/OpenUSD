@@ -24,32 +24,47 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorMaterial.h"
 
+#include "usdMaya/primReaderContext.h"
+#include "usdMaya/shadingModeExporter.h"
+#include "usdMaya/shadingModeImporter.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/util.h"
 
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/types.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/subset.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 
-#include <maya/MFnMeshData.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
-#include <maya/MItDependencyNodes.h>
+#include <maya/MIntArray.h>
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
+#include <set>
+#include <string>
+#include <vector>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_IMPORT_OLD_STYLE_FACESETS, true, 
+
+TF_DEFINE_ENV_SETTING(PIXMAYA_IMPORT_OLD_STYLE_FACESETS, true,
     "Whether maya/usdImport should transfer face-set bindings encoded in the "
     "old-style, using UsdGeomFaceSetAPI.");
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorMaterialTokens,
-    PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS);
 
 /* static */
 MObject
@@ -71,66 +86,31 @@ PxrUsdMayaTranslatorMaterial::Read(
         return shadingEngine;
     }
 
-    MStatus status;
-
-    MPlug outColorPlug;
-
-    if (PxrUsdMayaShadingModeImporter importer = 
+    if (PxrUsdMayaShadingModeImporter importer =
             PxrUsdMayaShadingModeRegistry::GetImporter(shadingMode)) {
-        outColorPlug = importer(&c);
-    }
-    else {
-        // this could spew a lot so we don't warn here.  Ideally, we did some
-        // validation up front.
+        shadingEngine = importer(&c);
     }
 
-    if (!outColorPlug.isNull()) {
-        MFnSet fnSet;
-        MSelectionList tmpSelList;
-        shadingEngine = fnSet.create(tmpSelList, MFnSet::kRenderableOnly, &status);
-
-        // To make sure that the shadingEngine object names do not collide with
-        // the Maya transform or shape node names, we put the shadingEngine
-        // objects into their own namespace.
-        std::string shadingEngineName =
-            PxrUsdMayaTranslatorMaterialTokens->MaterialNamespace.GetString() + std::string(":") +
-            (shadeMaterial ? shadeMaterial.GetPrim() : boundPrim.GetPrim()
-                ).GetName().GetString();
-
-        if (!status) {
-            TF_RUNTIME_ERROR(
-                        "Failed to make shadingEngine for %s", 
-                        shadingEngineName.c_str());
-            return shadingEngine;
-        }
-        fnSet.setName(MString(shadingEngineName.c_str()),
-            true /* createNamespace */);
-
-        const TfToken surfaceShaderPlugName = c.GetSurfaceShaderPlugName();
-        if (!surfaceShaderPlugName.IsEmpty()) {
-            MPlug seSurfaceShaderPlg = fnSet.findPlug(MString(surfaceShaderPlugName.GetText()), &status);
-            PxrUsdMayaUtil::Connect(outColorPlug, seSurfaceShaderPlg, 
-                    // Make sure that "surfaceShader" connection is open
-                    true);
-        }
+    if (!shadingEngine.isNull()) {
+        c.AddCreatedObject(shadeMaterial.GetPrim(), shadingEngine);
     }
 
-    return c.AddCreatedObject(shadeMaterial.GetPrim(), shadingEngine);
+    return shadingEngine;
 }
 
-static 
-bool 
-_AssignMaterialFaceSet(const MObject &shadingEngine,
-                   const MDagPath &shapeDagPath,
-                   const VtIntArray &faceIndices)
+static
+bool
+_AssignMaterialFaceSet(
+        const MObject& shadingEngine,
+        const MDagPath& shapeDagPath,
+        const VtIntArray& faceIndices)
 {
     MStatus status;
 
-    // Create component object using single indexed  
+    // Create component object using single indexed
     // components, i.e. face indices.
     MFnSingleIndexedComponent compFn;
-    MObject faceComp = compFn.create(
-        MFn::kMeshPolygonComponent, &status);
+    MObject faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
     if (!status) {
         TF_RUNTIME_ERROR("Failed to create face component.");
         return false;
@@ -147,8 +127,8 @@ _AssignMaterialFaceSet(const MObject &shadingEngine,
         status = seFnSet.addMember(shapeDagPath, faceComp);
         if (!status) {
             TF_RUNTIME_ERROR(
-                    "Could not add component to shadingEngine %s.", 
-                    seFnSet.name().asChar());
+                "Could not add component to shadingEngine %s.",
+                seFnSet.name().asChar());
             return false;
         }
     }
@@ -175,12 +155,12 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
     MFnDagNode(shapeObj).getPath(shapeDagPath);
 
     MStatus status;
-    UsdShadeMaterialBindingAPI bindingAPI(primSchema.GetPrim());
-    MObject shadingEngine = PxrUsdMayaTranslatorMaterial::Read(
-            shadingMode,
-            bindingAPI.ComputeBoundMaterial(),
-            primSchema,
-            context);
+    const UsdShadeMaterialBindingAPI bindingAPI(primSchema.GetPrim());
+    MObject shadingEngine =
+        PxrUsdMayaTranslatorMaterial::Read(shadingMode,
+                                           bindingAPI.ComputeBoundMaterial(),
+                                           primSchema,
+                                           context);
 
     if (shadingEngine.isNull()) {
         status = PxrUsdMayaUtil::GetMObjectByName("initialShadingGroup",
@@ -190,34 +170,34 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         }
     }
 
-    // If the gprim does not have a material faceSet which represents per-face 
+    // If the gprim does not have a material faceSet which represents per-face
     // shader assignments, assign the shading engine to the entire gprim.
-    std::vector<UsdGeomSubset> faceSubsets = UsdShadeMaterialBindingAPI(
+    const std::vector<UsdGeomSubset> faceSubsets =
+        UsdShadeMaterialBindingAPI(
             primSchema.GetPrim()).GetMaterialBindSubsets();
 
-    bool hasOldStyleFaceSets = UsdShadeMaterial::HasMaterialFaceSet(
-        primSchema.GetPrim());
+    const bool hasOldStyleFaceSets =
+        UsdShadeMaterial::HasMaterialFaceSet(primSchema.GetPrim());
 
-    if (faceSubsets.empty() && !hasOldStyleFaceSets) 
-    {
+    if (faceSubsets.empty() && !hasOldStyleFaceSets) {
         MFnSet seFnSet(shadingEngine, &status);
         if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
             status = seFnSet.addMember(shapeObj);
             if (!status) {
                 TF_RUNTIME_ERROR(
-                        "Could not add shadingEngine for '%s'.",
-                        shapeDagPath.fullPathName().asChar());
+                    "Could not add shadingEngine for '%s'.",
+                    shapeDagPath.fullPathName().asChar());
             }
         }
 
         return true;
-    } 
+    }
 
     if (!faceSubsets.empty()) {
 
         int faceCount = 0;
-        UsdGeomMesh mesh(primSchema);
-        if (mesh) {                
+        const UsdGeomMesh mesh(primSchema);
+        if (mesh) {
             VtIntArray faceVertexCounts;
             mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts);
             faceCount = faceVertexCounts.size();
@@ -225,53 +205,62 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 
         if (faceCount == 0) {
             TF_RUNTIME_ERROR(
-                    "Unable to get face count for gprim at path <%s>.", 
-                    primSchema.GetPath().GetText());
+                "Unable to get face count for gprim at path <%s>.",
+                primSchema.GetPath().GetText());
             return false;
         }
 
         std::string reasonWhyNotPartition;
-        
-        bool validPartition = UsdGeomSubset::ValidateSubsets(
-            faceSubsets, faceCount, UsdGeomTokens->partition, 
-            &reasonWhyNotPartition);
+
+        const bool validPartition =
+            UsdGeomSubset::ValidateSubsets(
+                faceSubsets,
+                faceCount,
+                UsdGeomTokens->partition,
+                &reasonWhyNotPartition);
         if (!validPartition) {
             TF_WARN("Face-subsets on <%s> don't form a valid partition: %s",
-                    primSchema.GetPath().GetText(), 
+                    primSchema.GetPath().GetText(),
                     reasonWhyNotPartition.c_str());
 
-            VtIntArray unassignedIndices = 
+            VtIntArray unassignedIndices =
                 UsdGeomSubset::GetUnassignedIndices(faceSubsets, faceCount);
-            if (!_AssignMaterialFaceSet(shadingEngine, shapeDagPath, 
+            if (!_AssignMaterialFaceSet(shadingEngine,
+                                        shapeDagPath,
                                         unassignedIndices)) {
                 return false;
             }
         }
 
-        for (const auto &subset: faceSubsets) {
-            UsdShadeMaterialBindingAPI subsetBindingAPI(subset.GetPrim());
-            UsdShadeMaterial boundMaterial = 
-                    subsetBindingAPI.ComputeBoundMaterial();
+        for (const auto& subset : faceSubsets) {
+            const UsdShadeMaterialBindingAPI subsetBindingAPI(subset.GetPrim());
+            const UsdShadeMaterial boundMaterial =
+                subsetBindingAPI.ComputeBoundMaterial();
             if (boundMaterial) {
-                MObject faceSubsetShadingEngine = 
-                    PxrUsdMayaTranslatorMaterial::Read(shadingMode, 
-                        boundMaterial, UsdGeomGprim(), context);
+                MObject faceSubsetShadingEngine =
+                    PxrUsdMayaTranslatorMaterial::Read(
+                        shadingMode,
+                        boundMaterial,
+                        UsdGeomGprim(),
+                        context);
                 if (faceSubsetShadingEngine.isNull()) {
-                    status = PxrUsdMayaUtil::GetMObjectByName(
-                            "initialShadingGroup", faceSubsetShadingEngine);
+                    status =
+                        PxrUsdMayaUtil::GetMObjectByName(
+                            "initialShadingGroup",
+                            faceSubsetShadingEngine);
                     if (status != MS::kSuccess) {
                         return false;
                     }
                 }
 
-                // Only transfer the first timeSample or default indices, if 
+                // Only transfer the first timeSample or default indices, if
                 // there are no time-samples.
                 VtIntArray indices;
-                subset.GetIndicesAttr().Get(&indices, 
+                subset.GetIndicesAttr().Get(&indices,
                                             UsdTimeCode::EarliestTime());
 
-                if (!_AssignMaterialFaceSet(faceSubsetShadingEngine, 
-                                            shapeDagPath, 
+                if (!_AssignMaterialFaceSet(faceSubsetShadingEngine,
+                                            shapeDagPath,
                                             indices)) {
                     return false;
                 }
@@ -280,16 +269,16 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
     }
 
     // Import per-face-set shader bindings.
-    if (TfGetEnvSetting(PIXMAYA_IMPORT_OLD_STYLE_FACESETS) && 
-        hasOldStyleFaceSets) 
-    {
-        UsdGeomFaceSetAPI materialFaceSet = 
+    if (TfGetEnvSetting(PIXMAYA_IMPORT_OLD_STYLE_FACESETS) &&
+            hasOldStyleFaceSets) {
+
+        const UsdGeomFaceSetAPI materialFaceSet =
             UsdShadeMaterial::GetMaterialFaceSet(primSchema.GetPrim());
 
         SdfPathVector bindingTargets;
         if (!materialFaceSet.GetBindingTargets(&bindingTargets) ||
-            bindingTargets.empty()) {
-                
+                bindingTargets.empty()) {
+
             TF_WARN("No bindings found on material faceSet at path <%s>.",
                     primSchema.GetPath().GetText());
             // No bindings to export in the material faceSet.
@@ -299,50 +288,49 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         std::string reason;
         if (!materialFaceSet.Validate(&reason)) {
             TF_WARN("Invalid faceSet data found on <%s>: %s",
-                    primSchema.GetPath().GetText(), 
+                    primSchema.GetPath().GetText(),
                     reason.c_str());
             return false;
         }
 
-        VtIntArray faceCounts, faceIndices;
-        bool isPartition = materialFaceSet.GetIsPartition();
-        materialFaceSet.GetFaceCounts(&faceCounts);
-        materialFaceSet.GetFaceIndices(&faceIndices);
-
-        if (!isPartition) {
-            TF_WARN("Invalid faceSet data found on <%s>: Not a partition.", 
+        if (!materialFaceSet.GetIsPartition()) {
+            TF_WARN("Invalid faceSet data found on <%s>: Not a partition.",
                     primSchema.GetPath().GetText());
             return false;
         }
 
+        VtIntArray faceCounts;
+        VtIntArray faceIndices;
+        materialFaceSet.GetFaceCounts(&faceCounts);
+        materialFaceSet.GetFaceIndices(&faceIndices);
+
         // Check if there are faceIndices that aren't included in the material
-        // face-set. 
-        // Note: This won't occur if the shading was originally 
-        // authored in maya and exported to the USD that we are importing, 
+        // face-set.
+        // Note: This won't occur if the shading was originally
+        // authored in maya and exported to the USD that we are importing,
         // but this is supported by the USD shading model.
-        UsdGeomMesh mesh(primSchema);
-        if (mesh) {                
+        const UsdGeomMesh mesh(primSchema);
+        if (mesh) {
             VtIntArray faceVertexCounts;
-            if (mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts))
-            {
-                std::set<int> assignedIndices(faceIndices.begin(),
-                                              faceIndices.end());
+            if (mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts)) {
+                const std::set<int> assignedIndices(faceIndices.begin(),
+                                                    faceIndices.end());
                 VtIntArray unassignedIndices;
                 unassignedIndices.reserve(faceVertexCounts.size() -
-                                            faceIndices.size());
-                for(size_t fIdx = 0; fIdx < faceVertexCounts.size(); fIdx++) 
-                {
+                                              faceIndices.size());
+                for (size_t fIdx = 0u; fIdx < faceVertexCounts.size(); ++fIdx) {
                     if (assignedIndices.count(fIdx) == 0) {
                         unassignedIndices.push_back(fIdx);
                     }
                 }
 
                 // Assign the face face indices that aren't in the material
-                // faceSet to the material that the mesh is bound to or 
-                // to the initialShadingGroup if it doesn't have a material 
+                // faceSet to the material that the mesh is bound to or
+                // to the initialShadingGroup if it doesn't have a material
                 // binding.
                 if (!unassignedIndices.empty()) {
-                    if (!_AssignMaterialFaceSet(shadingEngine, shapeDagPath, 
+                    if (!_AssignMaterialFaceSet(shadingEngine,
+                                                shapeDagPath,
                                                 unassignedIndices)) {
                         return false;
                     }
@@ -353,34 +341,41 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         int setIndex = 0;
         int currentFaceIndex = 0;
         TF_FOR_ALL(bindingTargetsIt, bindingTargets) {
-            UsdShadeMaterial material(
+            const UsdShadeMaterial material(
                 primSchema.GetPrim().GetStage()->GetPrimAtPath(
                     *bindingTargetsIt));
 
-            MObject faceGroupShadingEngine = PxrUsdMayaTranslatorMaterial::Read(
-                shadingMode, material, UsdGeomGprim(), context);
-    
+            MObject faceGroupShadingEngine =
+                PxrUsdMayaTranslatorMaterial::Read(
+                    shadingMode,
+                    material,
+                    UsdGeomGprim(),
+                    context);
+
             if (faceGroupShadingEngine.isNull()) {
-                status = PxrUsdMayaUtil::GetMObjectByName(
-                        "initialShadingGroup",faceGroupShadingEngine);
+                status =
+                    PxrUsdMayaUtil::GetMObjectByName(
+                        "initialShadingGroup",
+                        faceGroupShadingEngine);
                 if (status != MS::kSuccess) {
                     return false;
                 }
             }
 
-            int numFaces = faceCounts[setIndex];
+            const int numFaces = faceCounts[setIndex];
             VtIntArray faceGroupIndices;
             faceGroupIndices.reserve(numFaces);
-            for (int faceIndex = currentFaceIndex; 
-                faceIndex < currentFaceIndex + numFaces;
-                ++faceIndex) {
+            for (int faceIndex = currentFaceIndex;
+                    faceIndex < currentFaceIndex + numFaces;
+                    ++faceIndex) {
                 faceGroupIndices.push_back(faceIndices[faceIndex]);
             }
 
             ++setIndex;
             currentFaceIndex += numFaces;
 
-            if (!_AssignMaterialFaceSet(faceGroupShadingEngine, shapeDagPath, 
+            if (!_AssignMaterialFaceSet(faceGroupShadingEngine,
+                                        shapeDagPath,
                                         faceGroupIndices)) {
                 return false;
             }
@@ -415,4 +410,3 @@ PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

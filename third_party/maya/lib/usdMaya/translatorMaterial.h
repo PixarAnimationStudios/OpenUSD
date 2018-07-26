@@ -24,26 +24,26 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 #define PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
+/// \file usdMaya/translatorMaterial.h
+
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdShade/material.h"
 
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdShade/material.h"
+
 #include <maya/MObject.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-#define PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS \
-    ((MaterialNamespace, "USD_Materials"))
-
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorMaterialTokens,
-    PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS);
 
 /// \brief Provides helper functions for reading UsdShadeMaterial
 struct PxrUsdMayaTranslatorMaterial
@@ -71,9 +71,9 @@ struct PxrUsdMayaTranslatorMaterial
 
     /// Finds shadingEngines in the maya scene and exports them to \p stage.  This
     /// will call the current export for the shadingMode.
-    /// 
+    ///
     PXRUSDMAYA_API
-    static void 
+    static void
     ExportShadingEngines(
             const UsdStageRefPtr& stage,
             const TfToken& shadingMode,
@@ -84,5 +84,5 @@ struct PxrUsdMayaTranslatorMaterial
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
+#endif

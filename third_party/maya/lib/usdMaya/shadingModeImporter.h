@@ -21,22 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_SHADINGMODEIMPORTER_H 
-#define PXRUSDMAYA_SHADINGMODEIMPORTER_H 
+#ifndef PXRUSDMAYA_SHADING_MODE_IMPORTER_H
+#define PXRUSDMAYA_SHADING_MODE_IMPORTER_H
+
+/// \file usdMaya/shadingModeImporter.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
 #include "usdMaya/primReaderContext.h"
 
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include <maya/MObject.h>
-#include <maya/MPlug.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+#define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS \
+    ((MayaMaterialNamespace, "USD_Materials"))
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaShadingModeImporterTokens,
+    PXRUSDMAYA_API,
+    PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
 
 
 class PxrUsdMayaShadingModeImportContext
@@ -53,7 +66,9 @@ public:
         _shadeMaterial(shadeMaterial),
         _boundPrim(boundPrim),
         _context(context),
-        _surfaceShaderPlugName("surfaceShader")
+        _surfaceShaderPlugName("surfaceShader"),
+        _volumeShaderPlugName("volumeShader"),
+        _displacementShaderPlugName("displacementShader")
     {
     }
 
@@ -64,7 +79,7 @@ public:
     ///
     /// If your importer wants to try to re-use objects that were created by
     /// an earlier invocation (or by other things in the importer), you can
-    /// add/retrieve them using these functions.  
+    /// add/retrieve them using these functions.
 
     /// This will return true and \p obj will be set to the
     /// previously created MObject.  Otherwise, this returns false;
@@ -87,24 +102,60 @@ public:
     MObject AddCreatedObject(const SdfPath& path, const MObject& obj);
     /// @}
 
+    /// Creates a shading engine (an MFnSet with the kRenderableOnly
+    /// restriction).
+    ///
+    /// The shading engine's name is set using the value returned by
+    /// GetShadingEngineName().
     PXRUSDMAYA_API
-    TfToken
-    GetSurfaceShaderPlugName() const;
+    MObject CreateShadingEngine() const;
+
+    /// Gets the name of the shading engine that will be created for this
+    /// context.
+    ///
+    /// If a shading engine name has been explicitly set on the context, that
+    /// will be returned. Otherwise, the shading engine name is computed based
+    /// on the context's material and/or bound prim.
+    PXRUSDMAYA_API
+    TfToken GetShadingEngineName() const;
 
     PXRUSDMAYA_API
-    void
-    SetSurfaceShaderPlugName(const TfToken& plugName);
+    TfToken GetSurfaceShaderPlugName() const;
+    PXRUSDMAYA_API
+    TfToken GetVolumeShaderPlugName() const;
+    PXRUSDMAYA_API
+    TfToken GetDisplacementShaderPlugName() const;
+
+    /// Sets the name of the shading engine to be created for this context.
+    ///
+    /// Call this with an empty TfToken to reset the context to the default
+    /// behavior of computing the shading engine name based on its material
+    /// and/or bound prim.
+    PXRUSDMAYA_API
+    void SetShadingEngineName(const TfToken& shadingEngineName);
+
+    PXRUSDMAYA_API
+    void SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName);
+    PXRUSDMAYA_API
+    void SetVolumeShaderPlugName(const TfToken& volumeShaderPlugName);
+    PXRUSDMAYA_API
+    void SetDisplacementShaderPlugName(const TfToken& displacementShaderPlugName);
 
 private:
     const UsdShadeMaterial& _shadeMaterial;
     const UsdGeomGprim& _boundPrim;
     PxrUsdMayaPrimReaderContext* _context;
 
+    TfToken _shadingEngineName;
+
     TfToken _surfaceShaderPlugName;
+    TfToken _volumeShaderPlugName;
+    TfToken _displacementShaderPlugName;
 };
-typedef boost::function< MPlug (PxrUsdMayaShadingModeImportContext*) > PxrUsdMayaShadingModeImporter;
+typedef boost::function< MObject (PxrUsdMayaShadingModeImportContext*) > PxrUsdMayaShadingModeImporter;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_SHADINGMODEIMPORTER_H 
+
+#endif

@@ -23,14 +23,28 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/shadingModeRegistry.h"
+
 #include "usdMaya/registryHelper.h"
+#include "usdMaya/shadingModeExporter.h"
+#include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/shadingModeImporter.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
+
+#include <map>
+#include <string>
+#include <utility>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaShadingModeTokens, PXRUSDMAYA_SHADINGMODE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaShadingModeTokens,
+    PXRUSDMAYA_SHADINGMODE_TOKENS);
+
 
 typedef std::map<TfToken, PxrUsdMayaShadingModeExporterCreator> _ExportRegistry;
 static _ExportRegistry _exportReg;
@@ -40,7 +54,8 @@ PxrUsdMayaShadingModeRegistry::RegisterExporter(
         const std::string& name,
         PxrUsdMayaShadingModeExporterCreator fn)
 {
-    std::pair<_ExportRegistry::const_iterator, bool> insertStatus = _exportReg.insert(
+    std::pair<_ExportRegistry::const_iterator, bool> insertStatus =
+        _exportReg.insert(
             std::make_pair(TfToken(name), fn));
     return insertStatus.second;
 }
@@ -56,17 +71,19 @@ PxrUsdMayaShadingModeRegistry::_GetExporter(const TfToken& name)
 
 typedef std::map<TfToken, PxrUsdMayaShadingModeImporter> _ImportRegistry;
 static _ImportRegistry _importReg;
+
 bool
 PxrUsdMayaShadingModeRegistry::RegisterImporter(
         const std::string& name,
         PxrUsdMayaShadingModeImporter fn)
 {
-    std::pair<_ImportRegistry::const_iterator, bool> insertStatus = _importReg.insert(
+    std::pair<_ImportRegistry::const_iterator, bool> insertStatus =
+        _importReg.insert(
             std::make_pair(TfToken(name), fn));
     return insertStatus.second;
 }
 
-PxrUsdMayaShadingModeImporter 
+PxrUsdMayaShadingModeImporter
 PxrUsdMayaShadingModeRegistry::_GetImporter(const TfToken& name)
 {
     TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeImportContext>();
@@ -99,7 +116,7 @@ PxrUsdMayaShadingModeRegistry::_ListImporters() {
 TF_INSTANTIATE_SINGLETON(PxrUsdMayaShadingModeRegistry);
 
 PxrUsdMayaShadingModeRegistry&
-PxrUsdMayaShadingModeRegistry::GetInstance() 
+PxrUsdMayaShadingModeRegistry::GetInstance()
 {
     return TfSingleton<PxrUsdMayaShadingModeRegistry>::GetInstance();
 }
@@ -114,4 +131,3 @@ PxrUsdMayaShadingModeRegistry::~PxrUsdMayaShadingModeRegistry()
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

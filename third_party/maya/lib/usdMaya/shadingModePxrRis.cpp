@@ -38,6 +38,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
@@ -52,6 +53,7 @@
 #include "pxr/usd/usdShade/tokens.h"
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -374,6 +376,10 @@ _GetOrCreateShaderObject(
         PxrUsdMayaShadingModeImportContext* context)
 {
     MObject shaderObj;
+    if (!shaderSchema) {
+        return shaderObj;
+    }
+
     if (context->GetCreatedObject(shaderSchema.GetPrim(), &shaderObj)) {
         return shaderObj;
     }
@@ -503,41 +509,122 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
     // RenderMan for Maya wants the shader nodes to get hooked into the shading
     // group via its own plugs.
     context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
+    context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
+    context->SetDisplacementShaderPlugName(_tokens->RmanDisplacementShaderPlugName);
 
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
     if (!shadeMaterial) {
-        return MPlug();
+        return MObject();
     }
 
-    // First try the "surface" output of the material.
-    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(
-        UsdShadeTokens->surface);
-
-    // Otherwise fall back to trying the "surface" output  of the UsdRi schema.
+    // Get the surface, volume, and/or displacement shaders of the material.
+    // First we try computing the sources via the material, and otherwise we
+    // fall back to querying the UsdRiMaterialAPI.
+    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
     if (!surfaceShader) {
         surfaceShader = UsdRiMaterialAPI(shadeMaterial).GetSurface();
-        if (!surfaceShader) {
-            return MPlug();
-        }
     }
 
+    UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource();
+    if (!volumeShader) {
+        volumeShader = UsdRiMaterialAPI(shadeMaterial).GetVolume();
+    }
+
+    UsdShadeShader displacementShader = shadeMaterial.ComputeDisplacementSource();
+    if (!displacementShader) {
+        displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
+    }
+
+    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, context);
+    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, context);
+    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, context);
+
+    if (surfaceShaderObj.isNull() &&
+            volumeShaderObj.isNull() &&
+            displacementShaderObj.isNull()) {
+        return MObject();
+    }
+
+    // Create the shading engine.
+    MObject shadingEngine = context->CreateShadingEngine();
+    if (shadingEngine.isNull()) {
+        return MObject();
+    }
     MStatus status;
-    MObject shaderObj = _GetOrCreateShaderObject(surfaceShader,
-                                                 context);
-    MFnDependencyNode shaderDepFn(shaderObj, &status);
+    MFnSet fnSet(shadingEngine, &status);
     if (status != MS::kSuccess) {
-        return MPlug();
+        return MObject();
     }
 
-    MPlug outputPlug =
-        shaderDepFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
-    if (status != MS::kSuccess) {
-        return MPlug();
+    const TfToken surfaceShaderPlugName = context->GetSurfaceShaderPlugName();
+    if (!surfaceShaderPlugName.IsEmpty() && !surfaceShaderObj.isNull()) {
+        MFnDependencyNode depNodeFn(surfaceShaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug =
+            depNodeFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
+        if (status != MS::kSuccess || shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        MPlug seInputPlug =
+            fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        PxrUsdMayaUtil::Connect(shaderOutputPlug,
+                                seInputPlug,
+                                /* clearDstPlug = */ true);
     }
 
-    return outputPlug;
+    const TfToken volumeShaderPlugName = context->GetVolumeShaderPlugName();
+    if (!volumeShaderPlugName.IsEmpty() && !volumeShaderObj.isNull()) {
+        MFnDependencyNode depNodeFn(volumeShaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug =
+            depNodeFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
+        if (status != MS::kSuccess || shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        MPlug seInputPlug =
+            fnSet.findPlug(volumeShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        PxrUsdMayaUtil::Connect(shaderOutputPlug,
+                                seInputPlug,
+                                /* clearDstPlug = */ true);
+    }
+
+    const TfToken displacementShaderPlugName = context->GetDisplacementShaderPlugName();
+    if (!displacementShaderPlugName.IsEmpty() && !displacementShaderObj.isNull()) {
+        MFnDependencyNode depNodeFn(displacementShaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug =
+            depNodeFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
+        if (status != MS::kSuccess || shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        MPlug seInputPlug =
+            fnSet.findPlug(displacementShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        PxrUsdMayaUtil::Connect(shaderOutputPlug,
+                                seInputPlug,
+                                /* clearDstPlug = */ true);
+    }
+
+    return shadingEngine;
 }
 
 
