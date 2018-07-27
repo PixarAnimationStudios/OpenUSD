@@ -100,6 +100,14 @@ public:
         std::ostream& out,
         size_t indent) const;
 
+    /// Returns the value of the "format" argument to be used in the 
+    /// FileFormatArguments when exporting or saving the given layer.
+    /// 
+    /// Returns an empty token if the given layer does not have this 
+    /// file format.
+    USD_API
+    static TfToken GetUnderlyingFormatForLayer(const SdfLayerBase *layerBase);
+
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
