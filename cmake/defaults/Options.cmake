@@ -104,6 +104,11 @@ set(PXR_MONOLITHIC_IMPORT ""
     "Path to cmake file that imports a usd_ms target"
 )
 
+set(PXR_EXTRA_PLUGINS ""
+    CACHE
+    INTERNAL
+    "Aggregation of extra plugin directories containing a plugInfo.json.")
+
 # Resolve options that depend on one another so that subsequent .cmake scripts
 # all have the final value for these options.
 if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
