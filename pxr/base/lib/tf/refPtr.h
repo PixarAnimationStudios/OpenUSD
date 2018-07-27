@@ -433,7 +433,6 @@
 #include "pxr/base/tf/typeFunctions.h"
 #include "pxr/base/tf/api.h"
 
-#include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 
 #include <boost/functional/hash_fwd.hpp>
@@ -571,6 +570,12 @@ struct Tf_RefPtr_Counter {
         return true;
     }
 };
+
+// Helper to post a fatal error when a NULL Tf pointer is dereferenced.
+[[noreturn]]
+TF_API void
+Tf_PostNullSmartPtrDereferenceFatalError(
+    const TfCallContext &, const std::type_info &);
 
 /// \class TfRefPtr
 /// \ingroup group_tf_Memory
@@ -976,10 +981,11 @@ public:
 
     /// Accessor to \c T's public members.
     T* operator ->() const {
-        if (ARCH_UNLIKELY(!_refBase))
-            TF_FATAL_ERROR("attempted member lookup on NULL %s",
-                           ArchGetDemangled(typeid(TfRefPtr)).c_str());
-        return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        if (ARCH_LIKELY(_refBase)) {
+            return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        }
+        static const TfCallContext ctx(TF_CALL_CONTEXT);
+        Tf_PostNullSmartPtrDereferenceFatalError(ctx, typeid(TfRefPtr));
     }
 
     /// Dereferences the stored pointer.

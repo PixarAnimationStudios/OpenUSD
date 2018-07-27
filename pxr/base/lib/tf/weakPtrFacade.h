@@ -221,11 +221,11 @@ public:
     
     DataType *operator -> () const {
         DataType *ptr = _FetchPointer();
-        if (ARCH_LIKELY(ptr))
+        if (ARCH_LIKELY(ptr)) {
             return ptr;
-        TF_FATAL_ERROR("Dereferenced an invalid %s",
-                       ArchGetDemangled(typeid(Derived)).c_str());
-        return 0;
+        }
+        static const TfCallContext ctx(TF_CALL_CONTEXT);
+        Tf_PostNullSmartPtrDereferenceFatalError(ctx, typeid(Derived));
     }
 
     DataType &operator * () const {
