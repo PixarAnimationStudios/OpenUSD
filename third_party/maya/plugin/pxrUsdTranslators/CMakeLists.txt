@@ -46,6 +46,9 @@ pxr_plugin(${PXR_PACKAGE}
     PRIVATE_HEADERS
         api.h
 
+    RESOURCE_FILES
+        plugInfo.json
+
     DISABLE_PRECOMPILED_HEADERS
 )
 
