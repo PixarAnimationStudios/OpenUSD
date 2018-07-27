@@ -25,33 +25,33 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrUsdMaya_FunctorPrimReader::PxrUsdMaya_FunctorPrimReader(
-    const PxrUsdMayaPrimReaderArgs& args, 
-    PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn)
-    : PxrUsdMayaPrimReader(args), _readerFn(readerFn)
+UsdMaya_FunctorPrimReader::UsdMaya_FunctorPrimReader(
+    const UsdMayaPrimReaderArgs& args, 
+    UsdMayaPrimReaderRegistry::ReaderFn readerFn)
+    : UsdMayaPrimReader(args), _readerFn(readerFn)
 {
 }
 
 bool
-PxrUsdMaya_FunctorPrimReader::Read(PxrUsdMayaPrimReaderContext* context)
+UsdMaya_FunctorPrimReader::Read(UsdMayaPrimReaderContext* context)
 {
     TF_VERIFY(context);
     return _readerFn(_GetArgs(), context);
 }
 
 /* static */
-PxrUsdMayaPrimReaderSharedPtr
-PxrUsdMaya_FunctorPrimReader::Create(
-    const PxrUsdMayaPrimReaderArgs& args, 
-    PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn)
+UsdMayaPrimReaderSharedPtr
+UsdMaya_FunctorPrimReader::Create(
+    const UsdMayaPrimReaderArgs& args, 
+    UsdMayaPrimReaderRegistry::ReaderFn readerFn)
 {
-    return std::make_shared<PxrUsdMaya_FunctorPrimReader>(args, readerFn);
+    return std::make_shared<UsdMaya_FunctorPrimReader>(args, readerFn);
 }
 
 /* static */
-PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn
-PxrUsdMaya_FunctorPrimReader::CreateFactory(
-    PxrUsdMayaPrimReaderRegistry::ReaderFn readerFn)
+UsdMayaPrimReaderRegistry::ReaderFactoryFn
+UsdMaya_FunctorPrimReader::CreateFactory(
+    UsdMayaPrimReaderRegistry::ReaderFn readerFn)
 {
     return std::bind(
             Create,

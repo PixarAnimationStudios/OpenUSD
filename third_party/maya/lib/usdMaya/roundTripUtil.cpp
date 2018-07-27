@@ -120,14 +120,14 @@ _SetMayaDictValue(
 
 /* static */
 bool
-PxrUsdMayaRoundTripUtil::IsAttributeUserAuthored(const UsdAttribute& attr)
+UsdMayaRoundTripUtil::IsAttributeUserAuthored(const UsdAttribute& attr)
 {
     return attr.HasAuthoredValueOpinion() && !IsAttributeMayaGenerated(attr);
 }
 
 /* static */
 bool
-PxrUsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
+UsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
 {
     bool ret = false;
     return _GetMayaDictValue(attr, _tokens->generated, &ret) && ret;
@@ -135,14 +135,14 @@ PxrUsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
 
 /* static */
 void
-PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& attr)
+UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& attr)
 {
     _SetMayaDictValue(attr, _tokens->generated, true);
 }
 
 /* static */
 bool
-PxrUsdMayaRoundTripUtil::IsPrimvarClamped(const UsdGeomPrimvar& primvar)
+UsdMayaRoundTripUtil::IsPrimvarClamped(const UsdGeomPrimvar& primvar)
 {
     bool ret = false;
     return _GetMayaDictValue(primvar.GetAttr(), _tokens->clamped, &ret) && ret;
@@ -150,14 +150,14 @@ PxrUsdMayaRoundTripUtil::IsPrimvarClamped(const UsdGeomPrimvar& primvar)
 
 /* static */
 void
-PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(const UsdGeomPrimvar& primvar)
+UsdMayaRoundTripUtil::MarkPrimvarAsClamped(const UsdGeomPrimvar& primvar)
 {
     _SetMayaDictValue(primvar.GetAttr(), _tokens->clamped, true);
 }
 
 /* static */
 bool
-PxrUsdMayaRoundTripUtil::GetAttributeArray(
+UsdMayaRoundTripUtil::GetAttributeArray(
         const UsdAttribute& attr,
         unsigned int* index)
 {
@@ -166,7 +166,7 @@ PxrUsdMayaRoundTripUtil::GetAttributeArray(
 
 /* static */
 void
-PxrUsdMayaRoundTripUtil::MarkAttributeAsArray(
+UsdMayaRoundTripUtil::MarkAttributeAsArray(
         const UsdAttribute& attr,
         const unsigned int index)
 {

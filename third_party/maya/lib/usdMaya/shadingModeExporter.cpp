@@ -50,12 +50,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((materialNamespace, "material:"))
 );
 
-PxrUsdMayaShadingModeExporter::PxrUsdMayaShadingModeExporter()
+UsdMayaShadingModeExporter::UsdMayaShadingModeExporter()
 {
 }
 
 /* virtual */
-PxrUsdMayaShadingModeExporter::~PxrUsdMayaShadingModeExporter()
+UsdMayaShadingModeExporter::~UsdMayaShadingModeExporter()
 {
 }
 
@@ -90,10 +90,10 @@ _GetRootPaths(const SdfPathSet& paths)
 }
 
 void
-PxrUsdMayaShadingModeExporter::DoExport(
+UsdMayaShadingModeExporter::DoExport(
         const UsdStageRefPtr& stage,
-        const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-        const PxrUsdMayaExportParams& exportParams)
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+        const UsdMayaExportParams& exportParams)
 {
     MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
 
@@ -111,7 +111,7 @@ PxrUsdMayaShadingModeExporter::DoExport(
         }
     }
 
-    PxrUsdMayaShadingModeExportContext context(
+    UsdMayaShadingModeExportContext context(
         MObject(),
         stage,
         dagPathToUsdMap,

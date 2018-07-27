@@ -152,7 +152,7 @@ void PxrUsdTranslators_MeshWriter::_prependDefaultValue(
                 attr.GetName() == UsdGeomTokens->primvarsDisplayOpacity
                     ? PxrUsdTranslators_MeshWriter::_ShaderDefaultAlpha
                     : PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha);
-    } else if (typeName == (PxrUsdMayaWriteUtil::WriteUVAsFloat2()
+    } else if (typeName == (UsdMayaWriteUtil::WriteUVAsFloat2()
                             ? SdfValueTypeNames->Float2Array
                             : SdfValueTypeNames->TexCoord2fArray)) {
         _prependValue(
@@ -335,7 +335,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
 
     // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
     // flag (this is specified by the job args but defaults to catmullClark).
-    TfToken sdScheme = PxrUsdMayaMeshUtil::GetSubdivScheme(finalMesh);
+    TfToken sdScheme = UsdMayaMeshUtil::GetSubdivScheme(finalMesh);
     if (sdScheme.IsEmpty()) {
         sdScheme = _GetExportArgs().defaultMeshScheme;
     }
@@ -344,12 +344,12 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
     if (sdScheme == UsdGeomTokens->none) {
         // Polygonal mesh - export normals.
         bool emitNormals = true; // Default to emitting normals if no tagging.
-        PxrUsdMayaMeshUtil::GetEmitNormalsTag(finalMesh, &emitNormals);
+        UsdMayaMeshUtil::GetEmitNormalsTag(finalMesh, &emitNormals);
         if (emitNormals) {
             VtArray<GfVec3f> meshNormals;
             TfToken normalInterp;
 
-            if (PxrUsdMayaMeshUtil::GetMeshNormals(geomMesh,
+            if (UsdMayaMeshUtil::GetMeshNormals(geomMesh,
                                                    &meshNormals,
                                                    &normalInterp)) {
                 _SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, 
@@ -359,7 +359,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
         }
     } else {
         // Subdivision surface - export subdiv-specific attributes.
-        TfToken sdInterpBound = PxrUsdMayaMeshUtil::GetSubdivInterpBoundary(
+        TfToken sdInterpBound = UsdMayaMeshUtil::GetSubdivInterpBoundary(
             finalMesh);
         if (!sdInterpBound.IsEmpty()) {
             _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), 
@@ -367,7 +367,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
         }
         
         TfToken sdFVLinearInterpolation =
-            PxrUsdMayaMeshUtil::GetSubdivFVLinearInterpolation(finalMesh);
+            UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(finalMesh);
         if (!sdFVLinearInterpolation.IsEmpty()) {
             _SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(),
                           sdFVLinearInterpolation);
@@ -406,7 +406,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
         }
 
         int unassignedValueIndex = -1;
-        PxrUsdMayaUtil::SetUnassignedValueIndex(&assignmentIndices,
+        UsdMayaUtil::SetUnassignedValueIndex(&assignmentIndices,
                                                 &unassignedValueIndex);
 
         // XXX:bug 118447
@@ -450,7 +450,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
     // If we find a displayColor color set, the shader colors and opacities
     // will be used to fill in unauthored/unpainted faces in the color set.
     if (_GetExportArgs().exportDisplayColor || !colorSetNames.empty()) {
-        PxrUsdMayaUtil::GetLinearShaderColor(finalMesh,
+        UsdMayaUtil::GetLinearShaderColor(finalMesh,
                                              &shadersRGBData,
                                              &shadersAlphaData,
                                              &shadersInterpolation,
@@ -464,18 +464,18 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
 
         bool isDisplayColor = false;
 
-        if (colorSetName == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) {
+        if (colorSetName == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) {
             if (!_GetExportArgs().exportDisplayColor) {
                 continue;
             }
             isDisplayColor=true;
         }
         
-        if (colorSetName == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName.GetString()) {
+        if (colorSetName == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName.GetString()) {
             TF_WARN("Mesh \"%s\" has a color set named \"%s\", "
                 "which is a reserved Primvar name in USD. Skipping...",
                 finalMesh.fullPathName().asChar(),
-                PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName
+                UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName
                     .GetText());
             continue;
         }
@@ -506,7 +506,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
             continue;
         }
 
-        PxrUsdMayaUtil::SetUnassignedValueIndex(
+        UsdMayaUtil::SetUnassignedValueIndex(
             &assignmentIndices,
             &unassignedValueIndex);
 
@@ -524,7 +524,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                                 clamped,
                                 true);
         } else {
-            const std::string sanitizedName = PxrUsdMayaUtil::SanitizeColorSetName(colorSetName);
+            const std::string sanitizedName = UsdMayaUtil::SanitizeColorSetName(colorSetName);
             // if our sanitized name is different than our current one and the
             // sanitized name already exists, it means 2 things are trying to
             // write to the same primvar.  warn and continue.
@@ -577,7 +577,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
         // results in Gprims rendering the same way in usdview as they do in
         // Maya (i.e. unassigned components are invisible).
         int unassignedValueIndex = -1;
-        PxrUsdMayaUtil::SetUnassignedValueIndex(
+        UsdMayaUtil::SetUnassignedValueIndex(
                 &shadersAssignmentIndices,
                 &unassignedValueIndex);
 

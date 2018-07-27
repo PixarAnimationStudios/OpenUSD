@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDMAYA_EXPORT_TRANSLATOR_H
-#define USDMAYA_EXPORT_TRANSLATOR_H
+#ifndef PXRUSDMAYA_EXPORT_TRANSLATOR_H
+#define PXRUSDMAYA_EXPORT_TRANSLATOR_H
 
 /// \file usdMaya/exportTranslator.h
 
@@ -65,10 +65,10 @@ class UsdMayaExportTranslator : public MPxFileTranslator
                 short size) const override;
 
         MString defaultExtension() const override {
-            return PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+            return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
         }
         MString filter() const override {
-            return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
+            return UsdMayaTranslatorTokens->UsdFileFilter.GetText();
         }
 
         PXRUSDMAYA_API
@@ -85,4 +85,4 @@ class UsdMayaExportTranslator : public MPxFileTranslator
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_EXPORT_H
+#endif

@@ -37,18 +37,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-struct PxrUsdMayaTranslatorNurbsPatch
+struct UsdMayaTranslatorNurbsPatch
 {
     PXRUSDMAYA_API
     static bool Read(
             const UsdGeomNurbsPatch& usdNurbsPatch,
             MObject parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
+#endif

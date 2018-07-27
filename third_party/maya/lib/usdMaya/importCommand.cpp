@@ -64,7 +64,7 @@ UsdMayaImportCommand::createSyntax()
     MSyntax syntax;
 
     // These flags correspond to entries in
-    // PxrUsdMayaJobImportArgs::GetDefaultDictionary.
+    // UsdMayaJobImportArgs::GetDefaultDictionary.
     syntax.addFlag("-shd",
                    PxrUsdImportJobArgsTokens->shadingMode.GetText(),
                    MSyntax::kString);
@@ -127,9 +127,9 @@ UsdMayaImportCommand::doIt(const MArgList & args)
 
     // Get dictionary values.
     const VtDictionary userArgs =
-        PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
+        UsdMayaUtil::GetDictionaryFromArgDatabase(
             argData,
-            PxrUsdMayaJobImportArgs::GetDefaultDictionary());
+            UsdMayaJobImportArgs::GetDefaultDictionary());
 
     std::string mFileName;
     if (argData.isFlagSet("file")) {
@@ -204,8 +204,8 @@ UsdMayaImportCommand::doIt(const MArgList & args)
         delete mUsdReadJob;
     }
 
-    PxrUsdMayaJobImportArgs jobArgs =
-            PxrUsdMayaJobImportArgs::CreateFromDictionary(
+    UsdMayaJobImportArgs jobArgs =
+            UsdMayaJobImportArgs::CreateFromDictionary(
                 userArgs,
                 /* importWithProxyShapes = */ false,
                 timeInterval);

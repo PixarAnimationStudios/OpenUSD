@@ -167,7 +167,7 @@ _PluginDictScopeToDebugString(
 
 /* static */
 void
-PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
+UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
         const std::vector<TfToken>& scope,
         const std::string& value)
 {
@@ -210,7 +210,7 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
 
 /* static */
 void
-PxrUsdMaya_RegistryHelper::LoadShadingModePlugins() {
+UsdMaya_RegistryHelper::LoadShadingModePlugins() {
     static std::once_flag _shadingModesLoaded;
     static std::vector<TfToken> scope = {_tokens->UsdMaya, _tokens->ShadingModePlugin};
     std::call_once(_shadingModesLoaded, [](){        
@@ -241,7 +241,7 @@ PxrUsdMaya_RegistryHelper::LoadShadingModePlugins() {
 
 /* static */
 VtDictionary
-PxrUsdMaya_RegistryHelper::GetComposedInfoDictionary(
+UsdMaya_RegistryHelper::GetComposedInfoDictionary(
     const std::vector<TfToken>& scope)
 {
     VtDictionary result;

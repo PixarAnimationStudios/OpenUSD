@@ -59,7 +59,7 @@ MSyntax UsdMayaExportCommand::createSyntax()
     MSyntax syntax;
 
     // These flags correspond to entries in
-    // PxrUsdMayaJobExportArgs::GetDefaultDictionary.
+    // UsdMayaJobExportArgs::GetDefaultDictionary.
     syntax.addFlag("-mt",
                    PxrUsdExportJobArgsTokens->mergeTransformAndShape.GetText(),
                    MSyntax::kBoolean);
@@ -200,8 +200,8 @@ try
     }
 
     // Read all of the dictionary args first.
-    const VtDictionary userArgs = PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
-            argData, PxrUsdMayaJobExportArgs::GetDefaultDictionary());
+    const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
+            argData, UsdMayaJobExportArgs::GetDefaultDictionary());
 
     // Now read all of the other args that are specific to this command.
     bool verbose = argData.isFlagSet("verbose");
@@ -287,7 +287,7 @@ try
     }
 
     // Convert selection list to jobArgs dagPaths
-    PxrUsdMayaUtil::MDagPathSet dagPaths;
+    UsdMayaUtil::MDagPathSet dagPaths;
     for (unsigned int i=0; i < objSelList.length(); i++) {
         MDagPath dagPath;
         status = objSelList.getDagPath(i, dagPath);
@@ -297,8 +297,8 @@ try
         }
     }
 
-    PxrUsdMayaJobExportArgs jobArgs =
-            PxrUsdMayaJobExportArgs::CreateFromDictionary(
+    UsdMayaJobExportArgs jobArgs =
+            UsdMayaJobExportArgs::CreateFromDictionary(
                 userArgs, dagPaths, timeInterval);
 
     unsigned int numFilteredTypes = argData.numberOfFlagUses("filterTypes");
@@ -317,7 +317,7 @@ try
     // Create stage and process static data
     if (UsdMaya_WriteJob.beginJob(fileName, append)) {
         std::vector<double> timeSamples =
-                PxrUsdMayaWriteUtil::GetTimeSamples(
+                UsdMayaWriteUtil::GetTimeSamples(
                 jobArgs.timeInterval, frameSamples, frameStride);
         if (!timeSamples.empty()) {
             const MTime oldCurTime = MAnimControl::currentTime();

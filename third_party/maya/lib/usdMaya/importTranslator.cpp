@@ -104,10 +104,10 @@ UsdMayaImportTranslator::reader(
                 timeInterval.SetMax(theOption[1].asDouble());
             } else {
                 userArgs[argName] =
-                    PxrUsdMayaUtil::ParseArgumentValue(
+                    UsdMayaUtil::ParseArgumentValue(
                         argName,
                         theOption[1].asChar(),
-                        PxrUsdMayaJobImportArgs::GetDefaultDictionary());
+                        UsdMayaJobImportArgs::GetDefaultDictionary());
             }
         }
     }
@@ -121,8 +121,8 @@ UsdMayaImportTranslator::reader(
         timeInterval = GfInterval();
     }
 
-    PxrUsdMayaJobImportArgs jobArgs =
-        PxrUsdMayaJobImportArgs::CreateFromDictionary(
+    UsdMayaJobImportArgs jobArgs =
+        UsdMayaJobImportArgs::CreateFromDictionary(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
@@ -154,9 +154,9 @@ UsdMayaImportTranslator::identifyFile(
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() ||
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() ||
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
+    if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() ||
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() ||
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
         retValue = kIsMyFileType;
     }
 
@@ -172,7 +172,7 @@ UsdMayaImportTranslator::GetDefaultOptions()
     std::call_once(once, []() {
         std::vector<std::string> entries;
         for (const std::pair<std::string, VtValue> keyValue :
-                PxrUsdMayaJobImportArgs::GetDefaultDictionary()) {
+                UsdMayaJobImportArgs::GetDefaultDictionary()) {
             if (keyValue.second.IsHolding<bool>()) {
                 entries.push_back(TfStringPrintf("%s=%d",
                         keyValue.first.c_str(),

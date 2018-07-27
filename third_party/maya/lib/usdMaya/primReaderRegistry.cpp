@@ -42,14 +42,14 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
         (PrimReader)
 );
 
-typedef std::map<TfToken, PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
+typedef std::map<TfToken, UsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
 static _Registry _reg;
 
 /* static */
 void 
-PxrUsdMayaPrimReaderRegistry::Register(
+UsdMayaPrimReaderRegistry::Register(
         const TfType& t,
-        PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn fn)
+        UsdMayaPrimReaderRegistry::ReaderFactoryFn fn)
 {
     TfToken tfTypeName(t.GetTypeName());
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
@@ -64,19 +64,19 @@ PxrUsdMayaPrimReaderRegistry::Register(
 
 /* static */
 void
-PxrUsdMayaPrimReaderRegistry::RegisterRaw(
+UsdMayaPrimReaderRegistry::RegisterRaw(
         const TfType& t,
-        PxrUsdMayaPrimReaderRegistry::ReaderFn fn)
+        UsdMayaPrimReaderRegistry::ReaderFn fn)
 {
-    Register(t, PxrUsdMaya_FunctorPrimReader::CreateFactory(fn));
+    Register(t, UsdMaya_FunctorPrimReader::CreateFactory(fn));
 }
 
 /* static */
-PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn
-PxrUsdMayaPrimReaderRegistry::Find(
+UsdMayaPrimReaderRegistry::ReaderFactoryFn
+UsdMayaPrimReaderRegistry::Find(
         const TfToken& usdTypeName)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaPrimReaderRegistry>();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimReaderRegistry>();
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
@@ -90,7 +90,7 @@ PxrUsdMayaPrimReaderRegistry::Find(
 
     static std::vector<TfToken> SCOPE = boost::assign::list_of
         (_tokens->UsdMaya)(_tokens->PrimReader);
-    PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
+    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.

@@ -165,7 +165,7 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
         const unsigned int numElements = inputHierarchy.numElements();
         for (unsigned int i = 0; i < numElements; ++i) {
             const MPlug plug = inputHierarchy[i];
-            const MPlug source(PxrUsdMayaUtil::GetConnected(plug));
+            const MPlug source(UsdMayaUtil::GetConnected(plug));
             if (source.isNull()) {
                 TF_WARN("Cannot read prototype: the source plug %s was null",
                         plug.name().asChar());
@@ -195,7 +195,7 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
             // XXX: instancerTranslate does not behave well when added to a
             // reference that has an existing transform on the far side of the
             // reference. However, its behavior at least matches the
-            // behavior in PxrUsdMayaTranslatorModelAssembly. If we fix the
+            // behavior in UsdMayaTranslatorModelAssembly. If we fix the
             // behavior there, we need to make sure that this is also
             // fixed to match.
             bool instancerTranslateAnimated = false;
@@ -276,14 +276,14 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
     MPlug inputPointsDest = dagNode.findPlug("inputPoints", true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    MPlug inputPointsSrc = PxrUsdMayaUtil::GetConnected(inputPointsDest);
+    MPlug inputPointsSrc = UsdMayaUtil::GetConnected(inputPointsDest);
     if (inputPointsSrc.isNull()) {
         TF_WARN("inputPoints not connected on instancer '%s'",
                 GetDagPath().fullPathName().asChar());
         return false;
     }
 
-    auto holder = PxrUsdMayaUtil::GetPlugDataHandle(inputPointsSrc);
+    auto holder = UsdMayaUtil::GetPlugDataHandle(inputPointsSrc);
     if (!holder) {
         TF_WARN("Unable to read inputPoints data handle for instancer '%s'",
                 GetDagPath().fullPathName().asChar());
@@ -294,7 +294,7 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
             &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    if (!PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
+    if (!UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             inputPointsData, instancer, _numPrototypes, usdTime,
             _GetSparseValueWriter())) {
         return false;

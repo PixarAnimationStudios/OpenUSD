@@ -223,7 +223,7 @@ _WritePrefixedAttrs(
                         entry.usdPrim.GetPath().GetText());
                 continue;
             }
-            UsdGeomPrimvar primvar = PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
+            UsdGeomPrimvar primvar = UsdMayaWriteUtil::GetOrCreatePrimvar(
                     plg,
                     imageable,
                     attrEntry.usdAttributeName,
@@ -236,12 +236,12 @@ _WritePrefixedAttrs(
         }
         else {
             // Treat as custom attribute.
-            usdAttr = PxrUsdMayaWriteUtil::GetOrCreateUsdAttr(
+            usdAttr = UsdMayaWriteUtil::GetOrCreateUsdAttr(
                     plg, entry.usdPrim, attrEntry.usdAttributeName, true);
         }
 
         if (usdAttr) {
-            PxrUsdMayaWriteUtil::SetUsdAttr(plg, usdAttr, usdTime);
+            UsdMayaWriteUtil::SetUsdAttr(plg, usdAttr, usdTime);
         }
         else {
             TF_RUNTIME_ERROR(
@@ -261,7 +261,7 @@ static
 void
 _SetMeshesSubDivisionScheme(
         UsdStagePtr stage,
-        const PxrUsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd)
+        const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd)
 {
 
     for (const auto& p: dagToUsd) {
@@ -292,12 +292,12 @@ _SetMeshesSubDivisionScheme(
 // match what exporting a file from maya to alembic does.  For now, it just
 // supports attrprefix and primvarprefix to export custom attributes and
 // primvars.
-class AlembicChaser : public PxrUsdMayaChaser
+class AlembicChaser : public UsdMayaChaser
 {
 public:
     AlembicChaser(
             UsdStagePtr stage,
-            const PxrUsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd,
+            const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd,
             const std::map<std::string, std::string>& attrPrefixes,
             const std::map<std::string, std::string>& primvarPrefixes)
     : _stage(stage)
@@ -341,7 +341,7 @@ public:
 private:
     std::vector<_PrimEntry> _primEntries;
     UsdStagePtr _stage;
-    const PxrUsdMayaChaserRegistry::FactoryContext::DagToUsdMap& _dagToUsd;
+    const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& _dagToUsd;
 };
 
 static

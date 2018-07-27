@@ -34,7 +34,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsCurves, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return PxrUsdMayaTranslatorCurves::Create(
+    return UsdMayaTranslatorCurves::Create(
             UsdGeomCurves(usdPrim),
             parentNode,
             args,

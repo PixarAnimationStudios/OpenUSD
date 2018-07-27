@@ -91,7 +91,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime
 
         // Contrary to the documentation, Maya actually stores the orthographic
         // width in centimeters (Maya's internal unit system), not inches.
-        const double orthoWidth = PxrUsdMayaUtil::ConvertCMToMM(camFn.orthoWidth());
+        const double orthoWidth = UsdMayaUtil::ConvertCMToMM(camFn.orthoWidth());
 
         // It doesn't seem to be possible to specify a non-square orthographic
         // camera in Maya, and aspect ratio, lens squeeze ratio, and film
@@ -107,16 +107,16 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime
                       UsdGeomTokens->perspective, usdTime);
 
         // Lens squeeze ratio applies horizontally only.
-        const double horizontalAperture = PxrUsdMayaUtil::ConvertInchesToMM(
+        const double horizontalAperture = UsdMayaUtil::ConvertInchesToMM(
             camFn.horizontalFilmAperture() * camFn.lensSqueezeRatio());
-        const double verticalAperture = PxrUsdMayaUtil::ConvertInchesToMM(
+        const double verticalAperture = UsdMayaUtil::ConvertInchesToMM(
             camFn.verticalFilmAperture());
 
         // Film offset and shake (when enabled) have the same effect on film back
-        const double horizontalApertureOffset = PxrUsdMayaUtil::ConvertInchesToMM(
+        const double horizontalApertureOffset = UsdMayaUtil::ConvertInchesToMM(
             (camFn.shakeEnabled() ?
              camFn.horizontalFilmOffset() + camFn.horizontalShake() : camFn.horizontalFilmOffset()));
-        const double verticalApertureOffset = PxrUsdMayaUtil::ConvertInchesToMM(
+        const double verticalApertureOffset = UsdMayaUtil::ConvertInchesToMM(
             (camFn.shakeEnabled() ? camFn.verticalFilmOffset() + camFn.verticalShake() : camFn.verticalFilmOffset()));
 
         _SetAttribute(primSchema.GetHorizontalApertureAttr(), 

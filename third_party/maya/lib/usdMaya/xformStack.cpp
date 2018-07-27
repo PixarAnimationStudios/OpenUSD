@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaXformStackTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaXformStackTokens,
         PXRUSDMAYA_XFORM_STACK_TOKENS);
 
 namespace {
@@ -69,11 +69,11 @@ namespace {
                 || opType == UsdGeomXformOp::TypeRotateZ);
     }
 
-    PxrUsdMayaXformStack::IndexMap
+    UsdMayaXformStack::IndexMap
     _buildInversionMap(
-            const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins)
+            const std::vector<UsdMayaXformStack::IndexPair>& inversionTwins)
     {
-        PxrUsdMayaXformStack::IndexMap result;
+        UsdMayaXformStack::IndexMap result;
         for (const auto& twinPair : inversionTwins)
         {
             result[twinPair.first] = twinPair.second;
@@ -87,15 +87,15 @@ namespace {
     //     { opIndex, NO_INDEX }     if opIndex has no inversion twin
     //     { opIndex, opIndexTwin }  if opIndex has an inversion twin, and opIndex < opIndexTwin
     //     { opIndexTwin, opIndex }  if opIndex has an inversion twin, and opIndex > opIndexTwin
-    PxrUsdMayaXformStack::IndexPair
+    UsdMayaXformStack::IndexPair
     _makeInversionIndexPair(
             size_t opIndex,
-            const PxrUsdMayaXformStack::IndexMap& inversionMap)
+            const UsdMayaXformStack::IndexMap& inversionMap)
     {
         auto foundTwin = inversionMap.find(opIndex);
         if (foundTwin == inversionMap.end())
         {
-            return std::make_pair(opIndex, PxrUsdMayaXformStack::NO_INDEX);
+            return std::make_pair(opIndex, UsdMayaXformStack::NO_INDEX);
         }
         else
         {
@@ -111,21 +111,21 @@ namespace {
         }
     }
 
-    PxrUsdMayaXformStack::TokenIndexPairMap
+    UsdMayaXformStack::TokenIndexPairMap
     _buildAttrNamesToIdxs(
-            const PxrUsdMayaXformStack::OpClassList& ops,
-            const PxrUsdMayaXformStack::IndexMap& inversionMap)
+            const UsdMayaXformStack::OpClassList& ops,
+            const UsdMayaXformStack::IndexMap& inversionMap)
     {
-        PxrUsdMayaXformStack::TokenIndexPairMap result;
+        UsdMayaXformStack::TokenIndexPairMap result;
         for (size_t i = 0; i < ops.size(); ++i)
         {
-            const PxrUsdMayaXformOpClassification& op = ops[i];
+            const UsdMayaXformOpClassification& op = ops[i];
             // Inverted twin pairs will always have same name, so can skip one
             if (op.IsInvertedTwin()) continue;
 
             for (auto attrName : op.CompatibleAttrNames())
             {
-                PxrUsdMayaXformStack::IndexPair indexPair =
+                UsdMayaXformStack::IndexPair indexPair =
                         _makeInversionIndexPair(i, inversionMap);
                 // Insert, and check if it already existed
                 TF_VERIFY(result.insert({attrName, indexPair}).second,
@@ -136,18 +136,18 @@ namespace {
         return result;
     }
 
-    PxrUsdMayaXformStack::TokenIndexPairMap _buildOpNamesToIdxs(
-            const PxrUsdMayaXformStack::OpClassList& ops,
-            const PxrUsdMayaXformStack::IndexMap& inversionMap)
+    UsdMayaXformStack::TokenIndexPairMap _buildOpNamesToIdxs(
+            const UsdMayaXformStack::OpClassList& ops,
+            const UsdMayaXformStack::IndexMap& inversionMap)
     {
-        PxrUsdMayaXformStack::TokenIndexPairMap result;
+        UsdMayaXformStack::TokenIndexPairMap result;
         for (size_t i = 0; i < ops.size(); ++i)
         {
-            const PxrUsdMayaXformOpClassification& op = ops[i];
+            const UsdMayaXformOpClassification& op = ops[i];
             // Inverted twin pairs will always have same name, so can skip one
             if (op.IsInvertedTwin()) continue;
 
-            PxrUsdMayaXformStack::IndexPair indexPair =
+            UsdMayaXformStack::IndexPair indexPair =
                     _makeInversionIndexPair(i, inversionMap);
             // Insert, and check if it already existed
             TF_VERIFY(result.insert({op.GetName(), indexPair}).second,
@@ -159,7 +159,7 @@ namespace {
 
 }
 
-class PxrUsdMayaXformOpClassification::_Data : public TfRefBase
+class UsdMayaXformOpClassification::_Data : public TfRefBase
 {
 public:
     _DataRefPtr static Create(const TfToken &name,
@@ -189,12 +189,12 @@ private:
     }
 };
 
-PxrUsdMayaXformOpClassification::PxrUsdMayaXformOpClassification() :
+UsdMayaXformOpClassification::UsdMayaXformOpClassification() :
                 _sharedData(nullptr)
 {
 }
 
-PxrUsdMayaXformOpClassification::PxrUsdMayaXformOpClassification(
+UsdMayaXformOpClassification::UsdMayaXformOpClassification(
         const TfToken &name,
         UsdGeomXformOp::Type opType,
         bool isInvertedTwin) :
@@ -202,41 +202,41 @@ PxrUsdMayaXformOpClassification::PxrUsdMayaXformOpClassification(
 {
 }
 
-PxrUsdMayaXformOpClassification const &
-PxrUsdMayaXformOpClassification::NullInstance()
+UsdMayaXformOpClassification const &
+UsdMayaXformOpClassification::NullInstance()
 {
-    static PxrUsdMayaXformOpClassification theNull;
+    static UsdMayaXformOpClassification theNull;
     return theNull;
 }
 
 bool
-PxrUsdMayaXformOpClassification::IsNull() const
+UsdMayaXformOpClassification::IsNull() const
 {
     return !_sharedData;
 }
 
 TfToken const &
-PxrUsdMayaXformOpClassification::GetName() const
+UsdMayaXformOpClassification::GetName() const
 {
     return _sharedData->m_name;
 }
 
 UsdGeomXformOp::Type
-PxrUsdMayaXformOpClassification::GetOpType() const
+UsdMayaXformOpClassification::GetOpType() const
 {
     return _sharedData->m_opType;
 }
 
 bool
-PxrUsdMayaXformOpClassification::IsInvertedTwin() const
+UsdMayaXformOpClassification::IsInvertedTwin() const
 {
     return _sharedData->m_isInvertedTwin;
 }
 
 std::vector<TfToken>
-PxrUsdMayaXformOpClassification::CompatibleAttrNames() const
+UsdMayaXformOpClassification::CompatibleAttrNames() const
 {
-    // Note that we make tokens immortal because PxrUsdMayaXformOpClassification
+    // Note that we make tokens immortal because UsdMayaXformOpClassification
     // is currently not publically creatable, and is only used to make
     // some global constants (ie, MayaStack and CommonStack)
     std::vector<TfToken> result;
@@ -244,7 +244,7 @@ PxrUsdMayaXformOpClassification::CompatibleAttrNames() const
     if (_isThreeAxisRotate(GetOpType()))
     {
         // Special handling for rotates, to deal with rotateX/rotateZXY/etc
-        if (GetName() == PxrUsdMayaXformStackTokens->rotate)
+        if (GetName() == UsdMayaXformStackTokens->rotate)
         {
             result.reserve(std::extent<decltype(RotateOpTypes)>::value * 3);
             // Special handling for rotate, to deal with rotateX/rotateZXY/etc
@@ -257,7 +257,7 @@ PxrUsdMayaXformOpClassification::CompatibleAttrNames() const
                 // Add, ie, xformOp::rotateX::rotate
                 result.emplace_back(TfToken(
                         UsdGeomXformOp::GetOpName(rotateType,
-                                PxrUsdMayaXformStackTokens->rotate).GetString(),
+                                UsdMayaXformStackTokens->rotate).GetString(),
                         TfToken::Immortal));
                 // Add, ie, xformOp::rotateX::rotateX
                 result.emplace_back(TfToken(
@@ -297,7 +297,7 @@ PxrUsdMayaXformOpClassification::CompatibleAttrNames() const
 }
 
 bool
-PxrUsdMayaXformOpClassification::IsCompatibleType(UsdGeomXformOp::Type otherType) const
+UsdMayaXformOpClassification::IsCompatibleType(UsdGeomXformOp::Type otherType) const
 {
     if (GetOpType() == otherType) return true;
     if (_isThreeAxisRotate(GetOpType() ))
@@ -307,7 +307,7 @@ PxrUsdMayaXformOpClassification::IsCompatibleType(UsdGeomXformOp::Type otherType
     return false;
 }
 
-bool PxrUsdMayaXformOpClassification::operator ==(const PxrUsdMayaXformOpClassification& other) const
+bool UsdMayaXformOpClassification::operator ==(const UsdMayaXformOpClassification& other) const
 {
     return *_sharedData == *other._sharedData;
 }
@@ -315,22 +315,22 @@ bool PxrUsdMayaXformOpClassification::operator ==(const PxrUsdMayaXformOpClassif
 // Lame that we need this... I had thought that constexpr would essentially be treated like
 // a compile-time #define, with better type safety! Instead, it seems it still creates a full-fledged
 // linker symbol...
-constexpr size_t PxrUsdMayaXformStack::NO_INDEX;
+constexpr size_t UsdMayaXformStack::NO_INDEX;
 
-class PxrUsdMayaXformStack::_Data : public TfRefBase
+class UsdMayaXformStack::_Data : public TfRefBase
 {
 public:
     _DataRefPtr static Create(
-            const PxrUsdMayaXformStack::OpClassList& ops,
-            const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins,
+            const UsdMayaXformStack::OpClassList& ops,
+            const std::vector<UsdMayaXformStack::IndexPair>& inversionTwins,
             bool nameMatters)
     {
         return _DataRefPtr(new _Data(ops, inversionTwins, nameMatters));
     }
 
     _Data(
-            const PxrUsdMayaXformStack::OpClassList& ops,
-            const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins,
+            const UsdMayaXformStack::OpClassList& ops,
+            const std::vector<UsdMayaXformStack::IndexPair>& inversionTwins,
             bool nameMatters) :
                     m_ops(ops),
                     m_inversionTwins(inversionTwins),
@@ -345,8 +345,8 @@ public:
         // as the inverted twin
         for (auto& pair : m_inversionTwins)
         {
-            const PxrUsdMayaXformOpClassification& first = m_ops[pair.first];
-            const PxrUsdMayaXformOpClassification& second = m_ops[pair.second];
+            const UsdMayaXformOpClassification& first = m_ops[pair.first];
+            const UsdMayaXformOpClassification& second = m_ops[pair.second];
             TF_VERIFY(first.GetName() == second.GetName(),
                     "Inversion twins %lu (%s) and %lu (%s) did not have same name",
                     pair.first, first.GetName().GetText(),
@@ -361,27 +361,27 @@ public:
         }
     }
 
-    inline const PxrUsdMayaXformStack::OpClass&
+    inline const UsdMayaXformStack::OpClass&
     GetOpClassFromIndex(
             const size_t i) const
     {
-        return i == PxrUsdMayaXformStack::NO_INDEX
-                ? PxrUsdMayaXformStack::OpClass::NullInstance()
+        return i == UsdMayaXformStack::NO_INDEX
+                ? UsdMayaXformStack::OpClass::NullInstance()
                 : m_ops[i];
     }
 
-    inline PxrUsdMayaXformStack::OpClassPair
+    inline UsdMayaXformStack::OpClassPair
     MakeOpClassPairFromIndexPair(
-            const PxrUsdMayaXformStack::IndexPair& indexPair) const
+            const UsdMayaXformStack::IndexPair& indexPair) const
     {
         return std::make_pair(
                 GetOpClassFromIndex(indexPair.first),
                 GetOpClassFromIndex(indexPair.second));
     }
 
-    const PxrUsdMayaXformStack::OpClassList m_ops;
-    std::vector<PxrUsdMayaXformStack::IndexPair> m_inversionTwins;
-    PxrUsdMayaXformStack::IndexMap m_inversionMap;
+    const UsdMayaXformStack::OpClassList m_ops;
+    std::vector<UsdMayaXformStack::IndexPair> m_inversionTwins;
+    UsdMayaXformStack::IndexMap m_inversionMap;
 
     // We store lookups from raw attribute name - use full attribute
     // name because it's the only "piece" we know we have a pre-generated
@@ -395,58 +395,58 @@ public:
     //     { opIndex, NO_INDEX }     if opIndex has no inversion twin
     //     { opIndex, opIndexTwin }  if opIndex has an inversion twin, and opIndex < opIndexTwin
     //     { opIndexTwin, opIndex }  if opIndex has an inversion twin, and opIndex > opIndexTwin
-    PxrUsdMayaXformStack::TokenIndexPairMap m_attrNamesToIdxs;
+    UsdMayaXformStack::TokenIndexPairMap m_attrNamesToIdxs;
 
     // Also have a lookup by op name, for use by FindOp
-    PxrUsdMayaXformStack::TokenIndexPairMap m_opNamesToIdxs;
+    UsdMayaXformStack::TokenIndexPairMap m_opNamesToIdxs;
 
     bool m_nameMatters = true;
 };
 
-PxrUsdMayaXformStack::PxrUsdMayaXformStack(
-        const PxrUsdMayaXformStack::OpClassList& ops,
-        const std::vector<PxrUsdMayaXformStack::IndexPair>& inversionTwins,
+UsdMayaXformStack::UsdMayaXformStack(
+        const UsdMayaXformStack::OpClassList& ops,
+        const std::vector<UsdMayaXformStack::IndexPair>& inversionTwins,
         bool nameMatters) :
         _sharedData(_Data::Create(ops, inversionTwins, nameMatters))
 {
 }
 
-PxrUsdMayaXformStack::OpClassList const &
-PxrUsdMayaXformStack::GetOps() const {
+UsdMayaXformStack::OpClassList const &
+UsdMayaXformStack::GetOps() const {
     return _sharedData->m_ops;
 }
 
-std::vector<PxrUsdMayaXformStack::IndexPair> const &
-PxrUsdMayaXformStack::GetInversionTwins() const {
+std::vector<UsdMayaXformStack::IndexPair> const &
+UsdMayaXformStack::GetInversionTwins() const {
     return _sharedData->m_inversionTwins;
 }
 
 bool
-PxrUsdMayaXformStack::GetNameMatters() const {
+UsdMayaXformStack::GetNameMatters() const {
     return _sharedData->m_nameMatters;
 }
 
-PxrUsdMayaXformOpClassification const &
-PxrUsdMayaXformStack::operator[] (const size_t index) const {
+UsdMayaXformOpClassification const &
+UsdMayaXformStack::operator[] (const size_t index) const {
     return _sharedData->m_ops[index];
 }
 
 size_t
-PxrUsdMayaXformStack::GetSize() const {
+UsdMayaXformStack::GetSize() const {
     return _sharedData->m_ops.size();
 }
 
 size_t
-PxrUsdMayaXformStack::FindOpIndex(const TfToken& opName, bool isInvertedTwin) const
+UsdMayaXformStack::FindOpIndex(const TfToken& opName, bool isInvertedTwin) const
 {
-    const PxrUsdMayaXformStack::IndexPair& foundIdxPair =
+    const UsdMayaXformStack::IndexPair& foundIdxPair =
             FindOpIndexPair(opName);
 
     if(foundIdxPair.first == NO_INDEX) return NO_INDEX;
 
     // we (potentially) found a pair of opPtrs... use the one that
     // matches isInvertedTwin
-    const PxrUsdMayaXformOpClassification& firstOp = GetOps()[foundIdxPair.first];
+    const UsdMayaXformOpClassification& firstOp = GetOps()[foundIdxPair.first];
     if (firstOp.IsInvertedTwin())
     {
         if (isInvertedTwin) return foundIdxPair.first;
@@ -459,18 +459,18 @@ PxrUsdMayaXformStack::FindOpIndex(const TfToken& opName, bool isInvertedTwin) co
     }
 }
 
-const PxrUsdMayaXformStack::OpClass&
-PxrUsdMayaXformStack::FindOp(const TfToken& opName, bool isInvertedTwin) const
+const UsdMayaXformStack::OpClass&
+UsdMayaXformStack::FindOp(const TfToken& opName, bool isInvertedTwin) const
 {
     return _sharedData->GetOpClassFromIndex(FindOpIndex(opName, isInvertedTwin));
 }
 
-const PxrUsdMayaXformStack::IndexPair&
-PxrUsdMayaXformStack::FindOpIndexPair(const TfToken& opName) const
+const UsdMayaXformStack::IndexPair&
+UsdMayaXformStack::FindOpIndexPair(const TfToken& opName) const
 {
-    static PxrUsdMayaXformStack::IndexPair _NO_MATCH =
+    static UsdMayaXformStack::IndexPair _NO_MATCH =
             std::make_pair(NO_INDEX, NO_INDEX);
-    PxrUsdMayaXformStack::TokenIndexPairMap::const_iterator foundTokenIdxPair =
+    UsdMayaXformStack::TokenIndexPairMap::const_iterator foundTokenIdxPair =
             _sharedData->m_opNamesToIdxs.find(opName);
     if (foundTokenIdxPair == _sharedData->m_opNamesToIdxs.end())
     {
@@ -480,21 +480,21 @@ PxrUsdMayaXformStack::FindOpIndexPair(const TfToken& opName) const
     return foundTokenIdxPair->second;
 }
 
-const PxrUsdMayaXformStack::OpClassPair
-PxrUsdMayaXformStack::FindOpPair(const TfToken& opName) const
+const UsdMayaXformStack::OpClassPair
+UsdMayaXformStack::FindOpPair(const TfToken& opName) const
 {
     return _sharedData->MakeOpClassPairFromIndexPair(FindOpIndexPair(opName));
 }
 
-PxrUsdMayaXformStack::OpClassList
-PxrUsdMayaXformStack::MatchingSubstack(
+UsdMayaXformStack::OpClassList
+UsdMayaXformStack::MatchingSubstack(
         const std::vector<UsdGeomXformOp>& xformops) const
 {
-    static const PxrUsdMayaXformStack::OpClassList _NO_MATCH;
+    static const UsdMayaXformStack::OpClassList _NO_MATCH;
 
     if (xformops.empty()) return _NO_MATCH;
 
-    PxrUsdMayaXformStack::OpClassList ret;
+    UsdMayaXformStack::OpClassList ret;
 
     // nextOp keeps track of where we will start looking for matches.  It
     // will only move forward.
@@ -518,7 +518,7 @@ PxrUsdMayaXformStack::MatchingSubstack(
 
             // we found a pair of opPtrs... make sure one is
             // not less than nextOp...
-            const PxrUsdMayaXformStack::IndexPair& foundIdxPair =
+            const UsdMayaXformStack::IndexPair& foundIdxPair =
                     foundTokenIdxPairIter->second;
 
             if (foundIdxPair.first >= nextOpIndex)
@@ -560,7 +560,7 @@ PxrUsdMayaXformStack::MatchingSubstack(
 
 
         // Ok, we found a match...
-        const PxrUsdMayaXformOpClassification& foundOp = GetOps()[foundOpIdx];
+        const UsdMayaXformOpClassification& foundOp = GetOps()[foundOpIdx];
 
         // move the nextOp pointer along.
         ret.push_back(foundOp);
@@ -578,18 +578,18 @@ PxrUsdMayaXformStack::MatchingSubstack(
     return ret;
 }
 
-PxrUsdMayaXformStack::OpClassList
-PxrUsdMayaXformStack::FirstMatchingSubstack(
-        const std::vector<PxrUsdMayaXformStack const *>& stacks,
+UsdMayaXformStack::OpClassList
+UsdMayaXformStack::FirstMatchingSubstack(
+        const std::vector<UsdMayaXformStack const *>& stacks,
         const std::vector<UsdGeomXformOp>& xformops)
 {
     if (xformops.empty() || stacks.empty()) {
-        return PxrUsdMayaXformStack::OpClassList();
+        return UsdMayaXformStack::OpClassList();
     }
 
     for (auto& stackPtr : stacks)
     {
-        std::vector<PxrUsdMayaXformStack::OpClass> stackOps = \
+        std::vector<UsdMayaXformStack::OpClass> stackOps = \
                 stackPtr->MatchingSubstack(xformops);
         if (!stackOps.empty())
         {
@@ -597,48 +597,48 @@ PxrUsdMayaXformStack::FirstMatchingSubstack(
         }
     }
 
-    return PxrUsdMayaXformStack::OpClassList();
+    return UsdMayaXformStack::OpClassList();
 }
 
-const PxrUsdMayaXformStack&
-PxrUsdMayaXformStack::MayaStack()
+const UsdMayaXformStack&
+UsdMayaXformStack::MayaStack()
 {
-    static PxrUsdMayaXformStack mayaStack(
+    static UsdMayaXformStack mayaStack(
             // ops
             {
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->translate,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->translate,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->rotatePivotTranslate,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->rotatePivotTranslate,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->rotatePivot,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->rotatePivot,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->rotate,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->rotate,
                         UsdGeomXformOp::TypeRotateXYZ),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->rotateAxis,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->rotateAxis,
                         UsdGeomXformOp::TypeRotateXYZ),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->rotatePivot,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->rotatePivot,
                         UsdGeomXformOp::TypeTranslate,
                         true /* isInvertedTwin */),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->scalePivotTranslate,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->scalePivotTranslate,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->scalePivot,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->scalePivot,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->shear,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->shear,
                         UsdGeomXformOp::TypeTransform),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->scale,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->scale,
                         UsdGeomXformOp::TypeScale),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->scalePivot,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->scalePivot,
                         UsdGeomXformOp::TypeTranslate,
                         true /* isInvertedTwin */)
             },
@@ -652,26 +652,26 @@ PxrUsdMayaXformStack::MayaStack()
     return mayaStack;
 }
 
-const PxrUsdMayaXformStack&
-PxrUsdMayaXformStack::CommonStack()
+const UsdMayaXformStack&
+UsdMayaXformStack::CommonStack()
 {
-    static PxrUsdMayaXformStack commonStack(
+    static UsdMayaXformStack commonStack(
             // ops
             {
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->translate,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->translate,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->pivot,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->pivot,
                         UsdGeomXformOp::TypeTranslate),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->rotate,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->rotate,
                         UsdGeomXformOp::TypeRotateXYZ),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->scale,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->scale,
                         UsdGeomXformOp::TypeScale),
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->pivot,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->pivot,
                         UsdGeomXformOp::TypeTranslate,
                         true /* isInvertedTwin */)
             },
@@ -684,14 +684,14 @@ PxrUsdMayaXformStack::CommonStack()
     return commonStack;
 }
 
-const PxrUsdMayaXformStack&
-PxrUsdMayaXformStack::MatrixStack()
+const UsdMayaXformStack&
+UsdMayaXformStack::MatrixStack()
 {
-    static PxrUsdMayaXformStack matrixStack(
+    static UsdMayaXformStack matrixStack(
             // ops
             {
-                PxrUsdMayaXformOpClassification(
-                        PxrUsdMayaXformStackTokens->transform,
+                UsdMayaXformOpClassification(
+                        UsdMayaXformStackTokens->transform,
                         UsdGeomXformOp::TypeTransform)
             },
 

@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_FUNCTORPRIMWRITER_H
 #define PXRUSDMAYA_FUNCTORPRIMWRITER_H
 
-/// \file functorPrimWriter.h
+/// \file usdMaya/functorPrimWriter.h
 
 #include "pxr/pxr.h"
 
@@ -40,22 +40,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class PxrUsdMaya_FunctorPrimWriter
+/// \class UsdMaya_FunctorPrimWriter
 /// \brief This class is scaffolding to hold bare prim writer functions and
 /// adapt them to the UsdMayaPrimWriter or UsdMayaTransformWriter interface
 /// (depending on whether the writer plugin is handling a shape or a transform).
 ///
 /// It is used by the PXRUSDMAYA_DEFINE_WRITER macro.
-class PxrUsdMaya_FunctorPrimWriter final : public UsdMayaTransformWriter
+class UsdMaya_FunctorPrimWriter final : public UsdMayaTransformWriter
 {
 public:
-    PxrUsdMaya_FunctorPrimWriter(
+    UsdMaya_FunctorPrimWriter(
             const MDagPath& iDag,
             const SdfPath& uPath,
             UsdMayaWriteJobContext& jobCtx,
-            PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
+            UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
-    ~PxrUsdMaya_FunctorPrimWriter() override;
+    ~UsdMaya_FunctorPrimWriter() override;
 
     void Write(const UsdTimeCode &usdTime) override;
     bool ExportsGprims() const override;
@@ -66,13 +66,13 @@ public:
             const MDagPath& dag,
             const SdfPath& path,
             UsdMayaWriteJobContext& jobCtx,
-            PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
+            UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
-    static PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
-            CreateFactory(PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
+    static UsdMayaPrimWriterRegistry::WriterFactoryFn
+            CreateFactory(UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
 private:
-    PxrUsdMayaPrimWriterRegistry::WriterFn _plugFn;
+    UsdMayaPrimWriterRegistry::WriterFn _plugFn;
     bool _exportsGprims;
     bool _pruneChildren;
     SdfPathVector _modelPaths;
@@ -80,4 +80,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_FUNCTORPRIMWRITER_H
+#endif

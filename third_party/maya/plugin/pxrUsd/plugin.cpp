@@ -189,7 +189,7 @@ initializePlugin(MObject obj)
         status.perror("pxrUsd: unable to register USD Export translator.");
     }
 
-    PxrUsdMayaDiagnosticDelegate::InstallDelegate();
+    UsdMayaDiagnosticDelegate::InstallDelegate();
 
     return status;
 }
@@ -254,7 +254,7 @@ uninitializePlugin(MObject obj)
     status = plugin.deregisterData(UsdMayaStageData::mayaTypeId);
     CHECK_MSTATUS(status);
 
-    PxrUsdMayaDiagnosticDelegate::RemoveDelegate();
+    UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;
 }

@@ -27,51 +27,51 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
+UsdMayaPrimReaderArgs::UsdMayaPrimReaderArgs(
         const UsdPrim& prim,
-        const PxrUsdMayaJobImportArgs& jobArgs)
+        const UsdMayaJobImportArgs& jobArgs)
     : 
         _prim(prim),
         _jobArgs(jobArgs)
 {
 }
 const UsdPrim&
-PxrUsdMayaPrimReaderArgs::GetUsdPrim() const
+UsdMayaPrimReaderArgs::GetUsdPrim() const
 {
     return _prim;
 }
 const TfToken&
-PxrUsdMayaPrimReaderArgs::GetShadingMode() const
+UsdMayaPrimReaderArgs::GetShadingMode() const
 {
     return _jobArgs.shadingMode;
 }
 
 GfInterval
-PxrUsdMayaPrimReaderArgs::GetTimeInterval() const
+UsdMayaPrimReaderArgs::GetTimeInterval() const
 {
     return _jobArgs.timeInterval;
 }
 
 const TfToken::Set&
-PxrUsdMayaPrimReaderArgs::GetIncludeMetadataKeys() const
+UsdMayaPrimReaderArgs::GetIncludeMetadataKeys() const
 {
     return _jobArgs.includeMetadataKeys;
 }
 
 const TfToken::Set&
-PxrUsdMayaPrimReaderArgs::GetIncludeAPINames() const
+UsdMayaPrimReaderArgs::GetIncludeAPINames() const
 {
     return _jobArgs.includeAPINames;
 }
 
 const TfToken::Set&
-PxrUsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
+UsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
 {
     return _jobArgs.excludePrimvarNames;
 }
 
 bool
-PxrUsdMayaPrimReaderArgs::GetUseAsAnimationCache() const
+UsdMayaPrimReaderArgs::GetUseAsAnimationCache() const
 {
     return _jobArgs.useAsAnimationCache;
 }

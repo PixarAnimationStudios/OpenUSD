@@ -33,7 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdMayaPrimReaderContext
+/// \class UsdMayaPrimReaderContext
 /// \brief This class provides an interface for reader plugins to communicate
 /// state back to the core usd maya logic as well as retrieve information set by
 /// other plugins.  
@@ -44,13 +44,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// undo/redo.
 ///
 /// We will likely need a mechanism where one plugin can invoke another one.
-class PxrUsdMayaPrimReaderContext
+class UsdMayaPrimReaderContext
 {
 public:
     typedef std::map<std::string, MObject> ObjectRegistry;
 
     PXRUSDMAYA_API
-    PxrUsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap);
+    UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap);
 
     /// \brief Returns the prim was registered at \p path.  If \p findAncestors
     /// is true and no object was found for \p path, this will return the object
@@ -83,7 +83,7 @@ public:
     PXRUSDMAYA_API
     void SetPruneChildren(bool prune);
 
-    ~PxrUsdMayaPrimReaderContext() { }
+    ~UsdMayaPrimReaderContext() { }
 
 private:
 
@@ -97,4 +97,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PRIMREADERCONTEXT_H
+#endif

@@ -47,22 +47,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS \
     ((MayaMaterialNamespace, "USD_Materials"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaShadingModeImporterTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens,
     PXRUSDMAYA_API,
     PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
 
 
-class PxrUsdMayaShadingModeImportContext
+class UsdMayaShadingModeImportContext
 {
 public:
 
     const UsdShadeMaterial& GetShadeMaterial() const { return _shadeMaterial; }
     const UsdGeomGprim& GetBoundPrim() const { return _boundPrim; }
 
-    PxrUsdMayaShadingModeImportContext(
+    UsdMayaShadingModeImportContext(
             const UsdShadeMaterial& shadeMaterial,
             const UsdGeomGprim& boundPrim,
-            PxrUsdMayaPrimReaderContext* context) :
+            UsdMayaPrimReaderContext* context) :
         _shadeMaterial(shadeMaterial),
         _boundPrim(boundPrim),
         _context(context),
@@ -144,7 +144,7 @@ public:
 private:
     const UsdShadeMaterial& _shadeMaterial;
     const UsdGeomGprim& _boundPrim;
-    PxrUsdMayaPrimReaderContext* _context;
+    UsdMayaPrimReaderContext* _context;
 
     TfToken _shadingEngineName;
 
@@ -152,7 +152,7 @@ private:
     TfToken _volumeShaderPlugName;
     TfToken _displacementShaderPlugName;
 };
-typedef boost::function< MObject (PxrUsdMayaShadingModeImportContext*) > PxrUsdMayaShadingModeImporter;
+typedef boost::function< MObject (UsdMayaShadingModeImportContext*) > UsdMayaShadingModeImporter;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

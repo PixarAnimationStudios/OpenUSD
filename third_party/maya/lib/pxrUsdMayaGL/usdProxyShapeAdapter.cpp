@@ -327,7 +327,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     // shapes with different Maya types.
     const TfToken delegateName(
         TfStringPrintf("%s_%zx",
-                       PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+                       UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
                        shapeHash));
 
     const SdfPath delegateId = delegatePrefix.AppendChild(delegateName);

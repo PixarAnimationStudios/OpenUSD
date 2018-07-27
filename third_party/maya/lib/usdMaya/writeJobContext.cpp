@@ -56,7 +56,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace {
     inline SdfPath
     _GetRootOverridePath(
-        const PxrUsdMayaJobExportArgs& args,
+        const UsdMayaJobExportArgs& args,
         const SdfPath& path)
     {
         if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
@@ -70,7 +70,7 @@ namespace {
     const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
 }
 
-UsdMayaWriteJobContext::UsdMayaWriteJobContext(const PxrUsdMayaJobExportArgs& args)
+UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
     : mArgs(args),
       _skelBindingsProcessor(new UsdMaya_SkelBindingsProcessor())
 {
@@ -139,7 +139,7 @@ UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 SdfPath
 UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
 {
-    SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
+    SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
             dagPath, false, mArgs.stripNamespaces);
 
     // If we're merging transforms and shapes and this is a shape node, then
@@ -168,7 +168,7 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
 
     std::string fullName;
     if (mArgs.stripNamespaces){
-        fullName = PxrUsdMayaUtil::stripNamespaces(
+        fullName = UsdMayaUtil::stripNamespaces(
                 instancePath.fullPathName()).asChar();
     }
     else {
@@ -300,13 +300,13 @@ bool UsdMayaWriteJobContext::needToTraverse(const MDagPath& curDag) const
     MObject ob = curDag.node();
     // NOTE: Already skipping all intermediate objects
     // skip all intermediate nodes (and their children)
-    if (PxrUsdMayaUtil::isIntermediate(ob)) {
+    if (UsdMayaUtil::isIntermediate(ob)) {
         return false;
     }
 
     // skip nodes that aren't renderable (and their children)
 
-    if (mArgs.excludeInvisible && !PxrUsdMayaUtil::isRenderable(ob)) {
+    if (mArgs.excludeInvisible && !UsdMayaUtil::isRenderable(ob)) {
         return false;
     }
 
@@ -415,7 +415,7 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
 
     if (mArgs.exportInstances && instanced && !forceUninstance) {
         // Deal with instances -- we use a special internal writer for them.
-        return std::make_shared<PxrUsdMaya_InstancedNodeWriter>(
+        return std::make_shared<UsdMaya_InstancedNodeWriter>(
                 curDag, writePath, *this);
     }
     else {
@@ -424,7 +424,7 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
         // we find a prim writer plugin.
         MFnDependencyNode depNodeFn(ob);
         std::string mayaTypeName(depNodeFn.typeName().asChar());
-        if (PxrUsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
+        if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
                 _FindWriter(mayaTypeName)) {
             if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(
                     curDag, writePath, *this)) {
@@ -439,7 +439,7 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
     return nullptr;
 }
 
-PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
+UsdMayaPrimWriterRegistry::WriterFactoryFn
 UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
 {
     // Check if type is already cached locally.
@@ -450,10 +450,10 @@ UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
 
     // Search up the ancestor hierarchy for a writer plugin.
     const std::vector<std::string> ancestorTypes =
-            PxrUsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
+            UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
     for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
-        if (PxrUsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
-                PxrUsdMayaPrimWriterRegistry::Find(*i)) {
+        if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
+                UsdMayaPrimWriterRegistry::Find(*i)) {
             mWriterFactoryCache[mayaNodeType] = primWriterFactory;
             return primWriterFactory;
         }

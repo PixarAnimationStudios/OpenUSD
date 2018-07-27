@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_IMPORT_COMMAND_H
-#define USDMAYA_IMPORT_COMMAND_H
+#ifndef PXRUSDMAYA_IMPORT_COMMAND_H
+#define PXRUSDMAYA_IMPORT_COMMAND_H
 
 /// \file usdMaya/importCommand.h
 

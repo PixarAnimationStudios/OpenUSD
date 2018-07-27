@@ -102,9 +102,9 @@ PxrUsdTranslators_MeshWriter::_GetMeshUVSetData(
         (*assignmentIndices)[fvi] = uvArray->size() - 1;
     }
 
-    PxrUsdMayaUtil::MergeEquivalentIndexedValues(uvArray,
+    UsdMayaUtil::MergeEquivalentIndexedValues(uvArray,
                                                  assignmentIndices);
-    PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
                                                       interpolation,
                                                       assignmentIndices);
 
@@ -149,7 +149,7 @@ _MergeEquivalentColorSetValues(
     }
 
     VtArray<int> mergedIndices(*colorSetAssignmentIndices);
-    PxrUsdMayaUtil::MergeEquivalentIndexedValues(&colorsWithAlphasData,
+    UsdMayaUtil::MergeEquivalentIndexedValues(&colorsWithAlphasData,
                                                  &mergedIndices);
 
     // If we reduced the number of values by merging, copy the results back,
@@ -182,7 +182,7 @@ _LinearColorFromColorSet(
     // need to convert it to linear.
     GfVec3f c(mayaColor[0], mayaColor[1], mayaColor[2]);
     if (shouldConvertToLinear) {
-        return PxrUsdMayaColorSpace::ConvertMayaToLinear(c);
+        return UsdMayaColorSpace::ConvertMayaToLinear(c);
     }
     return c;
 }
@@ -349,7 +349,7 @@ bool PxrUsdTranslators_MeshWriter::_GetMeshColorSetData(
     _MergeEquivalentColorSetValues(colorSetRGBData,
                                    colorSetAlphaData,
                                    colorSetAssignmentIndices);
-    PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
                                                       interpolation,
                                                       colorSetAssignmentIndices);
 
@@ -390,7 +390,7 @@ bool PxrUsdTranslators_MeshWriter::_createAlphaPrimVar(
     }
 
     if (clamped) {
-        PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+        UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
     }
 
     return true;
@@ -430,7 +430,7 @@ bool PxrUsdTranslators_MeshWriter::_createRGBPrimVar(
     }
 
     if (clamped) {
-        PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+        UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
     }
 
     return true;
@@ -477,7 +477,7 @@ bool PxrUsdTranslators_MeshWriter::_createRGBAPrimVar(
     }
 
     if (clamped) {
-        PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+        UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
     }
 
     return true;
@@ -502,7 +502,7 @@ bool PxrUsdTranslators_MeshWriter::_createUVPrimVar(
         interp = TfToken();
     }
 
-    SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteUVAsFloat2())?
+    SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?
         (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray); 
     UsdGeomPrimvar primVar = 
         primSchema.CreatePrimvar(name, uvValueType, interp);
@@ -555,11 +555,11 @@ bool PxrUsdTranslators_MeshWriter::_addDisplayPrimvars(
         }
         if (authRGB) {
             if (clamped) {
-                PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayColor);
+                UsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayColor);
             }
         }
         else {
-            PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(colorAttr);
+            UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(colorAttr);
         }
     }
 
@@ -587,11 +587,11 @@ bool PxrUsdTranslators_MeshWriter::_addDisplayPrimvars(
             }
             if (authAlpha) {
                 if (clamped) {
-                    PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayOpacity);
+                    UsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayOpacity);
                 }
             }
             else {
-                PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(alphaAttr);
+                UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(alphaAttr);
             }
         }
     }

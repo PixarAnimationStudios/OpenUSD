@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_PRIMWRITERERARGS_H
 #define PXRUSDMAYA_PRIMWRITERERARGS_H
 
-/// \file primWriterArgs.h
+/// \file usdMaya/primWriterArgs.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -37,18 +37,18 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdMayaPrimWriterArgs
+/// \class UsdMayaPrimWriterArgs
 /// \brief This class holds read-only arguments that are passed into the writer
 /// plugins for the usdMaya library.  This mostly contains functions to get data
 /// from the maya scene and helpers to retrieve values from maya and prepare
 /// them to author into usd.
 ///
-/// \sa PxrUsdMayaPrimWriterContext
-class PxrUsdMayaPrimWriterArgs
+/// \sa UsdMayaPrimWriterContext
+class UsdMayaPrimWriterArgs
 {
 public:
     PXRUSDMAYA_API
-    PxrUsdMayaPrimWriterArgs(
+    UsdMayaPrimWriterArgs(
             const MDagPath& dagPath,
             const bool exportRefsAsInstanceable);
 
@@ -83,5 +83,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PRIMWRITERERARGS_H
+#endif
 

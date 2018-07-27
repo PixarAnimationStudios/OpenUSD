@@ -87,9 +87,9 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 
 /* static */
 bool
-PxrUsdMayaTranslatorModelAssembly::Create(
-        const PxrUsdMayaPrimWriterArgs& args,
-        PxrUsdMayaPrimWriterContext* context)
+UsdMayaTranslatorModelAssembly::Create(
+        const UsdMayaPrimWriterArgs& args,
+        UsdMayaPrimWriterContext* context)
 {
     UsdStageRefPtr stage = context->GetUsdStage();
     SdfPath authorPath = context->GetAuthorPath();
@@ -193,7 +193,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
 
             const std::string& variantSetName = regVarSet.name;
             std::string variantSetPlugName = TfStringPrintf("%s%s",
-                PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
+                UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
 
             MPlug modelingVariantPlg = assemblyNode.findPlug(variantSetPlugName.c_str(), &status);
             if (status == MS::kSuccess) {
@@ -276,7 +276,7 @@ _GetReferenceInfo(
 
 /* static */
 bool
-PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
+UsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
         const UsdPrim& usdImportRootPrim,
         const UsdPrim& prim,
         std::string* assetIdentifier,
@@ -327,13 +327,13 @@ _GetVariantSelections(const UsdPrim& prim)
 
 /* static */
 bool
-PxrUsdMayaTranslatorModelAssembly::Read(
+UsdMayaTranslatorModelAssembly::Read(
         const UsdPrim& prim,
         const std::string& assetIdentifier,
         const SdfPath& assetPrimPath,
         const MObject& parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         const TfToken& assemblyRep)
 {
     // This translator does not apply if assemblyRep == "Import".
@@ -370,7 +370,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     const std::string assemblyCmd =
         TfStringPrintf("import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
                        prim.GetName().GetText(),
-                       PxrUsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
+                       UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
     MString newAssemblyName;
     MStatus status = MGlobal::executePythonCommand(assemblyCmd.c_str(),
                                                    newAssemblyName);
@@ -378,7 +378,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
 
     // Now we get the MObject for the assembly node we just created.
     MObject assemblyObj;
-    status = PxrUsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(),
+    status = UsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(),
                                               assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -389,7 +389,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
 
     // Read xformable attributes from the UsdPrim on to the assembly node.
     UsdGeomXformable xformable(prim);
-    PxrUsdMayaTranslatorXformable::Read(xformable, assemblyObj, args, context);
+    UsdMayaTranslatorXformable::Read(xformable, assemblyObj, args, context);
 
     MFnDependencyNode depNodeFn(assemblyObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -426,7 +426,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
         std::string variantSelection = iter->second;
 
         std::string variantSetPlugName = TfStringPrintf("%s%s",
-            PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
+            UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
         MPlug varSetPlug = depNodeFn.findPlug(variantSetPlugName.c_str(), true, &status);
         if (status != MStatus::kSuccess) {
             MFnTypedAttribute typedAttrFn;
@@ -472,12 +472,12 @@ PxrUsdMayaTranslatorModelAssembly::Read(
 
 /* static */
 bool
-PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
+UsdMayaTranslatorModelAssembly::ReadAsProxy(
     const UsdPrim& prim,
     const std::map<std::string, std::string>& variantSetSelections,
     MObject parentNode,
-    const PxrUsdMayaPrimReaderArgs& args,
-    PxrUsdMayaPrimReaderContext* context)
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext* context)
 {
     if (!prim) {
         return false;
@@ -489,7 +489,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create a transform node for the proxy node under its parent node.
     MObject transformObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,
@@ -500,7 +500,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create the proxy shape node.
     MDagModifier dagMod;
-    MObject proxyObj = dagMod.createNode(PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+    MObject proxyObj = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
                                          transformObj,
                                          &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

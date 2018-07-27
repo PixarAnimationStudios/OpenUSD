@@ -32,15 +32,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdMayaPrimReaderContext
+/// \class UsdMayaPrimReaderContext
 /// \brief This class provides an interface for writer plugins to communicate
 /// state back to the core usd maya logic.
-class PxrUsdMayaPrimWriterContext
+class UsdMayaPrimWriterContext
 {
 public:
 
     PXRUSDMAYA_API
-    PxrUsdMayaPrimWriterContext(
+    UsdMayaPrimWriterContext(
             const UsdTimeCode& timeCode,
             const SdfPath& authorPath,
             const UsdStageRefPtr& stage);
@@ -128,5 +128,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PRIMWRITERCONTEXT_H
+#endif
 

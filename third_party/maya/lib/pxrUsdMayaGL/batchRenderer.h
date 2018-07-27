@@ -510,7 +510,7 @@ private:
     /// diagnostics across multiple function calls, e.g., batching all of the
     /// Sync() diagnostics across all prepareForDraw() callbacks in a single
     /// frame.
-    std::unique_ptr<PxrUsdMayaDiagnosticBatchContext> _sharedDiagBatchCtx;
+    std::unique_ptr<UsdMayaDiagnosticBatchContext> _sharedDiagBatchCtx;
 };
 
 PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);

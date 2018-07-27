@@ -82,12 +82,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 namespace {
-class DisplayColorShadingModeExporter : public PxrUsdMayaShadingModeExporter
+class DisplayColorShadingModeExporter : public UsdMayaShadingModeExporter
 {
 public:
     DisplayColorShadingModeExporter() {}
 private:
-    void Export(const PxrUsdMayaShadingModeExportContext& context,
+    void Export(const UsdMayaShadingModeExportContext& context,
                 UsdShadeMaterial * const mat,
                 SdfPathSet * const boundPrimPaths) override
     {
@@ -101,7 +101,7 @@ private:
             return;
         }
 
-        const PxrUsdMayaShadingModeExportContext::AssignmentVector& assignments =
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
             context.GetAssignments();
         if (assignments.empty()) {
             return;
@@ -111,9 +111,9 @@ private:
         const MColor mayaColor = lambertFn.color();
         const MColor mayaTransparency = lambertFn.transparency();
         const float diffuseCoeff = lambertFn.diffuseCoeff();
-        const GfVec3f color = PxrUsdMayaColorSpace::ConvertMayaToLinear(
+        const GfVec3f color = UsdMayaColorSpace::ConvertMayaToLinear(
             diffuseCoeff*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
-        const GfVec3f transparency = PxrUsdMayaColorSpace::ConvertMayaToLinear(
+        const GfVec3f transparency = UsdMayaColorSpace::ConvertMayaToLinear(
             GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
 
         VtVec3fArray displayColorAry;
@@ -244,13 +244,13 @@ private:
 };
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeExportContext, displayColor)
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, displayColor)
 {
-    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
+    UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "displayColor",
-        []() -> PxrUsdMayaShadingModeExporterPtr {
-            return PxrUsdMayaShadingModeExporterPtr(
-                static_cast<PxrUsdMayaShadingModeExporter*>(
+        []() -> UsdMayaShadingModeExporterPtr {
+            return UsdMayaShadingModeExporterPtr(
+                static_cast<UsdMayaShadingModeExporter*>(
                     new DisplayColorShadingModeExporter()));
         }
     );
@@ -315,9 +315,9 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
     }
 
     const GfVec3f displayColor =
-        PxrUsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
+        UsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
     const GfVec3f transparencyColor =
-        PxrUsdMayaColorSpace::ConvertLinearToMaya(linearTransparency);
+        UsdMayaColorSpace::ConvertLinearToMaya(linearTransparency);
 
     std::string shaderName(_tokens->MayaShaderName.GetText());
     SdfPath shaderParentPath = SdfPath::AbsoluteRootPath();
@@ -369,7 +369,7 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
         MPlug seSurfaceShaderPlg =
             fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
         CHECK_MSTATUS_AND_RETURN(status, MObject());
-        PxrUsdMayaUtil::Connect(outputPlug,
+        UsdMayaUtil::Connect(outputPlug,
                                 seSurfaceShaderPlg,
                                 /* clearDstPlug = */ true);
     }

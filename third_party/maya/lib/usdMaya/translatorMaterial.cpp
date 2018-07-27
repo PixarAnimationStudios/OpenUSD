@@ -68,17 +68,17 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_IMPORT_OLD_STYLE_FACESETS, true,
 
 /* static */
 MObject
-PxrUsdMayaTranslatorMaterial::Read(
+UsdMayaTranslatorMaterial::Read(
         const TfToken& shadingMode,
         const UsdShadeMaterial& shadeMaterial,
         const UsdGeomGprim& boundPrim,
-        PxrUsdMayaPrimReaderContext* context)
+        UsdMayaPrimReaderContext* context)
 {
-    if (shadingMode == PxrUsdMayaShadingModeTokens->none) {
+    if (shadingMode == UsdMayaShadingModeTokens->none) {
         return MObject();
     }
 
-    PxrUsdMayaShadingModeImportContext c(shadeMaterial, boundPrim, context);
+    UsdMayaShadingModeImportContext c(shadeMaterial, boundPrim, context);
 
     MObject shadingEngine;
 
@@ -86,8 +86,8 @@ PxrUsdMayaTranslatorMaterial::Read(
         return shadingEngine;
     }
 
-    if (PxrUsdMayaShadingModeImporter importer =
-            PxrUsdMayaShadingModeRegistry::GetImporter(shadingMode)) {
+    if (UsdMayaShadingModeImporter importer =
+            UsdMayaShadingModeRegistry::GetImporter(shadingMode)) {
         shadingEngine = importer(&c);
     }
 
@@ -137,16 +137,16 @@ _AssignMaterialFaceSet(
 }
 
 bool
-PxrUsdMayaTranslatorMaterial::AssignMaterial(
+UsdMayaTranslatorMaterial::AssignMaterial(
         const TfToken& shadingMode,
         const UsdGeomGprim& primSchema,
         MObject shapeObj,
-        PxrUsdMayaPrimReaderContext* context)
+        UsdMayaPrimReaderContext* context)
 {
     // if we don't have a valid context, we make one temporarily.  This is to
     // make sure we don't duplicate shading nodes within a material.
-    PxrUsdMayaPrimReaderContext::ObjectRegistry tmpRegistry;
-    PxrUsdMayaPrimReaderContext tmpContext(&tmpRegistry);
+    UsdMayaPrimReaderContext::ObjectRegistry tmpRegistry;
+    UsdMayaPrimReaderContext tmpContext(&tmpRegistry);
     if (!context) {
         context = &tmpContext;
     }
@@ -157,13 +157,13 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
     MStatus status;
     const UsdShadeMaterialBindingAPI bindingAPI(primSchema.GetPrim());
     MObject shadingEngine =
-        PxrUsdMayaTranslatorMaterial::Read(shadingMode,
+        UsdMayaTranslatorMaterial::Read(shadingMode,
                                            bindingAPI.ComputeBoundMaterial(),
                                            primSchema,
                                            context);
 
     if (shadingEngine.isNull()) {
-        status = PxrUsdMayaUtil::GetMObjectByName("initialShadingGroup",
+        status = UsdMayaUtil::GetMObjectByName("initialShadingGroup",
                                                   shadingEngine);
         if (status != MS::kSuccess) {
             return false;
@@ -238,14 +238,14 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
                 subsetBindingAPI.ComputeBoundMaterial();
             if (boundMaterial) {
                 MObject faceSubsetShadingEngine =
-                    PxrUsdMayaTranslatorMaterial::Read(
+                    UsdMayaTranslatorMaterial::Read(
                         shadingMode,
                         boundMaterial,
                         UsdGeomGprim(),
                         context);
                 if (faceSubsetShadingEngine.isNull()) {
                     status =
-                        PxrUsdMayaUtil::GetMObjectByName(
+                        UsdMayaUtil::GetMObjectByName(
                             "initialShadingGroup",
                             faceSubsetShadingEngine);
                     if (status != MS::kSuccess) {
@@ -346,7 +346,7 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
                     *bindingTargetsIt));
 
             MObject faceGroupShadingEngine =
-                PxrUsdMayaTranslatorMaterial::Read(
+                UsdMayaTranslatorMaterial::Read(
                     shadingMode,
                     material,
                     UsdGeomGprim(),
@@ -354,7 +354,7 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 
             if (faceGroupShadingEngine.isNull()) {
                 status =
-                    PxrUsdMayaUtil::GetMObjectByName(
+                    UsdMayaUtil::GetMObjectByName(
                         "initialShadingGroup",
                         faceGroupShadingEngine);
                 if (status != MS::kSuccess) {
@@ -387,18 +387,18 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 
 /* static */
 void
-PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
+UsdMayaTranslatorMaterial::ExportShadingEngines(
         const UsdStageRefPtr& stage,
         const TfToken& shadingMode,
-        const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-        const PxrUsdMayaExportParams &exportParams)
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+        const UsdMayaExportParams &exportParams)
 {
-    if (shadingMode == PxrUsdMayaShadingModeTokens->none) {
+    if (shadingMode == UsdMayaShadingModeTokens->none) {
         return;
     }
 
     if (auto exporterCreator =
-            PxrUsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
+            UsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
         if (auto exporter = exporterCreator()) {
             exporter->DoExport(stage, dagPathToUsdMap, exportParams);
         }

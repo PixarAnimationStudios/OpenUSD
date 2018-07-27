@@ -36,7 +36,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaUserTaggedAttributeTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaUserTaggedAttributeTokens,
     PXRUSDMAYA_ATTR_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -48,7 +48,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((UserPropertiesNamespace, "userProperties:"))
 );
 
-PxrUsdMayaUserTaggedAttribute::PxrUsdMayaUserTaggedAttribute(
+UsdMayaUserTaggedAttribute::UsdMayaUserTaggedAttribute(
         const MPlug& plug,
         const std::string& name,
         const TfToken& type,
@@ -64,38 +64,38 @@ PxrUsdMayaUserTaggedAttribute::PxrUsdMayaUserTaggedAttribute(
 }
 
 MPlug
-PxrUsdMayaUserTaggedAttribute::GetMayaPlug() const
+UsdMayaUserTaggedAttribute::GetMayaPlug() const
 {
     return _plug;
 }
 
 std::string
-PxrUsdMayaUserTaggedAttribute::GetMayaName() const
+UsdMayaUserTaggedAttribute::GetMayaName() const
 {
     MString name = _plug.partialName();
     return std::string(name.asChar());
 }
 
 std::string
-PxrUsdMayaUserTaggedAttribute::GetUsdName() const
+UsdMayaUserTaggedAttribute::GetUsdName() const
 {
     return _name;
 }
 
 TfToken
-PxrUsdMayaUserTaggedAttribute::GetUsdType() const
+UsdMayaUserTaggedAttribute::GetUsdType() const
 {
     return _type;
 }
 
 TfToken
-PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation() const
+UsdMayaUserTaggedAttribute::GetUsdInterpolation() const
 {
     return _interpolation;
 }
 
 bool
-PxrUsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision() const
+UsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision() const
 {
     return _translateMayaDoubleToUsdSinglePrecision;
 }
@@ -132,13 +132,13 @@ _GetExportAttributeMetadata(
 }
 
 /* static */
-std::vector<PxrUsdMayaUserTaggedAttribute>
-PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
+std::vector<UsdMayaUserTaggedAttribute>
+UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         const MDagPath& dagPath)
 {
     MStatus status;
     MFnDependencyNode depFn(dagPath.node());
-    std::vector<PxrUsdMayaUserTaggedAttribute> result;
+    std::vector<UsdMayaUserTaggedAttribute> result;
     std::set<std::string> processedAttributeNames;
 
     MPlug exportedAttrsJsonPlug = depFn.findPlug(
@@ -210,7 +210,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         std::string usdAttrName =
             _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
         if (usdAttrName.empty()) {
-            const auto& tokens = PxrUsdMayaUserTaggedAttributeTokens;
+            const auto& tokens = UsdMayaUserTaggedAttributeTokens;
             if (usdAttrType == tokens->USDAttrTypePrimvar || 
                     usdAttrType == tokens->USDAttrTypeUsdRi) {
                 // Primvars and UsdRi attributes will be given a type-specific

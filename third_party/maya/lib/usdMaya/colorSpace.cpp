@@ -31,7 +31,7 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_LINEAR_COLORS, false,
         "When false, colors are assumed to be gamma-corrected.");
 
 bool
-PxrUsdMayaColorSpace::IsColorManaged()
+UsdMayaColorSpace::IsColorManaged()
 {
     // in theory this could vary per scene, but we think mixing that within any
     // given pipeline is likely confusing.  Also, we want to avoid this function

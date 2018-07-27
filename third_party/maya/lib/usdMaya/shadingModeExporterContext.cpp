@@ -73,11 +73,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
+UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
         const MObject& shadingEngine,
         const UsdStageRefPtr& stage,
-        const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-        const PxrUsdMayaExportParams& exportParams) :
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+        const UsdMayaExportParams& exportParams) :
     _shadingEngine(shadingEngine),
     _stage(stage),
     _dagPathToUsdMap(dagPathToUsdMap),
@@ -112,21 +112,21 @@ PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
 }
 
 void
-PxrUsdMayaShadingModeExportContext::SetSurfaceShaderPlugName(
+UsdMayaShadingModeExportContext::SetSurfaceShaderPlugName(
         const TfToken& surfaceShaderPlugName)
 {
     _surfaceShaderPlugName = surfaceShaderPlugName;
 }
 
 void
-PxrUsdMayaShadingModeExportContext::SetVolumeShaderPlugName(
+UsdMayaShadingModeExportContext::SetVolumeShaderPlugName(
         const TfToken& volumeShaderPlugName)
 {
     _volumeShaderPlugName = volumeShaderPlugName;
 }
 
 void
-PxrUsdMayaShadingModeExportContext::SetDisplacementShaderPlugName(
+UsdMayaShadingModeExportContext::SetDisplacementShaderPlugName(
         const TfToken& displacementShaderPlugName)
 {
     _displacementShaderPlugName = displacementShaderPlugName;
@@ -162,32 +162,32 @@ _GetShaderFromShadingEngine(
         return MObject();
     }
 
-    return PxrUsdMayaUtil::GetConnected(shaderPlug).node();
+    return UsdMayaUtil::GetConnected(shaderPlug).node();
 }
 
 MObject
-PxrUsdMayaShadingModeExportContext::GetSurfaceShader() const
+UsdMayaShadingModeExportContext::GetSurfaceShader() const
 {
     return _GetShaderFromShadingEngine(_shadingEngine,
                                        _surfaceShaderPlugName);
 }
 
 MObject
-PxrUsdMayaShadingModeExportContext::GetVolumeShader() const
+UsdMayaShadingModeExportContext::GetVolumeShader() const
 {
     return _GetShaderFromShadingEngine(_shadingEngine,
                                        _volumeShaderPlugName);
 }
 
 MObject
-PxrUsdMayaShadingModeExportContext::GetDisplacementShader() const
+UsdMayaShadingModeExportContext::GetDisplacementShader() const
 {
     return _GetShaderFromShadingEngine(_shadingEngine,
                                        _displacementShaderPlugName);
 }
 
-PxrUsdMayaShadingModeExportContext::AssignmentVector
-PxrUsdMayaShadingModeExportContext::GetAssignments() const
+UsdMayaShadingModeExportContext::AssignmentVector
+UsdMayaShadingModeExportContext::GetAssignments() const
 {
     AssignmentVector ret;
 
@@ -206,7 +206,7 @@ PxrUsdMayaShadingModeExportContext::GetAssignments() const
     for (unsigned int i = 0; i < dsmPlug.numConnectedElements(); i++) {
         MPlug dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
         MStatus status = MS::kFailure;
-        MPlug connectedPlug = PxrUsdMayaUtil::GetConnected(dsmElemPlug);
+        MPlug connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
 
         // Maya connects shader bindings for instances based on element indices
         // of the instObjGroups[x] or instObjGroups[x].objectGroups[y] plugs.
@@ -294,7 +294,7 @@ static
 UsdPrim
 _GetMaterialParent(
         const UsdStageRefPtr& stage,
-        const PxrUsdMayaShadingModeExportContext::AssignmentVector& assignments)
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
 {
     SdfPath commonAncestor;
     TF_FOR_ALL(iter, assignments) {
@@ -377,7 +377,7 @@ _UninstancePrim(
 }
 
 UsdPrim
-PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
+UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         const AssignmentVector& assignmentsToBind,
         const std::string& name,
         SdfPathSet * const boundPrimPaths) const
@@ -395,7 +395,7 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         materialName = MNamespace::stripNamespaceFromName(seName).asChar();
     }
 
-    materialName = PxrUsdMayaUtil::SanitizeName(materialName);
+    materialName = UsdMayaUtil::SanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
     if (UsdPrim materialParent = _GetMaterialParent(stage, assignmentsToBind)) {
         SdfPath materialPath = materialParent.GetPath().AppendChild(
@@ -474,7 +474,7 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 }
 
 std::string
-PxrUsdMayaShadingModeExportContext::GetStandardAttrName(
+UsdMayaShadingModeExportContext::GetStandardAttrName(
         const MPlug& plug,
         bool allowMultiElementArrays) const
 {

@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for translating to/from UsdGeomCamera
-struct PxrUsdMayaTranslatorCamera
+struct UsdMayaTranslatorCamera
 {
     /// Reads a UsdGeomCamera \p usdCamera from USD and creates a Maya
     /// MFnCamera under \p parentNode.
@@ -46,8 +46,8 @@ struct PxrUsdMayaTranslatorCamera
     static bool Read(
             const UsdGeomCamera& usdCamera,
             MObject parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 
     /// Helper function to access just the logic that writes from a non-animated
     /// camera into an existing maya camera.
@@ -62,4 +62,4 @@ struct PxrUsdMayaTranslatorCamera
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_CAMERA_H
+#endif

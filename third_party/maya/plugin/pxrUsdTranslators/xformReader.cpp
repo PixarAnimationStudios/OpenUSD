@@ -41,7 +41,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomXform, args, context)
 
     MStatus status;
     MObject mayaNode;
-    return PxrUsdMayaTranslatorUtil::CreateTransformNode(usdPrim,
+    return UsdMayaTranslatorUtil::CreateTransformNode(usdPrim,
                                                          parentNode,
                                                          args,
                                                          context,

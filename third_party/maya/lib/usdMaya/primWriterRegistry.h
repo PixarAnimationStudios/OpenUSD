@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_PRIMWRITERREGISTRY_H
 #define PXRUSDMAYA_PRIMWRITERREGISTRY_H
 
-/// \file primWriterRegistry.h
+/// \file usdMaya/primWriterRegistry.h
 
 #include "pxr/pxr.h"
 
@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class PxrUsdMayaPrimWriterRegistry
+/// \class UsdMayaPrimWriterRegistry
 /// \brief Provides functionality to register and lookup USD writer plugins
 /// for Maya nodes.
 ///
@@ -67,7 +67,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// and for any user-defined plugin types. If UsdMaya does not ship with a
 /// writer plugin for some Maya built-in type, you can register your own
 /// plugin for that Maya built-in type.
-struct PxrUsdMayaPrimWriterRegistry
+struct UsdMayaPrimWriterRegistry
 {
     /// Writer factory function, i.e. a function that creates a prim writer
     /// for the given DAG/USD paths and context.
@@ -80,8 +80,8 @@ struct PxrUsdMayaPrimWriterRegistry
     /// signature of the function defined by the PXRUSDMAYA_DEFINE_WRITER
     /// macro.
     typedef std::function< bool (
-            const PxrUsdMayaPrimWriterArgs&,
-            PxrUsdMayaPrimWriterContext*) > WriterFn;
+            const UsdMayaPrimWriterArgs&,
+            UsdMayaPrimWriterContext*) > WriterFn;
 
     /// \brief Register \p fn as a factory function providing a UsdMayaPrimWriter
     /// subclass that can be used to write \p mayaType.
@@ -96,8 +96,8 @@ struct PxrUsdMayaPrimWriterRegistry
     ///             const SdfPath& uPath,
     ///             UsdMayaWriteJobContext& jobCtx);
     /// };
-    /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, MyWriter) {
-    ///     PxrUsdMayaPrimWriterRegistry::Register("myCustomMayaNode",
+    /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimWriterRegistry, MyWriter) {
+    ///     UsdMayaPrimWriterRegistry::Register("myCustomMayaNode",
     ///             MyWriter::Create);
     /// }
     /// \endcode
@@ -133,20 +133,20 @@ struct PxrUsdMayaPrimWriterRegistry
 /// }
 /// \endcode
 #define PXRUSDMAYA_DEFINE_WRITER(mayaTypeName, argsVarName, ctxVarName) \
-struct PxrUsdMayaWriterDummy_##mayaTypeName { }; \
-static bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
-    const PxrUsdMayaPrimWriterArgs&, \
-    PxrUsdMayaPrimWriterContext*); \
+struct UsdMayaWriterDummy_##mayaTypeName { }; \
+static bool UsdMaya_PrimWriter_##mayaTypeName( \
+    const UsdMayaPrimWriterArgs&, \
+    UsdMayaPrimWriterContext*); \
 TF_REGISTRY_FUNCTION_WITH_TAG( \
-    PxrUsdMayaPrimWriterRegistry, \
-    PxrUsdMayaWriterDummy_##mayaTypeName) \
+    UsdMayaPrimWriterRegistry, \
+    UsdMayaWriterDummy_##mayaTypeName) \
 { \
-    PxrUsdMayaPrimWriterRegistry::RegisterRaw( \
-            #mayaTypeName, PxrUsdMaya_PrimWriter_##mayaTypeName); \
+    UsdMayaPrimWriterRegistry::RegisterRaw( \
+            #mayaTypeName, UsdMaya_PrimWriter_##mayaTypeName); \
 } \
-bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
-    const PxrUsdMayaPrimWriterArgs& argsVarName, \
-    PxrUsdMayaPrimWriterContext* ctxVarName)
+bool UsdMaya_PrimWriter_##mayaTypeName( \
+    const UsdMayaPrimWriterArgs& argsVarName, \
+    UsdMayaPrimWriterContext* ctxVarName)
 
 /// \brief Registers a pre-existing writer class for the given Maya type;
 /// the writer class should be a subclass of UsdMayaPrimWriter with a three-place
@@ -167,10 +167,10 @@ bool PxrUsdMaya_PrimWriter_##mayaTypeName( \
 /// \endcode
 #define PXRUSDMAYA_REGISTER_WRITER(mayaTypeName, writerClass) \
 TF_REGISTRY_FUNCTION_WITH_TAG( \
-    PxrUsdMayaPrimWriterRegistry, \
+    UsdMayaPrimWriterRegistry, \
     mayaTypeName##_##writerClass) \
 { \
-    PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, \
+    UsdMayaPrimWriterRegistry::Register(#mayaTypeName, \
         [](const MDagPath& mayaPath, const SdfPath& usdPath, \
                 UsdMayaWriteJobContext& jobCtx) { \
             return std::make_shared<writerClass>(mayaPath, usdPath, jobCtx); \
@@ -180,5 +180,5 @@ TF_REGISTRY_FUNCTION_WITH_TAG( \
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PRIMWRITERREGISTRY_H
+#endif
 

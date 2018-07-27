@@ -65,7 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// General utilities for working with the Maya API.
-namespace PxrUsdMayaUtil
+namespace UsdMayaUtil
 {
 
 struct _CmpDag
@@ -494,7 +494,7 @@ VtValue ParseArgumentValue(
 PXRUSDMAYA_API
 std::vector<std::string> GetAllAncestorMayaNodeTypes(const std::string& ty);
 
-} // namespace PxrUsdMayaUtil
+} // namespace UsdMayaUtil
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

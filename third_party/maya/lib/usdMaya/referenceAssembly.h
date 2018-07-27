@@ -56,7 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS \
     ((MayaTypeName, "pxrUsdReferenceAssembly"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaReferenceAssemblyTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaReferenceAssemblyTokens,
                          PXRUSDMAYA_API,
                          PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS);
 
@@ -64,7 +64,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaReferenceAssemblyTokens,
 #define PXRUSDMAYA_VARIANT_SET_TOKENS \
     ((PlugNamePrefix, "usdVariantSet_"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaVariantSetTokens,
                          PXRUSDMAYA_API,
                          PXRUSDMAYA_VARIANT_SET_TOKENS);
 
@@ -75,7 +75,7 @@ bool UsdMayaUseUsdAssemblyNamespace();
 
 
 class UsdMayaReferenceAssembly : public MPxAssembly,
-                                 public PxrUsdMayaUsdPrimProvider
+                                 public UsdMayaUsdPrimProvider
 {
 public:
     PXRUSDMAYA_API
@@ -194,7 +194,7 @@ public:
             const MPlug& plug,
             MPlugArray& plugArray) override;
 
-    // PxrUsdMayaUsdPrimProvider overrides:
+    // UsdMayaUsdPrimProvider overrides:
     PXRUSDMAYA_API
     UsdPrim usdPrim() const override;
 

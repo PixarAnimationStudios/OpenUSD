@@ -55,13 +55,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaStageNodeTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaStageNodeTokens,
                         PXRUSDMAYA_STAGE_NODE_TOKENS);
 
 
 const MTypeId UsdMayaStageNode::typeId(0x00126400);
 const MString UsdMayaStageNode::typeName(
-    PxrUsdMayaStageNodeTokens->MayaTypeName.GetText());
+    UsdMayaStageNodeTokens->MayaTypeName.GetText());
 
 // Attributes
 MObject UsdMayaStageNode::filePathAttr;

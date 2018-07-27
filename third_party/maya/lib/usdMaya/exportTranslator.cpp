@@ -99,9 +99,9 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
                 theOption[1].split(',', filteredTypes);
             }
             else {
-                userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
+                userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
                     argName, theOption[1].asChar(),
-                    PxrUsdMayaJobExportArgs::GetDefaultDictionary());
+                    UsdMayaJobExportArgs::GetDefaultDictionary());
             }
         }
     }
@@ -130,7 +130,7 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     }
 
     // Convert selection list to jobArgs dagPaths
-    PxrUsdMayaUtil::MDagPathSet dagPaths;
+    UsdMayaUtil::MDagPathSet dagPaths;
     for (unsigned int i=0; i < objSelList.length(); i++) {
         MDagPath dagPath;
         if (objSelList.getDagPath(i, dagPath) == MS::kSuccess) {
@@ -139,8 +139,8 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     }
     
     if (!dagPaths.empty()) {
-        PxrUsdMayaJobExportArgs jobArgs =
-                PxrUsdMayaJobExportArgs::CreateFromDictionary(
+        UsdMayaJobExportArgs jobArgs =
+                UsdMayaJobExportArgs::CreateFromDictionary(
                     userArgs, dagPaths, timeInterval);
         for (unsigned int i=0; i < filteredTypes.length(); ++i) {
             jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
@@ -148,7 +148,7 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
         UsdMaya_WriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append)) {
             std::vector<double> timeSamples =
-                    PxrUsdMayaWriteUtil::GetTimeSamples(
+                    UsdMayaWriteUtil::GetTimeSamples(
                     jobArgs.timeInterval, std::set<double>(), frameStride);
             if (!timeSamples.empty()) {
                 const MTime oldCurTime = MAnimControl::currentTime();
@@ -189,9 +189,9 @@ UsdMayaExportTranslator::identifyFile(
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()   || 
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
+    if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()   || 
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
         retValue = kIsMyFileType;
     }
 
@@ -207,7 +207,7 @@ UsdMayaExportTranslator::GetDefaultOptions()
     std::call_once(once, []() {
         std::vector<std::string> entries;
         for (const std::pair<std::string, VtValue> keyValue :
-                PxrUsdMayaJobExportArgs::GetDefaultDictionary()) {
+                UsdMayaJobExportArgs::GetDefaultDictionary()) {
             if (keyValue.second.IsHolding<bool>()) {
                 entries.push_back(TfStringPrintf("%s=%d",
                         keyValue.first.c_str(),

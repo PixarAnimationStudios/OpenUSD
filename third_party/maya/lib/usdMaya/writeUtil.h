@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file writeUtil.h
+/// \file usdMaya/writeUtil.h
 
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
@@ -54,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdUtilsSparseValueWriter;
 
 /// This struct contains helpers for writing USD (thus reading Maya data).
-struct PxrUsdMayaWriteUtil
+struct UsdMayaWriteUtil
 {
     /// \name Helpers for writing USD
     /// \{
@@ -72,7 +72,7 @@ struct PxrUsdMayaWriteUtil
     static SdfValueTypeName GetUsdTypeName(
             const MPlug& attrPlug,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
@@ -90,7 +90,7 @@ struct PxrUsdMayaWriteUtil
             const std::string& attrName,
             const bool custom = false,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a primvar on \p imageable with
     /// the name \p primvarName. Note, it's value will not be set.
@@ -106,7 +106,7 @@ struct PxrUsdMayaWriteUtil
             const TfToken& interpolation = TfToken(),
             const int elementSize = -1,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a UsdRi attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
@@ -121,7 +121,7 @@ struct PxrUsdMayaWriteUtil
             const std::string& attrName,
             const std::string& nameSpace = "user",
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, reads its value and returns it as a wrapped
     /// VtValue. The type of the value is determined by consulting the given
@@ -172,7 +172,7 @@ struct PxrUsdMayaWriteUtil
     /// the \p prim. Only attributes on applied schemas will be written to
     /// \p prim.
     /// Returns true if successful (even if there was nothing to export).
-    /// \sa PxrUsdMayaAdaptor::GetAppliedSchemas
+    /// \sa UsdMayaAdaptor::GetAppliedSchemas
     PXRUSDMAYA_API
     static bool WriteAPISchemaAttributesToPrim(
             const MObject& mayaObject,
@@ -305,4 +305,4 @@ struct PxrUsdMayaWriteUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_WRITEUTIL_H
+#endif

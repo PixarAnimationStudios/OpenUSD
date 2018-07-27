@@ -72,7 +72,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-UsdMaya_WriteJob::UsdMaya_WriteJob(const PxrUsdMayaJobExportArgs& iArgs)
+UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
     : mJobCtx(iArgs),
       _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
@@ -87,13 +87,13 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
-    PxrUsdMayaUtil::MDagPathSet::const_iterator m, n;
-    PxrUsdMayaUtil::MDagPathSet::const_iterator endPath = mJobCtx.mArgs.dagPaths.end();
+    UsdMayaUtil::MDagPathSet::const_iterator m, n;
+    UsdMayaUtil::MDagPathSet::const_iterator endPath = mJobCtx.mArgs.dagPaths.end();
     for (m = mJobCtx.mArgs.dagPaths.begin(); m != endPath; ) {
         MDagPath path1 = *m; m++;
         for (n = m; n != endPath; n++) {
             MDagPath path2 = *n;
-            if (PxrUsdMayaUtil::isAncestorDescendentRelationship(path1,path2)) {
+            if (UsdMayaUtil::isAncestorDescendentRelationship(path1,path2)) {
                 TF_RUNTIME_ERROR(
                         "%s and %s are ancestors or descendants of each other. "
                         "Please specify export DAG paths that don't overlap. "
@@ -108,14 +108,14 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
     // Make sure the file name is a valid one with a proper USD extension.
     const std::string iFileExtension = TfStringGetSuffix(iFileName, '.');
     if (SdfLayer::IsAnonymousLayerIdentifier(iFileName) ||
-            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault ||
-            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII ||
-            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate) {
+            iFileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault ||
+            iFileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII ||
+            iFileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate) {
         mFileName = iFileName;
     } else {
         mFileName = TfStringPrintf("%s.%s",
                                    iFileName.c_str(),
-                                   PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+                                   UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     }
 
     TF_STATUS("Creating stage file '%s'", mFileName.c_str());
@@ -170,8 +170,8 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
     // less work to hash and compare than full path names.
     TfHashSet<std::string, TfHash> argDagPaths;
     TfHashSet<std::string, TfHash> argDagPathParents;
-    PxrUsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
-    for (PxrUsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
+    UsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
+    for (UsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
             it != end; ++it) {
         MDagPath curDagPath = *it;
         MStatus status;
@@ -269,7 +269,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
 
                     primWriter->Write(UsdTimeCode::Default());
 
-                    const PxrUsdMayaUtil::MDagPathMap<SdfPath>& mapping =
+                    const UsdMayaUtil::MDagPathMap<SdfPath>& mapping =
                             primWriter->GetDagToUsdPathMapping();
                     mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
 
@@ -283,7 +283,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
         }
     }
 
-    PxrUsdMayaExportParams exportParams;
+    UsdMayaExportParams exportParams;
     exportParams.mergeTransformAndShape = mJobCtx.mArgs.mergeTransformAndShape;
     exportParams.exportCollectionBasedBindings =
             mJobCtx.mArgs.exportCollectionBasedBindings;
@@ -298,7 +298,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
             mJobCtx.mArgs.materialCollectionsPath :
             SdfPath::EmptyPath();
 
-    PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
+    UsdMayaTranslatorMaterial::ExportShadingEngines(
                 mJobCtx.mStage,
                 mJobCtx.mArgs.shadingMode,
                 mDagPathToUsdPathMap,
@@ -317,10 +317,10 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
 
     // now we populate the chasers and run export default
     mChasers.clear();
-    PxrUsdMayaChaserRegistry::FactoryContext ctx(mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);
+    UsdMayaChaserRegistry::FactoryContext ctx(mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);
     for (const std::string& chaserName : mJobCtx.mArgs.chaserNames) {
-        if (PxrUsdMayaChaserRefPtr fn =
-                PxrUsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
+        if (UsdMayaChaserRefPtr fn =
+                UsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
             mChasers.push_back(fn);
         }
         else {
@@ -328,7 +328,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
         }
     }
 
-    for (const PxrUsdMayaChaserRefPtr& chaser : mChasers) {
+    for (const UsdMayaChaserRefPtr& chaser : mChasers) {
         if (!chaser->ExportDefault()) {
             return false;
         }
@@ -348,7 +348,7 @@ void UsdMaya_WriteJob::evalJob(double iFrame)
         }
     }
 
-    for (PxrUsdMayaChaserRefPtr& chaser : mChasers) {
+    for (UsdMayaChaserRefPtr& chaser : mChasers) {
         chaser->ExportFrame(iFrame);
     }
 

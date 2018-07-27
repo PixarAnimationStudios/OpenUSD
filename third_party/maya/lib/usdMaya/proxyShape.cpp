@@ -86,7 +86,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
                         PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
@@ -117,7 +117,7 @@ UsdMayaIsBoundingBoxModeEnabled()
 
 const MTypeId UsdMayaProxyShape::typeId(0x0010A259);
 const MString UsdMayaProxyShape::typeName(
-    PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText());
+    UsdMayaProxyShapeTokens->MayaTypeName.GetText());
 
 // Attributes
 MObject UsdMayaProxyShape::filePathAttr;

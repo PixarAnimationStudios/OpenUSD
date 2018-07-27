@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_TRANSFORM_WRITER_H
-#define USDMAYA_TRANSFORM_WRITER_H
+#ifndef PXRUSDMAYA_TRANSFORM_WRITER_H
+#define PXRUSDMAYA_TRANSFORM_WRITER_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"

@@ -32,13 +32,13 @@ UsdMayaListShadingModesCommand::doIt(const MArgList& args) {
 
     TfTokenVector v;
     if (argData.isFlagSet("export")) {
-        v = PxrUsdMayaShadingModeRegistry::ListExporters();
+        v = UsdMayaShadingModeRegistry::ListExporters();
     } else if (argData.isFlagSet("import")) {
-        v = PxrUsdMayaShadingModeRegistry::ListImporters();
+        v = UsdMayaShadingModeRegistry::ListImporters();
     }
 
     // Always include the "none" shading mode.
-    appendToResult(PxrUsdMayaShadingModeTokens->none.GetText());
+    appendToResult(UsdMayaShadingModeTokens->none.GetText());
 
     for (const auto& e : v) {
         appendToResult(e.GetText());

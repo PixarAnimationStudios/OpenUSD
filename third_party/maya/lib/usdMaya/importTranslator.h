@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDMAYA_IMPORT_TRANSLATOR_H
-#define USDMAYA_IMPORT_TRANSLATOR_H
+#ifndef PXRUSDMAYA_IMPORT_TRANSLATOR_H
+#define PXRUSDMAYA_IMPORT_TRANSLATOR_H
 
 /// \file usdMaya/importTranslator.h
 
@@ -65,10 +65,10 @@ class UsdMayaImportTranslator : public MPxFileTranslator
                 short size) const override;
 
         MString defaultExtension() const override {
-            return PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+            return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
         }
         MString filter() const override {
-            return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
+            return UsdMayaTranslatorTokens->UsdFileFilter.GetText();
         }
 
         PXRUSDMAYA_API

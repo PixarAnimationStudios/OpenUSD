@@ -27,7 +27,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
+UsdMayaPrimWriterContext::UsdMayaPrimWriterContext(
         const UsdTimeCode& timeCode,
         const SdfPath& authorPath, 
         const UsdStageRefPtr& stage) : 
@@ -40,62 +40,62 @@ PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
 }
 
 const UsdTimeCode&
-PxrUsdMayaPrimWriterContext::GetTimeCode() const 
+UsdMayaPrimWriterContext::GetTimeCode() const 
 {
     return _timeCode;
 }
 
 const SdfPath&
-PxrUsdMayaPrimWriterContext::GetAuthorPath() const
+UsdMayaPrimWriterContext::GetAuthorPath() const
 {
     return _authorPath;
 }
 
 UsdStageRefPtr
-PxrUsdMayaPrimWriterContext::GetUsdStage() const 
+UsdMayaPrimWriterContext::GetUsdStage() const 
 {
     return _stage;
 }
 
 bool 
-PxrUsdMayaPrimWriterContext::GetExportsGprims() const
+UsdMayaPrimWriterContext::GetExportsGprims() const
 {
     return _exportsGprims;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetExportsGprims(bool exportsGprims)
+UsdMayaPrimWriterContext::SetExportsGprims(bool exportsGprims)
 {
     _exportsGprims = exportsGprims;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetPruneChildren(bool pruneChildren)
+UsdMayaPrimWriterContext::SetPruneChildren(bool pruneChildren)
 {
     _pruneChildren = pruneChildren;
 }
 
 bool
-PxrUsdMayaPrimWriterContext::GetPruneChildren() const
+UsdMayaPrimWriterContext::GetPruneChildren() const
 {
     return _pruneChildren;
 }
 
 const SdfPathVector&
-PxrUsdMayaPrimWriterContext::GetModelPaths() const
+UsdMayaPrimWriterContext::GetModelPaths() const
 {
     return _modelPaths;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetModelPaths(
+UsdMayaPrimWriterContext::SetModelPaths(
     const SdfPathVector& modelPaths)
 {
     _modelPaths = modelPaths;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetModelPaths(
+UsdMayaPrimWriterContext::SetModelPaths(
     SdfPathVector&& modelPaths)
 {
     _modelPaths = std::move(modelPaths);

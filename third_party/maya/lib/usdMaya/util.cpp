@@ -79,14 +79,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 // return seconds per frame
 double
-PxrUsdMayaUtil::spf()
+UsdMayaUtil::spf()
 {
     static const MTime sec(1.0, MTime::kSeconds);
     return 1.0 / sec.as(MTime::uiUnit());
 }
 
 MStatus
-PxrUsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
+UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 {
     MSelectionList selectionList;
     MStatus status = selectionList.add(MString(nodeName.c_str()));
@@ -100,7 +100,7 @@ PxrUsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 }
 
 MStatus
-PxrUsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
+UsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
 {
     MSelectionList selectionList;
     MStatus status = selectionList.add(MString(nodeName.c_str()));
@@ -114,7 +114,7 @@ PxrUsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
 }
 
 MStatus
-PxrUsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
+UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 {
     std::vector<std::string> comps = TfStringSplit(attrPath, ".");
     if (comps.size() != 2) {
@@ -144,7 +144,7 @@ PxrUsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 }
 
 MPlug
-PxrUsdMayaUtil::GetMayaTimePlug()
+UsdMayaUtil::GetMayaTimePlug()
 {
     MPlug timePlug;
     MStatus status;
@@ -181,7 +181,7 @@ PxrUsdMayaUtil::GetMayaTimePlug()
 }
 
 bool
-PxrUsdMayaUtil::isAncestorDescendentRelationship(
+UsdMayaUtil::isAncestorDescendentRelationship(
         const MDagPath& path1,
         const MDagPath& path2)
 {
@@ -212,7 +212,7 @@ PxrUsdMayaUtil::isAncestorDescendentRelationship(
 
 // returns 0 if static, 1 if sampled, and 2 if a curve
 int
-PxrUsdMayaUtil::getSampledType(
+UsdMayaUtil::getSampledType(
         const MPlug& iPlug,
         const bool includeConnectedChildren)
 {
@@ -302,7 +302,7 @@ PxrUsdMayaUtil::getSampledType(
 }
 
 bool
-PxrUsdMayaUtil::getRotOrder(
+UsdMayaUtil::getRotOrder(
         const MTransformationMatrix::RotationOrder iOrder,
         unsigned int& oXAxis,
         unsigned int& oYAxis,
@@ -368,7 +368,7 @@ PxrUsdMayaUtil::getRotOrder(
 
 // 0 dont write, 1 write static 0, 2 write anim 0, 3 write anim -1
 int
-PxrUsdMayaUtil::getVisibilityType(const MPlug& iPlug)
+UsdMayaUtil::getVisibilityType(const MPlug& iPlug)
 {
     int type = getSampledType(iPlug, true);
 
@@ -395,7 +395,7 @@ PxrUsdMayaUtil::getVisibilityType(const MPlug& iPlug)
 
 // does this cover all cases?
 bool
-PxrUsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
+UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
 {
     MStatus stat;
     MItDependencyGraph iter(
@@ -471,7 +471,7 @@ PxrUsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
 }
 
 bool
-PxrUsdMayaUtil::isPlugAnimated(const MPlug& plug)
+UsdMayaUtil::isPlugAnimated(const MPlug& plug)
 {
     if (plug.isNull()) {
         return false;
@@ -489,7 +489,7 @@ PxrUsdMayaUtil::isPlugAnimated(const MPlug& plug)
 }
 
 bool
-PxrUsdMayaUtil::isIntermediate(const MObject& object)
+UsdMayaUtil::isIntermediate(const MObject& object)
 {
     MStatus stat;
     MFnDagNode mFn(object);
@@ -502,7 +502,7 @@ PxrUsdMayaUtil::isIntermediate(const MObject& object)
 }
 
 bool
-PxrUsdMayaUtil::isRenderable(const MObject& object)
+UsdMayaUtil::isRenderable(const MObject& object)
 {
     MStatus stat;
     MFnDagNode mFn(object);
@@ -544,7 +544,7 @@ PxrUsdMayaUtil::isRenderable(const MObject& object)
 }
 
 MString
-PxrUsdMayaUtil::stripNamespaces(const MString& iNodeName, const int iDepth)
+UsdMayaUtil::stripNamespaces(const MString& iNodeName, const int iDepth)
 {
     if (iDepth == 0) {
         return iNodeName;
@@ -578,14 +578,14 @@ PxrUsdMayaUtil::stripNamespaces(const MString& iNodeName, const int iDepth)
 }
 
 std::string
-PxrUsdMayaUtil::SanitizeName(const std::string& name)
+UsdMayaUtil::SanitizeName(const std::string& name)
 {
     return TfStringReplace(name, ":", "_");
 }
 
 // This to allow various pipeline to sanitize the colorset name for output
 std::string
-PxrUsdMayaUtil::SanitizeColorSetName(const std::string& name)
+UsdMayaUtil::SanitizeColorSetName(const std::string& name)
 {
     // We sanitize the name since certain pipeline like Pixar's, we have rman_
     // in front of all color sets that need to be exportred. We now export all
@@ -693,7 +693,7 @@ _GetColorAndTransparencyFromLambert(
                 displayColor[j] = color[j];
             }
             displayColor *= lambertFn.diffuseCoeff();
-            *rgb = PxrUsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+            *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
         }
         if (alpha) {
             MColor trn = lambertFn.transparency();
@@ -729,7 +729,7 @@ _GetColorAndTransparencyFromDepNode(
         for (int j=0; j<3; j++) {
             colorPlug.child(j).getValue(displayColor[j]);
         }
-        *rgb = PxrUsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+        *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
     }
 
     if (alpha) {
@@ -833,7 +833,7 @@ _GetLinearShaderColor(
 }
 
 bool
-PxrUsdMayaUtil::GetLinearShaderColor(
+UsdMayaUtil::GetLinearShaderColor(
         const MFnDagNode& node,
         VtVec3fArray* RGBData,
         VtFloatArray* AlphaData,
@@ -849,7 +849,7 @@ PxrUsdMayaUtil::GetLinearShaderColor(
 }
 
 bool
-PxrUsdMayaUtil::GetLinearShaderColor(
+UsdMayaUtil::GetLinearShaderColor(
         const MFnMesh& mesh,
         VtVec3fArray* RGBData,
         VtFloatArray* AlphaData,
@@ -950,35 +950,35 @@ _MergeEquivalentIndexedValues(
 }
 
 void
-PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+UsdMayaUtil::MergeEquivalentIndexedValues(
         VtFloatArray* valueData,
         VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<float>(valueData, assignmentIndices);
 }
 
 void
-PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+UsdMayaUtil::MergeEquivalentIndexedValues(
         VtVec2fArray* valueData,
         VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<GfVec2f>(valueData, assignmentIndices);
 }
 
 void
-PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+UsdMayaUtil::MergeEquivalentIndexedValues(
         VtVec3fArray* valueData,
         VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<GfVec3f>(valueData, assignmentIndices);
 }
 
 void
-PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+UsdMayaUtil::MergeEquivalentIndexedValues(
         VtVec4fArray* valueData,
         VtIntArray* assignmentIndices) {
     return _MergeEquivalentIndexedValues<GfVec4f>(valueData, assignmentIndices);
 }
 
 void
-PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(
+UsdMayaUtil::CompressFaceVaryingPrimvarIndices(
         const MFnMesh& mesh,
         TfToken* interpolation,
         VtIntArray* assignmentIndices)
@@ -1058,7 +1058,7 @@ PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(
 }
 
 bool
-PxrUsdMayaUtil::SetUnassignedValueIndex(
+UsdMayaUtil::SetUnassignedValueIndex(
         VtIntArray* assignmentIndices,
         int* unassignedValueIndex)
 {
@@ -1077,7 +1077,7 @@ PxrUsdMayaUtil::SetUnassignedValueIndex(
 }
 
 bool
-PxrUsdMayaUtil::IsAuthored(MPlug& plug)
+UsdMayaUtil::IsAuthored(MPlug& plug)
 {
     MStatus status;
 
@@ -1104,7 +1104,7 @@ PxrUsdMayaUtil::IsAuthored(MPlug& plug)
 }
 
 MPlug
-PxrUsdMayaUtil::GetConnected(const MPlug& plug)
+UsdMayaUtil::GetConnected(const MPlug& plug)
 {
     MStatus status = MS::kFailure;
     MPlugArray conn;
@@ -1116,7 +1116,7 @@ PxrUsdMayaUtil::GetConnected(const MPlug& plug)
 }
 
 void
-PxrUsdMayaUtil::Connect(
+UsdMayaUtil::Connect(
         const MPlug& srcPlug,
         const MPlug& dstPlug,
         const bool clearDstPlug)
@@ -1138,7 +1138,7 @@ PxrUsdMayaUtil::Connect(
 }
 
 MPlug
-PxrUsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
+UsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
 {
     unsigned int numChildren = plug.numChildren();
     for(unsigned int i = 0; i < numChildren; ++i) {
@@ -1185,7 +1185,7 @@ _IsShape(const MDagPath& dagPath)
 }
 
 SdfPath
-PxrUsdMayaUtil::MDagPathToUsdPath(
+UsdMayaUtil::MDagPathToUsdPath(
         const MDagPath& dagPath,
         const bool mergeTransformAndShape,
         const bool stripNamespaces)
@@ -1194,7 +1194,7 @@ PxrUsdMayaUtil::MDagPathToUsdPath(
 
     if (stripNamespaces) {
         // drop namespaces instead of making them part of the path
-        MString stripped = PxrUsdMayaUtil::stripNamespaces(dagPath.fullPathName());
+        MString stripped = UsdMayaUtil::stripNamespaces(dagPath.fullPathName());
         usdPathStr = stripped.asChar();
     } else{
         usdPathStr = dagPath.fullPathName().asChar();
@@ -1211,7 +1211,7 @@ PxrUsdMayaUtil::MDagPathToUsdPath(
 }
 
 bool
-PxrUsdMayaUtil::GetBoolCustomData(
+UsdMayaUtil::GetBoolCustomData(
         const UsdAttribute& obj,
         const TfToken& key,
         const bool defaultValue)
@@ -1237,14 +1237,14 @@ _GetVec(const UsdAttribute& attr, const VtValue& val)
     const T ret = val.UncheckedGet<T>();
 
     if (attr.GetRoleName() == SdfValueRoleNames->Color) {
-        return PxrUsdMayaColorSpace::ConvertMayaToLinear(ret);
+        return UsdMayaColorSpace::ConvertMayaToLinear(ret);
     }
 
     return ret;
 }
 
 MMatrix
-PxrUsdMayaUtil::GfMatrixToMMatrix(const GfMatrix4d& mx)
+UsdMayaUtil::GfMatrixToMMatrix(const GfMatrix4d& mx)
 {
     MMatrix mayaMx;
     std::copy(mx.GetArray(), mx.GetArray()+16, mayaMx[0]);
@@ -1252,7 +1252,7 @@ PxrUsdMayaUtil::GfMatrixToMMatrix(const GfMatrix4d& mx)
 }
 
 bool
-PxrUsdMayaUtil::getPlugMatrix(
+UsdMayaUtil::getPlugMatrix(
         const MFnDependencyNode& depNode,
         const MString& attr,
         MMatrix* outVal)
@@ -1278,7 +1278,7 @@ PxrUsdMayaUtil::getPlugMatrix(
 }
 
 bool
-PxrUsdMayaUtil::setPlugMatrix(
+UsdMayaUtil::setPlugMatrix(
         const MFnDependencyNode& depNode,
         const MString& attr,
         const GfMatrix4d& mx)
@@ -1290,7 +1290,7 @@ PxrUsdMayaUtil::setPlugMatrix(
 }
 
 bool
-PxrUsdMayaUtil::setPlugMatrix(const GfMatrix4d& mx, MPlug& plug)
+UsdMayaUtil::setPlugMatrix(const GfMatrix4d& mx, MPlug& plug)
 {
     MStatus status;
     MObject mxObj = MFnMatrixData().create(GfMatrixToMMatrix(mx), &status);
@@ -1301,13 +1301,13 @@ PxrUsdMayaUtil::setPlugMatrix(const GfMatrix4d& mx, MPlug& plug)
 }
 
 bool
-PxrUsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, MPlug& attrPlug)
+UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, MPlug& attrPlug)
 {
     return setPlugValue(usdAttr, UsdTimeCode::Default(), attrPlug);
 }
 
 bool
-PxrUsdMayaUtil::setPlugValue(
+UsdMayaUtil::setPlugValue(
         const UsdAttribute& usdAttr,
         const UsdTimeCode time,
         MPlug& attrPlug)
@@ -1545,7 +1545,7 @@ PxrUsdMayaUtil::setPlugValue(
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec3d vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(
                 static_cast<unsigned int>(i),
@@ -1567,7 +1567,7 @@ PxrUsdMayaUtil::setPlugValue(
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec3f vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(
                 static_cast<unsigned int>(i),
@@ -1589,7 +1589,7 @@ PxrUsdMayaUtil::setPlugValue(
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec4d vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(
                 static_cast<unsigned int>(i),
@@ -1611,7 +1611,7 @@ PxrUsdMayaUtil::setPlugValue(
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec4f vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = PxrUsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(
                 static_cast<unsigned int>(i),
@@ -1639,7 +1639,7 @@ PxrUsdMayaUtil::setPlugValue(
 }
 
 bool
-PxrUsdMayaUtil::createStringAttribute(
+UsdMayaUtil::createStringAttribute(
         MFnDependencyNode& depNode,
         const MString& attr)
 {
@@ -1660,7 +1660,7 @@ PxrUsdMayaUtil::createStringAttribute(
 }
 
 bool
-PxrUsdMayaUtil::createNumericAttribute(
+UsdMayaUtil::createNumericAttribute(
         MFnDependencyNode& depNode,
         const MString& attr,
         const MFnNumericData::Type type)
@@ -1681,7 +1681,7 @@ PxrUsdMayaUtil::createNumericAttribute(
     return true;
 }
 
-PxrUsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
+UsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
         const MPlug& plug,
         MDataHandle dataHandle) :
     _plug(plug),
@@ -1689,15 +1689,15 @@ PxrUsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
 {
 }
 
-PxrUsdMayaUtil::MDataHandleHolder::~MDataHandleHolder()
+UsdMayaUtil::MDataHandleHolder::~MDataHandleHolder()
 {
     if (!_plug.isNull()) {
         _plug.destructHandle(_dataHandle);
     }
 }
 
-TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
-PxrUsdMayaUtil::MDataHandleHolder::New(const MPlug& plug)
+TfRefPtr<UsdMayaUtil::MDataHandleHolder>
+UsdMayaUtil::MDataHandleHolder::New(const MPlug& plug)
 {
     MStatus status;
 
@@ -1709,21 +1709,21 @@ PxrUsdMayaUtil::MDataHandleHolder::New(const MPlug& plug)
 
     if (!status.error()) {
         return TfCreateRefPtr(
-                new PxrUsdMayaUtil::MDataHandleHolder(plug, dataHandle));
+                new UsdMayaUtil::MDataHandleHolder(plug, dataHandle));
     }
     else {
         return nullptr;
     }
 }
 
-TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
-PxrUsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
+TfRefPtr<UsdMayaUtil::MDataHandleHolder>
+UsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
 {
-    return PxrUsdMayaUtil::MDataHandleHolder::New(plug);
+    return UsdMayaUtil::MDataHandleHolder::New(plug);
 }
 
 VtDictionary
-PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
+UsdMayaUtil::GetDictionaryFromArgDatabase(
         const MArgDatabase& argData,
         const VtDictionary& guideDict)
 {
@@ -1801,7 +1801,7 @@ PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
 }
 
 VtValue
-PxrUsdMayaUtil::ParseArgumentValue(
+UsdMayaUtil::ParseArgumentValue(
         const std::string& key,
         const std::string& value,
         const VtDictionary& guideDict)
@@ -1830,7 +1830,7 @@ PxrUsdMayaUtil::ParseArgumentValue(
 }
 
 std::vector<std::string>
-PxrUsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
+UsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
 {
     const MString inheritedTypesMel = TfStringPrintf(
             "nodeType -isTypeName -inherited %s", ty.c_str()).c_str();

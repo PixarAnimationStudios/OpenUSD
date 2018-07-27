@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file userTaggedAttribute.h
+/// \file usdMaya/userTaggedAttribute.h
 
 #ifndef PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 #define PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
@@ -47,13 +47,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((USDAttrTypePrimvar, "primvar")) \
     ((USDAttrTypeUsdRi, "usdRi"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaUserTaggedAttributeTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaUserTaggedAttributeTokens,
     PXRUSDMAYA_API,
     PXRUSDMAYA_ATTR_TOKENS);
 
 /// \brief Represents a single attribute tagged for translation between Maya
 /// and USD, and describes how it will be exported from/imported into Maya.
-class PxrUsdMayaUserTaggedAttribute {
+class UsdMayaUserTaggedAttribute {
 private:
     MPlug _plug;
     const std::string _name;
@@ -73,7 +73,7 @@ public:
     };
 
     PXRUSDMAYA_API
-    PxrUsdMayaUserTaggedAttribute(
+    UsdMayaUserTaggedAttribute(
             const MPlug& plug,
             const std::string& name,
             const TfToken& type,
@@ -83,7 +83,7 @@ public:
 
     /// \brief Gets all of the exported attributes for the given node.
     PXRUSDMAYA_API
-    static std::vector<PxrUsdMayaUserTaggedAttribute>
+    static std::vector<UsdMayaUserTaggedAttribute>
             GetUserTaggedAttributesForNode(const MDagPath& dagPath);
 
     /// \brief Gets the plug for the Maya attribute to be exported.

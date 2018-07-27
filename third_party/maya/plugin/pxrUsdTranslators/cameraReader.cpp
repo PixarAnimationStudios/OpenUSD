@@ -38,7 +38,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomCamera, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return PxrUsdMayaTranslatorCamera::Read(
+    return UsdMayaTranslatorCamera::Read(
         UsdGeomCamera(usdPrim),
         parentNode,
         args,

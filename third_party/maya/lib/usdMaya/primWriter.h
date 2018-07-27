@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_PRIM_WRITER_H
-#define USDMAYA_PRIM_WRITER_H
+#ifndef PXRUSDMAYA_PRIM_WRITER_H
+#define PXRUSDMAYA_PRIM_WRITER_H
 
 #include "pxr/pxr.h"
 
@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct PxrUsdMayaJobExportArgs;
+struct UsdMayaJobExportArgs;
 class UsdGeomImageable;
 class UsdMayaWriteJobContext;
 class UsdTimeCode;
@@ -124,7 +124,7 @@ public:
     ///
     /// The base implementation simply maps GetDagPath() to GetUsdPath().
     PXRUSDMAYA_API
-    virtual const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
+    virtual const UsdMayaUtil::MDagPathMap<SdfPath>&
             GetDagToUsdPathMapping() const;
 
     /// The source Maya DAG path that we are consuming.
@@ -151,7 +151,7 @@ protected:
 
     /// Gets the current global export args in effect.
     PXRUSDMAYA_API
-    const PxrUsdMayaJobExportArgs& _GetExportArgs() const;
+    const UsdMayaJobExportArgs& _GetExportArgs() const;
 
     /// Sets the value of \p attr to \p value at \p time with value 
     /// compression. When this method is used to write attribute values, 
@@ -197,7 +197,7 @@ private:
 
     const MDagPath _dagPath;
     const SdfPath _usdPath;
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
+    const UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
 
     UsdUtilsSparseValueWriter _valueWriter;
 

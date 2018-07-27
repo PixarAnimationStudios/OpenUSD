@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_LIST_SHADING_MODES_COMMAND_H
-#define USDMAYA_LIST_SHADING_MODES_COMMAND_H
+#ifndef PXRUSDMAYA_LIST_SHADING_MODES_COMMAND_H
+#define PXRUSDMAYA_LIST_SHADING_MODES_COMMAND_H
 
 /// \file usdMaya/listShadingModesCommand.h
 

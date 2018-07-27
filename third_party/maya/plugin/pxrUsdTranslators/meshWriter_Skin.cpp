@@ -259,7 +259,7 @@ _WarnForPostDeformationTransform(const SdfPath& path,
         return;
 
     MMatrix bindPreMatrix;
-    if (PxrUsdMayaUtil::getPlugMatrix(
+    if (UsdMayaUtil::getPlugMatrix(
             skinCluster, "bindPreMatrix", &bindPreMatrix)) {
         
         if (!GfIsClose(GfMatrix4d(deformedMeshWorldXf.matrix),
@@ -280,7 +280,7 @@ _GetGeomBindTransform(const MFnSkinCluster& skinCluster,
                       GfMatrix4d* geomBindXf)
 {
     MMatrix geomWorldRestXf;
-    if (!PxrUsdMayaUtil::getPlugMatrix(
+    if (!UsdMayaUtil::getPlugMatrix(
             skinCluster, "geomMatrix", &geomWorldRestXf)) {
         // All skinClusters should have geomMatrix, but if not...
         TF_RUNTIME_ERROR(
@@ -399,7 +399,7 @@ PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     }
 
     // Write everything to USD once we know that we have OK data.
-    const UsdSkelBindingAPI bindingAPI = PxrUsdMayaTranslatorUtil
+    const UsdSkelBindingAPI bindingAPI = UsdMayaTranslatorUtil
         ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
 
     if (_WriteJointInfluences(skinCluster, inMesh, bindingAPI)) {

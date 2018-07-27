@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for other readers to use.
-struct PxrUsdMayaTranslatorUtil
+struct UsdMayaTranslatorUtil
 {
     /// \brief Often when creating a prim, we want to first create a Transform
     /// node. This is a small helper to do this. If the \p args provided
@@ -52,8 +52,8 @@ struct PxrUsdMayaTranslatorUtil
     CreateTransformNode(
             const UsdPrim& usdPrim,
             MObject& parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context,
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context,
             MStatus* status,
             MObject* mayaNodeObj);
 
@@ -66,7 +66,7 @@ struct PxrUsdMayaTranslatorUtil
             const UsdPrim& usdPrim,
             const MString& nodeTypeName,
             MObject& parentNode,
-            PxrUsdMayaPrimReaderContext* context,
+            UsdMayaPrimReaderContext* context,
             MStatus* status,
             MObject* mayaNodeObj);
 
@@ -79,7 +79,7 @@ struct PxrUsdMayaTranslatorUtil
             const SdfPath& usdPath,
             const MString& nodeTypeName,
             MObject& parentNode,
-            PxrUsdMayaPrimReaderContext* context,
+            UsdMayaPrimReaderContext* context,
             MStatus* status,
             MObject* mayaNodeObj);
 
@@ -116,4 +116,4 @@ struct PxrUsdMayaTranslatorUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_UTIL_H
+#endif

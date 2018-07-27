@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Utility class for handling edits on Assemblies in Maya.
 ///
-class PxrUsdMayaEditUtil
+class UsdMayaEditUtil
 {
 public:
         
@@ -145,4 +145,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_EDITUTIL_H
+#endif

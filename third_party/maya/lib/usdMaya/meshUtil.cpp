@@ -44,7 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
 // These tokens are supported Maya attributes used for Mesh surfaces
@@ -76,7 +76,7 @@ PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(
 
 // This can be customized for specific pipelines.
 bool
-PxrUsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
+UsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (!plug.isNull()) {
@@ -88,7 +88,7 @@ PxrUsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
 }
 
 void
-PxrUsdMayaMeshUtil::SetEmitNormalsTag(
+UsdMayaMeshUtil::SetEmitNormalsTag(
         MFnMesh& meshFn,
         const bool emitNormals)
 {
@@ -106,7 +106,7 @@ PxrUsdMayaMeshUtil::SetEmitNormalsTag(
 }
 
 bool
-PxrUsdMayaMeshUtil::GetMeshNormals(
+UsdMayaMeshUtil::GetMeshNormals(
         const MFnMesh& mesh,
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation)
@@ -159,11 +159,11 @@ PxrUsdMayaMeshUtil::GetMeshNormals(
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
 TfToken
-PxrUsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
+UsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken schemeToken;
-    PxrUsdMayaAdaptor(mesh.object())
+    UsdMayaAdaptor(mesh.object())
             .GetSchemaOrInheritedSchema<UsdGeomMesh>()
             .GetAttribute(UsdGeomTokens->subdivisionScheme)
             .Get<TfToken>(&schemeToken);
@@ -204,11 +204,11 @@ PxrUsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
 // We first look for the USD string attribute, and if not present we look for
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken PxrUsdMayaMeshUtil::GetSubdivInterpBoundary(const MFnMesh& mesh)
+TfToken UsdMayaMeshUtil::GetSubdivInterpBoundary(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken interpBoundaryToken;
-    PxrUsdMayaAdaptor(mesh.object())
+    UsdMayaAdaptor(mesh.object())
             .GetSchemaOrInheritedSchema<UsdGeomMesh>()
             .GetAttribute(UsdGeomTokens->interpolateBoundary)
             .Get<TfToken>(&interpBoundaryToken);
@@ -298,11 +298,11 @@ _GetOsd2FVInterpBoundary(const MFnMesh& mesh)
     return sdFVInterpBound;
 }
 
-TfToken PxrUsdMayaMeshUtil::GetSubdivFVLinearInterpolation(const MFnMesh& mesh)
+TfToken UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken sdFVLinearInterpolation;
-    PxrUsdMayaAdaptor(mesh.object())
+    UsdMayaAdaptor(mesh.object())
             .GetSchemaOrInheritedSchema<UsdGeomMesh>()
             .GetAttribute(UsdGeomTokens->faceVaryingLinearInterpolation)
             .Get<TfToken>(&sdFVLinearInterpolation);

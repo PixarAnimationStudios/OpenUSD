@@ -48,7 +48,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct PxrUsdMayaExportParams
+struct UsdMayaExportParams
 {
     /// Whether the transform node and the shape node must be merged into
     /// a single node in the output USD.
@@ -74,14 +74,14 @@ struct PxrUsdMayaExportParams
 
     /// Shaders that are bound to prims under \p bindableRoot paths will get
     /// exported.  If \p bindableRoots is empty, it will export all.
-    PxrUsdMayaUtil::MDagPathSet bindableRoots;
+    UsdMayaUtil::MDagPathSet bindableRoots;
 
     /// Sets up the parentScope for creating materials.
     SdfPath parentScope;
 };
 
 
-class PxrUsdMayaShadingModeExportContext
+class UsdMayaShadingModeExportContext
 {
 public:
     void SetShadingEngine(const MObject& shadingEngine) { _shadingEngine = shadingEngine; }
@@ -104,7 +104,7 @@ public:
     PXRUSDMAYA_API
     void SetDisplacementShaderPlugName(const TfToken& displacementShaderPlugName);
 
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const
+    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const
     { return _dagPathToUsdMap; }
 
     PXRUSDMAYA_API
@@ -157,16 +157,16 @@ public:
             bool allowMultiElementArrays) const;
 
     PXRUSDMAYA_API
-    PxrUsdMayaShadingModeExportContext(
+    UsdMayaShadingModeExportContext(
             const MObject& shadingEngine,
             const UsdStageRefPtr& stage,
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-            const PxrUsdMayaExportParams &exportParams);
+            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+            const UsdMayaExportParams &exportParams);
 private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>& _dagPathToUsdMap;
-    const PxrUsdMayaExportParams &_exportParams;
+    const UsdMayaUtil::MDagPathMap<SdfPath>& _dagPathToUsdMap;
+    const UsdMayaExportParams &_exportParams;
     TfToken _surfaceShaderPlugName;
     TfToken _volumeShaderPlugName;
     TfToken _displacementShaderPlugName;

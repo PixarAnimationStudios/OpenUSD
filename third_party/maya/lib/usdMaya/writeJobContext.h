@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_WRITE_JOB_CONTEXT_H
-#define USDMAYA_WRITE_JOB_CONTEXT_H
+#ifndef PXRUSDMAYA_WRITE_JOB_CONTEXT_H
+#define PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 
 /// \file usdMaya/writeJobContext.h
 
@@ -47,23 +47,23 @@ class UsdMaya_SkelBindingsProcessor;
 class UsdMaya_WriteJob;
 
 /// \class UsdMayaWriteJobContext
-/// \brief Provides basic functionality and access to shared data for MayaPrimWriters.
+/// \brief Provides basic functionality and access to shared data for UsdMayaPrimWriters.
 ///
 /// The main purpose of this class is to handle source prim creation for instancing,
-/// and to avoid storing the PxrUsdMayaJobExportArgs and UsdStage on each prim writer.
+/// and to avoid storing the UsdMayaJobExportArgs and UsdStage on each prim writer.
 ///
 class UsdMayaWriteJobContext {
 protected:
     friend class UsdMaya_WriteJob;
 
     PXRUSDMAYA_API
-    UsdMayaWriteJobContext(const PxrUsdMayaJobExportArgs& args);
+    UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args);
 
     PXRUSDMAYA_API
     ~UsdMayaWriteJobContext();
 
 public:
-    const PxrUsdMayaJobExportArgs& getArgs() const { return mArgs; };
+    const UsdMayaJobExportArgs& getArgs() const { return mArgs; };
     const UsdStageRefPtr& getUsdStage() const { return mStage; };
 
     /// Whether we will merge the transform at \p path with its single
@@ -143,7 +143,7 @@ protected:
     PXRUSDMAYA_API
     bool PostProcess();
 
-    PxrUsdMayaJobExportArgs mArgs;
+    UsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over
     std::vector<UsdMayaPrimWriterSharedPtr> mMayaPrimWriterList;
     // Stage used to write out USD file
@@ -181,7 +181,7 @@ private:
             std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const;
 
     /// Prim writer search with ancestor type resolution behavior.
-    PxrUsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(
+    UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(
             const std::string& mayaNodeType);
 
     struct MObjectHandleComp {
@@ -211,14 +211,14 @@ private:
 
     // Cache of node type names mapped to their "resolved" writer factory,
     // taking into account Maya's type hierarchy (note that this means that
-    // some types not resolved by the PxrUsdMayaPrimWriterRegistry will get
+    // some types not resolved by the UsdMayaPrimWriterRegistry will get
     // resolved in this map).
-    std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFactoryFn>
+    std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn>
             mWriterFactoryCache;
 
-    // PxrUsdMaya_InstancedNodeWriter is in a separate file, but functions as
+    // UsdMaya_InstancedNodeWriter is in a separate file, but functions as
     // an internal helper for UsdMayaWriteJobContext.
-    friend class PxrUsdMaya_InstancedNodeWriter;
+    friend class UsdMaya_InstancedNodeWriter;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

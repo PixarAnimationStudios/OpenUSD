@@ -47,15 +47,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct PxrUsdMayaTranslatorModelAssembly
+struct UsdMayaTranslatorModelAssembly
 {
     /// This method generates a USD prim with a model reference
     /// when provided args and a context that identify a Maya
     /// assembly node.
     PXRUSDMAYA_API
     static bool Create(
-            const PxrUsdMayaPrimWriterArgs& args,
-            PxrUsdMayaPrimWriterContext* context);
+            const UsdMayaPrimWriterArgs& args,
+            UsdMayaPrimWriterContext* context);
 
     /// This method returns true if \p prim being considered for import under
     /// \p usdImportRootPrim should be imported into Maya as an assembly.
@@ -82,8 +82,8 @@ struct PxrUsdMayaTranslatorModelAssembly
             const std::string& assetIdentifier,
             const SdfPath& assetPrimPath,
             const MObject& parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context,
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context,
             const TfToken& assemblyRep);
 
     /// Creates a Maya USD proxy shape node for the USD prim \p prim under
@@ -94,8 +94,8 @@ struct PxrUsdMayaTranslatorModelAssembly
             const UsdPrim& prim,
             const std::map<std::string, std::string>& variantSetSelections,
             MObject parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 

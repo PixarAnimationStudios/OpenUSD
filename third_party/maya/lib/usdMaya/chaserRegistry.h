@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_CHASER_REGISTRY_H
 #define PXRUSDMAYA_CHASER_REGISTRY_H
 
-/// \file chaserRegistry.h
+/// \file usdMaya/chaserRegistry.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -43,9 +43,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DECLARE_WEAK_PTRS(PxrUsdMayaChaserRegistry);
+TF_DECLARE_WEAK_PTRS(UsdMayaChaserRegistry);
 
-/// \class PxrUsdMayaChaserRegistry
+/// \class UsdMayaChaserRegistry
 /// \brief Registry for chaser plugins.
 ///
 /// We allow sites to register new chaser scripts that can be enabled on export.
@@ -54,54 +54,54 @@ TF_DECLARE_WEAK_PTRS(PxrUsdMayaChaserRegistry);
 ///
 /// Unfortunately, these are only available through the command/python interface
 /// and not yet exposed in the translator interface.
-class PxrUsdMayaChaserRegistry : public TfWeakBase
+class UsdMayaChaserRegistry : public TfWeakBase
 {
 public:
 
     /// \brief Holds data that can be accessed when constructing a 
-    /// \p PxrUsdMayaChaser object.
+    /// \p UsdMayaChaser object.
     ///
     /// This class allows plugin code to only know about the context object
     /// during construction and only need to know about the data it is needs to
     /// construct.  
     class FactoryContext {
     public:
-        typedef PxrUsdMayaUtil::MDagPathMap<SdfPath> DagToUsdMap;
+        typedef UsdMayaUtil::MDagPathMap<SdfPath> DagToUsdMap;
 
         PXRUSDMAYA_API
         FactoryContext(
                 const UsdStagePtr& stage, 
                 const DagToUsdMap& dagToUsdMap,
-                const PxrUsdMayaJobExportArgs& jobArgs);
+                const UsdMayaJobExportArgs& jobArgs);
 
         /// \brief Returns the exported stage.
         ///
-        /// It is safe for the \p PxrUsdMayaChaser to save this return value and
+        /// It is safe for the \p UsdMayaChaser to save this return value and
         /// use it during it's execution.
         PXRUSDMAYA_API
         UsdStagePtr GetStage() const;
 
         /// \brief Returns a map that maps full MDagPath's to Usd prim paths.
         ///
-        /// It is safe for the \p PxrUsdMayaChaser to save this return value by
+        /// It is safe for the \p UsdMayaChaser to save this return value by
         /// reference and use it during it's execution.
         PXRUSDMAYA_API
         const DagToUsdMap& GetDagToUsdMap() const;
 
         /// \brief Returns the current job args.
         ///
-        /// It is safe for the \p PxrUsdMayaChaser to save this return value by
+        /// It is safe for the \p UsdMayaChaser to save this return value by
         /// reference and use it during it's execution.
         PXRUSDMAYA_API
-        const PxrUsdMayaJobExportArgs& GetJobArgs() const;
+        const UsdMayaJobExportArgs& GetJobArgs() const;
 
     private:
         UsdStagePtr _stage;
         const DagToUsdMap& _dagToUsdMap;
-        const PxrUsdMayaJobExportArgs& _jobArgs;
+        const UsdMayaJobExportArgs& _jobArgs;
     };
 
-    typedef boost::function<PxrUsdMayaChaser* (const FactoryContext&)> FactoryFn;
+    typedef boost::function<UsdMayaChaser* (const FactoryContext&)> FactoryFn;
 
     /// \brief Register a chaser factory.  
     ///
@@ -114,7 +114,7 @@ public:
 
     /// \brief Creates a chaser using the factoring registered to \p name.
     PXRUSDMAYA_API
-    PxrUsdMayaChaserRefPtr Create(
+    UsdMayaChaserRefPtr Create(
             const std::string& name, 
             const FactoryContext& context) const;
 
@@ -123,24 +123,24 @@ public:
     std::vector<std::string> GetAllRegisteredChasers() const;
 
     PXRUSDMAYA_API
-    static PxrUsdMayaChaserRegistry& GetInstance();
+    static UsdMayaChaserRegistry& GetInstance();
 
 private:
-    PxrUsdMayaChaserRegistry();
-    ~PxrUsdMayaChaserRegistry();
-    friend class TfSingleton<PxrUsdMayaChaserRegistry>;
+    UsdMayaChaserRegistry();
+    ~UsdMayaChaserRegistry();
+    friend class TfSingleton<UsdMayaChaserRegistry>;
 };
 
 /// \brief define a factory for the chaser \p name.  the \p contextArgName will
-/// be type \p PxrUsdMayaChaserRegistry::FactoryContext .  The following code
-/// block should return a \p PxrUsdMayaChaser*.  There are no guarantees about
+/// be type \p UsdMayaChaserRegistry::FactoryContext .  The following code
+/// block should return a \p UsdMayaChaser*.  There are no guarantees about
 /// the lifetime of \p contextArgName. 
 #define PXRUSDMAYA_DEFINE_CHASER_FACTORY(name, contextArgName) \
-static PxrUsdMayaChaser* _ChaserFactory_##name(const PxrUsdMayaChaserRegistry::FactoryContext&); \
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaChaserRegistry, name) {\
-    PxrUsdMayaChaserRegistry::GetInstance().RegisterFactory(#name, &_ChaserFactory_##name); \
+static UsdMayaChaser* _ChaserFactory_##name(const UsdMayaChaserRegistry::FactoryContext&); \
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaChaserRegistry, name) {\
+    UsdMayaChaserRegistry::GetInstance().RegisterFactory(#name, &_ChaserFactory_##name); \
 }\
-PxrUsdMayaChaser* _ChaserFactory_##name(const PxrUsdMayaChaserRegistry::FactoryContext& contextArgName)
+UsdMayaChaser* _ChaserFactory_##name(const UsdMayaChaserRegistry::FactoryContext& contextArgName)
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -35,17 +35,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for creating UsdCurves
-struct PxrUsdMayaTranslatorCurves
+struct UsdMayaTranslatorCurves
 {
     /// \brief Creates a NurbsCurve under \p parentNode.
     PXRUSDMAYA_API
     static bool Create(
             const UsdGeomCurves& curves,
             MObject parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_CURVES_H
+#endif

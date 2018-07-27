@@ -35,7 +35,7 @@ PXRUSDMAYA_DEFINE_READER(UsdShadeMaterial, args, context)
     bool importUnboundShaders = args.ShouldImportUnboundShaders();
     if (importUnboundShaders) {
         const UsdPrim& usdPrim = args.GetUsdPrim();
-        PxrUsdMayaTranslatorMaterial::Read(args.GetShadingMode(), 
+        UsdMayaTranslatorMaterial::Read(args.GetShadingMode(), 
                 UsdShadeMaterial(usdPrim), 
                 UsdGeomGprim(), 
                 context);

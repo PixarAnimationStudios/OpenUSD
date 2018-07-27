@@ -95,7 +95,7 @@ _GetMayaFaceVertexAssignmentIds(
 
 /* static */
 bool
-PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
+UsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
         const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
 {
@@ -221,7 +221,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
 
 /* static */
 bool
-PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
+UsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         const UsdGeomMesh& primSchema,
         const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
@@ -238,17 +238,17 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // Note that if BOTH displayColor and displayOpacity are authored, they will
     // be imported as separate color sets. We do not attempt to combine them
     // into a single color set.
-    if (primvarName == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
+    if (primvarName == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
             typeName == SdfValueTypeNames->FloatArray) {
-        if (!PxrUsdMayaRoundTripUtil::IsAttributeUserAuthored(primSchema.GetDisplayColorPrimvar())) {
-            colorSetName = PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
+        if (!UsdMayaRoundTripUtil::IsAttributeUserAuthored(primSchema.GetDisplayColorPrimvar())) {
+            colorSetName = UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
         }
     }
 
     // We'll need to convert colors from linear to display if this color set is
     // for display colors.
     const bool isDisplayColor =
-        (colorSetName == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText());
+        (colorSetName == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText());
 
     // Get the raw data before applying any indexing. We'll only populate one
     // of these arrays based on the primvar's typeName, and we'll also set the
@@ -364,7 +364,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         }
 
         if (isDisplayColor) {
-            colorValue = PxrUsdMayaColorSpace::ConvertLinearToMaya(colorValue);
+            colorValue = UsdMayaColorSpace::ConvertLinearToMaya(colorValue);
         }
 
         MColor mColor(colorValue[0], colorValue[1], colorValue[2], colorValue[3]);
@@ -375,7 +375,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // have had their indices set to -1, so update the unauthored values index.
     unauthoredValuesIndex = -1;
 
-    const bool clamped = PxrUsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
+    const bool clamped = UsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
 
     status = meshFn.createColorSet(colorSetName, nullptr, clamped, colorRep);
     if (status != MS::kSuccess) {
@@ -415,7 +415,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     return true;
 }
 bool
-PxrUsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
+UsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
         const UsdGeomPrimvar& primvar, 
         MFnMesh& meshFn)
 {
@@ -431,7 +431,7 @@ PxrUsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
 
     // create attribute
     MObject attrObj = 
-        PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+        UsdMayaReadUtil::FindOrCreateMayaAttr(
             typeName, 
             variability, 
             meshFn, 
@@ -458,7 +458,7 @@ PxrUsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
         return false;
     }
 
-    if (!PxrUsdMayaReadUtil::SetMayaAttr(plug, primvarData, modifier)) {
+    if (!UsdMayaReadUtil::SetMayaAttr(plug, primvarData, modifier)) {
         return false;
     }
 

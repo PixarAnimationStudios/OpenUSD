@@ -51,11 +51,11 @@ using boost::python::reference_existing_object;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-    // We wrap this class, instead of PxrUsdMayaXformOpClassification directly, mostly
+    // We wrap this class, instead of UsdMayaXformOpClassification directly, mostly
     // just so we can handle the .IsNull() -> None conversion
     class _PyXformOpClassification {
     public:
-        _PyXformOpClassification(const PxrUsdMayaXformOpClassification& opClass)
+        _PyXformOpClassification(const UsdMayaXformOpClassification& opClass)
             : _opClass(opClass)
         {
         }
@@ -102,9 +102,9 @@ namespace {
             return _opClass.CompatibleAttrNames();
         }
 
-        // to-python conversion of const PxrUsdMayaXformOpClassification.
+        // to-python conversion of const UsdMayaXformOpClassification.
         static PyObject*
-        convert(const PxrUsdMayaXformOpClassification& opClass) {
+        convert(const UsdMayaXformOpClassification& opClass) {
             TfPyLock lock;
             if (opClass.IsNull())
             {
@@ -119,7 +119,7 @@ namespace {
         }
 
     private:
-        PxrUsdMayaXformOpClassification _opClass;
+        UsdMayaXformOpClassification _opClass;
     };
 
     class _PyXformStack
@@ -128,7 +128,7 @@ namespace {
         static inline object
         convert_index(size_t index)
         {
-            if (index == PxrUsdMayaXformStack::NO_INDEX)
+            if (index == UsdMayaXformStack::NO_INDEX)
             {
                 return object(); // return None (handles the incref)
             }
@@ -136,11 +136,11 @@ namespace {
         }
 
         // Don't want to make this into a generic conversion rule, via
-        //    to_python_converter<PxrUsdMayaXformStack::IndexPair, _PyXformStack>(),
+        //    to_python_converter<UsdMayaXformStack::IndexPair, _PyXformStack>(),
         // because that would make this apply to ANY pair of unsigned ints, which
         // could be dangerous
         static object
-        convert_index_pair(const PxrUsdMayaXformStack::IndexPair& indexPair)
+        convert_index_pair(const UsdMayaXformStack::IndexPair& indexPair)
         {
             return boost::python::make_tuple(
                     convert_index(indexPair.first),
@@ -148,7 +148,7 @@ namespace {
         }
 
         static PyObject*
-        convert(const PxrUsdMayaXformStack::OpClassPair& opPair)
+        convert(const UsdMayaXformStack::OpClassPair& opPair)
         {
             boost::python::tuple result = boost::python::make_tuple(
                     opPair.first, opPair.second);
@@ -156,8 +156,8 @@ namespace {
             return boost::python::incref(result.ptr());
         }
 
-        static const PxrUsdMayaXformOpClassification&
-        getitem(const PxrUsdMayaXformStack& stack, long index)
+        static const UsdMayaXformOpClassification&
+        getitem(const UsdMayaXformStack& stack, long index)
         {
             auto raise_index_error = [] () {
                 PyErr_SetString(PyExc_IndexError, "index out of range");
@@ -177,7 +177,7 @@ namespace {
         }
 
         static object
-        GetInversionTwins(const PxrUsdMayaXformStack& stack)
+        GetInversionTwins(const UsdMayaXformStack& stack)
         {
             boost::python::list result;
             for(const auto& idxPair : stack.GetInversionTwins())
@@ -189,7 +189,7 @@ namespace {
 
         static object
         FindOpIndex(
-                const PxrUsdMayaXformStack& stack,
+                const UsdMayaXformStack& stack,
                 const TfToken& opName,
                 bool isInvertedTwin=false)
         {
@@ -198,7 +198,7 @@ namespace {
 
         static object
         FindOpIndexPair(
-                const PxrUsdMayaXformStack& stack,
+                const UsdMayaXformStack& stack,
                 const TfToken& opName)
         {
             return convert_index_pair(stack.FindOpIndexPair(opName));
@@ -220,45 +220,45 @@ void wrapXformStack()
         .def("CompatibleAttrNames", &_PyXformOpClassification::CompatibleAttrNames)
         ;
 
-    boost::python::to_python_converter<PxrUsdMayaXformOpClassification,
+    boost::python::to_python_converter<UsdMayaXformOpClassification,
             _PyXformOpClassification>();
 
-    class_<PxrUsdMayaXformStack>("XformStack", no_init)
-        .def("GetOps", &PxrUsdMayaXformStack::GetOps,
+    class_<UsdMayaXformStack>("XformStack", no_init)
+        .def("GetOps", &UsdMayaXformStack::GetOps,
                 return_value_policy<TfPySequenceToList>())
         .def("GetInversionTwins", &_PyXformStack::GetInversionTwins)
-        .def("GetNameMatters", &PxrUsdMayaXformStack::GetNameMatters)
+        .def("GetNameMatters", &UsdMayaXformStack::GetNameMatters)
         .def("__getitem__", &_PyXformStack::getitem,
                 return_value_policy<return_by_value>())
-        .def("__len__", &PxrUsdMayaXformStack::GetSize)
-        .def("GetSize", &PxrUsdMayaXformStack::GetSize)
+        .def("__len__", &UsdMayaXformStack::GetSize)
+        .def("GetSize", &UsdMayaXformStack::GetSize)
         .def("FindOpIndex", &_PyXformStack::FindOpIndex,
                 (boost::python::arg("opName"), boost::python::arg("isInvertedTwin")=false))
-        .def("FindOp", &PxrUsdMayaXformStack::FindOp,
+        .def("FindOp", &UsdMayaXformStack::FindOp,
                 (boost::python::arg("opName"), boost::python::arg("isInvertedTwin")=false),
                 return_value_policy<copy_const_reference>())
         .def("FindOpIndexPair", &_PyXformStack::FindOpIndexPair)
-        .def("FindOpPair", &PxrUsdMayaXformStack::FindOpPair)
-        .def("MatchingSubstack", &PxrUsdMayaXformStack::MatchingSubstack)
-        .def("MayaStack", &PxrUsdMayaXformStack::MayaStack,
+        .def("FindOpPair", &UsdMayaXformStack::FindOpPair)
+        .def("MatchingSubstack", &UsdMayaXformStack::MatchingSubstack)
+        .def("MayaStack", &UsdMayaXformStack::MayaStack,
                 return_value_policy<return_by_value>())
         .staticmethod("MayaStack")
-        .def("CommonStack", &PxrUsdMayaXformStack::CommonStack,
+        .def("CommonStack", &UsdMayaXformStack::CommonStack,
                 return_value_policy<return_by_value>())
         .staticmethod("CommonStack")
-        .def("MatrixStack", &PxrUsdMayaXformStack::MatrixStack,
+        .def("MatrixStack", &UsdMayaXformStack::MatrixStack,
                 return_value_policy<return_by_value>())
         .staticmethod("MatrixStack")
-        .def("FirstMatchingSubstack", &PxrUsdMayaXformStack::FirstMatchingSubstack)
+        .def("FirstMatchingSubstack", &UsdMayaXformStack::FirstMatchingSubstack)
         .staticmethod("FirstMatchingSubstack")
     ;
 
-    boost::python::to_python_converter<PxrUsdMayaXformStack::OpClassPair,
+    boost::python::to_python_converter<UsdMayaXformStack::OpClassPair,
             _PyXformStack>();
 
-    boost::python::to_python_converter<std::vector<PxrUsdMayaXformStack::OpClass >,
-        TfPySequenceToPython<std::vector<PxrUsdMayaXformStack::OpClass > > >();
+    boost::python::to_python_converter<std::vector<UsdMayaXformStack::OpClass >,
+        TfPySequenceToPython<std::vector<UsdMayaXformStack::OpClass > > >();
 
-    TfPyContainerConversions::from_python_sequence<std::vector<PxrUsdMayaXformStack const *>,
+    TfPyContainerConversions::from_python_sequence<std::vector<UsdMayaXformStack const *>,
         TfPyContainerConversions::variable_capacity_policy >();
 }

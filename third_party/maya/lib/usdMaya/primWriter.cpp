@@ -64,11 +64,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 static bool
-_IsAnimated(const PxrUsdMayaJobExportArgs& args, const MDagPath& dagPath)
+_IsAnimated(const UsdMayaJobExportArgs& args, const MDagPath& dagPath)
 {
     MObject obj = dagPath.node();
     if (!args.timeInterval.IsEmpty()) {
-        return PxrUsdMayaUtil::isAnimated(obj);
+        return UsdMayaUtil::isAnimated(obj);
     }
     return false;
 }
@@ -89,7 +89,7 @@ UsdMayaPrimWriter::UsdMayaPrimWriter(const MDagPath& iDag,
     if (!GetDagPath().hasFn(MFn::kTransform)) { // if is a shape
         MObject obj = GetDagPath().node();
         if (!_GetExportArgs().timeInterval.IsEmpty()) {
-            _isShapeAnimated = PxrUsdMayaUtil::isAnimated(obj);
+            _isShapeAnimated = UsdMayaUtil::isAnimated(obj);
         }
     }
 }
@@ -120,7 +120,7 @@ _GetClassNamesToWrite(
         std::vector<std::string>* outClassNames)
 {
     std::vector<std::string> ret;
-    if (PxrUsdMayaWriteUtil::ReadMayaAttribute(
+    if (UsdMayaWriteUtil::ReadMayaAttribute(
             MFnDependencyNode(mObj), 
             MString(_tokens->USD_inheritClassNames.GetText()),
             outClassNames)) {
@@ -151,7 +151,7 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
     if (_exportVisibility && !_IsMergedTransform()) {
         bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
         bool isAnimated = false;  // if either shape or xform is animated, then animated
-        PxrUsdMayaUtil::getPlugValue(
+        UsdMayaUtil::getPlugValue(
                 depFn, "visibility", &isVisible, &isAnimated);
 
         if (_IsMergedShape()) {
@@ -161,7 +161,7 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
 
             bool parentVisible = true;
             bool parentAnimated = false;
-            PxrUsdMayaUtil::getPlugValue(
+            UsdMayaUtil::getPlugValue(
                     parentDepFn, "visibility", &parentVisible, &parentAnimated);
             isVisible = isVisible && parentVisible;
             isAnimated = isAnimated || parentAnimated;
@@ -184,8 +184,8 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
         // all, prim writers will write Gprims, so it's OK to skip writing
         // if this isn't a Gprim.
         if (UsdGeomGprim gprim = UsdGeomGprim(usdPrim)) {
-            PxrUsdMayaPrimWriterContext* unused = nullptr;
-            PxrUsdMayaTranslatorGprim::Write(
+            UsdMayaPrimWriterContext* unused = nullptr;
+            UsdMayaTranslatorGprim::Write(
                     GetDagPath().node(),
                     gprim,
                     unused);
@@ -196,13 +196,13 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
         if (_GetClassNamesToWrite(
                 GetDagPath().node(),
                 &classNames)) {
-            PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
+            UsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
         }
 
         // Write UsdGeomImageable typed schema attributes.
         // Currently only purpose, which is uniform, so only export at default
         // time.
-        PxrUsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
+        UsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
                 GetDagPath().node(),
                 usdPrim,
                 {UsdGeomTokens->purpose},
@@ -211,14 +211,14 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
 
         // Write API schema attributes and strongly-typed metadata.
         // We currently only support these at default time.
-        PxrUsdMayaWriteUtil::WriteMetadataToPrim(GetDagPath().node(), usdPrim);
-        PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
+        UsdMayaWriteUtil::WriteMetadataToPrim(GetDagPath().node(), usdPrim);
+        UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                 GetDagPath().node(), usdPrim, _GetSparseValueWriter());
     }
 
     // Write out user-tagged attributes, which are supported at default time and
     // at animated time-samples.
-    PxrUsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
+    UsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
             usdTime, _GetSparseValueWriter());
 }
 
@@ -258,7 +258,7 @@ UsdMayaPrimWriter::GetModelPaths() const
     return empty;
 }
 
-const PxrUsdMayaUtil::MDagPathMap<SdfPath>&
+const UsdMayaUtil::MDagPathMap<SdfPath>&
 UsdMayaPrimWriter::GetDagToUsdPathMapping() const
 {
     return _baseDagToUsdPaths;
@@ -288,7 +288,7 @@ UsdMayaPrimWriter::GetUsdStage() const
     return _writeJobCtx.getUsdStage();
 }
 
-const PxrUsdMayaJobExportArgs&
+const UsdMayaJobExportArgs&
 UsdMayaPrimWriter::_GetExportArgs() const
 {
     return _writeJobCtx.getArgs();

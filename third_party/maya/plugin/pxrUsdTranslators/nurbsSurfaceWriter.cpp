@@ -131,7 +131,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         VtArray<float> AlphaData;
         TfToken interpolation;
         VtArray<int> assignmentIndices;
-        if (PxrUsdMayaUtil::GetLinearShaderColor(nurbs,
+        if (UsdMayaUtil::GetLinearShaderColor(nurbs,
                                                  &RGBData,
                                                  &AlphaData,
                                                  &interpolation,
@@ -292,7 +292,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
     // If stValues vector has vertex data, create and assign st
     if (stValues.size() == static_cast<size_t>(numCVsInU * numCVsInV)) {
-        SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteUVAsFloat2())?  
+        SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?  
             (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray);
         UsdGeomPrimvar uvSet = 
             primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),

@@ -77,10 +77,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaReferenceAssemblyTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaReferenceAssemblyTokens,
                         PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS);
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaVariantSetTokens,
                         PXRUSDMAYA_VARIANT_SET_TOKENS);
 
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_ASSEM_NAMESPACE,
@@ -97,7 +97,7 @@ UsdMayaUseUsdAssemblyNamespace()
 // == Statics ==
 const MTypeId UsdMayaReferenceAssembly::typeId(0x0010A251);
 const MString UsdMayaReferenceAssembly::typeName(
-    PxrUsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
+    UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
 const MString UsdMayaReferenceAssembly::_classification("drawdb/geometry/transform");
 
 // Attributes
@@ -547,7 +547,7 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     // Hardcoded dynamic attr naming: usdVariantSet_*
     // If an attr starts with "usdVariantSet_", then dirty the stage
     MString dirtiedPlugName = dirtiedPlug.partialName();
-    const MString variantSetPrefix(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+    const MString variantSetPrefix(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
     if ((dirtiedPlugName.length() > variantSetPrefix.length()) &&
         (dirtiedPlugName.substring(0, variantSetPrefix.length()-1) == variantSetPrefix))
     {
@@ -624,12 +624,12 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
         }
 
         std::string attrName(attrPlug.partialName().asChar());
-        if (!TfStringStartsWith(attrName, PxrUsdMayaVariantSetTokens->PlugNamePrefix)) {
+        if (!TfStringStartsWith(attrName, UsdMayaVariantSetTokens->PlugNamePrefix)) {
             continue;
         }
 
         std::string variantSet = attrName.substr(
-            PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
+            UsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
         varSetNames.insert(variantSet);
     }
     return varSetNames;
@@ -680,7 +680,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
             const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
             TF_FOR_ALL(variantSet, varSetNamesForCache) {
-                MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+                MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
                 variantSetPlugName += variantSet->c_str();
                 MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
                 if (!varSetPlg.isNull()) {
@@ -846,7 +846,7 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
         std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
         std::map<std::string, std::string> varSets;
         TF_FOR_ALL(variantSet, variantSetNames) {
-            MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+            MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
             variantSetPlugName += variantSet->c_str();
             MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
             if (!varSetPlg.isNull()) {
@@ -1005,7 +1005,7 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
 
     bool setAttrSuccess = MPxAssembly::setInternalValueInContext(plug, dataHandle, ctx);
 
-    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), PxrUsdMayaVariantSetTokens->PlugNamePrefix);
+    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), UsdMayaVariantSetTokens->PlugNamePrefix);
 
     if (varSelChanged ||
             (std::find(attrsAffectingRepresentation.begin(),
@@ -1086,7 +1086,7 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
 
     std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
     for (std::string variantSetName : variantSetNames) {
-        MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+        MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
         variantSetPlugName += variantSetName.c_str();
         MPlug variantSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
         if (!variantSetPlg.isNull()) {
@@ -1110,7 +1110,7 @@ UsdMayaReferenceAssembly::ConnectMayaTimeToAssemblyTime()
         return;
     }
 
-    const MPlug mayaTimePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    const MPlug mayaTimePlug = UsdMayaUtil::GetMayaTimePlug();
     if (mayaTimePlug.isNull()) {
         return;
     }
@@ -1131,7 +1131,7 @@ UsdMayaReferenceAssembly::DisconnectAssemblyTimeFromMayaTime()
         return;
     }
 
-    const MPlug mayaTimePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    const MPlug mayaTimePlug = UsdMayaUtil::GetMayaTimePlug();
     if (mayaTimePlug.isNull()) {
         return;
     }
@@ -1274,10 +1274,10 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     }
     UsdStagePtr stage = proxyRootPrim.GetStage();
 
-    PxrUsdMayaEditUtil::PathEditMap refEdits;
+    UsdMayaEditUtil::PathEditMap refEdits;
     std::vector< std::string > invalidEdits, failedEdits;
 
-    PxrUsdMayaEditUtil::GetEditsForAssembly( assemObj, &refEdits, &invalidEdits );
+    UsdMayaEditUtil::GetEditsForAssembly( assemObj, &refEdits, &invalidEdits );
 
     if( !refEdits.empty() )
     {
@@ -1293,7 +1293,7 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
         // same layer(s).
         UsdEditContext editContext(stage, _sessionSublayer);
 
-        PxrUsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
+        UsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
     }
 
     if( !invalidEdits.empty() )
@@ -1512,8 +1512,8 @@ bool UsdMayaRepresentationHierBase::activate()
                 PxrUsdImportJobArgsTokens->Unloaded.GetString();
     }
 
-    PxrUsdMayaJobImportArgs importArgs =
-            PxrUsdMayaJobImportArgs::CreateFromDictionary(
+    UsdMayaJobImportArgs importArgs =
+            UsdMayaJobImportArgs::CreateFromDictionary(
                 userArgs, shouldImportWithProxies,
                 GfInterval::GetFullInterval());
     UsdMaya_ReadJob readJob(usdFilePath.asChar(),

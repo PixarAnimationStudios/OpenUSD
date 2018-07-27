@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file readUtil.h
+/// \file usdMaya/readUtil.h
 
 #ifndef PXRUSDMAYA_READUTIL_H
 #define PXRUSDMAYA_READUTIL_H
@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// This struct contains helpers for reading USD (thus writing Maya data).
-struct PxrUsdMayaReadUtil
+struct UsdMayaReadUtil
 {
     /// \name Helpers for reading USD
     /// \{
@@ -200,4 +200,4 @@ struct PxrUsdMayaReadUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_READUTIL_H
+#endif

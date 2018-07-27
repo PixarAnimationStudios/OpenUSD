@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 #define PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 
-/// \file diagnosticDelegate.h
+/// \file usdMaya/diagnosticDelegate.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -40,12 +40,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdMayaDiagnosticBatchContext;
+class UsdMayaDiagnosticBatchContext;
 
 /// Converts Tf diagnostics into native Maya infos, warnings, and errors.
 ///
 /// Provides an optional batching mechanism for diagnostics; see
-/// PxrUsdMayaDiagnosticBatchContext for more information. Note that errors
+/// UsdMayaDiagnosticBatchContext for more information. Note that errors
 /// are never batched.
 ///
 /// The IssueError(), IssueStatus(), etc. functions are thread-safe, since Tf
@@ -57,10 +57,10 @@ class PxrUsdMayaDiagnosticBatchContext;
 ///
 /// Installing and removing this diagnostic delegate is not thread-safe, and
 /// must be done only on the main thread.
-class PxrUsdMayaDiagnosticDelegate : TfDiagnosticMgr::Delegate {
+class UsdMayaDiagnosticDelegate : TfDiagnosticMgr::Delegate {
 public:
     PXRUSDMAYA_API
-    ~PxrUsdMayaDiagnosticDelegate() override;
+    ~UsdMayaDiagnosticDelegate() override;
 
     PXRUSDMAYA_API
     void IssueError(const TfError& err) override;
@@ -88,13 +88,13 @@ public:
     static int GetBatchCount();
 
 private:
-    friend class PxrUsdMayaDiagnosticBatchContext;
+    friend class UsdMayaDiagnosticBatchContext;
 
     std::atomic_int _batchCount;
     std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedStatuses;
     std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
 
-    PxrUsdMayaDiagnosticDelegate();
+    UsdMayaDiagnosticDelegate();
 
     void _StartBatch();
     void _EndBatch();
@@ -102,7 +102,7 @@ private:
 };
 
 /// As long as a batch context remains alive (process-wide), the
-/// PxrUsdMayaDiagnosticDelegate will save diagnostic messages, only emitting
+/// UsdMayaDiagnosticDelegate will save diagnostic messages, only emitting
 /// them when the last batch context is destructed. Note that errors are never
 /// batched.
 ///
@@ -117,22 +117,22 @@ private:
 ///   2. Context B constructed
 ///   3. Context A destructed
 ///   4. Context B destructed
-class PxrUsdMayaDiagnosticBatchContext : boost::noncopyable
+class UsdMayaDiagnosticBatchContext : boost::noncopyable
 {
 public:
     /// Constructs a batch context, causing all subsequent diagnostic messages
     /// to be batched on all threads.
     /// If this is invoked on a secondary thread, issues a fatal coding error.
     PXRUSDMAYA_API
-    PxrUsdMayaDiagnosticBatchContext();
+    UsdMayaDiagnosticBatchContext();
     PXRUSDMAYA_API
-    ~PxrUsdMayaDiagnosticBatchContext();
+    ~UsdMayaDiagnosticBatchContext();
 
 private:
     /// This pointer is used to "bind" this context to a specific delegate in
     /// case the global delegate is removed (and possibly re-installed) while
     /// this batch context is alive.
-    std::weak_ptr<PxrUsdMayaDiagnosticDelegate> _delegate;
+    std::weak_ptr<UsdMayaDiagnosticDelegate> _delegate;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

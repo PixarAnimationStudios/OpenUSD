@@ -53,11 +53,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 bool 
-PxrUsdMayaTranslatorNurbsPatch::Read(
+UsdMayaTranslatorNurbsPatch::Read(
         const UsdGeomNurbsPatch& usdNurbsPatch,
         MObject parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     if (!usdNurbsPatch) {
         return false;
@@ -69,7 +69,7 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
 
     // Create the transform node for the patch.
     MObject mayaNode;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                        parentNode,
                                                        args,
                                                        context,
@@ -207,14 +207,14 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
     // If a material is bound, create (or reuse if already present) and assign it
     // If no binding is present, assign the nurbs surface to the default shader
     const TfToken& shadingMode = args.GetShadingMode();  
-    PxrUsdMayaTranslatorMaterial::AssignMaterial(
+    UsdMayaTranslatorMaterial::AssignMaterial(
             shadingMode,
             usdNurbsPatch,
             surfaceObj,
             context);
 
     // NurbsSurface is a shape, so read Gprim properties
-    PxrUsdMayaTranslatorGprim::Read(usdNurbsPatch, surfaceObj, context);
+    UsdMayaTranslatorGprim::Read(usdNurbsPatch, surfaceObj, context);
 
     // == Animate points ==
     //   Use blendShapeDeformer so that all the points for a frame are contained in a single node

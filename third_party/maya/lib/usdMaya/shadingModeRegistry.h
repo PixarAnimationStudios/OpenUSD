@@ -60,21 +60,21 @@ PXR_NAMESPACE_OPEN_SCOPE
     (none) \
     (displayColor)
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaShadingModeTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     PXRUSDMAYA_API,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
 
-TF_DECLARE_WEAK_PTRS(PxrUsdMayaShadingModeRegistry);
+TF_DECLARE_WEAK_PTRS(UsdMayaShadingModeRegistry);
 
-class PxrUsdMayaShadingModeRegistry : public TfWeakBase
+class UsdMayaShadingModeRegistry : public TfWeakBase
 {
 public:
 
-    static PxrUsdMayaShadingModeExporterCreator GetExporter(const TfToken& name) {
+    static UsdMayaShadingModeExporterCreator GetExporter(const TfToken& name) {
         return GetInstance()._GetExporter(name);
     }
-    static PxrUsdMayaShadingModeImporter GetImporter(const TfToken& name) {
+    static UsdMayaShadingModeImporter GetImporter(const TfToken& name) {
         return GetInstance()._GetImporter(name);
     }
     static TfTokenVector ListExporters() {
@@ -85,36 +85,36 @@ public:
     }
 
     PXRUSDMAYA_API
-    static PxrUsdMayaShadingModeRegistry& GetInstance();
+    static UsdMayaShadingModeRegistry& GetInstance();
 
     PXRUSDMAYA_API
     bool RegisterExporter(
             const std::string& name,
-            PxrUsdMayaShadingModeExporterCreator fn);
+            UsdMayaShadingModeExporterCreator fn);
 
     PXRUSDMAYA_API
     bool RegisterImporter(
             const std::string& name,
-            PxrUsdMayaShadingModeImporter fn);
+            UsdMayaShadingModeImporter fn);
 
 private:
-    PxrUsdMayaShadingModeExporterCreator _GetExporter(const TfToken& name);
-    PxrUsdMayaShadingModeImporter _GetImporter(const TfToken& name);
+    UsdMayaShadingModeExporterCreator _GetExporter(const TfToken& name);
+    UsdMayaShadingModeImporter _GetImporter(const TfToken& name);
 
     TfTokenVector _ListExporters();
     TfTokenVector _ListImporters();
 
-    PxrUsdMayaShadingModeRegistry();
-    ~PxrUsdMayaShadingModeRegistry();
-    friend class TfSingleton<PxrUsdMayaShadingModeRegistry>;
+    UsdMayaShadingModeRegistry();
+    ~UsdMayaShadingModeRegistry();
+    friend class TfSingleton<UsdMayaShadingModeRegistry>;
 };
 
 #define DEFINE_SHADING_MODE_IMPORTER(name, contextName) \
-static MObject _ShadingModeImporter_##name(PxrUsdMayaShadingModeImportContext*); \
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeImportContext, name) {\
-    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterImporter(#name, &_ShadingModeImporter_##name); \
+static MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext*); \
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeImportContext, name) {\
+    UsdMayaShadingModeRegistry::GetInstance().RegisterImporter(#name, &_ShadingModeImporter_##name); \
 }\
-MObject _ShadingModeImporter_##name(PxrUsdMayaShadingModeImportContext* contextName)
+MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext* contextName)
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

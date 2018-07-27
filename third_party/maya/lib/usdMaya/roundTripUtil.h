@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// This holds some utility functions for dealing with data from Maya to Usd
 /// and back.
-struct PxrUsdMayaRoundTripUtil
+struct UsdMayaRoundTripUtil
 {
     /// Sometimes primvars like displayColor and displayOpacity aren't *really*
     /// authored by the user and instead are generated based on shaders, etc.

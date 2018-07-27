@@ -53,7 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UsdFileFilter, "*.usd *.usda *.usdc"))
 
 TF_DECLARE_PUBLIC_TOKENS(
-    PxrUsdMayaTranslatorTokens,
+    UsdMayaTranslatorTokens,
     PXRUSDMAYA_API,
     PXRUSDMAYA_TRANSLATOR_TOKENS);
 
@@ -121,7 +121,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     PXRUSDMAYA_API,
     PXRUSDMAYA_JOBIMPORTARGS_TOKENS);
 
-struct PxrUsdMayaJobExportArgs
+struct UsdMayaJobExportArgs
 {
     const TfToken defaultMeshScheme;
     const bool eulerFilter;
@@ -157,7 +157,7 @@ struct PxrUsdMayaJobExportArgs
     const std::string pythonPerFrameCallback;
     const std::string pythonPostCallback;
 
-    const PxrUsdMayaUtil::MDagPathSet dagPaths;
+    const UsdMayaUtil::MDagPathSet dagPaths;
     /// The interval over which to export animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
     /// animated (time-sampled) data should be exported.
@@ -170,19 +170,19 @@ struct PxrUsdMayaJobExportArgs
     // the model path. This to allow a proper internal reference.
     SdfPath usdModelRootOverridePath; // XXX can we make this const?
 
-    /// Creates a PxrUsdMayaJobExportArgs from the given \p dict, overlaid on
+    /// Creates a UsdMayaJobExportArgs from the given \p dict, overlaid on
     /// top of the default dictionary given by GetDefaultDictionary().
     /// The values of \p dict are stronger (will override) the values from the
     /// default dictionary.
     /// Issues runtime errors if \p dict contains values of the wrong type;
     /// types should match those declared in GetDefaultDictionary().
     PXRUSDMAYA_API
-    static PxrUsdMayaJobExportArgs CreateFromDictionary(
+    static UsdMayaJobExportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
-        const PxrUsdMayaUtil::MDagPathSet& dagPaths,
+        const UsdMayaUtil::MDagPathSet& dagPaths,
         const GfInterval& timeInterval = GfInterval());
 
-    /// Gets the default arguments dictionary for PxrUsdMayaJobExportArgs.
+    /// Gets the default arguments dictionary for UsdMayaJobExportArgs.
     PXRUSDMAYA_API
     static const VtDictionary& GetDefaultDictionary();
 
@@ -202,9 +202,9 @@ struct PxrUsdMayaJobExportArgs
 
 private:
     PXRUSDMAYA_API
-    PxrUsdMayaJobExportArgs(
+    UsdMayaJobExportArgs(
         const VtDictionary& userArgs,
-        const PxrUsdMayaUtil::MDagPathSet& dagPaths,
+        const UsdMayaUtil::MDagPathSet& dagPaths,
         const GfInterval& timeInterval);
 
     // Maya type ids to avoid exporting; these are
@@ -218,10 +218,10 @@ private:
 PXRUSDMAYA_API
 std::ostream& operator <<(
     std::ostream& out,
-    const PxrUsdMayaJobExportArgs& exportArgs);
+    const UsdMayaJobExportArgs& exportArgs);
 
 
-struct PxrUsdMayaJobImportArgs
+struct UsdMayaJobImportArgs
 {
     const TfToken assemblyRep;
     const TfToken::Set excludePrimvarNames;
@@ -240,25 +240,25 @@ struct PxrUsdMayaJobImportArgs
     /// non-empty interval.
     const GfInterval timeInterval;
 
-    /// Creates a PxrUsdMayaJobImportArgs from the given \p dict, overlaid on
+    /// Creates a UsdMayaJobImportArgs from the given \p dict, overlaid on
     /// top of the default dictionary given by GetDefaultDictionary().
     /// The values of \p dict are stronger (will override) the values from the
     /// default dictionary.
     /// Issues runtime errors if \p dict contains values of the wrong type;
     /// types should match those declared in GetDefaultDictionary().
     PXRUSDMAYA_API
-    static PxrUsdMayaJobImportArgs CreateFromDictionary(
+    static UsdMayaJobImportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
         const bool importWithProxyShapes = false,
         const GfInterval& timeInterval = GfInterval::GetFullInterval());
 
-    /// Gets the default arguments dictionary for PxrUsdMayaJobImportArgs.
+    /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     PXRUSDMAYA_API
     static const VtDictionary& GetDefaultDictionary();
 
 private:
     PXRUSDMAYA_API
-    PxrUsdMayaJobImportArgs(
+    UsdMayaJobImportArgs(
         const VtDictionary& userArgs,
         const bool importWithProxyShapes,
         const GfInterval& timeInterval);
@@ -267,7 +267,7 @@ private:
 PXRUSDMAYA_API
 std::ostream& operator <<(
     std::ostream& out,
-    const PxrUsdMayaJobImportArgs& importArgs);
+    const UsdMayaJobImportArgs& importArgs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_WRITE_JOB_H
-#define USDMAYA_WRITE_JOB_H
+#ifndef PXRUSDMAYA_WRITE_JOB_H
+#define PXRUSDMAYA_WRITE_JOB_H
 
 /// \file usdMaya/writeJob.h
 
@@ -48,7 +48,7 @@ class UsdMaya_WriteJob
   public:
 
     PXRUSDMAYA_API
-    UsdMaya_WriteJob(const PxrUsdMayaJobExportArgs & iArgs);
+    UsdMaya_WriteJob(const UsdMayaJobExportArgs & iArgs);
 
     PXRUSDMAYA_API
     ~UsdMaya_WriteJob();
@@ -78,12 +78,12 @@ class UsdMaya_WriteJob
     // List of renderLayerObjects. Currently used for variants
     MObjectArray mRenderLayerObjs;
 
-    PxrUsdMayaUtil::MDagPathMap<SdfPath> mDagPathToUsdPathMap;
+    UsdMayaUtil::MDagPathMap<SdfPath> mDagPathToUsdPathMap;
 
     // Currently only used if stripNamespaces is on, to ensure we don't have clashes
     TfHashMap<SdfPath, MDagPath, SdfPath::Hash> mUsdPathToDagPathMap;
 
-    PxrUsdMayaChaserRefPtrVector mChasers;
+    UsdMayaChaserRefPtrVector mChasers;
 
     UsdMayaWriteJobContext mJobCtx;
 

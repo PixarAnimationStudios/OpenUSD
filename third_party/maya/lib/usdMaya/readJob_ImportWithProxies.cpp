@@ -143,8 +143,8 @@ static
 bool
 _CreateParentTransformNodes(
         const UsdPrim& usdPrim,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     const UsdPrim parentPrim = usdPrim.GetParent();
     if (!parentPrim ||
@@ -171,7 +171,7 @@ _CreateParentTransformNodes(
         context->GetMayaNode(parentPrim.GetPath().GetParentPath(), false);
 
     MStatus status;
-    return PxrUsdMayaTranslatorUtil::CreateTransformNode(parentPrim,
+    return UsdMayaTranslatorUtil::CreateTransformNode(parentPrim,
                                                          grandParentNode,
                                                          args,
                                                          context,
@@ -187,15 +187,15 @@ UsdMaya_ReadJob::_ProcessProxyPrims(
 {
     TF_FOR_ALL(iter, proxyPrims) {
         const UsdPrim proxyPrim = *iter;
-        PxrUsdMayaPrimReaderArgs args(proxyPrim, mArgs);
-        PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
+        UsdMayaPrimReaderArgs args(proxyPrim, mArgs);
+        UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (!_CreateParentTransformNodes(proxyPrim, args, &ctx)) {
             return false;
         }
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
-        if (!PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
+        if (!UsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
                                                             mVariants,
                                                             parentNode,
                                                             args,
@@ -208,7 +208,7 @@ UsdMaya_ReadJob::_ProcessProxyPrims(
     // points we found.
     if (!collapsePointPathStrings.empty()) {
         MStatus status;
-        PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
+        UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // Get the geom root proxy shape node.
         SdfPath proxyShapePath = pxrGeomRoot.GetPath().AppendChild(
@@ -240,8 +240,8 @@ UsdMaya_ReadJob::_ProcessSubAssemblyPrims(
 {
     TF_FOR_ALL(iter, subAssemblyPrims) {
         const UsdPrim subAssemblyPrim = *iter;
-        PxrUsdMayaPrimReaderArgs args(subAssemblyPrim, mArgs);
-        PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
+        UsdMayaPrimReaderArgs args(subAssemblyPrim, mArgs);
+        UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // We use the file path of the file currently being imported and
         // the path to the prim within that file when creating the
@@ -254,7 +254,7 @@ UsdMaya_ReadJob::_ProcessSubAssemblyPrims(
         }
 
         MObject parentNode = ctx.GetMayaNode(subAssemblyPrim.GetPath().GetParentPath(), false);
-        if (!PxrUsdMayaTranslatorModelAssembly::Read(subAssemblyPrim,
+        if (!UsdMayaTranslatorModelAssembly::Read(subAssemblyPrim,
                                                      subAssemblyUsdFilePath,
                                                      subAssemblyUsdPrimPath,
                                                      parentNode,
@@ -273,16 +273,16 @@ UsdMaya_ReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 {
     TF_FOR_ALL(iter, cameraPrims) {
         const UsdPrim cameraPrim = *iter;
-        PxrUsdMayaPrimReaderArgs args(cameraPrim, mArgs);
-        PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
+        UsdMayaPrimReaderArgs args(cameraPrim, mArgs);
+        UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (!_CreateParentTransformNodes(cameraPrim, args, &ctx)) {
             return false;
         }
 
-        if (PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn =
-                PxrUsdMayaPrimReaderRegistry::Find(cameraPrim.GetTypeName())) {
-            PxrUsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
+        if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn =
+                UsdMayaPrimReaderRegistry::Find(cameraPrim.GetTypeName())) {
+            UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
                 primReader->Read(&ctx);
             }

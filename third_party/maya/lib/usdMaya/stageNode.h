@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_STAGE_NODE_TOKENS \
     ((MayaTypeName, "pxrUsdStageNode"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaStageNodeTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaStageNodeTokens,
                          PXRUSDMAYA_API,
                          PXRUSDMAYA_STAGE_NODE_TOKENS);
 

@@ -38,13 +38,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaStageDataTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaStageDataTokens,
                         PXRUSDMAYA_STAGE_DATA_TOKENS);
 
 
 const MTypeId UsdMayaStageData::mayaTypeId(0x0010A257);
 const MString UsdMayaStageData::typeName(
-    PxrUsdMayaStageDataTokens->MayaTypeName.GetText());
+    UsdMayaStageDataTokens->MayaTypeName.GetText());
 
 
 /* This exists solely to make sure that the usdStage instance

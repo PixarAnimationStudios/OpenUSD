@@ -38,7 +38,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsPatch, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return PxrUsdMayaTranslatorNurbsPatch::Read(
+    return UsdMayaTranslatorNurbsPatch::Read(
             UsdGeomNurbsPatch(usdPrim),
             parentNode,
             args,

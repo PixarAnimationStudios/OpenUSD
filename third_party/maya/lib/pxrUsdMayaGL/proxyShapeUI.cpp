@@ -198,7 +198,7 @@ UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() : MPxSurfaceShapeUI()
     MStatus status;
     _onNodeRemovedCallbackId = MDGMessage::addNodeRemovedCallback(
         _OnNodeRemoved,
-        PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+        UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
         this,
         &status);
     CHECK_MSTATUS(status);

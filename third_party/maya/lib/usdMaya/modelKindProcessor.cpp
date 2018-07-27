@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 UsdMaya_ModelKindProcessor::UsdMaya_ModelKindProcessor(
-    const PxrUsdMayaJobExportArgs& args)
+    const UsdMayaJobExportArgs& args)
     : _args(args),
       _rootIsAssembly(KindRegistry::IsA(args.rootKind, KindTokens->assembly))
 {

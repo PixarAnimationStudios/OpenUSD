@@ -94,7 +94,7 @@ _GetJointHierarchyComponents(const MDagPath& dagPath,
     if (!dagIter.isDone()) {
         MDagPath path;
         dagIter.getPath(path);
-        if (PxrUsdMayaTranslatorSkel::IsUsdSkeleton(path)) {
+        if (UsdMayaTranslatorSkel::IsUsdSkeleton(path)) {
             *skelXformPath = path;
             dagIter.next();
         }
@@ -155,14 +155,14 @@ PxrUsdTranslators_JointWriter::GetJointNames(
     // Joints have to be transforms, so mergeTransformAndShape
     // shouldn't matter here. (Besides, we're not actually using these
     // to point to prims.)
-    SdfPath rootPath = PxrUsdMayaUtil::MDagPathToUsdPath(
+    SdfPath rootPath = UsdMayaUtil::MDagPathToUsdPath(
             jointHierarchyRootPath, /*mergeTransformAndShape*/ false,
             stripNamespaces);
 
     VtTokenArray result;
     for (const MDagPath& joint : joints) {
 
-        SdfPath path = PxrUsdMayaUtil::MDagPathToUsdPath(
+        SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
                 joint, /*mergeTransformAndShape*/ false, stripNamespaces);
         result.push_back(path.MakeRelativePath(rootPath).GetToken());
     }
@@ -174,7 +174,7 @@ SdfPath
 PxrUsdTranslators_JointWriter::GetSkeletonPath(const MDagPath& rootJoint,
                                     bool stripNamespaces)
 {
-    return PxrUsdMayaUtil::MDagPathToUsdPath(
+    return UsdMayaUtil::MDagPathToUsdPath(
         rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces);
 }
 
@@ -184,15 +184,15 @@ static bool
 _IsTransformNodeAnimated(const MDagPath& dagPath)
 {
     MFnDependencyNode node(dagPath.node());
-    return PxrUsdMayaUtil::isPlugAnimated(node.findPlug("translateX")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("translateY")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("translateZ")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("rotateX")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("rotateY")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("rotateZ")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("scaleX")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("scaleY")) ||
-           PxrUsdMayaUtil::isPlugAnimated(node.findPlug("scaleZ"));
+    return UsdMayaUtil::isPlugAnimated(node.findPlug("translateX")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("translateY")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("translateZ")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("rotateX")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("rotateY")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("rotateZ")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("scaleX")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("scaleY")) ||
+           UsdMayaUtil::isPlugAnimated(node.findPlug("scaleZ"));
 }
 
 
@@ -202,7 +202,7 @@ _GetJointWorldBindTransform(const MDagPath& dagPath)
 {
     MFnDagNode dagNode(dagPath);
     MMatrix restTransformWorld;
-    if (PxrUsdMayaUtil::getPlugMatrix(
+    if (UsdMayaUtil::getPlugMatrix(
             dagNode, "bindPose", &restTransformWorld)) {
         return GfMatrix4d(restTransformWorld.matrix);
     }
@@ -544,14 +544,14 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
     // Check if the root joint is the special root joint created
     // for round-tripping UsdSkel data.
     bool haveUsdSkelXform =
-        PxrUsdMayaTranslatorSkel::IsUsdSkeleton(GetDagPath());
+        UsdMayaTranslatorSkel::IsUsdSkeleton(GetDagPath());
 
     if (!haveUsdSkelXform) {
         // We don't have a joint that represents the Skeleton.
         // This means that the joint hierarchy is originating from Maya.    
         // Mark it, so that the exported results can be reimported in
         // a structure-preserving way.
-        PxrUsdMayaTranslatorSkel::MarkSkelAsMayaGenerated(_skel);
+        UsdMayaTranslatorSkel::MarkSkelAsMayaGenerated(_skel);
     }
     
     _GetJointHierarchyComponents(GetDagPath(),
@@ -573,7 +573,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
     // Setup binding relationships on the instance prim,
     // so that the root xform establishes a skeleton instance 
     // with the right transform.
-    const UsdSkelBindingAPI binding = PxrUsdMayaTranslatorUtil
+    const UsdSkelBindingAPI binding = UsdMayaTranslatorUtil
         ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(_skel.GetPrim());
 
     // Mark the bindings for post processing.
@@ -604,7 +604,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
         _skelXformAttr = _skel.MakeMatrixXform();
         if (!_GetExportArgs().timeInterval.IsEmpty()) {
             MObject node = _skelXformPath.node();
-            _skelXformIsAnimated = PxrUsdMayaUtil::isAnimated(node);
+            _skelXformIsAnimated = UsdMayaUtil::isAnimated(node);
         } else {
             _skelXformIsAnimated = false;
         }

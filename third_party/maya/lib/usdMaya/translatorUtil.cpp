@@ -41,11 +41,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateTransformNode(
+UsdMayaTranslatorUtil::CreateTransformNode(
         const UsdPrim& usdPrim,
         MObject& parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         MStatus* status,
         MObject* mayaNodeObj)
 {
@@ -66,18 +66,18 @@ PxrUsdMayaTranslatorUtil::CreateTransformNode(
 
     // Read xformable attributes from the UsdPrim on to the transform node.
     UsdGeomXformable xformable(usdPrim);
-    PxrUsdMayaTranslatorXformable::Read(xformable, *mayaNodeObj, args, context);
+    UsdMayaTranslatorXformable::Read(xformable, *mayaNodeObj, args, context);
 
     return true;
 }
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateNode(
+UsdMayaTranslatorUtil::CreateNode(
         const UsdPrim& usdPrim,
         const MString& nodeTypeName,
         MObject& parentNode,
-        PxrUsdMayaPrimReaderContext* context,
+        UsdMayaPrimReaderContext* context,
         MStatus* status,
         MObject* mayaNodeObj)
 {
@@ -87,11 +87,11 @@ PxrUsdMayaTranslatorUtil::CreateNode(
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateNode(
+UsdMayaTranslatorUtil::CreateNode(
         const SdfPath& path,
         const MString& nodeTypeName,
         MObject& parentNode,
-        PxrUsdMayaPrimReaderContext* context,
+        UsdMayaPrimReaderContext* context,
         MStatus* status,
         MObject* mayaNodeObj)
 {
@@ -112,7 +112,7 @@ PxrUsdMayaTranslatorUtil::CreateNode(
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateNode(
+UsdMayaTranslatorUtil::CreateNode(
         const MString& nodeName,
         const MString& nodeTypeName,
         MObject& parentNode,

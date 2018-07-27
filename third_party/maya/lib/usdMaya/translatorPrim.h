@@ -38,17 +38,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Provides helper functions for reading UsdPrim.  This should more
 /// accurately take a UsdGeomImageable.
-struct PxrUsdMayaTranslatorPrim
+struct UsdMayaTranslatorPrim
 {
     PXRUSDMAYA_API
     static void Read(
             const UsdPrim& prim, 
             MObject mayaNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSD_TRANSLATOR_PRIM_H
+#endif

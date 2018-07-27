@@ -40,12 +40,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaShadingModeImporterTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens,
     PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
 
 
 bool
-PxrUsdMayaShadingModeImportContext::GetCreatedObject(
+UsdMayaShadingModeImportContext::GetCreatedObject(
         const UsdPrim& prim,
         MObject* obj) const
 {
@@ -63,7 +63,7 @@ PxrUsdMayaShadingModeImportContext::GetCreatedObject(
 }
 
 MObject
-PxrUsdMayaShadingModeImportContext::AddCreatedObject(
+UsdMayaShadingModeImportContext::AddCreatedObject(
         const UsdPrim& prim,
         const MObject& obj)
 {
@@ -75,7 +75,7 @@ PxrUsdMayaShadingModeImportContext::AddCreatedObject(
 }
 
 MObject
-PxrUsdMayaShadingModeImportContext::AddCreatedObject(
+UsdMayaShadingModeImportContext::AddCreatedObject(
         const SdfPath& path,
         const MObject& obj)
 {
@@ -87,7 +87,7 @@ PxrUsdMayaShadingModeImportContext::AddCreatedObject(
 }
 
 MObject
-PxrUsdMayaShadingModeImportContext::CreateShadingEngine() const
+UsdMayaShadingModeImportContext::CreateShadingEngine() const
 {
     const TfToken shadingEngineName = GetShadingEngineName();
     if (shadingEngineName.IsEmpty()) {
@@ -114,7 +114,7 @@ PxrUsdMayaShadingModeImportContext::CreateShadingEngine() const
 }
 
 TfToken
-PxrUsdMayaShadingModeImportContext::GetShadingEngineName() const
+UsdMayaShadingModeImportContext::GetShadingEngineName() const
 {
     if (!_shadeMaterial && !_boundPrim) {
         return TfToken();
@@ -137,53 +137,53 @@ PxrUsdMayaShadingModeImportContext::GetShadingEngineName() const
     const TfToken shadingEngineName(
         TfStringPrintf(
             "%s:%s",
-            PxrUsdMayaShadingModeImporterTokens->MayaMaterialNamespace.GetText(),
+            UsdMayaShadingModeImporterTokens->MayaMaterialNamespace.GetText(),
             primName.GetText()));
 
     return shadingEngineName;
 }
 
 TfToken
-PxrUsdMayaShadingModeImportContext::GetSurfaceShaderPlugName() const
+UsdMayaShadingModeImportContext::GetSurfaceShaderPlugName() const
 {
     return _surfaceShaderPlugName;
 }
 
 TfToken
-PxrUsdMayaShadingModeImportContext::GetVolumeShaderPlugName() const
+UsdMayaShadingModeImportContext::GetVolumeShaderPlugName() const
 {
     return _volumeShaderPlugName;
 }
 
 TfToken
-PxrUsdMayaShadingModeImportContext::GetDisplacementShaderPlugName() const
+UsdMayaShadingModeImportContext::GetDisplacementShaderPlugName() const
 {
     return _displacementShaderPlugName;
 }
 
 void
-PxrUsdMayaShadingModeImportContext::SetShadingEngineName(
+UsdMayaShadingModeImportContext::SetShadingEngineName(
         const TfToken& shadingEngineName)
 {
     _shadingEngineName = shadingEngineName;
 }
 
 void
-PxrUsdMayaShadingModeImportContext::SetSurfaceShaderPlugName(
+UsdMayaShadingModeImportContext::SetSurfaceShaderPlugName(
         const TfToken& surfaceShaderPlugName)
 {
     _surfaceShaderPlugName = surfaceShaderPlugName;
 }
 
 void
-PxrUsdMayaShadingModeImportContext::SetVolumeShaderPlugName(
+UsdMayaShadingModeImportContext::SetVolumeShaderPlugName(
         const TfToken& volumeShaderPlugName)
 {
     _volumeShaderPlugName = volumeShaderPlugName;
 }
 
 void
-PxrUsdMayaShadingModeImportContext::SetDisplacementShaderPlugName(
+UsdMayaShadingModeImportContext::SetDisplacementShaderPlugName(
         const TfToken& displacementShaderPlugName)
 {
     _displacementShaderPlugName = displacementShaderPlugName;

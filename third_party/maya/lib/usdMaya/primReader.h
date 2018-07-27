@@ -31,19 +31,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdMayaPrimReader
+class UsdMayaPrimReader
 {
 public:
     PXRUSDMAYA_API
-    PxrUsdMayaPrimReader(const PxrUsdMayaPrimReaderArgs&);
-    virtual ~PxrUsdMayaPrimReader() {};
+    UsdMayaPrimReader(const UsdMayaPrimReaderArgs&);
+    virtual ~UsdMayaPrimReader() {};
 
     /// Reads the USD prim given by the prim reader args into a Maya shape,
     /// modifying the prim reader context as a result.
     /// Callers must ensure \p context is non-null.
     /// Returns true if successful.
     PXRUSDMAYA_API
-    virtual bool Read(PxrUsdMayaPrimReaderContext* context) = 0;
+    virtual bool Read(UsdMayaPrimReaderContext* context) = 0;
 
     /// Whether this prim reader specifies a PostReadSubtree step.
     PXRUSDMAYA_API
@@ -57,19 +57,19 @@ public:
     /// (1) Read A (2) Read B (3) PostReadSubtree B (4) PostReadSubtree A,
     /// (5) Read C (6) PostReadSubtree C
     PXRUSDMAYA_API
-    virtual void PostReadSubtree(PxrUsdMayaPrimReaderContext* context);
+    virtual void PostReadSubtree(UsdMayaPrimReaderContext* context);
 
 protected:
     /// Input arguments. Read data about the input USD prim from here.
     PXRUSDMAYA_API
-    const PxrUsdMayaPrimReaderArgs& _GetArgs();
+    const UsdMayaPrimReaderArgs& _GetArgs();
 
 private:
-    const PxrUsdMayaPrimReaderArgs _args;
+    const UsdMayaPrimReaderArgs _args;
 };
 
-typedef std::shared_ptr<PxrUsdMayaPrimReader> PxrUsdMayaPrimReaderSharedPtr;
+typedef std::shared_ptr<UsdMayaPrimReader> UsdMayaPrimReaderSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MAYAPRIMREADER_H
+#endif

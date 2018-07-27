@@ -34,7 +34,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomMesh, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return PxrUsdMayaTranslatorMesh::Create(
+    return UsdMayaTranslatorMesh::Create(
             UsdGeomMesh(usdPrim),
             parentNode,
             args,

@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for reading UsdShadeMaterial
-struct PxrUsdMayaTranslatorMaterial
+struct UsdMayaTranslatorMaterial
 {
     /// \brief Reads \p material according to \p shadingMode .  Some shading modes
     /// may want to know the \p boundPrim.  This returns an MObject that is the
@@ -56,7 +56,7 @@ struct PxrUsdMayaTranslatorMaterial
             const TfToken& shadingMode,
             const UsdShadeMaterial& material,
             const UsdGeomGprim& boundPrim,
-            PxrUsdMayaPrimReaderContext* context);
+            UsdMayaPrimReaderContext* context);
 
     /// \brief Given a \p prim, assigns a material to it according to \p
     /// shadingMode.  This will see which UsdShadeMaterial is bound to \p prim.  If
@@ -67,7 +67,7 @@ struct PxrUsdMayaTranslatorMaterial
             const TfToken& shadingMode,
             const UsdGeomGprim& prim,
             MObject shapeObj,
-            PxrUsdMayaPrimReaderContext* context);
+            UsdMayaPrimReaderContext* context);
 
     /// Finds shadingEngines in the maya scene and exports them to \p stage.  This
     /// will call the current export for the shadingMode.
@@ -77,8 +77,8 @@ struct PxrUsdMayaTranslatorMaterial
     ExportShadingEngines(
             const UsdStageRefPtr& stage,
             const TfToken& shadingMode,
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-            const PxrUsdMayaExportParams &exportParams);
+            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+            const UsdMayaExportParams &exportParams);
 };
 
 

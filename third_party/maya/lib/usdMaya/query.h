@@ -35,7 +35,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct PxrUsdMayaQuery
+struct UsdMayaQuery
 {
     /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
      */
@@ -48,4 +48,4 @@ struct PxrUsdMayaQuery
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USD_MAYA_QUERY_H
+#endif

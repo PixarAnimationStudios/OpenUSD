@@ -49,13 +49,13 @@ std::string _FindOrCreateMayaAttr(
     std::string attrPath;
 
     MObject obj;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName(nodeName, obj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, obj);
     CHECK_MSTATUS_AND_RETURN(status, attrPath);
 
     MFnDependencyNode depNode(obj, &status);
     CHECK_MSTATUS_AND_RETURN(status, attrPath);
 
-    MObject attrObj = PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+    MObject attrObj = UsdMayaReadUtil::FindOrCreateMayaAttr(
             typeName, variability, depNode, attrName, attrNiceName);
     if (attrObj.isNull()) {
         return attrPath;
@@ -71,13 +71,13 @@ bool _SetMayaAttr(
     const VtValue& newValue)
 {
     MPlug plug;
-    MStatus status = PxrUsdMayaUtil::GetPlugByName(attrPath, plug);
+    MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     if (!status) {
         TF_RUNTIME_ERROR("Couldn't find plug '%s'", attrPath.c_str());
         return false;
     }
 
-    return PxrUsdMayaReadUtil::SetMayaAttr(plug, newValue);
+    return UsdMayaReadUtil::SetMayaAttr(plug, newValue);
 }
 
 static
@@ -86,18 +86,18 @@ void _SetMayaAttrKeyableState(
     const SdfVariability variability)
 {
     MPlug plug;
-    MStatus status = PxrUsdMayaUtil::GetPlugByName(attrPath, plug);
+    MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     if (!status) {
         TF_RUNTIME_ERROR("Couldn't find plug '%s'", attrPath.c_str());
         return;
     }
 
-    PxrUsdMayaReadUtil::SetMayaAttrKeyableState(plug, variability);
+    UsdMayaReadUtil::SetMayaAttrKeyableState(plug, variability);
 }
 
 void wrapReadUtil()
 {
-    typedef PxrUsdMayaReadUtil This;
+    typedef UsdMayaReadUtil This;
     class_<This>("ReadUtil", no_init)
         .def("ReadFloat2AsUV", This::ReadFloat2AsUV)
         .staticmethod("ReadFloat2AsUV")

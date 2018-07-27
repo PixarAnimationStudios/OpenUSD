@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_READ_JOB_H
-#define USDMAYA_READ_JOB_H
+#ifndef PXRUSDMAYA_READ_JOB_H
+#define PXRUSDMAYA_READ_JOB_H
 
 /// \file usdMaya/readJob.h
 
@@ -54,7 +54,7 @@ class UsdMaya_ReadJob
             const std::string& iFileName,
             const std::string& iPrimPath,
             const std::map<std::string, std::string>& iVariants,
-            const PxrUsdMayaJobImportArgs & iArgs);
+            const UsdMayaJobImportArgs & iArgs);
 
     PXRUSDMAYA_API
     ~UsdMaya_ReadJob();
@@ -91,13 +91,13 @@ class UsdMaya_ReadJob
     bool _ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims);
 
     // Data
-    PxrUsdMayaJobImportArgs mArgs;
+    UsdMayaJobImportArgs mArgs;
     std::string mFileName;
     std::string mPrimPath;
     std::map<std::string,std::string> mVariants;
     MDagModifier mDagModifierUndo;
     bool mDagModifierSeeded;
-    PxrUsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
+    UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
     MDagPath mMayaRootDagPath;
 };
 

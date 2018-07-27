@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS \
     ((MayaTypeName, "pxrUsdPointBasedDeformerNode"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaPointBasedDeformerNodeTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaPointBasedDeformerNodeTokens,
                          PXRUSDMAYA_API,
                          PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS);
 

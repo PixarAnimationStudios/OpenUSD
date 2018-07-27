@@ -41,14 +41,14 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
         (PrimWriter)
 );
 
-typedef std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
+typedef std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
 static _Registry _reg;
 
 /* static */
 void 
-PxrUsdMayaPrimWriterRegistry::Register(
+UsdMayaPrimWriterRegistry::Register(
         const std::string& mayaTypeName,
-        PxrUsdMayaPrimWriterRegistry::WriterFactoryFn fn)
+        UsdMayaPrimWriterRegistry::WriterFactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
             "Registering UsdMayaPrimWriter for maya type %s.\n", mayaTypeName.c_str());
@@ -63,19 +63,19 @@ PxrUsdMayaPrimWriterRegistry::Register(
 
 /* static */
 void
-PxrUsdMayaPrimWriterRegistry::RegisterRaw(
+UsdMayaPrimWriterRegistry::RegisterRaw(
         const std::string& mayaTypeName,
-        PxrUsdMayaPrimWriterRegistry::WriterFn fn)
+        UsdMayaPrimWriterRegistry::WriterFn fn)
 {
-    Register(mayaTypeName, PxrUsdMaya_FunctorPrimWriter::CreateFactory(fn));
+    Register(mayaTypeName, UsdMaya_FunctorPrimWriter::CreateFactory(fn));
 }
 
 /* static */
-PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
-PxrUsdMayaPrimWriterRegistry::Find(
+UsdMayaPrimWriterRegistry::WriterFactoryFn
+UsdMayaPrimWriterRegistry::Find(
         const std::string& mayaTypeName)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaPrimWriterRegistry>();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
@@ -86,7 +86,7 @@ PxrUsdMayaPrimWriterRegistry::Find(
 
     static std::vector<TfToken> SCOPE = boost::assign::list_of
         (_tokens->UsdMaya)(_tokens->PrimWriter);
-    PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
+    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.

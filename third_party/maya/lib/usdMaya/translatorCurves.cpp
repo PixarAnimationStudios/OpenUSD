@@ -46,11 +46,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 bool
-PxrUsdMayaTranslatorCurves::Create(
+UsdMayaTranslatorCurves::Create(
         const UsdGeomCurves& curves,
         MObject parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     if (!curves) {
         return false;
@@ -62,7 +62,7 @@ PxrUsdMayaTranslatorCurves::Create(
 
     // Create node (transform)
     MObject mayaNodeTransformObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,

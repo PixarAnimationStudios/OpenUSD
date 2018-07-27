@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_MODEL_KIND_PROCESSOR_H
-#define USDMAYA_MODEL_KIND_PROCESSOR_H
+#ifndef PXRUSDMAYA_MODEL_KIND_PROCESSOR_H
+#define PXRUSDMAYA_MODEL_KIND_PROCESSOR_H
 
 /// \file usdMaya/modelKindProcessor.h
 
@@ -48,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMaya_ModelKindProcessor
 {
 public:
-    UsdMaya_ModelKindProcessor(const PxrUsdMayaJobExportArgs& args);
+    UsdMaya_ModelKindProcessor(const UsdMayaJobExportArgs& args);
 
     /// Processes the given prim in order to collect model hierarchy data.
     /// This should be called after the prim has been written with the given
@@ -74,7 +74,7 @@ private:
     typedef std::unordered_map<SdfPath, bool, SdfPath::Hash> _PathBoolMap;
     typedef std::unordered_set<SdfPath, SdfPath::Hash> _PathSet;
 
-    PxrUsdMayaJobExportArgs _args;
+    UsdMayaJobExportArgs _args;
 
     // Precomputes whether _args.rootKind IsA assembly.
     bool _rootIsAssembly;

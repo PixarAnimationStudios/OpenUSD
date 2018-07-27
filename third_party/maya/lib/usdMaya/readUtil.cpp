@@ -62,7 +62,7 @@ TF_DEFINE_ENV_SETTING(
         "Set to false to disable ability to read Float2 type as a UV set");
 
 bool
-PxrUsdMayaReadUtil::ReadFloat2AsUV()
+UsdMayaReadUtil::ReadFloat2AsUV()
 {
     static const bool readFloat2AsUV = 
         TfGetEnvSetting(PIXMAYA_READ_FLOAT2_AS_UV);
@@ -70,7 +70,7 @@ PxrUsdMayaReadUtil::ReadFloat2AsUV()
 }
 
 MObject
-PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+UsdMayaReadUtil::FindOrCreateMayaAttr(
         const SdfValueTypeName& typeName,
         const SdfVariability variability,
         MFnDependencyNode& depNode,
@@ -199,7 +199,7 @@ _FindOrCreateMayaNumericAttr(
 }
 
 MObject
-PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+UsdMayaReadUtil::FindOrCreateMayaAttr(
         const SdfValueTypeName& typeName,
         const SdfVariability variability,
         MFnDependencyNode& depNode,
@@ -218,7 +218,7 @@ PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
 }
 
 MObject
-PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+UsdMayaReadUtil::FindOrCreateMayaAttr(
         const TfType& type,
         const TfToken& role,
         const SdfVariability variability,
@@ -383,14 +383,14 @@ _ConvertVec(
         const MPlug& plug,
         const T& val) {
     if (MFnAttribute(plug.attribute()).isUsedAsColor()) {
-        return PxrUsdMayaColorSpace::ConvertLinearToMaya(val);
+        return UsdMayaColorSpace::ConvertLinearToMaya(val);
     }
     else {
         return val;
     }
 }
 
-bool PxrUsdMayaReadUtil::SetMayaAttr(
+bool UsdMayaReadUtil::SetMayaAttr(
         MPlug& attrPlug,
         const UsdAttribute& usdAttr)
 {
@@ -405,7 +405,7 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
     return false;
 }
 
-bool PxrUsdMayaReadUtil::SetMayaAttr(
+bool UsdMayaReadUtil::SetMayaAttr(
         MPlug& attrPlug,
         const VtValue& newValue)
 {
@@ -413,7 +413,7 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
     return SetMayaAttr(attrPlug, newValue, modifier);
 }
 
-bool PxrUsdMayaReadUtil::SetMayaAttr(
+bool UsdMayaReadUtil::SetMayaAttr(
         MPlug& attrPlug,
         const VtValue& newValue,
         MDGModifier& modifier)
@@ -731,7 +731,7 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
 }
 
 void
-PxrUsdMayaReadUtil::SetMayaAttrKeyableState(
+UsdMayaReadUtil::SetMayaAttrKeyableState(
         MPlug& attrPlug,
         const SdfVariability variability)
 {
@@ -740,7 +740,7 @@ PxrUsdMayaReadUtil::SetMayaAttrKeyableState(
 }
 
 void
-PxrUsdMayaReadUtil::SetMayaAttrKeyableState(
+UsdMayaReadUtil::SetMayaAttrKeyableState(
         MPlug& attrPlug,
         const SdfVariability variability,
         MDGModifier& modifier)
@@ -752,12 +752,12 @@ PxrUsdMayaReadUtil::SetMayaAttrKeyableState(
 }
 
 bool
-PxrUsdMayaReadUtil::ReadMetadataFromPrim(
+UsdMayaReadUtil::ReadMetadataFromPrim(
     const TfToken::Set& includeMetadataKeys,
     const UsdPrim& prim,
     const MObject& mayaObject)
 {
-    PxrUsdMayaAdaptor adaptor(mayaObject);
+    UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
         return false;
     }
@@ -765,8 +765,8 @@ PxrUsdMayaReadUtil::ReadMetadataFromPrim(
     for (const TfToken& key : includeMetadataKeys) {
         if (key == UsdTokens->apiSchemas) {
             // Never import apiSchemas from metadata. It has a meaning in the
-            // PxrUsdMayaAdaptor system, so it should only be added to the
-            // Maya node by PxrUsdMayaAdaptor::ApplySchema().
+            // UsdMayaAdaptor system, so it should only be added to the
+            // Maya node by UsdMayaAdaptor::ApplySchema().
             continue;
         }
         if (!prim.HasAuthoredMetadata(key)) {
@@ -780,12 +780,12 @@ PxrUsdMayaReadUtil::ReadMetadataFromPrim(
 }
 
 bool
-PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
     const TfToken::Set& includeAPINames,
     const UsdPrim& prim,
     const MObject& mayaObject)
 {
-    PxrUsdMayaAdaptor adaptor(mayaObject);
+    UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
         return false;
     }
@@ -794,7 +794,7 @@ PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
         if (includeAPINames.count(schemaName) == 0) {
             continue;
         }
-        if (PxrUsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
+        if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
                 adaptor.ApplySchemaByName(schemaName)) {
             for (const TfToken& attrName : schemaAdaptor.GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
@@ -812,20 +812,20 @@ PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
 
 /* static */
 size_t
-PxrUsdMayaReadUtil::ReadSchemaAttributesFromPrim(
+UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
     const UsdPrim& prim,
     const MObject& mayaObject,
     const TfType& schemaType,
     const std::vector<TfToken>& attributeNames,
     const UsdTimeCode& usdTime)
 {
-    PxrUsdMayaAdaptor adaptor(mayaObject);
+    UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
         return 0;
     }
 
     size_t count = 0;
-    if (PxrUsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
+    if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
             adaptor.GetSchemaOrInheritedSchema(schemaType)) {
         for (const TfToken& attrName : attributeNames) {
             if (UsdAttribute attr = prim.GetAttribute(attrName)) {

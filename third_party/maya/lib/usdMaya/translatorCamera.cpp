@@ -54,8 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 static bool _ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context);
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context);
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((MayaCameraTypeName, "camera"))
@@ -139,10 +139,10 @@ _GetTimeAndValueArrayForUsdAttribute(
 
         switch (convertToUnit) {
             case MDistance::kInches:
-                attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToInches(attrValue);
                 break;
             case MDistance::kCentimeters:
-                attrValue = PxrUsdMayaUtil::ConvertMMToCM(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToCM(attrValue);
                 break;
             default:
                 // The input is expected to be in millimeters.
@@ -203,7 +203,7 @@ _CreateAnimCurveForPlug(
         MPlug& plug,
         MTimeArray& timeArray,
         MDoubleArray& valueArray,
-        PxrUsdMayaPrimReaderContext* context)
+        UsdMayaPrimReaderContext* context)
 {
     MFnAnimCurve animFn;
     MStatus status;
@@ -226,8 +226,8 @@ bool
 _TranslateAnimatedUsdAttributeToPlug(
         const UsdAttribute& usdAttr,
         MPlug& plug,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     if (args.GetTimeInterval().IsEmpty()) {
@@ -257,8 +257,8 @@ _TranslateAnimatedUsdAttributeToPlugs(
         const UsdAttribute& usdAttr,
         MPlug& plug1,
         MPlug& plug2,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     if (args.GetTimeInterval().IsEmpty()) {
         return false;
@@ -292,8 +292,8 @@ _TranslateUsdAttributeToPlug(
         const UsdAttribute& usdAttr,
         const MFnCamera& cameraFn,
         const TfToken& plugName,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     MStatus status;
@@ -314,10 +314,10 @@ _TranslateUsdAttributeToPlug(
 
         switch (convertToUnit) {
             case MDistance::kInches:
-                attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToInches(attrValue);
                 break;
             case MDistance::kCentimeters:
-                attrValue = PxrUsdMayaUtil::ConvertMMToCM(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToCM(attrValue);
                 break;
             default:
                 // The input is expected to be in millimeters.
@@ -333,11 +333,11 @@ _TranslateUsdAttributeToPlug(
 
 /* static */
 bool
-PxrUsdMayaTranslatorCamera::Read(
+UsdMayaTranslatorCamera::Read(
         const UsdGeomCamera& usdCamera,
         MObject parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     if (!usdCamera) {
         return false;
@@ -350,7 +350,7 @@ PxrUsdMayaTranslatorCamera::Read(
 
     // Create the transform node for the camera.
     MObject transformObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                        parentNode,
                                                        args,
                                                        context,
@@ -385,14 +385,14 @@ PxrUsdMayaTranslatorCamera::Read(
 
 /* static */
 bool
-PxrUsdMayaTranslatorCamera::ReadToCamera(
+UsdMayaTranslatorCamera::ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject)
 {
-    PxrUsdMayaJobImportArgs defaultJobArgs =
-            PxrUsdMayaJobImportArgs::CreateFromDictionary(
-                PxrUsdMayaJobImportArgs::GetDefaultDictionary());
-    PxrUsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
+    UsdMayaJobImportArgs defaultJobArgs =
+            UsdMayaJobImportArgs::CreateFromDictionary(
+                UsdMayaJobImportArgs::GetDefaultDictionary());
+    UsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
     return _ReadToCamera(usdCamera, cameraObject, args, nullptr);
 }
 
@@ -400,8 +400,8 @@ bool
 _ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraFn,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     MStatus status;
 

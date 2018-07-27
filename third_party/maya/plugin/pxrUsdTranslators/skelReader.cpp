@@ -45,15 +45,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Prim reader for skeletons.
 /// This produce a joint hierarchy, possibly animated, corresponding
 /// to a UsdSkelSkeleton.
-class PxrUsdMayaPrimReaderSkeleton : public PxrUsdMayaPrimReader
+class UsdMayaPrimReaderSkeleton : public UsdMayaPrimReader
 {
 public:
-    PxrUsdMayaPrimReaderSkeleton(const PxrUsdMayaPrimReaderArgs& args)
-        : PxrUsdMayaPrimReader(args) {}
+    UsdMayaPrimReaderSkeleton(const UsdMayaPrimReaderArgs& args)
+        : UsdMayaPrimReader(args) {}
 
-    ~PxrUsdMayaPrimReaderSkeleton() override {}
+    ~UsdMayaPrimReaderSkeleton() override {}
 
-    bool Read(PxrUsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext* context) override;
 
 private:
     // TODO: Ideally, we'd share the cache across different models
@@ -62,12 +62,12 @@ private:
 };
 
 
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelSkeleton) {
-    PxrUsdMayaPrimReaderRegistry::Register<UsdSkelSkeleton>(
-        [](const PxrUsdMayaPrimReaderArgs& args)
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdSkelSkeleton) {
+    UsdMayaPrimReaderRegistry::Register<UsdSkelSkeleton>(
+        [](const UsdMayaPrimReaderArgs& args)
         {
-            return PxrUsdMayaPrimReaderSharedPtr(
-                new PxrUsdMayaPrimReaderSkeleton(args));
+            return UsdMayaPrimReaderSharedPtr(
+                new UsdMayaPrimReaderSkeleton(args));
         });
 }
 
@@ -75,19 +75,19 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelSkeleton) {
 /// Prim reader for a UsdSkelRoot.
 /// This post-processes the skinnable prims beneath a UsdSkelRoot
 /// to define skin clusters, etc. for bound skeletons.
-class PxrUsdMayaPrimReaderSkelRoot : public PxrUsdMayaPrimReader
+class UsdMayaPrimReaderSkelRoot : public UsdMayaPrimReader
 {
 public:
-    PxrUsdMayaPrimReaderSkelRoot(const PxrUsdMayaPrimReaderArgs& args)
-        : PxrUsdMayaPrimReader(args) {}
+    UsdMayaPrimReaderSkelRoot(const UsdMayaPrimReaderArgs& args)
+        : UsdMayaPrimReader(args) {}
 
-    ~PxrUsdMayaPrimReaderSkelRoot() override {}
+    ~UsdMayaPrimReaderSkelRoot() override {}
 
-    bool Read(PxrUsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext* context) override;
 
     bool HasPostReadSubtree() const override { return true; }
 
-    void PostReadSubtree(PxrUsdMayaPrimReaderContext* context) override;
+    void PostReadSubtree(UsdMayaPrimReaderContext* context) override;
 
 private:
     // TODO: Ideally, we'd share the cache across different models
@@ -97,18 +97,18 @@ private:
 
 
 
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelRoot) {
-    PxrUsdMayaPrimReaderRegistry::Register<UsdSkelRoot>(
-        [](const PxrUsdMayaPrimReaderArgs& args)
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdSkelRoot) {
+    UsdMayaPrimReaderRegistry::Register<UsdSkelRoot>(
+        [](const UsdMayaPrimReaderArgs& args)
         {
-            return PxrUsdMayaPrimReaderSharedPtr(
-                new PxrUsdMayaPrimReaderSkelRoot(args));
+            return UsdMayaPrimReaderSharedPtr(
+                new UsdMayaPrimReaderSkelRoot(args));
         });
 }
 
 
 bool
-PxrUsdMayaPrimReaderSkeleton::Read(PxrUsdMayaPrimReaderContext* context)
+UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext* context)
 {
     UsdSkelSkeleton skel(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skel))
@@ -121,7 +121,7 @@ PxrUsdMayaPrimReaderSkeleton::Read(PxrUsdMayaPrimReaderContext* context)
 
         // Build out a joint hierarchy.
         VtArray<MObject> joints;
-        if (PxrUsdMayaTranslatorSkel::CreateJointHierarchy(
+        if (UsdMayaTranslatorSkel::CreateJointHierarchy(
                 skelQuery, parentNode, _GetArgs(), context, &joints)) {
 
             // Add a dagPose node to hold the rest pose.
@@ -130,7 +130,7 @@ PxrUsdMayaPrimReaderSkeleton::Read(PxrUsdMayaPrimReaderContext* context)
             // restTransforms, and is a requirement of some exporters.
             // The dagPose command also will not work without this.  
             MObject bindPose;
-            if (PxrUsdMayaTranslatorSkel::CreateBindPose(
+            if (UsdMayaTranslatorSkel::CreateBindPose(
                     skelQuery, joints, context, &bindPose)) {
                 return true;
             }
@@ -141,7 +141,7 @@ PxrUsdMayaPrimReaderSkeleton::Read(PxrUsdMayaPrimReaderContext* context)
 
 
 bool
-PxrUsdMayaPrimReaderSkelRoot::Read(PxrUsdMayaPrimReaderContext* context)
+UsdMayaPrimReaderSkelRoot::Read(UsdMayaPrimReaderContext* context)
 {
     UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skelRoot))
@@ -156,14 +156,14 @@ PxrUsdMayaPrimReaderSkelRoot::Read(PxrUsdMayaPrimReaderContext* context)
 
     MStatus status;
     MObject obj;
-    return PxrUsdMayaTranslatorUtil::CreateTransformNode(
+    return UsdMayaTranslatorUtil::CreateTransformNode(
         skelRoot.GetPrim(), parentNode, _GetArgs(), context, &status, &obj);
 }
 
 
 void
-PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree(
-    PxrUsdMayaPrimReaderContext* context)
+UsdMayaPrimReaderSkelRoot::PostReadSubtree(
+    UsdMayaPrimReaderContext* context)
 {
     UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skelRoot))
@@ -188,7 +188,7 @@ PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree(
             _cache.GetSkelQuery(binding.GetSkeleton())) {
             
             VtArray<MObject> joints;
-            if (!PxrUsdMayaTranslatorSkel::GetJoints(
+            if (!UsdMayaTranslatorSkel::GetJoints(
                     skelQuery, context, &joints)) {
                 continue;
             }
@@ -228,10 +228,10 @@ PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree(
                 }
 
                 MObject bindPose
-                    = PxrUsdMayaTranslatorSkel::GetBindPose(skelQuery, context);
+                    = UsdMayaTranslatorSkel::GetBindPose(skelQuery, context);
 
                 // Add a skin cluster to skin this prim.
-                PxrUsdMayaTranslatorSkel::CreateSkinCluster(
+                UsdMayaTranslatorSkel::CreateSkinCluster(
                     skelQuery, skinningQuery, skinningJoints,
                     skinnedPrim, _GetArgs(), context, bindPose);
             }

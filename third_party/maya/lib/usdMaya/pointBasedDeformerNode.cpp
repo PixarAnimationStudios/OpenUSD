@@ -64,13 +64,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaPointBasedDeformerNodeTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaPointBasedDeformerNodeTokens,
                         PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS);
 
 
 const MTypeId UsdMayaPointBasedDeformerNode::typeId(0x00126401);
 const MString UsdMayaPointBasedDeformerNode::typeName(
-    PxrUsdMayaPointBasedDeformerNodeTokens->MayaTypeName.GetText());
+    UsdMayaPointBasedDeformerNodeTokens->MayaTypeName.GetText());
 
 // Attributes
 MObject UsdMayaPointBasedDeformerNode::inUsdStageAttr;

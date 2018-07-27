@@ -37,23 +37,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for reading UsdGeomGprim.
-struct PxrUsdMayaTranslatorGprim
+struct UsdMayaTranslatorGprim
 {
     PXRUSDMAYA_API
     static void Read(
             const UsdGeomGprim& gprim, 
             MObject mayaNode,
-            PxrUsdMayaPrimReaderContext* context);
+            UsdMayaPrimReaderContext* context);
 
     PXRUSDMAYA_API
     static void Write(
             const MObject& mayaNode,
             const UsdGeomGprim& gprim, 
-            PxrUsdMayaPrimWriterContext* context);
+            UsdMayaPrimWriterContext* context);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSD_TRANSLATOR_GPRIM_H
+#endif
 

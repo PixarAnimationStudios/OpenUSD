@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_PRIMREADERARGS_H
 #define PXRUSDMAYA_PRIMREADERARGS_H
 
-/// \file primReaderArgs.h
+/// \file usdMaya/primReaderArgs.h
 
 #include "pxr/pxr.h"
 
@@ -37,18 +37,18 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdMayaPrimReaderArgs
+/// \class UsdMayaPrimReaderArgs
 /// \brief This class holds read-only arguments that are passed into reader plugins for
 /// the usdMaya library.
 /// 
-/// \sa PxrUsdMayaPrimReaderContext
-class PxrUsdMayaPrimReaderArgs
+/// \sa UsdMayaPrimReaderContext
+class UsdMayaPrimReaderArgs
 {
 public:
     PXRUSDMAYA_API
-    PxrUsdMayaPrimReaderArgs(
+    UsdMayaPrimReaderArgs(
             const UsdPrim& prim,
-            const PxrUsdMayaJobImportArgs& jobArgs);
+            const UsdMayaJobImportArgs& jobArgs);
 
     /// \brief return the usd prim that should be read.
     PXRUSDMAYA_API
@@ -81,10 +81,10 @@ public:
 
 private:
     const UsdPrim& _prim;
-    const PxrUsdMayaJobImportArgs& _jobArgs;
+    const UsdMayaJobImportArgs& _jobArgs;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PRIMREADERARGS_H
+#endif

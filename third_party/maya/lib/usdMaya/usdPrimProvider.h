@@ -32,17 +32,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 // interface class 
-class PxrUsdMayaUsdPrimProvider
+class UsdMayaUsdPrimProvider
 {
 public:
     // returns the prim that this node is holding
     virtual UsdPrim usdPrim() const = 0;
 
     PXRUSDMAYA_API
-    virtual ~PxrUsdMayaUsdPrimProvider();
+    virtual ~UsdMayaUsdPrimProvider();
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USD_MAYA_USDPRIMPROVIDER_H
+#endif
