@@ -622,9 +622,6 @@ vec3 evaluateNormal(vec4 basis, float u)
     return mix(inData[1].Neye, inData[2].Neye, u);
 }
 
-#endif
-
-
 --- --------------------------------------------------------------------------
 -- glsl Curves.Cubic.Widths.Basis
 
