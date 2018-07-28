@@ -121,15 +121,15 @@ public:
             WorkMoveDestroyAsync(_hashData);
     }
 
-    string const &GetFileName() const { return _crateFile->GetFileName(); }
+    string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
 
     bool Save(string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
 
         TF_DESCRIBE_SCOPE("Saving usd binary file @%s@", fileName.c_str());
         
-        auto dataFileName = _crateFile->GetFileName();
-        if (!TF_VERIFY(fileName == dataFileName || dataFileName.empty()))
+        auto assetPath = _crateFile->GetAssetPath();
+        if (!TF_VERIFY(fileName == assetPath || assetPath.empty()))
             return false;
 
         // Sort by path for better namespace-grouped data layout.
@@ -189,12 +189,12 @@ public:
         return false;
     }
 
-    bool Open(string const &fileName) {
+    bool Open(string const &assetPath) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Open");
 
-        TF_DESCRIBE_SCOPE("Opening usd binary file @%s@", fileName.c_str());
+        TF_DESCRIBE_SCOPE("Opening usd binary asset @%s@", assetPath.c_str());
         
-        if (auto newData = CrateFile::Open(fileName)) {
+        if (auto newData = CrateFile::Open(assetPath)) {
             _crateFile = std::move(newData);
             return _PopulateFromCrateFile();
         }
@@ -465,7 +465,7 @@ public:
     inline bool Has(const SdfAbstractDataSpecId& id,
                     const TfToken & field,
                     VtValue *value) const {
-        TF_DESCRIBE_SCOPE(GetFileName().c_str());
+        TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         TfScopeDescription desc2(field.GetText());
         if (VtValue const *fieldValue = _GetFieldValue(id, field)) {
             if (value) {
@@ -634,7 +634,7 @@ public:
 
     inline bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
                                 VtValue *value) const {
-        TF_DESCRIBE_SCOPE(GetFileName().c_str());
+        TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         if (VtValue const *fieldValue =
             _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
@@ -890,7 +890,7 @@ private:
 
     inline std::vector<double> const &
     _ListTimeSamplesForPath(const SdfAbstractDataSpecId &id) const {
-        TF_DESCRIBE_SCOPE(GetFileName().c_str());
+        TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         if (const VtValue* fieldValue =
             _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
@@ -1109,9 +1109,9 @@ Usd_CrateData::GetSoftwareVersionToken()
 
 /* static */
 bool
-Usd_CrateData::CanRead(string const &fileName)
+Usd_CrateData::CanRead(string const &assetPath)
 {
-    return CrateFile::CanRead(TfAbsPath(fileName));
+    return CrateFile::CanRead(assetPath);
 }
 
 bool
@@ -1123,8 +1123,8 @@ Usd_CrateData::Save(string const &fileName)
     }
 
     auto newFileName = TfAbsPath(fileName);
-    bool hasFile = !_impl->GetFileName().empty();
-    bool saveToOtherFile = _impl->GetFileName() != newFileName;
+    bool hasFile = !_impl->GetAssetPath().empty();
+    bool saveToOtherFile = _impl->GetAssetPath() != newFileName;
         
     if (hasFile && saveToOtherFile) {
         // We copy to a temporary data and save that.
@@ -1137,13 +1137,13 @@ Usd_CrateData::Save(string const &fileName)
 }
 
 bool
-Usd_CrateData::Open(const std::string &fileName)
+Usd_CrateData::Open(const std::string &assetPath)
 {
-    return _impl->Open(TfAbsPath(fileName));
+    return _impl->Open(assetPath);
 }
 
 // ------------------------------------------------------------------------- //
-// Abstract DataImplementation.
+// Abstract Data Implementation.
 //
 
 bool

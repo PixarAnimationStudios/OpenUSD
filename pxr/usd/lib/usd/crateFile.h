@@ -35,6 +35,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/usd/ar/asset.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -66,6 +67,8 @@ using std::string;
 using std::unordered_map;
 using std::tuple;
 using std::vector;
+
+using ArAssetSharedPtr = std::shared_ptr<ArAsset>;
 
 // Trait indicating trivially copyable types, a hack since gcc doesn't yet
 // implement is_trivially_copyable correctly.
@@ -275,10 +278,48 @@ public:
     struct Version;
 
 private:
-    struct _Fcloser {
-        void operator()(FILE *f) const;
+    // A move-only helper struct to represent a range of data in a FILE*, with
+    // optional "ownership" of that FILE* (i.e. responsibility to fclose upon
+    // destruction).
+    struct _FileRange {
+        _FileRange() = default;
+        _FileRange(FILE *file, int64_t startOffset,
+                   int64_t length, bool hasOwnership)
+            : file(file)
+            , startOffset(startOffset)
+            , length(file && length == -1 ?
+                     ArchGetFileLength(file) - startOffset : length)
+            , hasOwnership(hasOwnership) {}
+        ~_FileRange();
+        _FileRange(_FileRange &&other)
+            : file(other.file)
+            , startOffset(other.startOffset)
+            , length(other.length)
+            , hasOwnership(other.hasOwnership) {
+            other.file = nullptr;
+        }
+        _FileRange &operator=(_FileRange &&other) {
+            if (this != &other) {
+                file = other.file;
+                startOffset = other.startOffset;
+                length = other.length;
+                hasOwnership = other.hasOwnership;
+                other.file = nullptr;
+            }
+            return *this;
+        }
+
+        explicit operator bool() const {
+            return file;
+        }
+
+        int64_t GetLength() const { return length; }
+        
+        FILE *file = nullptr;
+        int64_t startOffset = 0;
+        int64_t length = 0;
+        bool hasOwnership = false;
     };
-    using _UniqueFILE = std::unique_ptr<FILE, _Fcloser>;
 
     // This structure pulls together the underlying ArchMutableFileMapping
     // representing the memory-mapped file plus all the information we need to
@@ -343,10 +384,14 @@ private:
         friend struct ZeroCopySource;
         
         _FileMapping() : _refCount(0) {};
-        
-        explicit _FileMapping(ArchMutableFileMapping mapping)
+
+        explicit _FileMapping(ArchMutableFileMapping mapping, int64_t offset=0,
+                              int64_t length=-1)
             : _refCount(0)
-            , _mapping(std::move(mapping)) {}
+            , _mapping(std::move(mapping))
+            , _start(_mapping.get() + offset)
+            , _length(length == -1 ?
+                      ArchGetFileMappingLength(_mapping) : length) {}
         
         // Add an an externally referenced page range.
         ZeroCopySource *
@@ -357,11 +402,13 @@ private:
         // swap-backed.  No new page ranges can be added once this is invoked.
         void DetachReferencedRanges();
 
-        // Return the start address of the mapped file content.
-        char *GetMapStart() const { return _mapping.get(); }
+        // Return the start address of the mapped file content.  Note that due
+        // to having usdc files embedded into other files (like usdz files) the
+        // map start address is NOT guaranteed to be page-aligned.
+        char *GetMapStart() const { return _start; }
 
-        // Return the length of the file at the time it was mapped.
-        size_t GetLength() const { return ArchGetFileMappingLength(_mapping); }
+        // Return the length of the relevant content range in the mapping.
+        size_t GetLength() const { return _length; }
 
     private:
         friend class CrateFile;
@@ -383,6 +430,8 @@ private:
 
         mutable std::atomic<size_t> _refCount { 0 };
         ArchMutableFileMapping _mapping;
+        char *_start;
+        int64_t _length;
         tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
     };
     using _FileMappingIPtr = boost::intrusive_ptr<_FileMapping>;
@@ -515,14 +564,14 @@ public:
 
     ~CrateFile();
 
-    static bool CanRead(string const &fileName);
+    static bool CanRead(string const &assetPath);
     static TfToken const &GetSoftwareVersionToken();
     TfToken GetFileVersionToken() const;
 
     static std::unique_ptr<CrateFile> CreateNew();
 
     // Return nullptr on failure.
-    static std::unique_ptr<CrateFile> Open(string const &fileName);
+    static std::unique_ptr<CrateFile> Open(string const &assetPath);
 
     // Helper for saving to a file.
     struct Packer {
@@ -559,7 +608,7 @@ public:
 
     Packer StartPacking(string const &fileName);
 
-    string const &GetFileName() const { return _fileName; }
+    string const &GetAssetPath() const { return _assetPath; }
 
     inline Field const &
     GetField(FieldIndex i) const { return _fields[i.value]; }
@@ -637,16 +686,23 @@ public:
 
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &fileName, _FileMappingIPtr mapStart);
-    CrateFile(string const &fileName, _UniqueFILE inputFile);
+    CrateFile(string const &assetPath,
+              _FileMappingIPtr mapStart, ArAssetSharedPtr const &asset);
+    CrateFile(string const &assetPath, _FileRange &&inputFile,
+              ArAssetSharedPtr const &asset);
+    CrateFile(string const &assetPath, ArAssetSharedPtr const &asset);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
 
     void _InitMMap();
     void _InitPread();
+    void _InitAsset();
 
-    static _FileMappingIPtr _MmapFile(char const *fileName, FILE *file);
+    static _FileMappingIPtr
+    _MmapFile(char const *fileName, FILE *file);
+    static _FileMappingIPtr
+    _MmapAsset(char const *fileName, ArAssetSharedPtr const &asset);
 
     class _Writer;
     class _BufferedOutput;
@@ -829,6 +885,9 @@ private:
     std::function<void (ValueRep, VtValue *)>
     _unpackValueFunctionsMmap[static_cast<int>(TypeEnum::NumTypes)];
 
+    std::function<void (ValueRep, VtValue *)>
+    _unpackValueFunctionsAsset[static_cast<int>(TypeEnum::NumTypes)];
+
     _ValueHandlerBase *_valueHandlers[static_cast<int>(TypeEnum::NumTypes)];
 
     ////////////////////////////////////////////////////////////////////////
@@ -836,21 +895,32 @@ private:
     // Temporary -- only valid during Save().
     std::unique_ptr<_PackingContext> _packCtx;
 
-    _TableOfContents _toc; // only valid if we read a file.
-    _BootStrap _boot; // only valid if we read a file.
+    _TableOfContents _toc; // only valid if we have read an asset.
+    _BootStrap _boot; // only valid if we have read an asset.
 
-    // We'll only have at most one of these, depending on whether we're doing
-    // mmap() or pread().  If this structure was not populated from a file then
-    // both will be null.
-    _FileMappingIPtr _mappedFile;
-    _UniqueFILE _inputFile;
+    
+    // If we're reading data from an mmap'd file, then _mmapSrc will be non-null
+    // and _preadSrc & _assetSrc will be null.  Otherwise if we're reading data
+    // by pread()ing from a file obtained from an ArAsset, then _assetSrc is
+    // non-null and _preadSrc observes (but does not own/fclose) the result of
+    // _assetSrc->GetFileUnsafe().  If a Save operation is completed (via
+    // StartPacking) in this state, then _preadSrc will become an owning FILE*,
+    // and _assetSrc will be nullptr.  Otherwise if _assetSrc is non-null and
+    // both _mmapSrc and _preadSrc are null, we read data from the _assetSrc via
+    // ArAsset::Read().  If all three are null then this structure was not
+    // populated from an asset.
+    _FileMappingIPtr _mmapSrc;
+    _FileRange _preadSrc;
+    ArAssetSharedPtr _assetSrc;
 
-    std::string _fileName; // Empty if this file data is in-memory only.
+    std::string _assetPath; // Empty if this file data is in-memory only.
 
     std::unique_ptr<char []> _debugPageMap; // Debug page access map, see
                                             // USDC_DUMP_PAGE_MAPS.
 
-    const bool _useMmap; // If true, use mmap for reads, otherwise use pread.
+    const bool _useMmap; // If true, try to use mmap for reads, otherwise try to
+                         // use pread, otherwise fall back to generalized
+                         // ArAsset::Read()s.
 };
 
 template <>
