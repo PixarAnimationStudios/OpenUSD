@@ -47,10 +47,30 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (dispatchBuffer)
+
+    (drawCommandIndex)
+    (drawIndirect)
+    (drawIndirectCull)
+    (drawIndirectResult)
+
+    (instanceCountInput)
+
+    (ulocDrawCommandNumUints)
+    (ulocResetPass)
+    (ulocCullMatrix)
+    (ulocDrawRangeNDC)
+
+);
 
 
 static const GLuint64 HD_CULL_RESULT_TIMEOUT_NS = 5e9; // XXX how long to wait?
@@ -533,7 +553,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
     // allocate draw dispatch buffer
     _dispatchBuffer =
-        resourceRegistry->RegisterDispatchBuffer(HdTokens->drawIndirect,
+        resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirect,
                                                  drawCount,
                                                  commandNumUints);
     // define binding views
@@ -634,7 +654,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // a copy.
         _dispatchBufferCullInput =
             resourceRegistry->RegisterDispatchBuffer(
-                HdTokens->drawIndirectCull,
+                _tokens->drawIndirectCull,
                 drawCount,
                 commandNumUints);
 
@@ -689,7 +709,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 }
                 // cull draw index
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawCommandIndex, {HdTypeInt32, 1},
+                    _tokens->drawCommandIndex, {HdTypeInt32, 1},
                     offsetof(_DrawArraysInstanceCullCommand, baseInstance));
             } else {
                 // cull indirect command
@@ -702,7 +722,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                     offsetof(_DrawArraysCommand, modelDC));
                 // cull instance count input
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->instanceCountInput, {HdTypeInt32, 1},
+                    _tokens->instanceCountInput, {HdTypeInt32, 1},
                     offsetof(_DrawArraysCommand, instanceCount));
             }
         } else {
@@ -729,7 +749,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 }
                 // cull draw index
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawCommandIndex, {HdTypeInt32, 1},
+                    _tokens->drawCommandIndex, {HdTypeInt32, 1},
                     offsetof(_DrawElementsInstanceCullCommand, baseInstance));
             } else {
                 // cull indirect command
@@ -742,7 +762,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                     offsetof(_DrawElementsCommand, modelDC));
                 // cull instance count input
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->instanceCountInput, {HdTypeInt32, 1},
+                    _tokens->instanceCountInput, {HdTypeInt32, 1},
                     offsetof(_DrawElementsCommand, instanceCount));
             }
         }
@@ -1280,17 +1300,17 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     }
 
     // bind destination buffer (using entire buffer bind to start from offset=0)
-    binder.BindBuffer(HdTokens->dispatchBuffer,
+    binder.BindBuffer(_tokens->dispatchBuffer,
                       _dispatchBuffer->GetEntireResource());
 
     // set cull parameters
     unsigned int drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
     GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
-    binder.BindUniformui(HdTokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
-    binder.BindUniformf(HdTokens->ulocCullMatrix, 16, cullMatrix.GetArray());
+    binder.BindUniformui(_tokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
+    binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
     if (IsEnabledGPUTinyPrimCulling()) {
-        binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+        binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
     }
 
     // run culling shader
@@ -1307,7 +1327,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
         glEnable(GL_RASTERIZER_DISCARD);
 
         int resetPass = 1;
-        binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
+        binder.BindUniformi(_tokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
             reinterpret_cast<const GLvoid*>(
@@ -1320,7 +1340,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         resetPass = 0;
-        binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
+        binder.BindUniformi(_tokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
             reinterpret_cast<const GLvoid*>(
@@ -1346,7 +1366,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     }
 
     // unbind destination dispatch buffer
-    binder.UnbindBuffer(HdTokens->dispatchBuffer,
+    binder.UnbindBuffer(_tokens->dispatchBuffer,
                         _dispatchBuffer->GetEntireResource());
 
     // make sure the culling results (instanceIndices and instanceCount)
@@ -1408,9 +1428,9 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     // set cull parameters
     GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
-    binder.BindUniformf(HdTokens->ulocCullMatrix, 16, cullMatrix.GetArray());
+    binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
     if (IsEnabledGPUTinyPrimCulling()) {
-        binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+        binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
     }
 
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0,
@@ -1492,7 +1512,7 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     if (!_resultBuffer) {
         _resultBuffer = 
             resourceRegistry->RegisterPersistentBuffer(
-                HdTokens->drawIndirectResult, sizeof(GLint), 0);
+                _tokens->drawIndirectResult, sizeof(GLint), 0);
     }
 
     // Reset visible item count
@@ -1514,7 +1534,7 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.
     int binding = _cullingProgram.GetBinder().GetBinding(
-        HdTokens->drawIndirectResult).GetLocation();
+        _tokens->drawIndirectResult).GetLocation();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, _resultBuffer->GetId());
 }
 
@@ -1551,7 +1571,7 @@ HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t *
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.
     int binding = _cullingProgram.GetBinder().GetBinding(
-        HdTokens->drawIndirectResult).GetLocation();
+        _tokens->drawIndirectResult).GetLocation();
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, 0);
 }
 
@@ -1581,29 +1601,29 @@ HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
         !TF_VERIFY(customBindings)) return;
 
     customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
-                                  HdTokens->drawIndirectResult));
+                                  _tokens->drawIndirectResult));
     customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
-                                  HdTokens->dispatchBuffer));
+                                  _tokens->dispatchBuffer));
     customBindings->push_back(HdBindingRequest(HdBinding::UNIFORM,
-                                               HdTokens->ulocDrawRangeNDC));
+                                               _tokens->ulocDrawRangeNDC));
     customBindings->push_back(HdBindingRequest(HdBinding::UNIFORM,
-                                               HdTokens->ulocCullMatrix));
+                                               _tokens->ulocCullMatrix));
 
     if (_useInstanceCulling) {
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX_INSTANCE,
-                HdTokens->drawCommandIndex));
+                _tokens->drawCommandIndex));
         customBindings->push_back(
             HdBindingRequest(HdBinding::UNIFORM,
-                HdTokens->ulocDrawCommandNumUints));
+                _tokens->ulocDrawCommandNumUints));
         customBindings->push_back(
             HdBindingRequest(HdBinding::UNIFORM,
-                HdTokens->ulocResetPass));
+                _tokens->ulocResetPass));
     } else {
         // XFB culling
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX,
-                HdTokens->instanceCountInput));
+                _tokens->instanceCountInput));
     }
 
     // set instanceDraw true if instanceCulling is enabled.

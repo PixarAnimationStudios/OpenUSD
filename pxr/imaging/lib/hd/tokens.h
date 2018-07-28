@@ -49,14 +49,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (culledInstanceIndices)                     \
     (cullStyle)                                 \
     (doubleSided)                               \
-    (dispatchBuffer)                            \
     (dispatchCount)                             \
     (displayStyle)                              \
     (drawDispatch)                              \
-    (drawCommandIndex)                          \
-    (drawIndirect)                              \
-    (drawIndirectCull)                          \
-    (drawIndirectResult)                        \
     (drawingShader)                             \
     (drawingCoord0)                             \
     (drawingCoord1)                             \
@@ -76,7 +71,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instancer)                                 \
     (instancerTransform)                        \
     (instancerTransformInverse)                 \
-    (instanceCountInput)                        \
     (instanceIndices)                           \
     (instanceIndexBase)                         \
     (instanceTransform)                         \
@@ -105,10 +99,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (refinedWire)                               \
     (refinedWireOnSurf)                         \
     (renderTags)                                \
-    (ulocDrawCommandNumUints)                   \
-    (ulocResetPass)                             \
-    (ulocCullMatrix)                            \
-    (ulocDrawRangeNDC)                          \
     (rightHanded)                               \
     (segmented)                                 \
     (shadowLink)                                \
