@@ -95,7 +95,27 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(
     FnKat::Attribute cacheKeyAttr;
     if (TfGetEnvSetting(USD_KATANA_CACHE_MATERIALGROUPS))
     {
-        cacheKeyAttr = _GetCacheKey(privateData);
+        // check for an explicit cache key from above
+        cacheKeyAttr = opArgs.getChildByName("sharedLooksCacheKey");
+        
+        if (!cacheKeyAttr.isValid())
+        {
+            // check locally also
+            UsdAttribute keyAttr = privateData.GetUsdPrim().GetAttribute(
+                    TfToken("sharedLooksCacheKey"));
+            if (keyAttr.IsValid())
+            {
+                std::string cacheKey;
+                keyAttr.Get(&cacheKey);
+                
+                cacheKeyAttr = FnKat::StringAttribute(cacheKey);
+            }
+        }
+        
+        if (!cacheKeyAttr.isValid())
+        {
+            cacheKeyAttr = _GetCacheKey(privateData);
+        }
     }
     
     
