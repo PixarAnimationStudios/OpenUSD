@@ -312,7 +312,7 @@ try
     computation.beginComputation();
 
     // Create stage and process static data
-    if (UsdMaya_WriteJob.beginJob(fileName, append)) {
+    if (UsdMaya_WriteJob.BeginWriting(fileName, append)) {
         std::vector<double> timeSamples =
                 UsdMayaWriteUtil::GetTimeSamples(
                 jobArgs.timeInterval, frameSamples, frameStride);
@@ -324,7 +324,7 @@ try
                 }
                 MGlobal::viewFrame(t);
                 // Process per frame data
-                UsdMaya_WriteJob.evalJob(t);
+                UsdMaya_WriteJob.WriteFrame(t);
                 if (computation.isInterruptRequested()) {
                     break;
                 }
@@ -335,7 +335,7 @@ try
         }
 
         // Finalize the export, close the stage
-        UsdMaya_WriteJob.endJob();
+        UsdMaya_WriteJob.FinishWriting();
     } else {
         computation.endComputation();
         return MS::kFailure;

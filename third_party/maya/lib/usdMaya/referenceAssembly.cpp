@@ -1520,10 +1520,10 @@ bool UsdMayaRepresentationHierBase::activate()
     MDagPath assemblyDagPath;
     status = assemblyFn.getPath(assemblyDagPath);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    readJob.setMayaRootDagPath(assemblyDagPath);
+    readJob.SetMayaRootDagPath(assemblyDagPath);
 
     std::vector<MDagPath> addedDagPaths;
-    if (!readJob.doIt(&addedDagPaths)) {
+    if (!readJob.Read(&addedDagPaths)) {
         return false;
     }
 

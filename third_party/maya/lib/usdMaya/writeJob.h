@@ -26,12 +26,11 @@
 
 /// \file usdMaya/writeJob.h
 
-#include "pxr/pxr.h"
-
-#include "usdMaya/api.h"
 #include "usdMaya/chaser.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeJobContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/hashmap.h"
 
@@ -45,30 +44,30 @@ class UsdMaya_ModelKindProcessor;
 
 class UsdMaya_WriteJob
 {
-  public:
-
-    PXRUSDMAYA_API
+public:
     UsdMaya_WriteJob(const UsdMayaJobExportArgs & iArgs);
 
-    PXRUSDMAYA_API
     ~UsdMaya_WriteJob();
 
-    // returns true if the stage can be created successfully
-    PXRUSDMAYA_API
-    bool beginJob(const std::string &fileName, bool append);
-    PXRUSDMAYA_API
-    void evalJob(double iFrame);
-    PXRUSDMAYA_API
-    void endJob();
-    PXRUSDMAYA_API
-    TfToken writeVariants(const UsdPrim &usdRootPrim);
+    /// Begins constructing the USD stage, writing out the values at the default
+    /// time. Returns \c true if the stage can be created successfully.
+    bool BeginWriting(const std::string &fileName, bool append);
+  
+    /// Writes the stage values at the given frame.
+    /// Warning: this function must be called with non-decreasing frame numbers.
+    /// If you call WriteFrame() with a frame number lower than a previous
+    /// WriteFrame() call, internal code may generate errors.
+    void WriteFrame(double iFrame);
 
-  private:
-    void perFrameCallback(double iFrame);
-    void postCallback();
-    bool needToTraverse(const MDagPath& curDag);
-    
-  private:
+    /// Runs any post-export processes, closes the USD stage, and writes it out
+    /// to disk.
+    void FinishWriting();
+
+private:
+    TfToken _WriteVariants(const UsdPrim &usdRootPrim);
+    void _PerFrameCallback(double iFrame);
+    void _PostCallback();
+
     // Name of the created/appended USD file
     std::string _fileName;
 

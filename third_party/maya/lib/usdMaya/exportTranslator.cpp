@@ -140,7 +140,7 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
             jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
         }
         UsdMaya_WriteJob writeJob(jobArgs);
-        if (writeJob.beginJob(fileName, append)) {
+        if (writeJob.BeginWriting(fileName, append)) {
             std::vector<double> timeSamples =
                     UsdMayaWriteUtil::GetTimeSamples(
                     jobArgs.timeInterval, std::set<double>(), frameStride);
@@ -148,14 +148,14 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
                 const MTime oldCurTime = MAnimControl::currentTime();
                 for (double t : timeSamples) {
                     MGlobal::viewFrame(t);
-                    writeJob.evalJob(t);
+                    writeJob.WriteFrame(t);
                 }
 
                 // Set the time back.
                 MGlobal::viewFrame(oldCurTime);
             }
 
-            writeJob.endJob();
+            writeJob.FinishWriting();
         } else {
             return MS::kFailure;
         }

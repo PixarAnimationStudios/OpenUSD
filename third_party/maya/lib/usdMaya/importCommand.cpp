@@ -228,13 +228,13 @@ UsdMayaImportCommand::doIt(const MArgList & args)
                         tmpVal.asChar());
                 return MS::kFailure;
             }
-            mUsdReadJob->setMayaRootDagPath( dagPath );
+            mUsdReadJob->SetMayaRootDagPath( dagPath );
         }
     }
 
     // Execute the command
     std::vector<MDagPath> addedDagPaths;
-    bool success = mUsdReadJob->doIt(&addedDagPaths);
+    bool success = mUsdReadJob->Read(&addedDagPaths);
     if (success) {
         TF_FOR_ALL(iter, addedDagPaths) {
             appendToResult(iter->fullPathName());
@@ -251,7 +251,7 @@ UsdMayaImportCommand::redoIt()
         return MS::kFailure;
     }
 
-    bool success = mUsdReadJob->redoIt();
+    bool success = mUsdReadJob->Redo();
 
     return (success) ? MS::kSuccess : MS::kFailure;
 }
@@ -264,7 +264,7 @@ UsdMayaImportCommand::undoIt()
         return MS::kFailure;
     }
 
-    bool success = mUsdReadJob->undoIt();
+    bool success = mUsdReadJob->Undo();
 
     return (success) ? MS::kSuccess : MS::kFailure;
 }

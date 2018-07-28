@@ -106,7 +106,7 @@ _MakeTmpStageName(const std::string& dir)
     return TfStringCatPaths(dir, fileName);
 }
 
-bool UsdMaya_WriteJob::beginJob(const std::string& fileName, bool append)
+bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -183,7 +183,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string& fileName, bool append)
         }
     }
 
-    if (!mJobCtx.openFile(_fileName, append)) {
+    if (!mJobCtx._OpenFile(_fileName, append)) {
         return false;
     }
 
@@ -291,7 +291,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string& fileName, bool append)
             continue;
         }
 
-        if (!needToTraverse(curDagPath) &&
+        if (!mJobCtx._NeedToTraverse(curDagPath) &&
             curDagPath.length() > 0) {
             // This dagPath and all of its children should be pruned.
             itDag.prune();
@@ -362,7 +362,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string& fileName, bool append)
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
     // want to cleanup the InstanceSources prim before writing model hierarchy.
-    if (!mJobCtx.PostProcess()) {
+    if (!mJobCtx._PostProcess()) {
         return false;
     }
 
@@ -392,7 +392,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string& fileName, bool append)
     return true;
 }
 
-void UsdMaya_WriteJob::evalJob(double iFrame)
+void UsdMaya_WriteJob::WriteFrame(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
@@ -407,10 +407,10 @@ void UsdMaya_WriteJob::evalJob(double iFrame)
         chaser->ExportFrame(iFrame);
     }
 
-    perFrameCallback(iFrame);
+    _PerFrameCallback(iFrame);
 }
 
-void UsdMaya_WriteJob::endJob()
+void UsdMaya_WriteJob::FinishWriting()
 {
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -433,7 +433,7 @@ void UsdMaya_WriteJob::endJob()
             //     This needs to be done since "local" values have stronger precedence
             //     than "variant" values, but "referencing" will cause the variant values
             //     to take precedence.
-        defaultPrim = writeVariants(usdRootPrim);
+        defaultPrim = _WriteVariants(usdRootPrim);
     }
 
     // Restoring the currentRenderLayer
@@ -443,7 +443,7 @@ void UsdMaya_WriteJob::endJob()
                                         mCurrentRenderLayerName, false, false);
     }
 
-    postCallback();
+    _PostCallback();
 
     // Unfortunately, MGlobal::isZAxisUp() is merely session state that does
     // not get recorded in Maya files, so we cannot rely on it being set
@@ -486,7 +486,7 @@ void UsdMaya_WriteJob::endJob()
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
 }
 
-TfToken UsdMaya_WriteJob::writeVariants(const UsdPrim &usdRootPrim)
+TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
 {
     // Some notes about the expected structure that this function will create:
 
@@ -644,13 +644,12 @@ TfToken UsdMaya_WriteJob::writeVariants(const UsdPrim &usdRootPrim)
     return defaultPrim;
 }
 
-bool UsdMaya_WriteJob::needToTraverse(const MDagPath& curDag)
+void UsdMaya_WriteJob::_PerFrameCallback(double  /*iFrame*/)
 {
-    return mJobCtx.needToTraverse(curDag);
-}
+    // XXX Should we be passing the frame number into the callback?
+    // Unfortunately, we need to be careful that we don't affect existing
+    // callbacks that don't take a frame.
 
-void UsdMaya_WriteJob::perFrameCallback(double  /*iFrame*/)
-{
     if (!mJobCtx.mArgs.melPerFrameCallback.empty()) {
         MGlobal::executeCommand(mJobCtx.mArgs.melPerFrameCallback.c_str(), true);
     }
@@ -663,7 +662,7 @@ void UsdMaya_WriteJob::perFrameCallback(double  /*iFrame*/)
 
 // write the frame ranges and statistic string on the root
 // Also call the post callbacks
-void UsdMaya_WriteJob::postCallback()
+void UsdMaya_WriteJob::_PostCallback()
 {
     if (!mJobCtx.mArgs.melPostCallback.empty()) {
         MGlobal::executeCommand(mJobCtx.mArgs.melPostCallback.c_str(), true);

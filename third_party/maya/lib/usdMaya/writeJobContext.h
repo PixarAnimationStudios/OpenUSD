@@ -26,12 +26,12 @@
 
 /// \file usdMaya/writeJobContext.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -63,8 +63,8 @@ protected:
     ~UsdMayaWriteJobContext();
 
 public:
-    const UsdMayaJobExportArgs& getArgs() const { return mArgs; };
-    const UsdStageRefPtr& getUsdStage() const { return mStage; };
+    const UsdMayaJobExportArgs& GetArgs() const;
+    const UsdStageRefPtr& GetUsdStage() const;
 
     /// Whether we will merge the transform at \p path with its single
     /// exportable child shape, given its hierarchy and the current path
@@ -118,9 +118,6 @@ public:
         const bool exportRootVisibility,
         std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut);
 
-    PXRUSDMAYA_API
-    bool needToTraverse(const MDagPath& curDag) const;
-
     /// Mark \p path as containing bindings utilizing the skeleton
     /// at \p skelPath.
     /// Bindings are marked so that SkelRoots may be post-processed.
@@ -136,12 +133,19 @@ public:
             const TfToken& config);
 
 protected:
+    /// Opens the stage with the given \p filename for writing.
+    /// If \p append is \c true, the file must already exist.
     PXRUSDMAYA_API
-    bool openFile(const std::string& filename, bool append);
+    bool _OpenFile(const std::string& filename, bool append);
+
+    /// Whether the current export options should traverse \p curDag and its
+    /// descendants.
+    PXRUSDMAYA_API
+    bool _NeedToTraverse(const MDagPath& curDag) const;
 
     /// Perform any necessary cleanup; call this before you save the stage.
     PXRUSDMAYA_API
-    bool PostProcess();
+    bool _PostProcess();
 
     UsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over

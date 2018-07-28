@@ -26,7 +26,6 @@
 
 /// \file usdMaya/readJob.h
 
-#include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -48,31 +47,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMaya_ReadJob
 {
-  public:
-
-    PXRUSDMAYA_API
+public:
     UsdMaya_ReadJob(
             const std::string& iFileName,
             const std::string& iPrimPath,
             const std::map<std::string, std::string>& iVariants,
             const UsdMayaJobImportArgs & iArgs);
 
-    PXRUSDMAYA_API
     ~UsdMaya_ReadJob();
 
-    PXRUSDMAYA_API
-    bool doIt(std::vector<MDagPath>* addedDagPaths);
-    PXRUSDMAYA_API
-    bool redoIt();
-    PXRUSDMAYA_API
-    bool undoIt();
+    /// Reads the USD stage specified by the job file name and prim path.
+    /// Newly-created DAG paths are inserted into the vector \p addedDagPaths.
+    bool Read(std::vector<MDagPath>* addedDagPaths);
+
+    /// Redoes a previous Read() operation after Undo() has been called.
+    /// If Undo() hasn't been called, does nothing.
+    bool Redo();
+
+    /// Undoes a previous Read() operation, removing all added nodes.
+    bool Undo();
 
     // Getters/Setters
-    void setMayaRootDagPath(const MDagPath &mayaRootDagPath) {
-        mMayaRootDagPath = mayaRootDagPath;
-    };
+    void SetMayaRootDagPath(const MDagPath &mayaRootDagPath);
 
-  private:
+private:
     // XXX: Activating the 'Expanded' representation of a USD reference
     // assembly node is very much like performing a regular UsdMaya_ReadJob but with
     // a few key differences (e.g. creating proxy shapes at collapse points).

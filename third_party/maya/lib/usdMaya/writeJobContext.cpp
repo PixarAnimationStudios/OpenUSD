@@ -78,6 +78,18 @@ UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
 
 UsdMayaWriteJobContext::~UsdMayaWriteJobContext() = default;
 
+const UsdMayaJobExportArgs&
+UsdMayaWriteJobContext::GetArgs() const
+{
+    return mArgs;
+}
+
+const UsdStageRefPtr&
+UsdMayaWriteJobContext::GetUsdStage() const
+{
+    return mStage;
+}
+
 bool
 UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
@@ -123,7 +135,7 @@ UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
         unsigned int numExportableChildren = 0u;
         for (unsigned int i = 0u; i < childCount; ++i) {
             childDag.push(path.child(i));
-            if (needToTraverse(childDag)) {
+            if (_NeedToTraverse(childDag)) {
                 ++numExportableChildren;
                 if (numExportableChildren > 1) {
                     return false;
@@ -295,7 +307,8 @@ UsdMayaWriteJobContext::_GetInstanceMasterPrimWriters(
     return false;
 }
 
-bool UsdMayaWriteJobContext::needToTraverse(const MDagPath& curDag) const
+bool
+UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
 {
     MObject ob = curDag.node();
     // NOTE: Already skipping all intermediate objects
@@ -332,7 +345,8 @@ bool UsdMayaWriteJobContext::needToTraverse(const MDagPath& curDag) const
     return true;
 }
 
-bool UsdMayaWriteJobContext::openFile(const std::string& filename, bool append)
+bool
+UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
 {
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
@@ -378,7 +392,8 @@ bool UsdMayaWriteJobContext::openFile(const std::string& filename, bool append)
     return true;
 }
 
-bool UsdMayaWriteJobContext::PostProcess()
+bool
+UsdMayaWriteJobContext::_PostProcess()
 {
     if (mArgs.exportInstances) {
         if (_objectsToMasterWriters.empty()) {
@@ -395,7 +410,8 @@ bool UsdMayaWriteJobContext::PostProcess()
     return true;
 }
 
-UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
+UsdMayaPrimWriterSharedPtr
+UsdMayaWriteJobContext::CreatePrimWriter(
     const MDagPath& curDag,
     const SdfPath& usdPath,
     const bool forceUninstance)
@@ -487,7 +503,7 @@ UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
         MDagPath curDagPath;
         itDag.getPath(curDagPath);
 
-        if (!this->needToTraverse(curDagPath)) {
+        if (!this->_NeedToTraverse(curDagPath)) {
             itDag.prune();
             continue;
         }

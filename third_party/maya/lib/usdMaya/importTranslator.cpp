@@ -126,7 +126,7 @@ UsdMayaImportTranslator::reader(
                        variants,
                        jobArgs);
     std::vector<MDagPath> addedDagPaths;
-    bool success = mUsdReadJob->doIt(&addedDagPaths);
+    bool success = mUsdReadJob->Read(&addedDagPaths);
     return (success) ? MS::kSuccess : MS::kFailure;
 }
 

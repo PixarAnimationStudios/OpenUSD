@@ -69,8 +69,8 @@ UsdMayaPrimWriter::UsdMayaPrimWriter(const MDagPath& iDag,
     _dagPath(iDag),
     _usdPath(uPath),
     _baseDagToUsdPaths({{iDag, uPath}}),
-    _exportVisibility(jobCtx.getArgs().exportVisibility),
-    _hasAnimCurves(_IsAnimated(jobCtx.getArgs(), iDag))
+    _exportVisibility(jobCtx.GetArgs().exportVisibility),
+    _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), iDag))
 {
     // Determine if shape is animated
     // note that we can't use hasTransform, because we need to test the original
@@ -274,13 +274,13 @@ UsdMayaPrimWriter::GetUsdPrim() const
 const UsdStageRefPtr&
 UsdMayaPrimWriter::GetUsdStage() const
 {
-    return _writeJobCtx.getUsdStage();
+    return _writeJobCtx.GetUsdStage();
 }
 
 const UsdMayaJobExportArgs&
 UsdMayaPrimWriter::_GetExportArgs() const
 {
-    return _writeJobCtx.getArgs();
+    return _writeJobCtx.GetArgs();
 }
 
 UsdUtilsSparseValueWriter*

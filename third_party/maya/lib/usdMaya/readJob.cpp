@@ -92,7 +92,7 @@ UsdMaya_ReadJob::~UsdMaya_ReadJob()
 }
 
 bool
-UsdMaya_ReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
+UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
     MStatus status;
 
@@ -370,7 +370,7 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 }
 
 bool
-UsdMaya_ReadJob::redoIt()
+UsdMaya_ReadJob::Redo()
 {
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
@@ -379,7 +379,7 @@ UsdMaya_ReadJob::redoIt()
 }
 
 bool
-UsdMaya_ReadJob::undoIt()
+UsdMaya_ReadJob::Undo()
 {
     if (!mDagModifierSeeded) {
         mDagModifierSeeded = true;
@@ -408,6 +408,12 @@ UsdMaya_ReadJob::undoIt()
     MStatus status = mDagModifierUndo.doIt();
 
     return (status == MS::kSuccess);
+}
+
+void
+UsdMaya_ReadJob::SetMayaRootDagPath(const MDagPath &mayaRootDagPath)
+{
+    mMayaRootDagPath = mayaRootDagPath;
 }
 
 
