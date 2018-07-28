@@ -26,12 +26,12 @@
 
 /// \file usdMaya/primReaderRegistry.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
 #include "usdMaya/primReader.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/registryManager.h" 
 

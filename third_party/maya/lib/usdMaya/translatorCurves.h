@@ -24,11 +24,16 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_CURVES_H
 #define PXRUSDMAYA_TRANSLATOR_CURVES_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/translatorCurves.h
+
 #include "usdMaya/api.h"
-#include "pxr/usd/usdGeom/curves.h"
-#include "usdMaya/primReaderContext.h"
 #include "usdMaya/primReaderArgs.h"
+#include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usdGeom/curves.h"
+
 #include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -24,10 +24,12 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_H
 #define PXRUSDMAYA_PRIM_WRITER_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/primWriter.h
 
 #include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/sparseValueWriter.h"

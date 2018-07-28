@@ -26,19 +26,12 @@
 
 /// \file usdMaya/shadingModeRegistry.h
 
-/// We understand that shading may want to be imported/exported in many ways
-/// across studios.  Even within a studio, different workflows may call for
-/// different shading modes.
-///
-/// We provide macros that are entry points into the shading import/export
-/// logic.
-
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
-
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeImporter.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/singleton.h"
@@ -47,8 +40,6 @@
 #include "pxr/base/tf/weakBase.h"
 
 #include <maya/MObject.h>
-
-#include <boost/function.hpp>
 
 #include <string>
 
@@ -67,6 +58,12 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
 
 TF_DECLARE_WEAK_PTRS(UsdMayaShadingModeRegistry);
 
+/// We understand that shading may want to be imported/exported in many ways
+/// across studios.  Even within a studio, different workflows may call for
+/// different shading modes.
+///
+/// We provide macros that are entry points into the shading import/export
+/// logic.
 class UsdMayaShadingModeRegistry : public TfWeakBase
 {
 public:

@@ -26,8 +26,9 @@
 
 /// \file usdMaya/pointBasedDeformerNode.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/staticTokens.h"
 

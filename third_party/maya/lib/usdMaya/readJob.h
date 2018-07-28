@@ -26,10 +26,11 @@
 
 /// \file usdMaya/readJob.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primRange.h"

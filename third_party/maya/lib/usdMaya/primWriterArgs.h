@@ -26,8 +26,9 @@
 
 /// \file usdMaya/primWriterArgs.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec3f.h"
 

@@ -26,13 +26,13 @@
 
 /// \file usdMaya/functorPrimWriter.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/transformWriter.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usd/stage.h"
 

@@ -26,8 +26,10 @@
 
 /// \file usdMaya/colorSpace.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/gf/gamma.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

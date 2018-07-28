@@ -27,9 +27,9 @@
 #ifndef PXRUSDMAYA_READUTIL_H
 #define PXRUSDMAYA_READUTIL_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/usd/attribute.h"
 

@@ -24,10 +24,13 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_CAMERA_H
 #define PXRUSDMAYA_TRANSLATOR_CAMERA_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/translatorCamera.h
+
 #include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usdGeom/camera.h"
 

@@ -26,13 +26,14 @@
 
 /// \file usdMaya/shadingModeImporter.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
-
 #include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/gprim.h"

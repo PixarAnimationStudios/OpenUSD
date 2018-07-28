@@ -21,18 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/editUtil.h"
-#include "usdMaya/referenceAssembly.h"
 
-#include <maya/MGlobal.h>
-#include <maya/MItEdits.h>
-#include <maya/MEdit.h>
+#include "usdMaya/referenceAssembly.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+
+#include <maya/MEdit.h>
+#include <maya/MGlobal.h>
+#include <maya/MItEdits.h>
 
 #include <unordered_map>
 

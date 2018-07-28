@@ -24,12 +24,15 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
 
-#include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "pxr/usd/usdGeom/gprim.h"
+/// \file translatorGprim.h
 
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterContext.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usdGeom/gprim.h"
 
 #include <maya/MObject.h>
 

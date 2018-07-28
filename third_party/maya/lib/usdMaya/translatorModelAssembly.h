@@ -26,15 +26,16 @@
 
 /// \file usdMaya/translatorModelAssembly.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
-
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 

@@ -26,11 +26,13 @@
 
 /// \file usdMaya/adaptor.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/vt/value.h"
+
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/usd/common.h"

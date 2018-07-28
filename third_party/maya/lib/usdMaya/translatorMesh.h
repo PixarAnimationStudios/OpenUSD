@@ -27,10 +27,11 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MESH_H
 #define PXRUSDMAYA_TRANSLATOR_MESH_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"

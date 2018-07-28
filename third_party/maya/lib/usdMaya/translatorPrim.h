@@ -24,12 +24,15 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_PRIM_H
 #define PXRUSDMAYA_TRANSLATOR_PRIM_H
 
-#include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "pxr/usd/usd/prim.h"
+/// \file usdMaya/translatorPrim.h
 
-#include "usdMaya/primReaderContext.h"
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
+#include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usd/prim.h"
 
 #include <maya/MObject.h>
 

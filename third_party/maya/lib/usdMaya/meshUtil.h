@@ -27,8 +27,9 @@
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"

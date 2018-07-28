@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #ifndef PXRUSDMAYA_IMPORT_TRANSLATOR_H
 #define PXRUSDMAYA_IMPORT_TRANSLATOR_H
 
 /// \file usdMaya/importTranslator.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 
 #include "usdMaya/jobArgs.h"
+
+#include "pxr/pxr.h"
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
@@ -42,6 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+/// File translator for USD files. Handles the USD option in the Import window.
 class UsdMayaImportTranslator : public MPxFileTranslator
 {
     public:

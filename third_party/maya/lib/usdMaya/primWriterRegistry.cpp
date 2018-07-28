@@ -27,7 +27,6 @@
 #include "usdMaya/functorPrimWriter.h"
 #include "usdMaya/registryHelper.h"
 
-#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 

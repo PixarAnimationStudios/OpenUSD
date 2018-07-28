@@ -26,14 +26,15 @@
 
 /// \file usdMaya/proxyShape.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
-
 #include "usdMaya/stageNoticeListener.h"
 #include "usdMaya/usdPrimProvider.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/staticTokens.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"

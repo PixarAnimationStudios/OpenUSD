@@ -33,14 +33,9 @@
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/tokens.h"
 
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnEnumAttribute.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnNumericData.h>
-#include <maya/MFnStringArrayData.h>
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MPlug.h>
-#include <maya/MStringArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

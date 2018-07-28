@@ -21,24 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeImporter.h"
+// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
+#include "usdMaya/shadingModePxrRis_rfm_map.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
-// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include "usdMaya/shadingModePxrRis_rfm_map.h"
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"

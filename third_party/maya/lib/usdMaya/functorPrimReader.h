@@ -26,13 +26,13 @@
 
 /// \file usdMaya/functorPrimReader.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
 #include "usdMaya/primReader.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primReaderRegistry.h"
+
+#include "pxr/pxr.h"
 
 #include <functional>
 

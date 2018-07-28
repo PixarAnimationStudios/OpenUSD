@@ -24,8 +24,12 @@
 #ifndef PXRUSDMAYA_PRIMWRITERCONTEXT_H
 #define PXRUSDMAYA_PRIMWRITERCONTEXT_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/primWriterContext.h
+
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 

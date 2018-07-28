@@ -26,24 +26,24 @@
 
 /// \file usdMaya/referenceAssembly.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/stage.h"
 
-#include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
+#include <maya/MDGModifier.h>
 #include <maya/MPxAssembly.h>
 #include <maya/MPxRepresentation.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
-
-#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>
@@ -265,9 +265,9 @@ public:
     // was edited directly (in which case _updatingRepNamespace == false).
     bool _updatingRepNamespace;
 
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> > _representations;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> > _representations;
     bool _activateRepOnFileLoad;
-    boost::shared_ptr<MPxRepresentation> _activeRep;
+    std::shared_ptr<MPxRepresentation> _activeRep;
     bool _inSetInternalValue;
     bool _hasEdits;
 };

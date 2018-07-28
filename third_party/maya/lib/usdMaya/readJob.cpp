@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/readJob.h"
 
 #include "usdMaya/primReaderRegistry.h"
@@ -33,13 +32,14 @@
 #include "usdMaya/translatorXformable.h"
 
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
@@ -47,8 +47,8 @@
 #include "pxr/usd/usdUtils/stageCache.h"
 
 #include <maya/MAnimControl.h>
-#include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
+#include <maya/MDGModifier.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>

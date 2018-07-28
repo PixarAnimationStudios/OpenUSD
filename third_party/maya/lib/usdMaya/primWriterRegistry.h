@@ -26,13 +26,12 @@
 
 /// \file usdMaya/primWriterRegistry.h
 
-#include "pxr/pxr.h"
-
+#include "usdMaya/api.h"
 #include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 
-#include "usdMaya/api.h"
+#include "pxr/pxr.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

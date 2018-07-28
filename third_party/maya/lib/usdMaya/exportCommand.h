@@ -26,8 +26,10 @@
 
 /// \file usdMaya/exportCommand.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
+
 #include <maya/MPxCommand.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

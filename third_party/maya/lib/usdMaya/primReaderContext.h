@@ -24,11 +24,15 @@
 #ifndef PXRUSDMAYA_PRIMREADERCONTEXT_H
 #define PXRUSDMAYA_PRIMREADERCONTEXT_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/primReaderContext.h
+
 #include "usdMaya/api.h"
-#include <maya/MObject.h>
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usd/prim.h"
+
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

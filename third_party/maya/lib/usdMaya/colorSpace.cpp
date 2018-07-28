@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "usdMaya/colorSpace.h"
+
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE

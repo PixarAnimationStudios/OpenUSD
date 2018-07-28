@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorMaterial.h"
 
 #include "usdMaya/primReaderContext.h"
@@ -35,6 +34,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
+
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"

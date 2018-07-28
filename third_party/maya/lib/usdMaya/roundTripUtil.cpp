@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-
 #include "usdMaya/roundTripUtil.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -31,6 +29,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/primvar.h"
 

@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/stageNoticeListener.h"
 
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/weakBase.h"
+
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
 

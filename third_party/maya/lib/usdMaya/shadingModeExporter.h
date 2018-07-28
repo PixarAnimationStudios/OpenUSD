@@ -26,11 +26,11 @@
 
 /// \file usdMaya/shadingModeExporter.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/util.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"

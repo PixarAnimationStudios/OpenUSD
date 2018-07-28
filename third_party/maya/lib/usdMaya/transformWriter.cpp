@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/transformWriter.h"
 
 #include "usdMaya/adaptor.h"
@@ -30,15 +29,15 @@
 #include "usdMaya/writeJobContext.h"
 #include "usdMaya/xformStack.h"
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/inherits.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include <maya/MFnTransform.h>
-#include <maya/MPoint.h>
 #include <maya/MMatrix.h>
+#include <maya/MPoint.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

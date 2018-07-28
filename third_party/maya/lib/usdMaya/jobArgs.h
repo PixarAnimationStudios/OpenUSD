@@ -26,12 +26,14 @@
 
 /// \file usdMaya/jobArgs.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/util.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/MString.h>

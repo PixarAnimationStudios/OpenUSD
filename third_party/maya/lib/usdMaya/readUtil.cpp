@@ -21,20 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "usdMaya/readUtil.h"
-#include "usdMaya/colorSpace.h"
+
 #include "usdMaya/adaptor.h"
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/vt/array.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/vt/array.h"
+
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/usd/tokens.h"
 
+#include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnEnumAttribute.h>
@@ -46,8 +49,6 @@
 #include <maya/MFnStringArrayData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnVectorArrayData.h>
-#include <maya/MDoubleArray.h>
-#include <maya/MFloatArray.h>
 #include <maya/MIntArray.h>
 #include <maya/MMatrix.h>
 #include <maya/MPointArray.h>

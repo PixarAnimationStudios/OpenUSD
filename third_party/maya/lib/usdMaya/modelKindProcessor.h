@@ -26,10 +26,10 @@
 
 /// \file usdMaya/modelKindProcessor.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriter.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"

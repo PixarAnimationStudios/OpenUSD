@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/query.h"
 
 #include "usdMaya/usdPrimProvider.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/arch/systemInfo.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -35,8 +35,8 @@
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
-#include <maya/MPxNode.h>
 #include <maya/MObject.h>
+#include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 
 #include <string>

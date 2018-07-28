@@ -24,8 +24,12 @@
 #ifndef USD_MAYA_QUERY_H
 #define USD_MAYA_QUERY_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/query.h
+
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 

@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
-/// \file usdMaya/roundTripUtil.h
-
 #ifndef PXRUSDMAYA_ROUND_TRIP_UTIL_H
 #define PXRUSDMAYA_ROUND_TRIP_UTIL_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/roundTripUtil.h
+
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/primvar.h"

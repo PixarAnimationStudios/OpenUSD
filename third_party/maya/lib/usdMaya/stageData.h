@@ -26,16 +26,18 @@
 
 /// \file usdMaya/stageData.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/staticTokens.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 
+#include <maya/MMessage.h>
 #include <maya/MPxData.h>
 #include <maya/MPxGeometryData.h>
-#include <maya/MMessage.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 

@@ -24,7 +24,10 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
+/// \file usdMaya/registryHelper.h
+
 #include "pxr/pxr.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
+
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
@@ -39,6 +39,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
@@ -46,8 +47,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
@@ -62,14 +63,13 @@
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
-#include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
-#include <maya/MPoint.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>

@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/translatorMaterial.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec3f.h"
@@ -38,6 +38,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/prim.h"

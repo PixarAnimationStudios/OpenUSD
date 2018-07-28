@@ -26,14 +26,15 @@
 
 /// \file usdMaya/translatorMaterial.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
-
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/util.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/gprim.h"

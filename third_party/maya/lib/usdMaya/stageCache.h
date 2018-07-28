@@ -26,9 +26,9 @@
 
 /// \file usdMaya/stageCache.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stageCache.h"

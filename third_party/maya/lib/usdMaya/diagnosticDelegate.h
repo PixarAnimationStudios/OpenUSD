@@ -26,14 +26,17 @@
 
 /// \file usdMaya/diagnosticDelegate.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnosticMgr.h"
+
 #include "pxr/usd/usdUtils/coalescingDiagnosticDelegate.h"
 
-#include <boost/noncopyable.hpp>
 #include <maya/MGlobal.h>
+
+#include <boost/noncopyable.hpp>
 
 #include <atomic>
 #include <memory>

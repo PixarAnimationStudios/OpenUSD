@@ -26,12 +26,13 @@
 
 /// \file usdMaya/primReaderArgs.h
 
-#include "pxr/pxr.h"
-
 #include "usdMaya/api.h"
 #include "usdMaya/jobArgs.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/gf/interval.h"
+
 #include "pxr/usd/usd/prim.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

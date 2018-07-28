@@ -26,19 +26,20 @@
 
 /// \file usdMaya/chaserRegistry.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/chaser.h"
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/util.h"
 
-#include "pxr/usd/usd/stage.h"
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <boost/function.hpp>
+#include "pxr/usd/usd/stage.h"
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -101,7 +102,7 @@ public:
         const UsdMayaJobExportArgs& _jobArgs;
     };
 
-    typedef boost::function<UsdMayaChaser* (const FactoryContext&)> FactoryFn;
+    typedef std::function<UsdMayaChaser* (const FactoryContext&)> FactoryFn;
 
     /// \brief Register a chaser factory.  
     ///

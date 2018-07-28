@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorMesh.h"
 
 #include "usdMaya/util.h"
@@ -36,8 +35,8 @@
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
-#include <maya/MItMeshVertex.h>
 #include <maya/MItMeshEdge.h>
+#include <maya/MItMeshVertex.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>

@@ -24,10 +24,13 @@
 #ifndef PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 #define PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 
+/// \file usdMaya/instancedNodeWriter.h
+
 #include "usdMaya/primWriter.h"
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/pxr.h"
+
 #include "pxr/usd/usd/references.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

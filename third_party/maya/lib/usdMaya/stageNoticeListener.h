@@ -26,11 +26,13 @@
 
 /// \file usdMaya/stageNoticeListener.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/weakBase.h"
+
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
 

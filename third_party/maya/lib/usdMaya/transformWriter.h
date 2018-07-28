@@ -24,12 +24,16 @@
 #ifndef PXRUSDMAYA_TRANSFORM_WRITER_H
 #define PXRUSDMAYA_TRANSFORM_WRITER_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/transformWriter.h
+
 #include "usdMaya/api.h"
 #include "usdMaya/primWriter.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformOp.h"
+
 #include <maya/MEulerRotation.h>
 #include <maya/MFnTransform.h>
 #include <maya/MPlugArray.h>
