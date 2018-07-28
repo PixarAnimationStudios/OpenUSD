@@ -54,5 +54,7 @@ void wrapDependencies()
     bp::def("ExtractExternalReferences", _ExtractExternalReferences);
 
     bp::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
-            (bp::arg("assetPath"), bp::arg("usdzFilePath")));
+            (bp::arg("assetPath"),
+             bp::arg("usdzFilePath"),
+             bp::arg("firstLayerName") = std::string()));
 }

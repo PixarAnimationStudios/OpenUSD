@@ -40,12 +40,19 @@ if __name__ == '__main__':
     parser.add_argument('assetPath')
     parser.add_argument('-l', '--listContents', type=str, default='-', 
                         dest='outfile')
+    parser.add_argument('-n', '--firstLayerName', type=str, default='', 
+                        dest='rename')
 
     args = parser.parse_args()
 
     Ar.GetResolver().CreateDefaultContextForAsset(args.assetPath)
-    assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
-                                         args.usdzFile)
+    if args.rename:
+        assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
+                                             args.usdzFile,
+                                             args.rename)
+    else:
+        assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
+                                             args.usdzFile)
 
     zipFile = Usd.ZipFile.Open(args.usdzFile)
     assert zipFile

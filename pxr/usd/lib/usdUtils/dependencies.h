@@ -68,6 +68,10 @@ void UsdUtilsExtractExternalReferences(
 /// \p assetPath. The created package will include a localized version of the 
 /// asset itself and all of its external dependencies. Due to localization, the 
 /// packaged layers might be modified to have different asset paths.
+///
+/// You can optionally specify a different package-internal name for the first
+/// layer of the asset by specifying \p firstLayerName. By default,
+/// \p firstLayerName is empty, meaning that the original name is preserved.
 /// 
 /// Returns true if the package was created successfully.
 /// 
@@ -82,7 +86,9 @@ void UsdUtilsExtractExternalReferences(
 USDUTILS_API
 bool
 UsdUtilsCreateNewUsdzPackage(const SdfAssetPath& assetPath,
-                             const std::string& usdzFilePath);
+                             const std::string& usdzFilePath,
+                             const std::string& firstLayerName =
+                                    std::string());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -780,7 +780,8 @@ UsdUtilsExtractExternalReferences(
 
 bool
 UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
-                             const std::string &usdzFilePath)
+                             const std::string &usdzFilePath,
+                             const std::string &firstLayerName)
 {
     std::string destDir = TfGetPathName(usdzFilePath);
 
@@ -800,11 +801,19 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
 
     UsdZipFileWriter writer = UsdZipFileWriter::CreateNew(usdzFilePath);
 
+    bool firstLayer = true;
     bool success = true;
     for (auto &layerAndDestPath : layerExportMap) {
         const auto &layer = layerAndDestPath.first;
-        const std::string destPath = _GetDestRelativePath(
+        std::string destPath = _GetDestRelativePath(
                 layerAndDestPath.second, destDir);
+
+        // Change the first layer's name if requested.
+        if (firstLayer && !firstLayerName.empty()) {
+            const std::string pathName = TfGetPathName(destPath);
+            destPath = TfStringCatPaths(pathName, firstLayerName);
+            firstLayer = false;
+        }
 
         if (!packagedFiles.insert(destPath).second) {
             TF_WARN("A file already exists at path \"%s\" in the package. "
