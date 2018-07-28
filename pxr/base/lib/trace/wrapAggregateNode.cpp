@@ -58,7 +58,7 @@ GetCount(TraceAggregateNodePtr &self) {
     return self->GetCount(false /* recursive */);
 }
 
-void wrapEventNode()
+void wrapAggregateNode()
 {
     using This = TraceAggregateNode;
     using ThisPtr = TraceAggregateNodePtr;
