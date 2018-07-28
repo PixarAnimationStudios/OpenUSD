@@ -47,11 +47,11 @@ Dependencies
 
 | Name | Version | Optional |
 | ---- | ------- | :------: |
-| C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |   |
-| C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |   |
-| [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows)    |   |
+| C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
+| C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
+| [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows VS 2015), 3.12 (Windows VS 2017)    |   |
 | [Python](https://python.org)                                      | 2.7.5                                  | x |
-| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows)    |   |
+| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows VS 2015), 1.65.1 (Windows VS 2017)    |   |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.4 Update 6                           |   |
 
 Additional dependencies are required for the following components. These components
@@ -140,7 +140,9 @@ then build and install USD into ```/opt/local/USD```.
 
 Launch the "Developer Command Prompt" for your version of Visual Studio and 
 run the script in the opened shell. Make sure to use the 64-bit (x64) command
-prompt and not the 32-bit (x86) command prompt.
+prompt and not the 32-bit (x86) command prompt.  (Note if you're trying to
+build with Visual Studio 2017, use the "x86 Native Tools Command Prompt for VS
+2017").
 
 See https://docs.microsoft.com/en-us/dotnet/framework/tools/developer-command-prompt-for-vs for more details.
 

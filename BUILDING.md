@@ -60,7 +60,7 @@ build USD.
 
 ```cmd.exe
 "C:\Program Files\CMake\bin\cmake.exe"      ^
--G "Visual Studio 14 Win64"                 ^
+-G "Visual Studio 14 2015 Win64"            ^
 -DTBB_ROOT_DIR=C:\path\to\tbb               ^
 -DOPENEXR_LOCATION=C:\path\to\openexr       ^
 -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
@@ -71,6 +71,8 @@ build USD.
 
 cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
 ```
+
+Note: if you're trying to build with Visual Studio 2017, use the "Visual Studio 15 2017 Win64" generator.
 
 ## Optional Components
 
