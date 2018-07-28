@@ -51,6 +51,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/selection.h"
+#include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -385,14 +386,16 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
 
         // create adjacency table for smooth normals
         HdBufferSourceSharedPtr adjacencyComputation =
-            adjacency->GetAdjacencyBuilderComputation(_topology.get());
+            adjacency->GetSharedAdjacencyBuilderComputation(_topology.get());
 
         resourceRegistry->AddSource(adjacencyComputation);
 
         if (HdStGLUtils::IsGpuComputeEnabled()) {
             // also send adjacency table to gpu
             HdBufferSourceSharedPtr adjacencyForGpuComputation =
-                adjacency->GetAdjacencyBuilderForGPUComputation();
+                HdBufferSourceSharedPtr(
+                    new Hd_AdjacencyBufferSource(
+                        adjacency.get(), adjacencyComputation));
 
             HdBufferSpecVector bufferSpecs;
             adjacencyForGpuComputation->GetBufferSpecs(&bufferSpecs);
@@ -739,8 +742,12 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 // CPU smooth normals depends on CPU adjacency.
                 //
                 HdBufferSourceSharedPtr normal =
-                        _vertexAdjacency->GetSmoothNormalsComputation(
-                                points, normalsName, usePackedSmoothNormals);
+                    HdBufferSourceSharedPtr(
+                        new Hd_SmoothNormalsComputation(
+                            _vertexAdjacency.get(), points, normalsName,
+                            _vertexAdjacency->GetSharedAdjacencyBuilderComputation(
+                                _topology.get()),
+                            usePackedSmoothNormals));
 
                 if (doRefine) {
                     normal = _RefinePrimvar(normal, /*varying=*/false,

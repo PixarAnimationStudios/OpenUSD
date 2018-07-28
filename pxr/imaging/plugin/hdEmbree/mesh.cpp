@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
 #include "pxr/imaging/hd/meshUtil.h"
+#include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -664,8 +665,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         _normalsValid = false;
     }
     if (_smoothNormals && !_normalsValid) {
-        _computedNormals = _adjacency.ComputeSmoothNormals(_points.size(),
-            _points.cdata());
+        _computedNormals = Hd_SmoothNormals::ComputeSmoothNormals(
+            &_adjacency, _points.size(), _points.cdata());
         _normalsValid = true;
 
         // Create a sampler for the "normals" primvar. If there are authored
