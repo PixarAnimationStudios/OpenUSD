@@ -1070,7 +1070,7 @@ class AppController(QtCore.QObject):
                 err += "\n".join(reasons) + "\n"
             return err
 
-        if not os.path.isfile(usdFilePath):
+        if not Ar.GetResolver().Resolve(usdFilePath):
             sys.stderr.write(_GetFormattedError(["File not found"]))
             sys.exit(1)
 
@@ -3383,7 +3383,8 @@ class AppController(QtCore.QObject):
 
         # For brevity, we display only the basename of layer paths.
         def LabelForLayer(l):
-            return os.path.basename(l.realPath) if l.realPath else '~session~'
+            return ('~session~' if l == self._dataModel.stage.GetSessionLayer()
+                    else l.GetDisplayName())
 
         # Create treeview items for all sublayers in the layer tree.
         def WalkSublayers(parent, node, layerTree, sublayer=False):
@@ -4049,7 +4050,8 @@ class AppController(QtCore.QObject):
                     for key, value in assetInfo.iteritems():
                         aiStr += "<br> -- <em>%s</em> : %s" % (key, _HTMLEscape(str(value)))
                     aiStr += "<br><em><small>%s created on %s by %s</small></em>" % \
-                        (_HTMLEscape(name), time, _HTMLEscape(owner))
+                        (_HTMLEscape(name), _HTMLEscape(time), 
+                         _HTMLEscape(owner))
                 else:
                     aiStr += "<br><small><em>No assetInfo!</em></small>"
 
