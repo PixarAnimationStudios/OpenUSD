@@ -108,6 +108,13 @@ _HasNumericType(const MPlug& plug, MFnNumericData::Type type)
     return attr.unitType() == type;
 }
 
+static bool
+_HasEnumType(const MPlug& plug)
+{
+    MObject object = plug.attribute();
+    return object.hasFn(MFn::kEnumAttribute);
+}
+
 static MObject
 _FindOrCreateMayaTypedAttr(
     const std::string& attrName,
@@ -187,7 +194,9 @@ _FindOrCreateMayaNumericAttr(
     }
     else {
         // Found -- verify.
-        if (_HasNumericType(plug, type)) {
+        if (_HasNumericType(plug, type)
+            || (type == MFnNumericData::kInt && _HasEnumType(plug)))
+        {
             return plug.attribute();
         }
         else {
@@ -623,6 +632,10 @@ bool UsdMayaReadUtil::SetMayaAttr(
         else if (_HasNumericType(attrPlug, MFnNumericData::kDouble)) {
             double d = VtValue::Cast<double>(newValue).Get<double>();
             modifier.newPlugValueDouble(attrPlug, d);
+            ok = true;
+        } else if (newValue.IsHolding<int>() && _HasEnumType(attrPlug)) {
+            int i = VtValue::Cast<int>(newValue).Get<int>();
+            modifier.newPlugValueInt(attrPlug, i);
             ok = true;
         }
     }
