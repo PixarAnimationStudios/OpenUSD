@@ -575,6 +575,10 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
 
     TfReset(_boundingBoxCache);
 
+    // Reset the stage listener until we determine that everything is valid.
+    _stageNoticeListener.SetStage(UsdStageWeakPtr());
+    _stageNoticeListener.SetStageContentsChangedCallback(nullptr);
+
     MDataHandle inDataCachedHandle =
         dataBlock.inputValue(inStageDataCachedAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -649,6 +653,13 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
 
     outDataHandle.set(stageData);
     outDataHandle.setClean();
+
+    // Start listening for notices for the USD stage.
+    _stageNoticeListener.SetStage(usdStage);
+    _stageNoticeListener.SetStageContentsChangedCallback(
+        std::bind(&UsdMayaProxyShape::_OnStageContentsChanged,
+                  this,
+                  std::placeholders::_1));
 
     return MS::kSuccess;
 }
@@ -1043,8 +1054,17 @@ UsdMayaProxyShape::_CanBeSoftSelected() const
     if (!status) {
         return false;
     }
-    return softSelHandle.asBool();
 
+    return softSelHandle.asBool();
+}
+
+void
+UsdMayaProxyShape::_OnStageContentsChanged(
+        const UsdNotice::StageContentsChanged& notice)
+{
+    // If the USD stage this proxy represents changes without Maya's knowledge,
+    // we need to inform Maya that the shape is dirty and needs to be redrawn.
+    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 }
 
 bool

@@ -28,11 +28,14 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "usdMaya/stageNoticeListener.h"
 #include "usdMaya/usdPrimProvider.h"
 
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -248,6 +251,11 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         bool _GetTint(MDataBlock dataBlock, GfVec4f* outTintColor) const;
 
         bool _CanBeSoftSelected() const;
+
+        void _OnStageContentsChanged(
+                const UsdNotice::StageContentsChanged& notice);
+
+        UsdMayaStageNoticeListener _stageNoticeListener;
 
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
 

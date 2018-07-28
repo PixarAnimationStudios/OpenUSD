@@ -57,6 +57,7 @@ pxr_shared_library(${PXR_PACKAGE}
         stageCache
         stageData
         stageNode
+        stageNoticeListener
         transformWriter
         translatorCamera
         translatorCurves
