@@ -11,9 +11,15 @@ pxr_install_test_dir(
     DEST testUsdZipInputFiles
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdZipAsset
+    DEST testUsdZipAsset
+)
+
 pxr_register_test(testUsdZipInputFiles
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip flat.usdz src"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip flat.usdz src -l flat.txt"
+    DIFF_COMPARE flat.txt
     EXPECTED_RETURN_CODE 0
 )
 
@@ -24,7 +30,8 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdZipInputFiles2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip -r recursive.usdz src"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip -r recursive.usdz src -l recursive.txt"
+    DIFF_COMPARE recursive.txt
     EXPECTED_RETURN_CODE 0
 )
 
@@ -54,4 +61,11 @@ pxr_register_test(testUsdZipMissingInput
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip nonexistent.usdz nonexistent.usd"
     EXPECTED_RETURN_CODE 1
+)
+
+pxr_register_test(testUsdZipAsset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip -a root.usd package.usdz -l contents.txt"
+    DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
 )

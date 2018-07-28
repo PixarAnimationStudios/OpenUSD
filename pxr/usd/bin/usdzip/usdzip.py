@@ -27,43 +27,25 @@ import glob
 import os
 import sys
 
-from pxr import Tf
-from pxr import Usd
+from pxr import Ar, Sdf, Tf, Usd, UsdUtils
+from contextlib import contextmanager
+
+@contextmanager
+def _Stream(path, *args, **kwargs):
+    if path == '-':
+        yield sys.stdout
+    else:
+        with open(path, *args, **kwargs) as fp:
+            yield fp
+
+def _Print(stream, msg):
+    print >>stream, msg
 
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
-def main():
-    parser = argparse.ArgumentParser(
-        description='Packages USD assets into a .usdz file.')
-
-    parser.add_argument('usdzFile', type=str, 
-                        help='Name of the .usdz file to create.')
-    parser.add_argument('inputFiles', type=str, nargs='+',
-                        help='Files to include in the .usdz file.')
-
-    parser.add_argument('-r', '--recurse', dest='recurse', action='store_true',
-                        help='If specified, files in sub-directories are '
-                        'recursively added to the package.')
-    parser.add_argument('-q', '--quiet', dest='quiet', action='store_true',
-                        help='Quiet mode, where output messages regarding files'
-                        ' being added to the package are suppressed.')
-
-    args = parser.parse_args()
-    usdzFile = args.usdzFile
-    filesToAdd = args.inputFiles
-    
-    # Ensure that the usdz file has the right extension.
-    if not usdzFile.endswith('.usdz'):
-        usdzFile += '.usdz'
-
-    if not args.quiet:
-        print('Creating package \'%s\' with files [%s].' % 
-              (usdzFile, filesToAdd))
-        if not args.recurse:
-            print('Not recursing into sub-directories.')
-
-    with Usd.ZipFileWriter.CreateNew(args.usdzFile) as usdzWriter:
+def _CreateUsdz(usdzFile, filesToAdd, recurse, verbose):
+    with Usd.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
         while filesToAdd:
             # Pop front (first file) from the list of files to add.
             f = filesToAdd[0]
@@ -73,23 +55,117 @@ def main():
                 # If a directory is specified, add all files in the directory.
                 filesInDir = glob.glob(os.path.join(f, '*'))
                 # If the recurse flag is not specified, remove sub-directories.
-                if not args.recurse:
+                if not recurse:
                     filesInDir = [f for f in filesInDir if not os.path.isdir(f)]
                 filesToAdd += filesInDir
             else:
-                if not args.quiet:
+                if verbose:
                     print('.. adding: %s' % f)
                 try:
                     usdzWriter.AddFile(f)
                 except Tf.ErrorException as e:
                     _Err('Failed to add file \'%s\' to package. Discarding '
-                         'package.' % f)
+                        'package.' % f)
                     # When the "with" block exits, Discard() will be called on 
                     # usdzWriter automatically if an exception occurs.
                     raise
 
-    if not args.quiet:
-        print("Done.")
+def _DumpContents(dumpLocation, zipFile):
+    with _Stream(dumpLocation, "w") as ofp:
+        _Print(ofp, "    Offset\t      Comp\t    Uncomp\tName")
+        _Print(ofp, "    ------\t      ----\t    ------\t----")
+        fileNames = zipFile.GetFileNames()
+        for fileName in fileNames:
+            fileInfo = zipFile.GetFileInfo(fileName)
+            _Print(ofp, "%10d\t%10d\t%10d\t%s" % 
+                (fileInfo.dataOffset, fileInfo.size, 
+                    fileInfo.uncompressedSize, fileName))
+
+        _Print(ofp, "----------")
+        _Print(ofp, "%d files total" % len(fileNames))
+
+def _ListContents(listLocation, zipFile):
+    with _Stream(listLocation, "w") as ofp:
+        for fileName in zipFile.GetFileNames():
+            _Print(ofp, fileName)
+
+def main():
+    parser = argparse.ArgumentParser(description='Utility for creating a .usdz '
+        'file containging USD assets and for inspecting existing .usdz files.')
+
+    parser.add_argument('usdzFile', type=str, 
+                        help='Name of the .usdz file to create.')
+    parser.add_argument('inputFiles', type=str, nargs='*',
+                        help='Files to include in the .usdz file.')
+    parser.add_argument('-a', '--asset', dest='asset', type=str,
+                        help='Resolvable asset path pointing to the root layer '
+                        'of the asset to be isolated and copied into the '
+                        'package.')
+    parser.add_argument('-r', '--recurse', dest='recurse', action='store_true',
+                        help='If specified, files in sub-directories are '
+                        'recursively added to the package.')
+    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
+                        help='Enable verbose mode, which causes messages '
+                        'regarding files being added to the package to be '
+                        'output to stdout.')
+    parser.add_argument('-l', '--list', dest='listContents', type=str, 
+                        nargs='?', default=None, const='-',
+                        help='List contents of the specified usdz file. If '
+                        'a file-path argument is provided, the list is output '
+                        'to a file at the given path. If not, it is output to '
+                        'stdout.')
+    parser.add_argument('-d', '--dump', dest='dumpContents', type=str, 
+                        nargs='?', default=None, const='-',
+                        help='Dump contents of the specified usdz file. If '
+                        'a file-path argument is provided, the contents are '
+                        'output to a file at the given path. If not, it is '
+                        'output to stdout.')
+
+    args = parser.parse_args()
+    usdzFile = args.usdzFile
+    filesToAdd = args.inputFiles
+    asset = args.asset
+
+    if args.asset and len(filesToAdd)>0:
+        parser.error("Specify either inputFiles or an asset via --asset, "
+                     "not both.")
+
+    # Ensure that the usdz file has the right extension.
+    if not usdzFile.endswith('.usdz'):
+        usdzFile += '.usdz'
+
+    # Check if we're in package creation mode and verbose mode is enabled, 
+    # print some useful information.
+    if (args.asset or len(filesToAdd)>0) and args.verbose:
+        if os.path.exists(usdzFile):
+            print("File at path '%s' already exists. Overwriting file." % 
+                    usdzFile)
+
+        print('Creating package \'%s\' with files [%s].' % 
+                (usdzFile, filesToAdd))
+        if not args.recurse:
+            print('Not recursing into sub-directories.')
+
+    if len(filesToAdd) > 0:
+        _CreateUsdz(usdzFile, filesToAdd, args.recurse, args.verbose)
+    elif args.asset:
+        r = Ar.GetResolver()
+        resolvedAsset = r.Resolve(args.asset)
+        r.ConfigureResolverForAsset(resolvedAsset)
+        UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.asset), usdzFile)
+
+    if args.listContents or args.dumpContents:
+        if os.path.exists(usdzFile):
+            zipFile = Usd.ZipFile.Open(usdzFile)
+            if zipFile:
+                if args.dumpContents:
+                    _DumpContents(args.dumpContents, zipFile)
+                if args.listContents:
+                    _ListContents(args.listContents, zipFile)
+            else:
+                _Err("Failed to open usdz file at path '%s'." % usdzFile)
+        else:
+            _Err("Can't find usdz file at path '%s'." % usdzFile)
 
     return 0
 

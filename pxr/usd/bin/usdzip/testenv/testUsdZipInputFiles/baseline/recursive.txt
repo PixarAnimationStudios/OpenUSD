@@ -1,0 +1,4 @@
+src/a.txt
+src/b.png
+src/sub/c.png
+src/sub/d.txt
