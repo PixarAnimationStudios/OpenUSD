@@ -526,7 +526,10 @@ public:
 
         _resolver->BeginCacheScope(&cacheData[0]);
         for (size_t i = 0, e = _GetNumPackageResolvers(); i != e; ++i) {
-            _GetPackageResolver(i)->BeginCacheScope(&cacheData[i+1]);
+            ArPackageResolver* packageResolver = _GetPackageResolver(i);
+            if (packageResolver) {
+                packageResolver->BeginCacheScope(&cacheData[i+1]);
+            }
         }
 
         cacheScopeData->Swap(cacheData);
@@ -544,7 +547,10 @@ public:
 
         _resolver->EndCacheScope(&cacheData[0]);
         for (size_t i = 0, e = _GetNumPackageResolvers(); i != e; ++i) {
-            _GetPackageResolver(i)->EndCacheScope(&cacheData[i+1]);
+            ArPackageResolver* packageResolver = _GetPackageResolver(i);
+            if (packageResolver) {
+                packageResolver->EndCacheScope(&cacheData[i+1]);
+            }
         }
 
         cacheScopeData->Swap(cacheData);
@@ -630,11 +636,17 @@ private:
 
         PlugRegistry& plugReg = PlugRegistry::GetInstance();
         for (const TfType& packageResolverType : packageResolverTypes) {
+            TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                "ArGetResolver(): Found package resolver %s\n",
+                packageResolverType.GetTypeName().c_str());
+
             const PlugPluginPtr plugin = 
                 plugReg.GetPluginForType(packageResolverType);
-            if (!TF_VERIFY(
-                    plugin, "Could not find plugin for '%s'", 
-                    packageResolverType.GetTypeName().c_str())) {
+            if (!plugin) {
+                TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                    "ArGetResolver(): Skipping package resolver %s because "
+                    "plugin cannot be found\n",
+                    packageResolverType.GetTypeName().c_str());
                 continue;
             }
 
@@ -715,7 +727,7 @@ private:
 
             Ar_PackageResolverFactoryBase* factory = 
                 r->resolverType.GetFactory<Ar_PackageResolverFactoryBase>();
-            if (TF_VERIFY(factory)) {
+            if (factory) {
                 newResolver.reset(factory->New());
             }
 
