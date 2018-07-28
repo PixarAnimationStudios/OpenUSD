@@ -36,42 +36,47 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-AR_DEFINE_PACKAGE_RESOLVER(Usd_UsdzResolver, ArPackageResolver);
+Usd_UsdzResolverCache&
+Usd_UsdzResolverCache::GetInstance()
+{
+    static Usd_UsdzResolverCache cache;
+    return cache;
+}
 
-Usd_UsdzResolver::Usd_UsdzResolver()
+Usd_UsdzResolverCache::Usd_UsdzResolverCache()
 {
 }
 
-struct Usd_UsdzResolver::_Cache
+struct Usd_UsdzResolverCache::_Cache
 {
-    using _Map = tbb::concurrent_hash_map<std::string, _AssetAndZipFile>;
+    using _Map = tbb::concurrent_hash_map<std::string, AssetAndZipFile>;
     _Map _pathToEntryMap;
 };
 
 void 
-Usd_UsdzResolver::BeginCacheScope(
+Usd_UsdzResolverCache::BeginCacheScope(
     VtValue* cacheScopeData)
 {
     _caches.BeginCacheScope(cacheScopeData);
 }
 
 void
-Usd_UsdzResolver::EndCacheScope(
+Usd_UsdzResolverCache::EndCacheScope(
     VtValue* cacheScopeData)
 {
     _caches.EndCacheScope(cacheScopeData);
 }
 
-Usd_UsdzResolver::_CachePtr 
-Usd_UsdzResolver::_GetCurrentCache()
+Usd_UsdzResolverCache::_CachePtr 
+Usd_UsdzResolverCache::_GetCurrentCache()
 {
     return _caches.GetCurrentCache();
 }
 
-Usd_UsdzResolver::_AssetAndZipFile
-Usd_UsdzResolver::_OpenZipFile(const std::string& path)
+Usd_UsdzResolverCache::AssetAndZipFile
+Usd_UsdzResolverCache::_OpenZipFile(const std::string& path)
 {
-    _AssetAndZipFile result;
+    AssetAndZipFile result;
     result.first = ArGetResolver().OpenAsset(path);
     if (result.first) {
         result.second = UsdZipFile::Open(result.first);
@@ -79,20 +84,42 @@ Usd_UsdzResolver::_OpenZipFile(const std::string& path)
     return result;
 }
 
-Usd_UsdzResolver::_AssetAndZipFile 
-Usd_UsdzResolver::_FindOrOpenZipFile(const std::string& packagePath)
+Usd_UsdzResolverCache::AssetAndZipFile 
+Usd_UsdzResolverCache::FindOrOpenZipFile(const std::string& packagePath)
 {
     _CachePtr currentCache = _GetCurrentCache();
     if (currentCache) {
         _Cache::_Map::accessor accessor;
         if (currentCache->_pathToEntryMap.insert(
-                accessor, std::make_pair(packagePath, _AssetAndZipFile()))) {
+                accessor, std::make_pair(packagePath, AssetAndZipFile()))) {
             accessor->second = _OpenZipFile(packagePath);
         }
         return accessor->second;
     }
 
     return  _OpenZipFile(packagePath);
+}
+
+// ------------------------------------------------------------
+
+AR_DEFINE_PACKAGE_RESOLVER(Usd_UsdzResolver, ArPackageResolver);
+
+Usd_UsdzResolver::Usd_UsdzResolver()
+{
+}
+
+void 
+Usd_UsdzResolver::BeginCacheScope(
+    VtValue* cacheScopeData)
+{
+    Usd_UsdzResolverCache::GetInstance().BeginCacheScope(cacheScopeData);
+}
+
+void
+Usd_UsdzResolver::EndCacheScope(
+    VtValue* cacheScopeData)
+{
+    Usd_UsdzResolverCache::GetInstance().EndCacheScope(cacheScopeData);
 }
 
 std::string 
@@ -102,7 +129,8 @@ Usd_UsdzResolver::Resolve(
 {
     std::shared_ptr<ArAsset> asset;
     UsdZipFile zipFile;
-    std::tie(asset, zipFile) = _FindOrOpenZipFile(packagePath);
+    std::tie(asset, zipFile) = Usd_UsdzResolverCache::GetInstance()
+        .FindOrOpenZipFile(packagePath);
 
     if (!zipFile) {
         return std::string();
@@ -185,7 +213,8 @@ Usd_UsdzResolver::OpenAsset(
 {
     std::shared_ptr<ArAsset> asset;
     UsdZipFile zipFile;
-    std::tie(asset, zipFile) = _FindOrOpenZipFile(packagePath);
+    std::tie(asset, zipFile) = Usd_UsdzResolverCache::GetInstance()
+        .FindOrOpenZipFile(packagePath);
 
     if (!zipFile) {
         return nullptr;

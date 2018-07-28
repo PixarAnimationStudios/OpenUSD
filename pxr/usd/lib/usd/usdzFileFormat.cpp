@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usd/usdzFileFormat.h"
+#include "pxr/usd/usd/usdzResolver.h"
 #include "pxr/usd/usd/zipFile.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -70,7 +71,8 @@ namespace
 std::string
 _GetFirstFileInZipFile(const std::string& zipFilePath)
 {
-    const UsdZipFile zipFile = UsdZipFile::Open(zipFilePath);
+    const UsdZipFile zipFile = Usd_UsdzResolverCache::GetInstance()
+        .FindOrOpenZipFile(zipFilePath).second;
     if (!zipFile) {
         return std::string();
     }
