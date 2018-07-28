@@ -56,6 +56,7 @@ _GenName()
 
 GlfBaseTexture::GlfBaseTexture()
   : _textureName(_GenName()),
+    _loaded(false),
     _currentWidth(0),
     _currentHeight(0),
     _format(GL_RGBA),
@@ -70,6 +71,7 @@ GlfBaseTexture::GlfBaseTexture()
 GlfBaseTexture::GlfBaseTexture(GlfImage::ImageOriginLocation originLocation)
   : GlfTexture(originLocation),
     _textureName(_GenName()),
+    _loaded(false),
     _currentWidth(0),
     _currentHeight(0),
     _format(GL_RGBA),
@@ -90,34 +92,97 @@ GlfBaseTexture::~GlfBaseTexture()
     }
 }
 
+GLuint
+GlfBaseTexture::GetGlTextureName()
+{
+    if (!_loaded) {
+        _ReadTexture();
+    }
+
+    return _textureName;
+}
+
+int
+GlfBaseTexture::GetWidth()
+{
+    if (!_loaded) {
+        _ReadTexture();
+    }
+
+    return _currentWidth;
+}
+
+int
+GlfBaseTexture::GetHeight()
+{
+    if (!_loaded) {
+        _ReadTexture();
+    }
+
+    return _currentHeight;
+}
+
+int
+GlfBaseTexture::GetFormat()
+{
+    if (!_loaded) {
+        _ReadTexture();
+    }
+
+    return _format;
+}
+
 /* virtual */
 GlfTexture::BindingVector
 GlfBaseTexture::GetBindings(TfToken const & identifier,
-                             GLuint samplerName) const
+                             GLuint samplerName)
 {
+    if (!_loaded) {
+        _ReadTexture();
+    }
+
     return BindingVector(1,
                 Binding(identifier, GlfTextureTokens->texels,
                         GL_TEXTURE_2D, _textureName, samplerName));
 }
 
 VtDictionary
-GlfBaseTexture::GetTextureInfo() const
+GlfBaseTexture::GetTextureInfo(bool forceLoad)
 {
     VtDictionary info;
-    info["memoryUsed"] = GetMemoryUsed();
-    info["width"] = _currentWidth;
-    info["height"] = _currentHeight;
-    info["depth"] = 1;
-    info["format"] = _format;
+
+    if (!_loaded && forceLoad) {
+        _ReadTexture();
+    }
+
+    if (_loaded) {
+        info["memoryUsed"] = GetMemoryUsed();
+        info["width"] = _currentWidth;
+        info["height"] = _currentHeight;
+        info["depth"] = 1;
+        info["format"] = _format;
+
+        if (_hasWrapModeS)
+            info["wrapModeS"] = _wrapModeS;
+
+        if (_hasWrapModeT)
+            info["wrapModeT"] = _wrapModeT;
+    } else {
+        info["memoryUsed"] = 0;
+        info["width"] = 0;
+        info["height"] = 0;
+        info["depth"] = 1;
+        info["format"] = _format;
+    }
     info["referenceCount"] = GetRefCount().Get();
 
-    if (_hasWrapModeS)
-        info["wrapModeS"] = _wrapModeS;
-
-    if (_hasWrapModeT)
-        info["wrapModeT"] = _wrapModeT;
-
     return info;
+}
+
+void
+GlfBaseTexture::_OnMemoryRequestedDirty()
+{
+    _loaded = false;
 }
 
 void 
@@ -274,6 +339,13 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
         _SetMemoryUsed(texData->ComputeBytesUsed());
     }
 }
+
+GLF_API
+void GlfBaseTexture::_SetLoaded()
+{
+    _loaded = true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -133,9 +133,9 @@ GlfUVTexture::GlfUVTexture(
 }
 
 VtDictionary
-GlfUVTexture::GetTextureInfo() const
+GlfUVTexture::GetTextureInfo(bool forceLoad)
 {
-    VtDictionary info = GlfBaseTexture::GetTextureInfo();
+    VtDictionary info = GlfBaseTexture::GetTextureInfo(forceLoad);
 
     info["imageFilePath"] = _imageFilePath;
 
@@ -149,10 +149,10 @@ GlfUVTexture::IsMinFilterSupported(GLenum filter)
 }
 
 void
-GlfUVTexture::_OnSetMemoryRequested(size_t targetMemory)
+GlfUVTexture::_ReadTexture()
 {
     GlfUVTextureDataRefPtr texData =
-        GlfUVTextureData::New(_GetImageFilePath(), targetMemory,
+        GlfUVTextureData::New(_GetImageFilePath(), GetMemoryRequested(),
                               _GetCropTop(), _GetCropBottom(),
                               _GetCropLeft(), _GetCropRight());
     if (texData) {
@@ -160,6 +160,7 @@ GlfUVTexture::_OnSetMemoryRequested(size_t targetMemory)
     }
     _UpdateTexture(texData);
     _CreateTexture(texData, _GenerateMipmap());
+    _SetLoaded();
 }
 
 bool

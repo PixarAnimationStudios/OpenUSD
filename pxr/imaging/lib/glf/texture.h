@@ -94,7 +94,7 @@ public:
     /// named \a identifier. If \a samplerId is specified, the bindings
     /// returned will use this samplerId for resources which can be sampled.
     virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerId = 0) const = 0;
+                                      GLuint samplerId = 0) = 0;
 
     /// Amount of memory used to store the texture
     GLF_API
@@ -108,7 +108,7 @@ public:
     GLF_API
     void SetMemoryRequested(size_t targetMemory);
 
-    virtual VtDictionary GetTextureInfo() const = 0;
+    virtual VtDictionary GetTextureInfo(bool forceLoad) = 0;
 
     GLF_API
     virtual bool IsMinFilterSupported(GLenum filter);
@@ -146,7 +146,7 @@ protected:
     void _SetMemoryUsed(size_t size);
     
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    virtual void _OnMemoryRequestedDirty();
 
     GLF_API
     void _UpdateContentsID();

@@ -35,6 +35,7 @@
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/repr.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -935,6 +936,26 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
 
     _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
+
+    // Texture Bprims contain a deduplication system, where certain paramters
+    // such as maximum texture size are resolved by looking at all the
+    // references.
+    //
+    // At this point new textures may have been added to the system, but old
+    // references haven't been removed yet.
+    //
+    // As Material Sprims need the resolved state of the textures.
+    // Therefore, the old references are cleaned up here, before Sprim
+    // processing
+    if (_tracker.IsBprimGarbageCollectionNeeded()) {
+        HdResourceRegistrySharedPtr registry = GetResourceRegistry();
+
+        registry->GarbageCollectBprims();
+
+        _tracker.ClearBprimGarbageCollectionNeeded();
+    }
+
+
     _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 
     // could be in parallel... but how?

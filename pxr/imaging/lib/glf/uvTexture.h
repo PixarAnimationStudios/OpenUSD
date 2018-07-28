@@ -81,7 +81,7 @@ public:
     static bool IsSupportedImageFile(std::string const &imageFilePath);
 
     GLF_API
-    virtual VtDictionary GetTextureInfo() const;
+    virtual VtDictionary GetTextureInfo(bool forceLoad);
 
     GLF_API
     virtual bool IsMinFilterSupported(GLenum filter);
@@ -98,7 +98,8 @@ protected:
                            GlfImage::OriginUpperLeft);
 
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    virtual void _ReadTexture();
+
     GLF_API
     virtual bool _GenerateMipmap() const;
     GLF_API

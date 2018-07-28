@@ -116,9 +116,11 @@ GlfArrayTexture::GlfArrayTexture(
 }
 
 void
-GlfArrayTexture::_OnSetMemoryRequested(size_t targetMemory)
+GlfArrayTexture::_ReadTexture()
 {
     GlfBaseTextureDataConstRefPtrVector texDataVec(_arraySize, 0);
+    size_t targetMemory = GetMemoryRequested();
+
     for (size_t i = 0; i < _arraySize; ++i) {
         GlfUVTextureDataRefPtr texData =
             GlfUVTextureData::New(_GetImageFilePath(i), targetMemory,
@@ -139,6 +141,7 @@ GlfArrayTexture::_OnSetMemoryRequested(size_t targetMemory)
     }
 
     _CreateTexture(texDataVec, _GenerateMipmap());
+    _SetLoaded();
 }
 
 /* virtual */
@@ -156,7 +159,7 @@ GlfArrayTexture::_GetImageFilePath(size_t index) const
 /* virtual */
 GlfTexture::BindingVector
 GlfArrayTexture::GetBindings(TfToken const & identifier,
-                              GLuint samplerName) const
+                              GLuint samplerName)
 {
     return BindingVector(1,
                 Binding(identifier, GlfTextureTokens->texels,

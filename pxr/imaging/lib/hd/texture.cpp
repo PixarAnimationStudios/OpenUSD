@@ -93,7 +93,7 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
         // request.
         // As the cache may be still holding on to the resource with a larger
         // memory request.
-        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+        renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
     }
 
     *dirtyBits = Clean;

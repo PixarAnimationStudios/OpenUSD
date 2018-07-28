@@ -426,6 +426,22 @@ public:
         return _needsGarbageCollection;
     }
 
+    void ClearBprimGarbageCollectionNeeded() {
+        _needsBprimGarbageCollection = false;
+    }
+
+    /// Sets the garbageCollectionNeeded flag.
+    void SetBprimGarbageCollectionNeeded() {
+        _needsBprimGarbageCollection = true;
+    }
+
+    /// Returns true if garbage collection was flagged to be run.
+    /// Currently, this flag only gets set internally when Rprims are removed.
+    bool IsBprimGarbageCollectionNeeded() const {
+        return _needsBprimGarbageCollection;
+    }
+
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name RprimCollection Tracking
@@ -530,6 +546,7 @@ private:
     // Collection versions / state.
     _CollectionStateMap _collectionState;
     bool _needsGarbageCollection;
+    bool _needsBprimGarbageCollection;
 
     // Provides reverse-association between instancers and the rprims that use
     // them.

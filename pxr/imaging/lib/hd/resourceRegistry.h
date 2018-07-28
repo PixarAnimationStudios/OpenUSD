@@ -140,6 +140,10 @@ public:
     HD_API
     void GarbageCollect();
 
+    /// cleanup all Bprim registries
+    HD_API
+    void GarbageCollectBprims();
+
     /// Set the aggregation strategy for non uniform parameters
     /// (vertex, varying, facevarying)
     /// Takes ownership of the passed in strategy object.

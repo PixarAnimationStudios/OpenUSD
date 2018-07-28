@@ -87,7 +87,7 @@ public:
     // GlfBaseTexture overrides
     GLF_API
     virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName) const;
+                                      GLuint samplerName);
 
 protected:
     GLF_API
@@ -102,7 +102,7 @@ protected:
                            GlfImage::OriginUpperLeft);
 
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    virtual void _ReadTexture();
     GLF_API
     const TfToken& _GetImageFilePath(size_t index) const;
     using GlfUVTexture::_GetImageFilePath;

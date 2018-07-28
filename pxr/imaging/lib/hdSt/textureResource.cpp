@@ -54,65 +54,19 @@ HdStSimpleTextureResource::HdStSimpleTextureResource(
  , _sampler(0)
  , _isPtex(isPtex)
  , _memoryRequest(memoryRequest)
+ , _wrapS(wrapS)
+ , _wrapT(wrapT)
+ , _minFilter(minFilter)
+ , _magFilter(magFilter)
 {
     // In cases of upstream errors, texture handle can be null.
     if (_textureHandle) {
         _texture = _textureHandle->GetTexture();
 
-
         // Unconditionally add the memory request, before the early function
         // exit so that the destructor doesn't need to figure out if the request
         // was added or not.
         _textureHandle->AddMemoryRequest(_memoryRequest);
-    }
-
-
-    if (!glGenSamplers) { // GL initialization guard for headless unit test
-        return;
-    }
-
-    // When we are not using Ptex we will use samplers,
-    // that includes both, bindless textures and no-bindless textures
-    if (!_isPtex) {
-        // If the HdStSimpleTextureResource defines a wrap mode it will 
-        // use it, otherwise it gives an opportunity to the texture to define
-        // its own wrap mode. The fallback value is always HdWrapRepeat
-        GLenum fwrapS = HdStGLConversions::GetWrap(wrapS);
-        GLenum fwrapT = HdStGLConversions::GetWrap(wrapT);
-        GLenum fminFilter = HdStGLConversions::GetMinFilter(minFilter);
-        GLenum fmagFilter = HdStGLConversions::GetMagFilter(magFilter);
-
-        if (_texture) {
-            VtDictionary txInfo = _texture->GetTextureInfo();
-
-            if (wrapS == HdWrapUseMetaDict &&
-                VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeS")) {
-                fwrapS = VtDictionaryGet<GLuint>(txInfo, "wrapModeS");
-            }
-
-            if (wrapT == HdWrapUseMetaDict &&
-                VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeT")) {
-                fwrapT = VtDictionaryGet<GLuint>(txInfo, "wrapModeT");
-            }
-
-            if (!_texture->IsMinFilterSupported(fminFilter)) {
-                fminFilter = GL_NEAREST;
-            }
-
-            if (!_texture->IsMagFilterSupported(fmagFilter)) {
-                fmagFilter = GL_NEAREST;
-            }
-        }
-
-        glGenSamplers(1, &_sampler);
-        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_S, fwrapS);
-        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, fwrapT);
-        glSamplerParameteri(_sampler, GL_TEXTURE_MIN_FILTER, fminFilter);
-        glSamplerParameteri(_sampler, GL_TEXTURE_MAG_FILTER, fmagFilter);
-        glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 
-            _maxAnisotropy);
-        glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR, 
-            _borderColor.GetArray());
     }
 
     bool bindlessTexture = 
@@ -184,13 +138,60 @@ GLuint HdStSimpleTextureResource::GetTexelsTextureId()
 
 GLuint HdStSimpleTextureResource::GetTexelsSamplerId() 
 {
+    if (!TF_VERIFY(!_isPtex)) {
+        return 0;
+    }
+
+    // Lazy sampler creation.
+    if (_sampler == 0) {
+        // If the HdStSimpleTextureResource defines a wrap mode it will
+        // use it, otherwise it gives an opportunity to the texture to define
+        // its own wrap mode. The fallback value is always HdWrapRepeat
+        GLenum fwrapS = HdStGLConversions::GetWrap(_wrapS);
+        GLenum fwrapT = HdStGLConversions::GetWrap(_wrapT);
+        GLenum fminFilter = HdStGLConversions::GetMinFilter(_minFilter);
+        GLenum fmagFilter = HdStGLConversions::GetMagFilter(_magFilter);
+
+        if (_texture) {
+            VtDictionary txInfo = _texture->GetTextureInfo(true);
+
+            if (_wrapS == HdWrapUseMetaDict &&
+                VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeS")) {
+                fwrapS = VtDictionaryGet<GLuint>(txInfo, "wrapModeS");
+            }
+
+            if (_wrapT == HdWrapUseMetaDict &&
+                VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeT")) {
+                fwrapT = VtDictionaryGet<GLuint>(txInfo, "wrapModeT");
+            }
+
+            if (!_texture->IsMinFilterSupported(fminFilter)) {
+                fminFilter = GL_NEAREST;
+            }
+
+            if (!_texture->IsMagFilterSupported(fmagFilter)) {
+                fmagFilter = GL_NEAREST;
+            }
+        }
+
+        glGenSamplers(1, &_sampler);
+        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_S, fwrapS);
+        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, fwrapT);
+        glSamplerParameteri(_sampler, GL_TEXTURE_MIN_FILTER, fminFilter);
+        glSamplerParameteri(_sampler, GL_TEXTURE_MAG_FILTER, fmagFilter);
+        glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT,
+            _maxAnisotropy);
+        glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR,
+            _borderColor.GetArray());
+    }
+
+
     return _sampler;
 }
 
 GLuint64EXT HdStSimpleTextureResource::GetTexelsTextureHandle() 
 { 
     GLuint textureId = GetTexelsTextureId();
-    GLuint samplerId = GetTexelsSamplerId();
 
     if (!TF_VERIFY(glGetTextureHandleARB) ||
         !TF_VERIFY(glGetTextureSamplerHandleARB)) {
@@ -201,6 +202,7 @@ GLuint64EXT HdStSimpleTextureResource::GetTexelsTextureHandle()
         return textureId ? glGetTextureHandleARB(textureId) : 0;
     } 
 
+    GLuint samplerId = GetTexelsSamplerId();
     return textureId ? glGetTextureSamplerHandleARB(textureId, samplerId) : 0;
 }
 

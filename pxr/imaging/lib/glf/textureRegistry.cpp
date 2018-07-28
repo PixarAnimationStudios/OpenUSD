@@ -310,7 +310,7 @@ GlfTextureRegistry::GetTextureInfos() const
             GlfTexturePtr const &texture = textureHandle->GetTexture();
             VtDictionary info;
             if (texture) {
-                info = texture->GetTextureInfo();
+                info = texture->GetTextureInfo(false);
             }
 
             info["uniqueIdentifier"] =
@@ -329,7 +329,7 @@ GlfTextureRegistry::GetTextureInfos() const
 
             VtDictionary info;
             if (texture) {
-                info = texture->GetTextureInfo();
+                info = texture->GetTextureInfo(false);
             }
             info["uniqueIdentifier"] =
                 (uint64_t)textureHandle->GetUniqueIdentifier();

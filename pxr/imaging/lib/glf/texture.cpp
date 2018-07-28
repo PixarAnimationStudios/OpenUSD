@@ -79,12 +79,12 @@ GlfTexture::SetMemoryRequested(size_t targetMemory)
 {
     if (_memoryRequested != targetMemory) {
         _memoryRequested = targetMemory;
-        _OnSetMemoryRequested(targetMemory);
+        _OnMemoryRequestedDirty();
     }
 }
 
 void
-GlfTexture::_OnSetMemoryRequested(size_t targetMemory)
+GlfTexture::_OnMemoryRequestedDirty()
 {
     // do nothing in base class
 }

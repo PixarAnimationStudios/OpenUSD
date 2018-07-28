@@ -496,9 +496,6 @@ HdResourceRegistry::GarbageCollect()
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
 
-    // Cleanup texture registries
-    _textureResourceRegistry.GarbageCollect();
-
     // Prompt derived registries to collect their garbage.
     _GarbageCollect();
 }
@@ -507,6 +504,13 @@ void
 HdResourceRegistry::_GarbageCollect()
 {
     /* NOTHING */
+}
+
+void
+HdResourceRegistry::GarbageCollectBprims()
+{
+    // Cleanup texture registries
+    _textureResourceRegistry.GarbageCollect();
 }
 
 VtDictionary

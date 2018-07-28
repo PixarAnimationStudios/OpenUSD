@@ -86,6 +86,7 @@ GlfPtexTexture::New(const TfToken &imageFilePath)
 
 //------------------------------------------------------------------------------
 GlfPtexTexture::GlfPtexTexture(const TfToken &imageFilePath) :
+    _loaded(false),
     _layout(0), _texels(0),
     _width(0), _height(0), _depth(0),
     _imageFilePath(imageFilePath)
@@ -100,14 +101,14 @@ GlfPtexTexture::~GlfPtexTexture()
 
 //------------------------------------------------------------------------------
 void
-GlfPtexTexture::_OnSetMemoryRequested(size_t targetMemory)
+GlfPtexTexture::_OnMemoryRequestedDirty()
 {
-    _ReadImage(targetMemory);
+    _loaded = false;
 }
 
 //------------------------------------------------------------------------------
 bool 
-GlfPtexTexture::_ReadImage(size_t targetMemory)
+GlfPtexTexture::_ReadImage()
 {
     TRACE_FUNCTION();
     
@@ -144,6 +145,8 @@ GlfPtexTexture::_ReadImage(size_t targetMemory)
     // Read the ptexture data and pack the texels
 
     TRACE_SCOPE("GlfPtexTexture::_ReadImage() (generate texture)");
+    size_t targetMemory = GetMemoryRequested();
+
 
     // maxLevels = -1 : load all mip levels
     // maxLevels = 0  : load only the highest resolution
@@ -251,6 +254,8 @@ GlfPtexTexture::_ReadImage(size_t targetMemory)
     // also releases PtexCache
     cache->release();
 
+    _loaded = true;
+
     return true;
 }
 
@@ -273,8 +278,12 @@ GlfPtexTexture::_FreePtexTextureObject()
 
 /* virtual */
 GlfTexture::BindingVector
-GlfPtexTexture::GetBindings(TfToken const & identifier, GLuint samplerName) const
+GlfPtexTexture::GetBindings(TfToken const & identifier, GLuint samplerName)
 {
+    if (!_loaded) {
+        _ReadImage();
+    }
+
     BindingVector result;
     result.reserve(2);
 
@@ -293,8 +302,12 @@ GlfPtexTexture::GetBindings(TfToken const & identifier, GLuint samplerName) cons
 //------------------------------------------------------------------------------
 
 VtDictionary
-GlfPtexTexture::GetTextureInfo() const
+GlfPtexTexture::GetTextureInfo(bool forceLoad)
 {
+    if (!_loaded && forceLoad) {
+        _ReadImage();
+    }
+
     VtDictionary info;
 
     info["memoryUsed"] = GetMemoryUsed();
@@ -331,6 +344,27 @@ GlfPtexTexture::IsMagFilterSupported(GLenum filter)
         return false;
     }
 }
+
+GLuint
+GlfPtexTexture::GetLayoutTextureName()
+{
+    if (!_loaded) {
+        _ReadImage();
+    }
+
+    return _layout;
+}
+
+GLuint
+GlfPtexTexture::GetTexelsTextureName()
+{
+    if (!_loaded) {
+        _ReadImage();
+    }
+
+    return _texels;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
