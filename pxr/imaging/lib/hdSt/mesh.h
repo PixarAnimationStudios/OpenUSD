@@ -99,6 +99,8 @@ protected:
 
     bool _UseLimitRefinement(const HdRenderIndex &renderIndex) const;
 
+    bool _UseSmoothNormals(HdSt_MeshTopologySharedPtr const& topology) const;
+
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
@@ -159,9 +161,15 @@ private:
     HdTopology::ID _vertexPrimvarId;
     HdDirtyBits _customDirtyBitsInUse;
     bool _doubleSided;
-    bool _packedNormals;
-    bool _smoothNormalsEnabled;
+
+    bool _flatShadingEnabled;
     bool _displacementEnabled;
+
+    bool _packedSmoothNormals;
+    bool _limitNormals;
+    bool _sceneNormals;
+    HdInterpolation _sceneNormalsInterpolation;
+
     HdCullStyle _cullStyle;
 };
 

@@ -36,9 +36,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((baseGLSLFX,              "mesh.glslfx"))
 
     // normal mixins
-    ((smooth,                  "MeshNormal.Smooth"))
-    ((flat,                    "MeshNormal.Flat"))
-    ((limit,                   "MeshNormal.Limit"))
+    ((normalsScene,            "MeshNormal.Scene"))
+    ((normalsSmooth,           "MeshNormal.Smooth"))
+    ((normalsPass,             "MeshNormal.Pass"))
+
+    ((normalsFlat,             "MeshNormal.Geometry.Flat"))
+    ((normalsNoFlat,           "MeshNormal.Geometry.NoFlat"))
 
     ((doubleSidedFS,           "MeshNormal.Fragment.DoubleSided"))
     ((singleSidedFS,           "MeshNormal.Fragment.SingleSided"))
@@ -110,7 +113,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
     bool useCustomDisplacement,
-    bool smoothNormals,
+    NormalSource normalsSource,
+    HdInterpolation normalsInterpolation,
     bool doubleSided,
     bool faceVarying,
     bool blendWireframeColor,
@@ -134,12 +138,38 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
     bool isPrimTypeQuads  = HdSt_GeometricShader::IsPrimTypeQuads(primType);
     bool isPrimTypeTris   = HdSt_GeometricShader::IsPrimTypeTriangles(primType);
+    const bool isPrimTypePatches = 
+        HdSt_GeometricShader::IsPrimTypePatches(primType);
+
+    /* Normals configurations:
+     * Smooth normals:
+     *   [VS] .Smooth, ([GS] .NoFlat, .Pass), [FS] .Pass
+     *   (geometry shader optional)
+     * Scene normals:
+     *   [VS] .Scene, ([GS] .NoFlat, .Pass), [FS] .Pass
+     *   --or-- [VS] .Pass, [GS] .NoFlat, .Scene, [FS] .Pass
+     *   --or-- [VS] .Pass, [FS] .Scene
+     *   (depending on interpolation)
+     * Limit normals:
+     *   [VS] .Pass, [GS] .NoFlat, .Pass, [FS] .Pass
+     * Flat normals:
+     *   [VS] .Pass, [GS] .Flat, .Pass, [FS] .Pass
+     */
+    bool vsSceneNormals =
+        (normalsSource == NormalSourceScene &&
+        normalsInterpolation != HdInterpolationUniform &&
+        normalsInterpolation != HdInterpolationFaceVarying);
+    bool gsSceneNormals =
+        (normalsSource == NormalSourceScene && !vsSceneNormals);
 
     // vertex shader
     uint8_t vsIndex = 0;
     VS[vsIndex++] = _tokens->instancing;
-    VS[vsIndex++] = (smoothNormals ? _tokens->smooth
-                           : _tokens->flat);
+
+    VS[vsIndex++] = (normalsSource == NormalSourceSmooth) ?
+        _tokens->normalsSmooth :
+        (vsSceneNormals ? _tokens->normalsScene : _tokens->normalsPass);
+
     if (isPrimTypePoints) {
         // Add mixins that allow for picking and sel highlighting of points.
         // Even though these are more "render pass-ish", we do this here to
@@ -154,9 +184,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     VS[vsIndex] = TfToken();
 
     // tessellation control shader
-    const bool isPrimTypePatches = 
-        HdSt_GeometricShader::IsPrimTypePatches(primType);
-
     TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
     TCS[1] = isPrimTypePatches ? _tokens->mainBSplineTCS : TfToken();
     TCS[2] = TfToken();
@@ -168,9 +195,13 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // geometry shader (note that PRIM_MESH_PATCHES uses triangles)
     GS[0] = _tokens->instancing;
-    GS[1] = isPrimTypePatches ? _tokens->limit : 
-                (smoothNormals ? _tokens->smooth : _tokens->flat);
-    GS[2] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
+
+    GS[1] = gsSceneNormals ?
+            _tokens->normalsScene : _tokens->normalsPass;
+    GS[2] = (normalsSource == NormalSourceFlat) ?
+            _tokens->normalsFlat : _tokens->normalsNoFlat;
+
+    GS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
               geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->edgeOnlyGS
            : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
               geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
@@ -179,23 +210,24 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // emit edge param per vertex to help compute the edgeId
     TfToken gsEdgeIdMixin = isPrimTypePoints ? _tokens->edgeIdNoneGS
                                              : _tokens->edgeIdEdgeParamGS;
-    GS[3] = gsEdgeIdMixin;
+    GS[4] = gsEdgeIdMixin;
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).
-    GS[4] = (!useCustomDisplacement) ?
+    GS[5] = (!useCustomDisplacement) ?
         _tokens->noCustomDisplacementGS :
         _tokens->customDisplacementGS;
 
-    GS[5] = isPrimTypeQuads? _tokens->mainQuadGS :
+    GS[6] = isPrimTypeQuads? _tokens->mainQuadGS :
                 (isPrimTypePatches ? _tokens->mainTriangleTessGS
                                    : _tokens->mainTriangleGS);
-    GS[6] = TfToken();
+    GS[7] = TfToken();
 
     // Optimization : If the mesh is skipping displacement shading, we have an
     // opportunity to fully disable the geometry stage.
     if (!useCustomDisplacement
-            && smoothNormals
+            && (normalsSource != NormalSourceLimit)
+            && (normalsSource != NormalSourceFlat)
             && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
             && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
             && (!isFaceVarying)) {
@@ -213,10 +245,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // fragment shader
      uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
-    FS[fsIndex++] = (smoothNormals ? _tokens->smooth
-                           : _tokens->flat);
-    FS[fsIndex++] = (doubleSided   ? _tokens->doubleSidedFS
-                           : _tokens->singleSidedFS);
+
+    FS[fsIndex++] = (!gsStageEnabled && gsSceneNormals) ?
+        _tokens->normalsScene : _tokens->normalsPass;
+    FS[fsIndex++] = doubleSided ?
+        _tokens->doubleSidedFS : _tokens->singleSidedFS;
 
     // Wire (edge) related mixins
     if ((geomStyle == HdMeshGeomStyleEdgeOnly ||

@@ -208,7 +208,8 @@ protected:
     HD_API
     void _PopulateConstantPrimvars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits);
+                                   HdDirtyBits *dirtyBits,
+                                   HdPrimvarDescriptorVector const &constantPrimvars);
 
     HD_API
     VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);

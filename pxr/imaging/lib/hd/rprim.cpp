@@ -248,7 +248,8 @@ HdRprim::SetPrimId(int32_t primId)
 void
 HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits)
+                                   HdDirtyBits *dirtyBits,
+                                   HdPrimvarDescriptorVector const& constantPrimvars)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -338,8 +339,6 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
     }
 
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        HdPrimvarDescriptorVector constantPrimvars =
-            delegate->GetPrimvarDescriptors(id, HdInterpolationConstant);
         sources.reserve(sources.size()+constantPrimvars.size());
         for (const HdPrimvarDescriptor& pv: constantPrimvars) {
             if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {

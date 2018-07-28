@@ -89,7 +89,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \
-    (packedNormals)                             \
     (params)                                    \
     (patchParam)                                \
     (periodic)                                  \

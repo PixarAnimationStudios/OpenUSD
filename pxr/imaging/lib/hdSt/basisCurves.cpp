@@ -105,7 +105,9 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits);
+    HdPrimvarDescriptorVector constantPrimvars =
+        GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
+    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits, constantPrimvars);
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
