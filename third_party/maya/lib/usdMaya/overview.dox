@@ -4,32 +4,63 @@
 \publicLib
 \endif
 
-\subpage usd_maya_lib_usdMaya_page_front
+USD support in Maya is provided through several libraries and plugins:
+- \subpage usd_maya_lib_usdMaya_page_front
+  This library provides reusable logic for using USD in Maya.
+- \subpage usd_maya_plugin_pxrUsdTranslators_page_front
+  This plugin supports the built-in Maya nodes.
+- \subpage usd_maya_plugin_pxrUsd_page_front
+  This is the main plugin that you load for USD functionality in Maya.
 
 */
 
 /*!
 \if ( PIXAR_MFB_BUILD )
-\mainpage UsdMaya: Translation between USD and Maya
+\mainpage UsdMaya : USD interop for Maya
 \publicLib
 \else
-\page usd_maya_lib_usdMaya_page_front UsdMaya: Translation between USD and Maya
+\page usd_maya_lib_usdMaya_page_front UsdMaya : USD interop for Maya
 \endif
 
-Provides core translation between USD and Maya. This library also contains
-some of the logic for USD assembly references.
+This library provides the core functionality for importing and exporting between
+USD data in Maya. It also contains the logic for USD assembly references,
+proxy shapes, and related Maya nodes.
 
-<h3>Translation Plugins</h3>
+## Translation Plugins
 
-Plugins can provide new translation functions for USD types that are not known
-to the core system.
+Plugins can provide new translation functions for USD types that are not built
+into the core UsdMaya library. We ship plugins for the major Maya built-in node
+types in the \ref usd_maya_plugin_pxrUsdTranslators_page_front
+"pxrUsdTranslators Maya plugin".
 
-\sa PxrUsdMayaPrimReaderRegistry
+When implementing new plugins, you must make sure to generate plugInfo.json
+files, and that they are recognized by the Plug system. More details for
+registering your plugins are available from these pages:
 
-<h3>Chaser Plugins</h3>
+\sa UsdMayaPrimReaderRegistry
+\sa UsdMayaPrimWriterRegistry
 
-Plugins to the export process can be provided and enabled as needed.
+## Chaser Plugins
 
-\sa PxrUsdMayaChaserRegistry
+Plugins to the export process can be provided and enabled as needed. These
+"chaser" plugins run after the main export process.
+
+\sa UsdMayaChaserRegistry
+
+## Shading Mode Plugins
+
+You can provide custom plugins for importing and exporting Maya shading networks
+to USD shading.
+
+\sa UsdMayaShadingModeRegistry
+
+## Adaptor System
+
+UsdMaya provides the UsdMayaAdaptor class for adding schema data to Maya nodes
+in a manner that is recognized by the USD export process. This lets you add
+USD data, such as mesh subdivision scheme, onto Maya nodes and have that data
+automatically exported to USD.
+
+\sa UsdMayaAdaptor
 
 */
