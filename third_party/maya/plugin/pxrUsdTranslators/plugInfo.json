@@ -10,6 +10,7 @@
                             "UsdGeomMesh",
                             "UsdGeomNurbsCurves",
                             "UsdGeomNurbsPatch",
+                            "UsdGeomScope",
                             "UsdGeomXform",
                             "UsdShadeMaterial",
                             "UsdSkelRoot",
