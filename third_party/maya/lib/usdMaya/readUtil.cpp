@@ -258,9 +258,13 @@ UsdMayaReadUtil::FindOrCreateMayaAttr(
                 /*usedAsFilename*/ false, depNode, modifier);
     }
     else if (type.IsA<SdfAssetPath>()) {
+        // XXX We're not setting usedAsFilename right now because we can't
+        // figure out how to opt-out of Maya's internal path resolution.
+        // This is still OK when we round-trip because we'll still generate
+        // SdfAssetPaths when we check the schema attribute's value type name.
         return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
                 MFnData::kString, keyable, usedAsColor,
-                /*usedAsFilename*/ true, depNode, modifier);
+                /*usedAsFilename*/ false, depNode, modifier);
     }
     else if (type.IsA<GfMatrix4d>()) {
         return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
