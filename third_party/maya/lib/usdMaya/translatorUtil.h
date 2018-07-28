@@ -57,6 +57,24 @@ struct UsdMayaTranslatorUtil
             MStatus* status,
             MObject* mayaNodeObj);
 
+    /// \brief Creates a "dummy" transform node for the given prim, where the
+    /// dummy transform has all transform properties locked.
+    /// A UsdMayaAdaptor-compatible attribute for the typeName metadata will
+    /// be generated. If \p importTypeName is \c true, this attribute will
+    /// contain the \c typeName metadata of \p usdPrim, so the \c typeName will
+    /// be applied on export. Otherwise, this attribute will be set to the
+    /// empty string, so a typeless def will be generated on export.
+    PXRUSDMAYA_API
+    static bool
+    CreateDummyTransformNode(
+            const UsdPrim& usdPrim,
+            MObject& parentNode,
+            bool importTypeName,
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context,
+            MStatus* status,
+            MObject* mayaNodeObj);
+
     /// \brief Helper to create a node for \p usdPrim of type \p
     /// nodeTypeName under \p parentNode. If \p context is non-NULL,
     /// the new Maya node will be registered to the path of \p usdPrim.

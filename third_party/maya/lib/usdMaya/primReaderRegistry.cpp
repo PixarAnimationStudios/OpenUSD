@@ -24,6 +24,7 @@
 #include "usdMaya/primReaderRegistry.h"
 
 #include "usdMaya/debugCodes.h"
+#include "usdMaya/fallbackPrimReader.h"
 #include "usdMaya/functorPrimReader.h"
 #include "usdMaya/registryHelper.h"
 
@@ -101,6 +102,17 @@ UsdMayaPrimReaderRegistry::Find(
         _reg[typeName] = nullptr;
     }
     return ret;
+}
+
+/* static */
+UsdMayaPrimReaderRegistry::ReaderFactoryFn
+UsdMayaPrimReaderRegistry::FindOrFallback(const TfToken& usdTypeName)
+{
+    if (ReaderFactoryFn fn = Find(usdTypeName)) {
+        return fn;
+    }
+
+    return UsdMaya_FallbackPrimReader::CreateFactory();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -477,15 +477,12 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
     // without actually having a transform (e.g. the internal
     // UsdMaya_FunctorPrimWriter), so accomodate those here.
     if (GetDagPath().hasFn(MFn::kTransform)) {
+        // There are valid cases where we have a transform in Maya but not one
+        // in USD, e.g. typeless defs or other container prims in USD.
         if (UsdGeomXformable xformSchema = UsdGeomXformable(_usdPrim)) {
             computeXFormOps(_animChannels, usdTime, 
                     _GetExportArgs().eulerFilter, &_previousRotates, 
                     _GetSparseValueWriter());
-        }
-        else {
-            TF_CODING_ERROR("'%s' has a transform, but <%s> is not Xformable",
-                    GetDagPath().fullPathName().asChar(),
-                    _usdPrim.GetPath().GetText());
         }
     }
 }

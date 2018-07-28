@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,32 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "usdMaya/primReaderRegistry.h"
-#include "usdMaya/translatorMaterial.h"
+#ifndef PXRUSDMAYA_FALLBACK_PRIM_READER_H
+#define PXRUSDMAYA_FALLBACK_PRIM_READER_H
 
-#include "pxr/usd/usdShade/material.h"
+/// \file usdMaya/fallbackPrimReader.h
+
+#include "usdMaya/primReader.h"
+#include "usdMaya/primReaderRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// This is a special prim reader that is used whenever a typeless prim or prim
+/// with unknown types is encountered when traversing USD.
+class UsdMaya_FallbackPrimReader : public UsdMayaPrimReader {
+public:
+    UsdMaya_FallbackPrimReader(const UsdMayaPrimReaderArgs& args);
 
-PXRUSDMAYA_DEFINE_READER(UsdShadeMaterial, args, context)
-{
-    bool importUnboundShaders = args.ShouldImportUnboundShaders();
-    if (importUnboundShaders) {
-        const UsdPrim& usdPrim = args.GetUsdPrim();
-        UsdMayaTranslatorMaterial::Read(args.GetShadingMode(), 
-                UsdShadeMaterial(usdPrim), 
-                UsdGeomGprim(), 
-                context);
-    }
-    // Always prune materials' namespace descendants - assume that it's just
-    // part of the material's shading network.
-    context->SetPruneChildren(true);
-    return true;
-}
+    virtual bool Read(UsdMayaPrimReaderContext* context);
 
-
+    static UsdMayaPrimReaderRegistry::ReaderFactoryFn CreateFactory();
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif

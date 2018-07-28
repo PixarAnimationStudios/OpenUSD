@@ -24,10 +24,14 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorUtil.h"
 
+#include "usdMaya/adaptor.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorXformable.h"
+#include "usdMaya/util.h"
+#include "usdMaya/xformStack.h"
 
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/xformable.h"
 
@@ -37,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+const MString _DEFAULT_TRANSFORM_TYPE("transform");
 
 /* static */
 bool
@@ -49,24 +53,103 @@ UsdMayaTranslatorUtil::CreateTransformNode(
         MStatus* status,
         MObject* mayaNodeObj)
 {
-    static const MString _defaultTypeName("transform");
-
     if (!usdPrim || !usdPrim.IsA<UsdGeomXformable>()) {
         return false;
     }
 
     if (!CreateNode(usdPrim,
-                       _defaultTypeName,
-                       parentNode,
-                       context,
-                       status,
-                       mayaNodeObj)) {
+                    _DEFAULT_TRANSFORM_TYPE,
+                    parentNode,
+                    context,
+                    status,
+                    mayaNodeObj)) {
         return false;
     }
 
     // Read xformable attributes from the UsdPrim on to the transform node.
     UsdGeomXformable xformable(usdPrim);
     UsdMayaTranslatorXformable::Read(xformable, *mayaNodeObj, args, context);
+
+    return true;
+}
+
+/* static */
+bool
+UsdMayaTranslatorUtil::CreateDummyTransformNode(
+        const UsdPrim& usdPrim,
+        MObject& parentNode,
+        bool importTypeName,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
+        MStatus* status,
+        MObject* mayaNodeObj)
+{
+    if (!usdPrim) {
+        return false;
+    }
+
+    if (!CreateNode(usdPrim,
+                    _DEFAULT_TRANSFORM_TYPE,
+                    parentNode,
+                    context,
+                    status,
+                    mayaNodeObj)) {
+        return false;
+    }
+
+    MFnDagNode dagNode(*mayaNodeObj);
+
+    // Set the typeName on the adaptor.
+    if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(*mayaNodeObj)) {
+        VtValue typeName;
+        if (!usdPrim.HasAuthoredTypeName()) {
+            // A regular typeless def.
+            typeName = TfToken();
+        }
+        else if (importTypeName) {
+            // Preserve type info for round-tripping.
+            typeName = usdPrim.GetTypeName();
+        }
+        else {
+            // Unknown type name; treat this as though it were a typeless def.
+            typeName = TfToken();
+
+            // If there is a typename that we're ignoring, leave a note so that
+            // we know where it came from.
+            const MString notes = TfStringPrintf(
+                    "Imported from @%s@<%s> with type '%s'",
+                    usdPrim.GetStage()->GetRootLayer()->GetIdentifier().c_str(),
+                    usdPrim.GetPath().GetText(),
+                    usdPrim.GetTypeName().GetText()).c_str();
+            if (UsdMayaUtil::createStringAttribute(dagNode, "notes")) {
+                dagNode.findPlug("notes", true).setString(notes);
+            }
+        }
+        adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
+    }
+
+    // Lock all the transform attributes.
+    for (const UsdMayaXformOpClassification& opClass :
+            UsdMayaXformStack::MayaStack().GetOps()) {
+        if (!opClass.IsInvertedTwin()) {
+            MPlug plug = dagNode.findPlug(opClass.GetName().GetText(), true);
+            if (!plug.isNull()) {
+                if (plug.isCompound()) {
+                    for (unsigned int i = 0; i < plug.numChildren(); ++i) {
+                        MPlug child = plug.child(i);
+                        child.setKeyable(false);
+                        child.setLocked(true);
+                        child.setChannelBox(false);
+                    }
+                }
+                else {
+                    plug.setKeyable(false);
+                    plug.setLocked(true);
+                    plug.setChannelBox(false);
+                }
+            }
+        }
+    }
 
     return true;
 }

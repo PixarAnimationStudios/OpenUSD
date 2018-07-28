@@ -341,7 +341,7 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 
                 TfToken typeName = prim.GetTypeName();
                 if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
-                        = UsdMayaPrimReaderRegistry::Find(typeName)) {
+                        = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
                     UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
                     if (primReader) {
                         primReader->Read(&readCtx);

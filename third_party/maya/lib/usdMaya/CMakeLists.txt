@@ -93,6 +93,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PRIVATE_CLASSES
         debugCodes
+        fallbackPrimReader
         functorPrimReader
         functorPrimWriter
         instancedNodeWriter
@@ -182,6 +183,7 @@ pxr_test_scripts(
         testenv/testUsdImportShadingModeDisplayColor.py
         testenv/testUsdImportShadingModePxrRis.py
         testenv/testUsdImportSkeleton.py
+        testenv/testUsdTranslateTypelessDefs.py
         testenv/testUsdImportUVSets.py
         testenv/testUsdImportXforms.py
         testenv/testUsdMayaAdaptor.py
@@ -767,6 +769,21 @@ pxr_register_test(testUsdImportSkeleton
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImportSkeleton"
     TESTENV testUsdImportSkeleton
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdTranslateTypelessDefs
+    DEST testUsdTranslateTypelessDefs
+)
+pxr_register_test(testUsdTranslateTypelessDefs
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTranslateTypelessDefs"
+    TESTENV testUsdTranslateTypelessDefs
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

@@ -135,6 +135,12 @@ struct UsdMayaPrimReaderRegistry
     PXRUSDMAYA_API
     static ReaderFactoryFn Find(
             const TfToken& usdTypeName);
+
+    /// Similar to Find(), but returns a "fallback" prim reader factory if none
+    /// can be found for \p usdTypeName. Thus, this always returns a valid
+    /// reader factory.
+    PXRUSDMAYA_API
+    static ReaderFactoryFn FindOrFallback(const TfToken& usdTypeName);
 };
 
 #define PXRUSDMAYA_DEFINE_READER(T, argsVarName, ctxVarName)\
