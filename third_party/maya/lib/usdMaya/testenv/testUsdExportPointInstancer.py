@@ -78,7 +78,10 @@ class testUsdExportPointInstancer(unittest.TestCase):
         # particles have the same positions for all test cases.
         # It doesn't look like doCreateNclothCache is Python-wrapped.
         cmds.select("nParticle1")
-        cacheLocation = os.path.abspath("nCache")
+        # Note: this MEL command expects paths to be in the Maya-normalized
+        # format with the '/' dir separator; using the Windows-style separator
+        # will cause MEL script errors because it's treated as an escape.
+        cacheLocation = os.path.abspath("nCache").replace(os.path.sep, "/")
         mel.eval('doCreateNclothCache 5 { "2", "1", "10", "OneFile", "1", "%s","0","","0", "add", "0", "1", "1","0","1","mcx" }'
                 % cacheLocation)
 
