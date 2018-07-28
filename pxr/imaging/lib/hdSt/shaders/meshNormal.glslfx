@@ -34,7 +34,6 @@
 vec3 GetNormal(vec3 Neye, int index)
 {
     // Sample the normal from a primvar and normalize it.
-    // XXX: should we normalize? or rely on normalized assets?
     vec3 normal = vec3(0);
 #if defined(HD_HAS_normals)
     normal = vec3(HdGet_normals(index).xyz);
