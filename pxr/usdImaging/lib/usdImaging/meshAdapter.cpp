@@ -277,8 +277,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
         UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
             UsdImagingTokens->primvarsNormals);
         if (pv) {
-            _ComputeAndMergePrimvar(UsdGeomGprim(prim), cachePath,
-                pv, time, valueCache);
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         } else {
             UsdGeomMesh mesh(prim);
             VtVec3fArray normals;

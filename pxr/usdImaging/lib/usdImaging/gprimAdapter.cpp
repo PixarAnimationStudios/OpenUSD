@@ -52,45 +52,6 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, GprimAdapter is abstract.
 }
 
-/* static */
-HdInterpolation
-UsdImagingGprimAdapter::_UsdToHdInterpolation(TfToken const& usdInterp)
-{
-    if (usdInterp == UsdGeomTokens->uniform) {
-        return HdInterpolationUniform;
-    } else if (usdInterp == UsdGeomTokens->vertex) {
-        return HdInterpolationVertex;
-    } else if (usdInterp == UsdGeomTokens->varying) {
-        return HdInterpolationVarying;
-    } else if (usdInterp == UsdGeomTokens->faceVarying) {
-        return HdInterpolationFaceVarying;
-    } else if (usdInterp == UsdGeomTokens->constant) {
-        return HdInterpolationConstant;
-    }
-    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
-                    usdInterp.GetText());
-    return HdInterpolationConstant;
-}
-
-/* static */
-TfToken
-UsdImagingGprimAdapter::_UsdToHdRole(TfToken const& usdRole)
-{
-    if (usdRole == SdfValueRoleNames->Point) {
-        return HdPrimvarRoleTokens->point;
-    } else if (usdRole == SdfValueRoleNames->Normal) {
-        return HdPrimvarRoleTokens->normal;
-    } else if (usdRole == SdfValueRoleNames->Vector) {
-        return HdPrimvarRoleTokens->vector;
-    } else if (usdRole == SdfValueRoleNames->Color) {
-        return HdPrimvarRoleTokens->color;
-    } else if (usdRole == SdfValueRoleNames->TextureCoordinate) {
-        return HdPrimvarRoleTokens->textureCoordinate;
-    }
-    // Empty token means no role specified
-    return TfToken();
-}
-
 UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
 {
 }
@@ -234,39 +195,13 @@ UsdImagingGprimAdapter::_RemovePrim(SdfPath const& cachePath,
     index->RemoveRprim(cachePath);
 }
 
-void 
-UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
-    UsdGeomGprim const& gprim,
-    SdfPath const& cachePath,
-    UsdGeomPrimvar const& primvar,
-    UsdTimeCode time,
-    UsdImagingValueCache* valueCache) const
-{
-    VtValue v;
-    TfToken primvarName = primvar.GetPrimvarName();
-    if (primvar.ComputeFlattened(&v, time)) {
-        TF_DEBUG(USDIMAGING_SHADERS)
-            .Msg("Found primvar %s on <%s>\n", 
-                primvarName.GetText(), gprim.GetPath().GetText());
-        valueCache->GetPrimvar(cachePath, primvarName) = v;
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
-                      primvarName, 
-                      _UsdToHdInterpolation(primvar.GetInterpolation()),
-                      _UsdToHdRole(primvar.GetAttr().GetRoleName()));
-    } else {
-        TF_DEBUG(USDIMAGING_SHADERS)
-            .Msg( "\t\t No primvar on <%s> named %s\n",
-                  gprim.GetPath().GetText(), primvarName.GetText());
-    }
-}
-
 bool
 UsdImagingGprimAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
 {
     return false;
 }
 
-void 
+void
 UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
@@ -313,7 +248,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                     continue;
                 }
                 _ComputeAndMergePrimvar(
-                    gprim, cachePath, pv, time, valueCache);
+                    prim, cachePath, pv, time, valueCache);
             }
             // Inherited primvars
             for (auto const &pv: primvars.FindInheritedPrimvars()) {
@@ -321,7 +256,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                     continue;
                 }
                 _ComputeAndMergePrimvar(
-                    gprim, cachePath, pv, time, valueCache);
+                    prim, cachePath, pv, time, valueCache);
             }
 
         } else {
@@ -352,7 +287,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                     }
                     if (pv) {
                         _ComputeAndMergePrimvar(
-                            gprim, cachePath, pv, time, valueCache);
+                            prim, cachePath, pv, time, valueCache);
                     }
                 }
             }

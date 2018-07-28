@@ -146,19 +146,6 @@ protected:
     USDIMAGING_API
     virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const;
 
-    // Helper method for the _DiscoverPrimvars methods above.
-    void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,
-                           SdfPath const& cachePath,
-                           UsdGeomPrimvar const& primvar,
-                           UsdTimeCode time,
-                           UsdImagingValueCache* valueCache) const;
-
-    // Conversion functions between usd and hydra enums.
-    USDIMAGING_API
-    static HdInterpolation _UsdToHdInterpolation(TfToken const& usdInterp);
-    USDIMAGING_API
-    static TfToken _UsdToHdRole(TfToken const& usdRole);
-
 private:
 
     /// Reads the extent from the given prim. If the extent is not authored,

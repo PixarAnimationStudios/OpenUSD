@@ -171,8 +171,7 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
         UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
             UsdImagingTokens->primvarsWidths);
         if (pv) {
-            _ComputeAndMergePrimvar(UsdGeomGprim(prim), cachePath,
-                pv, time, valueCache);
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         } else {
             UsdGeomBasisCurves curves(prim);
             HdInterpolation interpolation;
@@ -195,8 +194,7 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
         UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
             UsdImagingTokens->primvarsNormals);
         if (pv) {
-            _ComputeAndMergePrimvar(UsdGeomGprim(prim), cachePath,
-                pv, time, valueCache);
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         } else {
             UsdGeomBasisCurves curves(prim);
             VtVec3fArray normals;

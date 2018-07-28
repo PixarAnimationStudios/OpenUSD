@@ -36,6 +36,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -944,6 +945,19 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     &valueCache->GetPrimvars(cachePath),
                     _tokens->scale,
                     HdInterpolationInstance);
+            }
+
+            // Convert non-constant primvars on UsdGeomPointInstancer
+            // into instance-rate primvars.
+            UsdGeomPrimvarsAPI primvars(instancer);
+            for (auto const &pv: primvars.GetPrimvars()) {
+                TfToken const& interp = pv.GetInterpolation();
+                if (interp != UsdGeomTokens->constant &&
+                    interp != UsdGeomTokens->uniform) {
+                    HdInterpolation interp = HdInterpolationInstance;
+                    _ComputeAndMergePrimvar(
+                        prim, cachePath, pv, time, valueCache, &interp);
+                }
             }
         }
 

@@ -482,11 +482,27 @@ protected:
         HdInterpolation interp,
         TfToken const& role = TfToken()) const;
 
+    // Convenience method for computing a primvar.
+    USDIMAGING_API
+    void _ComputeAndMergePrimvar(UsdPrim const& prim,
+                                 SdfPath const& cachePath,
+                                 UsdGeomPrimvar const& primvar,
+                                 UsdTimeCode time,
+                                 UsdImagingValueCache* valueCache,
+                                 HdInterpolation *interpOverride = nullptr)
+                                 const;
+
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
 
     USDIMAGING_API
     UsdImaging_CollectionCache& _GetCollectionCache() const;
+
+    // Conversion functions between usd and hydra enums.
+    USDIMAGING_API
+    static HdInterpolation _UsdToHdInterpolation(TfToken const& usdInterp);
+    USDIMAGING_API
+    static TfToken _UsdToHdRole(TfToken const& usdRole);
 
 private:
 

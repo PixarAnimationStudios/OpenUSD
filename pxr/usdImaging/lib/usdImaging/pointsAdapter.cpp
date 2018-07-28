@@ -138,8 +138,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
         UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
             UsdImagingTokens->primvarsWidths);
         if (pv) {
-            _ComputeAndMergePrimvar(UsdGeomGprim(prim), cachePath,
-                pv, time, valueCache);
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         } else {
             UsdGeomPoints points(prim);
             HdInterpolation interpolation;
