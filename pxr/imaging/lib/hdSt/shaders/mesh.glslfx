@@ -533,9 +533,14 @@ void main(void)
 #endif
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
-    // Neye may be un-normalized, post rasterizer interpolation.
-    // We do _not_ normalize it, intentionally, for legacy testing reasons.
-    vec3 Neye = GetNormal(inData.Neye, 0);
+
+    vec3 Neye = inData.Neye;
+    // Normalize Neye after rasterizer interpolation.
+    if (length(Neye) > 0.0)
+        Neye = normalize(Neye);
+    // Give the shader key a chance to override the normal.
+    Neye = GetNormal(Neye, 0);
+    // Orient the normal for shading.
     Neye = GetShadingNormal(Neye, isFlipped);
 
     vec4 patchCoord = GetPatchCoord();
