@@ -170,6 +170,10 @@ _ComputeExtent(object points, object widths) {
 
 WRAP_CUSTOM {
     _class
+        .def("GetWidthsInterpolation", &UsdGeomPoints::GetWidthsInterpolation)
+        .def("SetWidthsInterpolation", &UsdGeomPoints::SetWidthsInterpolation,
+             arg("interpolation"))
+
         .def("ComputeExtent",
             &_ComputeExtent, 
             (arg("points"), arg("widths")))

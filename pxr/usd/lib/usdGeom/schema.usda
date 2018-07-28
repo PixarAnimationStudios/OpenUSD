@@ -738,11 +738,12 @@ class "PointBased" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        \\ref SetNormalsInterpolation() . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
 }
 
@@ -765,11 +766,16 @@ class Mesh "Mesh" (
     \\em subdivisionScheme attribute.
     
     \\section UsdGeom_Mesh_Normals A Note About Normals
-    
-    Although the \\em normals attribute inherited from PointBased can be authored
-    on any mesh, they are almost never needed for subdivided meshes, and only
-    add rendering cost.  You may consider only authoring them for polygonal
-    meshes."""
+
+    Normals should not be authored on a subdivided mesh, since subdivision
+    algorithms define their own normals. They should only be authored for
+    polygonal meshes.
+
+    The 'normals' attribute inherited from UsdGeomPointBased is not a generic
+    primvar, but the number of elements in this attribute will be determined by
+    its 'interpolation'.  See \\ref UsdGeomPointBased::GetNormalsInterpolation() .
+    If 'normals' and 'primvars:normals' are both specified, the latter has
+    precedence."""
 ) {
     #
     # Common Properties
@@ -1126,7 +1132,8 @@ class "Curves" (
         it), in which case widths are "ribbon width", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
 }
 
@@ -1317,13 +1324,21 @@ class Points "Points" (
     Points can be an efficient means of storing and rendering particle
     effects comprised of thousands or millions of small particles.  Points
     generally receive a single shading sample each, which should take 
-    \\em normals into account, if present."""
+    \\em normals into account, if present.
+
+    While not technically UsdGeomPrimvars, the widths and normals also
+    have interpolation metadata.  It's common for authored widths and normals
+    to have constant or varying interpolation."""
 
 ) {
     # shaping attributes
     float[] widths (
         doc = """Widths are defined as the \\em diameter of the points, in 
-                 object space"""
+                 object space.  'widths' is not a generic Primvar, but
+                 the number of elements in this attribute will be determined by
+                 its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If
+                 'widths' and 'primvars:widths' are both specified, the latter
+                 has precedence."""
     )
     
     int64[] ids (

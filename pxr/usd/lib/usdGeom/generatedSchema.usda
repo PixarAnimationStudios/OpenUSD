@@ -1575,11 +1575,12 @@ class "PointBased" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -1703,24 +1704,29 @@ class "PointBased" (
 }
 
 class Mesh "Mesh" (
-    doc = '''Encodes a mesh surface whose definition and feature-set
+    doc = """Encodes a mesh surface whose definition and feature-set
     will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
     
-    1. Certain interpolation ("tag") parameters not yet supported
+    1. Certain interpolation (\"tag\") parameters not yet supported
     
     2. Does not (as of 9/2014) yet support hierarchical edits.  We do intend
     to provide some encoding in a future version of the schema.
     
     A key property of this mesh schema is that it encodes both subdivision
-    surfaces, and non-subdived "polygonal meshes", by varying the
+    surfaces, and non-subdived \"polygonal meshes\", by varying the
     subdivisionScheme attribute.
     
     A Note About Normals
-    
-    Although the normals attribute inherited from PointBased can be authored
-    on any mesh, they are almost never needed for subdivided meshes, and only
-    add rendering cost.  You may consider only authoring them for polygonal
-    meshes.'''
+
+    Normals should not be authored on a subdivided mesh, since subdivision
+    algorithms define their own normals. They should only be authored for
+    polygonal meshes.
+
+    The 'normals' attribute inherited from UsdGeomPointBased is not a generic
+    primvar, but the number of elements in this attribute will be determined by
+    its 'interpolation'.  See .
+    If 'normals' and 'primvars:normals' are both specified, the latter has
+    precedence."""
 )
 {
     int[] cornerIndices = [] (
@@ -1823,11 +1829,12 @@ class Mesh "Mesh" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2115,11 +2122,12 @@ class NurbsPatch "NurbsPatch" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2383,11 +2391,12 @@ class "Curves" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2503,7 +2512,8 @@ class "Curves" (
         it), in which case widths are \"ribbon width\", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -2674,11 +2684,12 @@ class BasisCurves "BasisCurves" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2799,7 +2810,8 @@ class BasisCurves "BasisCurves" (
         it), in which case widths are \"ribbon width\", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
     uniform token wrap = "nonperiodic" (
         allowedTokens = ["nonperiodic", "periodic"]
@@ -2891,11 +2903,12 @@ class NurbsCurves "NurbsCurves" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     int[] order = [] (
         doc = """Order of the curve.  Order must be positive and is
@@ -3025,7 +3038,8 @@ class NurbsCurves "NurbsCurves" (
         it), in which case widths are \"ribbon width\", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -3041,12 +3055,16 @@ class NurbsCurves "NurbsCurves" (
 }
 
 class Points "Points" (
-    doc = '''Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
+    doc = """Points are analogous to the <A HREF=\"https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html\">RiPoints spec</A>.  
     
     Points can be an efficient means of storing and rendering particle
     effects comprised of thousands or millions of small particles.  Points
     generally receive a single shading sample each, which should take 
-    normals into account, if present.'''
+    normals into account, if present.
+
+    While not technically UsdGeomPrimvars, the widths and normals also
+    have interpolation metadata.  It's common for authored widths and normals
+    to have constant or varying interpolation."""
 )
 {
     uniform bool doubleSided = 0 (
@@ -3092,11 +3110,12 @@ class Points "Points" (
     normal3f[] normals (
         doc = """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
-        points.  Note that in general you should not need or want to provide
-        'normals' for any Mesh that is subdivided, as the subdivision scheme 
-        will provide smooth normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -3208,7 +3227,11 @@ class Points "Points" (
     )
     float[] widths (
         doc = """Widths are defined as the diameter of the points, in 
-                 object space"""
+                 object space.  'widths' is not a generic Primvar, but
+                 the number of elements in this attribute will be determined by
+                 its 'interpolation'.  See .  If
+                 'widths' and 'primvars:widths' are both specified, the latter
+                 has precedence."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the

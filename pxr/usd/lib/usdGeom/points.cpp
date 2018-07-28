@@ -184,6 +184,34 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TfToken 
+UsdGeomPoints::GetWidthsInterpolation() const
+{
+    // Because widths is a builtin, we don't need to check validity
+    // of the attribute before using it
+    TfToken interp;
+    if (GetWidthsAttr().GetMetadata(UsdGeomTokens->interpolation, &interp)){
+        return interp;
+    }
+    
+    return UsdGeomTokens->vertex;
+}
+
+bool
+UsdGeomPoints::SetWidthsInterpolation(TfToken const &interpolation)
+{
+    if (UsdGeomPrimvar::IsValidInterpolation(interpolation)){
+        return GetWidthsAttr().SetMetadata(UsdGeomTokens->interpolation, 
+                                            interpolation);
+    }
+
+    TF_CODING_ERROR("Attempt to set invalid interpolation "
+                     "\"%s\" for widths attr on prim %s",
+                     interpolation.GetText(),
+                     GetPrim().GetPath().GetString().c_str());
+    
+    return false;
+}
 
 static bool
 _ComputeExtent(const VtVec3fArray& points, const VtFloatArray& widths,

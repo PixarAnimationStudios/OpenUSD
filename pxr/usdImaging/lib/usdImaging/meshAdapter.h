@@ -107,6 +107,9 @@ protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
+    virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
+
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time) const;
     void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, 

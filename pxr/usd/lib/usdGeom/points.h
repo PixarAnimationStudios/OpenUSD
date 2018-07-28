@@ -58,6 +58,10 @@ class SdfAssetPath;
 /// effects comprised of thousands or millions of small particles.  Points
 /// generally receive a single shading sample each, which should take 
 /// \em normals into account, if present.
+/// 
+/// While not technically UsdGeomPrimvars, the widths and normals also
+/// have interpolation metadata.  It's common for authored widths and normals
+/// to have constant or varying interpolation.
 ///
 class UsdGeomPoints : public UsdGeomPointBased
 {
@@ -158,7 +162,11 @@ public:
     // WIDTHS 
     // --------------------------------------------------------------------- //
     /// Widths are defined as the \em diameter of the points, in 
-    /// object space
+    /// object space.  'widths' is not a generic Primvar, but
+    /// the number of elements in this attribute will be determined by
+    /// its 'interpolation'.  See \ref SetWidthsInterpolation() .  If
+    /// 'widths' and 'primvars:widths' are both specified, the latter
+    /// has precedence.
     ///
     /// \n  C++ Type: VtArray<float>
     /// \n  Usd Type: SdfValueTypeNames->FloatArray
@@ -212,6 +220,30 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get the \ref Usd_InterpolationVals "interpolation" for the \em widths
+    /// attribute.
+    ///
+    /// Although 'widths' is not classified as a generic UsdGeomPrimvar (and
+    /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
+    /// it does require an interpolation specification.  The fallback
+    /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
+    /// which means a width value is specified for each point.
+    USDGEOM_API
+    TfToken GetWidthsInterpolation() const;
+
+    /// Set the \ref Usd_InterpolationVals "interpolation" for the \em widths
+    /// attribute.
+    ///
+    /// \return true upon success, false if \p interpolation is not a legal
+    /// value as defined by UsdPrimvar::IsValidInterpolation(), or if there 
+    /// was a problem setting the value.  No attempt is made to validate
+    /// that the widths attr's value contains the right number of elements
+    /// to match its interpolation to its prim's topology.
+    ///
+    /// \sa GetWidthsInterpolation()
+    USDGEOM_API
+    bool SetWidthsInterpolation(TfToken const &interpolation);
 
     /// Compute the extent for the point cloud defined by points and widths.
     ///

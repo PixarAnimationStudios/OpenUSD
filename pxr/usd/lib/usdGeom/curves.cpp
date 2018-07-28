@@ -176,7 +176,7 @@ UsdGeomCurves::GetWidthsInterpolation() const
         return interp;
     }
     
-    return UsdGeomTokens->varying;
+    return UsdGeomTokens->vertex;
 }
 
 bool

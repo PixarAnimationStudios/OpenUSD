@@ -35,6 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((infoSource, "info:source")) \
     (faceIndexPrimvar)      \
     (faceOffsetPrimvar)     \
+    ((primvarsNormals, "primvars:normals")) \
+    ((primvarsWidths,  "primvars:widths")) \
     (ptexFaceIndex)         \
     (ptexFaceOffset)        \
     (usdPopulatedPrimCount) \

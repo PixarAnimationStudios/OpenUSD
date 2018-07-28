@@ -52,8 +52,9 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, GprimAdapter is abstract.
 }
 
-static HdInterpolation
-_UsdToHdInterpolation(TfToken const& usdInterp)
+/* static */
+HdInterpolation
+UsdImagingGprimAdapter::_UsdToHdInterpolation(TfToken const& usdInterp)
 {
     if (usdInterp == UsdGeomTokens->uniform) {
         return HdInterpolationUniform;
@@ -71,8 +72,9 @@ _UsdToHdInterpolation(TfToken const& usdInterp)
     return HdInterpolationConstant;
 }
 
-static TfToken
-_UsdToHdRole(TfToken const& usdRole)
+/* static */
+TfToken
+UsdImagingGprimAdapter::_UsdToHdRole(TfToken const& usdRole)
 {
     if (usdRole == SdfValueRoleNames->Point) {
         return HdPrimvarRoleTokens->point;
@@ -257,6 +259,12 @@ UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
+bool
+UsdImagingGprimAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
+{
+    return false;
+}
+
 void 
 UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
@@ -300,11 +308,17 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
 
             // Local (non-inherited) primvars
             for (auto const &pv: primvars.GetPrimvars()) {
+                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                    continue;
+                }
                 _ComputeAndMergePrimvar(
                     gprim, cachePath, pv, time, valueCache);
             }
             // Inherited primvars
             for (auto const &pv: primvars.FindInheritedPrimvars()) {
+                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                    continue;
+                }
                 _ComputeAndMergePrimvar(
                     gprim, cachePath, pv, time, valueCache);
             }
@@ -327,6 +341,9 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
 
                 UsdGeomPrimvarsAPI primvars(gprim);
                 for (auto const &pvName : matPrimvarNames) {
+                    if (_IsBuiltinPrimvar(pvName)) {
+                        continue;
+                    }
                     UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
                     if (!pv) {
                         // If not found, try as inherited primvar.

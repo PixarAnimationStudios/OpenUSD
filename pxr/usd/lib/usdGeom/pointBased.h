@@ -184,11 +184,12 @@ public:
     // --------------------------------------------------------------------- //
     /// Provide an object-space orientation for individual points, 
     /// which, depending on subclass, may define a surface, curve, or free 
-    /// points.  Note that in general you should not need or want to provide
-    /// 'normals' for any Mesh that is subdivided, as the subdivision scheme 
-    /// will provide smooth normals.  'normals' is not a generic Primvar,
-    /// but the number of elements in this attribute will be determined by
-    /// its 'interpolation'.  See \ref SetNormalsInterpolation()
+    /// points.  Note that 'normals' should not be authored on any Mesh that
+    /// is subdivided, since the subdivision algorithm will define its own
+    /// normals. 'normals' is not a generic primvar, but the number of elements
+    /// in this attribute will be determined by its 'interpolation'.  See
+    /// \ref SetNormalsInterpolation() . If 'normals' and 'primvars:normals'
+    /// are both specified, the latter has precedence.
     ///
     /// \n  C++ Type: VtArray<GfVec3f>
     /// \n  Usd Type: SdfValueTypeNames->Normal3fArray
@@ -223,7 +224,7 @@ public:
     /// Although 'normals' is not classified as a generic UsdGeomPrimvar (and
     /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
     /// it does require an interpolation specification.  The fallback
-    /// interpolation, if left unspecified, is UsdGeomTokens->varying , 
+    /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
     /// which will generally produce smooth shading on a polygonal mesh.
     /// To achieve partial or fully faceted shading of a polygonal mesh
     /// with normals, one should use UsdGeomTokens->faceVarying or

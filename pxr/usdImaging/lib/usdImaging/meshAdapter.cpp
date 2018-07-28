@@ -36,6 +36,7 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
@@ -117,6 +118,25 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
+
+    // Discover time-varying primvars:normals, and if that attribute
+    // doesn't exist also check for time-varying normals.
+    bool normalsExists = false;
+    _IsVarying(prim,
+               UsdImagingTokens->primvarsNormals,
+               HdChangeTracker::DirtyNormals,
+               UsdImagingTokens->usdVaryingNormals,
+               timeVaryingBits,
+               /*isInherited*/false,
+               &normalsExists);
+    if (!normalsExists) {
+        _IsVarying(prim,
+                UsdGeomTokens->normals,
+                HdChangeTracker::DirtyNormals,
+                UsdImagingTokens->usdVaryingNormals,
+                timeVaryingBits,
+                /*isInherited*/false);
+    }
 
     // Discover time-varying topology.
     if (!_IsVarying(prim,
@@ -208,6 +228,12 @@ UsdImagingMeshAdapter::_RemovePrim(SdfPath const& cachePath,
     }
 }
 
+bool
+UsdImagingMeshAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
+{
+    return (primvarName == UsdImagingTokens->primvarsNormals);
+}
+
 void
 UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                                      SdfPath const& cachePath,
@@ -243,6 +269,27 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
+    }
+
+    if (requestedBits & HdChangeTracker::DirtyNormals) {
+        // First check for "primvars:normals"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsNormals);
+        if (pv) {
+            _ComputeAndMergePrimvar(UsdGeomGprim(prim), cachePath,
+                pv, time, valueCache);
+        } else {
+            UsdGeomMesh mesh(prim);
+            VtVec3fArray normals;
+            if (mesh.GetNormalsAttr().Get(&normals, time)) {
+                _MergePrimvar(&primvars,
+                    UsdGeomTokens->normals,
+                    _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+                    HdPrimvarRoleTokens->normal);
+                valueCache->GetNormals(cachePath) = VtValue(normals);
+            }
+        }
     }
 
     // Subdiv tags are only needed if the mesh is refined.  So

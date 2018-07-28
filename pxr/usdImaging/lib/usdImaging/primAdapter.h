@@ -451,10 +451,14 @@ protected:
     // Determines if an attribute is varying and if so, sets the given
     // \p dirtyFlag in the \p dirtyFlags and increments a perf counter. Returns
     // true if the attribute is varying.
+    //
+    // If \p exists is non-null, _IsVarying will store whether the attribute
+    // was found.  If the attribute is not found, it counts as non-varying.
     USDIMAGING_API
     bool _IsVarying(UsdPrim prim, TfToken const& attrName, 
            HdDirtyBits dirtyFlag, TfToken const& perfToken,
-           HdDirtyBits* dirtyFlags, bool isInherited) const;
+           HdDirtyBits* dirtyFlags, bool isInherited,
+           bool* exists = nullptr) const;
 
     // Returns whether or not the rprim at \p cachePath is refined.
     USDIMAGING_API

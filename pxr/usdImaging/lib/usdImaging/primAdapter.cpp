@@ -502,7 +502,8 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   HdDirtyBits dirtyFlag,
                                   TfToken const& perfToken,
                                   HdDirtyBits* dirtyFlags,
-                                  bool isInherited) const
+                                  bool isInherited,
+                                  bool *exists) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -510,14 +511,21 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
 
+    if (exists != nullptr) {
+        *exists = false;
+    }
+
     do {
         UsdAttribute attr = prim.GetAttribute(attrName);
 
+        if (attr && exists != nullptr) {
+            *exists = true;
+        }
         if (attr.ValueMightBeTimeVarying()){
             (*dirtyFlags) |= dirtyFlag;
             HD_PERF_COUNTER_INCR(perfToken);
             return true;
-        } 
+        }
         prim = prim.GetParent();
 
     } while (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());

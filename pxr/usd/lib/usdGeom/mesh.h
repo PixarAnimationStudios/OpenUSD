@@ -68,10 +68,15 @@ class SdfAssetPath;
 /// 
 /// \section UsdGeom_Mesh_Normals A Note About Normals
 /// 
-/// Although the \em normals attribute inherited from PointBased can be authored
-/// on any mesh, they are almost never needed for subdivided meshes, and only
-/// add rendering cost.  You may consider only authoring them for polygonal
-/// meshes.
+/// Normals should not be authored on a subdivided mesh, since subdivision
+/// algorithms define their own normals. They should only be authored for
+/// polygonal meshes.
+/// 
+/// The 'normals' attribute inherited from UsdGeomPointBased is not a generic
+/// primvar, but the number of elements in this attribute will be determined by
+/// its 'interpolation'.  See \ref UsdGeomPointBased::GetNormalsInterpolation() .
+/// If 'normals' and 'primvars:normals' are both specified, the latter has
+/// precedence.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.

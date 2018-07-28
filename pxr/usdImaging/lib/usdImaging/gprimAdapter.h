@@ -141,7 +141,10 @@ protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
 
-private:
+    // Give derived classes an opportunity to block GprimAdapter processing
+    // of certain primvars.
+    USDIMAGING_API
+    virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const;
 
     // Helper method for the _DiscoverPrimvars methods above.
     void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,
@@ -149,6 +152,14 @@ private:
                            UsdGeomPrimvar const& primvar,
                            UsdTimeCode time,
                            UsdImagingValueCache* valueCache) const;
+
+    // Conversion functions between usd and hydra enums.
+    USDIMAGING_API
+    static HdInterpolation _UsdToHdInterpolation(TfToken const& usdInterp);
+    USDIMAGING_API
+    static TfToken _UsdToHdRole(TfToken const& usdRole);
+
+private:
 
     /// Reads the extent from the given prim. If the extent is not authored,
     /// an empty GfRange3d is returned, the extent will not be computed.
