@@ -89,7 +89,7 @@ ArDefaultResolver::SetDefaultSearchPath(
 void
 ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
 {
-    // no configuration takes place in search path resolver
+    _defaultContext = CreateDefaultContextForAsset(path);
 }
 
 bool
@@ -313,14 +313,21 @@ ArDefaultResolver::CanCreateNewLayerWithIdentifier(
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContext()
 {
-    return ArResolverContext(ArDefaultResolverContext());
+    return _defaultContext;
 }
 
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContextForAsset(
     const std::string& filePath)
 {
-    return ArResolverContext(ArDefaultResolverContext());
+    if (filePath.empty()){
+        return ArResolverContext(ArDefaultResolverContext());
+    }
+
+    std::string assetDir = TfGetPathName(TfAbsPath(filePath));
+    
+    return ArResolverContext(ArDefaultResolverContext(
+                                 std::vector<std::string>(1, assetDir)));
 }
 
 void 

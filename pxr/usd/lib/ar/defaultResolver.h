@@ -54,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// resolver will then examine the directories specified via the following
 /// mechanisms (in order):
 ///
-///    - The currently-bound ArDefaultResolverContext
+///    - The currently-bound ArDefaultResolverContext for the calling thread
 ///    - ArDefaultResolver::SetDefaultSearchPath
 ///    - The environment variable PXR_AR_DEFAULT_SEARCH_PATH. This is
 ///      expected to be a list of directories delimited by the platform's 
@@ -73,11 +73,18 @@ public:
     /// Set the default search path that will be used during asset
     /// resolution. This must be called before the first call
     /// to \ref ArGetResolver.
+    /// The specified paths will be searched *in addition to, and before*
+    /// paths specified via the environment variable PXR_AR_DEFAULT_SEARCH_PATH
     AR_API
     static void SetDefaultSearchPath(
         const std::vector<std::string>& searchPath);
 
     // ArResolver overrides
+
+    /// Sets the resolver's default context (returned by CreateDefaultContext())
+    /// to the same context you would get by calling 
+    /// CreateDefaultContextForAsset(). Has no other effect on the resolver's
+    /// configuration.
     AR_API
     virtual void ConfigureResolverForAsset(const std::string& path) override;
 
@@ -149,6 +156,13 @@ public:
     AR_API
     virtual ArResolverContext CreateDefaultContext() override;
 
+    /// Creates a context that adds the directory containing \p filePath
+    /// as a first directory to be searched, when the resulting context is
+    /// bound (\see ArResolverContextBinder).  
+    ///
+    /// If \p filePath is empty, returns an empty context; otherwise, if
+    /// \p filePath is not an absolute filesystem path, it will first be
+    /// anchored to the process's current working directory.
     AR_API
     virtual ArResolverContext CreateDefaultContextForAsset(
         const std::string& filePath) override;
@@ -189,6 +203,7 @@ private:
 
 private:
     ArDefaultResolverContext _fallbackContext;
+    ArResolverContext _defaultContext;
 
     _PerThreadCache _threadCache;
 
