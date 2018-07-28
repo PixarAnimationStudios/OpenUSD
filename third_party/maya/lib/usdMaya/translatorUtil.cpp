@@ -116,14 +116,12 @@ UsdMayaTranslatorUtil::CreateDummyTransformNode(
 
             // If there is a typename that we're ignoring, leave a note so that
             // we know where it came from.
-            const MString notes = TfStringPrintf(
+            const std::string notes = TfStringPrintf(
                     "Imported from @%s@<%s> with type '%s'",
                     usdPrim.GetStage()->GetRootLayer()->GetIdentifier().c_str(),
                     usdPrim.GetPath().GetText(),
-                    usdPrim.GetTypeName().GetText()).c_str();
-            if (UsdMayaUtil::createStringAttribute(dagNode, "notes")) {
-                dagNode.findPlug("notes", true).setString(notes);
-            }
+                    usdPrim.GetTypeName().GetText());
+            UsdMayaUtil::SetNotes(dagNode, notes);
         }
         adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
     }

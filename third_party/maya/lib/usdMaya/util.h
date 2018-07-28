@@ -98,22 +98,6 @@ private:
     ~MDataHandleHolder() override;
 };
 
-
-// safely inverse a scale component
-inline double inverseScale(const double scale)
-{
-    const double kScaleEpsilon = 1.0e-12;
-
-    if (scale < kScaleEpsilon && scale >= 0.0) {
-        return 1.0 / kScaleEpsilon;
-    }
-    else if (scale > -kScaleEpsilon && scale < 0.0) {
-        return 1.0 / -kScaleEpsilon;
-    }
-
-    return 1.0 / scale;
-}
-
 const double MillimetersPerInch = 25.4;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
@@ -154,10 +138,6 @@ ConvertCMToMM(const double cm)
     return cm * MillimetersPerCentimeter;
 }
 
-// seconds per frame
-PXRUSDMAYA_API
-double spf();
-
 /// Gets the Maya MObject for the node named \p nodeName.
 PXRUSDMAYA_API
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
@@ -195,19 +175,6 @@ bool isAncestorDescendentRelationship(
 // returns 0 if static, 1 if sampled, and 2 if a curve
 PXRUSDMAYA_API
 int getSampledType(const MPlug& iPlug, const bool includeConnectedChildren);
-
-// 0 dont write, 1 write static 0, 2 write anim 0, 3 write anim 1
-PXRUSDMAYA_API
-int getVisibilityType(const MPlug& iPlug);
-
-// determines what order we do the rotation in, returns false if iOrder is
-// kInvalid or kLast
-PXRUSDMAYA_API
-bool getRotOrder(
-        const MTransformationMatrix::RotationOrder iOrder,
-        unsigned int& oXAxis,
-        unsigned int& oYAxis,
-        unsigned int& oZAxis);
 
 // determine if a Maya Object is animated or not
 PXRUSDMAYA_API
@@ -456,13 +423,7 @@ PXRUSDMAYA_API
 TfRefPtr<MDataHandleHolder> GetPlugDataHandle(const MPlug& plug);
 
 PXRUSDMAYA_API
-bool createStringAttribute(MFnDependencyNode& depNode, const MString& attr);
-
-PXRUSDMAYA_API
-bool createNumericAttribute(
-        MFnDependencyNode& depNode,
-        const MString& attr,
-        const MFnNumericData::Type type);
+bool SetNotes(MFnDependencyNode& depNode, const std::string& notes);
 
 /// Reads values from the given \p argData into a VtDictionary, using the
 /// \p guideDict to figure out which keys and what type of values should be read

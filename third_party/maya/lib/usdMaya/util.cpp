@@ -77,14 +77,6 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-// return seconds per frame
-double
-UsdMayaUtil::spf()
-{
-    static const MTime sec(1.0, MTime::kSeconds);
-    return 1.0 / sec.as(MTime::uiUnit());
-}
-
 MStatus
 UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 {
@@ -299,98 +291,6 @@ UsdMayaUtil::getSampledType(
     }
 
     return 1;
-}
-
-bool
-UsdMayaUtil::getRotOrder(
-        const MTransformationMatrix::RotationOrder iOrder,
-        unsigned int& oXAxis,
-        unsigned int& oYAxis,
-        unsigned int& oZAxis)
-{
-    switch (iOrder)
-    {
-        case MTransformationMatrix::kXYZ:
-        {
-            oXAxis = 0;
-            oYAxis = 1;
-            oZAxis = 2;
-        }
-        break;
-
-        case MTransformationMatrix::kYZX:
-        {
-            oXAxis = 1;
-            oYAxis = 2;
-            oZAxis = 0;
-        }
-        break;
-
-        case MTransformationMatrix::kZXY:
-        {
-            oXAxis = 2;
-            oYAxis = 0;
-            oZAxis = 1;
-        }
-        break;
-
-        case MTransformationMatrix::kXZY:
-        {
-            oXAxis = 0;
-            oYAxis = 2;
-            oZAxis = 1;
-        }
-        break;
-
-        case MTransformationMatrix::kYXZ:
-        {
-            oXAxis = 1;
-            oYAxis = 0;
-            oZAxis = 2;
-        }
-        break;
-
-        case MTransformationMatrix::kZYX:
-        {
-            oXAxis = 2;
-            oYAxis = 1;
-            oZAxis = 0;
-        }
-        break;
-
-        default:
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-// 0 dont write, 1 write static 0, 2 write anim 0, 3 write anim -1
-int
-UsdMayaUtil::getVisibilityType(const MPlug& iPlug)
-{
-    int type = getSampledType(iPlug, true);
-
-    // static case
-    if (type == 0)
-    {
-        // dont write anything
-        if (iPlug.asBool())
-            return 0;
-
-        // write static 0
-        return 1;
-    }
-    else
-    {
-        // anim write -1
-        if (iPlug.asBool())
-            return 3;
-
-        // write anim 0
-        return 2;
-    }
 }
 
 // does this cover all cases?
@@ -1639,45 +1539,24 @@ UsdMayaUtil::setPlugValue(
 }
 
 bool
-UsdMayaUtil::createStringAttribute(
+UsdMayaUtil::SetNotes(
         MFnDependencyNode& depNode,
-        const MString& attr)
+        const std::string& notes)
 {
     MStatus status = MStatus::kFailure;
     MFnTypedAttribute typedAttrFn;
     MObject attrObj = typedAttrFn.create(
-        attr,
-        attr,
-        MFnData::kString,
-        MObject::kNullObj,
-        &status);
+            "notes",
+            "nts",
+            MFnData::kString,
+            MObject::kNullObj,
+            &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     status = depNode.addAttribute(attrObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    return true;
-}
-
-bool
-UsdMayaUtil::createNumericAttribute(
-        MFnDependencyNode& depNode,
-        const MString& attr,
-        const MFnNumericData::Type type)
-{
-    MStatus status = MStatus::kFailure;
-    MFnNumericAttribute numericAttrFn;
-    MObject attrObj = numericAttrFn.create(
-        attr,
-        attr,
-        type,
-        0,
-        &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    status = depNode.addAttribute(attrObj);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
+    depNode.findPlug(attrObj, true).setString(notes.c_str());
     return true;
 }
 

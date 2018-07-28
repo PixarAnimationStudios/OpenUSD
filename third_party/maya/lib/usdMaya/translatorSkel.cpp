@@ -44,6 +44,7 @@
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MMatrix.h>
@@ -580,17 +581,6 @@ _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 }
 
 
-template <typename T>
-bool _CreateNumericAttribute(MFnDependencyNode& depNode,
-                             const MString& attr,
-                             MFnNumericData::Type type, 
-                             T initialVal)
-{
-    return UsdMayaUtil::createNumericAttribute(depNode, attr, type) &&
-           UsdMayaUtil::setPlugValue(depNode, attr, initialVal);
-}
-
-
 } // namespace
 
 
@@ -691,10 +681,19 @@ UsdMayaTranslatorSkel::CreateJointHierarchy(
 
         // Create an attribute to indicate to export that this joint
         // represents UsdSkelSkeleton's transform.
-        _CreateNumericAttribute(skelXformJointDep,
-                                _MayaTokens->USD_isUsdSkeleton,
-                                MFnNumericData::kBoolean,
-                                true);
+        MObject attrObj = MFnNumericAttribute().create(
+                _MayaTokens->USD_isUsdSkeleton,
+                _MayaTokens->USD_isUsdSkeleton,
+                MFnNumericData::kBoolean,
+                true,
+                &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        status = skelXformJointDep.addAttribute(attrObj);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        UsdMayaUtil::setPlugValue(
+                skelXformJointDep, _MayaTokens->USD_isUsdSkeleton, true);
 
         // Change the draw style of the extra joints so that it is not drawn.
         UsdMayaUtil::setPlugValue(skelXformJointDep, 
