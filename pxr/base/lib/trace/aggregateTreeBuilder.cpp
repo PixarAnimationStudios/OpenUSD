@@ -59,7 +59,7 @@ Trace_AggregateTreeBuilder::_ProcessCounters(const TraceCollection& collection)
 void
 Trace_AggregateTreeBuilder::_CreateAggregateNodes()
 {
-    using TreeIt = std::pair<TraceEventNodePtr, size_t>;
+    using TreeIt = std::pair<TraceEventNodeRefPtr, size_t>;
     std::stack<TreeIt> treeStack;
     std::stack<TraceAggregateNodePtr> aggStack;
 
@@ -212,7 +212,7 @@ TraceAggregateNodePtr
 
     // Construct a sequence of node names from the thread root node to the
     // lowest node in the tree which contains this timestamp.
-    TraceEventNodePtr node = *it;
+    TraceEventNodeRefPtr node = *it;
     std::vector<TfToken> path;
     while (true) {
         path.push_back(node->GetKey());

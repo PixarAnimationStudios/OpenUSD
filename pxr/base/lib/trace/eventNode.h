@@ -34,15 +34,13 @@
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
+TF_DECLARE_REF_PTRS(TraceEventNode);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class TraceEventNode
@@ -52,7 +50,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
 /// useful for timeline views of a trace.
 ///
 
-class TraceEventNode : public TfRefBase, public TfWeakBase {
+class TraceEventNode : public TfRefBase {
 public:
 
     using TimeStamp = TraceEvent::TimeStamp;
@@ -119,7 +117,7 @@ public:
     /// \name Children Accessors
     /// @{
 
-    /// Returns weak references to the children of this node.
+    /// Returns references to the children of this node.
     const TraceEventNodeRefPtrVector &GetChildrenRef() {
         return _children;
     }
