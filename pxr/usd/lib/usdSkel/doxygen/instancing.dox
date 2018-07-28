@@ -1,0 +1,141 @@
+/*!
+
+\page UsdSkel_Instancing Instancing in UsdSkel
+
+\section UsdSkel_Instancing_BindState Instancing the "Bind State"
+
+A critical component of scalability when attempting to encode a crowd is that
+a model's `Bind State` must be _instanced_ across similar models. For example,
+suppose that a crowd has multiple copies of a particular model: Each of those
+copies will typically have a different root transform, and different set
+of joint transforms. Visually, the skinned models may all look entirely unique,
+but most of the contents of each copy of that model is identical: The topology
+of each geometric primitive within the model is the same. The primvars within
+the model are the same. The only properties that are not changed when skinning
+a copy of the model are _points_ and _normals_ of the skinned geometry.
+
+Scalability when encoding many such copies of characters depends on ensuring
+that those properties of each character that can be shared, are shared. So
+what is really meant when talking about _instancing_ in UsdSkel is this
+notion of instancing the _bind state_ of a skeletally posed model. It is
+important that that level of instancing can be encoded in USD.
+
+UsdSkel encodes this concept using a combination of inherited properties
+and <a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Instancing">scene graph instancing</a>.
+
+\subsection UsdSkel_Instancing_Example Instancing Example
+
+This section contains a simple example of _bind state instancing_.
+We will begin with the complete example, before breaking it into parts:
+
+\code
+def Xform "Model" (
+    instanceable = true
+)
+{
+    rel skel:skeleton = <Skel>
+    
+    def Mesh "Mesh" {}
+
+    def Skeleton "Skel" {}
+}
+
+def SkelAnimation "ModelAnim_1" {}
+...
+def SkelAnimation "ModelAnim_N" {}
+
+over Model_1 (
+    add references = </Model>
+)
+{
+    rel skel:animationSource = </ModelAnim_1>
+}
+
+...
+
+over Model_N (
+    add references = </Model>
+)
+{
+    rel skel:animationSource = </ModelAnim_N>
+}
+\endcode
+
+This example begins with the definition of an instanceable model, which
+contains a Skeleton:
+
+\code
+def Xform "Model" (
+    instanceable = true
+)
+{
+    rel skel:skeleton = <Skel>
+    
+    def Mesh "Mesh" {}
+
+    def Skeleton "Skel" {}
+}
+\endcode
+
+Typically, the `</Model>` primitive would be defined in a separate file,
+and the reference that is added at each model instance would target that file.
+
+Since this model has `instanceable` to `true`, when another primitive is
+created that references `</Model>`, USD will _instance_ the scene graph
+beneath the model.
+
+The contents of `</Model>` consist of a mesh (often *many* meshes), which
+has been bound to a Skeleton. This encapsulates the entire _bind state_
+of the model as an instanced scene graph location.
+
+
+\code
+def SkelAnimation "ModelAnim_1" {}
+...
+def SkelAnimation "ModelAnim_N" {}
+\endcode
+
+Here, we encode unique joint animations, so that we can bind them to the
+copies of `</Model>` that will follow.
+
+Note that when a scene graphf location is instanced in USD, it is not possible
+to add additional primitives beneath that scene graph location.  
+So we cannot add the SkelAnimation primitives as children of each copy of
+`</Model>`.
+
+Having defined unique animations, we then proceed to make copies of `</Model>`:
+
+\code
+over Model_1 (
+    add references = </Model>
+)
+{
+    rel skel:animationSource = </ModelAnim_1>
+}
+
+...
+
+over Model_N (
+    add references = </Model>
+)
+{
+    rel skel:animationSource = </ModelAnim_N>
+}
+\endcode
+
+
+As discussed in other sections, such as the UsdSkel_SchemaOverview_SkelAnimations
+"skel animation overview", the _skel:animationSource_ relationship is
+"inherited" down namespace, onto Skeleton primitives. This inheritance property
+passes down into instances as well. So each instanced Skeleton beneath our
+`</Model_1>, ... </Model_N>` instances adopts the SkelAnimation that has been
+assigned on the instance itself.
+
+Note that this ability to specify overrides on an instance is not unique to
+UsdSkel: Primvars in USD work the same way.
+
+The net result of this encoding: The entire bind state of `</Model>` has been
+instanced to different scene graph locations, each of which has specified
+a unique SkelAnimation to apply to the underlying Skeleton(s).
+
+*/

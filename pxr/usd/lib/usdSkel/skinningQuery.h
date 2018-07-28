@@ -73,12 +73,19 @@ public:
 
     const UsdPrim& GetPrim() const { return _prim; }
 
+    /// Returns the number of influences encoded for each component.
+    /// If the prim defines rigid joint influences, then this returns
+    /// the number of influences that map to every point. Otherwise,
+    /// this provides the number of influences per point.
+    /// \sa IsRigidlyDeformed
     int GetNumInfluencesPerComponent() const {
         return _numInfluencesPerComponent;
     }
 
     const TfToken& GetInterpolation() const { return _interpolation; }
 
+    /// Returns true if the held prim has the same joint influences
+    /// across all points, or false otherwise.
     USDSKEL_API
     bool IsRigidlyDeformed() const;
 

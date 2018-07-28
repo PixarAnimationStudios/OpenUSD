@@ -1,0 +1,427 @@
+/*!
+
+\page UsdSkel_SchemaOverview Schema Overview
+
+This page provides an overview of the UsdSkel schemas, using example
+scene description. The examples here only deal with the scene description
+itself. For coding examples, see the \ref UsdSkel_API_Overview "API Overview"
+page.
+
+\section UsdSkel_SchemaOverview_SkinningAnArm Skinning an Arm
+
+The following example demonstrates a 3-joint, skinned arm,
+with an animation that rotates the elbow by 90 degrees, over 10 frames:
+
+\code
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 10
+)
+def SkelRoot "Model" {
+    def Skeleton "Skel" {
+        uniform token[] joints = ["Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"]
+        uniform matrix4d[] bindTransforms = [
+            ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),
+            ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,2,1)),
+            ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,4,1))
+        ]
+        uniform matrix4d[] restTransforms = [
+            ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),
+            ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,2,1)),
+            ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,2,1))
+        ]
+
+        def SkelAnimation "Anim" {
+            uniform token[] joints = ["Shoulder/Elbow"]
+        
+            float3[] translations = [(0,0,2)]
+            quatf[] rotations.timeSamples = {
+                1: [(1,0,0,0)],
+                10: [(0.7071, 0.7071, 0, 0)]
+            }
+            half3[] scales = [(1,1,1)]
+        }
+        
+        rel skel:animationSource = <Anim>
+    }
+
+    def Mesh "Arm" {
+ 
+       int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+       int[] faceVertexIndices = [
+           2, 3, 1, 0,
+           6, 7, 5, 4,
+           8, 9, 7, 6,
+           3, 2, 9, 8,
+           10, 11, 4, 5,
+           0, 1, 11, 10,
+           7, 9, 10, 5,
+           9, 2, 0, 10,
+           3, 8, 11, 1,
+           8, 6, 4, 11
+       ]
+       point3f[] points = [
+           (0.5, -0.5, 4), (-0.5, -0.5, 4), (0.5, 0.5, 4), (-0.5, 0.5, 4),
+           (-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0),
+           (-0.5, 0.5, 2), (0.5, 0.5, 2), (0.5, -0.5, 2), (-0.5, -0.5, 2)
+       ]
+
+       rel skel:skeleton = </Model/Skel>
+
+       int[] primvars:skel:jointIndices = [
+           2,2,2,2, 0,0,0,0, 1,1,1,1
+       ] (
+           interpolation = "vertex"
+           elementSize = 1
+       )
+       float[] primvars:skel:jointWeights = [
+           1,1,1,1, 1,1,1,1, 1,1,1,1
+        ] (
+           interpolation = "vertex"
+           elementSize = 1
+       )
+       matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+    }
+}
+\endcode
+
+We will proceed to break this down one piece at a time.
+
+\subsection UsdSkel_SchemaOverview_SkelRoot Skinning an Arm: The Skel Root
+
+\code
+def SkelRoot "Model" {
+   ...
+}
+\endcode
+
+
+When a model contains skinned data, it must be encapsulated within a UsdSkelRoot
+primitive. This serves two purposes:
+
+1. Informs applications that are consuming the file that a branch of the scene
+  graph contains skinned primitives, as such data often requires special
+  processing by the consuming application.
+
+2. Provides a place to encode pre-computed bounding information for the skinned
+  primitives (a UsdSkelRoot is a subclass of `UsdGeomBoundable`). This allows
+  renderers to determine where in space the result of skinning resides without
+  having to apply skinning first. For example, a renderer is capable of
+  efficiently culling objects that are not visibile in camera without paying
+  the cost of computing skinning.
+
+\subsection UsdSkel_SchemaOverview_DefiningSkeletons Skinning an Arm: Defining a Skeleton
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = ["Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"]
+    ...
+}
+\endcode
+
+
+A Skeleton encodes a joint hierarchy. The actual joints and their parent<->child
+relationships are encoded in a compact, vectorized token arrays. Each token in
+the array is the token-valued form of a relative path to that joint. The paths
+follow the same syntax rules are other prim paths and in USD, and may be
+constructed using the `SdfPath` API.
+
+The tokens authored for _joints_ may be considered as defining the *topology*
+of the Skeleton.
+
+Each joint's parent is identified by path. If an intermediate path is excluded,
+then the next nearest ancestor path that is included is used instead.
+For example, if the joint list above did not include `Shoulder/Elbow`, then the
+parent of `Shoulder/Elbow/Hand` would be `Shoulder`. Consumers of UsdSkel
+files are encouraged to use the UsdSkelTopology utility class to reason about
+these relationships.
+
+Note that it is _valid_ to have multiple root joints in a Skeleton. For example:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = ["RootA", "RootA/Child", "RootB"]
+    ...
+}
+\endcode
+
+This is allowed because some of the applications that UsdSkel interchanges with
+also allow it. In a way, the Skeleton primitive itself may be thought of as the
+true root of the Skeleton.
+
+<b>Bind Transforms</b>
+
+\code
+def Skeleton "Skel" {
+    ...
+    uniform matrix4d[] bindTransforms = [
+        ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),
+        ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,2,0,1)),
+        ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,4,0,1))
+    ]
+    ...
+}
+\endcode
+
+The _bindTransforms_ property of a Skeleton provides the *world space* transform
+of each joint at bind time. A world space encoding has been chosen for bind
+transforms, since most DCC apps tend to use the same encoding, so using the
+same encoding tends to simplify IO.
+
+The entries of the _bindTransforms_ array are ordered according to the order of
+the _joints_ attribute. So for this example, the first entry in the array
+corresponds to joint `Shoulder`, the second to `Shoulder/Eblow`, and so forth.
+
+<b>Rest Transforms</b>
+
+\code
+def Skeleton "Skel" {
+    ...
+    uniform matrix4d[] restTransforms = [
+        ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1)),
+        ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,2,0,1)),
+        ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,2,0,1))
+    ]
+    ...
+}
+\endcode
+
+The _restTransforms_ property of a Skeleton provides the *local space* transform
+of each joint at bind time, and as with _bindTransforms_, is ordered according
+to the order of the _joints_ attribute.
+
+Rest transforms provide fallback values for joint transforms when joints are not
+being driven by an animation.
+
+This encoding may seem redundant at first: It might appear that it would be
+possible to derive _restTransforms_ from the _bindTransforms_, and vice versa.
+However, neither of these transform arrays provide any information about
+bind-time transforms of the primitives that live *above* the joint hierarchy.
+It's only true that one set of transforms can be computed from the other when
+all ancestor primitives above the joint hierarchy have identity transforms
+at bind-time.
+
+\subsection UsdSkel_SchemaOverview_SkelAnimations Skinning an Arm: Skel Animations
+
+\code
+def SkelAnimation "Anim" {
+    uniform token[] joints = ["Shoulder/Elbow"]
+    ...
+}
+\endcode
+
+Instead of encoding joint animations directly on a Skeleton, the animations
+are encoded in a `UsdSkelAnimation` primitive. The animation of a Skeleton is
+kept separate in this manner both to allow different animation encodings
+-- as different prim types -- as well as for the sake of \ref UsdSkel_Instancing
+"instancing".
+
+An animation must define _joints_, which determines the set of joints that
+the animation affects. This order does not need to match the order given on
+the _Skeleton_ primitive. To emphasize that point, this particular animation
+has been setup to affect only a single joint (`Shoulder/Elbow`).
+
+<b>Joint Transforms</b>
+
+\code
+def SkelAnimation "Anim" {
+    ...
+
+    float3[] translations = [(0,0,2)]
+    quatf[] rotations.timeSamples = {
+        1: [(1,0,0,0)],
+        10: [(0.7071, 0.7071, 0, 0)]
+    }
+    half3[] scales = [(1,1,1)]
+}
+\endcode
+
+Currently, UsdSkel encodes joint animations as arrays of translation, rotation
+and scale components. The encoding is vectorized for scalability reasons, and
+with consideration for the encoding of large-scale crowds. It is broken into
+these separate components primarily for the sake interpolation, but this also
+has storage benefits -- such as enabling separate run-length encoding for
+different components. For example, if only the rotations are changing over time,
+as is often the case, then we need only store animated values for those
+rotations.
+
+These transform components combine to describe the *local space* transforms
+of a set of joints. Helper methods UsdSkelDecomposeTransforms() and
+UsdSkelMakeTransforms() can be used to convert inbetween these components
+and arrays of matrices.
+
+Note that this encoding implies that joint local transforms must be
+_orthogonal_. It does not necessarily imply that the transforms must be
+_orthonormal_, however, as non-uniform scales may still be authored.
+Still, it is at least _recommended_ that users make an effort to stick to purely
+orthonormal transforms: Many applications do not support non-uniform joint
+scaling, so translating non-orthonormal transforms to other packages may be
+problematic.
+
+<b>Binding An Animation To A Skeleton</b>
+
+\code
+def Skeleton "Skel" {
+    def SkelAnimation "Anim" { ... }
+
+    rel skel:animationSource = <Anim>
+}
+\endcode
+
+In order for a SkelAnimation to have any effect, it must be bound to a Skeleton.
+This is done using the _skel:animationSource_ relationship, as created through
+the UsdSkelBindingAPI.
+
+The animation source binding is _inherited_ down namespace. For example,
+suppose we have:
+
+\code
+def Scope "Scope" {
+    
+    rel skel:animationSource = </Anim>
+    
+    def Skeleton "Skel" {}
+}
+\endcode
+
+In that case, the Skeleton at `</Scope/Skel>` inherits the animation source
+defined at `</Scope>`.
+The primary motivation for this inheritance property is that it is the
+means by which UsdSkel allows _instanced_ primitives to be driven by
+different joint animations. The \ref UsdSkel_Instancing "instancing" section
+goes into this in more detail.
+
+
+\subsection UsdSkel_SchemaOverview_BindingSkeletons Skinning an Arm: Binding Skeletons to Prims
+
+\code
+def Mesh "Arm" {
+    ...
+    rel skel:skeleton = </Model/Skel>
+    ...
+}
+\endcode
+
+Skeletons are bound to the primitives that they skin by way of the
+_skel:skeleton_ binding relationship, which can be set through the
+UsdSkelBindingAPI.
+
+This relationship works in a similar manner to the _skel:animationSource_
+binding, in that the binding is inherited. Using this inheritance, it is common
+on production assets to bind the skeleton at a higher scope, rather than on
+individual primitives -- of which there may be many! For example:
+
+\code
+def SkelRoot "ComplexModelWithHundredsOfMeshes" {
+    rel skel:skeleton = </Skel>
+
+    def Mesh "Mesh0" {}
+    def Mesh "Mesh1" {}
+    ...
+    def Mesh "Mesh1000" {}
+}
+\endcode
+
+Note that it is only valid to bind skeletons either on UsdSkelRoot primitives,
+or on their descendants.
+
+This example shows the common case of mesh skinning, but UsdSkel's skinning is
+not restricted to only meshes.
+
+\sa \ref UsdSkel_SkinnablePrims
+
+\subsection UsdSkel_SchemaOverview_JointInfluences Skinning an Arm: Joint Influences
+
+\code
+def Mesh "Arm" {
+    ...
+    int[] primvars:skel:jointIndices = [2,2,2,2, 0,0,0,0, 1,1,1,1] (
+       interpolation = "vertex"
+       elementSize = 1
+    )
+    float[] primvars:skel:jointWeights = [1,1,1,1, 1,1,1,1, 1,1,1,1] (
+       interpolation = "vertex"
+       elementSize = 1
+    )
+    ...
+}
+\endcode
+
+
+The _jointIndices_ and _jointWeights_ primvars store the joints and joint
+weights for each vertex. Both primvars are required to have a matching
+_interpolation_ and array size, and the _interpolation_ must be either
+'constant' or 'vertex'.
+
+Each value from _primvars:skel:jointIndices_ gives the index of a joint,
+while the corresponding element from _primvars:skel:jointWeights_ provides
+the weight for that joint.
+
+Without setting any additional properties, the index values  stored by the
+_jointIndices_ primvar refers to joints in the ordering defined by the
+_joints_ attribute of the bound Skeleton. So, referring back to the definition
+of the Skeleton:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = ["Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"]
+    ...
+}
+\endcode
+
+Given the set of joints defined here, a value of **0** in _jointIndices_ refers
+to the `Shoulder` joint, a value of **1** refers to `Shoulder/Elbow`, and so
+forth.
+
+<b>Explicit Joint Orders</b>
+
+Instead of using the joint order declared on the Skeleton, it is also possible
+to define an explicit ordering directly on a skinned mesh. For example:
+
+\code
+def Mesh "Arm" {
+    ...
+    uniform token[] skel:joints = ["Shoulder/Elbow", "Shoulder"]
+    int[] primvars:skel:jointIndices = [1,1,1,1, 1,1,1,1, 0,0,0,0] (
+       interpolation = "vertex"
+       elementSize = 1
+    )
+    float[] primvars:skel:jointWeights = [1,1,1,1, 1,1,1,1, 1,1,1,1] (
+       interpolation = "vertex"
+       elementSize = 1
+    )
+    ...
+}
+\endcode
+
+Here, we have an explicit _skel:joints_ ordering. Using that ordering, a value
+of **0** in _jointIndices_ refers to the `Shoulder/Elbow` joint, and a value
+of **1** refers to the `Shoulder` joint.
+As with the _skel:skeleton_ and _skel:animationSource_ binding relationships,
+_primvars:skel:joints_ is an inherited property, and may be set set on
+ancestor primitives. For that matter, *all* primvars in USD inherited down
+namespace.
+
+
+\subsection UsdSkel_SchemaOverview_GeomBindTransform Skinning an Arm: Geom Bind Transform
+
+
+\code
+def Mesh "Arm" {
+    ...
+   matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+}
+\endcode
+
+The _primvars:skel:geomBindTransform_ primvar provides the world space
+transform of a skinned primitive at bind-time. As with the case of the Skeleton's
+bindTransform property, the bind transforms are given in world space, since
+that is how most DCC apps tend to encode the property.
+
+The points of the skinned primitive are transformed by the geomBindTransform prior to
+skinning.
+
+If left undefined, the geom bind transform is assumed to be the identity.
+
+*/

@@ -1,0 +1,715 @@
+/*!
+
+\page UsdSkel_API_Intro UsdSkel API Introduction 
+
+This page gives a brief introduction to using the UsdSkel API to read
+skel data encoded in USD.
+
+\section UsdSkel_API_SkeletonQuery Querying Skeleton Structure And Animation
+
+Given a scene that contains a UsdSkelSkeleton, a consuming application is free
+to access that primitive and reason about its structure on its own, if it
+chooses to do so. But UsdSkel also provides a more convenient API for querying
+data on a Skeleton: UsdSkelSkeletonQuery. A UsdSkelSkeletonQuery is created
+through a UsdSkelCache, using a UsdSkelSkeleton primtivive, as in the following
+example:
+
+- C++:
+\code{.cpp}
+UsdSkelCache skelCache;
+UsdSkelSkeleton skel = UsdSkelSkeleton.Get((stage, SdfPath("/Path/To/Skel")));
+UsdSkelSkeletonQuery skelQuery = skelCache.GetSkelQuery(skel);
+\endcode
+
+- Python:
+\code{.py}
+skelCache = UsdSkel.Cache()
+skel = UsdSkelSkeleton.Get(stage, "/Path/To/Skel");
+skelQuery = skelCache.GetSkelQuery(skel)
+\endcode
+
+As with other cache structures in Usd -- UsdGeomXformCache, UsdGeomBBoxCache,
+etc. -- the UsdSkelCache that was constructed here is meant to be a persistent
+cache. The cache is thread-safe, and can be re-used for any numbers of
+primitives. When reading a USD file, it is best to create a single UsdSkelCache
+to reuse for each new UsdSkelSkeleton that is encountered.
+
+A UsdSkelSkeletonQuery provides convenience methods for extracting joint
+transforms, in a variety of spaces.
+
+- C++:
+\code{.cpp}
+// Local-space joint transforms
+VtMatrix4dArray localSpaceXforms;
+skelQuery.ComputeJointLocalTransforms(&localSpaceXforms, time);
+
+// Joint transforms in the space of the Skeleton.
+VtMatrix4dArray skelSpaceXforms;
+skelQuery.ComputeJointSkelTransforms(&skelSpaceXforms, time);
+\endcode
+
+- Python:
+\code{.py}
+# Local-space joint transforms
+localSpaceXforms = skelQuery.ComputeJointLocalTransforms(time)
+
+# Joint transforms in the space of the Skeleton.
+skelSpaceXforms = skelQuery.ComputeJointSkelTransforms(time)
+\endcode
+
+Note that this allows the animated transforms of a Skeleton to be exracted
+without having to deal with some of the more complicated aspects of the
+Skeleton encoding, such as the inheritance of the _skel:animationSource_
+relationship.
+
+\subsection UsdSkel_API_JointPathsAndNames Joint Paths and Names
+
+Each joint in a Skeleton is identified by a token, which represents the
+path to a joint in a hierarchy. For example:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = [
+        "Shoulder", "Shoulder/Elbow", "Shoulder/Elbow/Hand"
+    ]
+    ...
+}
+\endcode
+
+Each of these tokens can be converted to an _SdfPath_, after which the SdfPath
+methods can be used to extract different components of the path. For instance,
+to extract just the _name_ component of each path (`Shoulder/Elbow` -> `Elbow`),
+do the following:
+
+- C++:
+\code{.cpp}
+for (size_t i = 0; i < skelQuery.GetJointOrder().size(); ++i) {
+    SdfPath jointPath(skelQuery.GetJointOrder()[i]);
+    std::cout << "Name of joint " << i << " is "
+              << jointPath.GetName() << std::endl;
+}
+\endcode
+
+- Python:
+\code{.py}
+for i,jointToken in enumerate(skelQuery.GetJointOrder()):
+    jointPath = Sdf.Path(jointToken)
+    print "Name of joint", i, "is", jointPath.name
+\endcode
+
+For the schema example above, this code will print:
+
+\verbatim
+Name of joint 0 is Shoulder
+Name of joint 1 is Elbow
+Name of joint 2 is Hand
+\endverbatim
+
+It should be noted that, if extracting the _name_ of a joint in this manner,
+joint names are not guaranteed to be unique. For example, suppose a Skeleton
+has two arms. That may be encoded as:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = [
+        "LeftShoulder", "LeftShoulder/Elbow", "LeftShoulder/Elbow/Hand",
+        "RighShoulder", "RightShoulder/Elbow", "RightShoulder/Elbow/Hand"
+    ]
+    ...
+}
+\endcode
+
+Although the _path_ of every joint is unique, there is no guarantee over the
+uniqueness of the _name_. This is true of primitives in USD in general: Names
+need not be globally unique, but rather only need to be unique amongst their
+sibling primitives.
+
+\subsection UsdSkel_API_JointHierarchy Querying the Joint Hierarchy
+
+The structure of the joint hierarchy itself can also be queried through
+the UsdSkelSkeletonQuery. For example, suppose that in an application,
+every joint is described as a _Joint_ object, which has a pointer to
+its parent _Joint_. Code for creating a _Joint_ object for every joint
+in a Skeleton might look something like the following:
+
+- C++:
+\code{.cpp}
+
+// The ordered set of Joint objects of an imaginary application.
+std::vector<Joint> joints;
+
+// GetTopology() returns a UsdSkelTopology object, which describes
+// the parent<->child relationships. It also gives the numer of joints.
+size_t numJoints = skelQuery.GetTopology().GetNumJoints();
+for (size_t i = 0; i < numJoints; ++i) {
+    std::string name = SdfPath(skelQuery.GetJointOrder()[i]).GetName();
+    int parent = skelQuery.GetTopology().GetParent(i);
+    if (parent >= 0) {
+        Joint parentJoint = joints[parent];
+        joints.push_back(Joint(name, parentJoint));
+    } else {
+        // Root joint
+        joints.push_back(Joint(name));
+    }
+}
+\endcode
+
+- Python:
+\code{.py}
+# The ordered set of Joint objects of an imaginary application.
+joints = []
+
+# GetTopology() returns a UsdSkel.Topology object, which describes
+# the parent<->child relationships. It also gives the number of joints.
+numJoints = len(skelQuery.GetTopology())
+for i in range(numJoints):
+    name = Sdf.Path(skelQuery.GetJointOrder()[i]).name
+    parent = skelQuery.GetTopology().GetParent(i)
+    if parent >= 0:
+        parentJoint = joints[parent]
+        joints.append(Joint(name, parentJoint))
+    else:
+        joints.append(Joint(name))
+\endcode
+
+In the above code snippet, indexing into the _joints_ array with the
+parent index of a joint might appear unsafe, since it might not be
+clear whether or not the parent joint had been constructed yet. However,
+it is a schema **requirement** that the set of joints is ordered, with
+parent joints coming before child joints. That is, linearly iterating
+through the ordered set of joints on a Skeleton must always describe
+a top-down hiearchy traversal. When a UsdSkelSkeletonQuery is constructed,
+its topology is validated, and the resulting query object is only valid
+if that topology check passes. So given a valid UsdSkelSkeletonQuery,
+the above code snippet will be safe.
+
+To further expand on that point, the _topology_ of a Skeleton may be directly
+validated as follows:
+
+- C++:
+\code{.cpp}
+UsdSkelSkeleton skel(skelPrim);
+VtTokenArray joints;
+if (skel.GetJointsAttr().Get(&joints)) {
+    UsdSkelTopology topology(joints);
+    std::string whyNot;
+    bool valid = topology.Validate(&whyNot);
+}
+\endcode
+
+- Python:
+\code{.py}
+skel = UsdSkel.Skeleton(skelPrim)
+joints = skel.GetJointsAttr().Get(joints)
+if joints:
+   topology = UsdSkel.Topology(joints)
+   valid,whyNot = topology.Validate()
+\endcode
+
+But again, if data is being queried through a UsdSkelSkeletonQuery, this
+validation occurs _automatically_.
+
+
+\section UsdSkel_API_SkeletonBindings Skeleton Bindings 
+
+Before applying skinning to primitives, we need to first identify which
+primitives are skinnable, and which Skeleton affects them. It is also desired
+that this discovery process helps facilitate data sharing. For instance,
+suppose a model consists of 1000 individual meshes. In order to skin those
+meshes on a GPU, we would need to first compute appropriate skinning transforms
+to upload to the GPU. It would be awfully inefficient to do that for each
+individual mesh -- I.e., to perform redundant computations, and upload the
+same set of transforms for each mesh.
+
+The following snippet demonstrates how this can be addressed efficiently
+through UsdSkel. We will show the complete code first, before describing
+the individual parts in more detail:
+
+- C++:
+\code{.cpp}
+UsdSkelCache skelCache;
+
+// Traverse through the prims on the stage to find where we might
+// have prims to skin.
+auto it = stage->Traverse();
+for (const UsdPrim& prim : it) {
+    if (prim.IsA<UsdSkelRoot>()) {
+        it.PruneChilren();
+
+        UsdSkelRoot skelRoot(prim);
+        skelCache.Populate(skelRoot);
+
+        std::vector<UsdSkelBinding> bindings;
+        skelCache.ComputeSkelBindings(skelRoot, &bindings);
+
+        // Iterate over the bindings related to this SkelRoot
+        for (const UsdSkelBinding& binding : bindings) {
+            // Get the Skeleton for this binding.
+            UsdSkelQuery skelQuery =
+                skelCache.GetSkelQuery(binding.GetSkeleton());
+
+            VtMatrix4dArray skinningXforms;
+            if (skelQuery.ComputeSkinningTransforms(&skinningXforms, time)) {
+
+                // Iterate over the prims that are skinned by this Skeleton.
+                for (const UsdSkelSkinningQuery& skinningQuery :
+                     binding.GetSkinningTargets()) {
+                     
+                   const UsdPrim& primToSkin = skinningQuery.GetPrim();
+                   // Process prim / apply skinning
+                }
+            }
+       }
+    }
+}
+\endcode
+
+- Python:
+\code{.py}
+skelCache = UsdSkel.Cache()
+
+# Traverse through the prims on the stage to find where we might
+# have prims to skin.
+it = iter(stage.Traverse())
+for prim in it:
+    if prim.IsA(UsdSkel.Root):
+        it.PruneChildren()
+        
+        skelRoot = UsdSkel.Root(prim)
+        skelCache.Populate(skelRoot)
+        
+        bindings = skelCache.ComputeSkelBindings(skelRoot)
+
+        # Iterate over the bindings related to this SkelRoot
+        for binding in bindings:
+            # Get the Skeleton for this binding.
+            skelQuery = skelCache.GetSkelQuery(binding.GetSkeleton())
+
+            skinningXforms = skelQuery.ComputeSkinningTransforms(time)
+            if skinningXforms:
+
+               # Iterate over the prims that are skinned by this Skeleton.   
+               for skinningQuery in binding.GetSkinningTargets():
+                   primToSkin = skinningQuery.GetPrim()
+                   # Process prim / apply skinning
+\endcode
+
+
+The first part of this should be familiar:
+
+- C++:
+\code{.cpp}
+UsdSkelCache skelCache;
+\endcode
+
+- Python:
+\code{.py}
+skelCache = UsdSkel.Cache()
+\endcode
+
+When accessing a UsdSkelSkeletonQuery for a Skeleton, we constructed a
+UsdSkelCache. Again, in a context where data is being read from USD, this cache
+is intended to persist and be reused across multiple prims (or multiple stages,
+for that matter). This code example actually makes for a good example of how the
+cache can be shared across multiple primitives.
+
+- C++:
+\code{.cpp}
+auto it = stage->Traverse();
+for (const UsdPrim& prim : it) {
+    if (prim.IsA<UsdSkelRoot>()) {
+        it.PruneChilren();
+        ...
+    }
+}
+\endcode
+
+- Python:
+\code{.py}
+it = iter(stage.Traverse())
+for prim in it:
+    if prim.IsA(UsdSkel.Root):
+        it.PruneChildren()
+        ...
+\endcode
+
+Here, we traverse through the primitives on the stage. When we encounter a
+UsdSkelRoot primitive, we know that we have discovered a branch of the
+scene graph that _might_ contain skeletally-posed models.
+
+Being able to identify subsets of the scene graph that contain skeletal
+characters is part of the motivation behind the existence of SkelRoot
+primitives. It is common in IO contexts to use the SkelRoot as a point
+for dispatching common computations needed when translating Skeletons.
+
+
+- C++:
+\code{.cpp}
+        UsdSkelRoot skelRoot(prim);
+        skelCache.Populate(skelRoot);
+
+        std::vector<UsdSkelBinding> bindings;
+        skelCache.ComputeSkelBindings(skelRoot, &bindings);
+\endcode
+
+- Python:
+\code{.py}
+        skelRoot = UsdSkel.Root(prim)
+        skelCache.Populate(skelRoot)
+
+        bindings = skelCache.ComputeSkelBindings(skelRoot)
+\endcode
+
+
+A UsdSkelBinding object is a simply a mapping of some Skeleton to a set of
+skinnable primitives. We can compute those mappings by way of the UsdSkelCache,
+but must first `Populate()` that section of the scene graph on the cache.
+
+What we gain from using this API is that the UsdSkelCache is doing all the
+work of properly resolving inherited binding properties for us, allowing us
+to get at the question we're really interested: What prims are we skinning,
+and with which Skeletons?
+
+- C++:
+\code{.cpp}
+        for (const UsdSkelBinding& binding : bindings) {
+            // Get the Skeleton for this binding.
+            UsdSkelQuery skelQuery =
+                skelCache.GetSkelQuery(binding.GetSkeleton());
+            ...
+        }
+\endcode
+
+- Python:
+\code{.py}
+        # Iterate over the bindings related to this SkelRoot
+        for binding in bindings:
+            # Get the Skeleton for this binding.
+            skelQuery = skelCache.GetSkelQuery(binding.GetSkeleton())
+            ...
+\endcode
+
+There could be any number of Skeletons beneath a SkelRoot. There will be
+a UsdSkelBinding associated with each uniquely bound Skeleton. So we must
+iterate over all of them.
+
+The binding holds a reference to the Skeleton. As we saw earlier, we
+can extract a UsdSkelSkeletonQuery from the UsdSkelCache using that Skeleton,
+which provides a more convenient API for extracting data from the Skeleton.
+
+- C++:
+\code{.cpp}
+            VtMatrix4dArray skinningXforms;
+            if (skelQuery.ComputeSkinningTransforms(&skinningXforms, time)) {
+               ...
+            }
+\endcode
+
+- Python:
+\code{.py}
+            skinningXforms = skelQuery.ComputeSkinningTransforms(time)
+            if skinningXforms:
+               ...
+\endcode
+
+The skinning transforms have been included at this point only as an example,
+to emphasize the point that this serves as a common code site at which
+properties related to a Skeleton can be computed, which are subsequently
+shared across all of the primitives that are skinned by that Skeleton.
+
+
+- C++:
+\code{.cpp}
+                // Iterate over the prims that are skinned by this Skeleton.
+                for (const UsdSkelSkinningQuery& skinningQuery :
+                     binding.GetSkinningTargets()) {
+                     
+                   const UsdPrim& primToSkin = skinningQuery.GetPrim();
+
+                   ...
+                }
+\endcode
+
+- Python:
+\code{.py}
+               # Iterate over the prims that are skinned by this Skeleton.   
+               for skinningQuery in binding.GetSkinningTargets():
+
+                   primToSkin = skinningQuery.GetPrim()
+                   ...
+\endcode
+
+
+At this point, we have a Skeleton -- or better yet, a UsdSkelSkeletonQuery --
+and can traverse over the 'skinning targets', which are the set of primitives
+that are skinned by that Skeleton.
+
+The set of skinned primitives are returned as UsdSkelSkinningQuery objects.
+Just as UsdSkelSkeletonQuery objects provide convenient API for querying
+data related to a Skeleton, a UsdSkelSkinningQuery provides convenient
+API for reading data related to primitives that are skinned, such as 
+joint influences. See the \ref UsdSkel_API_SkinningQuery "skinning query"
+section for more information.
+
+
+
+\subsection UsdSkel_API_DiscoveringBindings Discovering Bindings On Skinnable Primitives
+
+
+In the \ref UsdSkel_API_SkeletonBindings section, we explored a top-down
+traversal of a stage, which allowed us to efficiently associate a Skeleton with
+multiple prims that are affected by that Skeleton. Sometimes, such top-down
+traversal patterns are not possible, and we need to discover bindings the other
+way around: That is, given a primitive, discover the Skeleton that affects it,
+and begin computing data required to skin it.
+
+As with the previous section, we will start with a complete coding example,
+before breaking down the individual parts.
+
+- C++:
+\code{.cpp}
+UsdSkelCache skelCache;
+
+if (UsdSkelRoot skelRoot = UsdSkelRoot::Find(prim)) {
+   skelCache.Populate(skelRoot);
+
+    if (UsdSkelSkinningQuery skinningQuery = skelCache.GetSkinningQuery(prim)) {
+
+        // Find the Skeleton that should affect this prim.
+        UsdSkelSkeleton skel = UsdSkelBindingAPI(prim).GetInheritedSkeleton();
+        if (UsdSkelSkeletonQuery skelQuery = skelCache.GetSkelQuery(skel)) {
+            // Apply skinning?
+        }
+    }
+}
+\endcode
+
+- Python:
+\code{.py}
+skelCache = UsdSkel.Cache()
+
+skelRoot = UsdSkel.Root.Find(prim)
+if skelRoot:
+   skelCache.Populate(skelRoot)
+
+    skinningQuery = skelCache.GetSkinningQuery(prim)
+    if skinningQuery:
+
+        # Find the Skeleton that should affect this prim.
+        skel = UsdSkel.BindingAPI(prim).GetInheritedSkeleton()
+        skelQuery = skelCache.GetSkelQuery(skel);
+        if skelQuery:
+            # Apply skinning?
+\endcode
+
+Once more, the first line should seem familiar:
+
+- C++:
+\code{.cpp}
+UsdSkelCache skelCache;
+\endcode
+
+- Python:
+\code{.py}
+skelCache = UsdSkel.Cache()
+\endcode
+
+As with previous examples, we utilize a UsdSkelCache. Again, we emphasize
+that such caches should persist, and be shared across multiple prims.
+
+- C++:
+\code{.cpp}
+if (UsdSkelRoot skelRoot = UsdSkelRoot::Find(prim)) {
+   skelCache.Populate(skelRoot);
+
+    if (UsdSkelSkinningQuery skinningQuery = skelCache.GetSkinningQuery(prim)) {
+       ...
+    }
+}
+\endcode
+
+- Python:
+\code{.py}
+skelRoot = UsdSkel.Root.Find(prim)
+if skelRoot:
+   skelCache.Populate(skelRoot)
+
+    skinningQuery = skelCache.GetSkinningQuery(prim)
+    if skinningQuery:
+       ...
+\endcode
+
+We want to be able to extract a UsdSkelSkinningQuery, which provides useful
+utilities for working with skinnable primitives. As with UsdSkelSkeletonQuery
+objects, skinning queries are accessed through the UsdSkelCache. But before
+they are accessed, we need to `Populate()` the UsdSkelCache with the section
+of the scene graph that contains the skinnable primitive. Cache population
+causes the cache to be pre-populated with information about inherited bindings,
+which is necessary when accessing skinning queries.
+
+The SkelRoot that enapsulates a primitive can be found using UsdSkelRoot::Find.
+If no SkelRoot is found, that means that the primitive is not encapsulated
+within a SkelRoot, and so any properties on the prim related to skinning
+should be ignored.
+
+- C++:
+\code{.cpp}
+    if (UsdSkelSkinningQuery skinningQuery = skelCache.GetSkinningQuery(prim)) {
+       ...
+    }
+\endcode
+
+- Python:
+\code{.py}
+    skinningQuery = skelCache.GetSkinningQuery(prim)
+    if skinningQuery:
+       ...
+\endcode
+
+Having found a SkelRoot and populated the UsdSkelCache, we can access a
+UsdSkelSkinningQuery object for the primitive that is being skinned.
+If the resulting UsdSkelSkinningQuery is invalid, that means that either
+the primitive is not considered to be skinnable, or the skinning properties
+are malformed in some way. If the latter, appropriate warning messsages will
+have been posted.
+
+- C++:
+\code{.cpp}
+        // Find the Skeleton that should affect this prim.
+        UsdSkelSkeleton skel = UsdSkelBindingAPI(prim).GetInheritedSkeleton();
+        if (UsdSkelSkeletonQuery skelQuery = skelCache.GetSkelQuery(skel)) {
+            // Apply skinning?
+        }
+\endcode
+
+- Python:
+\code{.py}
+        # Find the Skeleton that should affect this prim.
+        skel = UsdSkel.BindingAPI(prim).GetInheritedSkeleton()
+        skelQuery = skelCache.GetSkelQuery(skel);
+        if skelQuery:
+            # Apply skinning?
+\endcode
+
+
+If we've acquired a valid UsdSkelSkinningQuery, we know that a primitive is
+a valid candidate for skinning. The next logical step might be to determine
+which Skeleton affects skinning. UsdSkelBindingAPI::GetInheritedSkeleton
+can be used to discover the bound Skeleton, based on the inherited
+_skel:skeleton_ binding properties. As before, once we have a Skeleton,
+we can get access to a UsdSkelSkeletonQuery to assist value extraction.
+
+
+\subsection UsdSkel_API_SkinningQuery UsdSkelSkinningQuery: Extracting joint influences
+
+
+Coding examples from the previous sections demonstrated how to
+find skinnable primitives and gain access to a UsdSkelSkinningQuery object
+for a skinnable primitive. Here we briefly demonstrate some of the basic
+queries that can be used to extract joint influences from skinning queries:
+
+- C++:
+\code{.cpp}
+VtIntArray jointIndices;
+VtFloatArray jointWeights;
+skinningQuery.ComputeJointInfluences(&jointIndices, &jointWeights);
+\endcode
+
+- Python:
+\code{.py}
+influences = skinningQuery.ComputeJointInfluences()
+if influences:
+    jointIndices,jointWeights = influences
+\endcode
+
+Use UsdSkelSkinningQuery::IsRigidlyDeformed to determine whether or not
+these arrays represent rigid influences, or varying (per-point) influences.
+
+If the skinnable primitive is *not* rigidly deforming, then these arrays
+store a fixed number of influences per point. The full set of influences
+for the first point come first, followed by the influences for the second
+point, and so forth. UsdSkelSkinningQuery::ComputeVaryingJointInfluences
+
+returns the number of influences that map to each point.
+
+If the skinnable primitive is rigidly deforming, then all of the resulting
+influences apply to *every point*. Such a deformation can also be applied
+by altering a primitive's transform -- hence, a rigid deformation. It is
+up to the client to determine how to deal with rigid influences.
+
+Not all applications are capable of dealing with rigid transformations.
+If that's the case, UsdSkelSkinningQuery::ComputeVaryingJointInfluences
+can be used instead:
+
+- C++:
+\code{.cpp}
+VtIntArray jointIndices;
+VtFloatArray jointWeights;
+skinningQuery.ComputeVaryingJointInfluences(
+    numPoints, &jointIndices, &jointWeights);
+\endcode
+
+- Python:
+\code{.py}
+influences = skinningQuery.ComputeVaryingJointInfluences(numPoints)
+if influences:
+    jointIndices,jointWeights = influences
+\endcode
+
+When calling UsdSkelSkinningQuery::ComputeVaryingJointInfluences, rigid
+influences are automatically expanded out to define per-point influences.
+
+Another restriction encountered in some applications is that they have a limit
+on the number of influences that may be specified per point. We do not feel
+that it is appropriate to enforce such application-specific limitations on
+the storage encoding, so UsdSkel has defines no limit on the number of
+influences.
+
+However, UsdSkel does provide utility methods to allow influence arrays to be
+resized, which such applications may use:
+
+- C++:
+\code{.cpp}
+int numInfluencesPerComponent = skinningQuery.GetNumInfluencesPerComponent();
+if (numInfluencesPerComponent > 4) {
+   UsdSkelResizeInfluences(&jointIndices, numInfluencesPerComponent, 4);
+   UsdSkelResizeInfluences(&jointWeights, numInfluencesPerComponent, 4);
+}
+\endcode
+
+- Python:
+\code{.py}
+numInfluencesPerComponent = skinningQuery.GetNumInfluencesPerComponent()
+if numInfluencesPerComponent > 4:
+   UsdSkel.ResizeInfluences(jointIndices, numInfluencesPerComponent, 4);
+   UsdSkel.ResizeInfluences(jointWeights, numInfluencesPerComponent, 4);
+\endcode
+
+
+\section UsdSkel_API_BakeSkinning Testing Skinning with UsdSkelBakeSkinning
+
+UsdSkel provides a \ref UsdSkelBakeSkinning method that bakes the results of
+skinning directly into points and transforms, effectively converting skeletally
+posed primitives into normal geometry caches, with no special skeletal
+behaviors.
+
+UsdSkelBakeSkinning is intended both to serve as a reference implementation
+for skinning, and to help facilitate testing. Note that it is meant only
+for testing, and emphasizes correctness over performance. It should not be
+used in performance-sensitive contexts.
+
+Skinning can be baked on a stage as follows:
+
+- C++:
+\code{.cpp}
+UsdSkelBakeSkinning(stage->Traverse());
+stage->Save();
+\endcode
+
+- Python:
+\code{.py}
+UsdSkel.BakeSkinning(stage.Traverse());
+stage.Save();
+\endcode
+
+*/
