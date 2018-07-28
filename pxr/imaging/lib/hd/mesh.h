@@ -59,7 +59,8 @@ struct HdMeshReprDesc {
                    bool blendWireframeColor = true,
                    bool doubleSided = false,
                    float lineWidth = 0,
-                   bool useCustomDisplacement = true)
+                   bool useCustomDisplacement = true,
+                   bool enableScalarOverride = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
@@ -68,6 +69,7 @@ struct HdMeshReprDesc {
         , doubleSided(doubleSided)
         , lineWidth(lineWidth)
         , useCustomDisplacement(useCustomDisplacement)
+        , enableScalarOverride(enableScalarOverride)
         {}
 
     /// The rendering style: draw refined/unrefined, edge, points, etc.
@@ -88,6 +90,10 @@ struct HdMeshReprDesc {
     float           lineWidth;
     /// Should this mesh use displacementShader() to displace points?
     bool            useCustomDisplacement;
+    /// Should scalar override be allowed on this drawItem.
+    /// scalar override allows for visualization of a single float value
+    /// across a prim.
+    bool            enableScalarOverride;
 };
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.

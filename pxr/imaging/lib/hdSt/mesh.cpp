@@ -1479,6 +1479,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  cullStyle,
                                  geomStyle,
                                  desc.lineWidth,
+                                 desc.enableScalarOverride,
                                  discardIfNotActiveSelected,
                                  discardIfNotRolloverSelected);
 

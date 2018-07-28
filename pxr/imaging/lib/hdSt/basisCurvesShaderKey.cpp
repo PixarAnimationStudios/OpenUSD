@@ -106,6 +106,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // terminals
     ((surfaceFS,                       "Fragment.Surface"))
     ((commonFS,                        "Fragment.CommonTerminals"))
+    ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
 
 static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
@@ -255,6 +256,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->commonFS;
     FS[fsIndex++] = _tokens->surfaceFS;
+    FS[fsIndex++] = _tokens->scalarOverrideFS;
 
     // we don't currently ever set primType to PRIM_POINTS for curves, but
     // if we ever want to view them as just points, this allows point picking to

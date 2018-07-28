@@ -107,6 +107,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((hullColorFS,             "Fragment.HullColor"))
     ((pointColorFS,            "Fragment.PointColor"))
+    ((scalarOverrideFS,        "Fragment.ScalarOverride"))
+    ((noScalarOverrideFS,      "Fragment.NoScalarOverride"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
@@ -121,6 +123,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
     float lineWidth,
+    bool enableScalarOverride,
     bool discardIfNotActiveSelected /*=false*/,
     bool discardIfNotRolloverSelected /*=false*/)
     : primType(primitiveType)
@@ -319,6 +322,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // Common must be first as it defines terminal interfaces
     FS[fsIndex++] = _tokens->commonFS;
     FS[fsIndex++] = terminalFS;
+
+    FS[fsIndex++] =  enableScalarOverride ? _tokens->scalarOverrideFS :
+                                            _tokens->noScalarOverrideFS;
 
     // EdgeId mixin(s) for edge picking and selection
     if (gsStageEnabled) {

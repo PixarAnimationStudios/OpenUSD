@@ -54,6 +54,7 @@ struct HdSt_MeshShaderKey
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
                        float lineWidth,
+                       bool enableScalarOverride,
                        bool discardIfNotActiveSelected = false,
                        bool discardIfNotRolloverSelected = false);
 
@@ -89,7 +90,7 @@ struct HdSt_MeshShaderKey
     TfToken TCS[3];
     TfToken TES[3];
     TfToken GS[8];
-    TfToken FS[15];
+    TfToken FS[16];
 };
 
 

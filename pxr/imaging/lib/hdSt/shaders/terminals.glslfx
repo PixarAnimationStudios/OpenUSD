@@ -130,39 +130,6 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     return ApplyColorOverridesPostLighting(litColor); 
 }
 
-
-ScalarOverride GetScalarOverride()
-{
-    ScalarOverride result;
-
-#if defined(HD_HAS_scalarOverride)
-    result.enabled = true;
-
-    // Allow a scalar value to override the color from the surface
-    // for previewing heatmaps. This is useful for editing workflows.
-#if defined(HD_HAS_scalarOverrideColorRamp)
-    int rampCount = constantPrimvars[GetDrawingCoord().constantCoord].
-                scalarOverrideColorRamp.length();
-    float scalar = HdGet_scalarOverride() * float(rampCount - 1);
-    float baseIndex = floor(scalar);
-    float nextIndex = min(float(rampCount - 1), baseIndex + 1.0);
-    float interp = scalar - baseIndex;
-    result.color = mix(HdGet_scalarOverrideColorRamp(int(baseIndex)).rgb,
-                       HdGet_scalarOverrideColorRamp(int(nextIndex)).rgb,
-                       interp);
-#else
-    // If no ramp is given just gamma correct the scalar as greyscale.
-    result.color = vec3(pow(HdGet_scalarOverride(), 2.2));
-#endif // HD_HAS_scalarOverrideColorRamp
-
-#else // HD_HAS_scalarOverride
-    result.enabled = false;
-    result.color   = vec3(0.0, 0.0, 0.0); 
-#endif
-
-    return result;
-}
-
 --- --------------------------------------------------------------------------
 -- glsl Fragment.Surface
 
@@ -433,4 +400,52 @@ ReprStyle GetReprStyle()
     reprStyle.useSurfaceShaderAlpha    = false;
     
     return reprStyle; 
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Fragment.ScalarOverride
+
+ScalarOverride GetScalarOverride()
+{
+    ScalarOverride result;
+
+#if defined(HD_HAS_scalarOverride)
+    result.enabled = true;
+
+    // Allow a scalar value to override the color from the surface
+    // for previewing heatmaps. This is useful for editing workflows.
+#if defined(HD_HAS_scalarOverrideColorRamp)
+    int rampCount = constantPrimvars[GetDrawingCoord().constantCoord].
+                scalarOverrideColorRamp.length();
+    float scalar = HdGet_scalarOverride() * float(rampCount - 1);
+    float baseIndex = floor(scalar);
+    float nextIndex = min(float(rampCount - 1), baseIndex + 1.0);
+    float interp = scalar - baseIndex;
+    result.color = mix(HdGet_scalarOverrideColorRamp(int(baseIndex)).rgb,
+                       HdGet_scalarOverrideColorRamp(int(nextIndex)).rgb,
+                       interp);
+#else
+    // If no ramp is given just gamma correct the scalar as greyscale.
+    result.color = vec3(pow(HdGet_scalarOverride(), 2.2));
+#endif // HD_HAS_scalarOverrideColorRamp
+
+#else // HD_HAS_scalarOverride
+    result.enabled = false;
+    result.color   = vec3(0.0, 0.0, 0.0); 
+#endif
+
+    return result;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Fragment.NoScalarOverride
+
+ScalarOverride GetScalarOverride()
+{
+    ScalarOverride result;
+    
+    result.enabled = false;
+    result.color   = vec3(0.0, 0.0, 0.0); 
+
+    return result;    
 }
