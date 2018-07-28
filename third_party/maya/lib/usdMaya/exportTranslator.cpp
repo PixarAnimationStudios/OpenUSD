@@ -189,9 +189,14 @@ UsdMayaExportTranslator::identifyFile(
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()   || 
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
+    if (fileExtension ==
+            UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
+        fileExtension ==
+            UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() || 
+        fileExtension ==
+            UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText() ||
+        fileExtension ==
+            UsdMayaTranslatorTokens->UsdFileExtensionPackage.GetText()) {
         retValue = kIsMyFileType;
     }
 

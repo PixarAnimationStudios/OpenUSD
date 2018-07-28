@@ -35,20 +35,14 @@
 #include "usdMaya/chaser.h"
 #include "usdMaya/chaserRegistry.h"
 
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/kind/registry.h"
-
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usd/editContext.h"
-#include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usdGeom/metrics.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdUtils/pipeline.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashset.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stl.h"
-
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
 // Needed for directly removing a UsdVariant via Sdf
@@ -56,6 +50,15 @@
 //   XXX [bug 75864]
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
+#include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usd/editContext.h"
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usd/usdcFileFormat.h"
+#include "pxr/usd/usdGeom/metrics.h"
+#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdUtils/pipeline.h"
+#include "pxr/usd/usdUtils/dependencies.h"
 
 #include <maya/MFnDagNode.h>
 #include <maya/MFnRenderLayer.h>
@@ -64,6 +67,9 @@
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
+
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <limits>
 #include <map>
@@ -83,7 +89,24 @@ UsdMaya_WriteJob::~UsdMaya_WriteJob()
 {
 }
 
-bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
+/// Generates a name for a temporary USD stage in \p dir.
+/// Unless you are very, very unlucky, the stage name is unique because it's
+/// generated from a UUID.
+static
+std::string
+_MakeTmpStageName(const std::string& dir)
+{
+    const std::string uuid =
+            boost::uuids::to_string(boost::uuids::random_generator()());
+    const std::string fileName =
+            TfStringPrintf(
+                "tmp-%s.%s",
+                uuid.c_str(),
+                UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    return TfStringCatPaths(dir, fileName);
+}
+
+bool UsdMaya_WriteJob::beginJob(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -106,19 +129,51 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
     }  // for m
 
     // Make sure the file name is a valid one with a proper USD extension.
-    const std::string iFileExtension = TfStringGetSuffix(iFileName, '.');
-    if (SdfLayer::IsAnonymousLayerIdentifier(iFileName) ||
-            iFileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault ||
-            iFileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII ||
-            iFileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate) {
-        mFileName = iFileName;
-    } else {
-        mFileName = TfStringPrintf("%s.%s",
-                                   iFileName.c_str(),
-                                   UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    const std::string fileExt = TfGetExtension(fileName);
+    if (SdfLayer::IsAnonymousLayerIdentifier(fileName) ||
+            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionDefault ||
+            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionASCII ||
+            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate) {
+        // Standard, non-packaged file types.
+        _fileName = fileName;
+    }
+    else if (fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
+        // Packaged file type (usdz). We'll write to a temporary usdc file, and
+        // then package it into the final usdz file at the end of the write job.
+        if (append) {
+            TF_RUNTIME_ERROR("Cannot append to USDZ packages");
+            return false;
+        }
+
+        // `_fileName` is the export stage, which is a temporary file.
+        _fileName = _MakeTmpStageName(TfGetPathName(fileName));
+        if (TfPathExists(_fileName)) {
+            // This shouldn't happen (since we made the temp stage name from
+            // a UUID). Don't try to recover.
+            TF_RUNTIME_ERROR(
+                    "Temporary stage '%s' already exists", _fileName.c_str());
+            return false;
+        }
+
+        // `fileName` is actually the final package's file name.
+        // Since we're packaging a temporary stage file that has an
+        // auto-generated name, create a nicer name for the root layer -- it's
+        // just the package's base name but with ".usd" instead of ".usdz".
+        _packageName = fileName;
+        _packageRootName = TfStringPrintf(
+                "%s.%s",
+                TfStringGetBeforeSuffix(TfGetBaseName(fileName)).c_str(),
+                UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+    }
+    else {
+        // No extension; assume a usdc (crate) file.
+        _fileName = TfStringPrintf(
+                "%s.%s",
+                fileName.c_str(),
+                UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     }
 
-    TF_STATUS("Creating stage file '%s'", mFileName.c_str());
+    TF_STATUS("Creating stage file '%s'", _fileName.c_str());
 
     if (mJobCtx.mArgs.renderLayerMode == PxrUsdExportJobArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
@@ -128,7 +183,7 @@ bool UsdMaya_WriteJob::beginJob(const std::string &iFileName, bool append)
         }
     }
 
-    if (!mJobCtx.openFile(mFileName, append)) {
+    if (!mJobCtx.openFile(_fileName, append)) {
         return false;
     }
 
@@ -408,12 +463,27 @@ void UsdMaya_WriteJob::endJob()
     for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();
     }
+
+    TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
         mJobCtx.mStage->GetRootLayer()->Save();
     }
+
+    // If we are making a usdz archive, invoke the packaging API and then clean
+    // up the non-packaged stage file.
+    if (!_packageName.empty()) {
+        TF_STATUS("Packaging USDZ file");
+        UsdUtilsCreateNewUsdzPackage(
+                SdfAssetPath(_fileName),
+                _packageName,
+                _packageRootName);
+
+        // The original stage was just a temp file, so clean it up now.
+        TfDeleteFile(_fileName);
+    }
+
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
-    TF_STATUS("Saving stage");
 }
 
 TfToken UsdMaya_WriteJob::writeVariants(const UsdPrim &usdRootPrim)

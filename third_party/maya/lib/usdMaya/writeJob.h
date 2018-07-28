@@ -70,8 +70,14 @@ class UsdMaya_WriteJob
     
   private:
     // Name of the created/appended USD file
-    std::string mFileName;
-    
+    std::string _fileName;
+
+    // Name of destination packaged archive.
+    std::string _packageName;
+
+    // Name of the root layer in the packaged archive.
+    std::string _packageRootName;
+
     // Name of current layer since it should be restored after looping over them
     MString mCurrentRenderLayerName;
     

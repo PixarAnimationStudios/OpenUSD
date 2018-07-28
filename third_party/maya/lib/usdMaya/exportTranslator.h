@@ -68,7 +68,7 @@ class UsdMayaExportTranslator : public MPxFileTranslator
             return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
         }
         MString filter() const override {
-            return UsdMayaTranslatorTokens->UsdFileFilter.GetText();
+            return UsdMayaTranslatorTokens->UsdWritableFileFilter.GetText();
         }
 
         PXRUSDMAYA_API

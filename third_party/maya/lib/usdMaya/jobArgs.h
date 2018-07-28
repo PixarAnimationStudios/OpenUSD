@@ -50,7 +50,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UsdFileExtensionDefault, "usd")) \
     ((UsdFileExtensionASCII, "usda")) \
     ((UsdFileExtensionCrate, "usdc")) \
-    ((UsdFileFilter, "*.usd *.usda *.usdc"))
+    ((UsdFileExtensionPackage, "usdz")) \
+    ((UsdReadableFileFilter, "*.usd *.usda *.usdc")) \
+    ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaTranslatorTokens,
