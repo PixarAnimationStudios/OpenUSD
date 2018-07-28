@@ -221,6 +221,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vector)                                    \
     (normal)                                    \
     (point)                                     \
+    (pointsVisibility)                          \
     (textureCoordinate)
 
 /* Schema for "Alternate Output Values" rendering,

@@ -86,6 +86,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _packedSmoothNormals(IsEnabledPackedNormals())
     , _limitNormals(false)
     , _sceneNormals(false)
+    , _pointsVisibilityAuthored(false)
     , _cullStyle(HdCullStyleDontCare)
 {
     /*NOTHING*/
@@ -513,6 +514,37 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
     return source;
 }
 
+// XXX: Temporary methods to expand a sparse input of invisible point indices
+// into the pointsVisibility vertex primvar thats used to discard invisible
+// points when using the points repr.
+static HdBufferSourceSharedPtr
+_GetExpandedPointsVisibilityBuffer(VtValue input,
+                                   int numPoints)
+{
+    TF_VERIFY(input.IsArrayValued() &&
+              input.GetArraySize() > 0);
+
+    VtArray<float> pointsVisibility(numPoints, 1.0f);
+    const VtIntArray& invisiblePoints = input.UncheckedGet<VtIntArray>();
+    for (VtIntArray::const_iterator i = invisiblePoints.begin(),
+                                  end = invisiblePoints.end(); i != end; ++i) {
+        pointsVisibility[*i] = 0.0f;
+    }
+
+    return HdBufferSourceSharedPtr(
+        new HdVtBufferSource(HdPrimvarRoleTokens->pointsVisibility,
+                             VtValue(pointsVisibility)) );
+}
+
+static HdBufferSourceSharedPtr
+_GetAllVisiblePointsVisibilityBuffer(int numPoints)
+{
+    VtArray<float> pointsVisibility(numPoints, 1.0f);
+    return HdBufferSourceSharedPtr(
+        new HdVtBufferSource(HdPrimvarRoleTokens->pointsVisibility,
+                             VtValue(pointsVisibility)) );
+}
+
 void
 HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
@@ -618,6 +650,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    bool mergePointsVisibilityIntoBAR = false;
+
     // Track index to identify varying primvars.
     int i = 0;
     for (HdPrimvarDescriptor const& primvar: primvars) {
@@ -637,6 +671,36 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             HdBufferSourceSharedPtr source(
                 new HdVtBufferSource(primvar.name, value));
 
+            // XXX: special temporary handling for 'pointsVisibility'
+            if (primvar.name == HdPrimvarRoleTokens->pointsVisibility) {
+                bool hasInvisiblePoints = (source->GetNumElements() > 0);
+                if (!_pointsVisibilityAuthored && !hasInvisiblePoints) {
+                    // nothing to do; it isn't part of the vertex BAR.
+                    continue;
+                }
+
+                // At this point, we have the following possibilities:
+                // 1) Have invisible points AND it is part of the vertex BAR
+                //    => Expand the sparse representation and add it as a source
+                // 2) Have NO invisible points BUT it is part of the BAR
+                //    => Create a redundant source filled with 1's
+                // 3) Have invisible points BUT it is not part of the vertex BAR
+                //    => Merge it into the BAR and set
+                //       _pointsVisibilityAuthored to true
+                if (hasInvisiblePoints && _pointsVisibilityAuthored) {
+                    source =
+                        _GetExpandedPointsVisibilityBuffer(value, numPoints);
+                } else if (!hasInvisiblePoints && _pointsVisibilityAuthored) {
+                    source = _GetAllVisiblePointsVisibilityBuffer(numPoints);
+                } else {
+                    TF_VERIFY(hasInvisiblePoints && !_pointsVisibilityAuthored);
+                    source =
+                        _GetExpandedPointsVisibilityBuffer(value, numPoints);
+                    _pointsVisibilityAuthored = true;
+                    mergePointsVisibilityIntoBAR = true;
+                }
+            } // special handling for pointsVisibility
+            
             // verify primvar length -- it is alright to have more data than we
             // index into; the inverse is when we issue a warning and skip
             // update.
@@ -898,7 +962,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // added additional items (smooth normals) or we may be transitioning
         // to unpacked normals
         bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
-                     (usePackedSmoothNormals != _packedSmoothNormals);
+                     (usePackedSmoothNormals != _packedSmoothNormals) ||
+                     mergePointsVisibilityIntoBAR;
 
         HdBufferArrayRangeSharedPtr range = bar;
 

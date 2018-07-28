@@ -168,6 +168,7 @@ private:
     bool _packedSmoothNormals;
     bool _limitNormals;
     bool _sceneNormals;
+    bool _pointsVisibilityAuthored;
     HdInterpolation _sceneNormalsInterpolation;
 
     HdCullStyle _cullStyle;
