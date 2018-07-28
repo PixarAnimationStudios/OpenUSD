@@ -543,6 +543,22 @@ Glf_StbImage::_OpenForWriting(std::string const & filename)
     return true;
 }
 
+namespace
+{
+
+uint8_t
+_Quantize(float value)
+{
+    static const int min = 0;
+    static const int max = std::numeric_limits<uint8_t>::max();
+
+    int result = min + std::floor((max - min) * value + 0.499999f);
+    return std::min(max, std::max(min, result));
+}
+
+
+} // end anonymous namespace
+
 /// Writes image data stored in storage.data to a file (specified by _filename
 /// during _OpenForWriting).  Valid file types are jpg, png, bmp, tga, and hdr.
 /// Expects data to be of type GL_FLOAT when writing
@@ -551,21 +567,45 @@ Glf_StbImage::_OpenForWriting(std::string const & filename)
 /// file type.
 /* virtual */
 bool
-Glf_StbImage::Write(StorageSpec const & storage,
+Glf_StbImage::Write(StorageSpec const & storageIn,
                      VtDictionary const & metadata)
 {
-    std::string fileExtension = _GetFilenameExtension();
-    if (storage.type != GL_UNSIGNED_BYTE && fileExtension != "hdr")
+    const std::string fileExtension = _GetFilenameExtension();
+
+    StorageSpec quantizedSpec;
+    std::unique_ptr<uint8_t[]> quantizedData;
+    if (storageIn.type == GL_FLOAT && fileExtension != "hdr") 
     {
+        // stb requires unsigned byte data to write non .hdr file formats.
+        // We'll quantize the data ourselves here.
+        size_t numElements = 
+            storageIn.width * storageIn.height *
+            _GetNumChannelsFromGLFormat(storageIn.format);
+
+        quantizedData.reset(new uint8_t[numElements]);
+
+        const float* inData = static_cast<float*>(storageIn.data);
+        for (size_t i = 0; i < numElements; ++i) {
+            quantizedData[i] = _Quantize(inData[i]);
+        }
+
+        quantizedSpec = storageIn; // shallow copy
+        quantizedSpec.data = quantizedData.get();
+        quantizedSpec.type = GL_UNSIGNED_BYTE;
+    }
+    else if (storageIn.type != GL_UNSIGNED_BYTE && fileExtension != "hdr") {
         TF_CODING_ERROR("stb expects unsigned byte data to write filetype %s",
                         fileExtension.c_str());
         return false;
     }
-    else if (storage.type != GL_FLOAT && fileExtension == "hdr")
+    else if (storageIn.type != GL_FLOAT && fileExtension == "hdr") 
     {
         TF_CODING_ERROR("stb expects linear float data to write filetype hdr");
         return false;
     }
+
+    StorageSpec const& storage = quantizedData ? quantizedSpec : storageIn;
+
     //set info to match storage
     _GetInfoFromStorageSpec(storage); 
 
