@@ -978,7 +978,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                                     numInfluencesPerPoint,
                                     points->data(), points->size());
     } else {
-        TF_WARN("jointIndices.size() [%zu]! = jointWeights.size() [%zu].",
+        TF_WARN("jointIndices.size() [%zu] != jointWeights.size() [%zu].",
                 jointIndices.size(), jointWeights.size());
     }
     return false;
@@ -1158,7 +1158,7 @@ _GetSkinningTimeSamples(const UsdPrim& prim,
 
     // Include time samples that affect the local-to-world transform
     // (necessary because world space transforms are used to push
-    //  defomrations in skeleton-space back into normal prim space.
+    //  deformations in skeleton-space back into normal prim space.
     //  See the notes in the deformation methods for more on why.
     if(_GetWorldTransformTimeSamples(prim, interval, &propertyTimes)) {
         _MergeTimeSamples(times, propertyTimes, &tmpTimes);
