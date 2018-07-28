@@ -33,7 +33,6 @@
 #include "pxr/base/tf/traits.h"
 #include "pxr/base/tf/typeFunctions.h"
 
-#include <boost/function.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/operators.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -76,7 +75,7 @@ class TfType : boost::totally_ordered<TfType>
 
 public:
     /// Callback invoked when a declared type needs to be defined.
-    typedef boost::function<void (TfType)> DefinitionCallback;
+    using DefinitionCallback = void (*)(TfType);
 
     /// Base class of all factory types.
     class FactoryBase {
@@ -448,7 +447,7 @@ public:
     static TfType const&
     Declare( const std::string & typeName,
              const std::vector<TfType> & bases,
-             DefinitionCallback definitionCallback=0 );
+             DefinitionCallback definitionCallback=nullptr );
 
     /// Define a TfType with the given C++ type T and C++ base types
     /// B.  Each of the base types will be declared (but not defined)

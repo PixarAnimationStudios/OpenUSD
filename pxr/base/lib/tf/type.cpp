@@ -192,6 +192,7 @@ struct TfType::_TypeInfo : boost::noncopyable
     _TypeInfo(const string &newTypeName) :
         canonicalTfType(this),
         typeName(newTypeName),
+        definitionCallback(nullptr),
         typeInfo(nullptr),
         sizeofType(0),
         isPodType(false),
