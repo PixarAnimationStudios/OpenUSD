@@ -44,7 +44,7 @@ def _Print(stream, msg):
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
-def _CreateUsdz(usdzFile, filesToAdd, recurse, verbose):
+def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, verbose):
     with Usd.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
         while filesToAdd:
             # Pop front (first file) from the list of files to add.
@@ -57,6 +57,9 @@ def _CreateUsdz(usdzFile, filesToAdd, recurse, verbose):
                 # If the recurse flag is not specified, remove sub-directories.
                 if not recurse:
                     filesInDir = [f for f in filesInDir if not os.path.isdir(f)]
+                # glob.glob returns files in arbitrary order. Hence, sort them
+                # here to get consistent ordering of files in the package.
+                filesInDir.sort()
                 filesToAdd += filesInDir
             else:
                 if verbose:
@@ -147,7 +150,7 @@ def main():
             print('Not recursing into sub-directories.')
 
     if len(filesToAdd) > 0:
-        _CreateUsdz(usdzFile, filesToAdd, args.recurse, args.verbose)
+        _CreateUsdzPackage(usdzFile, filesToAdd, args.recurse, args.verbose)
     elif args.asset:
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.asset)
