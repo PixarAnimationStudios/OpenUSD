@@ -246,7 +246,8 @@ UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     TfToken primvarName = primvar.GetPrimvarName();
     if (primvar.ComputeFlattened(&v, time)) {
         TF_DEBUG(USDIMAGING_SHADERS)
-            .Msg("Found primvar %s\n", primvarName.GetText());
+            .Msg("Found primvar %s on <%s>\n", 
+                primvarName.GetText(), gprim.GetPath().GetText());
         valueCache->GetPrimvar(cachePath, primvarName) = v;
         _MergePrimvar(&valueCache->GetPrimvars(cachePath),
                       primvarName, 

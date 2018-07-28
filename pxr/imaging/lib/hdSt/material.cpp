@@ -179,8 +179,10 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         bool hasPtex = false;
         for (HdMaterialParam const & param: params) {
             if (param.IsPrimvar()) {
-                // skip -- maybe not necessary, but more memory efficient
-                continue;
+                HdBufferSourceSharedPtr source(
+                    new HdVtBufferSource(param.GetName(), 
+                        param.GetFallbackValue()));
+                sources.push_back(source);
             } else if (param.IsFallback()) {
                 VtValue paramVt = GetMaterialParamValue(sceneDelegate,
                                                         param.GetName());
