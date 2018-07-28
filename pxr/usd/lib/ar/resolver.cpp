@@ -23,6 +23,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/debugCodes.h"
 #include "pxr/usd/ar/defaultResolver.h"
 #include "pxr/usd/ar/definePackageResolver.h"
@@ -380,11 +381,23 @@ public:
         const std::string& path, 
         ArAssetInfo* assetInfo) override
     {
-        return _ResolveHelper(
+        std::string resolvedPath = _ResolveHelper(
             path, 
             [assetInfo, this](const std::string& path) {
                 return _resolver->ResolveWithAssetInfo(path, assetInfo);
             });
+
+        // If path was a package-relative path, make sure the repoPath field
+        // is also a package-relative path, since the primary resolver would
+        // only have been given the outer package path.
+        if (assetInfo && !assetInfo->repoPath.empty() && 
+            ArIsPackageRelativePath(resolvedPath)) {
+            assetInfo->repoPath = ArJoinPackageRelativePath(
+                assetInfo->repoPath,
+                ArSplitPackageRelativePathOuter(resolvedPath).second);
+        }
+
+        return resolvedPath;
     }
 
     virtual void UpdateAssetInfo(
@@ -394,12 +407,31 @@ public:
         ArAssetInfo* assetInfo) override
     {
         if (ArIsPackageRelativePath(identifier)) {
+            // The primary resolver is not expecting package-relative paths,
+            // so we replace the repoPath field with its outermost package
+            // path before passing it along. After the primary resolver
+            // has updated the assetInfo object, recreate the package-relative
+            // path. This matches the behavior in ResolveWithAssetInfo.
+            if (!assetInfo->repoPath.empty()) {
+                assetInfo->repoPath = ArSplitPackageRelativePathOuter(
+                    assetInfo->repoPath).first;
+            }
+
+            std::pair<std::string, std::string> resolvedPath =
+                ArSplitPackageRelativePathOuter(filePath);
+
             _resolver->UpdateAssetInfo(
                 ArSplitPackageRelativePathOuter(identifier).first,
-                ArSplitPackageRelativePathOuter(filePath).first,
+                resolvedPath.first,
                 fileVersion, assetInfo);
+
+            if (!assetInfo->repoPath.empty()) {
+                assetInfo->repoPath = ArJoinPackageRelativePath(
+                    assetInfo->repoPath, resolvedPath.second);
+            }
             return;
         }
+
         _resolver->UpdateAssetInfo(
             identifier, filePath, fileVersion, assetInfo);
     }
