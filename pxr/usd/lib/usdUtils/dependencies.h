@@ -26,7 +26,14 @@
 
 /// \file usdUtils/dependencies.h
 ///
-/// Utilities for extracting asset dependencies from a USD file.
+/// Utilities for the following tasks that require consideration of a USD
+/// asset's external dependencies:
+/// * extracting asset dependencies from a USD file.
+/// * creating a USDZ package containing a given asset and all of its external 
+/// dependencies.
+/// * some time in the future, localize a given asset and all of its 
+/// dependencies into a specified directory.
+/// 
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/api.h"
@@ -36,15 +43,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfAssetPath;
 
 /// Parses the file at \p filePath, identifying external references, and
 /// sorting them into separate type-based buckets. Sublayers are returned in
-/// the \p sublayers vector, references, whether prim references or values
-/// from asset path attributes, are returned in the \p references vector.
-/// Payload paths are returned in \p payloads.
-///
+/// the \p sublayers vector, references, whether prim references, value clip 
+/// references or values from asset path attributes, are returned in the 
+/// \p references vector. Payload paths are returned in \p payloads.
+/// 
 /// \note No recursive chasing of dependencies is performed; that is the
 /// client's responsibility, if desired.
+/// 
+/// \note Not all returned references are actually authored explicitly in the 
+/// layer. For example, templated clip asset paths are resolved and expanded 
+/// to include all available clip files that match the specified pattern.
 USDUTILS_API
 void UsdUtilsExtractExternalReferences(
     const std::string& filePath,
@@ -52,6 +64,25 @@ void UsdUtilsExtractExternalReferences(
     std::vector<std::string>* references,
     std::vector<std::string>* payloads);
 
+/// Creates a USDZ package containing the specified asset, identified by its 
+/// \p assetPath. The created package will include a localized version of the 
+/// asset itself and all of its external dependencies. Due to localization, the 
+/// packaged layers might be modified to have different asset paths.
+/// 
+/// Returns true if the package was created successfully.
+/// 
+/// \note Clients of this function must take care of configuring the asset 
+/// resolver context before invoking the function. To create a default 
+/// resolver context, use \ref CreateDefaultContextForAsset() with the 
+/// asset path.
+/// 
+/// \note If the given asset has a dependency on a directory (i.e. an external 
+/// reference to a directory path), the dependency is ignored and the contents 
+/// of the directory are not included in the created package. 
+USDUTILS_API
+bool
+UsdUtilsCreateNewUsdzPackage(const SdfAssetPath& assetPath,
+                             const std::string& usdzFilePath);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

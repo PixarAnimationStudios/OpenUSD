@@ -24,6 +24,11 @@ def "foo" (
             @./ref_a.usd@,
             @./ref_b.usd@
         ]
+        clips = {
+            dictionary default = {
+                string templateAssetPath = "./clip.###.usd"
+            }
+        }
     )
     {
     }

@@ -28,6 +28,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/tuple.hpp>
 
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
 namespace bp = boost::python;
@@ -51,4 +52,7 @@ _ExtractExternalReferences(
 void wrapDependencies()
 {
     bp::def("ExtractExternalReferences", _ExtractExternalReferences);
+
+    bp::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
+            (bp::arg("assetPath"), bp::arg("usdzFilePath")));
 }
