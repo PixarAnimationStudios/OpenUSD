@@ -145,6 +145,18 @@ public:
                                     UsdTimeCode time,
                                     bool atRest=false) const;
 
+    /// Compute joint transforms in world space, at whatever time is configured
+    /// on \p xfCache.
+    /// This is equivalent to computing skel-space joint transforms with
+    /// CmoputeJointSkelTransforms(), and then concatenating all transforms
+    /// by the local-to-world transform of the Skeleton prim.
+    /// If \p atRest is true, any bound animation source is ignored, and
+    /// transforms are computed from the rest pose.
+    USDSKEL_API
+    bool ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
+                                     UsdGeomXformCache* xfCache,
+                                     bool atRest=false) const;
+
     /// Compute transforms representing the change in transformation
     /// of a joint from its rest pose, in skeleton space.
     ///

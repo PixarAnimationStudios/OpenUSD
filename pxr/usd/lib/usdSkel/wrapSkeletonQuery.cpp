@@ -67,6 +67,17 @@ _ComputeJointSkelTransforms(UsdSkelSkeletonQuery& self,
 
 
 VtMatrix4dArray
+_ComputeJointWorldTransforms(UsdSkelSkeletonQuery& self,
+                             UsdGeomXformCache& xfCache,
+                             bool atRest)
+{
+    VtMatrix4dArray xforms;
+    self.ComputeJointWorldTransforms(&xforms, &xfCache, atRest);
+    return xforms;
+}
+
+
+VtMatrix4dArray
 _ComputeSkinningTransforms(UsdSkelSkeletonQuery& self, UsdTimeCode time)
 {
     VtMatrix4dArray xforms;
@@ -119,6 +130,9 @@ void wrapUsdSkelSkeletonQuery()
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
         
         .def("ComputeJointSkelTransforms", &_ComputeJointSkelTransforms,
+             (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
+
+        .def("ComputeJointWorldTransforms", &_ComputeJointWorldTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
 
         .def("ComputeSkinningTransforms", &_ComputeSkinningTransforms,

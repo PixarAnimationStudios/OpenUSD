@@ -164,6 +164,30 @@ UsdSkelSkeletonQuery::_ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
 
 
 bool
+UsdSkelSkeletonQuery::ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
+                                                  UsdGeomXformCache* xfCache,
+                                                  bool atRest) const
+{
+    TRACE_FUNCTION();
+
+    if (!xfCache) {
+        TF_CODING_ERROR("'xfCache' pointer is null.");
+        return false;
+    }
+    
+    VtMatrix4dArray localXforms;
+    if (ComputeJointLocalTransforms(&localXforms, xfCache->GetTime(), atRest)) {
+        const auto& topology = _definition->GetTopology();
+
+        GfMatrix4d rootXform = xfCache->GetLocalToWorldTransform(GetPrim());
+        return UsdSkelConcatJointTransforms(topology, localXforms,
+                                            xforms, &rootXform);
+    }
+    return false;
+}
+
+
+bool
 UsdSkelSkeletonQuery::ComputeSkinningTransforms(VtMatrix4dArray* xforms,
                                                 UsdTimeCode time) const
 {
