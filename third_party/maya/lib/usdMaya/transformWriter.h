@@ -45,34 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomXformable;
 class UsdTimeCode;
 
-enum XFormOpType { TRANSLATE, ROTATE, SCALE, SHEAR };
-enum AnimChannelSampleType { NO_XFORM, STATIC, ANIMATED };
-
-// This may not be the best name here as it isn't necessarily animated.
-struct AnimChannel
-{
-    MPlug plug[3];
-    AnimChannelSampleType sampleType[3];
-    // defValue should always be in "maya" space.  that is, if it's a rotation
-    // it should be radians, not degrees. (This is done so we only need to do
-    // conversion in one place, and so that, if we need to do euler filtering,
-    // we don't do conversions, and then undo them to use MEulerRotation).
-    GfVec3d defValue; 
-    XFormOpType opType;
-    UsdGeomXformOp::Type usdOpType;
-    UsdGeomXformOp::Precision precision;
-    TfToken opName;
-    bool isInverse;
-    UsdGeomXformOp op;
-};
-
-/// Writes transforms and serves as the base class for most shape writers.
-/// Handles instancing as well as merging transforms and shapes during export.
+/// Writes transforms and serves as the base class for custom transform writers.
+/// Handles the conversion of Maya transformation data into USD xformOps.
 class UsdMayaTransformWriter : public UsdMayaPrimWriter
 {
 public:
-    typedef std::unordered_map<const TfToken, MEulerRotation, TfToken::HashFunctor> TokenRotationMap;
-
     PXRUSDMAYA_API
     UsdMayaTransformWriter(
             const MDagPath& iDag,
@@ -86,17 +63,63 @@ public:
     void Write(const UsdTimeCode &usdTime) override;
 
 private:
+    using _TokenRotationMap = std::unordered_map<
+            const TfToken, MEulerRotation, TfToken::HashFunctor>;
+
+    enum class _XformType { Translate, Rotate, Scale, Shear };
+    enum class _SampleType { None, Static, Animated };
+
+    // This may not be the best name here as it isn't necessarily animated.
+    struct _AnimChannel
+    {
+        MPlug plug[3];
+        _SampleType sampleType[3];
+        // defValue should always be in "maya" space.  that is, if it's a
+        // rotation it should be radians, not degrees. (This is done so we only
+        // need to do conversion in one place, and so that, if we need to do
+        // euler filtering, we don't do conversions, and then undo them to use
+        // MEulerRotation).
+        GfVec3d defValue; 
+        _XformType opType;
+        UsdGeomXformOp::Type usdOpType;
+        UsdGeomXformOp::Precision precision;
+        TfToken opName;
+        bool isInverse;
+        UsdGeomXformOp op;
+    };
+
+    // For a given array of _AnimChannels and time, compute the xformOp data if
+    // needed and set the xformOps' values.
+    static void _ComputeXformOps(
+            const std::vector<_AnimChannel>& animChanList, 
+            const UsdTimeCode &usdTime,
+            bool eulerFilter,
+            UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
+            UsdUtilsSparseValueWriter *valueWriter);
+
+    // Creates an _AnimChannel from a Maya compound attribute if there is
+    // meaningful data. This means we found data that is non-identity.
+    // Returns true if we extracted an _AnimChannel and false otherwise (e.g.
+    // the data was identity).
+    static bool _GatherAnimChannel(
+            _XformType opType,
+            const MFnTransform& iTrans,
+            const TfToken& parentName,
+            const MString& xName, const MString& yName, const MString& zName,
+            std::vector<_AnimChannel>* oAnimChanList, 
+            bool isWritingAnimation,
+            bool setOpName);
+
     /// Populates the AnimChannel vector with various ops based on
-    /// the Maya
-    /// transformation logic. If scale and/or rotate pivot are declared, creates
-    /// inverse ops in the appropriate order.
+    /// the Maya transformation logic. If scale and/or rotate pivot are
+    /// declared, creates inverse ops in the appropriate order.
     void _PushTransformStack(
             const MFnTransform& iTrans, 
             const UsdGeomXformable& usdXForm, 
             bool writeAnim);
 
-    std::vector<AnimChannel> _animChannels;
-    TokenRotationMap _previousRotates;
+    std::vector<_AnimChannel> _animChannels;
+    _TokenRotationMap _previousRotates;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

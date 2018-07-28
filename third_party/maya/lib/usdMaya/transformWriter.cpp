@@ -96,19 +96,18 @@ setXformOp(const UsdGeomXformOp& op,
     }
 }
 
-// For a given GeomXForm and array of AnimChannels and time, compute the data
-// from if needed and set the XFormOps values
-static void 
-computeXFormOps(
-        const std::vector<AnimChannel>& animChanList, 
+/* static */
+void 
+UsdMayaTransformWriter::_ComputeXformOps(
+        const std::vector<_AnimChannel>& animChanList, 
         const UsdTimeCode &usdTime,
         bool eulerFilter,
-        UsdMayaTransformWriter::TokenRotationMap* previousRotates,
+        UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
         UsdUtilsSparseValueWriter *valueWriter)
 {
     TF_AXIOM(previousRotates);
 
-    // Iterate over each AnimChannel, retrieve the default value and pull the
+    // Iterate over each _AnimChannel, retrieve the default value and pull the
     // Maya data if needed. Then store it on the USD Ops
     for (const auto& animChannel : animChanList) {
 
@@ -119,11 +118,11 @@ computeXFormOps(
         GfVec3d value = animChannel.defValue;
         bool hasAnimated = false, hasStatic = false;
         for (unsigned int i = 0; i<3; i++) {
-            if (animChannel.sampleType[i] == ANIMATED) {
+            if (animChannel.sampleType[i] == _SampleType::Animated) {
                 value[i] = animChannel.plug[i].asDouble();
                 hasAnimated = true;
             } 
-            else if (animChannel.sampleType[i] == STATIC) {
+            else if (animChannel.sampleType[i] == _SampleType::Static) {
                 hasStatic = true;
             }
         }
@@ -139,7 +138,7 @@ computeXFormOps(
         if ((usdTime == UsdTimeCode::Default() && hasStatic && !hasAnimated) ||
             (usdTime != UsdTimeCode::Default() && hasAnimated)) {
 
-            if (animChannel.opType == ROTATE) {
+            if (animChannel.opType == _XformType::Rotate) {
                 if (hasAnimated && eulerFilter) {
                     const TfToken& lookupName = animChannel.opName.IsEmpty() ?
                             UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType) :
@@ -177,22 +176,18 @@ computeXFormOps(
     }
 }
 
-// Creates an AnimChannel from a Maya compound attribute if there is meaningful
-// data.  This means we found data that is non-identity.
-//
-// returns true if we extracted an AnimChannel and false otherwise (e.g., the
-// data was identity). 
-static bool 
-_GatherAnimChannel(
-        XFormOpType opType, 
+/* static */
+bool 
+UsdMayaTransformWriter::_GatherAnimChannel(
+        _XformType opType, 
         const MFnTransform& iTrans, 
         const TfToken& parentName,
         const MString& xName, const MString& yName, const MString& zName, 
-        std::vector<AnimChannel>* oAnimChanList, 
+        std::vector<_AnimChannel>* oAnimChanList, 
         bool isWritingAnimation,
         bool setOpName)
 {
-    AnimChannel chan;
+    _AnimChannel chan;
     chan.opType = opType;
     chan.isInverse = false;
     if (setOpName) {
@@ -218,24 +213,24 @@ _GatherAnimChannel(
     channels.append(parentNameMStr+yName);
     channels.append(parentNameMStr+zName);
 
-    GfVec3d nullValue(opType == SCALE ? 1.0 : 0.0);
+    GfVec3d nullValue(opType == _XformType::Scale ? 1.0 : 0.0);
     for (unsigned int i = 0; i<3; i++) {
         // Find the plug and retrieve the data as the channel default value. It
         // won't be updated if the channel is NOT ANIMATED
         chan.plug[i] = iTrans.findPlug(channels[i]);
         double plugValue = chan.plug[i].asDouble();
         chan.defValue[i] = plugValue;
-        chan.sampleType[i] = NO_XFORM;
-        // If we allow animation and either the parentsample or local sample is
-        // not 0 then we havea ANIMATED sample else we have a scale and the
+        chan.sampleType[i] = _SampleType::None;
+        // If we allow animation and either the parent sample or local sample is
+        // not 0 then we have an Animated sample else we have a scale and the
         // value is NOT 1 or if the value is NOT 0 then we have a static xform
         if ((parentSample != 0 || UsdMayaUtil::getSampledType(chan.plug[i], true) != 0) && 
              isWritingAnimation) {
-            chan.sampleType[i] = ANIMATED; 
+            chan.sampleType[i] = _SampleType::Animated; 
             validComponents++;
         } 
         else if (!GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
-            chan.sampleType[i] = STATIC; 
+            chan.sampleType[i] = _SampleType::Static; 
             validComponents++;
         }
     }
@@ -243,20 +238,26 @@ _GatherAnimChannel(
     // If there are valid component, then we will add the animation channel.
     // Rotates with 1 component will be optimized to single axis rotation
     if (validComponents>0) {
-        if (opType == SCALE) {
+        if (opType == _XformType::Scale) {
             chan.usdOpType = UsdGeomXformOp::TypeScale;
-        } else if (opType == TRANSLATE) {
+        } else if (opType == _XformType::Translate) {
             chan.usdOpType = UsdGeomXformOp::TypeTranslate;
             // The main translate is set to double precision
             if (parentName == UsdMayaXformStackTokens->translate) {
                 chan.precision = UsdGeomXformOp::PrecisionDouble;
             }
-        } else if (opType == ROTATE) {
+        } else if (opType == _XformType::Rotate) {
             chan.usdOpType = UsdGeomXformOp::TypeRotateXYZ;
             if (validComponents == 1) {
-                if (chan.sampleType[0] != NO_XFORM) chan.usdOpType = UsdGeomXformOp::TypeRotateX;
-                if (chan.sampleType[1] != NO_XFORM) chan.usdOpType = UsdGeomXformOp::TypeRotateY;
-                if (chan.sampleType[2] != NO_XFORM) chan.usdOpType = UsdGeomXformOp::TypeRotateZ;
+                if (chan.sampleType[0] != _SampleType::None) {
+                    chan.usdOpType = UsdGeomXformOp::TypeRotateX;
+                }
+                if (chan.sampleType[1] != _SampleType::None) {
+                    chan.usdOpType = UsdGeomXformOp::TypeRotateY;
+                }
+                if (chan.sampleType[2] != _SampleType::None) {
+                    chan.usdOpType = UsdGeomXformOp::TypeRotateZ;
+                }
             } 
             else {
                 // Rotation Order ONLY applies to the "rotate" attribute
@@ -282,7 +283,7 @@ _GatherAnimChannel(
                 }
             }
         } 
-        else if (opType == SHEAR) {
+        else if (opType == _XformType::Shear) {
             chan.usdOpType = UsdGeomXformOp::TypeTransform;
             chan.precision = UsdGeomXformOp::PrecisionDouble;
         } 
@@ -322,30 +323,30 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
             
     // inspect the translate, no suffix to be closer compatibility with common API
-    _GatherAnimChannel(TRANSLATE, iTrans, UsdMayaXformStackTokens->translate, "X", "Y", "Z", &_animChannels, writeAnim, false);
+    _GatherAnimChannel(_XformType::Translate, iTrans, UsdMayaXformStackTokens->translate, "X", "Y", "Z", &_animChannels, writeAnim, false);
 
     // inspect the rotate pivot translate
-    if (_GatherAnimChannel(TRANSLATE, iTrans, UsdMayaXformStackTokens->rotatePivotTranslate, "X", "Y", "Z", &_animChannels, writeAnim, true)) {
+    if (_GatherAnimChannel(_XformType::Translate, iTrans, UsdMayaXformStackTokens->rotatePivotTranslate, "X", "Y", "Z", &_animChannels, writeAnim, true)) {
         conformsToCommonAPI = false;
     }
 
     // inspect the rotate pivot
-    bool hasRotatePivot = _GatherAnimChannel(TRANSLATE, iTrans, UsdMayaXformStackTokens->rotatePivot, "X", "Y", "Z", &_animChannels, writeAnim, true);
+    bool hasRotatePivot = _GatherAnimChannel(_XformType::Translate, iTrans, UsdMayaXformStackTokens->rotatePivot, "X", "Y", "Z", &_animChannels, writeAnim, true);
     if (hasRotatePivot) {
         rotPivotIdx = _animChannels.size()-1;
     }
 
     // inspect the rotate, no suffix to be closer compatibility with common API
-    _GatherAnimChannel(ROTATE, iTrans, UsdMayaXformStackTokens->rotate, "X", "Y", "Z", &_animChannels, writeAnim, false);
+    _GatherAnimChannel(_XformType::Rotate, iTrans, UsdMayaXformStackTokens->rotate, "X", "Y", "Z", &_animChannels, writeAnim, false);
 
     // inspect the rotateAxis/orientation
-    if (_GatherAnimChannel(ROTATE, iTrans, UsdMayaXformStackTokens->rotateAxis, "X", "Y", "Z", &_animChannels, writeAnim, true)) {
+    if (_GatherAnimChannel(_XformType::Rotate, iTrans, UsdMayaXformStackTokens->rotateAxis, "X", "Y", "Z", &_animChannels, writeAnim, true)) {
         conformsToCommonAPI = false;
     }
 
     // invert the rotate pivot
     if (hasRotatePivot) {
-        AnimChannel chan;
+        _AnimChannel chan;
         chan.usdOpType = UsdGeomXformOp::TypeTranslate;
         chan.precision = UsdGeomXformOp::PrecisionFloat;
         chan.opName = UsdMayaXformStackTokens->rotatePivot;
@@ -355,27 +356,27 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
 
     // inspect the scale pivot translation
-    if (_GatherAnimChannel(TRANSLATE, iTrans, UsdMayaXformStackTokens->scalePivotTranslate, "X", "Y", "Z", &_animChannels, writeAnim, true)) {
+    if (_GatherAnimChannel(_XformType::Translate, iTrans, UsdMayaXformStackTokens->scalePivotTranslate, "X", "Y", "Z", &_animChannels, writeAnim, true)) {
         conformsToCommonAPI = false;
     }
 
     // inspect the scale pivot point
-    bool hasScalePivot = _GatherAnimChannel(TRANSLATE, iTrans, UsdMayaXformStackTokens->scalePivot, "X", "Y", "Z", &_animChannels, writeAnim, true);
+    bool hasScalePivot = _GatherAnimChannel(_XformType::Translate, iTrans, UsdMayaXformStackTokens->scalePivot, "X", "Y", "Z", &_animChannels, writeAnim, true);
     if (hasScalePivot) {
         scalePivotIdx = _animChannels.size()-1;
     }
 
     // inspect the shear. Even if we have one xform on the xform list, it represents a share so we should name it
-    if (_GatherAnimChannel(SHEAR, iTrans, UsdMayaXformStackTokens->shear, "XY", "XZ", "YZ", &_animChannels, writeAnim, true)) {
+    if (_GatherAnimChannel(_XformType::Shear, iTrans, UsdMayaXformStackTokens->shear, "XY", "XZ", "YZ", &_animChannels, writeAnim, true)) {
         conformsToCommonAPI = false;
     }
 
     // add the scale. no suffix to be closer compatibility with common API
-    _GatherAnimChannel(SCALE, iTrans, UsdMayaXformStackTokens->scale, "X", "Y", "Z", &_animChannels, writeAnim, false);
+    _GatherAnimChannel(_XformType::Scale, iTrans, UsdMayaXformStackTokens->scale, "X", "Y", "Z", &_animChannels, writeAnim, false);
 
     // inverse the scale pivot point
     if (hasScalePivot) {
-        AnimChannel chan;
+        _AnimChannel chan;
         chan.usdOpType = UsdGeomXformOp::TypeTranslate;
         chan.precision = UsdGeomXformOp::PrecisionFloat;
         chan.opName = UsdMayaXformStackTokens->scalePivot;
@@ -390,13 +391,14 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
 
     if (conformsToCommonAPI && hasRotatePivot && hasScalePivot) {
-        AnimChannel rotPivChan, scalePivChan;
+        _AnimChannel rotPivChan, scalePivChan;
         rotPivChan = _animChannels[rotPivotIdx];
         scalePivChan = _animChannels[scalePivotIdx];
-        // If they have different sampleType or are ANIMATED, does not conformsToCommonAPI anymore
+        // If they have different sampleType or are animated, then this does not
+        // conformsToCommonAPI anymore
         for (unsigned int i = 0;i<3;i++) {
             if (rotPivChan.sampleType[i] != scalePivChan.sampleType[i] ||
-                    rotPivChan.sampleType[i] == ANIMATED) {
+                    rotPivChan.sampleType[i] == _SampleType::Animated) {
                 conformsToCommonAPI = false;
             }
         }
@@ -432,7 +434,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
     // Loop over anim channel vector and create corresponding XFormOps
     // including the inverse ones if needed
     TF_FOR_ALL(iter, _animChannels) {
-        AnimChannel& animChan = *iter;
+        _AnimChannel& animChan = *iter;
         animChan.op = usdXformable.AddXformOp(
             animChan.usdOpType, animChan.precision,
             animChan.opName,
@@ -461,7 +463,7 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
     // UsdMaya_FunctorPrimWriter), so accomodate those here.
     if (iDag.hasFn(MFn::kTransform)) {
         MFnTransform transFn(iDag);
-        // Create a vector of AnimChannels based on the Maya transformation
+        // Create a vector of _AnimChannels based on the Maya transformation
         // ordering
         _PushTransformStack(transFn, primSchema,
                 !_GetExportArgs().timeInterval.IsEmpty());
@@ -479,7 +481,7 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
         // There are valid cases where we have a transform in Maya but not one
         // in USD, e.g. typeless defs or other container prims in USD.
         if (UsdGeomXformable xformSchema = UsdGeomXformable(_usdPrim)) {
-            computeXFormOps(_animChannels, usdTime, 
+            _ComputeXformOps(_animChannels, usdTime, 
                     _GetExportArgs().eulerFilter, &_previousRotates, 
                     _GetSparseValueWriter());
         }
