@@ -532,7 +532,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     // The repr defines whether we should compute smooth normals for this mesh:
     // per-vertex normals taken as an average of adjacent faces, and
     // interpolated smoothly across faces.
-    _smoothNormals = desc.smoothNormals;
+    _smoothNormals = !desc.flatShadingEnabled;
 
     // If the subdivision scheme is "none" or "bilinear", force us not to use
     // smooth normals.

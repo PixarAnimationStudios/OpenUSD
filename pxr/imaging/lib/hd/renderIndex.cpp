@@ -504,43 +504,43 @@ HdRenderIndex::_ConfigureReprs()
                           HdMeshReprDesc(HdMeshGeomStyleHull,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/false,
+                                         /*flatShadingEnabled=*/true,
                                          /*blendWireframeColor=*/false));
     HdMesh::ConfigureRepr(HdTokens->smoothHull,
                           HdMeshReprDesc(HdMeshGeomStyleHull,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/true,
+                                         /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/false));
     HdMesh::ConfigureRepr(HdTokens->wire,
                           HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/true,
+                                         /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
     HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
                           HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/true,
+                                         /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
     HdMesh::ConfigureRepr(HdTokens->refined,
                           HdMeshReprDesc(HdMeshGeomStyleSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/true,
+                                         /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/false));
     HdMesh::ConfigureRepr(HdTokens->refinedWire,
                           HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/true,
+                                         /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
     HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
                           HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
-                                         /*smoothNormals=*/true,
+                                         /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
 
     // TODO: Port over wire on surf geometry shader from internal code base

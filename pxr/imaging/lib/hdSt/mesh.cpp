@@ -1399,7 +1399,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     // Has the draw style been forced to flat-shading?
     bool forceFlatShading =
-        _flatShadingEnabled || !desc.smoothNormals;
+        _flatShadingEnabled || desc.flatShadingEnabled;
 
     // Resolve normals interpolation.
     HdInterpolation normalsInterpolation = HdInterpolationVertex;
@@ -1651,7 +1651,7 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
                 }
                 }
 
-                if (desc.smoothNormals) {
+                if (!desc.flatShadingEnabled) {
                     if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
                         _customDirtyBitsInUse |= DirtySmoothNormals;
                         *dirtyBits |= DirtySmoothNormals;
@@ -1707,7 +1707,7 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     bool requireSmoothNormals = false;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
-        if (desc.smoothNormals) {
+        if (!desc.flatShadingEnabled) {
             requireSmoothNormals = true;
             break;
         }

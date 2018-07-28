@@ -55,7 +55,7 @@ struct HdMeshReprDesc {
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
-                   bool smoothNormals = false,
+                   bool flatShadingEnabled = true,
                    bool blendWireframeColor = true,
                    bool doubleSided = false,
                    float lineWidth = 0,
@@ -64,7 +64,7 @@ struct HdMeshReprDesc {
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
-        , smoothNormals(smoothNormals)
+        , flatShadingEnabled(flatShadingEnabled)
         , blendWireframeColor(blendWireframeColor)
         , doubleSided(doubleSided)
         , lineWidth(lineWidth)
@@ -79,8 +79,8 @@ struct HdMeshReprDesc {
     /// Specifies how the fragment color should be computed from surfaceShader;
     /// this can be used to render a mesh lit, unlit, unshaded, etc.
     TfToken         shadingTerminal;
-    /// Does this mesh need to generate smooth normals?
-    bool            smoothNormals;
+    /// Does this mesh want flat shading?
+    bool            flatShadingEnabled;
     /// Should the wireframe color be blended into the color primvar?
     bool            blendWireframeColor;
     /// Should this mesh be treated as double-sided? The resolved value is
