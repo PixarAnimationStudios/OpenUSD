@@ -747,7 +747,7 @@ function(pxr_setup_plugins)
             "${CMAKE_INSTALL_PREFIX}/lib/usd"
             "${CMAKE_INSTALL_PREFIX}/${dirName}"
         )
-        set(extraIncludes "${plugInfoIncludes},\n        \"${relDirName}/\"")
+        set(extraIncludes "${extraIncludes},\n        \"${relDirName}/\"")
     endforeach()
 
     set(plugInfoContents "{\n    \"Includes\": [\n        \"*/${resourcesDir}/\"${extraIncludes}\n    ]\n}\n")
@@ -972,6 +972,10 @@ function(pxr_toplevel_epilogue)
         _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
         _pxr_install_rpath(rpath usd_ms)
     endif()
+
+    # Setup the plugins in the top epilogue to ensure that everybody has had a
+    # chance to update PXR_EXTRA_PLUGINS with their plugin paths.
+    pxr_setup_plugins()
 endfunction() # pxr_toplevel_epilogue
 
 function(pxr_monolithic_epilogue)
@@ -1098,7 +1102,6 @@ function(pxr_core_epilogue)
         if(PXR_ENABLE_PYTHON_SUPPORT)
             pxr_setup_python()
         endif()
-        pxr_setup_plugins()
         set(_building_core FALSE PARENT_SCOPE)
     endif()
 endfunction() # pxr_core_epilogue
