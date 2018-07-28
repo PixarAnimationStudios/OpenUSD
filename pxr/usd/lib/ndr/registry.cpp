@@ -27,6 +27,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/discoveryPlugin.h"
 #include "pxr/usd/ndr/node.h"
@@ -251,7 +252,7 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
                               const NdrTokenMap &metadata)
 {
     // Ensure there is a parser plugin that can handle this asset.
-    TfToken discoveryType(TfGetExtension(asset.GetAssetPath()));
+    TfToken discoveryType(ArGetResolver().GetExtension(asset.GetAssetPath()));
     auto parserIt = _parserPluginMap.find(discoveryType);
 
     // Ensure that there is a parser registered corresponding to the 
