@@ -142,6 +142,11 @@ GLuint HdStSimpleTextureResource::GetTexelsSamplerId()
         return 0;
     }
 
+    // Check for headless test
+    if (glGenSamplers == nullptr) {
+        return 0;
+    }
+
     // Lazy sampler creation.
     if (_sampler == 0) {
         // If the HdStSimpleTextureResource defines a wrap mode it will
