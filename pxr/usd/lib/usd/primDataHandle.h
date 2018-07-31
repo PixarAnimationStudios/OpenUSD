@@ -31,6 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfPath;
 
 // To start we always validate.
 #define USD_CHECK_ALL_PRIM_ACCESSES
@@ -111,7 +112,7 @@ public:
 
     // Return a text description of this prim data, used primarily for
     // diagnostic purposes.
-    std::string GetDescription() const;
+    std::string GetDescription(SdfPath const &proxyPrimPath) const;
 
 private:
     // Equality comparison.
