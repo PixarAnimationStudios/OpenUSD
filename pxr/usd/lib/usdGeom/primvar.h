@@ -763,10 +763,10 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
         }
 
         TF_WARN("Found %ld invalid indices at positions [%s%s] that are out of "
-            "range [0,%ld) for primvar <%s>.", invalidIndexPositions.size(), 
-            TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
-            invalidIndexPositions.size() > 5 ? ", ..." : "",
-            authored.size(), _attr.GetPath().GetText());
+                "range [0,%ld) for primvar %s.", invalidIndexPositions.size(), 
+                TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
+                invalidIndexPositions.size() > 5 ? ", ..." : "",
+                authored.size(), UsdDescribe(_attr).c_str());
     }
 
     return success;
