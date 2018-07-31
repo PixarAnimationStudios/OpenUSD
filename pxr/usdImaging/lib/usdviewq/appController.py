@@ -1236,7 +1236,7 @@ class AppController(QtCore.QObject):
                 action.pluginType = pluginType
                 self._ui.rendererPluginActionGroup.addAction(action)
 
-                action.triggered.connect(lambda pluginType=pluginType:
+                action.triggered[bool].connect(lambda _, pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
 
             # If any plugins exist, set the first one we find supported as the
@@ -2239,8 +2239,8 @@ class AppController(QtCore.QObject):
                 action.setToolTip(str(camera.GetPath()))
                 action.setCheckable(True)
 
-                action.triggered.connect(
-                    lambda camera = camera: self._cameraSelectionChanged(camera))
+                action.triggered[bool].connect(
+                    lambda _, cam = camera: self._cameraSelectionChanged(cam))
                 action.setChecked(action.data() == currCameraPath)
 
     def _updatePropertiesFromPropertyView(self):
