@@ -97,6 +97,12 @@ public:
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index);
+
+
 protected:
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,

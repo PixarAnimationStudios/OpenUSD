@@ -258,6 +258,10 @@ public:
     void SetUsdDrawModesEnabled(bool enableUsdDrawModes);
     bool GetUsdDrawModesEnabled() const { return _enableUsdDrawModes; }
 
+    /// Enables custom shading on prims.
+    USDIMAGING_API
+    void SetHardwareShadingEnabled(bool enable);
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -638,6 +642,9 @@ private:
     bool _enableUsdDrawModes;
 
     const bool _hasDrawModeAdapter;
+
+    /// Enable custom shading of prims
+    bool _hardwareShadingEnabled;
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

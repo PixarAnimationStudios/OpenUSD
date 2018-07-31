@@ -186,6 +186,14 @@ UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
 }
 
 /*virtual*/
+void
+UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
+                                         SdfPath const& usdPath,
+                                         UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
 SdfPath
 UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 {

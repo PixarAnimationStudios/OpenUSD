@@ -39,6 +39,8 @@ typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPt
 typedef std::vector<HdStTextureResourceSharedPtr>
                                 HdStTextureResourceSharedPtrVector;
 
+class GlfGLSLFX;
+
 class HdStMaterial final: public HdMaterial {
 public:
     HF_MALLOC_TAG_NEW("new HdStMaterial");
@@ -120,6 +122,10 @@ private:
 
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
+
+    void _InitFallbackShader();
+
+    static GlfGLSLFX                  *_fallbackSurfaceShader;
 
     HdStSurfaceShaderSharedPtr         _surfaceShader;
     HdStTextureResourceSharedPtrVector _fallbackTextureResources;

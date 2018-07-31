@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -36,6 +37,7 @@
 #include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/uvTextureStorage.h"
+#include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
@@ -48,6 +50,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (limitSurfaceEvaluation)
 );
+
+GlfGLSLFX *HdStMaterial::_fallbackSurfaceShader = nullptr;
 
 // A bindless GL sampler buffer.
 // This identifies a texture as a 64-bit handle, passed to GLSL as "uvec2".
@@ -143,13 +147,24 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if(bits & DirtySurfaceShader) {
         const std::string &fragmentSource =
                 GetSurfaceShaderSource(sceneDelegate);
-
-        _surfaceShader->SetFragmentSource(fragmentSource);
-
-        const std::string &geometrySource = 
+        const std::string &geometrySource =
                 GetDisplacementShaderSource(sceneDelegate);
+        VtDictionary materialMetadata = GetMaterialMetadata(sceneDelegate);
 
-        _surfaceShader->SetGeometrySource(geometrySource);
+        if (fragmentSource.empty() && geometrySource.empty()) {
+            _InitFallbackShader();
+            _surfaceShader->SetFragmentSource(
+                                   _fallbackSurfaceShader->GetFragmentSource());
+            _surfaceShader->SetGeometrySource(
+                                   _fallbackSurfaceShader->GetGeometrySource());
+
+            materialMetadata = _fallbackSurfaceShader->GetMetadata();
+
+        } else {
+            _surfaceShader->SetFragmentSource(fragmentSource);
+            _surfaceShader->SetGeometrySource(geometrySource);
+        }
+
         
         // XXX Forcing collections to be dirty to reload everything
         //     Something more efficient can be done here
@@ -158,7 +173,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         changeTracker.MarkAllCollectionsDirty();
 
         bool hasLimitSurfaceEvaluation =
-            _GetHasLimitSurfaceEvaluation(GetMaterialMetadata(sceneDelegate));
+                                _GetHasLimitSurfaceEvaluation(materialMetadata);
 
         if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
             _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
@@ -387,6 +402,24 @@ void
 HdStMaterial::SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode)
 {
     _surfaceShader = shaderCode;
+}
+
+void
+HdStMaterial::_InitFallbackShader()
+{
+    if (_fallbackSurfaceShader != nullptr) {
+        return;
+    }
+
+    const TfToken &filePath = HdStPackageFallbackSurfaceShader();
+
+    _fallbackSurfaceShader = new GlfGLSLFX(filePath);
+
+    // Check fallback shader loaded, if not continue with the invalid shader
+    // this would mean the shader compilation fails and the prim would not
+    // be drawn.
+    TF_VERIFY(_fallbackSurfaceShader->IsValid(),
+              "Failed to load fallback surface shader!");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -634,6 +634,10 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
 void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
+    // Forward hw shading enable to delegate
+    _delegate->SetHardwareShadingEnabled(params.enableHardwareShading);
+
+
     // User is responsible for initializing GL context and glew
     bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
 

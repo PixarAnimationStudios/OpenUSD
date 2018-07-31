@@ -218,6 +218,10 @@ public:
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index);
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing

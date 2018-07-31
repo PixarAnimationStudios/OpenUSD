@@ -269,6 +269,18 @@ UsdImagingGLDrawModeAdapter::MarkVisibilityDirty(UsdPrim const& prim,
 }
 
 void
+UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
+                                               SdfPath const& cachePath,
+                                               UsdImagingIndexProxy* index)
+{
+    if (_IsMaterialPath(cachePath)) {
+        index->MarkSprimDirty(cachePath, HdMaterial::DirtySurfaceShader |
+                                         HdMaterial::DirtyParams);
+    }
+}
+
+
+void
 UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             HdDirtyBits* timeVaryingBits,
