@@ -477,13 +477,18 @@ void UsdMaya_WriteJob::FinishWriting()
                 SdfAssetPath(_fileName),
                 _packageName,
                 _packageRootName);
-
-        // The original stage was just a temp file, so clean it up now.
-        TfDeleteFile(_fileName);
     }
 
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
+
+    // In the usdz case, the layer at _fileName was just a temp file, so
+    // clean it up now. Do this after mJobCtx.mStage is reset to ensure 
+    // there are no outstanding handles to the file, which will cause file
+    // access issues on Windows.
+    if (!_packageName.empty()) {
+        TfDeleteFile(_fileName);
+    }
 }
 
 TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
