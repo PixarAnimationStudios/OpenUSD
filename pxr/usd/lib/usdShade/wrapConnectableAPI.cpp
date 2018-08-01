@@ -238,8 +238,9 @@ WRAP_CUSTOM {
 
     ;
 
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeNodeGraph>();
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeShader>();
+    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
+    implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
+
 }
 
 } // anonymous namespace

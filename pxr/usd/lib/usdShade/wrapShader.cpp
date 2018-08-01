@@ -173,6 +173,8 @@ _WrapGetSourceCode(const UsdShadeShader &shader,
 
 WRAP_CUSTOM {
     _class
+        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+
         .def("ConnectableAPI", &UsdShadeShader::ConnectableAPI)
 
         .def("GetImplementationSource", &UsdShadeShader::GetImplementationSource)
@@ -226,8 +228,6 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
 
         ;
-
-    implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
 }
 
 } // anonymous namespace

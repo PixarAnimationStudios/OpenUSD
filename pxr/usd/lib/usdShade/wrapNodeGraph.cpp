@@ -123,6 +123,7 @@ _WrapComputeOutputSource(const UsdShadeNodeGraph &self,
 
 WRAP_CUSTOM {
     _class
+        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
 
         .def("CreateOutput", 
@@ -151,8 +152,6 @@ WRAP_CUSTOM {
              (arg("computeTransitiveConsumers")=false))
 
     ;
-
-    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
 }
 
 } // anonymous namespace

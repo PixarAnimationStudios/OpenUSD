@@ -191,9 +191,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((infoSourceCode, "info:sourceCode"))
 );
 
-UsdShadeShader::operator UsdShadeConnectableAPI () const 
+UsdShadeShader::UsdShadeShader(const UsdShadeConnectableAPI &connectable)
+    : UsdShadeShader(connectable.GetPrim())
 {
-    return UsdShadeConnectableAPI(GetPrim());
 }
 
 UsdShadeConnectableAPI 

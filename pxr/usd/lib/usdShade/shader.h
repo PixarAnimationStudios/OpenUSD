@@ -254,11 +254,12 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Allow UsdShadeShader to auto-convert to UsdShadeConnectableAPI, so 
-    /// you can pass in a UsdShadeShader to any function that accepts 
-    /// a UsdShadeConnectableAPI.
+    /// Constructor that takes a ConnectableAPI object.
+    /// Allow implicit (auto) conversion of UsdShadeShader to 
+    /// UsdShadeConnectableAPI, so that a shader can be passed into any function
+    /// that accepts a ConnectableAPI.
     USDSHADE_API
-    operator UsdShadeConnectableAPI () const;
+    UsdShadeShader(const UsdShadeConnectableAPI &connectable);
 
     /// Contructs and returns a UsdShadeConnectableAPI object with this shader.
     ///

@@ -166,16 +166,20 @@ protected:
 public:
 
     /// Constructor that takes a UsdShadeShader.
-    explicit UsdShadeConnectableAPI(const UsdShadeShader &shader):
+    /// Allow implicit (auto) conversion of UsdShadeShader to 
+    /// UsdShadeConnectableAPI, so that a shader can be passed into any function
+    /// that accepts a ConnectableAPI.
+    UsdShadeConnectableAPI(const UsdShadeShader &shader):
         UsdShadeConnectableAPI(shader.GetPrim())
-    {        
-    }
+    { }
 
     /// Constructor that takes a UsdShadeNodeGraph.
-    explicit UsdShadeConnectableAPI(const UsdShadeNodeGraph &nodeGraph):
+    /// Allow implicit (auto) conversion of UsdShadeNodeGraph to 
+    /// UsdShadeConnectableAPI, so that a nodegraph can be passed into any function
+    /// that accepts a ConnectableAPI.
+    UsdShadeConnectableAPI(const UsdShadeNodeGraph &nodeGraph):
         UsdShadeConnectableAPI(nodeGraph.GetPrim())
-    {        
-    }
+    { }
 
     /// Returns true if the prim is a shader.
     USDSHADE_API
@@ -184,20 +188,6 @@ public:
     /// Returns true if the prim is a node-graph.
     USDSHADE_API
     bool IsNodeGraph() const;
-
-    /// Allow UsdShadeConnectableAPI to auto-convert to UsdShadeNodeGraph, so 
-    /// you can pass in a UsdShadeConnectableAPI to any function that accepts 
-    /// a UsdShadeNodeGraph.
-    operator UsdShadeNodeGraph () {
-        return UsdShadeNodeGraph(GetPrim());
-    }
-
-    /// Allow UsdShadeConnectableAPI to auto-convert to UsdShadeShader, so 
-    /// you can pass in a UsdShadeConnectableAPI to any function that accepts 
-    /// a UsdShadeShader.
-    operator UsdShadeShader () {
-        return UsdShadeShader(GetPrim());
-    }
 
     /// \name Connections 
     /// 
