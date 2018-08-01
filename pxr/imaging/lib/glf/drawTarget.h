@@ -243,7 +243,7 @@ public:
 
 protected:
 
-    /// Weak/Ref-based container for the the map of texture attachments.
+    /// Weak/Ref-based container for the map of texture attachments.
     /// Multiple GlfDrawTargets can jointly share their attachment textures :
     /// this construction allows the use of a RefPtr on the map of attachments.
     class AttachmentsContainer : public TfRefBase, public TfWeakBase {

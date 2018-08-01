@@ -11,7 +11,7 @@ Given a scene that contains a UsdSkelSkeleton, a consuming application is free
 to access that primitive and reason about its structure on its own, if it
 chooses to do so. But UsdSkel also provides a more convenient API for querying
 data on a Skeleton: UsdSkelSkeletonQuery. A UsdSkelSkeletonQuery is created
-through a UsdSkelCache, using a UsdSkelSkeleton primtivive, as in the following
+through a UsdSkelCache, using a UsdSkelSkeleton primitive, as in the following
 example:
 
 - C++:
@@ -57,7 +57,7 @@ localSpaceXforms = skelQuery.ComputeJointLocalTransforms(time)
 skelSpaceXforms = skelQuery.ComputeJointSkelTransforms(time)
 \endcode
 
-Note that this allows the animated transforms of a Skeleton to be exracted
+Note that this allows the animated transforms of a Skeleton to be extracted
 without having to deal with some of the more complicated aspects of the
 Skeleton encoding, such as the inheritance of the _skel:animationSource_
 relationship.
@@ -178,7 +178,7 @@ clear whether or not the parent joint had been constructed yet. However,
 it is a schema **requirement** that the set of joints is ordered, with
 parent joints coming before child joints. That is, linearly iterating
 through the ordered set of joints on a Skeleton must always describe
-a top-down hiearchy traversal. When a UsdSkelSkeletonQuery is constructed,
+a top-down hierarchy traversal. When a UsdSkelSkeletonQuery is constructed,
 its topology is validated, and the resulting query object is only valid
 if that topology check passes. So given a valid UsdSkelSkeletonQuery,
 the above code snippet will be safe.
@@ -547,7 +547,7 @@ of the scene graph that contains the skinnable primitive. Cache population
 causes the cache to be pre-populated with information about inherited bindings,
 which is necessary when accessing skinning queries.
 
-The SkelRoot that enapsulates a primitive can be found using UsdSkelRoot::Find.
+The SkelRoot that encapsulates a primitive can be found using UsdSkelRoot::Find.
 If no SkelRoot is found, that means that the primitive is not encapsulated
 within a SkelRoot, and so any properties on the prim related to skinning
 should be ignored.
@@ -570,7 +570,7 @@ Having found a SkelRoot and populated the UsdSkelCache, we can access a
 UsdSkelSkinningQuery object for the primitive that is being skinned.
 If the resulting UsdSkelSkinningQuery is invalid, that means that either
 the primitive is not considered to be skinnable, or the skinning properties
-are malformed in some way. If the latter, appropriate warning messsages will
+are malformed in some way. If the latter, appropriate warning messages will
 have been posted.
 
 - C++:

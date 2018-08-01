@@ -103,7 +103,7 @@ class SdfAssetPath;
 /// schema or directly from APISchemaBase. Similarly, a non-applied API schema 
 /// can only inherit from a non-applied API Schema or directly from 
 /// APISchemaBase. 'usdGenSchema' attempts to issue a warning if it detects 
-/// an incompability.
+/// an incompatibility.
 /// 
 /// \note A multiple-apply API schema may not inherit from a single-apply API 
 /// schema and vice versa. 

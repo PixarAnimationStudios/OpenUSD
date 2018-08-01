@@ -73,7 +73,7 @@ def insertReference( destFile, path, reffile ):
         stage.SetStartTimeCode(frameRange[0])
         stage.SetEndTimeCode(frameRange[1])
 
-    # If the the file that we are referencing defines a default prim,
+    # If the file that we are referencing defines a default prim,
     # we can use it (targetPrim = None). Otherwise, use rootPrim.
     addReference( stage, path, reffile, firstRoot if not defaultPrim else None )
     stage.GetRootLayer().Save()
@@ -100,7 +100,7 @@ def addReference( stage, path, fileName, targetPrim ):
     '''
     Add a reference to the given USD stage at the given path.
     
-    If defaultPrim is not None, the the referencee contains a default prim and 
+    If defaultPrim is not None, the referencee contains a default prim and
     we can contruct the reference to use it.
 
     Otherwise, create the reference to point to the first found rootPrim. 

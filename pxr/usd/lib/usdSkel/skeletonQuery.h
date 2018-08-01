@@ -115,7 +115,7 @@ public:
     USDSKEL_API
     const UsdSkelTopology& GetTopology() const;
 
-    /// Returns an arrray of joint paths, given as tokens, describing
+    /// Returns an array of joint paths, given as tokens, describing
     /// the order and parent-child relationships of joints in the skeleton.
     ///
     /// \sa UsdSkelSkeleton::GetJointOrder

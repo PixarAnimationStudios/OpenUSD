@@ -941,7 +941,7 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
         //         attribute editor), we get the oldNS (the namespace to be
         //         renamed) using the plug value, which has not been set yet.
         //         So query the oldNS name from current state of the datablock,
-        //         and the new one from the the data handle that is passed into
+        //         and the new one from the data handle that is passed into
         //         this method.
         //
         //     2 - If we are in IO, the plug value has already been set, but

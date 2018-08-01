@@ -41,13 +41,13 @@ TF_INSTANTIATE_SINGLETON(GlfContextCaps);
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_STORAGE_BUFFER, true,
                       "Use GL shader storage buffer (OpenGL 4.3)");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_BUFFER, false,
-                      "Use GL bindless buffer extention");
+                      "Use GL bindless buffer extension");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
-                      "Use GL bindless texture extention");
+                      "Use GL bindless texture extension");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
-                      "Use GL mult draw indirect extention");
+                      "Use GL mult draw indirect extension");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
-                      "Use GL direct state access extention");
+                      "Use GL direct state access extension");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
                       "Use GL copy buffer data");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_DRAW_PARAMETERS, true,

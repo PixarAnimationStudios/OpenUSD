@@ -140,7 +140,7 @@ _GetOIIOBaseType(GLenum type)
     }
 }
 
-// For compatability with Ice/Imr we transmogrify some matrix metadata
+// For compatibility with Ice/Imr we transmogrify some matrix metadata
 static std::string
 _TranslateMetadataKey(std::string const & metadataKey, bool *convertMatrixTypes)
 {

@@ -356,8 +356,8 @@ _vopGraphToUsd(const VOP_Node* vopNode,
                const ParmDepMap& parmDeps)
 {
     // Look for interface inputs.
-    // We iterate through the vop creator's paramters and see if any of our
-    // vop graph's paramters are dependents.
+    // We iterate through the vop creator's parameters and see if any of our
+    // vop graph's parameters are dependents.
     const OP_Node* creatorNode = vopNode->getCreator();
     const PRM_ParmList* creatorParams = creatorNode->getParmList();  
 

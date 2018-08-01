@@ -6,7 +6,7 @@
 
     The key property of payloads that we want to demonstrate
     is that loading a payload should not change values that 
-    were present when the the payload wasn't loaded. This
+    were present when the payload wasn't loaded. This
     is to avoid situations where users are working and
     making changes without payloads loaded, then find 
     everything changed beneath them when they do load 

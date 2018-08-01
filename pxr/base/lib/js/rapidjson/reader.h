@@ -829,13 +829,13 @@ private:
 //!@endcond
 
         for (;;) {
-            // Scan and copy string before "\\\"" or < 0x20. This is an optional optimzation.
+            // Scan and copy string before "\\\"" or < 0x20. This is an optional optimization.
             if (!(parseFlags & kParseValidateEncodingFlag))
                 ScanCopyUnescapedString(is, os);
 
             Ch c = is.Peek();
             if (RAPIDJSON_UNLIKELY(c == '\\')) {    // Escape
-                size_t escapeOffset = is.Tell();    // For invalid escaping, report the inital '\\' as error offset
+                size_t escapeOffset = is.Tell();    // For invalid escaping, report the initial '\\' as error offset
                 is.Take();
                 Ch e = is.Peek();
                 if ((sizeof(Ch) == 1 || unsigned(e) < 256) && RAPIDJSON_LIKELY(escape[static_cast<unsigned char>(e)])) {

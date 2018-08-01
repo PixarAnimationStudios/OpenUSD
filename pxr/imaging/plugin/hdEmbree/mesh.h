@@ -151,7 +151,7 @@ protected:
     // This is called prior to syncing the prim, the first time the repr
     // is used.
     //
-    // reprName is the name of the repr to initalize.  HdRprim has already
+    // reprName is the name of the repr to initialize.  HdRprim has already
     // resolved the reprName to its final value.
     //
     // dirtyBits is an in/out value.  It is initialized to the dirty bits

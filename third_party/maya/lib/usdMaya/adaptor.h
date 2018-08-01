@@ -175,7 +175,7 @@ public:
         TfToken GetName() const;
 
         /// Gets the value of the underlying Maya plug and adapts it back into
-        /// a the requested type. This is simply a convenience function: values
+        /// the requested type. This is simply a convenience function: values
         /// are retrieved internally as VtValues and then converted into the
         /// requested type. Returns false if the value could not be converted to
         /// the requested type, or if this attribute adaptor is invalid.

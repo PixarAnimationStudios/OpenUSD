@@ -496,7 +496,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -709,7 +709,7 @@ class PxrAovLight "PxrAovLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -816,7 +816,7 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -970,7 +970,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1192,7 +1192,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1322,7 +1322,7 @@ class PxrRampLightFilter "PxrRampLightFilter" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1446,7 +1446,7 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 

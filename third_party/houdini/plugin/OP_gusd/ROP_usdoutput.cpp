@@ -116,7 +116,7 @@ creator(OP_Network* network,
 }
 
 //------------------------------------------------------------------------------
-// paramters
+// parameters
 //------------------------------------------------------------------------------
 OP_TemplatePair*
 getTemplates()
@@ -284,7 +284,7 @@ getTemplates()
             0, // thespareptr (leave default)
             0, // paramgroup (leave default)
             "If the file would otherwise be empty, write an empty group prim at "
-            "the location specified in the the prefix parm.",
+            "the location specified in the prefix parm.",
             0), // disable rules
 
         PRM_Template(
@@ -871,8 +871,8 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         m_usdStage->SetEditTarget(m_usdStage->GetSessionLayer());
 
         // If given model path and asset name detail attributes, we set up an
-        // edit target to remap the output of the overlay to the specfied
-        // model's scope. For exmaple, uutput would be /model/geom/... instead
+        // edit target to remap the output of the overlay to the specified
+        // model's scope. For example, output would be /model/geom/... instead
         // of /World/sets/model/geom...
 
         // Cook the node to get detail attributes.
@@ -1240,7 +1240,7 @@ setKind( const string &path, UsdStagePtr stage )
     // component (model) and all its ancestors need to be marked group.
     //
     // Unless we are writing a group of references to other assets. This is the 
-    // case if our chidren are models.
+    // case if our children are models.
 
     if( path.empty() )
         return;
@@ -1349,7 +1349,7 @@ renderFrame(fpreal time,
     // If writing an overlay and a prim has an instinsic path, write the prim to that path
     refiner.m_useUSDIntrinsicNames = overlayGeo;
 
-    // Check for a (usd)instancepath paramter/property to set as the default
+    // Check for a (usd)instancepath parameter/property to set as the default
     // value. This tells us to build a point instancer.
     UT_String usdInstancePath;
     if(!evalParameterOrProperty("usdinstancepath", 0, 0, usdInstancePath)) {
@@ -1388,7 +1388,7 @@ renderFrame(fpreal time,
 
     ctxt.writeOverlay = overlayGeo;
 
-    // Check for a usdprototypespath paramter/property to set as the default
+    // Check for a usdprototypespath parameter/property to set as the default
     // for point instancing.
     UT_String usdPrototypesPath;
     if(!evalParameterOrProperty("usdprototypespath", 0, 0, usdPrototypesPath)) {

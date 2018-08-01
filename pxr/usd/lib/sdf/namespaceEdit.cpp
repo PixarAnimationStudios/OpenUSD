@@ -72,7 +72,7 @@ public:
 
     /// Apply an edit to the tree.  This makes the "object" at \p
     /// edit.currentPath have the path \p edit.newPath.  It makes the same
-    /// change to the the prefix of each descendant.  It also makes the
+    /// change to the prefix of each descendant.  It also makes the
     /// same change to every target path that has \p edit.currentPath as a
     /// prefix.
     ///

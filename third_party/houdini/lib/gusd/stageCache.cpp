@@ -908,7 +908,7 @@ struct _PrimLoadKey
 
 
 /// Object holding a set of prim load keys.
-/// This object is compatible as a range functor on the the LoadPrimRange()
+/// This object is compatible as a range functor on the LoadPrimRange()
 /// methods of the cache.
 struct _PrimLoadRange
 {

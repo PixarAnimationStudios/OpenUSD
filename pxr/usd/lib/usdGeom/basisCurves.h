@@ -141,7 +141,7 @@ class SdfAssetPath;
 /// and RiCurves, hence the name "BasisCurves."  If we are interested in
 /// specifying a custom basis as RenderMan allows you to do, the basis
 /// enum could be extended with a new "custom" token and with additional 
-/// attributes vstep and matrix, but for compatability with AbcGeom and the
+/// attributes vstep and matrix, but for compatibility with AbcGeom and the
 /// rarity of this use case, it is omitted for now.
 /// 
 /// Example of deriving per curve segment and varying primvar data counts from

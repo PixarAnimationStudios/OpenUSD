@@ -179,7 +179,7 @@ public:
     /// at a prim with purpose \em render should generally only be included
     /// when performing a "final quality" render.  Subtrees rooted at a prim
     /// with purpose \em proxy should generally only be included when 
-    /// performing a lightweight proxy render (such as openGL).  Finally,
+    /// performing a lightweight proxy render (such as OpenGL).  Finally,
     /// subtrees rooted at a prim with purpose \em guide should generally
     /// only be included when an interactive application has been explicitly
     /// asked to "show guides". 

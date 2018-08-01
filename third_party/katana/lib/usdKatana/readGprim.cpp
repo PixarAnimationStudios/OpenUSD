@@ -131,7 +131,7 @@ _ConvertGeomAttr(
     const std::vector<double>& motionSampleTimes = data.GetMotionSampleTimes(usdAttr);
 
     // Flag to check if we discovered the topology is varying, in
-    // which case we only output the sample at the curent frame.
+    // which case we only output the sample at the current frame.
     bool varyingTopology = false;
 
     // Used to compare value sizes to identify varying topology.

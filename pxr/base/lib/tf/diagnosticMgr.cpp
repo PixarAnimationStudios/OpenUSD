@@ -434,7 +434,7 @@ TfDiagnosticMgr::_GetErrorMarkBegin(size_t mark, size_t *nErrors)
         return errorList.end();
     }
 
-    // Search backward to find the the error with the smallest serial number
+    // Search backward to find the error with the smallest serial number
     // that's greater than or equal to mark.
     size_t count = 0;
 

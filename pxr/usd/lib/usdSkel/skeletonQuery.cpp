@@ -99,7 +99,7 @@ UsdSkelSkeletonQuery::_ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
         // Need to first fill in bind transforms.
         if (!_definition->GetJointLocalRestTransforms(xforms)) {
             TF_WARN("%s -- Failed computing local space transforms: "
-                    "the the animation source (<%s>) is sparse, but the "
+                    "the animation source (<%s>) is sparse, but the "
                     "'restTransforms' of the Skeleton are either unset, "
                     "or do not match the number of joints.",
                     GetSkeleton().GetPrim().GetPath().GetText(),

@@ -214,7 +214,7 @@ void wrapRay()
              "\n"
              "Intersects the ray with the triangle formed by points p0,\n"
              "p1, and p2.  The first item in the tuple is true if the ray\n"
-             "intersects the triangle. dist is the the parametric\n"
+             "intersects the triangle. dist is the parametric\n"
              "distance to the intersection point, the barycentric\n"
              "coordinates of the intersection point, and the front-facing\n"
              "flag. The barycentric coordinates are defined with respect\n"

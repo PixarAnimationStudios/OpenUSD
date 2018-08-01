@@ -316,7 +316,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Ordered list of all target blend shapes. This property is not
     /// inherited hierarchically, and is expected to be authored directly on
-    /// the skinnable primitive to which the the blend shapes apply.
+    /// the skinnable primitive to which the blend shapes apply.
     ///
     USDSKEL_API
     UsdRelationship GetBlendShapeTargetsRel() const;

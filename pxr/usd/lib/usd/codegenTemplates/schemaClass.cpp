@@ -218,7 +218,7 @@ const TfType &
 {% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
 
 /// Returns the property name prefixed with the correct namespace prefix, which
-/// is composed of the the API's propertyNamespacePrefix metadata and the
+/// is composed of the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
 inline
 TfToken

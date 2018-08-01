@@ -53,9 +53,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 ///     bool Predicate(size_t index begin, V* value);
 ///
-/// if it evalutes as true then value contains the item from the original list.
+/// if it evaluates as true then value contains the item from the original list.
 ///
-/// grainSize specifices a minumum amount of work to be done per-thread. There
+/// grainSize specifies a minimum amount of work to be done per-thread. There
 /// is overhead to launching a thread (or task) and a typical guideline is that
 /// you want to have at least 10,000 instructions to count for the overhead of
 /// launching a thread.
@@ -132,7 +132,7 @@ WorkParallelFilterN(size_t N,
 ///
 ///     bool Predicate(size_t index begin, V& value);
 ///
-/// if it evalutes as true then value contains the item from the original list.
+/// if it evaluates as true then value contains the item from the original list.
 ///
 template <typename V, typename Fn>
 std::vector<V>

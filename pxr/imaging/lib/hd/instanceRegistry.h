@@ -63,7 +63,7 @@ public:
     /// Constructor.
     HdInstance() {}
 
-    /// Initalize the members of HdInstance
+    /// Initialize the members of HdInstance
     void Create(KeyType const &key,
                 ValueType const &value,
                  Dictionary *parent,

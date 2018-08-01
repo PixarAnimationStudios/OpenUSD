@@ -62,7 +62,7 @@ WorkSerialForN(size_t n, Fn &&fn)
 ///
 ///     void LoopCallback(size_t begin, size_t end);
 ///
-/// grainSize specifices a minumum amount of work to be done per-thread. There
+/// grainSize specifies a minimum amount of work to be done per-thread. There
 /// is overhead to launching a thread (or task) and a typical guideline is that
 /// you want to have at least 10,000 instructions to count for the overhead of
 /// launching a thread.

@@ -101,7 +101,7 @@ class "Light" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -435,7 +435,7 @@ class LightFilter "LightFilter" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -572,7 +572,7 @@ class DistantLight "DistantLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -707,7 +707,7 @@ class DiskLight "DiskLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -849,7 +849,7 @@ class RectLight "RectLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -989,7 +989,7 @@ class SphereLight "SphereLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1138,7 +1138,7 @@ class CylinderLight "CylinderLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1285,7 +1285,7 @@ class GeometryLight "GeometryLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1423,7 +1423,7 @@ class DomeLight "DomeLight" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -1537,7 +1537,7 @@ class LightPortal "LightPortal" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 

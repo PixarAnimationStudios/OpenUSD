@@ -339,7 +339,7 @@ private:
     typedef boost::unordered_map<SdfPath, 
                                  SdfPathVector, SdfPath::Hash> _UsdToCacheMap;
 
-    // All data asscoiated with a given Instancer prim. PrimMap could
+    // All data associated with a given Instancer prim. PrimMap could
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {

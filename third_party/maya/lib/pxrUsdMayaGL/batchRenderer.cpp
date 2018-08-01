@@ -507,7 +507,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
             nullptr);
     }
 
-    // We call _OnSoftSelectOptionsChangedCallback manually once, to initalize
+    // We call _OnSoftSelectOptionsChangedCallback manually once, to initialize
     // _objectSoftSelectEnabled; because of this, it's setup is slightly
     // different - since we're calling from within the constructor, we don't
     // use CurrentlyExists()/GetInstance(), but instead pass this as clientData;

@@ -828,12 +828,12 @@ namespace {
             // request before providing them to the scene delegate.
             //
             // The InitRepr bit is set when a collection changes and we need
-            // to re-evalutate the repr state of a prim to ensure the repr
-            // was initalised.
+            // to re-evaluate the repr state of a prim to ensure the repr
+            // was initialised.
             //
             // The DirtyRepr bit on the otherhand is set when the scene
             // delegate's prim repr state changes and thus the prim must
-            // fetch it again from the scene delgate.
+            // fetch it again from the scene delegate.
             //
             // In both cases, if the repr is new for the prim, this leaves the
             // NewRepr dirty bit on the prim (otherwise NewRepr is clean).
@@ -866,7 +866,7 @@ namespace {
             //
             // Calling PropagateRprimDirtyBits gives the Rprim an opportunity
             // to update the dirty bits in order to request the information
-            // before passing the request to the scene deleate.
+            // before passing the request to the scene delegate.
             dirtyBits = rprim->PropagateRprimDirtyBits(dirtyBits);
         }
     }
@@ -937,7 +937,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
     _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 
-    // Texture Bprims contain a deduplication system, where certain paramters
+    // Texture Bprims contain a deduplication system, where certain parameters
     // such as maximum texture size are resolved by looking at all the
     // references.
     //

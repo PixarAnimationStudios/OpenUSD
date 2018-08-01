@@ -1358,7 +1358,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
        being passed into shader since the vertex shader takes pre-offsetted
        vertex arrays and no needs to apply offset in shader (except gregory
        patch drawing etc. In that case gl_BaseVertexARB can be used under
-       GL_ARB_shader_draw_parameters extention)
+       GL_ARB_shader_draw_parameters extension)
 
        gl_InstanceID is available only in vertex shader, so codegen
        takes care of applying an offset for each instance for the later
@@ -2221,7 +2221,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
         TfToken const &dataType = it->second.dataType;
 
         // future work:
-        // with ARB_enhanced_layouts extention, it's possible
+        // with ARB_enhanced_layouts extension, it's possible
         // to use "component" qualifier to declare offsetted primvars
         // in interleaved buffer.
         _EmitDeclaration(vertexInputs, name, dataType, binding);

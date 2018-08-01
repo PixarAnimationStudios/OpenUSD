@@ -199,12 +199,12 @@ HdPrimGather::_FindUpperBound(const SdfPathVector &paths,
         }
     }
 
-    // start represents the first path that doens't have the prefix
+    // start represents the first path that doesn't have the prefix
     // but we want the inclusive range, so -1
     return start - 1;
 }
 
-// Apply the the top item on the filter stack to the range
+// Apply the top item on the filter stack to the range
 // of elements between (start, end) (inclusive).
 // isIncludeRange is the current state of the specified range.
 void

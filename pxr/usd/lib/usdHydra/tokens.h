@@ -128,7 +128,7 @@ struct UsdHydraTokensType {
     /// 
     /// Possible value for "wrapT" and "wrapS" inputs on a "UvTexture" 
     /// shader prim. 
-    /// Causes the the texture coordinate to be clamped to [0,1].
+    /// Causes the texture coordinate to be clamped to [0,1].
     const TfToken clamp;
 
     /// \brief "mirror"

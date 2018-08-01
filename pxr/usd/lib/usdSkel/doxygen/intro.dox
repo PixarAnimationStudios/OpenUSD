@@ -116,7 +116,7 @@ The _World Space_ transform of a joint is computed as:
 \endcode
 
 Where _skelLocalToWorldTransform_ is the world space transform of the Skeleton
-primtiive.
+primitiive.
     
 
 <b>Computing a Posed Point</b>

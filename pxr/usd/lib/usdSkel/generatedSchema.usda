@@ -64,7 +64,7 @@ class SkelRoot "SkelRoot" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -178,7 +178,7 @@ class Skeleton "Skeleton" (
         at a prim with purpose render should generally only be included
         when performing a "final quality" render.  Subtrees rooted at a prim
         with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
+        performing a lightweight proxy render (such as OpenGL).  Finally,
         subtrees rooted at a prim with purpose guide should generally
         only be included when an interactive application has been explicitly
         asked to "show guides". 
@@ -366,7 +366,7 @@ class "BindingAPI" (
     rel skel:blendShapeTargets (
         doc = """Ordered list of all target blend shapes. This property is not
         inherited hierarchically, and is expected to be authored directly on
-        the skinnable primitive to which the the blend shapes apply."""
+        the skinnable primitive to which the blend shapes apply."""
     )
     uniform token[] skel:joints (
         doc = """An (optional) array of tokens defining the list of

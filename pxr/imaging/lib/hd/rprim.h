@@ -161,7 +161,7 @@ public:
     /// This is called prior to syncing the prim, the first time the repr
     /// is used.
     ///
-    /// defaultReprName is the name of the repr to initalize.  However, this
+    /// defaultReprName is the name of the repr to initialize.  However, this
     /// can be overridden by the prim itself with an authored repr, which
     /// is obtained from the scene delegate.  If the forced flag is set
     /// the defaultReprName should be used, even if there is an authored repr.

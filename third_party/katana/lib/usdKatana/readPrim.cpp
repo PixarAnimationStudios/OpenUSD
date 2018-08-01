@@ -293,7 +293,7 @@ _BuildScopedCoordinateSystems(
         FnKat::GroupBuilder& coordSysBuilder)
 {
     // We look at the immediate children of this prim for UsdRi-encoded
-    // scopedCooordinateSystems, but emit them as a relative coordinate system
+    // scopedCoordinateSystems, but emit them as a relative coordinate system
     // on this (parent) so they are applicable to all children of this node.
 
     if (!prim) {
@@ -322,7 +322,7 @@ _BuildScopedCoordinateSystems(
         // XXX: For backward compatibility we will emit the same coordsys
         // again, prefixed with modelInstanceName.
         //
-        // XXX: 20150126: Restoring this backward compatbility
+        // XXX: 20150126: Restoring this backward compatibility
         // shim that the tidscene SGG had.  We're finding we need it
         // to preserve assumptions made internally by the REYES eye
         // shaders.  Possibly we can remove this once we are no longer
@@ -786,7 +786,7 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         SdfValueTypeName typeName;
         int              elementSize;
 
-        // GetDeclarationInfo inclues all namespaces other than "primvars:" in
+        // GetDeclarationInfo includes all namespaces other than "primvars:" in
         // 'name'
         primvar->GetDeclarationInfo(&name, &typeName, 
                                     &interpolation, &elementSize);

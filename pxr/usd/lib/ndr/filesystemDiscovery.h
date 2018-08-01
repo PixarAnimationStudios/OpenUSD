@@ -76,7 +76,7 @@ public:
     NDR_API
     ~_NdrFilesystemDiscoveryPlugin() {}
 
-    /// Discover all of the nodes that appear within the the search paths
+    /// Discover all of the nodes that appear within the search paths
     /// provided and match the extensions provided.
     NDR_API
     NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override;

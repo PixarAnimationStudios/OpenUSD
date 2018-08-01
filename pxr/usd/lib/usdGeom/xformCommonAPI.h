@@ -256,7 +256,7 @@ private:
 
     // Computes and stored op indices if the xformable is compatible.
     // 
-    // Returns false if the xformable is incompabible or if there was a problem
+    // Returns false if the xformable is incompatible or if there was a problem
     // computing op indices.
     // 
     bool _VerifyCompatibility();

@@ -3554,7 +3554,7 @@ SdfLayer::_PrimPushChild(const SdfPath& parentPath,
     //
     // - Do not record a field change entry with Sdf_ChangeManager.
     //   Doing so would require us to provide both the old & new
-    //   values for the vector.  Note tha the the changelist protocol
+    //   values for the vector.  Note that the changelist protocol
     //   already has special affordances for spec add/remove events,
     //   and child fields are essentially an implementation detail.
     //
