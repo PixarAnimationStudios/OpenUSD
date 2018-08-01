@@ -77,17 +77,26 @@ enum class _PathType {
 
 class _FileAnalyzer {
 public:
-    // Takes a given asset path and the layer it was found in, and returns the
-    // corresponding remapped path.
+    // The asset remapping function's signature. 
+    // It takes a given asset path, the layer it was found in and a boolean 
+    // value. The bool is used to indicate whether a dependency must be skipped 
+    // on the given asset path, which is useful to skip for things like 
+    // templated clip paths that cannot be resolved directly without additional 
+    // processing. 
+    // The function returns the corresponding remapped path.
+    // 
     // The layer is used to resolve the asset path in cases where the given 
     // asset path is a search path or a relative path. 
     using RemapAssetPathFunc = std::function<std::string 
-            (const std::string &, const SdfLayerRefPtr &)>;
+            (const std::string &assetPath, 
+             const SdfLayerRefPtr &layer, 
+             bool skipDependency)>;
 
     // Takes the asset path and the type of dependency it is and does some 
     // arbitrary processing (like enumerating dependencies).
-    using ProcessAssetPathFunc = std::function<void (const std::string &, 
-                                                     const _DepType &)>;
+    using ProcessAssetPathFunc = std::function<void 
+            (const std::string &assetPath, 
+             const _DepType &depType)>;
 
     // Opens the file at \p resolvedFilePath and analyzes its external 
     // dependencies.
@@ -173,10 +182,12 @@ _FileAnalyzer::_ProcessDependency(const std::string &rawRefPath,
     }
 
     if (_remapPathFunc) {
-        return _remapPathFunc(rawRefPath, GetLayer());
-    } else {
-        return rawRefPath;
+        return _remapPathFunc(rawRefPath, GetLayer(), /*skipDependency*/ false);
     }
+
+    // Return the raw reference path if there's no asset path remapping 
+    // function.
+    return rawRefPath;
 }
 
 VtValue 
@@ -338,8 +349,11 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
     // UsdClipsAPI::GetClipTemplateAssetPath for details. 
     VtValue clipsValue = primSpec->GetInfo(UsdTokens->clips);
     if (!clipsValue.IsEmpty() && clipsValue.IsHolding<VtDictionary>()) {
-        VtDictionary clipsDict = 
+        const VtDictionary origClipsDict = 
                 clipsValue.UncheckedGet<VtDictionary>();
+
+        // Create a copy of the clips dictionary, as we may have to modify it.
+        VtDictionary clipsDict = origClipsDict;
         for (auto &clipSetNameAndDict : clipsDict) {
             if (clipSetNameAndDict.second.IsHolding<VtDictionary>()) {
                 VtDictionary clipDict = 
@@ -361,9 +375,12 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
                     // update the clip dictionary.
                     // This retains the #s in the templateAssetPath?
                     if (_remapPathFunc) {
+                        // Not adding a dependency on the templated asset path
+                        // since it can't be resolved by the resolver.
                         clipDict[UsdClipsAPIInfoKeys->templateAssetPath] = 
                             VtValue(_remapPathFunc(templateAssetPath, 
-                                                   GetLayer()));
+                                                   GetLayer(), 
+                                                   /*skipDependency*/ true));
                         clipsDict[clipSetNameAndDict.first] = VtValue(clipDict);
                     }
 
@@ -376,27 +393,19 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
                     const std::string clipsDirAssetPath = 
                         SdfComputeAssetPathRelativeToLayer(_layer, clipsDir);
 
-                    std::string resolvedClipsDir = 
-                        ArGetResolver().Resolve(clipsDirAssetPath);
-                    if (resolvedClipsDir.empty()) {
-                        TF_WARN("Failed to resolve template clips directory"
-                            " @%s@ with computed asset path @%s@ in layer "
-                            "@%s@.", clipsDir.c_str(), 
-                            clipsDirAssetPath.c_str(), 
-                            GetFilePath().c_str());
-                        continue;
-                    }
-
-                    if (!TfIsDir(resolvedClipsDir)) {
-                        TF_WARN("Resolved path to clips directory '%s' is not "
-                            "a valid directory!", resolvedClipsDir.c_str());
+                    // We don't attempt to resolve the clips directory asset
+                    // path, since Ar does not support directory-path 
+                    // resolution. 
+                    if (!TfIsDir(clipsDirAssetPath)) {
+                        TF_WARN("Clips directory '%s' is not a valid directory"
+                            "on the filesystem.", clipsDirAssetPath.c_str());
                         continue;
                     }
 
                     std::string clipsBaseName = TfGetBaseName(
                             templateAssetPath);
                     std::string globPattern = TfStringCatPaths(
-                            resolvedClipsDir, 
+                            clipsDirAssetPath, 
                             TfStringReplace(clipsBaseName, "#", "*"));
                     const std::vector<std::string> clipAssetRefs = 
                         TfGlob(globPattern);
@@ -405,17 +414,18 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
                         // which the dependency must be processed.
                         // 
                         // clipsDir contains a '/' in the end, but 
-                        // resolvedClipsDir does not. Hence, add a '/' to 
-                        // resolvedClipsDir before doing the replace.
+                        // clipsDirAssetPath does not. Hence, add a '/' to 
+                        // clipsDirAssetPath before doing the replace.
                         std::string rawClipRef = TfStringReplace(
-                                clipAsset, resolvedClipsDir + '/', clipsDir);
+                                clipAsset, clipsDirAssetPath + '/', clipsDir);
                         _ProcessDependency(rawClipRef, _DepType::Reference);
                     }
                 }
             }
         }
 
-        if (_remapPathFunc) {
+        // Update the clips dictionary only if it has been modified.
+        if (_remapPathFunc && clipsDict != origClipsDict) {
             primSpec->SetInfo(UsdTokens->clips, VtValue(clipsDict));
         }
     }
@@ -513,8 +523,12 @@ public:
     {
         auto &layerDependenciesMap = _layerDependenciesMap;
         const auto remapAssetPathFunc = [&layerDependenciesMap](
-            const std::string &ap, const SdfLayerRefPtr &layer) {
-            layerDependenciesMap[layer].push_back(ap);
+                const std::string &ap, 
+                const SdfLayerRefPtr &layer,
+                bool skipDependency) {
+            if (!skipDependency) {
+                layerDependenciesMap[layer].push_back(ap);
+            }
             return _RemapAssetPath(ap, layer, nullptr);
         };
 
@@ -777,7 +791,6 @@ UsdUtilsExtractExternalReferences(
         payloads->end());
 }
 
-
 bool
 UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
                              const std::string &usdzFilePath,
@@ -835,7 +848,6 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
         } else {
             // If the layer has been modified, then we need to export it to 
             // a temporary file before adding it to the package.
-            std::string layerExtension = ArGetResolver().GetExtension(destPath);
             SdfFileFormat::FileFormatArguments args;
 
             const SdfFileFormatConstPtr fileFormat = 
