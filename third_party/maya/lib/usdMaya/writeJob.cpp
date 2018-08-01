@@ -159,11 +159,13 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
         // Since we're packaging a temporary stage file that has an
         // auto-generated name, create a nicer name for the root layer -- it's
         // just the package's base name but with ".usd" instead of ".usdz".
+        // NOTE: For now the extension has to be ".usdc" since it's required
+        // to properly work on MacOS/iOS Mojave/12
         _packageName = fileName;
         _packageRootName = TfStringPrintf(
                 "%s.%s",
                 TfStringGetBeforeSuffix(TfGetBaseName(fileName)).c_str(),
-                UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+                UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     }
     else {
         // No extension; assume a usdc (crate) file.

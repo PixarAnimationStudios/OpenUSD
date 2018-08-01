@@ -59,7 +59,7 @@ class testUsdExportPackage(unittest.TestCase):
         zipFile = Usd.ZipFile.Open(usdFile)
         fileNames = zipFile.GetFileNames()
         self.assertEqual(fileNames, [
-            "MyAwesomePackage.usd",
+            "MyAwesomePackage.usdc",
             "ReferenceModel.usda",
             "BaseModel.usda",
             "card.png"
