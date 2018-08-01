@@ -193,6 +193,7 @@ pxr_test_scripts(
     testenv/testUsdStagePopulationMasks.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
+    testenv/testUsdUsdzFileFormat.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
     testenv/testUsdVariantFallbacks.py
@@ -300,6 +301,16 @@ pxr_build_test(testUsdSchemaBase
         usd
     CPPFILES
         testenv/testUsdSchemaBase.cpp
+)
+
+pxr_build_test(testUsdUsdzResolver
+    LIBRARIES
+        ar
+        arch
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdUsdzResolver.cpp
 )
 
 pxr_install_test_dir(
@@ -445,6 +456,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdCollectionAPI
     DEST testUsdCollectionAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUsdzFileFormat
+    DEST testUsdUsdzFileFormat
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUsdzResolver
+    DEST testUsdUsdzResolver
 )
 
 pxr_install_test_dir(
@@ -778,6 +799,12 @@ pxr_register_test(testUsdSchemaBase
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUsdzFileFormat
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzFileFormat"
     EXPECTED_RETURN_CODE 0
 )
 
