@@ -83,6 +83,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _doubleSided(false)
     , _flatShadingEnabled(false)
     , _displacementEnabled(true)
+    , _smoothNormals(false)
     , _packedSmoothNormals(IsEnabledPackedNormals())
     , _limitNormals(false)
     , _sceneNormals(false)
@@ -773,8 +774,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // Take local copy of packed normal state, so we can
-    // detect transitions from packed to unpacked normals.
+    // Take local copy of normals state, so we can detect transitions
+    // to smooth normals or from packed to unpacked normals.
+    bool useSmoothNormals = _smoothNormals;
     bool usePackedSmoothNormals = _packedSmoothNormals;
 
     if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals)) {
@@ -787,6 +789,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         TF_VERIFY(_vertexAdjacency);
         bool doRefine = (refineLevel > 0);
         bool doQuadrangulate = _UseQuadIndices(renderIndex, _topology);
+
+        useSmoothNormals = true;
 
         // we can't use packed normals for refined/quad,
         // let's migrate the buffer to full precision
@@ -962,6 +966,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // added additional items (smooth normals) or we may be transitioning
         // to unpacked normals
         bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
+                     (useSmoothNormals != _smoothNormals) ||
                      (usePackedSmoothNormals != _packedSmoothNormals) ||
                      mergePointsVisibilityIntoBAR;
 
@@ -1025,8 +1030,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // Now we've finished transitioning from packed to unpacked normals
-    // so update the current state.
+    // Now we've finished transitioning to smooth normals or
+    // from packed to unpacked normals so update the current state.
+    _smoothNormals = useSmoothNormals;
     _packedSmoothNormals = usePackedSmoothNormals;
 
     // schedule buffer sources

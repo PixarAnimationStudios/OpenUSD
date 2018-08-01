@@ -165,6 +165,7 @@ private:
     bool _flatShadingEnabled;
     bool _displacementEnabled;
 
+    bool _smoothNormals;
     bool _packedSmoothNormals;
     bool _limitNormals;
     bool _sceneNormals;
