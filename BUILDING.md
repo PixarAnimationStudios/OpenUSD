@@ -233,23 +233,11 @@ For further information see our additional documentation on the Houdini plugins 
 
 Enable the [MaterialX](https://github.com/materialx/materialx) plugin in the build
 by specifying the cmake flag ```PXR_BUILD_MATERIALX_PLUGIN=TRUE``` when invoking cmake.
-This plugin is compatible with MaterialX 1.35.5. The additional dependencies that must be supplied when invoking cmake are:
+This plugin is compatible with MaterialX 1.36.0. The additional dependencies that must be supplied when invoking cmake are:
 
 | Dependency Name    | Description                              | Version |
 | ------------------ |----------------------------------------  | ------- |
-| MATERIALX_ROOT     | The root path to a MaterialX SDK install.| 1.35.5  |
-
-The plugin builds against 1.35.5 but targets the 1.36 spec.  The differences
-include: how inherits are specified, how collections are created, variants
-replace MaterialVar, and versioning support.
-
-In addition, MaterialX versions prior to 1.36 don't copy the MaterialX standard
-library files, including OSL definitions, into the install location.  As a
-result the plugin will not be able to find them.  You may manually copy these
-files from the source tree to the install by copying everything in
-SRC/documents/Libraries to INST/documents/Libraries.
-
-Support for 1.35 will be dropped when 1.36 becomes available.
+| MATERIALX_ROOT     | The root path to a MaterialX SDK install.| 1.36.0  |
 
 For further information see our additional documentation on the MaterialX plugins [here](http://openusd.org/docs/MaterialX-USD-Plugins.html).
 
