@@ -57,4 +57,6 @@ pxr_build_test_shared_lib(TestSdrRegistry
 pxr_register_test(testSdrRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry"
+    ENV
+        PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH=1
 )
