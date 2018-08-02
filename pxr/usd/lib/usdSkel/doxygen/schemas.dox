@@ -294,7 +294,7 @@ weights.
 
 For example, suppose that a blend shape defines a 'smile' shape.
 At a weight of 1, we apply the full effect of the shape. At in-between weight
-values, we linear interpolate the shape back towards a neutral pose to derive
+values, we linearly interpolate the shape back towards a neutral pose to derive
 an in-between shape. Using in-betweens, we can instead specify those in-between
 shapes explicitly. So instead of linearly interpolating to derive a 'half-smile'
 pose, we might provide an explicit shape corresponding to a weight of 0.5.
@@ -320,22 +320,21 @@ at which they apply.
 
 The in-between shapes corresponding to \f$weight = 0\f$ and \f$weight = 1\f$
 are **implicitly** defined on a blend shape. The former defines the null shape,
-for at which all shape offset are zero, while the latter is the shape given
-by the _offsets_ property of the UsdSkelBlendShape primitive.
+for which all shape offset are zero, while the latter is the shape given by the
+_offsets_ property of the UsdSkelBlendShape primitive.
 Because the existence of those in-betweens is implied, it is considered an
-authoring error for any in-betweens to specify a weight of 0 or 1 for 
-an in-between shape.
+authoring error for any in-betweens to specify a weight of 0 or 1.
 
-We must also consider the behavior when multiple in-betweens whose weight values
-match. Although it would be possible to adopt an interpretation that allows
-all shapes to have meaning -- such as averaging across all shapes -- this
+We must also consider the behavior when multiple in-betweens have matching
+weight values. Although it would be possible to adopt an interpretation that
+allows all shapes to have meaning -- such as averaging across all shapes -- this
 introduces some ambiguity for interchange: If the in-betweens are averaged
 together, it's unclear what the _name_ should be given to the resulting shape.
-To avoid this ambiguous interpretation, in addition to a weight value of 0 or 1,
-it is considered an authoring error for any two in-betweens of a blend shape
-to have the same weight value. Typical run-time behavior for these malformed
-in-betweens is to produce and error, but continue to process the blend shape
-while ignoring the malformed in-betweens.
+To avoid this ambiguous interpretation, in addition to treating in-betweens with
+a weight value of 0 or 1 as an authoring error, it is also considered an error
+for any two in-betweens of a blend shape to have the same weight value. Typical
+run-time behavior for these malformed in-betweens is to produce an error, but
+continue to process the blend shape while ignoring the malformed in-betweens.
 
 If we consider only the set of valid in-betweens, a set of blend shapes
 containing in-betweens are applied to a point as follows:
@@ -345,7 +344,7 @@ containing in-betweens are applied to a point as follows:
                      b_u\frac{w_i-\alpha_l}{\alpha_u-\alpha_l}] } \\
     \text{where:} \\
     \begin{align*}
-        P        &= \text{Initial point being deformed}
+        P        &= \text{Initial point being deformed} \\
         w_i      &= \text{Weight value of blendshape } i \\
         b_i      &= \text{Position offsets of blendshape } i \\
         \alpha_i &= \text{Weight location of in-between blendshape } i \\
@@ -362,8 +361,16 @@ weight is greater than 0.5, we interpolate between the shape at 0.5 and the
 implicit primary shape (\f$weight = 1\f$), adding the result to the base shape.
 If the weight is in the \f$[0.25,0.5]\f$ interval, we interpolate between the
 shapes at 0.25 and 0.5, adding the result to the base shape. Finally, if the
-weight is less than 0, we interpolate between the implicit null shape
-(\f$weight = 0\f$),
+weight is less than 0.25, we interpolate between the implicit null shape
+(\f$weight = 0\f$) and the shape at 0.25. Note also that this interpolation
+is _unbounded_, so if the input weight is, say, -0.25, then we have:
+\f[
+    (1 - \frac{w_i-\alpha_l}{\alpha_u-\alpha_l}) = (1 - \frac{-0.25 - 0}{0.25 - 0}) = 2 \\
+    \frac{w_i-\alpha_l}{\alpha_u-\alpha_l} = \frac{-0.25 - 0}{0.25 - 0} = -1
+\f]
+
+So at a weight value of -0.25, the shape at 0.25 is applied with a weight of -1.
+   
 
 \section UsdSkel_BindingAPI Binding API Schema
 
