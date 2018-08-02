@@ -486,6 +486,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         float      lightDropoff = 0.0f;
         // The cone angle is 180 degrees by default.
         GfVec2f    lightCosineConeAngle(-1.0f);
+        GfMatrix4d lightShadowMatrix(1.0);
         int        lightShadowResolution = 512;
         float      lightShadowBias = 0.0f;
         bool       lightShadowOn = false;
@@ -510,6 +511,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
 
             MIntArray intValues;
             MFloatArray floatValues;
+            MMatrix matrixValue;
 
             switch (paramType) {
                 case MHWRender::MLightParameterInformation::kBoolean:
@@ -521,6 +523,14 @@ px_vp20Utils::GetLightingContextFromDrawContext(
                 case MHWRender::MLightParameterInformation::kFloat3:
                 case MHWRender::MLightParameterInformation::kFloat4:
                     mayaLightParamInfo->getParameter(paramName, floatValues);
+                    break;
+                case MHWRender::MLightParameterInformation::kFloat4x4Row:
+                    mayaLightParamInfo->getParameter(paramName, matrixValue);
+                    break;
+                case MHWRender::MLightParameterInformation::kFloat4x4Col:
+                    mayaLightParamInfo->getParameter(paramName, matrixValue);
+                    // Gf matrices are row-major.
+                    matrixValue = matrixValue.transpose();
                     break;
                 default:
                     // Unsupported paramType.
@@ -571,6 +581,9 @@ px_vp20Utils::GetLightingContextFromDrawContext(
                     break;
                 case MHWRender::MLightParameterInformation::kShadowMapSize:
                     _GetLightingParam(intValues, floatValues, lightShadowResolution);
+                    break;
+                case MHWRender::MLightParameterInformation::kShadowViewProj:
+                    lightShadowMatrix.Set(matrixValue.matrix);
                     break;
                 case MHWRender::MLightParameterInformation::kGlobalShadowOn:
                     _GetLightingParam(intValues, floatValues, globalShadowOn);
@@ -680,6 +693,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         light.SetSpotCutoff(lightCutoff);
         light.SetSpotFalloff(lightFalloff);
         light.SetAttenuation(lightAttenuation);
+        light.SetShadowMatrix(lightShadowMatrix);
         light.SetShadowResolution(lightShadowResolution);
         light.SetShadowBias(lightShadowBias);
         light.SetHasShadow(lightShadowOn && globalShadowOn);
