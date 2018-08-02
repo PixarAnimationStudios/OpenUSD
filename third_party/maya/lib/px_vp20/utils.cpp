@@ -66,216 +66,222 @@ bool
 px_vp20Utils::setupLightingGL(const MHWRender::MDrawContext& context)
 {
     MStatus status;
-    
+
     // Take into account only the 8 lights supported by the basic
     // OpenGL profile.
     const unsigned int nbLights =
         std::min(context.numberOfActiveLights(&status), 8u);
-    if (status != MStatus::kSuccess) return false;
-
-    if (nbLights > 0) {
-        // Lights are specified in world space and needs to be
-        // converted to view space.
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        const MMatrix worldToView =
-            context.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
-        if (status != MStatus::kSuccess) return false;
-        glLoadMatrixd(worldToView.matrix[0]);
-
-        glEnable(GL_LIGHTING);
-        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-        glEnable(GL_COLOR_MATERIAL) ;
-        glEnable(GL_NORMALIZE) ;
-
-        
-        {
-            const GLfloat ambient[4]  = { 0.0f, 0.0f, 0.0f, 1.0f };
-            const GLfloat specular[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-            glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,  ambient);
-            glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-
-            glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-
-            glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
-        }
-
-        for (unsigned int i=0; i<nbLights; ++i) {
-            MFloatVector direction;
-            float intensity;
-            MColor color;
-            bool hasDirection;
-            bool hasPosition;
-#if MAYA_API_VERSION >= 201300
-            // Starting with Maya 2013, getLightInformation() uses MFloatPointArray for positions
-            MFloatPointArray positions;
-            status = context.getLightInformation(
-                i, positions, direction, intensity, color,
-                hasDirection, hasPosition);
-            const MFloatPoint &position = positions[0];
-#else 
-            // Maya 2012, getLightInformation() uses MFloatPoint for position
-            MFloatPoint position;
-            status = context.getLightInformation(
-                i, position, direction, intensity, color,
-                hasDirection, hasPosition);
-#endif
-            if (status != MStatus::kSuccess) return false;
-
-            if (hasDirection) {
-                if (hasPosition) {
-                    // Assumes a Maya Spot Light!
-                    const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-                    const GLfloat diffuse[4] = { intensity * color[0],
-                                              intensity * color[1],
-                                              intensity * color[2],
-                                              1.0f };
-                    const GLfloat pos[4] = { position[0],
-                                              position[1],
-                                              position[2],
-                                              1.0f };
-                    const GLfloat dir[3] = { direction[0],
-                                              direction[1],
-                                              direction[2]};
-                        
-                            
-                    glLightfv(GL_LIGHT0+i, GL_AMBIENT,  ambient);
-                    glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  diffuse);
-                    glLightfv(GL_LIGHT0+i, GL_POSITION, pos);
-                    glLightfv(GL_LIGHT0+i, GL_SPOT_DIRECTION, dir);
-
-                    // Maya's default value's for spot lights.
-                    glLightf(GL_LIGHT0+i,  GL_SPOT_EXPONENT, 0.0);
-                    glLightf(GL_LIGHT0+i,  GL_SPOT_CUTOFF,  20.0);
-                }
-                else {
-                    // Assumes a Maya Directional Light!
-                    const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-                    const GLfloat diffuse[4] = { intensity * color[0],
-                                                  intensity * color[1],
-                                                  intensity * color[2],
-                                                  1.0f };
-                    const GLfloat pos[4] = { -direction[0],
-                                              -direction[1],
-                                              -direction[2],
-                                              0.0f };
-                        
-                            
-                    glLightfv(GL_LIGHT0+i, GL_AMBIENT,  ambient);
-                    glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  diffuse);
-                    glLightfv(GL_LIGHT0+i, GL_POSITION, pos);
-                    glLightf(GL_LIGHT0+i, GL_SPOT_CUTOFF, 180.0);
-                }
-            }
-            else if (hasPosition) {
-                // Assumes a Maya Point Light!
-                const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-                const GLfloat diffuse[4] = { intensity * color[0],
-                                              intensity * color[1],
-                                              intensity * color[2],
-                                              1.0f };
-                const GLfloat pos[4] = { position[0],
-                                          position[1],
-                                          position[2],
-                                          1.0f };
-                        
-                            
-                glLightfv(GL_LIGHT0+i, GL_AMBIENT,  ambient);
-                glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  diffuse);
-                glLightfv(GL_LIGHT0+i, GL_POSITION, pos);
-                glLightf(GL_LIGHT0+i, GL_SPOT_CUTOFF, 180.0);
-            }
-            else {
-                // Assumes a Maya Ambient Light!
-                const GLfloat ambient[4] = { intensity * color[0],
-                                              intensity * color[1],
-                                              intensity * color[2],
-                                              1.0f };
-                const GLfloat diffuse[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-                const GLfloat pos[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-                        
-                            
-                glLightfv(GL_LIGHT0+i, GL_AMBIENT,  ambient);
-                glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  diffuse);
-                glLightfv(GL_LIGHT0+i, GL_POSITION, pos);
-                glLightf(GL_LIGHT0+i, GL_SPOT_CUTOFF, 180.0);
-            }
-
-            glEnable(GL_LIGHT0+i);
-        }
-        glPopMatrix();
+    if (status != MStatus::kSuccess) {
+        return false;
     }
 
-    glDisable(GL_LIGHTING);
-    return nbLights > 0;
-}
+    if (nbLights == 0u) {
+        return true;
+    }
 
+    // Lights are specified in world space and needs to be
+    // converted to view space.
+    const MMatrix worldToView =
+        context.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
+    if (status != MStatus::kSuccess) {
+        return false;
+    }
 
-//------------------------------------------------------------------------------
-//
-/* static */
-void
-px_vp20Utils::unsetLightingGL(const MHWRender::MDrawContext& context)
-{
-    MStatus status;
-    
-    // Take into account only the 8 lights supported by the basic
-    // OpenGL profile.
-    const unsigned int nbLights =
-        std::min(context.numberOfActiveLights(&status), 8u);
-    if (status != MStatus::kSuccess) return;
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadMatrixd(worldToView.matrix[0]);
 
-    // Restore OpenGL default values for anything that we have
-    // modified.
+    glEnable(GL_LIGHTING);
 
-    if (nbLights > 0) {
-        for (unsigned int i=0; i<nbLights; ++i) {
-            glDisable(GL_LIGHT0+i);
-            
-            const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-            glLightfv(GL_LIGHT0+i, GL_AMBIENT,  ambient);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_NORMALIZE);
 
-            if (i==0) {
-                const GLfloat diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-                glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  diffuse);
-
-                const GLfloat spec[4]    = { 1.0f, 1.0f, 1.0f, 1.0f };
-                glLightfv(GL_LIGHT0+i, GL_SPECULAR, spec);
-            }
-            else {
-                const GLfloat diffuse[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-                glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  diffuse);
-
-                const GLfloat spec[4]    = { 0.0f, 0.0f, 0.0f, 1.0f };
-                glLightfv(GL_LIGHT0+i, GL_SPECULAR, spec);
-            }
-            
-            const GLfloat pos[4]     = { 0.0f, 0.0f, 1.0f, 0.0f };
-            glLightfv(GL_LIGHT0+i, GL_POSITION, pos);
-            
-            const GLfloat dir[3]     = { 0.0f, 0.0f, -1.0f };
-            glLightfv(GL_LIGHT0+i, GL_SPOT_DIRECTION, dir);
-            
-            glLightf(GL_LIGHT0+i,  GL_SPOT_EXPONENT,  0.0);
-            glLightf(GL_LIGHT0+i,  GL_SPOT_CUTOFF,  180.0);
-        }
-        
-        glDisable(GL_LIGHTING);
-        glDisable(GL_COLOR_MATERIAL) ;
-        glDisable(GL_NORMALIZE) ;
-
-        const GLfloat ambient[4]  = { 0.2f, 0.2f, 0.2f, 1.0f };
-        const GLfloat specular[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    {
+        const GLfloat ambient[4]  = { 0.0f, 0.0f, 0.0f, 1.0f };
+        const GLfloat specular[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,  ambient);
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
 
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-        glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
-        
-
+        glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
     }
+
+    for (unsigned int i = 0u; i < nbLights; ++i) {
+        MFloatVector direction;
+        float intensity;
+        MColor color;
+        bool hasDirection;
+        bool hasPosition;
+
+        MFloatPointArray positions;
+        status = context.getLightInformation(
+            i,
+            positions,
+            direction,
+            intensity,
+            color,
+            hasDirection,
+            hasPosition);
+        if (status != MStatus::kSuccess) {
+            return false;
+        }
+
+        const MFloatPoint& position = positions[0];
+
+        if (hasDirection) {
+            if (hasPosition) {
+                // Assumes a Maya Spot Light!
+                const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+                const GLfloat diffuse[4] = {
+                    intensity * color[0],
+                    intensity * color[1],
+                    intensity * color[2],
+                    1.0f };
+                const GLfloat pos[4] = {
+                    position[0],
+                    position[1],
+                    position[2],
+                    1.0f };
+                const GLfloat dir[3] = {
+                    direction[0],
+                    direction[1],
+                    direction[2] };
+
+                glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
+                glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, diffuse);
+                glLightfv(GL_LIGHT0 + i, GL_POSITION, pos);
+                glLightfv(GL_LIGHT0 + i, GL_SPOT_DIRECTION, dir);
+
+                // Maya's default values for spot lights.
+                glLightf(GL_LIGHT0 + i, GL_SPOT_EXPONENT, 0.0);
+                glLightf(GL_LIGHT0 + i, GL_SPOT_CUTOFF, 20.0);
+            }
+            else {
+                // Assumes a Maya Directional Light!
+                const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+                const GLfloat diffuse[4] = {
+                    intensity * color[0],
+                    intensity * color[1],
+                    intensity * color[2],
+                    1.0f };
+                const GLfloat pos[4] = {
+                    -direction[0],
+                    -direction[1],
+                    -direction[2],
+                    0.0f };
+
+                glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
+                glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, diffuse);
+                glLightfv(GL_LIGHT0 + i, GL_POSITION, pos);
+                glLightf(GL_LIGHT0 + i, GL_SPOT_CUTOFF, 180.0f);
+            }
+        }
+        else if (hasPosition) {
+            // Assumes a Maya Point Light!
+            const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            const GLfloat diffuse[4] = {
+                intensity * color[0],
+                intensity * color[1],
+                intensity * color[2],
+                1.0f };
+            const GLfloat pos[4] = {
+                position[0],
+                position[1],
+                position[2],
+                1.0f };
+
+            glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
+            glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, diffuse);
+            glLightfv(GL_LIGHT0 + i, GL_POSITION, pos);
+            glLightf(GL_LIGHT0 + i, GL_SPOT_CUTOFF, 180.0f);
+        }
+        else {
+            // Assumes a Maya Ambient Light!
+            const GLfloat ambient[4] = {
+                intensity * color[0],
+                intensity * color[1],
+                intensity * color[2],
+                1.0f };
+            const GLfloat diffuse[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            const GLfloat pos[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+            glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
+            glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, diffuse);
+            glLightfv(GL_LIGHT0 + i, GL_POSITION, pos);
+            glLightf(GL_LIGHT0 + i, GL_SPOT_CUTOFF, 180.0f);
+        }
+
+        glEnable(GL_LIGHT0 + i);
+    }
+
+    glDisable(GL_LIGHTING);
+
+    glPopMatrix();
+
+    return true;
+}
+
+/* static */
+void
+px_vp20Utils::unsetLightingGL(const MHWRender::MDrawContext& context)
+{
+    MStatus status;
+
+    // Take into account only the 8 lights supported by the basic
+    // OpenGL profile.
+    const unsigned int nbLights =
+        std::min(context.numberOfActiveLights(&status), 8u);
+    if (status != MStatus::kSuccess || nbLights == 0u) {
+        return;
+    }
+
+    // Restore OpenGL default values for anything that we have modified.
+
+    for (unsigned int i = 0u; i < nbLights; ++i) {
+        glDisable(GL_LIGHT0 + i);
+
+        const GLfloat ambient[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        glLightfv(GL_LIGHT0 + i, GL_AMBIENT, ambient);
+
+        if (i == 0u) {
+            const GLfloat diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, diffuse);
+
+            const GLfloat spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            glLightfv(GL_LIGHT0 + i, GL_SPECULAR, spec);
+        }
+        else {
+            const GLfloat diffuse[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, diffuse);
+
+            const GLfloat spec[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            glLightfv(GL_LIGHT0 + i, GL_SPECULAR, spec);
+        }
+
+        const GLfloat pos[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+        glLightfv(GL_LIGHT0 + i, GL_POSITION, pos);
+
+        const GLfloat dir[3] = { 0.0f, 0.0f, -1.0f };
+        glLightfv(GL_LIGHT0 + i, GL_SPOT_DIRECTION, dir);
+
+        glLightf(GL_LIGHT0 + i, GL_SPOT_EXPONENT, 0.0);
+        glLightf(GL_LIGHT0 + i, GL_SPOT_CUTOFF, 180.0);
+    }
+
+    glDisable(GL_LIGHTING);
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_NORMALIZE);
+
+    const GLfloat ambient[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    const GLfloat specular[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
 }
 
 static
@@ -287,11 +293,11 @@ _GetLightingParam(
 {
     bool gotParamValue = false;
 
-    if (intValues.length() > 0) {
-        paramValue = (intValues[0] == 1);
+    if (intValues.length() > 0u) {
+        paramValue = (intValues[0u] == 1);
         gotParamValue = true;
-    } else if (floatValues.length() > 0) {
-        paramValue = GfIsClose(floatValues[0], 1.0f, 1e-5);
+    } else if (floatValues.length() > 0u) {
+        paramValue = GfIsClose(floatValues[0u], 1.0f, 1e-5);
         gotParamValue = true;
     }
 
@@ -307,8 +313,8 @@ _GetLightingParam(
 {
     bool gotParamValue = false;
 
-    if (intValues.length() > 0) {
-        paramValue = intValues[0];
+    if (intValues.length() > 0u) {
+        paramValue = intValues[0u];
         gotParamValue = true;
     }
 
@@ -324,8 +330,8 @@ _GetLightingParam(
 {
     bool gotParamValue = false;
 
-    if (floatValues.length() > 0) {
-        paramValue = floatValues[0];
+    if (floatValues.length() > 0u) {
+        paramValue = floatValues[0u];
         gotParamValue = true;
     }
 
@@ -341,13 +347,13 @@ _GetLightingParam(
 {
     bool gotParamValue = false;
 
-    if (intValues.length() >= 2) {
-        paramValue[0] = intValues[0];
-        paramValue[1] = intValues[1];
+    if (intValues.length() >= 2u) {
+        paramValue[0u] = intValues[0u];
+        paramValue[1u] = intValues[1u];
         gotParamValue = true;
-    } else if (floatValues.length() >= 2) {
-        paramValue[0] = floatValues[0];
-        paramValue[1] = floatValues[1];
+    } else if (floatValues.length() >= 2u) {
+        paramValue[0u] = floatValues[0u];
+        paramValue[1u] = floatValues[1u];
         gotParamValue = true;
     }
 
@@ -363,15 +369,15 @@ _GetLightingParam(
 {
     bool gotParamValue = false;
 
-    if (intValues.length() >= 3) {
-        paramValue[0] = intValues[0];
-        paramValue[1] = intValues[1];
-        paramValue[2] = intValues[2];
+    if (intValues.length() >= 3u) {
+        paramValue[0u] = intValues[0u];
+        paramValue[1u] = intValues[1u];
+        paramValue[2u] = intValues[2u];
         gotParamValue = true;
-    } else if (floatValues.length() >= 3) {
-        paramValue[0] = floatValues[0];
-        paramValue[1] = floatValues[1];
-        paramValue[2] = floatValues[2];
+    } else if (floatValues.length() >= 3u) {
+        paramValue[0u] = floatValues[0u];
+        paramValue[1u] = floatValues[1u];
+        paramValue[2u] = floatValues[2u];
         gotParamValue = true;
     }
 
@@ -387,20 +393,20 @@ _GetLightingParam(
 {
     bool gotParamValue = false;
 
-    if (intValues.length() >= 3) {
-        paramValue[0] = intValues[0];
-        paramValue[1] = intValues[1];
-        paramValue[2] = intValues[2];
-        if (intValues.length() > 3) {
-            paramValue[3] = intValues[3];
+    if (intValues.length() >= 3u) {
+        paramValue[0u] = intValues[0u];
+        paramValue[1u] = intValues[1u];
+        paramValue[2u] = intValues[2u];
+        if (intValues.length() > 3u) {
+            paramValue[3u] = intValues[3u];
         }
         gotParamValue = true;
-    } else if (floatValues.length() >= 3) {
-        paramValue[0] = floatValues[0];
-        paramValue[1] = floatValues[1];
-        paramValue[2] = floatValues[2];
-        if (floatValues.length() > 3) {
-            paramValue[3] = floatValues[3];
+    } else if (floatValues.length() >= 3u) {
+        paramValue[0u] = floatValues[0u];
+        paramValue[1u] = floatValues[1u];
+        paramValue[2u] = floatValues[2u];
+        if (floatValues.length() > 3u) {
+            paramValue[3u] = floatValues[3u];
         }
         gotParamValue = true;
     }
@@ -421,10 +427,11 @@ px_vp20Utils::GetLightingContextFromDrawContext(
 
     MStatus status;
 
-    unsigned int numMayaLights =
-        context.numberOfActiveLights(MHWRender::MDrawContext::kFilteredToLightLimit,
-                                     &status);
-    if (status != MS::kSuccess || numMayaLights < 1) {
+    const unsigned int numMayaLights =
+        context.numberOfActiveLights(
+            MHWRender::MDrawContext::kFilteredToLightLimit,
+            &status);
+    if (status != MS::kSuccess || numMayaLights < 1u) {
         return lightingContext;
     }
 
@@ -448,10 +455,9 @@ px_vp20Utils::GetLightingContextFromDrawContext(
 
     GlfSimpleLightVector lights;
 
-    for (unsigned int i = 0; i < numMayaLights; ++i) {
+    for (unsigned int i = 0u; i < numMayaLights; ++i) {
         MHWRender::MLightParameterInformation* mayaLightParamInfo =
             context.getLightParameterInformation(i);
-
         if (!mayaLightParamInfo) {
             continue;
         }
@@ -463,7 +469,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
 
         // Some Maya lights may have multiple positions (e.g. area lights).
         // We'll accumulate all the positions and use the average of them.
-        size_t  lightNumPositions = 0;
+        size_t  lightNumPositions = 0u;
         GfVec4f lightPosition(0.0f);
         bool    lightHasDirection = false;
         GfVec3f lightDirection(0.0f, 0.0f, -1.0f);
@@ -472,17 +478,17 @@ px_vp20Utils::GetLightingContextFromDrawContext(
             lightDirection[2] = 1.0f;
         }
 
-        float   lightIntensity = 1.0f;
-        GfVec4f lightColor = blackColor;
-        bool    lightEmitsDiffuse = true;
-        bool    lightEmitsSpecular = false;
-        float   lightDecayRate = 0.0f;
-        float   lightDropoff = 0.0f;
+        float      lightIntensity = 1.0f;
+        GfVec4f    lightColor = blackColor;
+        bool       lightEmitsDiffuse = true;
+        bool       lightEmitsSpecular = false;
+        float      lightDecayRate = 0.0f;
+        float      lightDropoff = 0.0f;
         // The cone angle is 180 degrees by default.
-        GfVec2f lightCosineConeAngle(-1.0f);
-        int     lightShadowResolution = 512;
-        float   lightShadowBias = 0.0f;
-        bool    lightShadowOn = false;
+        GfVec2f    lightCosineConeAngle(-1.0f);
+        int        lightShadowResolution = 512;
+        float      lightShadowBias = 0.0f;
+        bool       lightShadowOn = false;
 
         bool globalShadowOn = false;
 
@@ -495,7 +501,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         MStringArray paramNames;
         mayaLightParamInfo->parameterList(paramNames);
 
-        for (unsigned int paramIndex = 0; paramIndex < paramNames.length(); ++paramIndex) {
+        for (unsigned int paramIndex = 0u; paramIndex < paramNames.length(); ++paramIndex) {
             const MString paramName = paramNames[paramIndex];
             const MHWRender::MLightParameterInformation::ParameterType paramType =
                 mayaLightParamInfo->parameterType(paramName);
@@ -591,15 +597,15 @@ px_vp20Utils::GetLightingContextFromDrawContext(
 
         // Set position back to the origin if we didn't get one, or average the
         // positions if we got more than one.
-        if (lightNumPositions == 0) {
+        if (lightNumPositions == 0u) {
             lightPosition = GfVec4f(0.0f, 0.0f, 0.0f, 1.0f);
-        } else if (lightNumPositions > 1) {
+        } else if (lightNumPositions > 1u) {
             lightPosition /= lightNumPositions;
         }
 
-        lightColor[0] *= lightIntensity;
-        lightColor[1] *= lightIntensity;
-        lightColor[2] *= lightIntensity;
+        lightColor[0u] *= lightIntensity;
+        lightColor[1u] *= lightIntensity;
+        lightColor[2u] *= lightIntensity;
 
         // Populate a GlfSimpleLight from the light information from Maya.
         GlfSimpleLight light;
@@ -611,7 +617,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         // We receive the cone angle from Maya as a pair of floats which
         // includes the penumbra, but GlfSimpleLights don't currently support
         // that, so we only use the primary cone angle value.
-        float lightCutoff = GfRadiansToDegrees(std::acos(lightCosineConeAngle[0]));
+        float lightCutoff = GfRadiansToDegrees(std::acos(lightCosineConeAngle[0u]));
         float lightFalloff = lightDropoff;
 
         // Maya's decayRate is effectively the attenuation exponent, so we
@@ -621,37 +627,37 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         // - 2.0 = quadratic attenuation
         // - 3.0 = cubic attenuation
         GfVec3f lightAttenuation(0.0f);
-        if (lightDecayRate > 2.5) {
+        if (lightDecayRate > 2.5f) {
             // Cubic attenuation.
-            lightAttenuation[0] = 1.0f;
-            lightAttenuation[1] = 1.0f;
-            lightAttenuation[2] = 1.0f;
-        } else if (lightDecayRate > 1.5) {
+            lightAttenuation[0u] = 1.0f;
+            lightAttenuation[1u] = 1.0f;
+            lightAttenuation[2u] = 1.0f;
+        } else if (lightDecayRate > 1.5f) {
             // Quadratic attenuation.
-            lightAttenuation[2] = 1.0f;
+            lightAttenuation[2u] = 1.0f;
         } else if (lightDecayRate > 0.5f) {
             // Linear attenuation.
-            lightAttenuation[1] = 1.0f;
+            lightAttenuation[1u] = 1.0f;
         } else {
             // No/constant attenuation.
-            lightAttenuation[0] = 1.0f;
+            lightAttenuation[0u] = 1.0f;
         }
 
-        if (lightHasDirection && lightNumPositions == 0) {
+        if (lightHasDirection && lightNumPositions == 0u) {
             // This is a directional light. Set the direction as its position.
-            lightPosition[0] = -lightDirection[0];
-            lightPosition[1] = -lightDirection[1];
-            lightPosition[2] = -lightDirection[2];
-            lightPosition[3] = 0.0f;
+            lightPosition[0u] = -lightDirection[0u];
+            lightPosition[1u] = -lightDirection[1u];
+            lightPosition[2u] = -lightDirection[2u];
+            lightPosition[3u] = 0.0f;
 
             // Revert direction to the default value.
             lightDirection = GfVec3f(0.0f, 0.0f, -1.0f);
             if (!viewDirectionAlongNegZ) {
-                lightDirection[2] = 1.0f;
+                lightDirection[2u] = 1.0f;
             }
         }
 
-        if (lightNumPositions == 0 && !lightHasDirection) {
+        if (lightNumPositions == 0u && !lightHasDirection) {
             // This is an ambient light.
             lightAmbient = lightColor;
         } else {
@@ -708,7 +714,7 @@ px_vp20Utils::RenderBoundingBox(
         const MMatrix& worldViewMat,
         const MMatrix& projectionMat)
 {
-    static const GfVec3f cubeLineVertices[24] = {
+    static const GfVec3f cubeLineVertices[24u] = {
         // Vertical edges
         GfVec3f(-0.5f, -0.5f, 0.5f),
         GfVec3f(-0.5f, 0.5f, 0.5f),
