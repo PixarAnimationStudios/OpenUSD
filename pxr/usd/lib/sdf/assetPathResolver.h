@@ -164,6 +164,10 @@ bool Sdf_IsPackageOrPackagedLayer(
     const SdfFileFormatConstPtr& fileFormat,
     const std::string& identifier);
 
+/// Returns the canonicalized form of the given \p realPath.
+std::string Sdf_CanonicalizeRealPath(
+    const std::string& realPath);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_ASSET_PATH_RESOLVER_H

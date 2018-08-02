@@ -407,4 +407,28 @@ Sdf_IsPackageOrPackagedLayer(
     return fileFormat->IsPackage() || ArIsPackageRelativePath(identifier);
 }
 
+string 
+Sdf_CanonicalizeRealPath(
+    const string& realPath)
+{
+    // Use the given realPath as-is if it's a relative path, otherwise
+    // use TfAbsPath to compute a platform-dependent real path.
+    //
+    // XXX: This method needs to be re-examined as we move towards a
+    // less filesystem-dependent implementation.
+
+    // If realPath is a package-relative path, absolutize just the
+    // outer path; the packaged path has a specific format defined in
+    // Ar that we don't want to modify.
+    if (ArIsPackageRelativePath(realPath)) {
+        pair<string, string> packagePath = 
+            ArSplitPackageRelativePathOuter(realPath);
+        return TfIsRelativePath(packagePath.first) ?
+            realPath : ArJoinPackageRelativePath(
+                TfAbsPath(packagePath.first), packagePath.second);
+    }
+
+    return TfIsRelativePath(realPath) ? realPath : TfAbsPath(realPath);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

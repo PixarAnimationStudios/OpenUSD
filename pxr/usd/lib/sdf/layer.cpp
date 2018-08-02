@@ -130,8 +130,7 @@ SdfLayer::SdfLayer(
     _permissionToEdit(true),
     _permissionToSave(true)
 {
-    const string realPathFinal =
-        TfIsRelativePath(realPath) ? realPath : TfAbsPath(realPath);
+    const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
     TF_DEBUG(SDF_LAYER).Msg("SdfLayer::SdfLayer('%s', '%s')\n",
         identifier.c_str(), realPathFinal.c_str());
@@ -201,8 +200,7 @@ SdfLayer::_CreateNewWithFormat(
     const ArAssetInfo& assetInfo,
     const FileFormatArguments& args)
 {
-    const string realPathFinal =
-        TfIsRelativePath(realPath) ? realPath : TfAbsPath(realPath);
+    const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
     // This method should be called with the layerRegistryMutex already held.
 
