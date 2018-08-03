@@ -1,0 +1,110 @@
+/*!
+\page usdMtlx_page_front UsdMtlx : MaterialX File Format and Shader Plugins
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdMtlx : MaterialX File Format and Shader Plugins
+\publicLib
+\endif
+
+\section usdMtlx_overview Overview
+
+This library provides the MaterialX file format, shader discovery and
+parsing plugin for USD, and currently has no user-level API.
+
+\section usdMtlx_concepts Concept Mappings
+
+MaterialX | USD | Notes
+--------- | --- | -----
+parameter | UsdShadeInput | Connectability is interfaceOnly
+input | UsdShadeInput | .
+output | UsdShadeOutput | A default output is named "result"
+material | UsdShadeMaterial | .
+nodegraph | UsdShadeNodeGraph | .
+collection | UsdCollectionAPI | See below
+geom | UsdCollectionAPI | See below
+node | UsdShadeShader | .
+nodedef | UsdShadeShader | See below
+implementation | SdrShaderNode | .
+materialassign | UsdShadeMaterialBindingAPI | .
+variant | USD variant | .
+variantset | USD variantset | .
+variantassign | USD variant selection | See below
+bindparam & bindinput | USD composition | See below
+look | USD prim | See below
+
+1. USD collections always contain absolute paths.  The file format
+plugin stores all collections on a single prim.
+2. USD material bindings require a UsdCollectionAPI so geom expressions
+are converted to and stored with collections.  geomprefix is applied
+at the time of conversion so the prefix is baked in.  Equal collections
+share the same UsdCollectionAPI.
+3. The shader discovery and parsing parts of the plugin record the
+information for nodedefs and implementations.  (nodegraphs used to
+implement nodedefs aren't currently supported.)  However, the nodedef
+is also translated by the file format.  This is so naive clients that
+don't look up the registered shader node will still see the attributes
+of a shader and so USD's composition can use the nodedef value's as
+fallbacks.
+4. Variants are used both to support MaterialX variants and to select a
+look.
+5. USD leverages its composition features to implement several MaterialX
+features.  Parameters and inputs are bound simply by setting opinions on
+Material prims, which are stronger than the opinions on the shaders.
+Look inherits use references and material inherits use specializes.
+nodedef inherits are handled during conversion and don't map to USD
+composition.
+6. MaterialX looks become variants on a single USD prim.  The expectation
+is that this prim will be referenced by various prims that will also set a
+variant selection to choose the desired look.  XXX -- How collection paths
+get mapped is still undecided.
+
+\section usdMtlx_unsupported Unsupported MaterialX Features
+
++ _materialx_ **require** attribute.  The file format plugin simply does its
+best with the input without checking the require attribute.
++ _materialx_ **namespace** attribute.  This attribute is ignored.
++ **geomexpr** requirement.  USD cannot yet represent path expressions.
+Paths that require glob-like pattern matching are discarded with a
+warning.
++ light context shader types.  USD doesn't have support for light types
+on materials.
++ Custom type members.  The file format plugin currently doesn't handle
+structures except as blind data.  Consequently it ignores **member** attributes.
++ Swizzle.  Swizzle is currently ignored with a warning.
++ _geominfo_, _geomattr_, _geomattrvalue_, _geomattrdefault_ and
+_geomtokendefault_ elements.  These elements are ignored.  The file
+format plugin currently doesn't attempt to bind looks to geometry.
++ **internalgeomprops** attribute.  This attribute is ignored.
++ **defaultgeomprop** attribute.  This attribute is ignored.
++ **geomname** value type.  These are treated as strings but such values
+are never used.  The file format plugin currently doesn't attempt
+to bind looks to geometry.
++ _property_, _propertyset_, _propertyassign_ and _propertysetassign_
+elements.  These elements are ignored.  The file format plugin currently
+doesn't attempt to bind looks to geometry.
++ _visibility_ elements.  These elements are ignored.  The file format
+plugin currently doesn't attempt to bind looks to geometry.
++ **fileprefix**.  This attribute is ignored.
++ Image filename substitutions.  USD has no support for these kind of
+substitutions.
++ _token_ and _bindtoken_ elements.  These elements are ignored.  Without
+image filename substitutions they have no purpose.
++ **width**, **height**, **bitdepth** output attributes.  These attributes are
+ignored.
++ **disable** parameter.  If this exists it will be converted as expected
+but MaterialX considers it implicit and the file format plugin will not
+create it automatically.  In addition it has no special meaning to USD.
+In particular, it does not disable the UsdShadeShader prim.
++ **uienumvalues** attribute.  This attribute is ignored..  USD has no
+corresponding concept.  uienum is handled correctly.
++ **uimin** and **uimax** attributes.  These attributes are ignored.  USD has
+no corresponding concept.
++ _attributedef_ elements.  These elements are ignored.  This is
+technically not unsupported since support is optional and only meaningful
+for applications that need it, which USD does not.
+
+Note that the file format plugin uses the MaterialX XML reader so it
+can read any valid MaterialX file, even it contains features not supported
+by the file format plugin.  Those features will be ignored or incompletely
+handled.
+
+*/

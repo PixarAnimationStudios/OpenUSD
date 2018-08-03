@@ -76,7 +76,7 @@ find_path(MATERIALX_LIB_DIRS
 )
 
 find_path(MATERIALX_STDLIB_DIR 
-    mx_stdlib_defs.mtlx
+    stdlib_defs.mtlx
     HINTS
         "${MATERIALX_ROOT}"
         "$ENV{MATERIALX_ROOT}"        
@@ -110,4 +110,5 @@ find_package_handle_standard_args(MaterialX
         MATERIALX_BASE_DIR
         MATERIALX_INCLUDE_DIRS
         MATERIALX_LIB_DIRS
+        MATERIALX_STDLIB_DIR
 )

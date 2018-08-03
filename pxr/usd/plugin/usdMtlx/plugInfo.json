@@ -1,0 +1,35 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "UsdMtlxFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "displayName": "USD MaterialX File Format",
+                        "extensions": [
+                            "mtlx"
+                        ],
+                        "formatId": "mtlx",
+                        "primary": true,
+                        "target": "usd"
+                    },
+                    "UsdMtlxDiscoveryPlugin" : {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "MaterialX Discovery"
+                    },
+                    "UsdMtlxParserPlugin" : {
+                        "bases": ["NdrParserPlugin"],
+                        "displayName": "MaterialX Node Parser"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdMtlx",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

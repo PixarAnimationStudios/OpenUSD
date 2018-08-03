@@ -1,0 +1,589 @@
+#usda 1.0
+(
+    colorManagementSystem = "ocio"
+    customLayerData = {
+        string colorSpace = "acescg"
+    }
+)
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "Msimple" (
+            prepend variantSets = "vs_simple_srf"
+        )
+        {
+            color3f inputs:diffColor
+            color3f inputs:otherColor1 (
+                connectability = "interfaceOnly"
+            )
+            color3f inputs:otherColor2 (
+                connectability = "interfaceOnly"
+            )
+            color3f inputs:otherColor3 (
+                connectability = "interfaceOnly"
+            )
+            color3f inputs:specColor
+            float inputs:specRoughness
+            token outputs:surface.connect = </MaterialX/Materials/Msimple/shader1.outputs:surface>
+            token outputs:volume.connect = </MaterialX/Materials/Msimple/shader2.outputs:volume>
+
+            def Shader "shader1" (
+                prepend references = </MaterialX/Shaders/shader1>
+            )
+            {
+                color3f inputs:diffColor.connect = </MaterialX/Materials/Msimple.inputs:diffColor>
+                color3f inputs:otherColor1 (
+                    connectability = "interfaceOnly"
+                )
+                color3f inputs:otherColor1.connect = </MaterialX/Materials/Msimple.inputs:otherColor1>
+                color3f inputs:otherColor2 (
+                    connectability = "interfaceOnly"
+                )
+                color3f inputs:otherColor2.connect = </MaterialX/Materials/Msimple.inputs:otherColor2>
+                color3f inputs:otherColor3 (
+                    connectability = "interfaceOnly"
+                )
+                color3f inputs:otherColor3.connect = </MaterialX/Materials/Msimple.inputs:otherColor3>
+                color3f inputs:specColor.connect = </MaterialX/Materials/Msimple.inputs:specColor>
+                float inputs:specRoughness.connect = </MaterialX/Materials/Msimple.inputs:specRoughness>
+            }
+
+            def Shader "shader2" (
+                prepend references = </MaterialX/Shaders/shader2>
+            )
+            {
+                color3f inputs:diffColor.connect = </MaterialX/Materials/Msimple.inputs:diffColor>
+                color3f inputs:specColor.connect = </MaterialX/Materials/Msimple.inputs:specColor>
+                float inputs:specRoughness.connect = </MaterialX/Materials/Msimple.inputs:specRoughness>
+            }
+            variantSet "vs_simple_srf" = {
+                "metal1" {
+                    color3f inputs:diffColor = (0.001, 0.001, 0.001)
+                    color3f inputs:specColor = (0.671, 0.676, 0.667)
+                    float inputs:specRoughness = 0.005
+
+                }
+                "metal2" {
+                    color3f inputs:diffColor = (0.049, 0.043, 0.033)
+                    color3f inputs:specColor = (0.115, 0.091, 0.064)
+                    float inputs:specRoughness = 0.35
+
+                }
+                "plastic1" {
+                    color3f inputs:diffColor = (0.134, 0.13, 0.125)
+                    color3f inputs:otherColor4 = (0.1, 0.1, 0.1)
+                    color3f inputs:otherColor5 = (0.1, 0.1, 0.1)
+                    color3f inputs:otherColor6 = (0.1, 0.1, 0.1) (
+                        colorSpace = "lin_rec709"
+                    )
+                    color3f inputs:specColor = (0.114, 0.114, 0.114)
+                    float inputs:specRoughness = 0.38
+
+                }
+                "plastic2" {
+                    color3f inputs:diffColor = (0.17, 0.26, 0.23)
+                    float inputs:specRoughness = 0.24
+
+                }
+            }
+        }
+
+        def Material "Msimple2" (
+            prepend variantSets = "vs_simple_srf"
+        )
+        {
+            color3f inputs:diffColor
+            color3f inputs:otherColor1 (
+                connectability = "interfaceOnly"
+            )
+            color3f inputs:otherColor2 (
+                connectability = "interfaceOnly"
+            )
+            color3f inputs:otherColor3 (
+                connectability = "interfaceOnly"
+            )
+            color3f inputs:specColor
+            float inputs:specRoughness
+            token outputs:surface.connect = </MaterialX/Materials/Msimple2/shader1.outputs:surface>
+
+            def Shader "shader1" (
+                prepend references = </MaterialX/Shaders/shader1>
+            )
+            {
+                color3f inputs:diffColor.connect = </MaterialX/Materials/Msimple2.inputs:diffColor>
+                color3f inputs:otherColor1 (
+                    connectability = "interfaceOnly"
+                )
+                color3f inputs:otherColor1.connect = </MaterialX/Materials/Msimple2.inputs:otherColor1>
+                color3f inputs:otherColor2 (
+                    connectability = "interfaceOnly"
+                )
+                color3f inputs:otherColor2.connect = </MaterialX/Materials/Msimple2.inputs:otherColor2>
+                color3f inputs:otherColor3 (
+                    connectability = "interfaceOnly"
+                )
+                color3f inputs:otherColor3.connect = </MaterialX/Materials/Msimple2.inputs:otherColor3>
+                color3f inputs:specColor.connect = </MaterialX/Materials/Msimple2.inputs:specColor>
+                float inputs:specRoughness.connect = </MaterialX/Materials/Msimple2.inputs:specRoughness>
+            }
+            variantSet "vs_simple_srf" = {
+                "plastic2" {
+                    over "shader1"
+                    {
+                        color3f inputs:diffColor = (0.17, 0.26, 0.23)
+                        float inputs:specRoughness = 0.24
+                    }
+
+                }
+            }
+        }
+
+        def Material "mheadlight"
+        {
+            token inputs:custom (
+                connectability = "interfaceOnly"
+                renderType = "customtype"
+            )
+            asset inputs:emissionmap (
+                connectability = "interfaceOnly"
+            )
+            float inputs:gain = 500 (
+                connectability = "interfaceOnly"
+                doc = "This is a bound param"
+            )
+            token outputs:light.connect = </MaterialX/Materials/mheadlight/nd_headlight1.outputs:light>
+
+            def Shader "nd_headlight1" (
+                prepend references = </MaterialX/Shaders/nd_headlight1>
+            )
+            {
+                token inputs:custom (
+                    connectability = "interfaceOnly"
+                    renderType = "customtype"
+                )
+                token inputs:custom.connect = </MaterialX/Materials/mheadlight.inputs:custom>
+                asset inputs:emissionmap (
+                    connectability = "interfaceOnly"
+                )
+                asset inputs:emissionmap.connect = </MaterialX/Materials/mheadlight.inputs:emissionmap>
+                float inputs:gain (
+                    connectability = "interfaceOnly"
+                )
+                float inputs:gain.connect = </MaterialX/Materials/mheadlight.inputs:gain>
+            }
+        }
+
+        def Material "mheadlight1"
+        {
+            token inputs:custom (
+                connectability = "interfaceOnly"
+                renderType = "customtype"
+            )
+            float inputs:gain = 100 (
+                connectability = "interfaceOnly"
+            )
+            float inputs:gain.timeSamples = {
+                11: 110,
+                12: 220,
+                13: 300,
+                14: 480,
+                15: 500,
+            }
+            token outputs:light.connect = </MaterialX/Materials/mheadlight1/nd_headlight0.outputs:light>
+            string primvars:mumble = "shout"
+
+            def Shader "nd_headlight0" (
+                prepend references = </MaterialX/Shaders/nd_headlight0>
+            )
+            {
+                token inputs:custom (
+                    connectability = "interfaceOnly"
+                    renderType = "customtype"
+                )
+                token inputs:custom.connect = </MaterialX/Materials/mheadlight1.inputs:custom>
+                float inputs:gain (
+                    connectability = "interfaceOnly"
+                )
+                float inputs:gain.connect = </MaterialX/Materials/mheadlight1.inputs:gain>
+            }
+        }
+
+        def Material "mheadlight2"
+        {
+            token inputs:custom (
+                connectability = "interfaceOnly"
+                renderType = "customtype"
+            )
+            asset inputs:emissionmap (
+                connectability = "interfaceOnly"
+            )
+            float inputs:gain (
+                connectability = "interfaceOnly"
+            )
+            token outputs:light.connect = </MaterialX/Materials/mheadlight2/nd_headlight1.outputs:light>
+
+            def Shader "nd_headlight1" (
+                prepend references = </MaterialX/Shaders/nd_headlight1>
+            )
+            {
+                token inputs:custom (
+                    connectability = "interfaceOnly"
+                    renderType = "customtype"
+                )
+                token inputs:custom.connect = </MaterialX/Materials/mheadlight2.inputs:custom>
+                asset inputs:emissionmap (
+                    connectability = "interfaceOnly"
+                )
+                asset inputs:emissionmap.connect = </MaterialX/Materials/mheadlight2.inputs:emissionmap>
+                float inputs:gain (
+                    connectability = "interfaceOnly"
+                )
+                float inputs:gain.connect = </MaterialX/Materials/mheadlight2.inputs:gain>
+            }
+        }
+
+        def Material "m_vn"
+        {
+            token outputs:surface.connect = </MaterialX/Materials/m_vn/nd_vn_2.outputs:surface>
+
+            def Shader "nd_vn_2" (
+                prepend references = </MaterialX/Shaders/nd_vn_2>
+            )
+            {
+            }
+        }
+
+        def Material "m_vn_1_0"
+        {
+            token outputs:surface.connect = </MaterialX/Materials/m_vn_1_0/nd_vn_1_0.outputs:surface>
+
+            def Shader "nd_vn_1_0" (
+                prepend references = </MaterialX/Shaders/nd_vn_1_0>
+            )
+            {
+            }
+        }
+
+        def Material "m_vn_nd_1_0"
+        {
+            token outputs:surface.connect = </MaterialX/Materials/m_vn_nd_1_0/nd_vn_1_0.outputs:surface>
+
+            def Shader "nd_vn_1_0" (
+                prepend references = </MaterialX/Shaders/nd_vn_1_0>
+            )
+            {
+            }
+        }
+
+        def Material "m_vn_2_0"
+        {
+            token outputs:surface.connect = </MaterialX/Materials/m_vn_2_0/nd_vn_2.outputs:surface>
+
+            def Shader "nd_vn_2" (
+                prepend references = </MaterialX/Shaders/nd_vn_2>
+            )
+            {
+            }
+        }
+
+        def Material "m_vn_2_1"
+        {
+            token outputs:surface.connect = </MaterialX/Materials/m_vn_2_1/nd_vn_2_1.outputs:surface>
+
+            def Shader "nd_vn_2_1" (
+                prepend references = </MaterialX/Shaders/nd_vn_2_1>
+            )
+            {
+            }
+        }
+
+        def Material "m_vn_nd_2x"
+        {
+            token outputs:surface.connect = </MaterialX/Materials/m_vn_nd_2x/nd_vn_2.outputs:surface>
+
+            def Shader "nd_vn_2" (
+                prepend references = </MaterialX/Shaders/nd_vn_2>
+            )
+            {
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "shader1"
+        {
+            uniform token info:id = "shader1"
+            color3f inputs:diffColor = (0.18, 0.18, 0.18) (
+                colorSpace = "lin_rec709"
+            )
+            color3f inputs:otherColor1 = (0.1, 0.1, 0.1) (
+                colorSpace = "lin_rec709"
+            )
+            color3f inputs:otherColor2 = (0.1, 0.1, 0.1)
+            color3f inputs:otherColor3 = (0.1, 0.1, 0.1) (
+                colorSpace = "lin_rec709"
+            )
+            color3f inputs:specColor = (0.05, 0.05, 0.05) (
+                colorSpace = "lin_rec709"
+            )
+            float inputs:specRoughness = 0.25
+            token outputs:surface
+        }
+
+        def Shader "shader2"
+        {
+            uniform token info:id = "shader2"
+            color3f inputs:diffColor = (0.2, 0.2, 0.2) (
+                colorSpace = "lin_rec709"
+            )
+            color3f inputs:specColor = (0.75, 0.75, 0.75) (
+                colorSpace = "lin_rec709"
+            )
+            float inputs:specRoughness = 0.05
+            token outputs:volume
+        }
+
+        def Shader "nd_headlight1"
+        {
+            uniform token info:id = "nd_headlight1"
+            token inputs:custom (
+                renderType = "customtype"
+            )
+            asset inputs:emissionmap (
+                colorSpace = "lin_rec709"
+            )
+            float inputs:gain = 2000
+            token outputs:light
+        }
+
+        def Shader "nd_headlight0"
+        {
+            uniform token info:id = "nd_headlight0"
+            token inputs:custom (
+                renderType = "customtype"
+            )
+            float inputs:gain = 1000
+            token outputs:light
+        }
+
+        def Shader "nd_vn_2"
+        {
+            uniform token info:id = "nd_vn_2"
+            token outputs:surface
+        }
+
+        def Shader "nd_vn_1_0"
+        {
+            uniform token info:id = "nd_vn_1_0"
+            token outputs:surface
+        }
+
+        def Shader "nd_vn_2_1"
+        {
+            uniform token info:id = "nd_vn_2_1"
+            token outputs:surface
+        }
+    }
+
+    def "Collections" (
+        prepend apiSchemas = ["CollectionAPI:c_plastic", "CollectionAPI:c_metal", "CollectionAPI:c_lamphouse", "CollectionAPI:c_setgeom", "CollectionAPI:geom_1", "CollectionAPI:geom_2"]
+    )
+    {
+        uniform token collection:c_lamphouse:expansionRule = "expandPrims"
+        prepend rel collection:c_lamphouse:includes = </MaterialX/Collections.collection:c_metal>
+        uniform token collection:c_metal:expansionRule = "expandPrims"
+        rel collection:c_metal:includes (
+            doc = "This is a collection"
+        )
+        prepend rel collection:c_metal:includes = [
+            </MaterialX/Collections/X/Y/a/g3>,
+            </MaterialX/Collections/X/Y/a/g4>,
+        ]
+        prepend rel collection:c_plastic:excludes = [
+            </MaterialX/Collections/X/Y/a/g3>,
+            </MaterialX/Collections/X/Y/a/g5>,
+        ]
+        uniform token collection:c_plastic:expansionRule = "expandPrims"
+        prepend rel collection:c_plastic:includes = [
+            </MaterialX/Collections/X/Y/a/g1>,
+            </MaterialX/Collections/X/Y/a/g2>,
+            </MaterialX/Collections/X/Y/a/g5>,
+        ]
+        uniform token collection:c_setgeom:expansionRule = "expandPrims"
+        rel collection:c_setgeom:includes
+        uniform token collection:geom_1:expansionRule = "expandPrims"
+        prepend rel collection:geom_1:includes = </MaterialX/Collections/X/Y/a/b/headlight>
+        uniform token collection:geom_2:expansionRule = "expandPrims"
+        prepend rel collection:geom_2:includes = [
+            </MaterialX/Collections/U/V/a/g3>,
+            </MaterialX/Collections/U/V/a/g5>,
+            </MaterialX/Collections/U/V/a/g6>,
+        ]
+    }
+
+    def "Looks"
+    {
+        def "lookA" (
+            doc = "Look A"
+            prepend references = </MaterialX/Collections>
+        )
+        {
+            reorder properties = ["material:binding:collection:ma1", "material:binding:collection:ma2", "material:binding:collection:ma3"]
+            rel material:binding:collection:ma1 = [
+                </MaterialX/Looks/lookA.collection:c_plastic>,
+                </MaterialX/Looks/lookA/Materials/ma1>,
+            ]
+            rel material:binding:collection:ma2 = [
+                </MaterialX/Looks/lookA.collection:c_metal>,
+                </MaterialX/Looks/lookA/Materials/ma2>,
+            ]
+            rel material:binding:collection:ma3 = [
+                </MaterialX/Looks/lookA.collection:geom_1>,
+                </MaterialX/Looks/lookA/Materials/ma3>,
+            ]
+
+            def "Materials"
+            {
+                def "ma1" (
+                    doc = "Plastic 1"
+                    prepend references = </MaterialX/Materials/Msimple>
+                    variants = {
+                        string vs_simple_srf = "plastic1"
+                    }
+                )
+                {
+                }
+
+                def "ma2" (
+                    doc = "Metal 1"
+                    prepend references = </MaterialX/Materials/Msimple>
+                    variants = {
+                        string vs_simple_srf = "metal1"
+                    }
+                )
+                {
+                }
+
+                def "ma3" (
+                    prepend references = </MaterialX/Materials/mheadlight>
+                )
+                {
+                }
+            }
+        }
+
+        def "lookB" (
+            doc = "Look B"
+            prepend references = </MaterialX/Collections>
+        )
+        {
+            reorder properties = ["material:binding:collection:ma4", "material:binding:collection:ma5"]
+            rel material:binding:collection:ma4 = [
+                </MaterialX/Looks/lookB.collection:geom_2>,
+                </MaterialX/Looks/lookB/Materials/ma4>,
+            ]
+            rel material:binding:collection:ma5 = [
+                </MaterialX/Looks/lookB.collection:c_metal>,
+                </MaterialX/Looks/lookB/Materials/ma5>,
+            ]
+
+            def "Materials"
+            {
+                def "ma4" (
+                    prepend references = </MaterialX/Materials/Msimple>
+                    variants = {
+                        string vs_simple_srf = "plastic2"
+                    }
+                )
+                {
+                }
+
+                def "ma5" (
+                    prepend references = </MaterialX/Materials/Msimple>
+                    variants = {
+                        string vs_simple_srf = "metal2"
+                    }
+                )
+                {
+                }
+            }
+        }
+
+        def "lookC" (
+            doc = "Look C"
+            prepend references = [
+                </MaterialX/Looks/lookA>,
+                </MaterialX/Collections>
+            ]
+        )
+        {
+            reorder properties = ["material:binding:collection:ma1_1", "material:binding:collection:ma1", "material:binding:collection:ma2", "material:binding:collection:ma3"]
+            rel material:binding:collection:ma1_1 = [
+                </MaterialX/Looks/lookC.collection:c_plastic>,
+                </MaterialX/Looks/lookC/Materials/ma1_1>,
+            ]
+
+            over "Materials"
+            {
+                def "ma1_1" (
+                    doc = "Plastic 2"
+                    prepend references = </MaterialX/Materials/Msimple2>
+                    variants = {
+                        string vs_simple_srf = "plastic2"
+                    }
+                )
+                {
+                }
+            }
+        }
+
+        def "lookD" (
+            prepend references = </MaterialX/Collections>
+        )
+        {
+            rel material:binding = </MaterialX/Looks/lookD/Materials/ma1>
+
+            def "Materials"
+            {
+                def "ma1" (
+                    prepend references = </MaterialX/Materials/Msimple2>
+                )
+                {
+                }
+            }
+        }
+    }
+}
+
+def "ModelRoot" (
+    prepend variantSets = "LookVariant"
+)
+{
+    variantSet "LookVariant" = {
+        "lookA" (
+            prepend references = </MaterialX/Looks/lookA>
+        ) {
+
+        }
+        "lookB" (
+            prepend references = </MaterialX/Looks/lookB>
+        ) {
+
+        }
+        "lookC" (
+            prepend references = </MaterialX/Looks/lookC>
+        ) {
+
+        }
+        "lookD" (
+            prepend references = </MaterialX/Looks/lookD>
+        ) {
+
+        }
+    }
+}
+
+
