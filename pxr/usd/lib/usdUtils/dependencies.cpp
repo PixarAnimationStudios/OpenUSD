@@ -521,15 +521,18 @@ public:
 
     _AssetLocalizer(const SdfAssetPath &assetPath, const std::string &destDir) 
     {
+        _DirectoryRemapper dirRemapper;
+
         auto &layerDependenciesMap = _layerDependenciesMap;
-        const auto remapAssetPathFunc = [&layerDependenciesMap](
+        const auto remapAssetPathFunc = 
+            [&layerDependenciesMap, &dirRemapper](
                 const std::string &ap, 
                 const SdfLayerRefPtr &layer,
                 bool skipDependency) {
             if (!skipDependency) {
                 layerDependenciesMap[layer].push_back(ap);
             }
-            return _RemapAssetPath(ap, layer, nullptr);
+            return _RemapAssetPath(ap, layer, &dirRemapper, nullptr);
         };
 
         auto &resolver = ArGetResolver();
@@ -627,7 +630,7 @@ public:
 
                 _PathType pathType;
                 std::string remappedRef = _RemapAssetPath(ref, 
-                    fileAnalyzer.GetLayer(), &pathType);
+                    fileAnalyzer.GetLayer(), &dirRemapper, &pathType);
 
                 // If it's a relative path, construct the full path relative to
                 // the final (destination) location of the reference-containing 
@@ -671,16 +674,51 @@ private:
     // paths.
     LayerDependenciesMap _layerDependenciesMap;
 
+    // Helper object for remapping paths to an artifically-generated path.
+    class _DirectoryRemapper {
+    public:
+        _DirectoryRemapper() : _nextDirectoryNum(0) { }
+
+        // Remap the given file path by replacing the directory with a
+        // unique, artifically generated name. The generated directory name
+        // will be reused if the original directory is seen again on a
+        // subsequent call to Remap.
+        std::string Remap(const std::string& filePath)
+        {
+            const std::string pathName = TfGetPathName(filePath);
+            if (pathName.empty()) {
+                return filePath;
+            }
+
+            const std::string baseName = TfGetBaseName(filePath);
+            
+            auto insertStatus = _oldToNewDirectory.insert({pathName, ""});
+            if (insertStatus.second) {
+                insertStatus.first->second = 
+                    TfStringPrintf("%zu", _nextDirectoryNum++);
+            }
+            
+            return TfStringCatPaths(insertStatus.first->second, baseName);
+        }
+
+    private:
+        size_t _nextDirectoryNum;
+        std::unordered_map<std::string, std::string> _oldToNewDirectory;
+    };
+
     // Remaps a given asset path to be relative to the layer containing it,
     // for the purpose of localization.
-    static std::string _RemapAssetPath(const std::string &refPath, 
-                                       const SdfLayerRefPtr &layer,
-                                       _PathType *pathType);
+    static std::string _RemapAssetPath(
+        const std::string &refPath, 
+        const SdfLayerRefPtr &layer,
+        _DirectoryRemapper *dirRemapper,
+        _PathType *pathType);
 };
 
 std::string 
 _AssetLocalizer::_RemapAssetPath(const std::string &refPath, 
                                  const SdfLayerRefPtr &layer,
+                                 _DirectoryRemapper *dirRemapper,
                                  _PathType *pathType)
 {
     auto &resolver = ArGetResolver();
@@ -733,7 +771,13 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
     }
 
     // Strip off any initial slashes.
-    return TfStringTrimLeft(result, "/");
+    result = TfStringTrimLeft(result, "/");
+
+    // Remap the path to an artifically-constructed one so that the source 
+    // directory structure isn't embedded in the final .usdz file. Otherwise,
+    // sensitive information (e.g. usernames, movie titles...) in directory
+    // names may be inadvertently leaked in the .usdz file.
+    return dirRemapper->Remap(result);
 }
 
 // Returns a relative path for fullDestPath, relative to the given destination 
