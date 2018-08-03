@@ -578,6 +578,14 @@ px_vp20Utils::GetLightingContextFromDrawContext(
                     break;
                 case MHWRender::MLightParameterInformation::kShadowBias:
                     _GetLightingParam(intValues, floatValues, lightShadowBias);
+                    // XXX: Remap the kShadowBias value back into the light's
+                    // bias attribute value so it can be used by Hydra.
+                    // Maya's default value for the "Bias" attribute on lights
+                    // is 0.001, but that value gets reported here as 0.0022.
+                    // When the attribute is set to -1.0, 0.0, or 1.0, it is
+                    // reported back to us by the MLightParameterInformation as
+                    // -0.198, 0.002, and 0.202, respectively.
+                    lightShadowBias = (lightShadowBias - 0.002f) / 0.2f;
                     break;
                 case MHWRender::MLightParameterInformation::kShadowMapSize:
                     _GetLightingParam(intValues, floatValues, lightShadowResolution);
