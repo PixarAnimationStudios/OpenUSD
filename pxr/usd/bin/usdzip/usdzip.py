@@ -104,6 +104,16 @@ def main():
                         help='Resolvable asset path pointing to the root layer '
                         'of the asset to be isolated and copied into the '
                         'package.')
+    parser.add_argument("--arkitAsset", dest="arkitAsset", type=str,
+                        help="Similar to the --asset option, the --arkitAsset "
+                        "option packages all of the dependencies of the named "
+                        "scene file.  Assets targeted at the initial usdz "
+                        "implementation in ARKit operate under greater "
+                        "constraints than usdz files for more general 'in "
+                        "house' uses, and this option attempts to ensure that "
+                        "these constraints are honored; this may involve more "
+                        "transformations to the data, which may cause loss of "
+                        "features such as VariantSets.")
     parser.add_argument('-r', '--recurse', dest='recurse', action='store_true',
                         help='If specified, files in sub-directories are '
                         'recursively added to the package.')
@@ -127,7 +137,9 @@ def main():
     args = parser.parse_args()
     usdzFile = args.usdzFile
     filesToAdd = args.inputFiles
-    asset = args.asset
+
+    if args.asset and args.arkitAsset:
+        parser.error("Specify either --asset or --arkitAsset, not both.")
 
     if args.asset and len(filesToAdd)>0:
         parser.error("Specify either inputFiles or an asset via --asset, "
@@ -149,13 +161,23 @@ def main():
         if not args.recurse:
             print('Not recursing into sub-directories.')
 
+    success = True
     if len(filesToAdd) > 0:
         _CreateUsdzPackage(usdzFile, filesToAdd, args.recurse, args.verbose)
     elif args.asset:
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.asset)
-        r.ConfigureResolverForAsset(resolvedAsset)
-        UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.asset), usdzFile)
+        context = r.CreateDefaultContextForAsset(resolvedAsset)
+        with Ar.ResolverContextBinder(context):
+            success = UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.asset), 
+                                                    usdzFile)
+    elif args.arkitAsset:
+        r = Ar.GetResolver()
+        resolvedAsset = r.Resolve(args.arkitAsset)
+        context = r.CreateDefaultContextForAsset(resolvedAsset)
+        with Ar.ResolverContextBinder(context):
+            success = UsdUtils.CreateNewARKitUsdzPackage(
+                    Sdf.AssetPath(args.arkitAsset), usdzFile)
 
     if args.listContents or args.dumpContents:
         if os.path.exists(usdzFile):
@@ -170,7 +192,7 @@ def main():
         else:
             _Err("Can't find usdz file at path '%s'." % usdzFile)
 
-    return 0
+    return 0 if success else 1
 
 if __name__ == '__main__':
     sys.exit(main())

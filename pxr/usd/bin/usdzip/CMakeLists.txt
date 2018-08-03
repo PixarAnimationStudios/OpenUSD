@@ -16,6 +16,11 @@ pxr_install_test_dir(
     DEST testUsdZipAsset
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdZipAsset
+    DEST testUsdZipARKitAsset
+)
+
 pxr_register_test(testUsdZipInputFiles
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip flat.usdz src -l flat.txt"
@@ -67,5 +72,11 @@ pxr_register_test(testUsdZipAsset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip -a root.usd package.usdz -l contents.txt"
     DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdZipARKitAsset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip --arkitAsset root.usd package.usdz -l contents_arkit.txt"
     EXPECTED_RETURN_CODE 0
 )
