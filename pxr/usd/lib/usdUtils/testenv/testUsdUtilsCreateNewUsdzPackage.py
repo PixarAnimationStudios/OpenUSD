@@ -42,17 +42,18 @@ if __name__ == '__main__':
                         dest='outfile')
     parser.add_argument('-n', '--firstLayerName', type=str, default='', 
                         dest='rename')
+    parser.add_argument('--arkit', dest="arkit", action="store_true")
 
     args = parser.parse_args()
 
-    Ar.GetResolver().CreateDefaultContextForAsset(args.assetPath)
-    if args.rename:
-        assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
-                                             args.usdzFile,
-                                             args.rename)
-    else:
-        assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
-                                             args.usdzFile)
+    context = Ar.GetResolver().CreateDefaultContextForAsset(args.assetPath)
+    with Ar.ResolverContextBinder(context):
+        if not args.arkit:
+            assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
+                    args.usdzFile, args.rename if args.rename else "")
+        else:
+            assert UsdUtils.CreateNewARKitUsdzPackage(
+                    Sdf.AssetPath(args.assetPath), args.usdzFile)
 
     zipFile = Usd.ZipFile.Open(args.usdzFile)
     assert zipFile

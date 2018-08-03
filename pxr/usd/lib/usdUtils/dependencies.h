@@ -85,10 +85,37 @@ void UsdUtilsExtractExternalReferences(
 /// of the directory are not included in the created package. 
 USDUTILS_API
 bool
-UsdUtilsCreateNewUsdzPackage(const SdfAssetPath& assetPath,
-                             const std::string& usdzFilePath,
-                             const std::string& firstLayerName =
-                                    std::string());
+UsdUtilsCreateNewUsdzPackage(
+    const SdfAssetPath& assetPath,
+    const std::string& usdzFilePath,
+    const std::string& firstLayerName=std::string());
+
+/// Similar to UsdUtilsCreateNewUsdzPackage, this function packages all of the 
+/// dependencies of the given asset. Assets targeted at the initial usdz 
+/// implementation in ARKit operate under greater constraints than usdz files 
+/// for more general 'in house' uses, and this option attempts to ensure that
+/// these constraints are honored; this may involve more transformations to the 
+/// data, which may cause loss of features such as VariantSets.
+///
+/// If \p firstLayerName is specified, it is modified to have the ".usdc" 
+/// extension, as required by the initial usdz implementation in ARKit.
+/// 
+/// Returns true if the package was created successfully.
+/// 
+/// \note Clients of this function must take care of configuring the asset 
+/// resolver context before invoking the function. To create a default 
+/// resolver context, use \ref CreateDefaultContextForAsset() with the 
+/// asset path.
+/// 
+/// \note If the given asset has a dependency on a directory (i.e. an external 
+/// reference to a directory path), the dependency is ignored and the contents 
+/// of the directory are not included in the created package. 
+USDUTILS_API
+bool
+UsdUtilsCreateNewARKitUsdzPackage(
+    const SdfAssetPath &assetPath,
+    const std::string &usdzFilePath,
+    const std::string &firstLayerName=std::string());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

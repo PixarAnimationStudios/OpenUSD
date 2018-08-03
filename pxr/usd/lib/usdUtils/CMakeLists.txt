@@ -96,6 +96,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewARKitUsdzPackage
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencyExtractor
     DEST testUsdUtilsDependencyExtractor1
 )
@@ -172,6 +177,12 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage -l contents.txt package.usdz root.usd"
     DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --arkit -l contents_arkit.txt package.usdz root.usd"
     EXPECTED_RETURN_CODE 0
 )
 

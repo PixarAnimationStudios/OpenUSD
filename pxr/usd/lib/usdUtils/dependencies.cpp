@@ -41,6 +41,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/usdFileFormat.h"
+#include "pxr/usd/usd/usdcFileFormat.h"
 #include "pxr/usd/usd/zipFile.h"
 
 #include "pxr/base/arch/fileSystem.h"
@@ -75,6 +76,17 @@ enum class _PathType {
     AbsolutePath
 };
 
+// Enum class representing the external reference types that must be included 
+// in the search for external dependencies.
+enum class _ReferenceTypesToInclude {
+    // Include only references that affect composition.
+    CompositionOnly, 
+
+    // Include all external references including asset-valued attributes
+    // and non-composition metadata containing SdfAssetPath values.
+    All              
+};
+
 class _FileAnalyzer {
 public:
     // The asset remapping function's signature. 
@@ -107,9 +119,12 @@ public:
     // \p processPathFunc is invoked first with the raw (un-remapped) path. 
     // Then \p remapPathFunc is invoked. 
     _FileAnalyzer(const std::string &resolvedFilePath,
+                  _ReferenceTypesToInclude refTypesToInclude=
+                        _ReferenceTypesToInclude::All,
                   const RemapAssetPathFunc &remapPathFunc={},
                   const ProcessAssetPathFunc &processPathFunc={}) : 
         _filePath(resolvedFilePath),
+        _refTypesToInclude(refTypesToInclude),
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
@@ -167,6 +182,12 @@ private:
     // SdfLayer corresponding to the file. This will be null for non-layer 
     // files.
     SdfLayerRefPtr _layer;
+
+    // The types of references to include in the processing. 
+    // If set to _ReferenceTypesToInclude::CompositionOnly, 
+    // non-composition related asset references (eg. property values, property
+    // metadata and non-composition prim metadata) are ignored.
+    _ReferenceTypesToInclude _refTypesToInclude;
 
     // Remap and process path callback functions.
     RemapAssetPathFunc _remapPathFunc;
@@ -265,6 +286,12 @@ _FileAnalyzer::_ProcessPayload(const SdfPrimSpecHandle &primSpec)
 void
 _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
 {
+    // Include external references in property values and metadata only if 
+    // the client is interested in all reference types. i.e. return early if 
+    // _refTypesToInclude is CompositionOnly.
+    if (_refTypesToInclude == _ReferenceTypesToInclude::CompositionOnly)
+        return;
+
     // XXX:2016-04-14 Note that we use the field access API
     // here rather than calling GetAttributes, as creating specs for
     // large numbers of attributes, most of which are *not* asset
@@ -336,11 +363,13 @@ _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
 void
 _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
 {
-    for (const TfToken& infoKey : primSpec->GetMetaDataInfoKeys()) {
-        VtValue value = primSpec->GetInfo(infoKey);
-        VtValue updatedValue = _UpdateAssetValue(value);
-        if (_remapPathFunc && value != updatedValue) {
-            primSpec->SetInfo(infoKey, updatedValue);
+    if (_refTypesToInclude == _ReferenceTypesToInclude::All) {
+        for (const TfToken& infoKey : primSpec->GetMetaDataInfoKeys()) {
+            VtValue value = primSpec->GetInfo(infoKey);
+            VtValue updatedValue = _UpdateAssetValue(value);
+            if (_remapPathFunc && value != updatedValue) {
+                primSpec->SetInfo(infoKey, updatedValue);
+            }
         }
     }
 
@@ -553,8 +582,9 @@ public:
 
                 std::string destFilePath = TfStringCatPaths(destDir, 
                         TfGetBaseName(filePath));
-                filesToLocalize.emplace(destFilePath, 
-                        _FileAnalyzer(filePath, remapAssetPathFunc));
+                filesToLocalize.emplace(destFilePath, _FileAnalyzer(filePath, 
+                        /*refTypesToInclude*/ _ReferenceTypesToInclude::All,
+                        remapAssetPathFunc));
             }
         }
 
@@ -642,9 +672,10 @@ public:
                 const std::string destFilePathForRef = TfStringCatPaths(
                         destDirForRef, remappedRef);
 
-                filesToLocalize.emplace(destFilePathForRef, 
-                        _FileAnalyzer(resolvedRefFilePath, 
-                                        remapAssetPathFunc));
+                filesToLocalize.emplace(destFilePathForRef, _FileAnalyzer(
+                        resolvedRefFilePath, 
+                        /* refTypesToInclude */ _ReferenceTypesToInclude::All,
+                        remapAssetPathFunc));
             }
         }
     }
@@ -799,22 +830,18 @@ _GetDestRelativePath(const std::string &fullDestPath,
 } // end of anonymous namespace
 
 
-// XXX: don't even know if it's important to distinguish where
-// these asset paths are coming from..  if it's not important, maybe this
-// should just go into Sdf's _GatherPrimAssetReferences?  if it is important,
-// we could also have another function that takes 3 vectors.
-void
-UsdUtilsExtractExternalReferences(
+static void
+_ExtractExternalReferences(
     const std::string& filePath,
+    const _ReferenceTypesToInclude &refTypesToInclude,
     std::vector<std::string>* subLayers,
     std::vector<std::string>* references,
     std::vector<std::string>* payloads)
 {
-    TRACE_FUNCTION();
-
     // We only care about knowing what the dependencies are. Hence, set 
     // remapPathFunc to empty.
-    _FileAnalyzer(filePath, /*remapPathFunc*/ {}, 
+    _FileAnalyzer(filePath, refTypesToInclude,
+        /*remapPathFunc*/ {}, 
         [&subLayers, &references, &payloads](const std::string &assetPath,
                                           const _DepType &depType) {
             if (depType == _DepType::Reference) {
@@ -833,6 +860,22 @@ UsdUtilsExtractExternalReferences(
     std::sort(payloads->begin(), payloads->end());
     payloads->erase(std::unique(payloads->begin(), payloads->end()),
         payloads->end());
+}
+
+// XXX: don't even know if it's important to distinguish where
+// these asset paths are coming from..  if it's not important, maybe this
+// should just go into Sdf's _GatherPrimAssetReferences?  if it is important,
+// we could also have another function that takes 3 vectors.
+void
+UsdUtilsExtractExternalReferences(
+    const std::string& filePath,
+    std::vector<std::string>* subLayers,
+    std::vector<std::string>* references,
+    std::vector<std::string>* payloads)
+{
+    TRACE_FUNCTION();
+    _ExtractExternalReferences(filePath, _ReferenceTypesToInclude::All, 
+        subLayers, references, payloads);
 }
 
 bool
@@ -947,6 +990,71 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
     }
 
     return writer.Save() && success;
+}
+
+bool
+UsdUtilsCreateNewARKitUsdzPackage(
+    const SdfAssetPath &assetPath,
+    const std::string &usdzFilePath,
+    const std::string &firstLayerName)
+{
+    auto &resolver = ArGetResolver();
+
+    const auto resolvedPath = resolver.Resolve(assetPath.GetAssetPath());
+    if (resolvedPath.empty()) {
+        return false;
+    }
+    
+    // Check if the given asset has external dependencies that participate in 
+    // the composition of the stage.
+    std::vector<std::string> sublayers, references, payloads;
+    _ExtractExternalReferences(resolvedPath, 
+        _ReferenceTypesToInclude::CompositionOnly,
+        &sublayers, &references, &payloads);
+
+    // Ensure that the root layer has the ".usdc" extension.
+    std::string targetBaseName = firstLayerName.empty() ? 
+        TfGetBaseName(assetPath.GetAssetPath()) : firstLayerName;
+    const std::string &fileExt = resolver.GetExtension(targetBaseName);
+    if (fileExt != UsdUsdcFileFormatTokens->Id) {
+        targetBaseName = targetBaseName.substr(0, targetBaseName.rfind(".")+1) +  
+                UsdUsdcFileFormatTokens->Id.GetString();
+    }
+
+    // If there are no external dependencies needed for composition, we can 
+    // invoke the regular packaging function.
+    if (sublayers.empty() && references.empty() && payloads.empty()) {
+        return UsdUtilsCreateNewUsdzPackage(assetPath, usdzFilePath, 
+                /*firstLayerName*/ targetBaseName);
+    }
+
+    TF_WARN("The given asset '%s' contains one or more composition arcs "
+        "referencing external USD files. Flattening it to a single .usdc file "
+        "before packaging. This will result in loss of features such as "
+        "variantSets and all asset references to be absolutized.", 
+        assetPath.GetAssetPath().c_str());
+
+    const auto &usdStage = UsdStage::Open(resolvedPath);
+    const std::string tmpFileName = 
+            ArchMakeTmpFileName(targetBaseName, ".usdc");
+
+    if (!usdStage->Export(tmpFileName, /*addSourceFileComment*/ false)) {
+        TF_WARN("Failed to flatten and export the USD stage '%s'.", 
+            UsdDescribe(usdStage).c_str());
+        return false;
+    }
+
+    bool success = UsdUtilsCreateNewUsdzPackage(SdfAssetPath(tmpFileName), 
+        usdzFilePath, /* firstLayerName */ targetBaseName);
+
+    if (success) {
+        TfDeleteFile(tmpFileName);
+    } else {
+        TF_WARN("Failed to create a .usdz package from temporary, flattened "
+            "layer '%s'.", tmpFileName.c_str());;
+    }
+
+    return success;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
