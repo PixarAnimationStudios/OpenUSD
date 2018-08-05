@@ -119,10 +119,12 @@ public:
 
     /// Modifies the range if necessary to surround the given value.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     void ExtendBy(const GfVec3d &point) { UnionWith(point); }
 
     /// Modifies the range if necessary to surround the given range.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     void ExtendBy(const GfRange3d &range) { UnionWith(range); }
 
     /// Returns true if the \p point is located inside the range. As with all
@@ -143,6 +145,7 @@ public:
     /// Returns true if the \p point is located inside the range. As with all
     /// operations of this type, the range is assumed to include its extrema.
     /// \deprecated Use Contains() instead.
+    [[deprecated("Please use Contains() instead")]]
     bool IsInside(const GfVec3d &point) const {
         return Contains(point);
     }
@@ -151,6 +154,7 @@ public:
     /// with all operations of this type, the ranges are assumed to include
     /// their extrema.
     /// \deprecated Use Contains() instead.
+    [[deprecated("Please use Contains() instead")]]
     bool IsInside(const GfRange3d &range) const {
         return Contains(range);
     }
@@ -188,18 +192,21 @@ public:
 
     /// Returns the smallest \c GfRange3d which contains both \p a and \p b
     /// \deprecated Use GetUnion() instead.
+    [[deprecated("Please use GetUnion() instead")]]
     static GfRange3d Union(const GfRange3d &a, const GfRange3d &b) {
         return GetUnion(a, b);
     }
 
     /// Extend \p this to include \p b.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     const GfRange3d &Union(const GfRange3d &b) {
         return UnionWith(b);
     }
 
     /// Extend \p this to include \p b.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     const GfRange3d &Union(const GfVec3d &b) {
         return UnionWith(b);
     }
@@ -214,6 +221,7 @@ public:
 
     /// Returns a \c GfRange3d that describes the intersection of \p a and \p b.
     /// \deprecated Use GetIntersection() instead.
+    [[deprecated("Please use GetIntersection() instead")]]
     static GfRange3d Intersection(const GfRange3d &a, const GfRange3d &b) {
         return GetIntersection(a, b);
     }
@@ -229,6 +237,7 @@ public:
     /// Modifies this range to hold its intersection with \p b and returns the
     /// result.
     /// \deprecated Use IntersectWith() instead.
+    [[deprecated("Please use IntersectWith() instead")]]
     const GfRange3d &Intersection(const GfRange3d &b) {
         return IntersectWith(b);
     }

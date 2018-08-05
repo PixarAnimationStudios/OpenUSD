@@ -135,10 +135,12 @@ public:
 
     /// Modifies the range if necessary to surround the given value.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     void ExtendBy({{ MINMAXPARM }}point) { UnionWith(point); }
 
     /// Modifies the range if necessary to surround the given range.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     void ExtendBy(const {{ RNG }} &range) { UnionWith(range); }
 
     /// Returns true if the \p point is located inside the range. As with all
@@ -161,6 +163,7 @@ public:
     /// Returns true if the \p point is located inside the range. As with all
     /// operations of this type, the range is assumed to include its extrema.
     /// \deprecated Use Contains() instead.
+    [[deprecated("Please use Contains() instead")]]
     bool IsInside({{ MINMAXPARM }}point) const {
         return Contains(point);
     }
@@ -169,6 +172,7 @@ public:
     /// with all operations of this type, the ranges are assumed to include
     /// their extrema.
     /// \deprecated Use Contains() instead.
+    [[deprecated("Please use Contains() instead")]]
     bool IsInside(const {{ RNG }} &range) const {
         return Contains(range);
     }
@@ -208,18 +212,21 @@ public:
 
     /// Returns the smallest \c {{ RNG }} which contains both \p a and \p b
     /// \deprecated Use GetUnion() instead.
+    [[deprecated("Please use GetUnion() instead")]]
     static {{ RNG }} Union(const {{ RNG }} &a, const {{ RNG }} &b) {
         return GetUnion(a, b);
     }
 
     /// Extend \p this to include \p b.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     const {{ RNG }} &Union(const {{ RNG }} &b) {
         return UnionWith(b);
     }
 
     /// Extend \p this to include \p b.
     /// \deprecated Use UnionWith() instead.
+    [[deprecated("Please use UnionWith() instead")]]
     const {{ RNG }} &Union({{ MINMAXPARM }}b) {
         return UnionWith(b);
     }
@@ -234,6 +241,7 @@ public:
 
     /// Returns a \c {{ RNG }} that describes the intersection of \p a and \p b.
     /// \deprecated Use GetIntersection() instead.
+    [[deprecated("Please use GetIntersection() instead")]]
     static {{ RNG }} Intersection(const {{ RNG }} &a, const {{ RNG }} &b) {
         return GetIntersection(a, b);
     }
@@ -249,6 +257,7 @@ public:
     /// Modifies this range to hold its intersection with \p b and returns the
     /// result.
     /// \deprecated Use IntersectWith() instead.
+    [[deprecated("Please use IntersectWith() instead")]]
     const {{ RNG }} &Intersection(const {{ RNG }} &b) {
         return IntersectWith(b);
     }
