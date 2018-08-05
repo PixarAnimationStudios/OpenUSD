@@ -232,8 +232,10 @@ def RunCMake(context, force, extraArgs = None):
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
         Run("cmake --build . --config Release --target install -- {multiproc}"
-            .format(multiproc=("/M:{procs}" if Windows() else "-j{procs}")
-                               .format(procs=context.numJobs)))
+            .format(multiproc=("/M:{procs}"
+                               if generator and "Visual Studio" in generator
+                               else "-j{procs}")
+                              .format(procs=context.numJobs)))
 
 def PatchFile(filename, patches):
     """Applies patches to the specified file. patches is a list of tuples
