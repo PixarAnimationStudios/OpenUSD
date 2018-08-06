@@ -124,6 +124,8 @@ void wrapFileFormat()
 
         .def("IsSupportedExtension", &This::IsSupportedExtension)
 
+        .def("IsPackage", &This::IsPackage)
+
         .def("CanRead", &This::CanRead)
 
         .def("GetFileExtension", &This::GetFileExtension)
