@@ -218,16 +218,22 @@ def RunCMake(context, force, extraArgs = None):
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
+    # Note: we use -DCMAKE_BUILD_TYPE=Release for single-configuration
+    #       generators (Ninja, make), and --config Relase for multi-configuration
+    #       generators (Visual Studio); technically we don't need BOTH at the same
+    #       time, but specifying both is simpler than branching
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
+            '-DCMAKE_BUILD_TYPE=Release '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
                     depsInstDir=context.instDir,
+                    cmakeBuildType=cmakeBuildType,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
@@ -236,7 +242,8 @@ def RunCMake(context, force, extraArgs = None):
             .format(multiproc=("/M:{procs}"
                                if generator and "Visual Studio" in generator
                                else "-j{procs}")
-                              .format(procs=context.numJobs)))
+                              .format(procs=context.numJobs),
+                    buildConfig=buildConfig))
 
 def PatchFile(filename, patches, multiLineMatches=False):
     """Applies patches to the specified file. patches is a list of tuples
