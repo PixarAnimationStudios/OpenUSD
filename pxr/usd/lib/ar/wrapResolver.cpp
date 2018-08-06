@@ -52,6 +52,8 @@ wrapResolver()
 
         .def("AnchorRelativePath", &This::AnchorRelativePath)
         .def("Resolve", &This::Resolve)
+
+        .def("GetExtension", &This::GetExtension)
         ;
 
     def("GetResolver", ArGetResolver,
