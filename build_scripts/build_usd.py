@@ -203,6 +203,7 @@ def RunCMake(context, force, extraArgs = None):
 
     # On Windows, we need to explicitly specify the generator to ensure we're
     # building a 64-bit project. (Surely there is a better way to do this?)
+    # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
         if IsVisualStudio2017OrGreater():
             generator = "Visual Studio 15 2017 Win64"
@@ -839,7 +840,17 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        oldGenerator = context.cmakeGenerator
+    
+        # OpenSubdiv seems to error when building on windows w/ Ninja...
+        # ...so just use the default generator (ie, VisualStudio on windows)
+        # until someone can sort it out
+        if oldGenerator == "Ninja" and Windows():
+            context.cmakeGenerator = None
+        try:
+            RunCMake(context, force, extraArgs)
+        finally:
+            context.cmakeGenerator = oldGenerator
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
