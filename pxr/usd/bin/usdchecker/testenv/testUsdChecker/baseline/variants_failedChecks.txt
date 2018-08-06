@@ -1,0 +1,12 @@
+Prim </World/X/pi> has unsupported type 'PointInstancer'.
+Prim </World/A/pi> has unsupported type 'PointInstancer'.
+Prim </World/Y/pi> has unsupported type 'PointInstancer'.
+Prim </World/A/pi> has unsupported type 'PointInstancer'.
+Prim </World/X/pi> has unsupported type 'PointInstancer'.
+Prim </World/B/pi> has unsupported type 'PointInstancer'.
+Prim </World/Y/pi> has unsupported type 'PointInstancer'.
+Prim </World/B/pi> has unsupported type 'PointInstancer'.
+Prim </World/X/pi> has unsupported type 'PointInstancer'.
+Prim </World/C/pi> has unsupported type 'PointInstancer'.
+Prim </World/Y/pi> has unsupported type 'PointInstancer'.
+Prim </World/C/pi> has unsupported type 'PointInstancer'.
