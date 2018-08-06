@@ -26,7 +26,11 @@
 
 #include "pxr/pxr.h"
 #include <boost/python/def.hpp>
+#include <boost/python/list.hpp>
 #include <boost/python/tuple.hpp>
+
+#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdUtils/dependencies.h"
@@ -47,6 +51,30 @@ _ExtractExternalReferences(
     return bp::make_tuple(subLayers, references, payloads);
 }
 
+// Helper for creating a python object holding a layer ref ptr.
+bp::object
+_LayerRefToObj(const SdfLayerRefPtr& layer)
+{
+    using RefPtrFactory = Tf_MakePyConstructor::RefPtrFactory<>::
+            apply<SdfLayerRefPtr>::type;
+    return bp::object(bp::handle<>(RefPtrFactory()(layer)));
+}
+
+static bp::tuple
+_ComputeAllDependencies(const SdfAssetPath &assetPath) 
+{
+    std::vector<SdfLayerRefPtr> layers;
+    std::vector<std::string> assets, unresolvedPaths;
+    
+    UsdUtilsComputeAllDependencies(assetPath, &layers, &assets, 
+                                   &unresolvedPaths);
+    bp::list layersList;
+    for (auto &l: layers) { 
+        layersList.append(_LayerRefToObj(l)); 
+    }
+    return bp::make_tuple(layersList, assets, unresolvedPaths);
+}
+
 } // anonymous namespace 
 
 void wrapDependencies()
@@ -63,4 +91,7 @@ void wrapDependencies()
             (bp::arg("assetPath"),
              bp::arg("usdzFilePath"),
              bp::arg("firstLayerName") = std::string()));
+
+    bp::def("ComputeAllDependencies", _ComputeAllDependencies,
+            (bp::arg("assetPath")));
 }

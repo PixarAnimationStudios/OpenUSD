@@ -30,7 +30,6 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/fileFormat.h"
-#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
@@ -548,18 +547,27 @@ public:
     using LayerDependenciesMap = std::unordered_map<SdfLayerRefPtr, 
             std::vector<std::string>, TfHash>;
 
+    // Computes the given asset's dependencies recursively and determines
+    // the information needed to localize the asset.
+    // If \p destDir is empty, none of the asset layers are modified, allowing
+    // this class to be used purely as a recursive dependency finder.
     _AssetLocalizer(const SdfAssetPath &assetPath, const std::string &destDir) 
     {
         _DirectoryRemapper dirRemapper;
 
         auto &layerDependenciesMap = _layerDependenciesMap;
         const auto remapAssetPathFunc = 
-            [&layerDependenciesMap, &dirRemapper](
+            [&layerDependenciesMap, &dirRemapper, &destDir](
                 const std::string &ap, 
                 const SdfLayerRefPtr &layer,
                 bool skipDependency) {
             if (!skipDependency) {
                 layerDependenciesMap[layer].push_back(ap);
+            }
+            // If destination directory is an empty string, skip any remapping.
+            // of asset paths.
+            if (destDir.empty()) {
+                return ap;
             }
             return _RemapAssetPath(ap, layer, &dirRemapper, nullptr);
         };
@@ -637,6 +645,8 @@ public:
                             ref.c_str(),
                             refAssetPath.c_str(), 
                             fileAnalyzer.GetFilePath().c_str());
+
+                    _unresolvedAssetPaths.push_back(refAssetPath);
                     continue;
                 } 
 
@@ -692,6 +702,11 @@ public:
         return _fileCopyMap;
     }
 
+    // Returns ths list of all unresolved references.
+    const std::vector<std::string> GetUnresolvedAssetPaths() const {
+        return _unresolvedAssetPaths;
+    }
+
 private:
     // This will contain a mapping of SdfLayerRefPtr's mapped to their 
     // desination path inside the destination directory.
@@ -704,6 +719,9 @@ private:
     // A map of layers and their corresponding vector of raw external reference
     // paths.
     LayerDependenciesMap _layerDependenciesMap;
+
+    // List of all the unresolvable asset paths.
+    std::vector<std::string> _unresolvedAssetPaths;
 
     // Helper object for remapping paths to an artifically-generated path.
     class _DirectoryRemapper {
@@ -1055,6 +1073,38 @@ UsdUtilsCreateNewARKitUsdzPackage(
     }
 
     return success;
+}
+
+bool
+UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
+                               std::vector<SdfLayerRefPtr> *layers,
+                               std::vector<std::string> *assets,
+                               std::vector<std::string> *unresolvedPaths)
+{
+    // We are not interested in localizing here, hence pass in the empty string
+    // for destination directory.
+    _AssetLocalizer localizer(assetPath, /* destDir */ std::string());
+
+    // Clear the vectors before we start.
+    layers->clear();
+    assets->clear();
+    
+    // Reserve space in the vectors.
+    layers->reserve(localizer.GetLayerExportMap().size());
+    assets->reserve(localizer.GetFileCopyMap().size());
+
+    for (auto &layerAndDestPath : localizer.GetLayerExportMap()) {
+        layers->push_back(layerAndDestPath.first);
+    }
+
+    for (auto &srcAndDestPath : localizer.GetFileCopyMap()) {
+        assets->push_back(srcAndDestPath.first);
+    }
+
+    *unresolvedPaths = localizer.GetUnresolvedAssetPaths();
+
+    // Return true if one or more layers or assets were added  to the results.
+    return !layers->empty() || !assets->empty();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -36,6 +36,7 @@
 /// 
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdUtils/api.h"
 
 #include <string>
@@ -116,6 +117,23 @@ UsdUtilsCreateNewARKitUsdzPackage(
     const SdfAssetPath &assetPath,
     const std::string &usdzFilePath,
     const std::string &firstLayerName=std::string());
+
+/// Recursively computes all the dependencies of the given asset and populates
+/// \p layers with all the dependencies that can be opened as an SdfLayer. 
+/// All of the resolved non-layer dependencies are populated in \p assets.
+/// Any unresolved (layer and non-layer) asset paths are populated in 
+/// \p unresolvedPaths.
+/// 
+/// The input vectors to be populated with the results are are *cleared* before 
+/// any results are added to them.
+/// 
+/// Returns true if the given asset was resolved correctly.
+USDUTILS_API
+bool
+UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
+                               std::vector<SdfLayerRefPtr> *layers,
+                               std::vector<std::string> *assets,
+                               std::vector<std::string> *unresolvedPaths);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
