@@ -127,7 +127,7 @@ evaluateLights(vec3 emissive, float occlusion, float ior,
 {
     matSpecularRoughness  = max(0.001, matSpecularRoughness);
     matClearcoatRoughness = max(0.001, matClearcoatRoughness);
-    vec3 n = normalize(gl_FrontFacing ? Neye : -Neye);
+    vec3 n = Neye;
     vec3 e = normalize(-Peye.xyz);
     float NdotE = max(0.0, dot(n, e));
     vec3 directLight = vec3(0.0);

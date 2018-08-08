@@ -536,8 +536,9 @@ void main(void)
 
     vec3 Neye = inData.Neye;
     // Normalize Neye after rasterizer interpolation.
-    if (length(Neye) > 0.0)
+    if (length(Neye) > 0.0) {
         Neye = normalize(Neye);
+    }
     // Give the shader key a chance to override the normal.
     Neye = GetNormal(Neye, 0);
     // Orient the normal for shading.
