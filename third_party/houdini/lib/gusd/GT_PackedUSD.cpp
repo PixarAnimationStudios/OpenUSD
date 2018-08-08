@@ -45,6 +45,7 @@
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
 #include <GU/GU_PrimPacked.h>
+#include <UT/UT_HDKVersion.h>
 #include <UT/UT_Options.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -85,6 +86,7 @@ namespace {
 
 int s_gtPackedUsdPrimId     = GT_PRIM_UNDEFINED;
 int s_gtPrimInstanceColorId = GT_PRIM_UNDEFINED;
+int s_gtPackedUsdMeshId     = GT_PRIM_UNDEFINED;
 
 struct _ViewportAttrFilter : public GT_GEOAttributeFilter
 {
@@ -592,6 +594,113 @@ const GT_AttributeListHandle& GusdGT_PackedUSD::
 getDetailAttributes() const
 {
     return m_detailAttributes;
+}
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// class GusdGT_PackedUSDMesh implementation
+////////////////////////////////////////////////////////////////////////////////
+
+GusdGT_PackedUSDMesh::
+GusdGT_PackedUSDMesh(
+        const GT_PrimitiveHandle& mesh,
+        int64 id,
+        UT_Array<GT_PrimitiveHandle>& sourceMeshes)
+    : m_mesh(mesh)
+    , m_id(id)
+    , m_sourceMeshes(sourceMeshes)
+{
+}
+
+GusdGT_PackedUSDMesh::
+~GusdGT_PackedUSDMesh()
+{
+}
+
+const char* GusdGT_PackedUSDMesh::
+className() const
+{ 
+    return "GusdGT_PackedUSDMesh";
+}
+
+/* static */
+int GusdGT_PackedUSDMesh::
+getStaticPrimitiveType() 
+{
+    if( s_gtPackedUsdMeshId == GT_PRIM_UNDEFINED ) {
+#if HDK_API_VERSION >= 16050000
+        // XXX There appears to be a bug in 16.5 that prevents primitives
+        // with custom primitive ids to refine in the viewport. As a 
+        // workaround we'll use GT_PRIM_ALEMBIC_SHAPE_MESH for now.
+        s_gtPackedUsdMeshId = GT_PRIM_ALEMBIC_SHAPE_MESH; 
+#else
+        s_gtPackedUsdMeshId = GT_Primitive::createPrimitiveTypeId(); 
+#endif
+    }
+    return s_gtPackedUsdMeshId;
+}
+
+int GusdGT_PackedUSDMesh::
+getPrimitiveType() const
+{
+    //return GT_PRIM_UNDEFINED;
+    return getStaticPrimitiveType();
+}
+
+GT_PrimitiveHandle GusdGT_PackedUSDMesh::
+doSoftCopy() const
+{
+    return new GusdGT_PackedUSDMesh(*this);
+}
+
+bool GusdGT_PackedUSDMesh::
+refine(GT_Refine& refiner, const GT_RefineParms* /*parms*/) const
+{
+    if(m_mesh) {
+        refiner.addPrimitive(m_mesh->copyTransformed(
+                    this->getPrimitiveTransform()));
+        return true;
+    }
+    return false;
+}
+
+void GusdGT_PackedUSDMesh::
+enlargeBounds(UT_BoundingBox boxes[], int nsegments) const
+{
+    if(m_mesh) {
+        m_mesh->enlargeBounds(boxes, nsegments);
+    }
+}
+
+int	GusdGT_PackedUSDMesh::
+getMotionSegments() const
+{
+    if(m_mesh) {
+        return m_mesh->getMotionSegments();
+    }
+    return 1;
+}
+
+int64 GusdGT_PackedUSDMesh::
+getMemoryUsage() const
+{
+    int64 size = sizeof(*this);
+
+    if(m_mesh) {
+        size += m_mesh->getMemoryUsage();
+    }
+    for(auto p : m_sourceMeshes) {
+        size += p->getMemoryUsage();
+    }
+
+    return size;
+}
+
+bool GusdGT_PackedUSDMesh::
+getUniqueID(int64& id) const
+{
+    id = m_id;
+    return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 

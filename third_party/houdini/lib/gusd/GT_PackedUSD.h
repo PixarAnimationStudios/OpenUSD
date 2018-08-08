@@ -129,6 +129,54 @@ private:
 
 
 //------------------------------------------------------------------------------
+// class GusdGT_PackedUSDMesh
+//------------------------------------------------------------------------------
+
+/*
+ * A utility class which supports meshes which have been coalesced together
+ * for viewport efficiency. Based on GT_PackedAlembicMesh in the HDK.
+ */
+
+class GusdGT_PackedUSDMesh : public GT_Primitive
+{
+public:
+    GusdGT_PackedUSDMesh(
+            const GT_PrimitiveHandle& mesh,
+            int64 id,
+            UT_Array<GT_PrimitiveHandle>& sourceMeshes);
+
+    virtual ~GusdGT_PackedUSDMesh();
+    
+    virtual const char* className() const override;
+
+    static int getStaticPrimitiveType();
+
+    virtual int getPrimitiveType() const override;
+    
+    virtual GT_PrimitiveHandle doSoftCopy() const override;
+
+    virtual bool refine(
+            GT_Refine& refiner,
+            const GT_RefineParms* parms=nullptr) const override;
+
+    virtual void enlargeBounds(
+            UT_BoundingBox boxes[],
+            int nsegments) const override;
+
+    virtual int	getMotionSegments() const override;
+
+    virtual int64 getMemoryUsage() const override;
+
+    virtual bool getUniqueID(int64& id) const override;
+
+private:
+    GT_PrimitiveHandle m_mesh;
+    int64 m_id;
+    // Handles to uncoalesced meshes must be kept alive for viewport picking
+    // to work correctly.
+    UT_Array<GT_PrimitiveHandle> m_sourceMeshes;
+};
+
 
 //------------------------------------------------------------------------------
 // class GusdGT_PrimCollect
