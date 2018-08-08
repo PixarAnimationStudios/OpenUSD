@@ -902,7 +902,7 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
                              const std::string &firstLayerName)
 {
     std::string destDir = TfGetPathName(usdzFilePath);
-
+    destDir = destDir.empty() ? "./" : destDir;
     _AssetLocalizer localizer(assetPath, destDir);
 
     auto &layerExportMap = localizer.GetLayerExportMap();
