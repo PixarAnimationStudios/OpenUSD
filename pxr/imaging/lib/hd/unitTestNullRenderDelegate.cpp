@@ -230,19 +230,19 @@ public:
         return bits;
     }
 
-    virtual void _InitRepr(HdReprSelector const &reprName,
+    virtual void _InitRepr(HdReprSelector const &reprSelector,
                            HdDirtyBits *dirtyBits) override
     {
         _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                                _ReprComparator(reprName));
+                                                _ReprComparator(reprSelector));
         if (it == _reprs.end()) {
-            _reprs.emplace_back(reprName, HdReprSharedPtr());
+            _reprs.emplace_back(reprSelector, HdReprSharedPtr());
         }
     }
 
 protected:
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const &reprName,
+                             HdReprSelector const &reprSelector,
                              HdDirtyBits *dirtyBits) override  {
     }
 
