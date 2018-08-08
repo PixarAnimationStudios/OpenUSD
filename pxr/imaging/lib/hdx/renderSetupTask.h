@@ -53,12 +53,18 @@ class HdStRenderPassState;
 /// A task for setting up render pass state (camera, renderpass shader, GL
 /// states).
 ///
+/// HdxRenderTask depends on the output of this task.  Applications can choose
+/// to create a render setup task, and pass it the HdxRenderTaskParams; or they
+/// can pass the HdxRenderTaskParams directly to the render task, which will
+/// create a render setup task internally.  See the HdxRenderTask documentation
+/// for details.
+///
 class HdxRenderSetupTask : public HdSceneTask {
 public:
     HDX_API
     HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    // compatibility APIs used from HdxRenderTask
+    // APIs used from HdxRenderTask to manage the sync process.
     HDX_API
     void SyncParams(HdxRenderTaskParams const &params);
     HDX_API

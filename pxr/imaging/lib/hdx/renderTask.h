@@ -47,6 +47,21 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 ///
 /// A task for rendering geometry to pixels.
 ///
+/// Rendering state management can be handled two ways:
+/// 1.) An application can create an HdxRenderTask and pass it the
+///     HdxRenderTaskParams struct as "params".
+/// 2.) An application can create an HdxRenderSetupTask and an
+///     HdxRenderTask, and pass params to the setup task. In this case
+///     the setup task must run first.
+///
+/// Parameter unpacking is handled by HdxRenderSetupTask; in case #1,
+/// HdxRenderTask creates a dummy setup task internally to manage the sync
+/// process.
+///
+/// Case #2 introduces complexity; the benefit is that by changing which
+/// setup task you run before the render task, you can change the render
+/// parameters without incurring a hydra sync or rebuilding any resources.
+///
 class HdxRenderTask : public HdSceneTask 
 {
 public:
@@ -68,11 +83,11 @@ protected:
 private:
     HdRenderPassSharedPtrVector _passes;
 
-    // XXX: temp members to keep compatibility (optional)
+    // Optional internal render setup task, for params unpacking.
     HdxRenderSetupTaskSharedPtr _setupTask;
 
-    // XXX: Setup additional state that HdStRenderPassState requires.
-    // This should be moved to hdSt!
+    // Setup additional state that HdStRenderPassState requires.
+    // XXX: This should be moved to hdSt!
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
 };

@@ -82,11 +82,9 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
 
     HdDirtyBits bits = _GetTaskDirtyBits();
 
-    // XXX: for compatibility.
     if (bits & HdChangeTracker::DirtyParams) {
         HdxRenderTaskParams params;
 
-        // if HdxRenderTaskParams is set, it's using old API
         if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
             return;
         }
