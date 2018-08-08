@@ -65,26 +65,26 @@ UsdMayaImportCommand::createSyntax()
     // These flags correspond to entries in
     // UsdMayaJobImportArgs::GetDefaultDictionary.
     syntax.addFlag("-shd",
-                   PxrUsdImportJobArgsTokens->shadingMode.GetText(),
+                   UsdMayaJobImportArgsTokens->shadingMode.GetText(),
                    MSyntax::kString);
     syntax.addFlag("-ar",
-                   PxrUsdImportJobArgsTokens->assemblyRep.GetText(),
+                   UsdMayaJobImportArgsTokens->assemblyRep.GetText(),
                    MSyntax::kString);
     syntax.addFlag("-md",
-                   PxrUsdImportJobArgsTokens->metadata.GetText(),
+                   UsdMayaJobImportArgsTokens->metadata.GetText(),
                    MSyntax::kString);
-    syntax.makeFlagMultiUse(PxrUsdImportJobArgsTokens->metadata.GetText());
+    syntax.makeFlagMultiUse(UsdMayaJobImportArgsTokens->metadata.GetText());
     syntax.addFlag("-api",
-                   PxrUsdImportJobArgsTokens->apiSchema.GetText(),
+                   UsdMayaJobImportArgsTokens->apiSchema.GetText(),
                    MSyntax::kString);
-    syntax.makeFlagMultiUse(PxrUsdImportJobArgsTokens->apiSchema.GetText());
+    syntax.makeFlagMultiUse(UsdMayaJobImportArgsTokens->apiSchema.GetText());
     syntax.addFlag("-epv",
-                   PxrUsdImportJobArgsTokens->excludePrimvar.GetText(),
+                   UsdMayaJobImportArgsTokens->excludePrimvar.GetText(),
                    MSyntax::kString);
     syntax.makeFlagMultiUse(
-            PxrUsdImportJobArgsTokens->excludePrimvar.GetText());
+            UsdMayaJobImportArgsTokens->excludePrimvar.GetText());
     syntax.addFlag("-uac",
-                   PxrUsdImportJobArgsTokens->useAsAnimationCache.GetText(),
+                   UsdMayaJobImportArgsTokens->useAsAnimationCache.GetText(),
                    MSyntax::kBoolean);
 
     // These are additional flags under our control.

@@ -61,7 +61,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     PXRUSDMAYA_API,
     PXRUSDMAYA_TRANSLATOR_TOKENS);
 
-#define PXRUSDMAYA_JOBEXPORTARGS_TOKENS \
+#define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
     (chaser) \
     (chaserArgs) \
@@ -106,11 +106,11 @@ TF_DECLARE_PUBLIC_TOKENS(
     (appleArKit)
 
 TF_DECLARE_PUBLIC_TOKENS(
-    PxrUsdExportJobArgsTokens,
+    UsdMayaJobExportArgsTokens,
     PXRUSDMAYA_API,
-    PXRUSDMAYA_JOBEXPORTARGS_TOKENS);
+    PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS);
 
-#define PXRUSDMAYA_JOBIMPORTARGS_TOKENS \
+#define PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
     (apiSchema) \
     (assemblyRep) \
@@ -125,9 +125,9 @@ TF_DECLARE_PUBLIC_TOKENS(
     ((Unloaded, ""))
 
 TF_DECLARE_PUBLIC_TOKENS(
-    PxrUsdImportJobArgsTokens,
+    UsdMayaJobImportArgsTokens,
     PXRUSDMAYA_API,
-    PXRUSDMAYA_JOBIMPORTARGS_TOKENS);
+    PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS);
 
 struct UsdMayaJobExportArgs
 {

@@ -1503,8 +1503,8 @@ bool UsdMayaRepresentationHierBase::activate()
     bool shouldImportWithProxies = _ShouldImportWithProxies();
     if (shouldImportWithProxies) {
         // In this mode, sub-assembly nodes we create should come in unloaded.
-        userArgs[PxrUsdImportJobArgsTokens->assemblyRep] =
-                PxrUsdImportJobArgsTokens->Unloaded.GetString();
+        userArgs[UsdMayaJobImportArgsTokens->assemblyRep] =
+                UsdMayaJobImportArgsTokens->Unloaded.GetString();
     }
 
     UsdMayaJobImportArgs importArgs =

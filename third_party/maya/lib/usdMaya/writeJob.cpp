@@ -112,7 +112,7 @@ static
 TfToken
 _GetFallbackExtension(const TfToken& compatibilityMode)
 {
-    if (compatibilityMode == PxrUsdExportJobArgsTokens->appleArKit) {
+    if (compatibilityMode == UsdMayaJobExportArgsTokens->appleArKit) {
         return UsdMayaTranslatorTokens->UsdFileExtensionPackage;
     }
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
@@ -189,7 +189,8 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
 
     TF_STATUS("Creating stage file '%s'", _fileName.c_str());
 
-    if (mJobCtx.mArgs.renderLayerMode == PxrUsdExportJobArgsTokens->modelingVariant) {
+    if (mJobCtx.mArgs.renderLayerMode ==
+            UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
         if (mRenderLayerObjs.length() > 1) {
@@ -224,8 +225,10 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
 
     // Switch to the default render layer unless the renderLayerMode is
     // 'currentLayer', or the default layer is already the current layer.
-    if (mJobCtx.mArgs.renderLayerMode != PxrUsdExportJobArgsTokens->currentLayer &&
-            MFnRenderLayer::currentLayer() != MFnRenderLayer::defaultRenderLayer()) {
+    if ((mJobCtx.mArgs.renderLayerMode !=
+            UsdMayaJobExportArgsTokens->currentLayer) &&
+            (MFnRenderLayer::currentLayer() !=
+            MFnRenderLayer::defaultRenderLayer())) {
         // Set the RenderLayer to the default render layer
         MFnRenderLayer defaultLayer(MFnRenderLayer::defaultRenderLayer());
         MGlobal::executeCommand(MString("editRenderLayerGlobals -currentRenderLayer ")+
@@ -674,7 +677,7 @@ UsdMaya_WriteJob::_CreatePackage() const
             firstLayerBaseName.c_str(),
             UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
 
-    if (mJobCtx.mArgs.compatibility == PxrUsdExportJobArgsTokens->appleArKit) {
+    if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional
         // requirements on the usdz file to make it compatible with Apple's usdz
         // support in macOS Mojave/iOS 12.

@@ -125,8 +125,8 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(const MDagPath& iDa
     : UsdMayaPrimWriter(iDag, uPath, jobCtx), _valid(false)
 {
     const TfToken& exportSkels = _GetExportArgs().exportSkels;
-    if (exportSkels != PxrUsdExportJobArgsTokens->auto_ &&
-        exportSkels != PxrUsdExportJobArgsTokens->explicit_) {
+    if (exportSkels != UsdMayaJobExportArgsTokens->auto_ &&
+        exportSkels != UsdMayaJobExportArgsTokens->explicit_) {
         return;
     }
 
