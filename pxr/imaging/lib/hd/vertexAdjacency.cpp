@@ -57,9 +57,7 @@ Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
     bool flip = (topology->GetOrientation() != HdTokens->rightHanded);
 
     // compute numPoints from topology indices
-    _numPoints = HdMeshTopology::ComputeNumPoints(
-        topology->GetFaceVertexIndices());
-
+    _numPoints = topology->GetNumPoints();
 
     // Track the number of entries needed the adjacency table.
     // We start by needing 2 per point (offset and valence).

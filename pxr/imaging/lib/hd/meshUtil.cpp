@@ -398,9 +398,7 @@ HdMeshUtil::ComputeQuadInfo(HdQuadInfo* quadInfo)
     int numFaces = _topology->GetFaceVertexCounts().size();
     int numVertIndices = _topology->GetFaceVertexIndices().size();
     int numHoleFaces = _topology->GetHoleIndices().size();
-    // compute numPoints from topology indices
-    int numPoints = HdMeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
+    int numPoints = _topology->GetNumPoints();
 
     quadInfo->numVerts.clear();
     quadInfo->verts.clear();
@@ -478,6 +476,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
     int numFaces = _topology->GetFaceVertexCounts().size();
     int numVertIndices = _topology->GetFaceVertexIndices().size();
     int numHoleFaces = _topology->GetHoleIndices().size();
+    int numPoints = _topology->GetNumPoints();
 
     // count num quads
     bool invalidTopology = false;
@@ -500,8 +499,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
 
     // quadrangulated verts is added to the end.
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
-    int vertIndex = HdMeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
+    int vertIndex = numPoints;
 
     EdgeMap edges;
     if (quadsEdgeIndices) {
