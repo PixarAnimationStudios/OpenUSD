@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 
@@ -351,12 +352,13 @@ public:
 
     /// Returns the authored repr (if any) for the given prim.
     HD_API
-    virtual TfToken GetReprName(SdfPath const &id);
+    virtual HdReprSelector GetReprSelector(SdfPath const &id);
 
     /// Returns the render tag that will be used to bucket prims during
     /// render pass bucketing.
     HD_API
-    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
+    virtual TfToken GetRenderTag(SdfPath const& id,
+                                 HdReprSelector const& reprSelector);
 
     /// Returns the prim categories.
     HD_API

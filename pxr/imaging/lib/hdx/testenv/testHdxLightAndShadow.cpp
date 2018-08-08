@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     // set renderTask
     delegate->SetTaskParam(
         renderTask, HdTokens->collection,
-        VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->refined)));
+        VtValue(HdRprimCollection(HdTokens->geometry, HdReprSelector(HdTokens->refined))));
 
     // set render setup param
     VtValue vParam = delegate->GetTaskParam(renderSetupTask, HdTokens->params);

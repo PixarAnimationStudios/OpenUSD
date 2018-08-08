@@ -56,9 +56,9 @@ HdMesh::ConfigureRepr(TfToken const &reprName,
 
 /* static */
 HdMesh::_MeshReprConfig::DescArray
-HdMesh::_GetReprDesc(TfToken const &reprName)
+HdMesh::_GetReprDesc(HdReprSelector const &reprSelector)
 {
-    return _reprDescConfig.Find(reprName);
+    return _reprDescConfig.Find(reprSelector.GetReprToken());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

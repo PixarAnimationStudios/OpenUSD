@@ -113,37 +113,37 @@ HdEmbreeMesh::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 void
-HdEmbreeMesh::_InitRepr(TfToken const &reprName,
+HdEmbreeMesh::_InitRepr(HdReprSelector const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
     TF_UNUSED(dirtyBits);
 
     // Create an empty repr.
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
+                                            _ReprComparator(reprToken));
     if (it == _reprs.end()) {
-        _reprs.emplace_back(reprName, HdReprSharedPtr());
+        _reprs.emplace_back(reprToken, HdReprSharedPtr());
     }
 }
 
 
 void
 HdEmbreeMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                          TfToken const &reprName,
+                          HdReprSelector const &reprToken,
                           HdDirtyBits *dirtyBits)
 {
     TF_UNUSED(sceneDelegate);
-    TF_UNUSED(reprName);
+    TF_UNUSED(reprToken);
     TF_UNUSED(dirtyBits);
     // Embree doesn't use the HdRepr structure.
 }
 
 void
-HdEmbreeMesh::Sync(HdSceneDelegate* sceneDelegate,
-                   HdRenderParam*   renderParam,
-                   HdDirtyBits*     dirtyBits,
-                   TfToken const&   reprName,
-                   bool             forcedRepr)
+HdEmbreeMesh::Sync(HdSceneDelegate   *sceneDelegate,
+                   HdRenderParam     *renderParam,
+                   HdDirtyBits       *dirtyBits,
+                   HdReprSelector const &reprToken,
+                   bool               forcedRepr)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -152,14 +152,14 @@ HdEmbreeMesh::Sync(HdSceneDelegate* sceneDelegate,
     // has drawing settings for this prim to use. Repr opinions can come
     // from the render pass's rprim collection or the scene delegate;
     // _GetReprName resolves these multiple opinions.
-    TfToken calculatedReprName = _GetReprName(reprName, forcedRepr);
+    HdReprSelector calculatedReprToken = _GetReprSelector(reprToken, forcedRepr);
 
     // XXX: Meshes can have multiple reprs; this is done, for example, when
     // the drawstyle specifies different rasterizing modes between front faces
     // and back faces. With raytracing, this concept makes less sense, but
     // combining semantics of two HdMeshReprDesc is tricky in the general case.
     // For now, HdEmbreeMesh only respects the first desc; this should be fixed.
-    _MeshReprConfig::DescArray descs = _GetReprDesc(calculatedReprName);
+    _MeshReprConfig::DescArray descs = _GetReprDesc(calculatedReprToken);
     const HdMeshReprDesc &desc = descs[0];
 
     // Pull top-level embree state out of the render param.

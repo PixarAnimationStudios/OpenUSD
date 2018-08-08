@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
@@ -46,7 +47,6 @@ class HdBufferSource;
 class HdDrawItem;
 class HdMaterial;
 class HdRenderIndex;
-class HdRepr;
 class HdRenderParam;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
@@ -84,11 +84,11 @@ public:
     ///                             On output specifies which bits are still
     ///                             dirty and were not cleaned by the sync.
     ///
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
-                      bool             forcedRepr) = 0;
+    virtual void Sync(HdSceneDelegate      *delegate,
+                      HdRenderParam        *renderParam,
+                      HdDirtyBits          *dirtyBits,
+                      HdReprSelector const &reprSelector,
+                      bool                  forcedRepr) = 0;
 
     /// Finalizes object resources. This function might not delete resources,
     /// but it should deal with resource ownership so that the rprim is deletable.
@@ -108,12 +108,14 @@ public:
     /// If no draw items exist, or reprName cannot be found, nullptr
     /// will be returned.
     HD_API
-    const std::vector<HdDrawItem*>* GetDrawItems(TfToken const &reprName,
-                                                 bool forced) const;
+    const std::vector<HdDrawItem*>* GetDrawItems(
+                         HdReprSelector const& reprSelector,
+                         bool forced) const;
 
     /// Returns the render tag associated to this rprim
     HD_API
-    TfToken GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const;
+    TfToken GetRenderTag(HdSceneDelegate* delegate,
+                         HdReprSelector const& reprSelector) const;
 
     /// Returns the identifier of the instancer (if any) for this Rprim. If this
     /// Rprim is not instanced, an empty SdfPath will be returned.
@@ -172,7 +174,7 @@ public:
     /// repr is synced.  InitRepr occurs before dirty bit propagation.
     HD_API
     void InitRepr(HdSceneDelegate* delegate,
-                  TfToken const &defaultReprName,
+                  HdReprSelector const& defaultReprSelector,
                   bool forced,
                   HdDirtyBits *dirtyBits);
 
@@ -192,10 +194,10 @@ public:
 
 protected:
     HD_API
-    HdReprSharedPtr const & _GetRepr(TfToken const &reprName) const;
+    HdReprSharedPtr const & _GetRepr(HdReprSelector const& reprSelector) const;
 
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
+                             HdReprSelector const& reprSelector,
                              HdDirtyBits *dirtyBits) = 0;
 
     HD_API
@@ -207,9 +209,9 @@ protected:
     /// unlike vertex primvars (DirtyPoints-DirtyRefinedPoints)
     HD_API
     void _PopulateConstantPrimvars(HdSceneDelegate *sceneDelegate,
-                                   HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits,
-                                   HdPrimvarDescriptorVector const &constantPrimvars);
+                            HdDrawItem *drawItem,
+                            HdDirtyBits *dirtyBits,
+                            HdPrimvarDescriptorVector const &constantPrimvars);
 
     HD_API
     VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
@@ -225,14 +227,16 @@ protected:
                       HdComputationVector const &computations) const;
 
     HD_API
-    TfToken _GetReprName(TfToken const &defaultReprName, bool forced) const;
+    HdReprSelector _GetReprSelector(HdReprSelector const &defaultReprSelector,
+                                    bool forced) const;
 
     HD_API
-    void _UpdateReprName(HdSceneDelegate* delegate, HdDirtyBits *dirtyBits);
+    void _UpdateReprSelector(HdSceneDelegate* delegate, HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 
-    virtual void _InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits) = 0;
+    virtual void _InitRepr(HdReprSelector const &reprSelector,
+                           HdDirtyBits *dirtyBits) = 0;
 
     /// Sets a new material binding to be used by this rprim
     HD_API
@@ -251,21 +255,22 @@ protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility
     HdRprimSharedData _sharedData;
 
-    // authored repr name
-    TfToken _authoredReprName;
+    // authored repr selector
+    HdReprSelector _authoredReprSelector;
 
     // total number of reprs is relatively small (less than 5 or so
     // in most case), we use linear container for efficiency.
-    typedef std::vector<std::pair<TfToken, HdReprSharedPtr> > _ReprVector;
+    typedef std::vector<std::pair<HdReprSelector, HdReprSharedPtr> >
+        _ReprVector;
     _ReprVector _reprs;
 
     struct _ReprComparator {
-        _ReprComparator(TfToken const &name) : _name(name) {}
-        bool operator() (const std::pair<TfToken, HdReprSharedPtr> &e) const {
-            return _name == e.first;
+        _ReprComparator(HdReprSelector const &selector) : _selector(selector) {}
+        bool operator() (const std::pair<HdReprSelector, HdReprSharedPtr> &e) const {
+            return _selector == e.first;
         }
     private:
-        TfToken _name;
+        HdReprSelector _selector;
     };
 
     // Repr configuration descriptors. All concrete types (HdMesh, HdPoints ..)

@@ -220,11 +220,11 @@ void HdEmbree_TestGLDrawing::InitTest()
     if (_refined) {
         _sceneDelegate->UpdateTask(renderTask, HdTokens->collection,
                 VtValue(HdRprimCollection(HdTokens->geometry, 
-                HdTokens->refined)));
+                HdReprSelector(HdTokens->refined))));
     } else {
         _sceneDelegate->UpdateTask(renderTask, HdTokens->collection,
                 VtValue(HdRprimCollection(HdTokens->geometry, 
-                _smooth ? HdTokens->smoothHull : HdTokens->hull)));
+                HdReprSelector(_smooth ? HdTokens->smoothHull : HdTokens->hull))));
     }
 
     // Tasks can have child tasks that get scheduled together.

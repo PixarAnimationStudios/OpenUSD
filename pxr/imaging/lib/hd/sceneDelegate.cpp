@@ -75,7 +75,8 @@ HdSceneDelegate::IsEnabled(TfToken const& option) const
 
 /*virtual*/
 TfToken
-HdSceneDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
+HdSceneDelegate::GetRenderTag(SdfPath const& id,
+                              HdReprSelector const& reprSelector)
 {
     return HdTokens->geometry;
 }
@@ -192,10 +193,10 @@ HdSceneDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
 }
 
 /*virtual*/
-TfToken
-HdSceneDelegate::GetReprName(SdfPath const &id)
+HdReprSelector
+HdSceneDelegate::GetReprSelector(SdfPath const &id)
 {
-    return TfToken();
+    return HdReprSelector();
 }
 
 /*virtual*/

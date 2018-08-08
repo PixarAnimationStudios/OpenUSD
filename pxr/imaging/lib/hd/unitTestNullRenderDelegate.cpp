@@ -211,7 +211,7 @@ public:
     virtual void Sync(HdSceneDelegate* delegate,
                       HdRenderParam*   renderParam,
                       HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
+                      HdReprSelector const& reprSelector,
                       bool             forcedRepr) override
     {
         *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
@@ -230,7 +230,7 @@ public:
         return bits;
     }
 
-    virtual void _InitRepr(TfToken const &reprName,
+    virtual void _InitRepr(HdReprSelector const &reprName,
                            HdDirtyBits *dirtyBits) override
     {
         _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
@@ -242,7 +242,7 @@ public:
 
 protected:
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
+                             HdReprSelector const &reprName,
                              HdDirtyBits *dirtyBits) override  {
     }
 

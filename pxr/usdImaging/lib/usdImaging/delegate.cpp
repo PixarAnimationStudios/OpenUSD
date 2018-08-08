@@ -1426,7 +1426,8 @@ UsdImagingDelegate::SetHardwareShadingEnabled(bool enable)
 
 /*virtual*/
 TfToken
-UsdImagingDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
+UsdImagingDelegate::GetRenderTag(SdfPath const& id,
+                                 HdReprSelector const& reprSelector)
 {
     SdfPath usdPath = GetPathForUsd(id);
 
@@ -1670,7 +1671,7 @@ UsdImagingDelegate::IsRefined(SdfPath const& usdPath) const
 
 
 void
-UsdImagingDelegate::SetReprFallback(TfToken const &repr)
+UsdImagingDelegate::SetReprFallback(HdReprSelector const &repr)
 {
     HD_TRACE_FUNCTION();
 
@@ -2365,8 +2366,8 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
 }
 
 /*virtual*/
-TfToken
-UsdImagingDelegate::GetReprName(SdfPath const &id)
+HdReprSelector
+UsdImagingDelegate::GetReprSelector(SdfPath const &id)
 {
     return _reprFallback;
 }

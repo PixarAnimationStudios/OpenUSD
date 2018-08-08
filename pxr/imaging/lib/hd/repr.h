@@ -37,6 +37,52 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdRprimSharedData;
 
+/// \struct HdReprSelector
+///
+/// Describes one of more authored rprim display representations.
+struct HdReprSelector {
+    explicit HdReprSelector()
+    : reprToken() { }
+    explicit HdReprSelector(TfToken const &token)
+    : reprToken(token) { }
+    
+    bool operator==(const HdReprSelector &rhs) const {
+        return reprToken == rhs.reprToken;
+    }
+
+    bool operator!=(const HdReprSelector &rhs) const {
+        return reprToken != rhs.reprToken;
+    }
+    
+    bool operator<(const HdReprSelector &rhs) const {
+        return reprToken < rhs.reprToken;
+    }
+    
+    bool IsEmpty() const {
+        return reprToken.IsEmpty();
+    }
+
+    size_t Hash() const { 
+        return reprToken.Hash();
+    }
+    
+    char const* GetText() const {
+        return reprToken.GetText();
+    }
+    
+    friend std::ostream &operator <<(std::ostream &stream,
+                                     HdReprSelector const& t) {
+        return stream << t.reprToken;
+    }
+    
+    TfToken const &GetReprToken() const {
+        return reprToken;
+    }
+    
+private:
+    TfToken reprToken;
+};
+
 /// \class HdRepr
 ///
 /// An HdRepr owns one or more draw item(s) that visually represent it.

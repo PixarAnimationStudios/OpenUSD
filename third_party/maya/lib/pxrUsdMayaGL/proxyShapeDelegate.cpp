@@ -46,7 +46,7 @@ static constexpr size_t ISECT_RESOLUTION = 256;
 static GlfDrawTargetRefPtr _sharedDrawTarget = nullptr;
 static HdRprimCollection _sharedRprimCollection(
         TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
-        HdTokens->refined);
+        HdReprSelector(HdTokens->refined));
 
 /// Delegate for computing a ray intersection against a UsdMayaProxyShape by
 /// rendering using Hydra via the UsdMayaGLBatchRenderer.

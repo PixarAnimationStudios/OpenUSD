@@ -196,12 +196,12 @@ public:
     bool IsRefined(SdfPath const& usdPath) const;
 
     /// Returns the fallback repr name.
-    TfToken GetReprFallback() const { return _reprFallback; }
+    HdReprSelector GetReprFallback() const { return _reprFallback; }
 
     /// Sets the fallback repr name. Note that currently UsdImagingDelegate
     /// doesn't support per-prim repr.
     USDIMAGING_API
-    void SetReprFallback(TfToken const &repr);
+    void SetReprFallback(HdReprSelector const &repr);
 
     /// Returns the fallback cull style.
     HdCullStyle GetCullStyleFallback() const { return _cullStyleFallback; }
@@ -266,7 +266,8 @@ public:
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) override;
+    virtual TfToken GetRenderTag(SdfPath const& id,
+                                 HdReprSelector const& reprSelector) override;
     USDIMAGING_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     USDIMAGING_API
@@ -298,7 +299,7 @@ public:
     USDIMAGING_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
-    virtual TfToken GetReprName(SdfPath const &id) override;
+    virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
     USDIMAGING_API
     virtual VtArray<TfToken> GetCategories(SdfPath const &id) override;
     USDIMAGING_API
@@ -613,7 +614,7 @@ private:
     std::vector<float> _timeSampleOffsets;
 
     int _refineLevelFallback;
-    TfToken _reprFallback;
+    HdReprSelector _reprFallback;
     HdCullStyle _cullStyleFallback;
 
     // Change processing

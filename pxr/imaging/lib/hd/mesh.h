@@ -145,7 +145,7 @@ protected:
         _MeshReprConfig;
 
     HD_API
-    static _MeshReprConfig::DescArray _GetReprDesc(TfToken const &reprName);
+    static _MeshReprConfig::DescArray _GetReprDesc(HdReprSelector const &reprSelector);
 
 private:
 

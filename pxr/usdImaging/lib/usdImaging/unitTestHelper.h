@@ -223,7 +223,7 @@ private:
 
         _stage = usdStage;
         _delegate->Populate(_stage->GetPseudoRoot());
-        HdRprimCollection col = HdRprimCollection(collectionName, reprName);
+        HdRprimCollection col = HdRprimCollection(collectionName, HdReprSelector(reprName));
         col.SetRenderTags(renderTags);
         _geometryPass = HdRenderPassSharedPtr(new HdSt_RenderPass(_renderIndex, col));
         _renderPassState = HdRenderPassStateSharedPtr(new HdStRenderPassState());

@@ -595,7 +595,7 @@ _DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const HdRprimCollection &collection = filterParam->collection;
     const HdRenderIndex *renderIndex    = filterParam->renderIndex;
 
-   TfToken const & repr = collection.GetReprName();
+   HdReprSelector const & repr = collection.GetReprSelector();
 
    if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID, repr))) {
        return true;
@@ -662,14 +662,14 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 }
 
 TfToken
-HdRenderIndex::GetRenderTag(SdfPath const& id, TfToken const& reprName) const
+HdRenderIndex::GetRenderTag(SdfPath const& id, HdReprSelector const& reprSelector) const
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
     if (info == nullptr) {
         return HdTokens->hidden;
     }
 
-    return info->rprim->GetRenderTag(info->sceneDelegate, reprName);
+    return info->rprim->GetRenderTag(info->sceneDelegate, reprSelector);
 }
 
 SdfPathVector
@@ -734,17 +734,17 @@ namespace {
     };
 
     struct _ReprSpec {
-        _ReprSpec(TfToken const &repr, bool forced) :
-            reprName(repr), forcedRepr(forced) {}
-        TfToken reprName;
+        _ReprSpec(HdReprSelector const &repr, bool forced) :
+            reprSelector(repr), forcedRepr(forced) {}
+        HdReprSelector reprSelector;
         bool forcedRepr;
 
         bool operator < (_ReprSpec const &other) const {
-            return reprName < other.reprName ||
-                (reprName == other.reprName && (forcedRepr && (!other.forcedRepr)));
+            return reprSelector < other.reprSelector ||
+                (reprSelector == other.reprSelector && (forcedRepr && (!other.forcedRepr)));
         }
         bool operator == (_ReprSpec const &other) const {
-            return  (reprName == other.reprName) &&
+            return  (reprSelector == other.reprSelector) &&
                     (forcedRepr == other.forcedRepr);
         }
     };
@@ -785,7 +785,7 @@ namespace {
                         rprim.Sync(_sceneDelegate,
                                    _renderParam,
                                    &dirtyBits,
-                                    it->reprName,
+                                    it->reprSelector,
                                    it->forcedRepr);
                     }
                     reprsMask >>= 1;
@@ -843,7 +843,7 @@ namespace {
                 TF_FOR_ALL(it, reprs) {
                     if (reprsMask & 1) {
                         rprim->InitRepr(sceneDelegate,
-                                        it->reprName,
+                                        it->reprSelector,
                                         it->forcedRepr,
                                         &dirtyBits);
                     }
@@ -983,7 +983,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         for (auto const& hdDirtyList : _syncQueue) {
             HdRprimCollection const& collection = hdDirtyList->GetCollection();
 
-            _ReprSpec reprSpec(collection.GetReprName(),
+            _ReprSpec reprSpec(collection.GetReprSelector(),
                                collection.IsForcedRepr());
 
             // find reprIndex and append it if not exists.
@@ -1386,7 +1386,7 @@ HdRenderIndex::_AppendDrawItems(
                 HdRprimCollection const& collection,
                 _ConcurrentDrawItems* result)
 {
-    TfToken const& reprName = collection.GetReprName();
+    HdReprSelector const& reprSelector = collection.GetReprSelector();
     bool forcedRepr = collection.IsForcedRepr();
 
     // Get draw item view for this thread.
@@ -1403,12 +1403,12 @@ HdRenderIndex::_AppendDrawItems(
             // Extract the draw items and assign them to the right command buffer
             // based on the tag
             if (const std::vector<HdDrawItem*> *drawItems =
-                          rprimInfo.rprim->GetDrawItems(reprName,
+                          rprimInfo.rprim->GetDrawItems(reprSelector,
                                                         forcedRepr)) {
 
                 const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(
                                                         rprimInfo.sceneDelegate,
-                                                        reprName);
+                                                        reprSelector);
 
                 HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
 

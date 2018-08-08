@@ -451,7 +451,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         TfStringPrintf("%s_%s",
                        _tokens->BatchRendererRootName.GetText(),
                        _tokens->LegacyViewport.GetText())));
-    _legacyViewportRprimCollection.SetReprName(HdTokens->refined);
+    _legacyViewportRprimCollection.SetReprSelector(
+        HdReprSelector(HdTokens->refined));
     _legacyViewportRprimCollection.SetRootPath(_legacyViewportPrefix);
     _legacyViewportRprimCollection.SetRenderTags(renderTags);
     _renderIndex->GetChangeTracker().AddCollection(
@@ -461,7 +462,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         TfStringPrintf("%s_%s",
                        _tokens->BatchRendererRootName.GetText(),
                        _tokens->Viewport2.GetText())));
-    _viewport2RprimCollection.SetReprName(HdTokens->refined);
+    _viewport2RprimCollection.SetReprSelector(
+        HdReprSelector(HdTokens->refined));
     _viewport2RprimCollection.SetRootPath(_viewport2Prefix);
     _viewport2RprimCollection.SetRenderTags(renderTags);
     _renderIndex->GetChangeTracker().AddCollection(

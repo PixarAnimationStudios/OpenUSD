@@ -66,7 +66,7 @@ protected:
     typedef _ReprDescConfigs<HdPointsReprDesc> _PointsReprConfig;
 
     HD_API
-    static _PointsReprConfig::DescArray _GetReprDesc(TfToken const &reprName);
+    static _PointsReprConfig::DescArray _GetReprDesc(HdReprSelector const &reprSelector);
 
 private:
 

@@ -232,7 +232,7 @@ public:
 
     /// Returns the render tag for the given rprim
     HD_API
-    TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) const;
+    TfToken GetRenderTag(SdfPath const& id, HdReprSelector const& reprSelector) const;
 
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>

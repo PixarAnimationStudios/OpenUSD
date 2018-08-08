@@ -136,7 +136,8 @@ HdxTaskController::_CreateRenderTasks()
     renderParams.camera = _cameraId;
     renderParams.viewport = GfVec4d(0,0,1,1);
 
-    HdRprimCollection collection(HdTokens->geometry, HdTokens->smoothHull);
+    HdRprimCollection collection(HdTokens->geometry,
+                                 HdReprSelector(HdTokens->smoothHull));
     collection.SetRootPath(SdfPath::AbsoluteRootPath());
 
     SdfPath const renderTasks[] = {

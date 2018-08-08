@@ -83,7 +83,7 @@ HdxIntersector::_Init(GfVec2i const& size)
 {
     // The collection created below is purely for satisfying the HdRenderPass
     // constructor. The collections for the render passes are set in Query(..)
-    HdRprimCollection col(HdTokens->geometry, HdTokens->hull);
+    HdRprimCollection col(HdTokens->geometry, HdReprSelector(HdTokens->hull));
     _pickableRenderPass = 
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
     _occluderRenderPass = 
@@ -426,7 +426,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                 // Point picking support is limited to unrefined meshes currently,
                 // and so we can use 'hull' to do the depth-only pass w/ both
                 // pickables and unpickables.
-                occluderCol.SetReprName(HdTokens->hull);
+                occluderCol.SetReprSelector(HdReprSelector(HdTokens->hull));
                 if (!occluderCol.GetExcludePaths().empty()) {
                     // add the "unpickables" to the prims rendered to the depth
                     // buffer

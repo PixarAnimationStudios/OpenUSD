@@ -75,7 +75,7 @@ protected:
 
     HD_API
     static _BasisCurvesReprConfig::DescArray
-        _GetReprDesc(TfToken const &reprName);
+        _GetReprDesc(HdReprSelector const &reprSelector);
 
 private:
     // Class can not be default constructed or copied.

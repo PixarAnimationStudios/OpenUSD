@@ -42,21 +42,21 @@ HdRprimCollection::HdRprimCollection()
 }
 
 HdRprimCollection::HdRprimCollection(TfToken const& name,
-                                     TfToken const& reprName,
+                                     HdReprSelector const& reprSelector,
                                      bool forcedRepr)
     : _name(name)
-    , _reprName(reprName)
+    , _reprSelector(reprSelector)
     , _forcedRepr(forcedRepr)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
 {
 }
 
 HdRprimCollection::HdRprimCollection(TfToken const& name,
-                                     TfToken const& reprName,
+                                     HdReprSelector const& reprSelector,
                                      SdfPath const& rootPath,
                                      bool forcedRepr)
     : _name(name)
-    , _reprName(reprName)
+    , _reprSelector(reprSelector)
     , _forcedRepr(forcedRepr)
 {
     if (!rootPath.IsAbsolutePath()) {
@@ -70,7 +70,7 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
 HdRprimCollection::HdRprimCollection(HdRprimCollection const& col)
 {
     _name           = col._name;
-    _reprName       = col._reprName;
+    _reprSelector   = col._reprSelector;
     _forcedRepr     = col._forcedRepr;
     _renderTags     = col._renderTags;
     _rootPaths      = col._rootPaths;
@@ -177,7 +177,7 @@ size_t
 HdRprimCollection::ComputeHash() const
 {
     size_t h = _name.Hash();
-    boost::hash_combine(h, _reprName.Hash());
+    boost::hash_combine(h, _reprSelector.Hash());
     boost::hash_combine(h, _forcedRepr);
     TF_FOR_ALL(pathIt, _rootPaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
@@ -194,7 +194,7 @@ HdRprimCollection::ComputeHash() const
 bool HdRprimCollection::operator==(HdRprimCollection const & other) const 
 {
     return _name == other._name
-       && _reprName == other._reprName
+       && _reprSelector == other._reprSelector
        && _forcedRepr == other._forcedRepr
        && _rootPaths == other._rootPaths
        && _excludePaths == other._excludePaths

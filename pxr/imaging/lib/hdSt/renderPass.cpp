@@ -159,7 +159,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
                                             "(repr = %s)"
                                             "version: %d -> %d\n", 
                                              collection.GetName().GetText(),
-                                             collection.GetReprName().GetText(),
+                                             collection.GetReprSelector().GetText(),
                                              _collectionVersion,
                                              collectionVersion);
 

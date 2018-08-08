@@ -125,7 +125,7 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
                            VtValue(HdRprimCollection(HdTokens->geometry,
-                                   _reprName)));
+                                   HdReprSelector(_reprName))));
 
     // prepare scene
     // To ensure that the non-aggregated element index returned via picking, 

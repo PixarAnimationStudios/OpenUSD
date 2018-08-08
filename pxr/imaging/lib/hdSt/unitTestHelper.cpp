@@ -97,7 +97,7 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
+ , _reprToken()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(
@@ -109,7 +109,7 @@ HdSt_TestDriver::HdSt_TestDriver()
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
         reprName = HdTokens->smoothHull;
     }
-    _Init(reprName);
+    _Init(HdReprSelector(reprName));
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
@@ -117,14 +117,29 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
+ , _reprToken()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(
     boost::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 {
-    _Init(reprName);
+    _Init(HdReprSelector(reprName));
+}
+
+HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _reprToken()
+ , _geomPass()
+ , _geomAndGuidePass()
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
+{
+    _Init(reprToken);
 }
 
 HdSt_TestDriver::~HdSt_TestDriver()
@@ -134,7 +149,7 @@ HdSt_TestDriver::~HdSt_TestDriver()
 }
 
 void
-HdSt_TestDriver::_Init(TfToken const &reprName)
+HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
 {
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
@@ -142,7 +157,7 @@ HdSt_TestDriver::_Init(TfToken const &reprName)
     _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
-    _reprName = reprName;
+    _reprToken = reprToken;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
     viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(0.0, 1000.0, 0.0));
@@ -177,8 +192,8 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
 
 void
 HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
-                         GfMatrix4d const &projectionMatrix,
-                         GfVec4d const &viewport)
+                           GfMatrix4d const &projectionMatrix,
+                           GfVec4d const &viewport)
 {
     _renderPassState->SetCamera(modelViewMatrix,
                                 projectionMatrix,
@@ -202,7 +217,7 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
             
             HdRprimCollection col = HdRprimCollection(
                                      HdTokens->geometry,
-                                     _reprName);
+                                     _reprToken);
             col.SetRenderTags(renderTags);
             _geomAndGuidePass = HdRenderPassSharedPtr(
                 new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
@@ -215,7 +230,7 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
 
             HdRprimCollection col = HdRprimCollection(
                                         HdTokens->geometry,
-                                        _reprName);
+                                        _reprToken);
             col.SetRenderTags(renderTags);
             _geomPass = HdRenderPassSharedPtr(
                 new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
@@ -225,9 +240,9 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
 }
 
 void
-HdSt_TestDriver::SetRepr(TfToken const &reprName)
+HdSt_TestDriver::SetRepr(HdReprSelector const &reprToken)
 {
-    _reprName = reprName;
+    _reprToken = reprToken;
 
     if (_geomAndGuidePass) {
         TfTokenVector renderTags;
@@ -236,7 +251,7 @@ HdSt_TestDriver::SetRepr(TfToken const &reprName)
         
         HdRprimCollection col = HdRprimCollection(
                                  HdTokens->geometry,
-                                 _reprName);
+                                 _reprToken);
         col.SetRenderTags(renderTags);
         _geomAndGuidePass->SetRprimCollection(col);
     }
@@ -246,7 +261,7 @@ HdSt_TestDriver::SetRepr(TfToken const &reprName)
         
         HdRprimCollection col = HdRprimCollection(
                                  HdTokens->geometry,
-                                 _reprName);
+                                 _reprToken);
         col.SetRenderTags(renderTags);
         _geomPass->SetRprimCollection(col);
     }

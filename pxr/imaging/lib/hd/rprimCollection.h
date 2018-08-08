@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
@@ -56,11 +57,11 @@ public:
     HD_API
     HdRprimCollection();
 
-    /// Constructs an rprim collection with \p reprName. \p if forcedRepr is
+    /// Constructs an rprim collection with \p reprSelector. \p if forcedRepr is
     /// set to true, prims authored repr will be ignored.
     HD_API
     HdRprimCollection(TfToken const& name,
-                      TfToken const& reprName,
+                      HdReprSelector const& reprSelector,
                       bool forcedRepr=false);
 
     /// Constructs an rprim collection, excluding all Rprims not prefixed by \p
@@ -68,7 +69,7 @@ public:
     /// ignored.
     HD_API
     HdRprimCollection(TfToken const& name,
-                      TfToken const& reprName,
+                      HdReprSelector const& reprSelector,
                       SdfPath const& rootPath,
                       bool forcedRepr=false);
 
@@ -100,16 +101,16 @@ public:
 
     /// Returns the representation name.
     ///
-    /// The repr name corresponds to specific aspects of the requested set of 
-    /// Rprims, for example one can request "hullAndPoints" repr which
+    /// The repr selector corresponds to specific aspects of the requested set
+    /// of Rprims, for example one can request "hullAndPoints" repr which
     /// would cause both the hull and points representations of all prims named
     /// by the collection to be included.
-    TfToken const& GetReprName() const {
-        return _reprName;
+    HdReprSelector const& GetReprSelector() const {
+        return _reprSelector;
     }
 
-    void SetReprName(TfToken const &reprName) {
-        _reprName = reprName;
+    void SetReprSelector(HdReprSelector const& reprSelector) {
+        _reprSelector = reprSelector;
     }
 
     bool IsForcedRepr() const {
@@ -183,7 +184,7 @@ private:
         HdRprimCollection const & v);
 
     TfToken _name;
-    TfToken _reprName;
+    HdReprSelector _reprSelector;
     bool _forcedRepr;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;

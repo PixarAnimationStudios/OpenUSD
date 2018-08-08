@@ -69,9 +69,9 @@ HdBasisCurves::ConfigureRepr(TfToken const &reprName,
 
 /* static */
 HdBasisCurves::_BasisCurvesReprConfig::DescArray
-HdBasisCurves::_GetReprDesc(TfToken const &reprName)
+HdBasisCurves::_GetReprDesc(HdReprSelector const &reprSelector)
 {
-    return _reprDescConfig.Find(reprName);
+    return _reprDescConfig.Find(reprSelector.GetReprToken());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

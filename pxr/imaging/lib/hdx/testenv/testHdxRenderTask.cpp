@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
 
     // update collection
     HdRprimCollectionVector collections;
-    collections.push_back(HdRprimCollection(HdTokens->geometry, HdTokens->wire));
-    collections.push_back(HdRprimCollection(HdTokens->geometry, HdTokens->wire));
+    collections.push_back(HdRprimCollection(HdTokens->geometry, HdReprSelector(HdTokens->wire)));
+    collections.push_back(HdRprimCollection(HdTokens->geometry, HdReprSelector(HdTokens->wire)));
     delegate->SetTaskParam(renderTask1, HdTokens->collection, VtValue(collections));
 
     // draw #3

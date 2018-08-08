@@ -118,11 +118,11 @@ public:
     ///   \param reprName A specifier for which representation to draw with.
     ///   \param forcedRepr A specifier for how to resolve reprName opinions.
     ///
-    virtual void Sync(HdSceneDelegate* sceneDelegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
-                      bool             forcedRepr) override;
+    virtual void Sync(HdSceneDelegate   *sceneDelegate,
+                      HdRenderParam     *renderParam,
+                      HdDirtyBits       *dirtyBits,
+                      HdReprSelector const &reprToken,
+                      bool               forcedRepr) override;
 
 protected:
     // Update the named repr object for this Rprim. Repr objects are
@@ -132,7 +132,7 @@ protected:
     // rendered, but HdEmbreeMesh bypasses them for now, so this function is
     // a no-op.
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
+                             HdReprSelector const &reprToken,
                              HdDirtyBits *dirtyBits) override;
 
     // This callback from Rprim gives the prim an opportunity to set
@@ -160,7 +160,7 @@ protected:
     // repr is synced.  InitRepr occurs before dirty bit propagation.
     //
     // See HdRprim::InitRepr()
-    virtual void _InitRepr(TfToken const &reprName,
+    virtual void _InitRepr(HdReprSelector const &reprToken,
                            HdDirtyBits *dirtyBits) override;
 
 private:

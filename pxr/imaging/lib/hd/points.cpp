@@ -54,9 +54,9 @@ HdPoints::ConfigureRepr(TfToken const &reprName,
 
 /* static */
 HdPoints::_PointsReprConfig::DescArray
-HdPoints::_GetReprDesc(TfToken const &reprName)
+HdPoints::_GetReprDesc(HdReprSelector const &reprSelector)
 {
-    return _reprDescConfig.Find(reprName);
+    return _reprDescConfig.Find(reprSelector.GetReprToken());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

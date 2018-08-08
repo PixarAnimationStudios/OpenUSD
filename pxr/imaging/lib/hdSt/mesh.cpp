@@ -99,11 +99,11 @@ HdStMesh::~HdStMesh()
 }
 
 void
-HdStMesh::Sync(HdSceneDelegate *delegate,
-               HdRenderParam   *renderParam,
-               HdDirtyBits     *dirtyBits,
-               TfToken const   &reprName,
-               bool             forcedRepr)
+HdStMesh::Sync(HdSceneDelegate      *delegate,
+               HdRenderParam        *renderParam,
+               HdDirtyBits          *dirtyBits,
+               HdReprSelector const &reprSelector,
+               bool                  forcedRepr)
 {
     TF_UNUSED(renderParam);
 
@@ -112,8 +112,8 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
-    _UpdateRepr(delegate, calcReprName, dirtyBits);
+    HdReprSelector calcReprSelector = _GetReprSelector(reprSelector, forcedRepr);
+    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
@@ -1665,21 +1665,21 @@ size_t _GetNumDrawItemsForDesc(HdMeshReprDesc const& reprDesc)
 }
 
 void
-HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
+HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
 {
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
+                                            _ReprComparator(reprSelector));
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
-        _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprSelector, boost::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         // set dirty bit to say we need to sync a new repr (buffer array
         // ranges may change)
         *dirtyBits |= HdChangeTracker::NewRepr;
 
-        _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprSelector);
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -1742,20 +1742,20 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 
 void
 HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                      TfToken const &reprName,
+                      HdReprSelector const &reprSelector,
                       HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdReprSharedPtr const &curRepr = _GetRepr(reprName);
+    HdReprSharedPtr const &curRepr = _GetRepr(reprSelector);
     if (!curRepr) {
         return;
     }
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStMesh::GetRepr " << GetId()
-                  << " Repr = " << reprName << "\n";
+                  << " Repr = " << reprSelector << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
@@ -1775,7 +1775,7 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         needsSetGeometricShader = true;
     }
 
-    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprName);
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprSelector);
 
     // iterate through all reprdescs for the current repr to figure out if any 
     // of them requires smoothnormals

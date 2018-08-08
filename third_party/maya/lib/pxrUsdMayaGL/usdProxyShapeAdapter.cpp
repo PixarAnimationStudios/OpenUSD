@@ -227,7 +227,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
                                                1.0f);
     }
 
-    TfToken reprName;
+    HdReprSelector reprSelector;
 
     // Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for
     // whatever reason...
@@ -240,22 +240,22 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 
     if (flatShaded) {
         if (needsWire) {
-            reprName = HdTokens->wireOnSurf;
+            reprSelector = HdReprSelector(HdTokens->wireOnSurf);
         } else {
-            reprName = HdTokens->hull;
+            reprSelector = HdReprSelector(HdTokens->hull);
         }
     }
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
     {
         if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
-            reprName = HdTokens->refinedWireOnSurf;
+            reprSelector = HdReprSelector(HdTokens->refinedWireOnSurf);
         } else {
-            reprName = HdTokens->refined;
+            reprSelector = HdReprSelector(HdTokens->refined);
         }
     }
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
     {
-        reprName = HdTokens->refinedWire;
+        reprSelector = HdReprSelector(HdTokens->refinedWire);
         _renderParams.enableLighting = false;
     }
     else
@@ -267,13 +267,13 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         _delegate->SetRootVisibility(_drawShape);
     }
 
-    if (_rprimCollection.GetReprName() != reprName) {
-        _rprimCollection.SetReprName(reprName);
+    if (_rprimCollection.GetReprSelector() != reprSelector) {
+        _rprimCollection.SetReprSelector(reprSelector);
 
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "    Repr name changed: %s\n"
+                "    Repr selector changed: %s\n"
                 "        Marking collection dirty: %s\n",
-                reprName.GetText(),
+                reprSelector.GetText(),
                 _rprimCollection.GetName().GetText());
 
         _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
@@ -378,7 +378,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
     }
 
-    _rprimCollection.SetReprName(HdTokens->refined);
+    _rprimCollection.SetReprSelector(HdReprSelector(HdTokens->refined));
     _rprimCollection.SetRootPath(delegateId);
 
     return true;

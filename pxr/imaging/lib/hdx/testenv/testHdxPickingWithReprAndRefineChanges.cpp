@@ -138,7 +138,8 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
                             VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull)));
+                            VtValue(HdRprimCollection(HdTokens->geometry,
+                                        HdReprSelector(HdTokens->hull))));
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
@@ -157,7 +158,8 @@ My_TestGLDrawing::InitTest()
     // Worth noting that the collection's repr is set to refined (and not 
     // hull). When a prim has an authored repr, we'll use that instead, as
     // the collection's forcedRepr defaults to false.
-    _pickablesCol = HdRprimCollection(_tokens->pickables, HdTokens->refined);
+    _pickablesCol = HdRprimCollection(_tokens->pickables,
+                        HdReprSelector(HdTokens->refined));
     _marquee.InitGLResources();
     _picker.InitIntersector(_renderIndex);
     _SetPickParams();

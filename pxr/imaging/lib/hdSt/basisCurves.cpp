@@ -71,11 +71,11 @@ HdStBasisCurves::~HdStBasisCurves()
 }
 
 void
-HdStBasisCurves::Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
-                      bool             forcedRepr)
+HdStBasisCurves::Sync(HdSceneDelegate      *delegate,
+                      HdRenderParam        *renderParam,
+                      HdDirtyBits          *dirtyBits,
+                      HdReprSelector const &reprSelector,
+                      bool                  forcedRepr)
 {
     TF_UNUSED(renderParam);
 
@@ -84,8 +84,9 @@ HdStBasisCurves::Sync(HdSceneDelegate* delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
-    _UpdateRepr(delegate, calcReprName, dirtyBits);
+    HdReprSelector calcReprSelector = 
+            _GetReprSelector(reprSelector, forcedRepr);
+    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
@@ -107,7 +108,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits, constantPrimvars);
+    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
+            constantPrimvars);
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
@@ -259,17 +261,17 @@ HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 void
-HdStBasisCurves::_InitRepr(TfToken const &reprName,
+HdStBasisCurves::_InitRepr(HdReprSelector const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
+                                            _ReprComparator(reprToken));
     bool isNew = it == _reprs.end();
     if (isNew) {
-        _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprName);
+        _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
         // add new repr
-        _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         *dirtyBits |= HdChangeTracker::NewRepr;
@@ -304,13 +306,13 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
 
 void
 HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
+                             HdReprSelector const &reprToken,
                              HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdReprSharedPtr const &curRepr = _GetRepr(reprName);
+    HdReprSharedPtr const &curRepr = _GetRepr(reprToken);
     if (!curRepr) {
         return;
     }
@@ -322,7 +324,7 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStBasisCurves::_UpdateRepr " << GetId()
-                  << " Repr = " << reprName << "\n";
+                  << " Repr = " << reprToken << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
@@ -340,7 +342,8 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         needsSetGeometricShader = true;
     }
 
-    _BasisCurvesReprConfig::DescArray const &reprDescs = _GetReprDesc(reprName);
+    _BasisCurvesReprConfig::DescArray const &reprDescs = 
+        _GetReprDesc(reprToken);
 
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {

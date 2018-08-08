@@ -80,17 +80,17 @@ public:
     virtual ~HdStBasisCurves();
 
     HDST_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const &  reprName,
-                      bool             forcedRepr) override;
+    virtual void Sync(HdSceneDelegate   *delegate,
+                      HdRenderParam     *renderParam,
+                      HdDirtyBits       *dirtyBits,
+                      HdReprSelector const &reprToken,
+                      bool               forcedRepr) override;
 
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
+                             HdReprSelector const &reprToken,
                              HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
@@ -107,7 +107,7 @@ protected:
                                   HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-    virtual void _InitRepr(TfToken const &reprName,
+    virtual void _InitRepr(HdReprSelector const &reprToken,
                            HdDirtyBits *dirtyBits) override;
 
 private:
