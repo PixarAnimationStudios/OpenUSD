@@ -30,6 +30,7 @@
 #include "px_vp20/utils.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -38,8 +39,11 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+#include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
@@ -49,6 +53,8 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
+#include "pxr/imaging/hdx/shadowMatrixComputation.h"
+#include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
@@ -66,6 +72,29 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
+namespace {
+    class PxrMayaHdShadowMatrix : public HdxShadowMatrixComputation
+    {
+        public:
+            PxrMayaHdShadowMatrix(const GlfSimpleLight& light)
+            {
+                // We use the shadow matrix as provided by Maya directly.
+                _shadowMatrix = light.GetShadowMatrix();
+            }
+
+            GfMatrix4d Compute(
+                    const GfVec4f& viewport,
+                    CameraUtilConformWindowPolicy policy) override
+            {
+                return _shadowMatrix;
+            }
+
+        private:
+            GfMatrix4d _shadowMatrix;
+    };
+}
+
+
 PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         HdRenderIndex* renderIndex,
         const SdfPath& delegateID) :
@@ -80,6 +109,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         TfToken(TfStringPrintf("_UsdImaging_%p", this)));
 
     _simpleLightTaskId = _rootId.AppendChild(HdxPrimitiveTokens->simpleLightTask);
+    _shadowTaskId = _rootId.AppendChild(HdxPrimitiveTokens->shadowTask);
     _cameraId = _rootId.AppendChild(HdPrimTypeTokens->camera);
 
     // camera
@@ -92,16 +122,28 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         _ValueCache& cache = _valueCacheMap[_cameraId];
         cache[HdCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
         cache[HdCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdCameraTokens->windowPolicy] = VtValue();  // no window policy.
+        cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
     }
 
-    // simple lighting task (for Hydra native)
+    // Simple lighting task.
     {
         renderIndex->InsertTask<HdxSimpleLightTask>(this, _simpleLightTaskId);
         _ValueCache& cache = _valueCacheMap[_simpleLightTaskId];
         HdxSimpleLightTaskParams taskParams;
         taskParams.cameraPath = _cameraId;
         taskParams.viewport = GfVec4f(_viewport);
+        taskParams.enableShadows = _lightingContext->GetUseShadows();
+        cache[HdTokens->params] = VtValue(taskParams);
+        cache[HdTokens->children] = VtValue(SdfPathVector());
+    }
+
+    // Shadow task.
+    {
+        renderIndex->InsertTask<HdxShadowTask>(this, _shadowTaskId);
+        _ValueCache& cache = _valueCacheMap[_shadowTaskId];
+        HdxShadowTaskParams taskParams;
+        taskParams.camera = _cameraId;
+        taskParams.viewport = _viewport;
         cache[HdTokens->params] = VtValue(taskParams);
         cache[HdTokens->children] = VtValue(SdfPathVector());
     }
@@ -134,7 +176,7 @@ PxrMayaHdSceneDelegate::SetCameraState(
     _ValueCache& cache = _valueCacheMap[_cameraId];
     cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
     cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
-    cache[HdCameraTokens->windowPolicy] = VtValue(); // no window policy.
+    cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
@@ -153,6 +195,18 @@ PxrMayaHdSceneDelegate::SetCameraState(
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId,
+            HdChangeTracker::DirtyParams);
+
+        // Update the shadow task.
+        HdxShadowTaskParams shadowTaskParams =
+            _GetValue<HdxShadowTaskParams>(_shadowTaskId,
+                                           HdTokens->params);
+
+        shadowTaskParams.viewport = _viewport;
+        _SetValue(_shadowTaskId, HdTokens->params, shadowTaskParams);
+
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            _shadowTaskId,
             HdChangeTracker::DirtyParams);
 
         // Update all render setup tasks.
@@ -210,12 +264,12 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
 {
     const GlfSimpleLightVector& lights = _lightingContext->GetLights();
 
-    bool hasNumLightsChanged = false;
+    bool hasLightingChanged = false;
 
     // Insert light Ids into the render index for those that do not yet exist.
     while (_lightIds.size() < lights.size()) {
-        const SdfPath lightId(
-            TfStringPrintf("%s/light%zu", _rootId.GetText(), _lightIds.size()));
+        const SdfPath lightId = _rootId.AppendChild(TfToken(
+            TfStringPrintf("light%zu", _lightIds.size())));
         _lightIds.push_back(lightId);
 
         // Since we're hardcoded to use HdStRenderDelegate, we expect to have
@@ -225,7 +279,7 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
 
         GetRenderIndex().
             InsertSprim(HdPrimTypeTokens->simpleLight, this, lightId);
-        hasNumLightsChanged = true;
+        hasLightingChanged = true;
     }
 
     // Remove unused light Ids from HdRenderIndex
@@ -233,22 +287,53 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
         GetRenderIndex().
             RemoveSprim(HdPrimTypeTokens->simpleLight, _lightIds.back());
         _lightIds.pop_back();
-        hasNumLightsChanged = true;
+        hasLightingChanged = true;
     }
 
-    // invalidate HdLights
+    // Check for any changes in lighting.
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache& cache = _valueCacheMap[_lightIds[i]];
-        // store GlfSimpleLight directly.
+
+        const VtValue& currLightValue = cache[HdLightTokens->params];
+        if (currLightValue.IsHolding<GlfSimpleLight>()) {
+            const GlfSimpleLight& currLight =
+                currLightValue.Get<GlfSimpleLight>();
+
+            if (lights[i] == currLight) {
+                // This light hasn't changed since the last time it was stored
+                // in the cache, so skip it.
+                continue;
+            }
+        }
+
+        hasLightingChanged = true;
+
+        // Store GlfSimpleLight directly.
         cache[HdLightTokens->params] = VtValue(lights[i]);
         cache[HdLightTokens->transform] = VtValue();
-        cache[HdLightTokens->shadowParams] = VtValue(HdxShadowParams());
-        cache[HdLightTokens->shadowCollection] = VtValue();
 
-        // Only mark as dirty the parameters to avoid unnecessary invalidation
-        // specially marking as dirty lightShadowCollection will trigger
-        // a collection dirty on geometry and we don't want that to happen
-        // always
+        HdxShadowParams shadowParams;
+        shadowParams.enabled = lights[i].HasShadow();
+        shadowParams.resolution = lights[i].GetShadowResolution();
+        // XXX: The Hydra lighting shader currently adds the bias value to the
+        // depth of the position being tested for shadowing whereas the Maya
+        // behavior appears to be that it is subtracted. To handle this for now,
+        // we simply negate the bias value from Maya before passing it to Hydra.
+        shadowParams.bias = -1.0f * lights[i].GetShadowBias();
+        shadowParams.blur = lights[i].GetShadowBlur();
+
+        if (lights[i].HasShadow()) {
+            shadowParams.shadowMatrix =
+                HdxShadowMatrixComputationSharedPtr(
+                    new PxrMayaHdShadowMatrix(lights[i]));
+        }
+
+        cache[HdLightTokens->shadowParams] = VtValue(shadowParams);
+        cache[HdLightTokens->shadowCollection] =
+            VtValue(HdRprimCollection(
+                HdTokens->geometry,
+                HdReprSelector(HdTokens->refined)));
+
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             _lightIds[i],
             HdStLight::AllDirty);
@@ -257,6 +342,11 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
     HdxSimpleLightTaskParams taskParams =
         _GetValue<HdxSimpleLightTaskParams>(_simpleLightTaskId,
                                             HdTokens->params);
+
+    if (taskParams.enableShadows != _lightingContext->GetUseShadows()) {
+        taskParams.enableShadows = _lightingContext->GetUseShadows();
+        hasLightingChanged = true;
+    }
 
     // Sadly the material also comes from the lighting context right now...
     bool hasSceneAmbientChanged = false;
@@ -270,12 +360,15 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
         hasMaterialChanged = true;
     }
 
-    // invalidate HdxSimpleLightTask too
-    if (hasNumLightsChanged || hasSceneAmbientChanged || hasMaterialChanged) {
+    if (hasLightingChanged || hasSceneAmbientChanged || hasMaterialChanged) {
         _SetValue(_simpleLightTaskId, HdTokens->params, taskParams);
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId,
+            HdChangeTracker::DirtyParams);
+
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            _shadowTaskId,
             HdChangeTracker::DirtyParams);
     }
 }
@@ -286,6 +379,7 @@ PxrMayaHdSceneDelegate::GetSetupTasks()
     HdTaskSharedPtrVector tasks;
 
     tasks.push_back(GetRenderIndex().GetTask(_simpleLightTaskId));
+    tasks.push_back(GetRenderIndex().GetTask(_shadowTaskId));
 
     return tasks;
 }
