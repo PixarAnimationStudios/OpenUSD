@@ -1772,3 +1772,21 @@ UsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
     }
     return inheritedTypesVector;
 }
+
+bool
+UsdMayaUtil::FindAncestorSceneAssembly(
+        const MDagPath& dagPath,
+        MDagPath* assemblyPath)
+{
+    MDagPath currentPath(dagPath);
+    while (currentPath.length()) {
+        if (currentPath.hasFn(MFn::kAssembly)) {
+            if (assemblyPath) {
+                *assemblyPath = currentPath;
+            }
+            return true;
+        }
+        currentPath.pop();
+    }
+    return false;
+}

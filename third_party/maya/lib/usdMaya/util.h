@@ -455,6 +455,14 @@ VtValue ParseArgumentValue(
 PXRUSDMAYA_API
 std::vector<std::string> GetAllAncestorMayaNodeTypes(const std::string& ty);
 
+/// If dagPath is a scene assembly node or is the descendant of one, populates
+/// the \p *assemblyPath with the assembly path and returns \c true.
+/// Otherwise, returns \c false.
+PXRUSDMAYA_API
+bool FindAncestorSceneAssembly(
+        const MDagPath& dagPath,
+        MDagPath* assemblyPath = nullptr);
+
 } // namespace UsdMayaUtil
 
 
