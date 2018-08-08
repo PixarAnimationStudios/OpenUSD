@@ -213,6 +213,13 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary& userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
     const GfInterval& timeInterval) :
+        compatibility(
+            _Token(userArgs,
+                PxrUsdExportJobArgsTokens->compatibility,
+                PxrUsdExportJobArgsTokens->none,
+                {
+                    PxrUsdExportJobArgsTokens->appleArKit
+                })),
         defaultMeshScheme(
             _Token(userArgs,
                 PxrUsdExportJobArgsTokens->defaultMeshScheme,
@@ -320,29 +327,32 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
 std::ostream&
 operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
 {
-    out << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable) << std::endl
-        << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
-        << "shadingMode: " << exportArgs.shadingMode << std::endl
-        << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
-        << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
-        << "timeInterval: " << exportArgs.timeInterval << std::endl
+    out << "compatibility: " << exportArgs.compatibility << std::endl
+        << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl
         << "eulerFilter: " << TfStringify(exportArgs.eulerFilter) << std::endl
         << "excludeInvisible: " << TfStringify(exportArgs.excludeInvisible) << std::endl
+        << "exportCollectionBasedBindings: " << TfStringify(exportArgs.exportCollectionBasedBindings) << std::endl
+        << "exportColorSets: " << TfStringify(exportArgs.exportColorSets) << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
+        << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
+        << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
+        << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections) << std::endl
+        << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
+        << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
+        << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable) << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
-        << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
-        << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections) << std::endl
-        << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
-        << "exportCollectionBasedBindings: " << TfStringify(exportArgs.exportCollectionBasedBindings) << std::endl
-        << "normalizeNurbs: " << TfStringify(exportArgs.normalizeNurbs) << std::endl
-        << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
-        << "exportColorSets: " << TfStringify(exportArgs.exportColorSets) << std::endl
-        << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
-        << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
+        << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
+        << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
+        << "normalizeNurbs: " << TfStringify(exportArgs.normalizeNurbs) << std::endl
+        << "parentScope: " << exportArgs.parentScope << std::endl
+        << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
+        << "rootKind: " << exportArgs.rootKind << std::endl
+        << "shadingMode: " << exportArgs.shadingMode << std::endl
         << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
-        << "parentScope: " << exportArgs.parentScope << std::endl;
+        << "timeInterval: " << exportArgs.timeInterval << std::endl
+        << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl;
 
     out << "melPerFrameCallback: " << exportArgs.melPerFrameCallback << std::endl
         << "melPostCallback: " << exportArgs.melPostCallback << std::endl
@@ -353,6 +363,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
     for (const MDagPath& dagPath : exportArgs.dagPaths) {
         out << "    " << dagPath.fullPathName().asChar() << std::endl;
     }
+
     out << "_filteredTypeIds (" << exportArgs.GetFilteredTypeIds().size() << ")" << std::endl;
     for (unsigned int id : exportArgs.GetFilteredTypeIds()) {
         out << "    " << id << ": " << MNodeClass(MTypeId(id)).className() << std::endl;
@@ -373,9 +384,6 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
                 << ", Value: " << argIter.second << std::endl;
         }
     }
-
-    out << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl
-        << "rootKind: " << exportArgs.rootKind << std::endl;
 
     return out;
 }
@@ -401,6 +409,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         // Base defaults.
         d[PxrUsdExportJobArgsTokens->chaser] = std::vector<VtValue>();
         d[PxrUsdExportJobArgsTokens->chaserArgs] = std::vector<VtValue>();
+        d[PxrUsdExportJobArgsTokens->compatibility] =
+                PxrUsdExportJobArgsTokens->none.GetString();
         d[PxrUsdExportJobArgsTokens->defaultCameras] = false;
         d[PxrUsdExportJobArgsTokens->defaultMeshScheme] = 
                 UsdGeomTokens->catmullClark.GetString();

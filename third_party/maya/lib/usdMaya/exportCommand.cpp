@@ -128,6 +128,9 @@ MSyntax UsdMayaExportCommand::createSyntax()
     syntax.addFlag("-k",
                    PxrUsdExportJobArgsTokens->kind.GetText(),
                    MSyntax::kString);
+    syntax.addFlag("-com",
+                   PxrUsdExportJobArgsTokens->compatibility.GetText(),
+                   MSyntax::kString);
 
     syntax.addFlag("-chr",
                    PxrUsdExportJobArgsTokens->chaser.GetText(),

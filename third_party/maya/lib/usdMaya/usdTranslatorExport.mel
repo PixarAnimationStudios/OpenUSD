@@ -162,6 +162,10 @@ global proc int usdTranslatorExport (string $parent,
             menuItem -l "Use Current layer" -ann "currentLayer";
             menuItem -l "Modeling Variant Per Layer" -ann "modelingVariant";
 
+        optionMenuGrp -l "Compatibility Profile:" compatibilityPopup;
+            menuItem -l "Standard" -ann "none";
+            menuItem -l "ARKit-compatible" -ann "appleArKit";
+
         checkBox -l "Merge Transform and Shape Nodes" mergeTransformAndShapeCheckBox;
         checkBox -l "Export Instances" exportInstancesCheckBox;
 
@@ -190,7 +194,7 @@ global proc int usdTranslatorExport (string $parent,
         intFieldGrp -l "End Time:" -v1 1 endTimeField;
         floatFieldGrp -l "Stride:" -v1 1 frameStrideField;
         button -l "Use Animation Range" -command ("usdTranslatorExport_AnimationRangeCB") animRangeButton;
-        
+
         setParent $parent;
         
         // Now set to current settings.
@@ -254,7 +258,9 @@ global proc int usdTranslatorExport (string $parent,
                     floatFieldGrp -e -v1 $frameStride frameStrideField;
                 } else if ($optionBreakDown[0] == "parentScope") {
                     usdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
-                }
+                } else if ($optionBreakDown[0] == "compatibility") {
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "compatibilityPopup");
+                } 
             }
         }
         // Set visibility for anim widgets
@@ -290,6 +296,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "compatibility", "compatibilityPopup");
                 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

@@ -65,6 +65,10 @@ public:
 
 private:
     TfToken _WriteVariants(const UsdPrim &usdRootPrim);
+
+    /// Creates a usdz package from the write job's current USD stage.
+    void _CreatePackage() const;
+
     void _PerFrameCallback(double iFrame);
     void _PostCallback();
 
@@ -73,9 +77,6 @@ private:
 
     // Name of destination packaged archive.
     std::string _packageName;
-
-    // Name of the root layer in the packaged archive.
-    std::string _packageRootName;
 
     // Name of current layer since it should be restored after looping over them
     MString mCurrentRenderLayerName;

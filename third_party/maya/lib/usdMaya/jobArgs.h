@@ -65,6 +65,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     /* Dictionary keys */ \
     (chaser) \
     (chaserArgs) \
+    (compatibility) \
     (defaultCameras) \
     (defaultMeshScheme) \
     (eulerFilter) \
@@ -92,14 +93,17 @@ TF_DECLARE_PUBLIC_TOKENS(
     (renderLayerMode) \
     (shadingMode) \
     (stripNamespaces) \
+    /* Special "none" token */ \
+    (none) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \
     (modelingVariant) \
     /* exportSkels/exportSkin values */ \
-    (none) \
     ((auto_, "auto")) \
-    ((explicit_, "explicit"))
+    ((explicit_, "explicit")) \
+    /* compatibility values */ \
+    (appleArKit)
 
 TF_DECLARE_PUBLIC_TOKENS(
     PxrUsdExportJobArgsTokens,
@@ -127,6 +131,7 @@ TF_DECLARE_PUBLIC_TOKENS(
 
 struct UsdMayaJobExportArgs
 {
+    const TfToken compatibility;
     const TfToken defaultMeshScheme;
     const bool eulerFilter;
     const bool excludeInvisible;

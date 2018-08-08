@@ -47,26 +47,7 @@ class testUsdExportPackage(unittest.TestCase):
     def setUp(self):
         cmds.file(os.path.abspath('PackageTest.ma'), open=True, force=True)
 
-    def testExport(self):
-        usdFile = os.path.abspath('MyAwesomePackage.usdz')
-        cmds.usdExport(
-                file=usdFile,
-                mergeTransformAndShape=True,
-                shadingMode='none')
-
-        # Lets make sure that the root layer is the first file and that all
-        # the references were localized ok.
-        zipFile = Usd.ZipFile.Open(usdFile)
-        fileNames = zipFile.GetFileNames()
-        self.assertEqual(fileNames, [
-            "MyAwesomePackage.usdc",
-            "ReferenceModel.usda",
-            "BaseModel.usda",
-            "card.png"
-        ])
-
-        # Open the usdz file up to verify that everything exported properly.
-        stage = Usd.Stage.Open(usdFile)
+    def _AssertExpectedStage(self, stage, cardPngRefPath):
         self.assertTrue(stage)
 
         self.assertTrue(stage.GetPrimAtPath("/PackageTest"))
@@ -84,12 +65,68 @@ class testUsdExportPackage(unittest.TestCase):
         self.assertTrue(prim)
         modelAPI = UsdGeom.ModelAPI(prim)
         self.assertEqual(modelAPI.GetModelCardTextureXNegAttr().Get().path,
-                "./card.png")
+                cardPngRefPath)
+
+    def _AssertNoTempFiles(self, usdFilePath):
+        lsDir = os.listdir(os.path.dirname(usdFilePath))
+        for item in lsDir:
+            self.assertNotRegexpMatches(item, "tmp-.*\.usd.?")
+
+    def testExport(self):
+        '''Tests standard usdz package export.'''
+        usdFile = os.path.abspath('MyAwesomePackage.usdz')
+        cmds.usdExport(
+                file=usdFile,
+                mergeTransformAndShape=True,
+                shadingMode='none')
+
+        # Lets make sure that the root layer is the first file and that all
+        # the references were localized ok.
+        zipFile = Usd.ZipFile.Open(usdFile)
+        fileNames = zipFile.GetFileNames()
+        self.assertEqual(fileNames, [
+            "MyAwesomePackage.usd",
+            "ReferenceModel.usda",
+            "BaseModel.usda",
+            "card.png"
+        ])
+
+        # Open the usdz file up to verify that everything exported properly.
+        stage = Usd.Stage.Open(usdFile)
+        self._AssertExpectedStage(stage, "./card.png")
 
         # Make sure there's no weird temp files sitting around.
-        lsDir = os.listdir(os.path.dirname(usdFile))
-        for item in lsDir:
-            self.assertNotRegexpMatches(item, "tmp-.*\.usd")
+        self._AssertNoTempFiles(usdFile)
+
+    def testArKitCompatibility(self):
+        '''Tests usdz package export with ARKit compatibility profile.'''
+        usdFile = os.path.abspath('MyAwesomeArKitCompatibleFile.usdz')
+        usdFileNoExt = os.path.abspath('MyAwesomeArKitCompatibleFile')
+
+        # The usdExport command should automatically add "usdz" extension since
+        # we're requestion appleArKit compatibility.
+        cmds.usdExport(
+                file=usdFileNoExt,
+                mergeTransformAndShape=True,
+                shadingMode='none',
+                compatibility='appleArKit')
+
+        # Lets make sure that the root layer is the first file and that all
+        # the references were localized ok.
+        # Note that the path of "card.png" in the usdz archive may have changed
+        # because of the flattening step.
+        zipFile = Usd.ZipFile.Open(usdFile)
+        fileNames = zipFile.GetFileNames()
+        self.assertEqual(len(fileNames), 2)
+        self.assertEqual(fileNames[0], "MyAwesomeArKitCompatibleFile.usdc")
+        self.assertTrue(fileNames[1].endswith("card.png"))
+
+        # Open the usdz file up to verify that everything exported properly.
+        stage = Usd.Stage.Open(usdFile)
+        self._AssertExpectedStage(stage, fileNames[-1])
+
+        # Make sure there's no weird temp files sitting around.
+        self._AssertNoTempFiles(usdFile)
 
 
 if __name__ == '__main__':

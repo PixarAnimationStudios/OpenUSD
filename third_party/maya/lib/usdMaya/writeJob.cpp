@@ -89,7 +89,7 @@ UsdMaya_WriteJob::~UsdMaya_WriteJob()
 {
 }
 
-/// Generates a name for a temporary USD stage in \p dir.
+/// Generates a name for a temporary usdc file in \p dir.
 /// Unless you are very, very unlucky, the stage name is unique because it's
 /// generated from a UUID.
 static
@@ -102,8 +102,20 @@ _MakeTmpStageName(const std::string& dir)
             TfStringPrintf(
                 "tmp-%s.%s",
                 uuid.c_str(),
-                UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+                UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     return TfStringCatPaths(dir, fileName);
+}
+
+/// Chooses the fallback extension based on the compatibility profile, e.g.
+/// ARKit-compatible files should be usdz's by default.
+static
+TfToken
+_GetFallbackExtension(const TfToken& compatibilityMode)
+{
+    if (compatibilityMode == PxrUsdExportJobArgsTokens->appleArKit) {
+        return UsdMayaTranslatorTokens->UsdFileExtensionPackage;
+    }
+    return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
 bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
@@ -129,24 +141,36 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
     }  // for m
 
     // Make sure the file name is a valid one with a proper USD extension.
-    const std::string fileExt = TfGetExtension(fileName);
-    if (SdfLayer::IsAnonymousLayerIdentifier(fileName) ||
+    TfToken fileExt(TfGetExtension(fileName));
+    std::string fileNameWithExt;
+    if (!(SdfLayer::IsAnonymousLayerIdentifier(fileName) ||
             fileExt == UsdMayaTranslatorTokens->UsdFileExtensionDefault ||
             fileExt == UsdMayaTranslatorTokens->UsdFileExtensionASCII ||
-            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate) {
-        // Standard, non-packaged file types.
-        _fileName = fileName;
+            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate ||
+            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage)) {
+        // No extension; get fallback extension based on compatibility profile.
+        fileExt = _GetFallbackExtension(mJobCtx.mArgs.compatibility);
+        fileNameWithExt = TfStringPrintf(
+                "%s.%s",
+                fileName.c_str(),
+                fileExt.GetText());
     }
-    else if (fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        // Packaged file type (usdz). We'll write to a temporary usdc file, and
-        // then package it into the final usdz file at the end of the write job.
+    else {
+        // Has correct extension; use as-is.
+        fileNameWithExt = fileName;
+    }
+
+    // Setup file structure for export based on whether we are doing a
+    // "standard" flat file export or a "packaged" export to usdz.
+    if (fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
         if (append) {
             TF_RUNTIME_ERROR("Cannot append to USDZ packages");
             return false;
         }
 
-        // `_fileName` is the export stage, which is a temporary file.
-        _fileName = _MakeTmpStageName(TfGetPathName(fileName));
+        // We don't write to fileNameWithExt directly; instead, we write to
+        // a temp stage file.
+        _fileName = _MakeTmpStageName(TfGetPathName(fileNameWithExt));
         if (TfPathExists(_fileName)) {
             // This shouldn't happen (since we made the temp stage name from
             // a UUID). Don't try to recover.
@@ -155,24 +179,12 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
             return false;
         }
 
-        // `fileName` is actually the final package's file name.
-        // Since we're packaging a temporary stage file that has an
-        // auto-generated name, create a nicer name for the root layer -- it's
-        // just the package's base name but with ".usd" instead of ".usdz".
-        // NOTE: For now the extension has to be ".usdc" since it's required
-        // to properly work on MacOS/iOS Mojave/12
-        _packageName = fileName;
-        _packageRootName = TfStringPrintf(
-                "%s.%s",
-                TfStringGetBeforeSuffix(TfGetBaseName(fileName)).c_str(),
-                UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
+        // The packaged file gets written to fileNameWithExt.
+        _packageName = fileNameWithExt;
     }
     else {
-        // No extension; assume a usdc (crate) file.
-        _fileName = TfStringPrintf(
-                "%s.%s",
-                fileName.c_str(),
-                UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+        _fileName = fileNameWithExt;
+        _packageName = std::string();
     }
 
     TF_STATUS("Creating stage file '%s'", _fileName.c_str());
@@ -475,10 +487,7 @@ void UsdMaya_WriteJob::FinishWriting()
     // up the non-packaged stage file.
     if (!_packageName.empty()) {
         TF_STATUS("Packaging USDZ file");
-        UsdUtilsCreateNewUsdzPackage(
-                SdfAssetPath(_fileName),
-                _packageName,
-                _packageRootName);
+        _CreatePackage();
     }
 
     mJobCtx.mStage = UsdStageRefPtr();
@@ -649,6 +658,50 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
         modelingVariantSet.SetVariantSelection(defaultModelingVariant);
     }
     return defaultPrim;
+}
+
+void
+UsdMaya_WriteJob::_CreatePackage() const
+{
+    // Since we're packaging a temporary stage file that has an
+    // auto-generated name, create a nicer name for the root layer from
+    // the package layer name specified by the user.
+    // (Otherwise, the name inside the package will be a random string!)
+    const std::string firstLayerBaseName =
+            TfStringGetBeforeSuffix(TfGetBaseName(_packageName));
+    const std::string firstLayerName = TfStringPrintf(
+            "%s.%s",
+            firstLayerBaseName.c_str(),
+            UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+
+    if (mJobCtx.mArgs.compatibility == PxrUsdExportJobArgsTokens->appleArKit) {
+        // If exporting with compatibility=appleArKit, there are additional
+        // requirements on the usdz file to make it compatible with Apple's usdz
+        // support in macOS Mojave/iOS 12.
+        // UsdUtilsCreateNewARKitUsdzPackage will automatically flatten and
+        // enforce that the first layer has a .usdc extension.
+        if (!UsdUtilsCreateNewARKitUsdzPackage(
+                SdfAssetPath(_fileName),
+                _packageName,
+                firstLayerName)) {
+            TF_RUNTIME_ERROR(
+                    "Could not create package '%s' from temporary stage '%s'",
+                    _packageName.c_str(),
+                    _fileName.c_str());
+        }
+    }
+    else {
+        // No compatibility options (standard).
+        if (!UsdUtilsCreateNewUsdzPackage(
+                SdfAssetPath(_fileName),
+                _packageName,
+                firstLayerName)) {
+            TF_RUNTIME_ERROR(
+                    "Could not create package '%s' from temporary stage '%s'",
+                    _packageName.c_str(),
+                    _fileName.c_str());
+        }
+    }
 }
 
 void UsdMaya_WriteJob::_PerFrameCallback(double  /*iFrame*/)
