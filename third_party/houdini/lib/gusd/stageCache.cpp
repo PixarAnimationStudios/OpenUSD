@@ -64,6 +64,14 @@ TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_EXPANDRELS, true,
                       "guaranteed when doing so.");
 
 
+TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_EXPANDMODELS, true,
+                      "Expand stage masks to encapsulating models. "
+                      "This helps limit the number of masked stages, by "
+                      "causing stage sharing across different prims within "
+                      "each encapsulating model. Disabling this may cause a "
+                      "signficant reduction in performance.");
+
+
 TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_ENABLE, true,
                       "Enable use of stage masks when accessing prims from "
                       "the cache. Note that disabling this feature may "
@@ -251,7 +259,12 @@ public:
 
     UsdStageRefPtr  FindStage(const SdfPath& primPath);
 
+    /// Find or open a new stage, masking the prim at \p primPath.
+    /// If population mask expansion causes a newly opened stage to include
+    /// the entire contents of the stage (I.e., with no masking), then
+    /// \p loadedFullStage will be set to true. Otherwise, it is not modified.
     UsdStageRefPtr  FindOrOpenStage(const SdfPath& primPath,
+                                    bool* loadedFullStage,
                                     UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     void            Clear() { _map.clear(); }
@@ -554,83 +567,158 @@ GusdStageCache::_Impl::CreateSessionLayer(const GusdStageEdit& edit,
 }
 
 
+namespace {
+
+
+/// Returns true if \p prim is a reasonable encapsulating model
+/// at which to expand a stage population mask.
+bool
+_ShouldExpandPopulationMaskAtPrim(const UsdPrim& prim)
+{
+    // It's reasonable to treat models as valid encapsulation points
+    // for mask expansion. It is not, however, reasonable to expand
+    // at groups: Under model hierarchy rules, all ancestors of prims
+    // with a 'group'-derived kind must also be groups, so expanding
+    // by group-derived kinds would lead us to expand to the full stage.
+    return prim.IsModel() && !prim.IsGroup();
+
+    // XXX: A possible alternative to the above rule is to expand
+    // to prims of 'component'-derived kinds. This rule has been deactiveated
+    // for now because we also wish to consider cameras as reasonable
+    // expansion points, but cameras are not currently component-derived.
+    //
+    // TfToken kind;
+    // return UsdModelAPI(prim).GetKind(&kind) &&
+    //        KindRegistry::IsA(kind, KindTokens->component);
+}
+
+
+/// Expand the prim paths in \p mask to include ancestor prims of
+/// the existing mask that appear to be reasonable 'encapsulating models'
+/// of their child prims. Returns true if the population mask was modified,
+/// or false otherwise.
+bool
+_ExpandPopulationMaskToEncapsulatingModels(const UsdStageRefPtr& stage)
+{
+    UT_ASSERT_P(stage);
+
+    bool didChangeMask = false;
+
+    const auto modelSearchPredicate =
+        UsdPrimIsDefined && UsdPrimIsModel
+        && UsdPrimIsActive && !UsdPrimIsAbstract;
+
+    UsdStagePopulationMask mask = stage->GetPopulationMask();
+
+    // Iterate over ancestor prims at each masked path,
+    // looking for possible points at which to expand the mask.
+    UsdPrimRange range = stage->Traverse(modelSearchPredicate);
+    for(auto it = range.begin(); it != range.end(); ++it) {
+
+        if(mask.IncludesSubtree(it->GetPath())) {
+            // Don't traverse beneath the masking points, because
+            // masking guarantees that subtrees of the masking points
+            // are fully expanded and present.
+            it.PruneChildren();
+            continue;
+        }
+
+        if (_ShouldExpandPopulationMaskAtPrim(*it)) {
+
+            TF_DEBUG(GUSD_STAGECACHE).Msg(
+                "[GusdStageCache] Expanding population mask of masked stage "
+                "@%s@ to the encapsulating prim at <%s>.\n",
+                stage->GetRootLayer()->GetIdentifier().c_str(),
+                it->GetPath().GetText());
+
+            mask.Add(it->GetPath());
+            
+            didChangeMask = true;
+            
+            // Since this location is included in the mask, don't
+            // need to consider any of its descendants.
+            it.PruneChildren();
+        }
+    }
+
+    if (didChangeMask)
+        stage->SetPopulationMask(mask);
+    
+    return didChangeMask;
+}
+
+
+/// Check if there are any models on \p stage that can be considered as
+/// valid 'encapsulating models'.
+bool
+_StageContainsEncapsulatingModels(const UsdStageRefPtr& stage)
+{
+    const auto modelSearchPredicate =
+        UsdPrimIsDefined && UsdPrimIsModel
+        && UsdPrimIsActive && !UsdPrimIsAbstract;
+
+    for (const UsdPrim& prim : stage->Traverse(modelSearchPredicate)) {
+        if (_ShouldExpandPopulationMaskAtPrim(prim)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+} // namespace
+
+
 void
 GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
 {
     UT_ASSERT_P(stage);
     UT_ASSERT_P(!stage->GetPopulationMask().IsEmpty());
 
-    // Expand the population mask to contain any existing prims of the
-    // given kind. This is done to limit the number of masked stages that
-    // we create. For instance, if the user passes in leaf prim paths, we
-    // might otherwise end up creating a new masked stage per leaf-prim.
-    // The kind used for this search is not meant to be exposed to users.
-    const TfToken& expandAtKind = KindTokens->component;
+    if (TfGetEnvSetting(GUSD_STAGEMASK_EXPANDMODELS)) {
 
-    if(!expandAtKind.IsEmpty()) {
-        auto popMask = stage->GetPopulationMask();
-        bool foundAncestorToExpand = false;
+        // Expand the population mask to include enclosing model prims.
+        // This expansion can help limit the number of masked stages being
+        // created on the cache. For instance, if the user attempted to load
+        // individual leaf prim paths, we might otherwise end up creating a new
+        // masked stage for each of those leaf prims. By expanding the mask to
+        // common, encapsulating ancestor prims, we are able to still allow only
+        // a subset of a stage to be loaded, but while ensuring that some stages
+        // can be shared across multiple prims that live beneath a common,
+        // encapsulating model.
 
-        const auto modelSearchPredicate =
-            UsdPrimIsDefined && UsdPrimIsModel
-            && UsdPrimIsActive && !UsdPrimIsAbstract;
+        if (!_ExpandPopulationMaskToEncapsulatingModels(stage)) {
 
-        // Iterate over ancestor prims at each masked path,
-        // looking for possible points at which to expand the mask.
-        UsdPrimRange range = stage->Traverse(modelSearchPredicate);
-        for(auto it = range.begin(); it != range.end(); ++it) {
+            // Couldn't expand the population mask at any encapsulating models.
+            // This might mean that the encapsulating models are descendants of
+            // the already-masked prim paths. Find out if that's the case.
+            // (Note that unlike the above attempt at prim mask expansion,
+            // which traversed from the root of stage down to the masked prim
+            // paths, this traverses *beneath* the masking sites.
 
-            if(popMask.IncludesSubtree(it->GetPath())) {
-                // Don't traverse beneath the masking points, because
-                // masking guarantees that subtrees of the masking points
-                // are fully expanded and present.
-                it.PruneChildren();
-                continue;
-            }
+            if (!_StageContainsEncapsulatingModels(stage)) {
 
-            TfToken kind;
-            if(UsdModelAPI(*it).GetKind(&kind) &&
-               KindRegistry::IsA(kind, expandAtKind)) {
+                TF_DEBUG(GUSD_STAGECACHE).Msg(
+                    "[GusdStageCache] Masked stage @%s@ has no encapsulating "
+                    "models either above or beneath the masking site. "
+                    "Expanding to a complete stage.\n",
+                    stage->GetRootLayer()->GetIdentifier().c_str());
 
-                popMask.Add(it->GetPath());
-
-                foundAncestorToExpand = true;
-                it.PruneChildren();
-            }
-        }
-        if(foundAncestorToExpand) {
-            stage->SetPopulationMask(popMask);
-        } else  if(!foundAncestorToExpand) {
-            // Couldn't find a reasonable enclosing model to expand to.
-            // This might mean that the kinds of prims we want to expand to are
-            // descendants of the masking point. Find out if that's the case.
-            // (Note that unlike the previous traversal, this traversal
-            // iterates *beneath* the masking sites)
-            bool havePrimsWithExpansionKind = false;
-            for(const auto& prim : stage->Traverse(modelSearchPredicate)) {
-                TfToken kind;
-                if(UsdModelAPI(prim).GetKind(&kind) &&
-                   KindRegistry::IsA(kind, expandAtKind)) {
-                    havePrimsWithExpansionKind = true;
-                    break;
-                }
-            }
-
-            if(!havePrimsWithExpansionKind) {
-                // No prims matching the target expandAtKind were found.
-                // This can happen if a stage isn't encoding appropriate
-                // kinds in its model hierarchy, or if a stage is using a
-                // non-standard kind hierarchy.
-                // Rather than risking creating a stage per leaf-prim queried
-                // from the cache, it's better to just expand to include the
-                // full stage.
+                // We were not able to find any encapsulating models -- either
+                // in prims already present on the masked stage, or at ancestor
+                // prims. This can happen if a stage isn't defining a proper
+                // model hierarchy with 'kind' metadata, or if a stage is using
+                // a non-standard kind hierarchy. Rather than risking creating a
+                // stage per leaf-prim queried from the cache -- which is very
+                // non-scalable! -- it's better to expand the population mask to
+                // the full stage.
                 stage->SetPopulationMask(UsdStagePopulationMask::All());
                 return;
             }
         }
     }
-
-    if(TfGetEnvSetting(GUSD_STAGEMASK_EXPANDRELS)) {
+        
+    if (TfGetEnvSetting(GUSD_STAGEMASK_EXPANDRELS)) {
         // Expand the population mask to include relationship targets.
         // TODO: This currently will test all relationships, and may be very
         // expensive. For performance, it may be necessary to limit the set
@@ -752,7 +840,22 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
                 "[GusdStageCache] Found existing masked stage cache "
                 "for @%s@<%s>\n", path.c_str(), primPath.GetText());
 
-            return a->second->FindOrOpenStage(primPath, sev);
+            bool loadedFullStage = false;
+            UsdStageRefPtr stage =
+                a->second->FindOrOpenStage(primPath, &loadedFullStage, sev);
+
+            if (loadedFullStage) {
+                // Despite trying to load a masked stage, the entire stage
+                // has been loaded. Store this stage on the non-masked stage
+                // map so that all future cache lookups will find it.
+                _StageMap::accessor stageMapAcc;
+                if (_stageMap.insert(
+                        stageMapAcc, _StageKey(path, opts, edit))) {
+                    stageMapAcc->second = stage;
+                }
+            }
+
+            return stage;
         }
     }
 
@@ -768,8 +871,21 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
 
         a->second = new GusdStageCache::_MaskedStageCache(*this, newKey);
     }
+
     UT_ASSERT_P(a->second);
-    return a->second->FindOrOpenStage(primPath, sev);
+
+    bool loadedFullStage = false;
+    UsdStageRefPtr stage =
+        a->second->FindOrOpenStage(primPath, &loadedFullStage, sev);
+
+    if (loadedFullStage) {
+        // Same case as above.
+        _StageMap::accessor stageMapAcc;
+        if (_stageMap.insert(stageMapAcc, _StageKey(path, opts, edit))) {
+            stageMapAcc->second = stage;
+        }
+    }
+    return stage;
 }
 
 
@@ -1251,6 +1367,7 @@ GusdStageCache::_MaskedStageCache::FindStage(const SdfPath& primPath)
 
 UsdStageRefPtr
 GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
+                                                   bool* loadedFullStage,
                                                    UT_ErrorSeverity sev)
 {
     if(UsdStageRefPtr stage = FindStage(primPath)) {
@@ -1282,6 +1399,13 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
             _map.erase(a);
             return TfNullPtr;
         }
+
+        // Check if the masked stage was expanded to the full stage.
+        static const UsdStagePopulationMask maskAll(
+            UsdStagePopulationMask::All());
+
+        UT_ASSERT_P(loadedFullStage);
+        *loadedFullStage = (a->second->GetPopulationMask() == maskAll);
     }
     return a->second;
 }
