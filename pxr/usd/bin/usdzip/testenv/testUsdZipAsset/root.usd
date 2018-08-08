@@ -5,6 +5,7 @@
         @./sub_a.usd@,
         @./sub_b.usd@,
     ]
+    upAxis = "Y"
 )
 
 over "foo" (

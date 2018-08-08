@@ -44,8 +44,22 @@ def _Print(stream, msg):
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
-def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, verbose):
+def _CheckCompliance(rootLayer, arkit=False):
+    checker = UsdUtils.ComplianceChecker(rootLayer, arkit=arkit, 
+        # We're going to flatten the USD stage and convert the root layer to 
+        # crate file format before packaging, if necessary. Hence, skip these 
+        # checks.
+        skipARKitRootLayerCheck=True)
+    
+    errors = checker.GetErrors()
+    failedChecks = checker.GetFailedChecks()
+    for msg in errors + failedChecks:
+        _Err(msg)
+    return len(errors) == 0 and len(failedChecks) == 0
+
+def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, checkCompliance, verbose):
     with Usd.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
+        fileList = []
         while filesToAdd:
             # Pop front (first file) from the list of files to add.
             f = filesToAdd[0]
@@ -64,14 +78,26 @@ def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, verbose):
             else:
                 if verbose:
                     print('.. adding: %s' % f)
-                try:
-                    usdzWriter.AddFile(f)
-                except Tf.ErrorException as e:
-                    _Err('Failed to add file \'%s\' to package. Discarding '
-                        'package.' % f)
-                    # When the "with" block exits, Discard() will be called on 
-                    # usdzWriter automatically if an exception occurs.
-                    raise
+                if os.path.getsize(f) > 0:
+                    fileList.append(f)
+                else:
+                    _Err("Skipping empty file '%s'." % f)
+
+        if checkCompliance and len(fileList) > 0:
+            rootLayer = fileList[0]
+            if not _CheckCompliance(rootLayer):
+                return False
+
+        for f in fileList:
+            try:
+                usdzWriter.AddFile(f)
+            except Tf.ErrorException as e:
+                _Err('Failed to add file \'%s\' to package. Discarding '
+                    'package.' % f)
+                # When the "with" block exits, Discard() will be called on 
+                # usdzWriter automatically if an exception occurs.
+                raise
+        return True
 
 def _DumpContents(dumpLocation, zipFile):
     with _Stream(dumpLocation, "w") as ofp:
@@ -98,8 +124,13 @@ def main():
 
     parser.add_argument('usdzFile', type=str, 
                         help='Name of the .usdz file to create.')
+
     parser.add_argument('inputFiles', type=str, nargs='*',
                         help='Files to include in the .usdz file.')
+    parser.add_argument('-r', '--recurse', dest='recurse', action='store_true',
+                        help='If specified, files in sub-directories are '
+                        'recursively added to the package.')
+
     parser.add_argument('-a', '--asset', dest='asset', type=str,
                         help='Resolvable asset path pointing to the root layer '
                         'of the asset to be isolated and copied into the '
@@ -114,13 +145,13 @@ def main():
                         "these constraints are honored; this may involve more "
                         "transformations to the data, which may cause loss of "
                         "features such as VariantSets.")
-    parser.add_argument('-r', '--recurse', dest='recurse', action='store_true',
-                        help='If specified, files in sub-directories are '
-                        'recursively added to the package.')
-    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
-                        help='Enable verbose mode, which causes messages '
-                        'regarding files being added to the package to be '
-                        'output to stdout.')
+
+    parser.add_argument('-c', '--checkCompliance', dest='checkCompliance', 
+                        action='store_true', help='Perform compliance checking '
+                        'of the input files. If the input asset or \"root\" '
+                        'layer fails any of the compliance checks, the package '
+                        'is not created and the program fails.')
+
     parser.add_argument('-l', '--list', dest='listContents', type=str, 
                         nargs='?', default=None, const='-',
                         help='List contents of the specified usdz file. If '
@@ -132,6 +163,11 @@ def main():
                         help='Dump contents of the specified usdz file. If '
                         'a file-path argument is provided, the contents are '
                         'output to a file at the given path. If not, it is '
+                        'output to stdout.')
+
+    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
+                        help='Enable verbose mode, which causes messages '
+                        'regarding files being added to the package to be '
                         'output to stdout.')
 
     args = parser.parse_args()
@@ -151,32 +187,48 @@ def main():
 
     # Check if we're in package creation mode and verbose mode is enabled, 
     # print some useful information.
-    if (args.asset or len(filesToAdd)>0) and args.verbose:
-        if os.path.exists(usdzFile):
-            print("File at path '%s' already exists. Overwriting file." % 
-                    usdzFile)
+    if (args.asset or args.arkitAsset or len(filesToAdd)>0):
+        if args.verbose:
+            if os.path.exists(usdzFile):
+                print("File at path '%s' already exists. Overwriting file." % 
+                        usdzFile)
 
-        print('Creating package \'%s\' with files [%s].' % 
-                (usdzFile, filesToAdd))
-        if not args.recurse:
-            print('Not recursing into sub-directories.')
+            print('Creating package \'%s\' with files [%s].' % 
+                    (usdzFile, filesToAdd))
+            if not args.recurse:
+                print('Not recursing into sub-directories.')
+    else:
+        if args.checkCompliance:
+            parser.error("--checkCompliance should only be specified when "
+                "creatinga usdz package. Please use 'usdchecker' to check "
+                "compliance of an existing .usdz file.")
 
     success = True
     if len(filesToAdd) > 0:
-        _CreateUsdzPackage(usdzFile, filesToAdd, args.recurse, args.verbose)
+        success = _CreateUsdzPackage(usdzFile, filesToAdd, args.recurse, 
+                args.checkCompliance, args.verbose) and success
+
     elif args.asset:
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.asset)
-        context = r.CreateDefaultContextForAsset(resolvedAsset)
+        if args.checkCompliance:
+            success = _CheckCompliance(resolvedAsset, arkit=False) and success
+
+        context = r.CreateDefaultContextForAsset(resolvedAsset) 
         with Ar.ResolverContextBinder(context):
-            success = UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.asset), 
-                                                    usdzFile)
+            # Create the package only if the compliance check was passed.
+            success = success and UsdUtils.CreateNewUsdzPackage(
+                Sdf.AssetPath(args.asset), usdzFile)
     elif args.arkitAsset:
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.arkitAsset)
+        if args.checkCompliance:
+            success = _CheckCompliance(resolvedAsset, arkit=True) and success
+
         context = r.CreateDefaultContextForAsset(resolvedAsset)
         with Ar.ResolverContextBinder(context):
-            success = UsdUtils.CreateNewARKitUsdzPackage(
+            # Create the package only if the compliance check was passed.
+            success = success and UsdUtils.CreateNewARKitUsdzPackage(
                     Sdf.AssetPath(args.arkitAsset), usdzFile)
 
     if args.listContents or args.dumpContents:
