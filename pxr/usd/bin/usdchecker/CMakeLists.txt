@@ -97,3 +97,50 @@ pxr_register_test(testUsdChecker8
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit clean/clean_flat.usdz"
     EXPECTED_RETURN_CODE 1
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdChecker
+    DEST testUsdChecker9
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdChecker
+    DEST testUsdChecker10
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdChecker
+    DEST testUsdChecker11
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdChecker
+    DEST testUsdChecker12
+)
+
+pxr_register_test(testUsdChecker9
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badUsdz.usdz"
+    EXPECTED_RETURN_CODE 1
+)
+
+
+pxr_register_test(testUsdChecker10
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit --dumpRules bad/variants.usdc -o variants_failedChecks.txt"
+    DIFF_COMPARE variants_failedChecks.txt
+    EXPECTED_RETURN_CODE 1
+)
+
+pxr_register_test(testUsdChecker11
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/brokenRef.usd"
+    EXPECTED_RETURN_CODE 1
+)
+
+pxr_register_test(testUsdChecker12
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/badShaderUnsupportedTexture.usd"
+    EXPECTED_RETURN_CODE 1
+)
+
