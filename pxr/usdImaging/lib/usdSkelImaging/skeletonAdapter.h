@@ -111,6 +111,12 @@ public:
                              const SdfPath& cachePath,
                              UsdImagingIndexProxy* index) override;
 
+    USDSKELIMAGING_API
+    void MarkMaterialDirty(const UsdPrim& prim,
+                           const SdfPath& cachePath,
+                           UsdImagingIndexProxy* index) override;
+
+
 protected:
 
     void _RemovePrim(const SdfPath& cachePath,

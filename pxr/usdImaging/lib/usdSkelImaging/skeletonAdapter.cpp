@@ -285,6 +285,18 @@ UsdSkelImagingSkeletonAdapter::MarkVisibilityDirty(const UsdPrim& prim,
 
 
 void
+UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
+                                                  const SdfPath& cachePath,
+                                                  UsdImagingIndexProxy* index)
+{
+    // If the Usd material changed, it could mean the primvar set also changed
+    // Hydra doesn't currently manage detection and propagation of these
+    // changes, so we must mark the rprim dirty.
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
+}
+
+
+void
 UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
                                            UsdImagingIndexProxy* index)
 {
