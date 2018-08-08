@@ -306,6 +306,7 @@ _MakeInput(C& connectable, const mx::ConstTypedElementPtr& mtlx)
 static
 mx::ConstNodeDefPtr
 _FindMatchingNodeDef(
+    const mx::ConstDocumentPtr& mtlxDocument,
     const mx::ConstInterfaceElementPtr& mtlxInterface,
     const std::string& family,
     const NdrVersion& version,
@@ -313,8 +314,7 @@ _FindMatchingNodeDef(
 {
     mx::ConstNodeDefPtr result = nullptr;
 
-    for (auto&& mtlxNodeDef:
-            mtlxInterface->getDocument()->getMatchingNodeDefs(family)) {
+    for (auto&& mtlxNodeDef: mtlxDocument->getMatchingNodeDefs(family)) {
         // Filter by target.
         if (!mx::targetStringsMatch(target, mtlxNodeDef->getTarget())) {
             continue;
@@ -349,6 +349,37 @@ _FindMatchingNodeDef(
     }
 
     return result;
+}
+
+// Return the nodedef with node=family, that's type compatible with
+// mtlxInterface, and has a compatible version.  If target isn't empty
+// then it must also match.  Returns null if there's no such nodedef.
+// If the nodedef is not found in the document then the standard
+// library is also checked.
+static
+mx::ConstNodeDefPtr
+_FindMatchingNodeDef(
+    const mx::ConstInterfaceElementPtr& mtlxInterface,
+    const std::string& family,
+    const NdrVersion& version,
+    const std::string& target)
+{
+    auto nodeDef = _FindMatchingNodeDef(mtlxInterface->getDocument(),
+                                        mtlxInterface,
+                                        mtlxInterface->getCategory(),
+                                        UsdMtlxGetVersion(mtlxInterface),
+                                        mtlxInterface->getTarget());
+    if (nodeDef) {
+        return nodeDef;
+    }
+
+    // Get the standard library document and check that.
+    static auto standardLibraryDocument = UsdMtlxGetDocument("");
+    return _FindMatchingNodeDef(standardLibraryDocument,
+                                mtlxInterface,
+                                mtlxInterface->getCategory(),
+                                UsdMtlxGetVersion(mtlxInterface),
+                                mtlxInterface->getTarget());
 }
 
 // Get the shader id for a MaterialX nodedef.
@@ -546,6 +577,8 @@ _GetInheritanceStack(const std::shared_ptr<T>& mtlxMostDerived)
 /// This class translates a MaterialX node graph into a USD node graph.
 class _NodeGraphBuilder {
 public:
+    using ShaderNamesByOutputName = std::map<std::string, TfToken>;
+
     _NodeGraphBuilder() = default;
     _NodeGraphBuilder(const _NodeGraphBuilder&) = delete;
     _NodeGraphBuilder(_NodeGraphBuilder&&) = delete;
@@ -558,7 +591,7 @@ public:
     void SetTarget(const UsdStagePtr&, const SdfPath& targetPath);
     void SetTarget(const UsdStagePtr&, const SdfPath& parentPath,
                    const mx::ConstElementPtr& childName);
-    UsdShadeNodeGraph Build();
+    UsdPrim Build(ShaderNamesByOutputName* outputs);
 
 private:
     void _CreateInterface(const mx::ConstInterfaceElementPtr& iface,
@@ -625,43 +658,61 @@ _NodeGraphBuilder::SetTarget(
     SetTarget(stage, parentPath.AppendChild(_MakeName(childName)));
 }
 
-UsdShadeNodeGraph
-_NodeGraphBuilder::Build()
+UsdPrim
+_NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
 {
     if (!TF_VERIFY(_usdStage)) {
-        return UsdShadeNodeGraph();
+        return UsdPrim();
     }
     if (!TF_VERIFY(_usdPath.IsAbsolutePath() && _usdPath.IsPrimPath())) {
-        return UsdShadeNodeGraph();
+        return UsdPrim();
     }
 
-    // Create the USD node graph.
-    auto usdNodeGraph = UsdShadeNodeGraph::Define(_usdStage, _usdPath);
-    if (!usdNodeGraph) {
-        return UsdShadeNodeGraph();
-    }
-    if (_mtlxContainer->isA<mx::NodeGraph>()) {
-        _SetCoreUIAttributes(usdNodeGraph.GetPrim(), _mtlxContainer);
-    }
+    const auto isInsideNodeGraph = _mtlxContainer->isA<mx::NodeGraph>();
 
-    // Create the interface.
-    if (_mtlxNodeDef) {
-        for (auto& i: _GetInheritanceStack(_mtlxNodeDef)) {
-            _CreateInterface(i, usdNodeGraph);
+    // Create the USD nodegraph.
+    UsdPrim usdPrim;
+    if (isInsideNodeGraph) {
+        // Create the nodegraph.
+        auto usdNodeGraph = UsdShadeNodeGraph::Define(_usdStage, _usdPath);
+        if (!usdNodeGraph) {
+            return UsdPrim();
+        }
+        usdPrim = usdNodeGraph.GetPrim();
+
+        _SetCoreUIAttributes(usdPrim, _mtlxContainer);
+
+        // Create the interface.
+        if (_mtlxNodeDef) {
+            for (auto& i: _GetInheritanceStack(_mtlxNodeDef)) {
+                _CreateInterface(i, usdNodeGraph);
+            }
         }
     }
+    else {
+        usdPrim = _usdStage->DefinePrim(_usdPath);
+    }
 
-    // Build the nodegraph.
-    auto usdPrim = usdNodeGraph.GetPrim();
-    // XXX -- File reading prior to 1.36 doesn't support nodes outside of
-    //        a nodegraph so this will return an empty vector.
+    // Build the graph of nodes.
     for (auto& mtlxNode: _mtlxContainer->getChildrenOfType<mx::Node>()) {
         _AddNode(mtlxNode, usdPrim);
     }
     _ConnectNodes();
-    _ConnectTerminals(_mtlxContainer, usdNodeGraph);
 
-    return usdNodeGraph;
+    if (isInsideNodeGraph) {
+        _ConnectTerminals(_mtlxContainer,  UsdShadeNodeGraph(usdPrim));
+    }
+    else if (outputs) {
+        // Collect the outputs on the existing shader nodes.
+        for (auto& mtlxOutput:
+                _mtlxContainer->getChildrenOfType<mx::Output>()) {
+            if (auto nodeName = _Attr(mtlxOutput, names.nodename)) {
+                (*outputs)[_Name(mtlxOutput)] = TfToken(nodeName);
+            }
+        }
+    }
+
+    return usdPrim;
 }
 
 void
@@ -929,20 +980,21 @@ class _NodeGraph {
 public:
     _NodeGraph();
 
-    explicit operator bool() const { return bool(_usdNodeGraph); }
+    explicit operator bool() const { return bool(_usdOwnerPrim); }
 
     void SetImplementation(_NodeGraphBuilder&);
 
     _NodeGraph AddReference(const SdfPath& referencingPath) const;
 
-    UsdShadeNodeGraph GetNodeGraph() const { return _usdNodeGraph; }
+    UsdPrim GetOwnerPrim() const { return _usdOwnerPrim; }
     UsdShadeOutput GetOutputByName(const std::string& name) const;
 
 private:
     _NodeGraph(const _NodeGraph&, const UsdPrim& referencer);
 
 private:
-    UsdShadeNodeGraph _usdNodeGraph;
+    UsdPrim _usdOwnerPrim;
+    _NodeGraphBuilder::ShaderNamesByOutputName _outputs;
     SdfPath _referencer;
 };
 
@@ -952,7 +1004,8 @@ _NodeGraph::_NodeGraph()
 }
 
 _NodeGraph::_NodeGraph(const _NodeGraph& other, const UsdPrim& referencer)
-    : _usdNodeGraph(other._usdNodeGraph)
+    : _usdOwnerPrim(other._usdOwnerPrim)
+    , _outputs(other._outputs)
     , _referencer(referencer.GetPath())
 {
     // Do nothing
@@ -961,9 +1014,9 @@ _NodeGraph::_NodeGraph(const _NodeGraph& other, const UsdPrim& referencer)
 void
 _NodeGraph::SetImplementation(_NodeGraphBuilder& builder)
 {
-    if (auto usdNodeGraph = builder.Build()) {
+    if (auto usdOwnerPrim = builder.Build(&_outputs)) {
         // Success.  Cut over.
-        _usdNodeGraph = usdNodeGraph;
+        _usdOwnerPrim = usdOwnerPrim;
         _referencer   = SdfPath();
     }
 }
@@ -973,25 +1026,37 @@ _NodeGraph::GetOutputByName(const std::string& name) const
 {
     auto nodeGraph =
         _referencer.IsEmpty()
-            ? _usdNodeGraph
-            : UsdShadeNodeGraph::Get(_usdNodeGraph.GetPrim().GetStage(),
-                                     _referencer);
+            ? UsdShadeNodeGraph(_usdOwnerPrim)
+            : UsdShadeNodeGraph::Get(_usdOwnerPrim.GetStage(), _referencer);
     if (nodeGraph) {
         return nodeGraph.GetOutput(TfToken(name));
     }
-    else {
-        return UsdShadeOutput();
+
+    // If this is an implicit node graph then the output is on a
+    // child shader.
+    auto i = _outputs.find(name);
+    if (i != _outputs.end()) {
+        auto child =
+            _referencer.IsEmpty()
+                ? UsdShadeShader(_usdOwnerPrim.GetChild(i->second))
+                : UsdShadeShader::Get(_usdOwnerPrim.GetStage(),
+                                      _referencer.AppendChild(i->second));
+        if (child) {
+            return child.GetOutput(tokens->defaultOutputName);
+        }
     }
+
+    return UsdShadeOutput();
 }
 
 _NodeGraph
 _NodeGraph::AddReference(const SdfPath& referencingPath) const
 {
-    if (!_usdNodeGraph) {
+    if (!_usdOwnerPrim) {
         return *this;
     }
 
-    auto stage = _usdNodeGraph.GetPrim().GetStage();
+    auto stage = _usdOwnerPrim.GetStage();
     if (auto prim = stage->GetPrimAtPath(referencingPath)) {
         if (UsdShadeNodeGraph(prim)) {
             // A node graph already exists -- reuse it.
@@ -1007,7 +1072,7 @@ _NodeGraph::AddReference(const SdfPath& referencingPath) const
     // Create a new prim referencing the node graph.
     auto referencer = stage->DefinePrim(referencingPath);
     _NodeGraph result(*this, referencer);
-    referencer.GetReferences().AddInternalReference(_usdNodeGraph.GetPath());
+    referencer.GetReferences().AddInternalReference(_usdOwnerPrim.GetPath());
     return result;
 }
 
@@ -1059,6 +1124,7 @@ private:
     _NodeGraph _AddNodeGraph(const mx::ConstNodeGraphPtr& mtlxNodeGraph,
                              const mx::ConstDocumentPtr& mtlxDocument);
     void _BindNodeGraph(const mx::ConstBindInputPtr& mtlxBindInput,
+                        const SdfPath& referencingPathParent,
                         const UsdShadeConnectableAPI& connectable,
                         const _NodeGraph& usdNodeGraph);
     bool _AddShaderVariant(const std::string& mtlxMaterialName,
@@ -1176,22 +1242,15 @@ _Context::_AddNodeGraph(
 
         // Choose USD parent path.  If mtlxNodeGraph exists then use
         // its name as the USD nodegraph's name, otherwise we're
-        // making a nodegraph out of the nodes and outputs at the
-        // document scope and we need a unique name.
+        // getting nodes and outputs at the document scope and we
+        // don't make a USD nodegraph.
         if (mtlxNodeGraph) {
             builder.SetContainer(mtlxNodeGraph);
             builder.SetTarget(_stage, _nodeGraphsPath, mtlxNodeGraph);
         }
         else {
-            // XXX -- Cast away const because createValidChildName() is
-            //        not const but should be.
-            auto uniqueName =
-                std::const_pointer_cast<mx::Document>(mtlxDocument)
-                    ->createValidChildName("adhoc");
-            auto parentPath =
-                _nodeGraphsPath.AppendChild(_MakeName(uniqueName));
             builder.SetContainer(mtlxDocument);
-            builder.SetTarget(_stage, parentPath);
+            builder.SetTarget(_stage, _nodeGraphsPath);
         }
 
         nodeGraph.SetImplementation(builder);
@@ -1260,7 +1319,8 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
         // The shaderref specified a node instead of a nodeDef. Find
         // the best matching nodedef since the MaterialX API doesn't.
         mtlxNodeDef =
-            _FindMatchingNodeDef(mtlxNodeDef,
+            _FindMatchingNodeDef(mtlxNodeDef->getDocument(),
+                                 mtlxNodeDef,
                                  mtlxShaderRef->getNodeString(),
                                  UsdMtlxGetVersion(mtlxShaderRef),
                                  mtlxShaderRef->getTarget());
@@ -1381,7 +1441,8 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
                     mtlxNodeGraph
                         ? AddNodeGraph(mtlxNodeGraph)
                         : AddImplicitNodeGraph(mtlxInput->getDocument())) {
-                _BindNodeGraph(mtlxInput, _usdMaterial, usdNodeGraph);
+                _BindNodeGraph(mtlxInput, _usdMaterial.GetPath(),
+                               usdShader, usdNodeGraph);
             }
         }
     }
@@ -1722,13 +1783,14 @@ _Context::GetCollection(
 void
 _Context::_BindNodeGraph(
     const mx::ConstBindInputPtr& mtlxBindInput,
+    const SdfPath& referencingPathParent,
     const UsdShadeConnectableAPI& connectable,
     const _NodeGraph& usdNodeGraph)
 {
     // Reference the instantiation.
     auto referencingPath =
-        connectable.GetPath().AppendChild(
-            usdNodeGraph.GetNodeGraph().GetPath().GetNameToken());
+        referencingPathParent.AppendChild(
+            usdNodeGraph.GetOwnerPrim().GetPath().GetNameToken());
     auto refNodeGraph = usdNodeGraph.AddReference(referencingPath);
     if (!refNodeGraph) {
         return;
