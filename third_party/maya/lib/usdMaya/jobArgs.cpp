@@ -212,7 +212,7 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary& userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
-    const GfInterval& timeInterval) :
+    const std::vector<double>& timeSamples) :
         compatibility(
             _Token(userArgs,
                 UsdMayaJobExportArgsTokens->compatibility,
@@ -303,6 +303,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
                 UsdMayaJobExportArgsTokens->shadingMode,
                 UsdMayaShadingModeTokens->none,
                 UsdMayaShadingModeRegistry::ListExporters())),
+        verbose(
+            _Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose)),
 
         chaserNames(
             _Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser)),
@@ -320,7 +322,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
             _String(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback)),
 
         dagPaths(dagPaths),
-        timeInterval(timeInterval)
+        timeSamples(timeSamples)
 {
 }
 
@@ -351,7 +353,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
         << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
-        << "timeInterval: " << exportArgs.timeInterval << std::endl
+        << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl;
 
     out << "melPerFrameCallback: " << exportArgs.melPerFrameCallback << std::endl
@@ -392,12 +394,12 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
 UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
     const VtDictionary& userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
-    const GfInterval& timeInterval)
+    const std::vector<double>& timeSamples)
 {
     return UsdMayaJobExportArgs(
             VtDictionaryOver(userArgs, GetDefaultDictionary()),
             dagPaths,
-            timeInterval);
+            timeSamples);
 }
 
 /* static */
@@ -414,6 +416,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->defaultCameras] = false;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = 
                 UsdGeomTokens->catmullClark.GetString();
+        d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = true;
@@ -425,7 +428,6 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
                 UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] =
                 UsdMayaJobExportArgsTokens->none.GetString();
-        
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
@@ -443,7 +445,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->shadingMode] =
                 UsdMayaShadingModeTokens->displayColor.GetString();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
-        d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
+        d[UsdMayaJobExportArgsTokens->verbose] = false;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable

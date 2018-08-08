@@ -30,10 +30,8 @@
 
 #include "pxr/usd/usdGeom/tokens.h"
 
-#include <maya/MAnimControl.h>
 #include <maya/MArgList.h>
 #include <maya/MArgDatabase.h>
-#include <maya/MComputation.h>
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
@@ -154,6 +152,9 @@ MSyntax UsdMayaExportCommand::createSyntax()
     syntax.addFlag("-ppc",
                    UsdMayaJobExportArgsTokens->pythonPostCallback.GetText(),
                    MSyntax::kString);
+    syntax.addFlag("-v",
+                   UsdMayaJobExportArgsTokens->verbose.GetText(),
+                   MSyntax::kNoArg);
 
     // These are additional flags under our control.
     syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);
@@ -167,8 +168,6 @@ MSyntax UsdMayaExportCommand::createSyntax()
 
     syntax.addFlag("-ft" , "-filterTypes", MSyntax::kString);
     syntax.makeFlagMultiUse("-filterTypes");
-
-    syntax.addFlag("-v", "-verbose", MSyntax::kNoArg);
 
     syntax.enableQuery(false);
     syntax.enableEdit(false);
@@ -204,7 +203,6 @@ try
             argData, UsdMayaJobExportArgs::GetDefaultDictionary());
 
     // Now read all of the other args that are specific to this command.
-    bool verbose = argData.isFlagSet("verbose");
     bool append = false;
     std::string fileName;
 
@@ -297,9 +295,10 @@ try
         }
     }
 
-    UsdMayaJobExportArgs jobArgs =
-            UsdMayaJobExportArgs::CreateFromDictionary(
-                userArgs, dagPaths, timeInterval);
+    const std::vector<double> timeSamples = UsdMayaWriteUtil::GetTimeSamples(
+            timeInterval, frameSamples, frameStride);
+    UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
+            userArgs, dagPaths, timeSamples);
 
     unsigned int numFilteredTypes = argData.numberOfFlagUses("filterTypes");
     for (unsigned int i=0; i < numFilteredTypes; i++) {
@@ -308,43 +307,10 @@ try
         jobArgs.AddFilteredTypeName(tmpArgList.asString(0));
     }
 
-    // Create WriteJob object
-    UsdMaya_WriteJob UsdMaya_WriteJob(jobArgs);
-
-    MComputation computation;
-    computation.beginComputation();
-
-    // Create stage and process static data
-    if (UsdMaya_WriteJob.BeginWriting(fileName, append)) {
-        std::vector<double> timeSamples =
-                UsdMayaWriteUtil::GetTimeSamples(
-                jobArgs.timeInterval, frameSamples, frameStride);
-        if (!timeSamples.empty()) {
-            const MTime oldCurTime = MAnimControl::currentTime();
-            for (double t : timeSamples) {
-                if (verbose) {
-                    TF_STATUS("%f", t);
-                }
-                MGlobal::viewFrame(t);
-                // Process per frame data
-                UsdMaya_WriteJob.WriteFrame(t);
-                if (computation.isInterruptRequested()) {
-                    break;
-                }
-            }
-
-            // Set the time back.
-            MGlobal::viewFrame(oldCurTime);
-        }
-
-        // Finalize the export, close the stage
-        UsdMaya_WriteJob.FinishWriting();
-    } else {
-        computation.endComputation();
+    UsdMaya_WriteJob writeJob(jobArgs);
+    if (!writeJob.Write(fileName, append)) {
         return MS::kFailure;
     }
-
-    computation.endComputation();
 
     return MS::kSuccess;
 } // end of try block

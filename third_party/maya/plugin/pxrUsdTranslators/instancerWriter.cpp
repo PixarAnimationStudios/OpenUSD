@@ -111,7 +111,7 @@ PxrUsdTranslators_InstancerWriter::_NeedsExtraInstancerTranslate(
 {
     // XXX: Maybe we could be smarter here and figure out if the animation
     // affects instancerTranslate?
-    bool animated = !_GetExportArgs().timeInterval.IsEmpty() &&
+    bool animated = !_GetExportArgs().timeSamples.empty() &&
             MAnimUtil::isAnimated(prototypeDagPath.node(), false);
     if (animated) {
         *instancerTranslateAnimated = true;

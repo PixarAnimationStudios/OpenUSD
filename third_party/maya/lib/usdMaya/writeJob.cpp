@@ -60,6 +60,8 @@
 #include "pxr/usd/usdUtils/pipeline.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
+#include <maya/MAnimControl.h>
+#include <maya/MComputation.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnRenderLayer.h>
 #include <maya/MGlobal.h>
@@ -118,7 +120,62 @@ _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
-bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
+bool
+UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
+{
+    const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
+
+    MComputation computation;
+    if (timeSamples.empty()) {
+        // Non-animated export doesn't show progress.
+        computation.beginComputation(/*showProgressBar*/ false);
+    }
+    else {
+        // Animated export shows frame-by-frame progress.
+        computation.beginComputation(/*showProgressBar*/ true);
+        computation.setProgressRange(0, timeSamples.size());
+    }
+
+    // Default-time export.
+    if (!_BeginWriting(fileName, append)) {
+        computation.endComputation();
+        return false;
+    }
+
+    // Time-sampled export.
+    if (!timeSamples.empty()) {
+        const MTime oldCurTime = MAnimControl::currentTime();
+
+        int progress = 0;
+        for (double t : timeSamples) {
+            if (mJobCtx.mArgs.verbose) {
+                TF_STATUS("%f", t);
+            }
+            MGlobal::viewFrame(t);
+            computation.setProgress(progress);
+            progress++;
+
+            // Process per frame data.
+            _WriteFrame(t);
+
+            // Allow user cancellation.
+            if (computation.isInterruptRequested()) {
+                break;
+            }
+        }
+
+        // Set the time back.
+        MGlobal::viewFrame(oldCurTime);
+    }
+
+    // Finalize the export, close the stage.
+    _FinishWriting();
+    computation.endComputation();
+    return true;
+}
+
+bool
+UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -203,9 +260,9 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
     }
 
     // Set time range for the USD file if we're exporting animation.
-    if (!mJobCtx.mArgs.timeInterval.IsEmpty()) {
-        mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeInterval.GetMin());
-        mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeInterval.GetMax());
+    if (!mJobCtx.mArgs.timeSamples.empty()) {
+        mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeSamples.front());
+        mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeSamples.back());
     }
 
     // Setup the requested render layer mode:
@@ -409,7 +466,8 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
     return true;
 }
 
-void UsdMaya_WriteJob::WriteFrame(double iFrame)
+void
+UsdMaya_WriteJob::_WriteFrame(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
@@ -427,7 +485,8 @@ void UsdMaya_WriteJob::WriteFrame(double iFrame)
     _PerFrameCallback(iFrame);
 }
 
-void UsdMaya_WriteJob::FinishWriting()
+void
+UsdMaya_WriteJob::_FinishWriting()
 {
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 

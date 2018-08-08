@@ -598,11 +598,11 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
     _GetAnimatedJoints(_topology, skelJointNames, GetDagPath(),
                        _joints, restXforms,
                        &animJointNames, &_animatedJoints,
-                       !_GetExportArgs().timeInterval.IsEmpty());
+                       !_GetExportArgs().timeSamples.empty());
 
     if (haveUsdSkelXform) {
         _skelXformAttr = _skel.MakeMatrixXform();
-        if (!_GetExportArgs().timeInterval.IsEmpty()) {
+        if (!_GetExportArgs().timeSamples.empty()) {
             MObject node = _skelXformPath.node();
             _skelXformIsAnimated = UsdMayaUtil::isAnimated(node);
         } else {

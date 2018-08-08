@@ -205,7 +205,6 @@ private:
 
     bool _exportVisibility;
     bool _hasAnimCurves;
-    bool _isShapeAnimated;
 };
 
 typedef std::shared_ptr<UsdMayaPrimWriter> UsdMayaPrimWriterSharedPtr;

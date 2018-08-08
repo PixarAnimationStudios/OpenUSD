@@ -93,6 +93,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (renderLayerMode) \
     (shadingMode) \
     (stripNamespaces) \
+    (verbose) \
     /* Special "none" token */ \
     (none) \
     /* renderLayerMode values */ \
@@ -156,6 +157,7 @@ struct UsdMayaJobExportArgs
     const TfToken renderLayerMode;
     const TfToken rootKind;
     const TfToken shadingMode;
+    const bool verbose;
 
     typedef std::map<std::string, std::string> ChaserArgs;
     const std::vector<std::string> chaserNames;
@@ -167,12 +169,11 @@ struct UsdMayaJobExportArgs
     const std::string pythonPostCallback;
 
     const UsdMayaUtil::MDagPathSet dagPaths;
-    /// The interval over which to export animated data.
-    /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
-    /// animated (time-sampled) data should be exported.
-    /// Otherwise, animated data should be exported at times contained in the
-    /// interval.
-    const GfInterval timeInterval;
+    /// The time samples at which to export animated data; the times must be
+    /// monotonically non-decreasing.
+    /// An empty list of time samples means that no animated (time-sampled)
+    /// data should be exported.
+    const std::vector<double> timeSamples;
 
     // This path is provided when dealing with variants
     // where a _BaseModel_ root path is used instead of
@@ -189,7 +190,7 @@ struct UsdMayaJobExportArgs
     static UsdMayaJobExportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
-        const GfInterval& timeInterval = GfInterval());
+        const std::vector<double>& timeSamples = std::vector<double>());
 
     /// Gets the default arguments dictionary for UsdMayaJobExportArgs.
     PXRUSDMAYA_API
@@ -214,7 +215,7 @@ private:
     UsdMayaJobExportArgs(
         const VtDictionary& userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
-        const GfInterval& timeInterval);
+        const std::vector<double>& timeSamples = std::vector<double>());
 
     // Maya type ids to avoid exporting; these are
     // EXACT types, though the only exposed way to modify this,
