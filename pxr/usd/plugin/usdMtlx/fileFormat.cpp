@@ -25,6 +25,7 @@
 #include "pxr/usd/usdMtlx/fileFormat.h"
 #include "pxr/usd/usdMtlx/reader.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/base/tf/pathUtils.h"
 
 #include <MaterialXCore/Document.h>
@@ -85,20 +86,24 @@ UsdMtlxFileFormat::~UsdMtlxFileFormat()
 SdfAbstractDataRefPtr
 UsdMtlxFileFormat::InitData(const FileFormatArguments& args) const
 {
-    // XXX
     return SdfFileFormat::InitData(args);
 }
 
 bool
 UsdMtlxFileFormat::CanRead(const std::string& filePath) const
 {
-    // XXX: Add more verification of file header magic
-    auto extension = TfGetExtension(filePath);
-    if (extension.empty()) {
+    // XXX -- MaterialX doesn't provide this function.  We should attempt
+    //        to parse XML as far as finding the first 'materialx' node.
+
+    // XXX -- Emergency backup test.  This should be removed when the
+    //        proper test described above is implemented because the
+    //        actual filename extension shouldn't matter.
+    const auto extension = TfGetExtension(filePath);
+    if (extension != this->GetFormatId()) {
         return false;
     }
 
-    return extension == this->GetFormatId();
+    return true;
 }
 
 bool
@@ -166,7 +171,8 @@ UsdMtlxFileFormat::WriteToString(
     std::string* str,
     const std::string& comment) const
 {
-    return false;
+    return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
+        WriteToString(layerBase, str, comment);
 }
 
 bool
@@ -175,7 +181,8 @@ UsdMtlxFileFormat::WriteToStream(
     std::ostream& out,
     size_t indent) const
 {
-    return false;
+    return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
+        WriteToStream(spec, out, indent);
 }
 
 bool 
