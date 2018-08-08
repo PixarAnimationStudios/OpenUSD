@@ -77,9 +77,12 @@ HdStMesh::HdStMesh(SdfPath const& id,
                    SdfPath const& instancerId)
     : HdMesh(id, instancerId)
     , _topology()
+    , _vertexAdjacency()
     , _topologyId(0)
     , _vertexPrimvarId(0)
     , _customDirtyBitsInUse(0)
+    , _sceneNormalsInterpolation()
+    , _cullStyle(HdCullStyleDontCare)
     , _doubleSided(false)
     , _flatShadingEnabled(false)
     , _displacementEnabled(true)
@@ -88,7 +91,6 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _limitNormals(false)
     , _sceneNormals(false)
     , _pointsVisibilityAuthored(false)
-    , _cullStyle(HdCullStyleDontCare)
 {
     /*NOTHING*/
 }
@@ -1375,8 +1377,11 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* CONSTANT PRIMVARS */
     {
-        HdPrimvarDescriptorVector constantPrimvars =
-            GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
+        HdPrimvarDescriptorVector constantPrimvars;
+        if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+            constantPrimvars =
+                GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
+        }
         _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
                                   constantPrimvars);
 

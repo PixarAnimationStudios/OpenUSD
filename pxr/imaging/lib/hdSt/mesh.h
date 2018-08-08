@@ -160,19 +160,18 @@ private:
     HdTopology::ID _topologyId;
     HdTopology::ID _vertexPrimvarId;
     HdDirtyBits _customDirtyBitsInUse;
-    bool _doubleSided;
 
-    bool _flatShadingEnabled;
-    bool _displacementEnabled;
-
-    bool _smoothNormals;
-    bool _packedSmoothNormals;
-    bool _limitNormals;
-    bool _sceneNormals;
-    bool _pointsVisibilityAuthored;
     HdInterpolation _sceneNormalsInterpolation;
-
     HdCullStyle _cullStyle;
+
+    bool _doubleSided : 1;
+    bool _flatShadingEnabled : 1;
+    bool _displacementEnabled : 1;
+    bool _smoothNormals : 1;
+    bool _packedSmoothNormals : 1;
+    bool _limitNormals : 1;
+    bool _sceneNormals : 1;
+    bool _pointsVisibilityAuthored : 1;
 };
 
 
