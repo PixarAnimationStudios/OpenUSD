@@ -34,8 +34,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_QUEUE_INFO,
-        "Prints out batch renderer queuing info.");
+        PXRUSDMAYAGL_BATCHED_DRAWING,
+        "Prints out batched drawing event info.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        PXRUSDMAYAGL_BATCHED_SELECTION,
+        "Prints out batched selection event info.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING,

@@ -57,7 +57,6 @@
 
 #include <memory>
 #include <utility>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -460,16 +459,6 @@ private:
             const GfMatrix4d& projectionMatrix,
             const bool singleSelection);
 
-    /// Container of Maya render pass identifiers of passes drawn so far during
-    /// a Viewport 2.0 render.
-    ///
-    /// Since all Hydra geometry is drawn at once, we only ever want to execute
-    /// the Hydra draw once per Maya render pass (shadow, color, etc.). This
-    /// container keeps track of which passes have been drawn by Hydra, and it
-    /// is reset when the batch renderer is notified that a Maya render has
-    /// ended.
-    std::unordered_set<std::string> _drawnMayaRenderPasses;
-
     /// A cache of all selection results gathered since the last selection was
     /// computed. It maps delegate IDs to a HitSet of all of the intersection
     /// hits for that delegate ID.
@@ -519,4 +508,4 @@ PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_BATCH_RENDERER_H
+#endif
