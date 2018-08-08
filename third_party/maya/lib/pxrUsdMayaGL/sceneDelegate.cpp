@@ -407,6 +407,17 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // be lazily instantiated, potentially even after SetCameraState().
         renderSetupTaskParams.viewport = _viewport;
 
+        // Set the parameters that are constant for all draws.
+        renderSetupTaskParams.enableIdRender = false;
+        renderSetupTaskParams.alphaThreshold = 0.1f;
+        renderSetupTaskParams.tessLevel = 32.0f;
+        const float tinyThreshold = 0.9f;
+        renderSetupTaskParams.drawingRange = GfVec2f(tinyThreshold, -1.0f);
+        renderSetupTaskParams.enableHardwareShading = true;
+        renderSetupTaskParams.depthBiasUseDefault = true;
+        renderSetupTaskParams.depthFunc = HdCmpFuncLess;
+        renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
+
         _ValueCache& cache = _valueCacheMap[renderSetupTaskId];
         cache[HdTokens->params] = VtValue(renderSetupTaskParams);
         cache[HdTokens->children] = VtValue(SdfPathVector());
@@ -503,26 +514,21 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     HdxRenderTaskParams renderSetupTaskParams =
         _GetValue<HdxRenderTaskParams>(renderSetupTaskId, HdTokens->params);
 
-    // Update the render setup task params.
-    renderSetupTaskParams.overrideColor = renderParams.overrideColor;
-    renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
-    renderSetupTaskParams.enableLighting = renderParams.enableLighting;
-    renderSetupTaskParams.enableIdRender = false;
-    renderSetupTaskParams.alphaThreshold = 0.1f;
-    renderSetupTaskParams.tessLevel = 32.0f;
-    const float tinyThreshold = 0.9f;
-    renderSetupTaskParams.drawingRange = GfVec2f(tinyThreshold, -1.0f);
-    renderSetupTaskParams.enableHardwareShading = true;
-    renderSetupTaskParams.depthBiasUseDefault = true;
-    renderSetupTaskParams.depthFunc = HdCmpFuncLess;
-    renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
+    if (renderSetupTaskParams.overrideColor != renderParams.overrideColor ||
+            renderSetupTaskParams.wireframeColor != renderParams.wireframeColor ||
+            renderSetupTaskParams.enableLighting != renderParams.enableLighting) {
+        // Update the render setup task params.
+        renderSetupTaskParams.overrideColor = renderParams.overrideColor;
+        renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
+        renderSetupTaskParams.enableLighting = renderParams.enableLighting;
 
-    // Store the updated render setup task params back in the cache and mark
-    // them dirty.
-    _SetValue(renderSetupTaskId, HdTokens->params, renderSetupTaskParams);
-    GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-        renderSetupTaskId,
-        HdChangeTracker::DirtyParams);
+        // Store the updated render setup task params back in the cache and
+        // mark them dirty.
+        _SetValue(renderSetupTaskId, HdTokens->params, renderSetupTaskParams);
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            renderSetupTaskId,
+            HdChangeTracker::DirtyParams);
+    }
 
 
     // Update the collections on the render task and mark them dirty.
