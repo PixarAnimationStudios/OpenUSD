@@ -264,6 +264,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             _bindingMap[it->first] = vertexPrimvarBinding;
 
             HdTupleType valueType = it->second->GetTupleType();
+            // Special case: VBOs have intrinsic support for packed types,
+            // so expand them out to their target type for the shader binding.
+            if (valueType.type == HdTypeInt32_2_10_10_10_REV) {
+                valueType.type = HdTypeFloatVec4;
+            }
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->vertexData[vertexPrimvarBinding] =
                 MetaData::Primvar(/*name=*/it->first,
