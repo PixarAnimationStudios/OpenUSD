@@ -89,6 +89,11 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
     primInfo.usdPrim         = usdPrim;
 
     _delegate->_usdIds.Insert(cachePath);
+
+    // precache cache path to index path translations
+    SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+    _delegate->_cache2indexPath[cachePath] = indexPath;
+    _delegate->_index2cachePath[indexPath] = cachePath;
 }
 
 void
@@ -296,15 +301,22 @@ UsdImagingIndexProxy::_ProcessRemovals()
     _bprimsToRemove.clear();
 
     TF_FOR_ALL(it, _primInfoToRemove) {
+        SdfPath cachePath = *it;
+
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove PrimInfo] <%s>\n",
-                                it->GetText());
+                                         cachePath.GetText());
 
-        _delegate->_valueCache.Clear(*it);
-        _delegate->_refineLevelMap.erase(*it);
-        _delegate->_pickablesMap.erase(*it);
 
-        _delegate->_primInfoMap.erase(*it);
-        _delegate->_usdIds.Remove(*it);
+        _delegate->_valueCache.Clear(cachePath);
+        _delegate->_refineLevelMap.erase(cachePath);
+        _delegate->_pickablesMap.erase(cachePath);
+
+        _delegate->_primInfoMap.erase(cachePath);
+        _delegate->_usdIds.Remove(cachePath);
+
+        SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+        _delegate->_cache2indexPath.erase(cachePath);
+        _delegate->_index2cachePath.erase(indexPath);
     }
     _primInfoToRemove.clear();
 }
