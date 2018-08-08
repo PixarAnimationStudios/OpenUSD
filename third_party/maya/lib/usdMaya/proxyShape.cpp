@@ -94,10 +94,6 @@ TF_DEFINE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
 // we don't want to rely on Maya to do it on the CPU. AS such, the best
 // performance comes from telling Maya to pretend that every object has no
 // bounds.
-//
-// This has the side effect of disabling bounding box display mode, but that
-// is usually an acceptable loss.
-//
 TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
                       "Enable bounding box rendering (slows refresh rate)");
 
@@ -107,11 +103,6 @@ UsdMayaProxyShape::_sharedClosestPointDelegate = nullptr;
 UsdMayaProxyShape::ObjectSoftSelectEnabledDelgate
 UsdMayaProxyShape::_sharedObjectSoftSelectEnabledDelgate = nullptr;
 
-bool
-UsdMayaIsBoundingBoxModeEnabled()
-{
-    return TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE);
-}
 
 // ========================================================
 

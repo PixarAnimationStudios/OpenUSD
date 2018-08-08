@@ -68,11 +68,6 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
                          PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
-/// Returns the PIXMAYA_ENABLE_BOUNDING_BOX_MODE env setting.
-PXRUSDMAYA_API
-bool UsdMayaIsBoundingBoxModeEnabled();
-
-
 class UsdMayaProxyShape : public MPxSurfaceShape,
                           public UsdMayaUsdPrimProvider
 {

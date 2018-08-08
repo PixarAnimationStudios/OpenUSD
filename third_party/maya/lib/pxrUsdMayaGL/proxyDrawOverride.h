@@ -59,28 +59,31 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
         static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
         PXRUSDMAYAGL_API
-        virtual ~UsdMayaProxyDrawOverride() override;
+        ~UsdMayaProxyDrawOverride() override;
 
         PXRUSDMAYAGL_API
-        virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
+        MHWRender::DrawAPI supportedDrawAPIs() const override;
 
         PXRUSDMAYAGL_API
-        virtual MMatrix transform(
+        MMatrix transform(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual MBoundingBox boundingBox(
+        MBoundingBox boundingBox(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual bool isBounded(
+        bool isBounded(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual MUserData* prepareForDraw(
+        bool disableInternalBoundingBoxDraw() const override;
+
+        PXRUSDMAYAGL_API
+        MUserData* prepareForDraw(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath,
                 const MHWRender::MFrameContext& frameContext,
@@ -88,10 +91,10 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 
 #if MAYA_API_VERSION >= 201800
         PXRUSDMAYAGL_API
-        virtual bool wantUserSelection() const override;
+        bool wantUserSelection() const override;
 
         PXRUSDMAYAGL_API
-        virtual bool userSelect(
+        bool userSelect(
                 MHWRender::MSelectionInfo& selectInfo,
                 const MHWRender::MDrawContext& context,
                 MPoint& hitPoint,
@@ -113,4 +116,4 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_PROXY_DRAW_OVERRIDE_H
+#endif

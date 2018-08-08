@@ -131,7 +131,42 @@ UsdMayaProxyDrawOverride::isBounded(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */) const
 {
-    return UsdMayaIsBoundingBoxModeEnabled();
+    // XXX: Ideally, we'd be querying the shape itself using the code below to
+    // determine whether the object is bounded or not. Unfortunately, the
+    // shape's bounded-ness is based on the PIXMAYA_ENABLE_BOUNDING_BOX_MODE
+    // environment variable, which is almost never enabled. This is because we
+    // want Maya to bypass its own costly CPU-based frustum culling in favor
+    // of Hydra's higher performance implementation.
+    // However, this causes problems for features in Viewport 2.0 such as
+    // automatic computation of width focus for directional lights since it
+    // cannot get a bounding box for the shape.
+    // It would be preferable to just remove the use of
+    // PIXMAYA_ENABLE_BOUNDING_BOX_MODE in the shape's isBounded() method,
+    // especially since we instruct Maya not to draw bounding boxes in
+    // disableInternalBoundingBoxDraw() below, but trying to do that caused
+    // performance degradation in selection.
+    // So rather than ask the shape whether it is bounded or not, the draw
+    // override simply *always* considers the shape bounded. Hopefully at some
+    // point we can get Maya to fully bypass all of its frustum culling and
+    // remove PIXMAYA_ENABLE_BOUNDING_BOX_MODE.
+    return true;
+
+    // UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    // if (!pShape) {
+    //     return false;
+    // }
+
+    // return pShape->isBounded();
+}
+
+/* virtual */
+bool
+UsdMayaProxyDrawOverride::disableInternalBoundingBoxDraw() const
+{
+    // Hydra performs its own high-performance frustum culling, so we don't
+    // want to rely on Maya to do it on the CPU. As such, the best performance
+    // comes from telling Maya *not* to draw bounding boxes.
+    return true;
 }
 
 /* virtual */
