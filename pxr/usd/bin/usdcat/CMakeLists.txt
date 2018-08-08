@@ -70,3 +70,14 @@ pxr_register_test(testUsdCatMask2
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask input.usda -o output.usda"
     EXPECTED_RETURN_CODE 1
 )
+
+pxr_install_test_dir(
+    SRC testenv/testLoadOnly
+    DEST testUsdCatLoadOnly
+)
+
+pxr_register_test(testUsdCatLoadOnly
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --loadOnly input.usda"
+    EXPECTED_RETURN_CODE 0
+)

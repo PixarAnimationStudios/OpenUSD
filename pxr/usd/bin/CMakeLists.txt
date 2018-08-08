@@ -1,6 +1,5 @@
 set(DIRS
     usdcat
-    usdcheck
     usdchecker
     usddiff
     usdedit

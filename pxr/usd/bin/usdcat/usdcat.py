@@ -24,6 +24,9 @@
 #
 import argparse, sys, os
 
+def _Msg(msg):
+    sys.stdout.write(msg + '\n')
+
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
@@ -65,6 +68,11 @@ def main():
         "'-o output.usd --usdFormat usda' will create output.usd as a text "
         "file.  The USD_DEFAULT_FILE_FORMAT environment variable is another "
         "way to achieve this.")
+    parser.add_argument(
+        '-l', '--loadOnly', action='store_true', 
+        help="Attempt to load the specified input files and report 'OK' or "
+        "'ERR' for each one. After all files are processed, this script will "
+        "exit with a non-zero exit code if any files failed to load.")
     parser.add_argument(
         '-f', '--flatten', action='store_true', help='Compose stages with the '
         'input files as root layers and write their flattened content.')
@@ -147,9 +155,18 @@ def main():
             else:
                 usdData = GetUsdData(inputFile)
             if not usdData:
-                raise Exception("Unknown error")
+                raise Exception("Could not open layer")
+
+            if args.loadOnly:
+                _Msg("{:3} {}".format("OK", inputFile))
+                continue
+
         except Exception as e:
-            _Err("Failed to open '%s' - %s" % (inputFile, e))
+            if args.loadOnly:
+                _Msg("{:3} {}".format("ERR", inputFile))
+                _Msg("{}".format(e))
+            else:
+                _Err("Failed to open '%s' - %s" % (inputFile, e))
             exitCode = 1
             continue
 
