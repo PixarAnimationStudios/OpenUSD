@@ -1983,11 +1983,13 @@ CrateFile::Open(string const &assetPath)
         if (!TfGetenvBool("USDC_USE_PREAD", false)) {
             // Try to memory-map the file.
             auto mapping = _MmapAsset(assetPath.c_str(), asset);
-            result.reset(new CrateFile(assetPath, std::move(mapping), asset));
+            result.reset(new CrateFile(assetPath, ArchGetFileName(file),
+                                       std::move(mapping), asset));
         } else {
             // Use pread with the asset's file.
             result.reset(new CrateFile(
-                             assetPath, _FileRange(
+                             assetPath, ArchGetFileName(file),
+                             _FileRange(
                                  file, offset, asset->GetSize(),
                                  /*hasOwnership=*/ false),
                              asset));
@@ -2025,10 +2027,11 @@ CrateFile::CrateFile(bool useMmap)
     _DoAllTypeRegistrations();
 }
 
-CrateFile::CrateFile(string const &assetPath, _FileMappingIPtr mapping,
-                     ArAssetSharedPtr const &asset)
+CrateFile::CrateFile(string const &assetPath, string const &fileName,
+                     _FileMappingIPtr mapping, ArAssetSharedPtr const &asset)
     : _mmapSrc(std::move(mapping))
     , _assetPath(assetPath)
+    , _fileReadFrom(fileName)
     , _useMmap(true)
 {
     // Note that we intentionally do not store the asset -- we want to close the
@@ -2081,14 +2084,16 @@ CrateFile::_InitMMap() {
         }
     } else {
         _assetPath.clear();
+        _fileReadFrom.clear();
     }
 }
 
-CrateFile::CrateFile(string const &assetPath, _FileRange &&inputFile,
-                     ArAssetSharedPtr const &asset)
+CrateFile::CrateFile(string const &assetPath, string const &fileName,
+                     _FileRange &&inputFile, ArAssetSharedPtr const &asset)
     : _preadSrc(std::move(inputFile))
     , _assetSrc(asset)
     , _assetPath(assetPath)
+    , _fileReadFrom(fileName)
     , _useMmap(false)
 {
     // Note that we *do* store the asset here, since we need to keep the FILE*
@@ -2108,8 +2113,10 @@ CrateFile::_InitPread()
     auto reader = _MakeReader(_PreadStream(_preadSrc));
     TfErrorMark m;
     _ReadStructuralSections(reader, rangeLength);
-    if (!m.IsClean())
+    if (!m.IsClean()) {
         _assetPath.clear();
+        _fileReadFrom.clear();
+    }
     // Restore default prefetch behavior.
     ArchFileAdvise(_preadSrc.file, _preadSrc.startOffset,
                    rangeLength, ArchFileAdviceNormal);
@@ -2209,11 +2216,26 @@ CrateFile::~CrateFile()
     _DeleteValueHandlers();
 }
 
+bool
+CrateFile::CanPackTo(string const &fileName) const
+{
+    if (_assetPath.empty()) {
+        return true;
+    }
+    // Try to open \p fileName and get its filename.
+    bool result = false;
+    if (FILE *f = ArchOpenFile(fileName.c_str(), "rb")) {
+        if (ArchGetFileName(f) == _fileReadFrom) {
+            result = true;
+        }
+        fclose(f);
+    }
+    return result;
+}
+
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
-    TF_VERIFY(_assetPath.empty() || _assetPath == fileName);
-    
     // We open the file using the TfSafeOutputFile helper so that we can avoid
     // stomping on the file for other processes currently observing it, in the
     // case that we're replacing it.  In the case where we're actually updating
@@ -2246,8 +2268,9 @@ CrateFile::Packer::Close()
     bool writeResult = _crate->_Write();
     
     // If we wrote successfully, store the fileName and size.
-    if (writeResult)
+    if (writeResult) {
         _crate->_assetPath = _crate->_packCtx->fileName;
+    }
 
     // Pull out the file handle and kill the packing context.
     TfSafeOutputFile outFile = _crate->_packCtx->ExtractOutputFile();
@@ -2272,6 +2295,9 @@ CrateFile::Packer::Close()
                                /*startOffset=*/0, /*length=*/-1,
                                /*hasOwnership=*/true);
     }
+
+    // Reset the filename we've read content from.
+    _crate->_fileReadFrom = ArchGetFileName(fileRange.file);
 
     // Reset the mapping or file so we can read values from the newly
     // written file.

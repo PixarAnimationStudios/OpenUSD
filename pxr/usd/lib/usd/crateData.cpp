@@ -123,15 +123,15 @@ public:
 
     string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
 
+    bool CanIncrementalSave(string const &fileName) {
+        return _crateFile->CanPackTo(fileName);
+    }
+
     bool Save(string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
 
         TF_DESCRIBE_SCOPE("Saving usd binary file @%s@", fileName.c_str());
         
-        auto assetPath = _crateFile->GetAssetPath();
-        if (!TF_VERIFY(fileName == assetPath || assetPath.empty()))
-            return false;
-
         // Sort by path for better namespace-grouped data layout.
         vector<SdfPath> sortedPaths;
         sortedPaths.reserve(_hashData ? _hashData->size() : _flatData.size());
@@ -1122,18 +1122,15 @@ Usd_CrateData::Save(string const &fileName)
         return false;
     }
 
-    auto newFileName = TfAbsPath(fileName);
-    bool hasFile = !_impl->GetAssetPath().empty();
-    bool saveToOtherFile = _impl->GetAssetPath() != newFileName;
-        
-    if (hasFile && saveToOtherFile) {
+    if (_impl->CanIncrementalSave(fileName)) {
+        return _impl->Save(fileName);
+    }
+    else {
         // We copy to a temporary data and save that.
         Usd_CrateData tmp;
         tmp.CopyFrom(SdfAbstractDataConstPtr(this));
-        return tmp.Save(newFileName);
+        return tmp.Save(fileName);
     }
-
-    return _impl->Save(newFileName);
 }
 
 bool

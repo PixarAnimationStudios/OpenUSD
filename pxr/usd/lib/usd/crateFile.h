@@ -606,6 +606,10 @@ public:
         CrateFile *_crate;
     };
 
+    // Return true if this CrateFile object wasn't populated from a file, or if
+    // the given \p fileName is the file this object was populated from.
+    bool CanPackTo(string const &fileName) const;
+
     Packer StartPacking(string const &fileName);
 
     string const &GetAssetPath() const { return _assetPath; }
@@ -686,10 +690,10 @@ public:
 
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &assetPath,
+    CrateFile(string const &assetPath, string const &fileName,
               _FileMappingIPtr mapStart, ArAssetSharedPtr const &asset);
-    CrateFile(string const &assetPath, _FileRange &&inputFile,
-              ArAssetSharedPtr const &asset);
+    CrateFile(string const &assetPath, string const &fileName,
+              _FileRange &&inputFile, ArAssetSharedPtr const &asset);
     CrateFile(string const &assetPath, ArAssetSharedPtr const &asset);
 
     CrateFile(CrateFile const &) = delete;
@@ -914,6 +918,8 @@ private:
     ArAssetSharedPtr _assetSrc;
 
     std::string _assetPath; // Empty if this file data is in-memory only.
+    std::string _fileReadFrom; // The file this object was populate from, if it
+                               // was populated from a file.
 
     std::unique_ptr<char []> _debugPageMap; // Debug page access map, see
                                             // USDC_DUMP_PAGE_MAPS.
