@@ -28,6 +28,8 @@
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
 
+#include "px_vp20/utils.h"
+
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/util.h"
 
@@ -35,6 +37,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/imaging/hdx/intersector.h"
 
+#include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -252,6 +255,13 @@ UsdMayaProxyDrawOverride::userSelect(
         MPoint& hitPoint,
         const MUserData* data)
 {
+    M3dView view;
+    const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
+    if (hasView &&
+            !view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        return false;
+    }
+
     MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
     if (!selectInfo.selectable(objectsMask)) {
         return false;

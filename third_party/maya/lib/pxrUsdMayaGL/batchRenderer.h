@@ -315,15 +315,6 @@ private:
     /// options through mel every time we have a selection event.
     static void _OnSoftSelectOptionsChangedCallback(void* clientData);
 
-    /// Tries to get the viewport for the given draw context.
-    /// Returns true if the viewport was found, in which case it is returned in
-    /// the \p view parameter.
-    /// Returns false if there's not a 3D viewport (e.g. we're drawing into a
-    /// render view).
-    static bool _GetViewFromDrawContext(
-            const MHWRender::MDrawContext& context,
-            M3dView* view);
-
     /// Perform post-render state cleanup.
     ///
     /// For Viewport 2.0, this method gets invoked by

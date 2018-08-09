@@ -110,6 +110,11 @@ const MTypeId UsdMayaProxyShape::typeId(0x0010A259);
 const MString UsdMayaProxyShape::typeName(
     UsdMayaProxyShapeTokens->MayaTypeName.GetText());
 
+const MString UsdMayaProxyShape::displayFilterName(
+    TfStringPrintf("%sDisplayFilter",
+                   UsdMayaProxyShapeTokens->MayaTypeName.GetText()).c_str());
+const MString UsdMayaProxyShape::displayFilterLabel("USD Proxies");
+
 // Attributes
 MObject UsdMayaProxyShape::filePathAttr;
 MObject UsdMayaProxyShape::primPathAttr;

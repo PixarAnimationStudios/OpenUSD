@@ -77,6 +77,11 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         PXRUSDMAYA_API
         static const MString typeName;
 
+        PXRUSDMAYA_API
+        static const MString displayFilterName;
+        PXRUSDMAYA_API
+        static const MString displayFilterLabel;
+
         // Attributes
         PXRUSDMAYA_API
         static MObject filePathAttr;

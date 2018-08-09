@@ -116,6 +116,10 @@ UsdMayaProxyShapeUI::getDrawRequests(
 void
 UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
+    if (!view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        return;
+    }
+
     view.beginGL();
 
     UsdMayaGLBatchRenderer::GetInstance().Draw(request, view);
@@ -130,14 +134,18 @@ UsdMayaProxyShapeUI::select(
         MSelectionList& selectionList,
         MPointArray& worldSpaceSelectedPoints) const
 {
+    M3dView view = selectInfo.view();
+
+    if (!view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        return false;
+    }
+
     MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
 
     // selectable() takes MSelectionMask&, not const MSelectionMask.  :(.
     if (!selectInfo.selectable(objectsMask)) {
         return false;
     }
-
-    M3dView view = selectInfo.view();
 
     // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
     // selectInfo.selectPath() returns the dag path to the assembly node, not

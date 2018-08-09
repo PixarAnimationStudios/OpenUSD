@@ -403,24 +403,6 @@ UsdMayaGLBatchRenderer::_OnSoftSelectOptionsChangedCallback(void* clientData)
     batchRenderer->_objectSoftSelectEnabled = (commandResult == 3);
 }
 
-
-/* static */
-bool
-UsdMayaGLBatchRenderer::_GetViewFromDrawContext(
-        const MHWRender::MDrawContext& context,
-        M3dView* view)
-{
-    MString modelPanel;
-    if (context.renderingDestination(modelPanel) ==
-            MHWRender::MFrameContext::k3dViewport) {
-        if (M3dView::getM3dViewFromModelPanel(modelPanel, *view)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _lastRenderFrameStamp(0u),
         _lastSelectionFrameStamp(0u),
@@ -713,7 +695,8 @@ UsdMayaGLBatchRenderer::Draw(
         _GetViewport(context, &viewport);
 
         M3dView view;
-        const bool hasView = _GetViewFromDrawContext(context, &view);
+        const bool hasView =
+            px_vp20Utils::GetViewFromDrawContext(context, view);
 
         _RenderBatches(
                 &context,
@@ -884,7 +867,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     }
 
     M3dView view;
-    const bool hasView = _GetViewFromDrawContext(context, &view);
+    const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
 
     const MUint64 frameStamp = context.getFrameStamp();
 

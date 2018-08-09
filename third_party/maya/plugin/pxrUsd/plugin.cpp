@@ -102,6 +102,12 @@ initializePlugin(MObject obj)
         UsdMayaProxyDrawOverride::Creator);
     CHECK_MSTATUS(status);
 
+    status = plugin.registerDisplayFilter(
+        UsdMayaProxyShape::displayFilterName,
+        UsdMayaProxyShape::displayFilterLabel,
+        UsdMayaProxyDrawOverride::sm_drawDbClassification);
+    CHECK_MSTATUS(status);
+
     status = MGlobal::sourceFile("usdMaya.mel");
     CHECK_MSTATUS(status);
 
@@ -232,6 +238,10 @@ uninitializePlugin(MObject obj)
     }
 
     status = MGlobal::executeCommand("assembly -e -deregister " + UsdMayaReferenceAssembly::typeName);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterDisplayFilter(
+        UsdMayaProxyShape::displayFilterName);
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
