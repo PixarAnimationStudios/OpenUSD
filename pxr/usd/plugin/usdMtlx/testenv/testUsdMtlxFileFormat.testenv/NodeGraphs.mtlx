@@ -15,10 +15,6 @@
       <input name="bg" type="color3" nodename="img2"/>
       <input name="mask" type="float" nodename="img3"/>
     </mix>
-    <hueshift name="n1" type="color3">
-      <input name="in" type="color3" nodename="n0"/>
-      <parameter name="amount" type="float" value="0.22"/>
-    </hueshift>
     <output name="diffuse" type="color3" nodename="n1" doc="this is an output" xpos="0" ypos="0"/>
   </nodegraph>
 
@@ -40,10 +36,6 @@
       <input name="bg" type="color3" nodename="img2"/>
       <input name="mask" type="float" nodename="img3"/>
     </mix>
-    <hueshift name="n4" type="color3">
-      <input name="in" type="color3" nodename="n3"/>
-      <parameter name="amount" type="float" value="0.22"/>
-    </hueshift>
     <output name="diffuse" type="color3" nodename="n4"/>
   </nodegraph>
 
@@ -87,10 +79,6 @@
       <input name="mask" type="float" nodename="img3"/>
     </mix>
     <texcoord name="t1" type="vector2"/>
-    <scale name="s1" type="vector2">
-      <input name="in" type="vector2" nodename="t1"/>
-      <parameter name="amount" type="float" value="0.003" publicname="grain_size"/>
-    </scale>
     <noise2d name="n9" type="color3">
       <input name="texcoord" type="vector2" nodename="s1"/>
       <parameter name="amplitude" type="vector3" value="0.03,0.04,0.06" publicname="grain_gain"/>
