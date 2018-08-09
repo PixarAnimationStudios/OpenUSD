@@ -27,23 +27,33 @@
 #include "usdMaya/meshUtil.h"
 #include "usdMaya/readUtil.h"
 #include "usdMaya/roundTripUtil.h"
-#include "usdMaya/util.h"
 
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
-
+#include "pxr/base/vt/types.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include <maya/MColor.h>
+#include <maya/MColorArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshFaceVertex.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <utility>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -268,7 +278,7 @@ UsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         } else {
             numValues = alphaArray.size();
         }
-    } else if (typeName == SdfValueTypeNames->Float3Array || 
+    } else if (typeName == SdfValueTypeNames->Float3Array ||
                typeName == SdfValueTypeNames->Color3fArray) {
         colorRep = MFnMesh::kRGB;
         if (!primvar.Get(&rgbArray) || rgbArray.empty()) {
@@ -276,7 +286,7 @@ UsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         } else {
             numValues = rgbArray.size();
         }
-    } else if (typeName == SdfValueTypeNames->Float4Array || 
+    } else if (typeName == SdfValueTypeNames->Float4Array ||
                typeName == SdfValueTypeNames->Color4fArray) {
         colorRep = MFnMesh::kRGBA;
         if (!primvar.Get(&rgbaArray) || rgbaArray.empty()) {
@@ -414,38 +424,33 @@ UsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     return true;
 }
+
+/* static */
 bool
 UsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
-        const UsdGeomPrimvar& primvar, 
+        const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
 {
-
-    const TfToken& name = primvar.GetBaseName();
-    const SdfValueTypeName& typeName = primvar.GetTypeName();
-    const SdfVariability& variability = SdfVariabilityUniform;
     const TfToken& interpolation = primvar.GetInterpolation();
-
     if (interpolation != UsdGeomTokens->constant) {
         return false;
     }
 
-    // create attribute
-    MObject attrObj = 
-        UsdMayaReadUtil::FindOrCreateMayaAttr(
-            typeName, 
-            variability, 
-            meshFn, 
-            name.GetText(),
-            name.GetText());
+    const TfToken& name = primvar.GetBaseName();
+    const SdfValueTypeName& typeName = primvar.GetTypeName();
+    const SdfVariability& variability = SdfVariabilityUniform;
 
+    MObject attrObj =
+        UsdMayaReadUtil::FindOrCreateMayaAttr(
+            typeName,
+            variability,
+            meshFn,
+            name.GetText());
     if (attrObj.isNull()) {
         return false;
     }
 
-    // set attribute value
     VtValue primvarData;
-    MDGModifier modifier;
-
     primvar.Get(&primvarData);
 
     MStatus status;
@@ -453,18 +458,12 @@ UsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
         name.GetText(),
         /* wantNetworkedPlug = */ true,
         &status);
-
     if (status != MS::kSuccess || plug.isNull()) {
         return false;
     }
 
-    if (!UsdMayaReadUtil::SetMayaAttr(plug, primvarData, modifier)) {
-        return false;
-    }
-
-    return true;
-
+    return UsdMayaReadUtil::SetMayaAttr(plug, primvarData);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE
