@@ -185,6 +185,9 @@ ArchOpenFile(char const* fileName, char const* mode);
 ARCH_API int64_t ArchGetFileLength(const char* fileName);
 ARCH_API int64_t ArchGetFileLength(FILE *file);
 
+/// Return a filename for this file, if one can be obtained.
+ARCH_API std::string ArchGetFileName(FILE *file);
+
 /// Returns true if the data in \c stat struct \p st indicates that the target
 /// file or directory is writable.
 ///

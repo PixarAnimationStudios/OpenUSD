@@ -455,6 +455,51 @@ ArchGetFileLength(const char* fileName)
 }
 
 string
+ArchGetFileName(FILE *file)
+{
+#if defined (ARCH_OS_LINUX)
+    string result;
+    char buf[PATH_MAX];
+    ssize_t r = readlink(
+        ArchStringPrintf("/proc/self/fd/%d", fileno(file)).c_str(),
+        buf, sizeof(buf));
+    if (r != -1) {
+        result.assign(buf, buf + r);
+    }
+    return result;
+#elif defined (ARCH_OS_DARWIN)
+    string result;
+    char buf[MAXPATHLEN];
+    if (fcntl(fileno(file), F_GETPATH, buf) != -1) {
+        result = buf;
+    }
+    return result;
+#elif defined (ARCH_OS_WINDOWS)
+    static constexpr DWORD bufSize =
+        sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
+    HANDLE hfile = _FileToWinHANDLE(file);
+    auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
+    string result;
+    if (GetFileInformationByHandleEx(
+            hfile, FileNameInfo, static_cast<void *>(fileNameInfo), bufSize)) {
+        size_t outSize = WideCharToMultiByte(
+            CP_UTF8, 0, fileNameInfo->FileName,
+            fileNameInfo->FileNameLength/sizeof(WCHAR),
+            NULL, 0, NULL, NULL);
+        result.resize(outSize);
+        WideCharToMultiByte(
+            CP_UTF8, 0, fileNameInfo->FileName,
+            fileNameInfo->FileNameLength/sizeof(WCHAR),
+            &result.front(), outSize, NULL, NULL);
+    }
+    free(fileNameInfo);
+    return result;                                        
+#else
+#error Unknown system architecture
+#endif
+}
+
+string
 ArchMakeTmpFileName(const string& prefix, const string& suffix)
 {
     string  tmpDir = ArchGetTmpDir();
