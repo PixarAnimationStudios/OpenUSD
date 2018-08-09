@@ -958,25 +958,6 @@ UsdMayaUtil::CompressFaceVaryingPrimvarIndices(
 }
 
 bool
-UsdMayaUtil::SetUnassignedValueIndex(
-        VtIntArray* assignmentIndices,
-        int* unassignedValueIndex)
-{
-    if (assignmentIndices == nullptr || unassignedValueIndex == nullptr) {
-        return false;
-    }
-
-    *unassignedValueIndex = -1;
-    for (auto& index: *assignmentIndices) {
-        if (index < 0) {
-            index = -1;
-            *unassignedValueIndex = 0;
-        }
-    }
-    return *unassignedValueIndex == 0;
-}
-
-bool
 UsdMayaUtil::IsAuthored(MPlug& plug)
 {
     MStatus status;

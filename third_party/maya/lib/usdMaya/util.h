@@ -277,16 +277,6 @@ void CompressFaceVaryingPrimvarIndices(
         PXR_NS::TfToken* interpolation,
         PXR_NS::VtIntArray* assignmentIndices);
 
-/// If any of the components in \p assignmentIndices are unassigned (<0), the
-/// \p unassignedValueIndex will be set to zero and all those indices will be
-/// set to -1. Otherwise \p unassignedValueIndices is set to -1.
-/// Returns true if there were any unassigned values and indices were updated,
-/// or false otherwise.
-PXRUSDMAYA_API
-bool SetUnassignedValueIndex(
-        PXR_NS::VtIntArray* assignmentIndices,
-        int* unassignedValueIndex);
-
 /// Get whether \p plug is authored in the Maya scene.
 ///
 /// A plug is considered authored if its value has been changed from the

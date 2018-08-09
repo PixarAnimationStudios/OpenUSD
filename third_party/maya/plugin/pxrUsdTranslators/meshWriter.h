@@ -24,8 +24,11 @@
 #ifndef PXRUSDTRANSLATORS_MESH_WRITER_H
 #define PXRUSDTRANSLATORS_MESH_WRITER_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usdGeom/primvar.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -98,7 +101,6 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
                              const VtArray<float>& data,
                              const TfToken& interpolation,
                              const VtArray<int>& assignmentIndices,
-                             const int unassignedValueIndex,
                              bool clamped);
 
     bool _createRGBPrimVar(UsdGeomGprim &primSchema,
@@ -107,7 +109,6 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
                            const VtArray<GfVec3f>& data,
                            const TfToken& interpolation,
                            const VtArray<int>& assignmentIndices,
-                           const int unassignedValueIndex,
                            bool clamped);
 
     bool _createRGBAPrimVar(UsdGeomGprim &primSchema,
@@ -117,7 +118,6 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
                             const VtArray<float>& alphaData,
                             const TfToken& interpolation,
                             const VtArray<int>& assignmentIndices,
-                            const int unassignedValueIndex,
                             bool clamped);
 
     bool _createUVPrimVar(UsdGeomGprim &primSchema,
@@ -125,8 +125,7 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
                           const UsdTimeCode& usdTime,
                           const VtArray<GfVec2f>& data,
                           const TfToken& interpolation,
-                          const VtArray<int>& assignmentIndices,
-                          const int unassignedValueIndex);
+                          const VtArray<int>& assignmentIndices);
 
     /// Adds displayColor and displayOpacity primvars using the given color,
     /// alpha, and assignment data if the \p primSchema does not already have
@@ -139,13 +138,37 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
         const VtArray<float>& AlphaData,
         const TfToken& interpolation,
         const VtArray<int>& assignmentIndices,
-        const int unassignedValueIndex,
         const bool clamped,
         const bool authored);
 
-    /// Prepends a default value to an attribute containing primvars.
-    static void _prependDefaultValue(UsdAttribute& attr,
-                                     const UsdTimeCode& usdTime);
+    /// Sets the primvar \p primvar at time \p usdTime using the given
+    /// \p indices (can be empty) and \p values.
+    /// The \p defaultValue is used to pad the \p values array in case
+    /// \p indices contains unassigned indices (i.e. indices < 0) that need a
+    /// corresponding value in the array.
+    ///
+    /// When authoring values at a non-default time, _SetPrimvar() might
+    /// unnecessarily pad \p values with \p defaultValue in order to guarantee
+    /// that the primvar remains valid during the export process. In that case,
+    /// the expected value of UsdGeomPrimvar::ComputeFlattened() is still
+    /// correct (there is just some memory wasted).
+    /// In order to cleanup any extra values and reclaim the wasted memory, call
+    /// _CleanupPrimvars() at the end of the export process.
+    void _SetPrimvar(
+            const UsdGeomPrimvar& primvar,
+            const VtIntArray& indices,
+            const VtValue& values,
+            const VtValue& defaultValue,
+            const UsdTimeCode& usdTime);
+
+    /// Cleans up any extra data authored by _SetPrimvar().
+    void _CleanupPrimvars();
+
+    /// Whether the mesh is animated. For the time being, meshes on which
+    /// skinning is being exported are considered to be non-animated.
+    /// XXX In theory you could have an animated input mesh before the
+    /// skinCluster is applied but we don't support that right now.
+    bool _IsMeshAnimated() const;
 
     /// Default value to use when collecting UVs from a UV set and a component
     /// has no authored value.
