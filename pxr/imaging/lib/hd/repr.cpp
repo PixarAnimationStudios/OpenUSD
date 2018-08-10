@@ -22,9 +22,102 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/repr.h"
+#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+bool
+HdReprSelector::Contains(TfToken reprToken) const
+{
+    return (reprToken == refinedToken)
+        || (reprToken == unrefinedToken)
+        || (reprToken == pointsToken);
+}
+
+bool
+HdReprSelector::IsEmpty() const
+{
+    return refinedToken.IsEmpty()
+        && unrefinedToken.IsEmpty()
+        && pointsToken.IsEmpty();
+}
+
+HdReprSelector
+HdReprSelector::CompositeOver(const HdReprSelector &under) const
+{
+    return HdReprSelector(
+        refinedToken.IsEmpty() ? under.refinedToken : refinedToken,
+        unrefinedToken.IsEmpty() ? under.unrefinedToken : unrefinedToken,
+        pointsToken.IsEmpty() ? under.pointsToken : pointsToken);
+}
+
+bool
+HdReprSelector::operator==(const HdReprSelector &rhs) const
+{
+    return (refinedToken == rhs.refinedToken)
+        && (unrefinedToken == rhs.unrefinedToken)
+        && (pointsToken == rhs.pointsToken);
+}
+
+bool
+HdReprSelector::operator!=(const HdReprSelector &rhs) const
+{
+    return (refinedToken != rhs.refinedToken)
+        || (unrefinedToken != rhs.unrefinedToken)
+        || (pointsToken != rhs.pointsToken);
+}
+
+bool
+HdReprSelector::operator<(const HdReprSelector &rhs) const
+{
+    return (refinedToken < rhs.refinedToken)
+        && (unrefinedToken < rhs.unrefinedToken)
+        && (pointsToken < rhs.pointsToken);
+}
+
+size_t
+HdReprSelector::Hash() const
+{ 
+    size_t hash = 0;
+    boost::hash_combine(hash,
+                        refinedToken);
+    boost::hash_combine(hash,
+                        unrefinedToken);
+    boost::hash_combine(hash,
+                        pointsToken);
+    return hash;
+}
+
+char const*
+HdReprSelector::GetText() const
+{
+    return refinedToken.GetText();
+}
+
+std::ostream &
+operator <<(std::ostream &stream, HdReprSelector const& t)
+{
+    return stream << t.refinedToken
+          << ", " << t.unrefinedToken
+          << ", " << t.pointsToken;
+}
+
+size_t
+HdReprSelector::size() const
+{
+    return 3;
+}
+
+TfToken const &
+HdReprSelector::operator[](int index) const
+{
+    switch (index) {
+        case 0: return refinedToken;
+        case 1: return unrefinedToken;
+        case 2: return pointsToken;
+        default: return refinedToken;
+    }
+}
 
 HdRepr::HdRepr()
 {

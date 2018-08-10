@@ -71,6 +71,10 @@ struct HdMeshReprDesc {
         , useCustomDisplacement(useCustomDisplacement)
         , enableScalarOverride(enableScalarOverride)
         {}
+    
+    bool IsEmpty() const {
+        return geomStyle == HdMeshGeomStyleInvalid;
+    }
 
     /// The rendering style: draw refined/unrefined, edge, points, etc.
     HdMeshGeomStyle geomStyle;
@@ -141,11 +145,13 @@ protected:
     HdMesh(SdfPath const& id,
            SdfPath const& instancerId = SdfPath());
 
-    typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/2>
+    // 2 refined draw items + 1 hull + 1 points
+    typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/4>
         _MeshReprConfig;
 
     HD_API
-    static _MeshReprConfig::DescArray _GetReprDesc(HdReprSelector const &reprSelector);
+    static _MeshReprConfig::DescArray _GetReprDesc(
+        HdReprSelector const &reprSelector);
 
 private:
 

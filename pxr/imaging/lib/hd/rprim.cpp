@@ -99,10 +99,11 @@ HdRprim::_UpdateReprSelector(HdSceneDelegate* delegate,
 HdReprSelector
 HdRprim::_GetReprSelector(HdReprSelector const &defaultReprSelector, bool forced) const
 {
-    // if not forced, the prim's authored repr wins.
-    // otherwise we respect defaultReprName (used for shadowmap drawing etc)
-    if (!forced && !_authoredReprSelector.IsEmpty()) {
-        return _authoredReprSelector;
+    // if not forced, the prim's authored opinion composites over the
+    // collection's repr, otherwise we respect the collection's repr
+    // (used for shadows)
+    if (!forced) {
+        return _authoredReprSelector.CompositeOver(defaultReprSelector);
     }
     return defaultReprSelector;
 }

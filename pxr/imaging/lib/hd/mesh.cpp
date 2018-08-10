@@ -58,7 +58,22 @@ HdMesh::ConfigureRepr(TfToken const &reprName,
 HdMesh::_MeshReprConfig::DescArray
 HdMesh::_GetReprDesc(HdReprSelector const &reprSelector)
 {
-    return _reprDescConfig.Find(reprSelector.GetReprToken());
+    _MeshReprConfig::DescArray result;
+    size_t index = 0;
+    
+    for (size_t i = 0; i < reprSelector.size(); ++i) {
+        if (!reprSelector[i].IsEmpty()) {
+            _MeshReprConfig::DescArray descs = _reprDescConfig.Find(
+                    reprSelector[i]);
+            for (HdMeshReprDesc &desc : descs) {
+                if (!desc.IsEmpty() && index < result.size()) {
+                    result[index++] = desc;
+                }
+            }
+        }
+    }
+    
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

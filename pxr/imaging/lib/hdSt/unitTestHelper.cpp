@@ -104,12 +104,12 @@ HdSt_TestDriver::HdSt_TestDriver()
     boost::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 {
-    TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        reprName = HdTokens->smoothHull;
+        _Init(HdReprSelector(HdTokens->smoothHull));
+    } else {
+        _Init(HdReprSelector(HdTokens->hull));
     }
-    _Init(HdReprSelector(reprName));
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)

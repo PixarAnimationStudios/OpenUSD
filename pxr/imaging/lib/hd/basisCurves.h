@@ -41,6 +41,10 @@ struct HdBasisCurvesReprDesc {
         : geomStyle(geomStyle)
         {}
 
+    bool IsEmpty() const {
+        return geomStyle == HdBasisCurvesGeomStyleInvalid;
+    }
+    
     HdBasisCurvesGeomStyle geomStyle;
 };
 
