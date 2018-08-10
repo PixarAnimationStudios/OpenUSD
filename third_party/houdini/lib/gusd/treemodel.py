@@ -215,7 +215,7 @@ class TreeModel(QAbstractItemModel):
         # path than that stored in self._stage's rootLayer. If they differ,
         # clear and rebuild this model.
         paramPath = node.parm(self._nameUsdFile).eval()
-        storedPath = self._stage.GetRootLayer().realPath
+        storedPath = self._stage.GetRootLayer().realPath if self._stage else ''
         if Ar.GetResolver().Resolve(paramPath) != storedPath:
             self.BuildAll(node, clearExisting=True)
         else:
