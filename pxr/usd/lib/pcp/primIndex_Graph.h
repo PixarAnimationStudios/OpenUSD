@@ -301,7 +301,7 @@ private:
         PcpMapExpression mapToParent;
         // Pack the non-byte sized integers into an unnamed structure.
         // This allows us to initialize them all at once.  g++ will,
-        // suprisingly, initialize each individually in the default
+        // surprisingly, initialize each individually in the default
         // copy constructor if they're direct members of _Node.
         struct _SmallInts {
             // The permissions for this node (whether specs on this node 

@@ -30,10 +30,11 @@
 #include "pxr/base/trace/api.h"
 #include "pxr/base/trace/collectionNotice.h"
 #include "pxr/base/trace/collection.h"
+#include "pxr/base/trace/reporterDataSourceBase.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_vector.h>
 
 #include <ostream>
 
@@ -55,13 +56,16 @@ public:
     using ThisPtr = TraceReporterBasePtr;
     using ThisRefPtr = TraceReporterBaseRefPtr;
     using CollectionPtr = std::shared_ptr<TraceCollection>;
+    using DataSourcePtr = std::unique_ptr<TraceReporterDataSourceBase>;
 
-    /// Constructor
-    TRACE_API TraceReporterBase();
+    /// Constructor taking ownership of \p dataSource.
+    TRACE_API TraceReporterBase(DataSourcePtr dataSource);
 
     /// Destructor.
     TRACE_API virtual ~TraceReporterBase();
 
+    /// Write all collections that were processed by this reporter to \p ostr.
+    TRACE_API bool SerializeProcessedCollections(std::ostream& ostr) const;
 protected:
     /// Removes all references to TraceCollections.
     TRACE_API void _Clear();
@@ -70,18 +74,12 @@ protected:
     /// collections that have been received since the last call to _Update().
     TRACE_API void _Update();
 
-    /// Determines whether TraceCollection instances will be stored when
-    /// TraceCollectionAvailable notices are received.
-    virtual bool _IsAcceptingCollections() = 0;
-
-    /// Called once per collection fron _Update()
+    /// Called once per collection from _Update()
     virtual void _ProcessCollection(const CollectionPtr&) = 0;
 
 private:
-    // Add the new collection to the pending queue.
-    void _OnTraceCollection(const TraceCollectionAvailable&);
-
-    tbb::concurrent_queue<CollectionPtr> _pendingCollections;
+    DataSourcePtr _dataSource;
+    tbb::concurrent_vector<CollectionPtr> _processedCollections;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

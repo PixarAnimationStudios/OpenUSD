@@ -153,7 +153,7 @@ HdStInstancer::GetInstancePrimvars()
                             continue;
 
                         // Latch onto the first numElements we see.
-                        int numElements = source->GetNumElements();
+                        size_t numElements = source->GetNumElements();
                         if (_numInstancePrimvars == 0) {
                             _numInstancePrimvars = numElements;
                         }
@@ -165,7 +165,7 @@ HdStInstancer::GetInstancePrimvars()
                             // Also note that this will not catch time-varying update
                             // errors.
                             TF_WARN("Inconsistent number of '%s' values "
-                                    "(%d vs %d) for <%s>.",
+                                    "(%zu vs %zu) for <%s>.",
                                     primvar.name.GetText(),
                                     source->GetNumElements(),
                                     _numInstancePrimvars,
@@ -183,7 +183,7 @@ HdStInstancer::GetInstancePrimvars()
                 // if the instance BAR has not been allocated, create new one
                 if (!_instancePrimvarRange) {
                     HdBufferSpecVector bufferSpecs;
-                    HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+                    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
                     _instancePrimvarRange =
                         resourceRegistry->AllocateNonUniformBufferArrayRange(
@@ -221,10 +221,10 @@ HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
     // instance indices should not exceed the size of instance primvars.
     for (auto it = instanceIndices.cbegin();
          it != instanceIndices.cend(); ++it) {
-        if (*it >= _numInstancePrimvars) {
+        if (*it >= (int)_numInstancePrimvars) {
             TF_WARN("Instance index exceeds the number of instance primvars"
                     " (%d >= %d) for <%s>",
-                    *it, _numInstancePrimvars, instancerId.GetText());
+                    *it, (int)_numInstancePrimvars, instancerId.GetText());
             instanceIndices.clear();
             // insert 0-th index as placeholder (0th should always exist, since
             // we don't populate instance primvars with numElements == 0).

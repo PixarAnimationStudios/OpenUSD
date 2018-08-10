@@ -192,7 +192,7 @@ endfunction() #_install_python
 
 function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     # Resource files install into a structure that looks like:
-    # share/
+    # lib/
     #     usd/
     #         ${NAME}/
     #             resources/
@@ -220,17 +220,17 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
                "Failed to parse resource path ${resourceFile}")
         endif()
 
+        get_filename_component(dirPath ${resourceDestFile} PATH)
+        get_filename_component(destFileName ${resourceDestFile} NAME)
+        
         # plugInfo.json go through an initial template substitution step files
         # install it from the binary (gen) directory specified by the full
         # path. Otherwise, use the original relative path which is relative to
         # the source directory.
-        if (${resourceFile} STREQUAL "plugInfo.json")
+        if (${destFileName} STREQUAL "plugInfo.json")
             _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
             set(resourceFile "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
         endif()
-
-        get_filename_component(dirPath ${resourceDestFile} PATH)
-        get_filename_component(destFileName ${resourceDestFile} NAME)
 
         install(
             FILES ${resourceFile}
@@ -325,17 +325,10 @@ function(_get_resources_dir_name output)
         PARENT_SCOPE)
 endfunction() # _get_resources_dir_name
 
-function(_get_plugin_root pluginsPrefix pluginName output)
-    set(${output} 
-        ${pluginsPrefix}/${pluginName}
-        PARENT_SCOPE)
-endfunction() # _get_plugin_root
-
 function(_get_resources_dir pluginsPrefix pluginName output)
     _get_resources_dir_name(resourcesDir)
-    _get_plugin_root(${pluginsPrefix} ${pluginName} pluginRoot)
     set(${output} 
-        ${pluginRoot}/${resourcesDir} 
+        ${pluginsPrefix}/${pluginName}/${resourcesDir} 
         PARENT_SCOPE)
 endfunction() # _get_resources_dir
 
@@ -1162,7 +1155,7 @@ function(_pxr_library NAME)
             set(libInstallPrefix "${pluginInstallPrefix}")
         endif()
     else()
-        _get_install_dir("share/usd/plugins" pluginInstallPrefix)
+        _get_install_dir("lib/usd" pluginInstallPrefix)
     endif()
     if(args_SUBDIR)
         set(libInstallPrefix "${libInstallPrefix}/${args_SUBDIR}")
@@ -1198,38 +1191,17 @@ function(_pxr_library NAME)
     # where we can find external resources for the library) to the
     # library's location.  This can be embedded into resource files.
     #
-    # If we're building a monolithic shared library or one was supplied
-    # to us then we need to use that if we're building a library that
-    # will be/is in the monolithic library.
+    # If we're building a monolithic library or individual static libraries,
+    # these libraries are not separately loadable at runtime. In these cases,
+    # we don't need to specify the library's location, so we leave 
+    # pluginToLibraryPath empty.
     if(";${PXR_CORE_LIBS};" MATCHES ";${NAME};")
-        if (PXR_MONOLITHIC_IMPORT)
-            if(TARGET usd_ms)
-                # The monolithic shared library was supplied.
-                get_property(location TARGET usd_ms PROPERTY IMPORTED_LOCATION)
-                if (IS_ABSOLUTE "${location}")
-                    set(pluginToLibraryPath ${location})
-                else()
-                    set(libraryFilename "${location}")
-                endif()
-            endif()
-        elseif(TARGET usd_ms)
-            # We're building usd_ms ourself.
-            get_property(prefix TARGET usd_ms PROPERTY PREFIX)
-            if(NOT prefix)
-                set(prefix ${CMAKE_SHARED_LIBRARY_PREFIX})
-            endif()
-            get_property(suffix TARGET usd_ms PROPERTY SUFFIX)
-            if(NOT suffix)
-                set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
-            endif()
-            set(libraryFilename "${prefix}usd_ms${suffix}")
+        if (NOT _building_monolithic AND NOT args_TYPE STREQUAL "STATIC")
+            file(RELATIVE_PATH
+                pluginToLibraryPath
+                ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
+                ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
         endif()
-    endif()
-    if(NOT pluginToLibraryPath)
-        file(RELATIVE_PATH
-            pluginToLibraryPath
-            ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-            ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
     endif()
 
     #
@@ -1264,7 +1236,7 @@ function(_pxr_library NAME)
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
-            PXR_BUILD_LOCATION=../share/usd/plugins
+            PXR_BUILD_LOCATION=usd
             PXR_PLUGIN_BUILD_LOCATION=../plugin/usd
             ${pxrInstallLocation}
             ${pythonModulesEnabled}

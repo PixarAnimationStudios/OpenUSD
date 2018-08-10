@@ -42,9 +42,6 @@ def SkelRoot "Root" (
         29: [(-0.30484766, -1, 0), (0, 0.8949245, 0.32584968)],
         30: [(-0.30484766, -1, 0), (0, 0.8949245, 0.3258497)],
     }
-
-    # If we have an extentsHint defined, baking skinning should
-    # update the extents hint.
     float3[] extentsHint.timeSamples = {
         1: [(-8.881784e-16, -1, 0), (0, 1, 4.440892e-16)],
         2: [(-8.8548644e-16, -1, 0), (0, 0.99992824, 0.011980047)],
@@ -82,15 +79,14 @@ def SkelRoot "Root" (
 
     def Skeleton "Skeleton"
     {
+        uniform matrix4d[] bindTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (2, 0, 0, 1) )]
         uniform token[] joints = ["joint1", "joint1/joint2", "joint1/joint2/joint3"]
-
         uniform matrix4d[] restTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (1, 0, 0, 1) )]
     }
 
-    def PackedJointAnimation "Animation"
+    def SkelAnimation "Animation"
     {
         uniform token[] joints = ["joint1", "joint1/joint2", "joint1/joint2/joint3"]
-
         quatf[] rotations.timeSamples = {
             1: [(0.5, 0.5, 0.5, 0.5), (1, 0, 0, 0), (0.5, -0.5, -0.5, -0.5)],
             2: [(0.5, 0.5, 0.5, 0.5), (0.99998206, 0, 0, 0.0059874505), (0.5, -0.5, -0.5, -0.5)],
@@ -206,3 +202,4 @@ def SkelRoot "Root" (
         uniform token subdivisionScheme = "none"
     }
 }
+

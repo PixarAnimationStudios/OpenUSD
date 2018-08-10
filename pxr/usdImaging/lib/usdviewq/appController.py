@@ -305,7 +305,7 @@ class AppController(QtCore.QObject):
         # assertions without it.
         self._primToItemMap.clear()
 
-    def __init__(self, parserData):
+    def __init__(self, parserData, resolverContextFn):
         QtCore.QObject.__init__(self)
 
         with Timer() as uiOpenTimer:
@@ -320,6 +320,7 @@ class AppController(QtCore.QObject):
             self._noRender = parserData.noRender
             self._noPlugins = parserData.noPlugins
             self._unloaded = parserData.unloaded
+            self._resolverContextFn = resolverContextFn
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
@@ -357,6 +358,14 @@ class AppController(QtCore.QObject):
             from appEventFilter import AppEventFilter
             self._filterObj = AppEventFilter(self)
             QtWidgets.QApplication.instance().installEventFilter(self._filterObj)
+
+            # Setup Usdview API and optionally load plugins.  We do this before
+            # loading the stage in case a plugin wants to modify global settings
+            # that affect stage loading.
+            self._plugRegistry = None
+            self._usdviewApi = UsdviewApi(self)
+            if not self._noPlugins:
+                self._configurePlugins()
 
             # read the stage here
             stage = self._openStage(
@@ -987,12 +996,6 @@ class AppController(QtCore.QObject):
 
             self._setupDebugMenu()
 
-            # Setup Usdview API and optionally load plugins
-            self._plugRegistry = None
-            self._usdviewApi = UsdviewApi(self)
-            if not self._noPlugins:
-                self._configurePlugins()
-
             # timer for slider. when user stops scrubbing for 0.5s, update stuff.
             self._sliderTimer = QtCore.QTimer(self)
             self._sliderTimer.setInterval(500)
@@ -1060,7 +1063,6 @@ class AppController(QtCore.QObject):
             t.PrintTime("'%s'" % msg)
 
     def _openStage(self, usdFilePath, populationMaskPaths):
-        Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1068,7 +1070,7 @@ class AppController(QtCore.QObject):
                 err += "\n".join(reasons) + "\n"
             return err
 
-        if not os.path.isfile(usdFilePath):
+        if not Ar.GetResolver().Resolve(usdFilePath):
             sys.stderr.write(_GetFormattedError(["File not found"]))
             sys.exit(1)
 
@@ -1091,9 +1093,13 @@ class AppController(QtCore.QObject):
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, popMask, loadSet)
+                stage = Usd.Stage.OpenMasked(layer, 
+                                             self._resolverContextFn(usdFilePath),
+                                             popMask, loadSet)
             else:
-                stage = Usd.Stage.Open(layer, loadSet)
+                stage = Usd.Stage.Open(layer,
+                                       self._resolverContextFn(usdFilePath), 
+                                       loadSet)
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
@@ -1209,7 +1215,13 @@ class AppController(QtCore.QObject):
     # Render plugin support
     def _rendererPluginChanged(self, plugin):
         if self._stageView:
-            self._stageView.SetRendererPlugin(plugin)
+            if not self._stageView.SetRendererPlugin(plugin):
+                # If SetRendererPlugin failed, we need to reset the check mark
+                # to whatever the currently loaded renderer is.
+                for action in self._ui.rendererPluginActionGroup.actions():
+                    if action.text() == self._stageView.rendererPluginName:
+                        action.setChecked(True)
+                        break
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1224,7 +1236,7 @@ class AppController(QtCore.QObject):
                 action.pluginType = pluginType
                 self._ui.rendererPluginActionGroup.addAction(action)
 
-                action.triggered.connect(lambda pluginType=pluginType:
+                action.triggered[bool].connect(lambda _, pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
 
             # If any plugins exist, set the first one we find supported as the
@@ -2227,8 +2239,8 @@ class AppController(QtCore.QObject):
                 action.setToolTip(str(camera.GetPath()))
                 action.setCheckable(True)
 
-                action.triggered.connect(
-                    lambda camera = camera: self._cameraSelectionChanged(camera))
+                action.triggered[bool].connect(
+                    lambda _, cam = camera: self._cameraSelectionChanged(cam))
                 action.setChecked(action.data() == currCameraPath)
 
     def _updatePropertiesFromPropertyView(self):
@@ -2434,21 +2446,25 @@ class AppController(QtCore.QObject):
         #       In the future, we should do this when a signal from
         #       ViewSettingsDataModel is emitted so the prim view always updates
         #       when they are changed.
+        self._dataModel.selection.removeInactivePrims()
         self._resetPrimView()
 
     def _toggleShowMasterPrims(self):
         self._dataModel.viewSettings.showAllMasterPrims = (
             self._ui.actionShow_All_Master_Prims.isChecked())
+        self._dataModel.selection.removeMasterPrims()
         self._resetPrimView()
 
     def _toggleShowUndefinedPrims(self):
         self._dataModel.viewSettings.showUndefinedPrims = (
             self._ui.actionShow_Undefined_Prims.isChecked())
+        self._dataModel.selection.removeUndefinedPrims()
         self._resetPrimView()
 
     def _toggleShowAbstractPrims(self):
         self._dataModel.viewSettings.showAbstractPrims = (
             self._ui.actionShow_Abstract_Prims.isChecked())
+        self._dataModel.selection.removeAbstractPrims()
         self._resetPrimView()
 
     def _toggleRolloverPrimInfo(self):
@@ -3281,6 +3297,16 @@ class AppController(QtCore.QObject):
                        else "Unknown"
         m["[path]"] = str(obj.GetPath())
 
+        clipMetadata = obj.GetMetadata("clips")
+        if clipMetadata is None:
+            clipMetadata = {}
+        numClipRows = 0
+        for (clip, data) in clipMetadata.items():
+            numClipRows += len(data)
+        m["clips"] = clipMetadata
+        
+        numMetadataRows = (len(m) - 1) + numClipRows
+
         variantSets = {}
         if (isinstance(obj, Usd.Prim)):
             variantSetNames = obj.GetVariantSets().GetNames()
@@ -3298,25 +3324,37 @@ class AppController(QtCore.QObject):
                 combo.setCurrentIndex(indexToSelect)
                 variantSets[variantSetName] = combo
 
-        tableWidget.setRowCount(len(m) + len(variantSets))
+        tableWidget.setRowCount(numMetadataRows + len(variantSets))
 
-        for i,key in enumerate(sorted(m.keys())):
-            attrName = QtWidgets.QTableWidgetItem(str(key))
-            tableWidget.setItem(i, 0, attrName)
-
-            # Get metadata value
-            if key == "customData":
-                val = obj.GetCustomData()
+        rowIndex = 0
+        for key in sorted(m.keys()):
+            if key == "clips":
+                for (clip, metadataGroup) in m[key].items():
+                    attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
+                    tableWidget.setItem(rowIndex, 0, attrName)
+                    for metadata in metadataGroup.keys():
+                        dataPair = (metadata, metadataGroup[metadata])
+                        valStr, ttStr = self._formatMetadataValueView(dataPair)
+                        attrVal = QtWidgets.QTableWidgetItem(valStr)
+                        attrVal.setToolTip(ttStr)
+                        tableWidget.setItem(rowIndex, 1, attrVal)
+                        rowIndex += 1
             else:
-                val = m[key]
+                attrName = QtWidgets.QTableWidgetItem(str(key))
+                tableWidget.setItem(rowIndex, 0, attrName)
+                # Get metadata value
+                if key == "customData":
+                    val = obj.GetCustomData()
+                else:
+                    val = m[key]
 
-            valStr, ttStr = self._formatMetadataValueView(val)
-            attrVal = QtWidgets.QTableWidgetItem(valStr)
-            attrVal.setToolTip(ttStr)
+                valStr, ttStr = self._formatMetadataValueView(val)
+                attrVal = QtWidgets.QTableWidgetItem(valStr)
+                attrVal.setToolTip(ttStr)
 
-            tableWidget.setItem(i, 1, attrVal)
+                tableWidget.setItem(rowIndex, 1, attrVal)
+                rowIndex += 1
 
-        rowIndex = len(m)
         for variantSetName, combo in variantSets.iteritems():
             attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
             tableWidget.setItem(rowIndex, 0, attrName)
@@ -3345,7 +3383,8 @@ class AppController(QtCore.QObject):
 
         # For brevity, we display only the basename of layer paths.
         def LabelForLayer(l):
-            return os.path.basename(l.realPath) if l.realPath else '~session~'
+            return ('~session~' if l == self._dataModel.stage.GetSessionLayer()
+                    else l.GetDisplayName())
 
         # Create treeview items for all sublayers in the layer tree.
         def WalkSublayers(parent, node, layerTree, sublayer=False):
@@ -4011,7 +4050,8 @@ class AppController(QtCore.QObject):
                     for key, value in assetInfo.iteritems():
                         aiStr += "<br> -- <em>%s</em> : %s" % (key, _HTMLEscape(str(value)))
                     aiStr += "<br><em><small>%s created on %s by %s</small></em>" % \
-                        (_HTMLEscape(name), time, _HTMLEscape(owner))
+                        (_HTMLEscape(name), _HTMLEscape(time), 
+                         _HTMLEscape(owner))
                 else:
                     aiStr += "<br><small><em>No assetInfo!</em></small>"
 

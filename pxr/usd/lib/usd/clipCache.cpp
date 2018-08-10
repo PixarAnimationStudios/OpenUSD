@@ -37,6 +37,7 @@
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec2d.h"
+#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <string>
@@ -212,33 +213,29 @@ _AddClipsFromClipInfo(
                 std::make_pair(entry.startTime, entry)).second);
     }
 
+    // Generate the clip time mapping that applies to all clips.
+    Usd_Clip::TimeMappings timeMapping;
+    if (clipInfo.clipTimes) {
+        for (const auto& clipTime : *clipInfo.clipTimes) {
+            const Usd_Clip::ExternalTime extTime = clipTime[0];
+            const Usd_Clip::InternalTime intTime = clipTime[1];
+            timeMapping.push_back(Usd_Clip::TimeMapping(extTime, intTime));
+        }
+    }
+
     // Build up the final vector of clips.
     const _TimeToClipMap::const_iterator itBegin = startTimeToClip.begin();
     const _TimeToClipMap::const_iterator itEnd = startTimeToClip.end();
 
     _TimeToClipMap::const_iterator it = startTimeToClip.begin();
     while (it != itEnd) {
-        const Usd_ClipEntry clipEntry = it->second;
+        const Usd_ClipEntry& clipEntry = it->second;
 
         const Usd_Clip::ExternalTime clipStartTime = 
             (it == itBegin ? Usd_ClipTimesEarliest : it->first);
         ++it;
         const Usd_Clip::ExternalTime clipEndTime = 
             (it == itEnd ? Usd_ClipTimesLatest : it->first);
-
-        // Generate the clip time mapping that applies to this clip.
-        Usd_Clip::TimeMappings timeMapping;
-        if (clipInfo.clipTimes) {
-            for (const auto& clipTime : *clipInfo.clipTimes) {
-                const Usd_Clip::ExternalTime extTime = clipTime[0];
-                const Usd_Clip::InternalTime intTime = clipTime[1];
-                
-                if (clipStartTime <= extTime && extTime < clipEndTime) {
-                    timeMapping.push_back(
-                        Usd_Clip::TimeMapping(extTime, intTime));
-                }
-            }
-        }
 
         const Usd_ClipRefPtr clip(new Usd_Clip(
             /* clipSourceLayerStack = */ clipInfo.sourceLayerStack,
@@ -283,6 +280,7 @@ Usd_ClipCache::PopulateClipsForPrim(
     const SdfPath& path, const PcpPrimIndex& primIndex)
 {
     TRACE_FUNCTION();
+    TfAutoMallocTag2 tag("Usd", "Usd_ClipCache::PopulateClipsForPrim");
 
     std::vector<Clips> allClips;
     _AddClipsFromPrimIndex(primIndex, &allClips);

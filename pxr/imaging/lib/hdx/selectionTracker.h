@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/sdf/path.h"
 #include <boost/smart_ptr.hpp>
@@ -40,107 +41,65 @@ class TfToken;
 class SdfPath;
 class VtValue;
 
-typedef boost::shared_ptr<class HdxSelection> HdxSelectionSharedPtr;
 typedef boost::shared_ptr<class HdxSelectionTracker> HdxSelectionTrackerSharedPtr;
 typedef boost::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
 
 
-enum HdxSelectionHighlightMode {
-    HdxSelectionHighlightModeSelect = 0,
-    HdxSelectionHighlightModeLocate,
-    HdxSelectionHighlightModeMask,
-
-    HdxSelectionHighlightModeCount
-};
-
-/// \class HdxSelection
+/// ----------------------------------------------------------------------------
+/// Selection highlighting in Hydra:
 ///
-/// HdxSelection holds a collection of items which are rprims, instances of
-/// rprim and subprimitives of rprim, such as elements (faces when dealing with 
-/// meshes, individual curves when dealing with basis curves) and edges.
+/// Hydra Stream (*) supports selection highlighting of:
+/// (a) a set of rprims, wherein each rprim is entirely highlighted
+/// (b) a set of instances of an rprim, wherein each instance is highlighted
+/// (c) a set of subprimitives of an rprim, wherein each subprim is highlighted.
+/// Subprimitives support is limited to elements (faces of meshes, or
+/// individual curves of basis curves), edges of meshes and points of meshes.
 /// 
-/// HdxSelectionTracker takes HdxSelection and generates a GPU buffer to be used 
-/// for highlighting.
+/// * While the goal is have an architecture that is extensible by rendering
+/// backends, the current implementation is heavily influenced by the Stream(GL)
+/// backend.
+/// 
+/// Background:
+/// The current selection implementation is, in a sense, global in nature. 
+/// If there are no selected objects, we do not bind any selection-related 
+/// resources, nor does the shader execute any selection-related operations.
+/// 
+/// If there are one or more selected objects, we *don't* choose to have them
+/// in a separate 'selection' collection.
+/// Instead, we stick by AZDO principles and avoid command buffer changes as
+/// a result of selection updates (which would involve removal of draw items
+/// corresponding to the selected objects from each render pass' command buffer
+/// and building the selection pass' command buffer).
+/// We build an integer buffer encoding of the selected items, for use in the
+/// fragment shader, that allows us to perform a small number of lookups to
+/// quickly tell us if a fragment needs to be highlighted.
 ///
-class HdxSelection {
-public:
-    typedef TfHashMap<SdfPath, std::vector<VtIntArray>, SdfPath::Hash> InstanceMap;
-    typedef TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> ElementIndicesMap;
-    typedef ElementIndicesMap EdgeIndicesMap;
-    typedef ElementIndicesMap PointIndicesMap;
+/// Conceptually, the implementation is split into:
+/// (a) HdSelection : Client facing API that builds a collection of selected
+/// items. This is agnostic of the rendering backend.
+/// (b) HdxSelectionTracker: Base class that observes (a) and encodes it as
+/// needed by (c). This may be specialized to be backend specific.
+/// (c) HdxSelectionTask : A scene task that, currently, only syncs resources
+/// related to selection highlighting. Currently, this is tied to Stream.
+/// (d) HdxRenderSetupTask : A scene task that sets up the render pass shader
+/// to use the selection highlighting mixin in the render pass(es) of
+/// HdxRenderTask. This is relevant only to Stream.
+///
+/// ----------------------------------------------------------------------------
 
-    HdxSelection() = default;
 
-    HDX_API
-    void AddRprim(HdxSelectionHighlightMode const& mode,
-                  SdfPath const &path);
-
-    HDX_API
-    void AddInstance(HdxSelectionHighlightMode const& mode,
-                     SdfPath const &path,
-                     VtIntArray const &instanceIndex=VtIntArray());
-
-    HDX_API
-    void AddElements(HdxSelectionHighlightMode const& mode,
-                     SdfPath const &path,
-                     VtIntArray const &elementIndices);
-    
-    HDX_API
-    void AddEdges(HdxSelectionHighlightMode const& mode,
-                  SdfPath const &path,
-                  VtIntArray const &edgeIndices);
-    
-    HDX_API
-    void AddPoints(HdxSelectionHighlightMode const& mode,
-                   SdfPath const &path,
-                   VtIntArray const &pointIndices);
-
-    SdfPathVector const&
-    GetSelectedPrims(HdxSelectionHighlightMode const& mode) const;
-
-    InstanceMap const&
-    GetSelectedInstances(HdxSelectionHighlightMode const& mode) const;
-
-    ElementIndicesMap const&
-    GetSelectedElements(HdxSelectionHighlightMode const& mode) const;
-
-    EdgeIndicesMap const&
-    GetSelectedEdges(HdxSelectionHighlightMode const& mode) const;
-    
-    PointIndicesMap const&
-    GetSelectedPoints(HdxSelectionHighlightMode const& mode) const;
-
-protected:
-    struct _SelectedEntities {
-        // The SdfPaths are expected to be resolved rprim paths,
-        // root paths will not be expanded.
-        // Duplicated entries are allowed.
-        SdfPathVector prims;
-
-        /// This maps from prototype path to a vector of instance indices which is
-        /// also a vector (because of nested instancing).
-        InstanceMap instances;
-
-        // The selected elements, if any, for the selected objects. This maps
-        // from object path to a vector of element indices.
-        ElementIndicesMap elements;
-
-        // The selected edges, if any, for the selected objects. This maps from 
-        // object path to a vector of (authored) edge indices.
-        EdgeIndicesMap edges;
-
-        // The selected points, if any, for the selected objects. This maps from
-        // object path to a vector of point (vertex) indices.
-        PointIndicesMap points;
-    };
-
-    _SelectedEntities _selEntities[HdxSelectionHighlightModeCount];
-};
-
+/// \class HdxSelectionTracker
+///
+/// HdxSelectionTracker takes HdSelection and generates a GPU buffer to be used 
 /// \class HdxSelectionTracker
 ///
 /// HdxSelectionTracker is a base class for observing selection state and
 /// providing selection highlighting details to interested clients.
+/// 
+/// Applications may use HdxSelectionTracker as-is, or extend it as needed.
+/// 
+/// HdxSelectionTask takes HdxSelectionTracker as a task parameter, and uploads
+/// the selection buffer encoding to the GPU.
 ///
 class HdxSelectionTracker {
 public:
@@ -151,14 +110,18 @@ public:
     /// Update dirty bits in the ChangeTracker and compute required primvars for
     /// later consumption.
     HDX_API
-    virtual void Sync(HdRenderIndex* index);
+    virtual void Sync(HdRenderIndex *index);
 
-    /// Populates an array of offsets required for selection highlighting for
-    /// the given highlight mode.
+    /// Encodes the selection state (HdxSelection) as an integer array. This is
+    /// uploaded to the GPU and decoded in the fragment shader to provide
+    /// selection highlighting behavior. See HdxSelectionTask.
     /// Returns true if offsets has anything selected.
     HDX_API
-    virtual bool GetSelectionOffsetBuffer(HdRenderIndex const* index,
-                                          VtIntArray* offsets) const;
+    virtual bool GetSelectionOffsetBuffer(HdRenderIndex const *index,
+                                          VtIntArray *offsets) const;
+
+    HDX_API
+    virtual VtVec4fArray GetSelectedPointColors() const;
 
     /// Returns a monotonically increasing version number, which increments
     /// whenever the result of GetBuffers has changed. Note that this number may
@@ -167,12 +130,17 @@ public:
     HDX_API
     int GetVersion() const;
 
-    void SetSelection(HdxSelectionSharedPtr const &selection) {
+    /// The collection of selected objects is expected to be created externally
+    /// and set via SetSelection.
+    HDX_API
+    void SetSelection(HdSelectionSharedPtr const &selection) {
         _selection = selection;
         _IncrementVersion();
     }
 
-    HdxSelectionSharedPtr const &GetSelectionMap() const {
+    /// XXX: Rename to GetSelection
+    HDX_API
+    HdSelectionSharedPtr const &GetSelectionMap() const {
         return _selection;
     }
 
@@ -183,14 +151,14 @@ protected:
     void _IncrementVersion();
 
     HDX_API
-    virtual bool _GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
+    virtual bool _GetSelectionOffsets(HdSelection::HighlightMode const& mode,
                                       HdRenderIndex const* index,
                                       size_t modeOffset,
                                       std::vector<int>* offsets) const;
 
 private:
     int _version;
-    HdxSelectionSharedPtr _selection;
+    HdSelectionSharedPtr _selection;
 };
 
 

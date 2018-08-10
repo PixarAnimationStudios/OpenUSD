@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file readUtil.h
+/// \file usdMaya/readUtil.h
 
 #ifndef PXRUSDMAYA_READUTIL_H
 #define PXRUSDMAYA_READUTIL_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/usd/attribute.h"
 
@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// This struct contains helpers for reading USD (thus writing Maya data).
-struct PxrUsdMayaReadUtil
+struct UsdMayaReadUtil
 {
     /// \name Helpers for reading USD
     /// \{
@@ -56,7 +56,7 @@ struct PxrUsdMayaReadUtil
 
     /// Given the \p typeName and \p variability, try to create a Maya attribute
     /// on \p depNode with the name \p attrName.
-    /// If the \p typeName isn't supported by this function, raises a coding
+    /// If the \p typeName isn't supported by this function, raises a runtime
     /// error (this function supports the majority of, but not all, type names).
     /// If the attribute already exists and its type information matches, then
     /// its object is returned. If the attribute already exists but its type
@@ -72,11 +72,21 @@ struct PxrUsdMayaReadUtil
             const std::string& attrNiceName = std::string());
 
     /// An overload of FindOrCreateMayaAttr that takes an MDGModifier.
-    /// Note that this function will call doIt() on the MDGModifier; thus the
+    /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     PXRUSDMAYA_API
     static MObject FindOrCreateMayaAttr(
             const SdfValueTypeName& typeName,
+            const SdfVariability variability,
+            MFnDependencyNode& depNode,
+            const std::string& attrName,
+            const std::string& attrNiceName,
+            MDGModifier& modifier);
+
+    PXRUSDMAYA_API
+    static MObject FindOrCreateMayaAttr(
+            const TfType& type,
+            const TfToken& role,
             const SdfVariability variability,
             MFnDependencyNode& depNode,
             const std::string& attrName,
@@ -101,7 +111,7 @@ struct PxrUsdMayaReadUtil
             const VtValue& newValue);
 
     /// An overload of SetMayaAttr that takes an MDGModifier.
-    /// Note that this function will call doIt() on the MDGModifier; thus the
+    /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     PXRUSDMAYA_API
     static bool SetMayaAttr(
@@ -117,7 +127,7 @@ struct PxrUsdMayaReadUtil
             const SdfVariability variability);
 
     /// An overload of SetMayaAttrKeyableState that takes an MDGModifier.
-    /// Note that this function will call doIt() on the MDGModifier; thus the
+    /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     PXRUSDMAYA_API
     static void SetMayaAttrKeyableState(
@@ -126,9 +136,68 @@ struct PxrUsdMayaReadUtil
             MDGModifier& modifier);
 
     /// \}
-};
 
+    /// \name Auto-importing API schemas and metadata
+    /// \{
+
+    /// Reads the metadata specified in \p includeMetadataKeys from \p prim, and
+    /// uses adaptors to write them onto attributes of \p mayaObject.
+    /// Returns true if successful (even if there was nothing to import).
+    PXRUSDMAYA_API
+    static bool ReadMetadataFromPrim(
+            const TfToken::Set& includeMetadataKeys,
+            const UsdPrim& prim,
+            const MObject& mayaObject);
+
+    /// Reads the attributes from the non-excluded schemas applied to \p prim,
+    /// and uses adaptors to write them onto attributes of \p mayaObject.
+    /// Returns true if successful (even if there was nothing to import).
+    /// \note If the schema wasn't applied using the schema class's Apply()
+    /// function, then this function won't recognize it.
+    PXRUSDMAYA_API
+    static bool ReadAPISchemaAttributesFromPrim(
+            const TfToken::Set& includeAPINames,
+            const UsdPrim& prim,
+            const MObject& mayaObject);
+
+    /// \}
+
+    /// \name Manually importing typed schema data
+    /// \{
+
+    template <typename T>
+    static size_t ReadSchemaAttributesFromPrim(
+            const UsdPrim& prim,
+            const MObject& mayaObject,
+            const std::vector<TfToken>& attributeNames,
+            const UsdTimeCode& usdTime = UsdTimeCode::Default())
+    {
+        return ReadSchemaAttributesFromPrim(
+                prim,
+                mayaObject,
+                TfType::Find<T>(),
+                attributeNames,
+                usdTime);
+    }
+
+    /// Reads schema attributes specified by \attributeNames for the schema
+    /// with type \p schemaType, storing them as adapted attributes on
+    /// \p mayaObject. Attributes that are unauthored in USD (only have their
+    /// fallback value) will be skipped.
+    /// Values are read from the stage at \p usdTime, and are stored on the
+    /// Maya node as unanimated values. If the optional \p valueWriter is
+    /// provided, it will be used to write the values.
+    /// Returns the number of attributes that were read into Maya.
+    static size_t ReadSchemaAttributesFromPrim(
+            const UsdPrim& prim,
+            const MObject& mayaObject,
+            const TfType& schemaType,
+            const std::vector<TfToken>& attributeNames,
+            const UsdTimeCode& usdTime = UsdTimeCode::Default());
+
+    /// \}
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_READUTIL_H
+#endif

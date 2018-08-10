@@ -69,7 +69,7 @@ HdStExtCompGpuComputationResource::Resolve()
     HdBufferSpecVector inputBufferSpecs;
     for (HdBufferArrayRangeSharedPtr const & input: _inputs) {
         if (TF_VERIFY(input)) {
-            input->AddBufferSpecs(&inputBufferSpecs);
+            input->GetBufferSpecs(&inputBufferSpecs);
         }
     }
     // Once we know the names and sizes of all outputs and inputs and the kernel

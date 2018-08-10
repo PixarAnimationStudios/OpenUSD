@@ -62,16 +62,10 @@ class SdfAssetPath;
 class UsdGeomCurves : public UsdGeomPointBased
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::AbstractTyped;
 
     /// Construct a UsdGeomCurves on UsdPrim \p prim .
     /// Equivalent to UsdGeomCurves::Get(prim.GetStage(), prim.GetPath())
@@ -114,6 +108,13 @@ public:
     static UsdGeomCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDGEOM_API
+    virtual UsdSchemaType _GetSchemaType() const;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -160,7 +161,8 @@ public:
     /// it), in which case widths are "ribbon width", or unoriented, in which
     /// case widths are cylinder width.  'widths' is not a generic Primvar,
     /// but the number of elements in this attribute will be determined by
-    /// its 'interpolation'.  See \ref SetWidthsInterpolation()
+    /// its 'interpolation'.  See \ref SetWidthsInterpolation() .  If 'widths'
+    /// and 'primvars:widths' are both specified, the latter has precedence.
     ///
     /// \n  C++ Type: VtArray<float>
     /// \n  Usd Type: SdfValueTypeNames->FloatArray
@@ -195,7 +197,7 @@ public:
     /// Although 'widths' is not classified as a generic UsdGeomPrimvar (and
     /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
     /// it does require an interpolation specification.  The fallback
-    /// interpolation, if left unspecified, is UsdGeomTokens->varying , 
+    /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
     /// which means a width value is specified at the end of each curve segment.
     USDGEOM_API
     TfToken GetWidthsInterpolation() const;

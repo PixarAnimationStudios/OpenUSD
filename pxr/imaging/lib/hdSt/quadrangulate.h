@@ -149,7 +149,7 @@ public:
         HdSt_MeshTopology *topology,
         HdSt_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
         SdfPath const &id);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
@@ -175,7 +175,7 @@ public:
     HdSt_QuadrangulateTableComputation(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &quadInfoBuilder);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
 protected:
@@ -197,7 +197,7 @@ public:
                                 HdBufferSourceSharedPtr const &source,
                                 HdBufferSourceSharedPtr const &quadInfoBuilder,
                                 SdfPath const &id);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
     virtual HdTupleType GetTupleType() const override;
 
@@ -225,7 +225,7 @@ public:
                                            HdBufferSourceSharedPtr const &source,
                                            SdfPath const &id);
 
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
 protected:
@@ -250,7 +250,7 @@ public:
                                SdfPath const &id);
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual int GetNumOutputElements() const override;
 
 private:

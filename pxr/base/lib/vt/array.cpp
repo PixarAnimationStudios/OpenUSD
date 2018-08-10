@@ -26,6 +26,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stackTrace.h"
+#include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

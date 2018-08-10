@@ -1,14 +1,16 @@
 
 global proc usdTranslatorExport_AnimationCB() {
     if (`checkBox -q -v animationCheckBox` == 1) {
+        checkBox -e -vis true eulerFilterCheckBox;
         intFieldGrp -e -vis true startTimeField;
         intFieldGrp -e -vis true endTimeField;
-        textFieldGrp -e -vis true frameSamplesField; 
+        floatFieldGrp -e -vis true frameStrideField; 
         button -e -vis true animRangeButton;
     } else {
+        checkBox -e -vis false eulerFilterCheckBox;
         intFieldGrp -e -vis false startTimeField;
         intFieldGrp -e -vis false endTimeField;
-        textFieldGrp -e -vis false frameSamplesField; 
+        floatFieldGrp -e -vis false frameStrideField; 
         button -e -vis false animRangeButton;
     }
 }
@@ -33,6 +35,19 @@ global proc usdTranslatorExport_SetTextField(string $arg, string $widget) {
     textFieldGrp -e -text $arg $widget;
 }
 
+global proc usdTranslatorExport_SetOptionMenuByAnnotation(
+        string $ann, string $widget) {
+    int $index = 1; // 1-based indexing.
+    for ($i in `optionMenuGrp -q -itemListLong $widget`) {
+        if (`menuItem -q -ann $i` == $ann) {
+            optionMenuGrp -e -select $index $widget;
+            return;
+        }
+
+        $index++;
+    }
+}
+
 global proc string usdTranslatorExport_AppendFromCheckbox(string $currentOptions, string $arg, string $widget) {
     if (`checkBox -q -v $widget` == 1) {
         return $currentOptions + ";" + $arg + "=1";
@@ -42,8 +57,11 @@ global proc string usdTranslatorExport_AppendFromCheckbox(string $currentOptions
 }
 
 global proc string usdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
-    string $value = `optionMenuGrp -q -value $widget`;
-    return $currentOptions + ";" + $arg + "=" + $value;
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    string $allItems[] = `optionMenuGrp -q -itemListLong $widget`;
+    string $item = $allItems[$index];
+    string $annotation = `menuItem -q -ann $item`;
+    return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
 global proc string usdTranslatorExport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
@@ -51,31 +69,14 @@ global proc string usdTranslatorExport_AppendFromIntField(string $currentOptions
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
-global proc string usdTranslatorExport_AppendFromTextField(string $currentOptions, string $arg, string $widget) {
-    string $value = `textFieldGrp -q -text $widget`;
+global proc string usdTranslatorExport_AppendFromFloatField(string $currentOptions, string $arg, string $widget) {
+    string $value = `floatFieldGrp -q -value1 $widget`;
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
-global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $currentOptions, string $arg, string $widget) {
-    string $rawValue = `textFieldGrp -q -text $widget`;
-    if (size($rawValue) == 0) {
-        return $currentOptions;
-    }
-
-    string $buffer[];
-    int $numTokens = `tokenize $rawValue ";, " $buffer`;
-
-    int $i;
-    string $token;
-    for ($i = 0; $i < $numTokens; ++$i) {
-        $token = $buffer[$i];
-        if (size($token) == 0) {
-            continue;
-        }
-        $currentOptions = $currentOptions + ";" + $arg + "=" + (float) $token;
-    }
-
-    return $currentOptions;
+global proc string usdTranslatorExport_AppendFromTextField(string $currentOptions, string $arg, string $widget) {
+    string $value = `textFieldGrp -q -text $widget`;
+    return $currentOptions + ";" + $arg + "=" + $value;
 }
 
 global proc int usdTranslatorExport (string $parent,
@@ -117,11 +118,19 @@ global proc int usdTranslatorExport (string $parent,
 
         string $exporters[] = `usdListShadingModes -export`;
         optionMenuGrp -l "Shading Mode:" shadingModePopup;
-        for ($each in $exporters) {
-            menuItem -l $each;
+        for ($modeName in $exporters) {
+            string $niceName = $modeName;
+            if ($modeName == "displayColor") {
+                $niceName = "Material Colors";
+            } else if ($modeName == "pxrRis") {
+                $niceName = "RfM Shaders";
+            }
+            menuItem -l $niceName -ann $modeName;
         }
 
-        checkBox -l "Make References Instanceable"      exportReferencesAsInstanceableCheckBox;
+        checkBox -l "Export displayColor primvar" exportDisplayColorCheckBox;
+
+        checkBox -l "Make References Instanceable"      exportRefsAsInstanceableCheckBox;
 
         checkBox -l "Export material collections" exportMaterialCollectionsCheckBox;
         textFieldGrp -l "Material collections path:" materialCollectionsPathField;
@@ -130,45 +139,62 @@ global proc int usdTranslatorExport (string $parent,
         
         checkBox -l "Export UVs" exportUVsCheckBox;
 
-        checkBox -l "Normalize UVs" normalizeUVsCheckBox;
-
         checkBox -l "Export ColorSets" exportColorSetsCheckBox;
+        checkBox -l "Export Reference Objects" exportReferenceObjectsCheckBox;
 
         checkBox -l "Export Visibility" exportVisibilityCheckBox;
 
+        checkBox -l "Strip Namespaces" stripNamespacesCheckBox;
+
         checkBox -l "Renderable Only" renderableOnlyCheckBox;
+
+        textFieldGrp -l "Filtered Node Types"
+            -annotation ("Do not export nodes of this type, or their children;\n" +
+                         "specify multiple types by separating with comma: 'constraint,place3dTexture'")
+            filterTypesTextField;
          
-        checkBox -l "Export all cameras" allCamerasCheckBox;
+        checkBox -l "Export all cameras" defaultCamerasCheckBox;
 
         textFieldGrp -l "Parent Scope:" parentScopeField;
 
         optionMenuGrp -l "Render Layer Mode:" renderLayerModePopup;
-            menuItem -l "Use Default Layer";
-            menuItem -l "Use Current Layer";
-            menuItem -l "Modeling Variant Per Layer";
+            menuItem -l "Use Default layer" -ann "defaultLayer";
+            menuItem -l "Use Current layer" -ann "currentLayer";
+            menuItem -l "Modeling Variant Per Layer" -ann "modelingVariant";
 
-        checkBox -l "Merge Transform and Shape Nodes" mergeXFormCheckBox;
+        optionMenuGrp -l "Compatibility Profile:" compatibilityPopup;
+            menuItem -l "Standard" -ann "none";
+            menuItem -l "ARKit-compatible" -ann "appleArKit";
+
+        checkBox -l "Merge Transform and Shape Nodes" mergeTransformAndShapeCheckBox;
         checkBox -l "Export Instances" exportInstancesCheckBox;
 
 	    optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
-	        menuItem -l "Polygonal Mesh";
-	        menuItem -l "Bilinear SubDiv";
-	        menuItem -l "CatmullClark SDiv";
-	        menuItem -l "Loop SDiv";
+	        menuItem -l "Polygonal Mesh" -ann "none";
+	        menuItem -l "Bilinear SubDiv" -ann "bilinear";
+	        menuItem -l "CatmullClark SDiv" -ann "catmullClark";
+	        menuItem -l "Loop SDiv" -ann "loop";
+
+        optionMenuGrp -l "Export Skeletons:" exportSkelsPopup;
+            menuItem -l "None" -ann "none";
+            menuItem -l "All (Automatically Create SkelRoots)" -ann "auto";
+            menuItem -l "Only Under SkelRoots" -ann "explicit";
 
         optionMenuGrp -l "Export Skin Clusters:" exportSkinClustersPopup;
-            menuItem -l "None";
-            menuItem -l "All (Automatically Create SkelRoots)";
-            menuItem -l "Only Under SkelRoots";
+            menuItem -l "None" -ann "none";
+            menuItem -l "All (Automatically Create SkelRoots)" -ann "auto";
+            menuItem -l "Only Under SkelRoots" -ann "explicit";
 
         checkBox -l "Export Animation" -cc ("usdTranslatorExport_AnimationCB") animationCheckBox;
 
+        checkBox -l "Apply Euler Filter" eulerFilterCheckBox;
+
         columnLayout -width 100 animOptsCol;
-        intFieldGrp -l "Start Time:" startTimeField;
-        intFieldGrp -l "End Time:" endTimeField;
-        textFieldGrp -l "Frame Samples:" frameSamplesField;
-        button -l "Animation Range" -command ("usdTranslatorExport_AnimationRangeCB") animRangeButton;
-        
+        intFieldGrp -l "Start Time:" -v1 1 startTimeField;
+        intFieldGrp -l "End Time:" -v1 1 endTimeField;
+        floatFieldGrp -l "Stride:" -v1 1 frameStrideField;
+        button -l "Use Animation Range" -command ("usdTranslatorExport_AnimationRangeCB") animRangeButton;
+
         setParent $parent;
         
         // Now set to current settings.
@@ -178,9 +204,11 @@ global proc int usdTranslatorExport (string $parent,
             for ($index = 0; $index < size($optionList); $index++) {
                 tokenize($optionList[$index], "=", $optionBreakDown);
                 if ($optionBreakDown[0] == "shadingMode") {
-                    optionMenuGrp -e -value $optionBreakDown[1] shadingModePopup;
-                } else if ($optionBreakDown[0] == "exportReferencesAsInstanceable") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferencesAsInstanceableCheckBox");
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
+                } else if ($optionBreakDown[0] == "exportDisplayColor") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
+                } else if ($optionBreakDown[0] == "exportRefsAsInstanceable") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportRefsAsInstanceableCheckBox");
                 } else if ($optionBreakDown[0] == "exportUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportMaterialCollections") {
@@ -189,47 +217,50 @@ global proc int usdTranslatorExport (string $parent,
                     textFieldGrp -e -text $optionBreakDown[1] materialCollectionsPathField;
                 } else if ($optionBreakDown[0] == "exportCollectionBasedBindings") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportCollectionBasedBindingsCheckBox");
-                } else if ($optionBreakDown[0] == "normalizeUVs") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
+                } else if ($optionBreakDown[0] == "exportReferenceObjects") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferenceObjectsCheckBox");
                 } else if ($optionBreakDown[0] == "renderableOnly") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "renderableOnlyCheckBox");
-                } else if ($optionBreakDown[0] == "allCameras") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "allCamerasCheckBox");
+                } else if ($optionBreakDown[0] == "filterTypes") {
+                    usdTranslatorExport_SetTextField($optionBreakDown[1], "filterTypesTextField");
+                } else if ($optionBreakDown[0] == "defaultCameras") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "defaultCamerasCheckBox");
                 } else if ($optionBreakDown[0] == "renderLayerMode") {
-                    optionMenuGrp -e -value $optionBreakDown[1] renderLayerModePopup;
-                } else if ($optionBreakDown[0] == "mergeXForm") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeXFormCheckBox");
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "renderLayerModePopup");
+                } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeTransformAndShapeCheckBox");
                 } else if ($optionBreakDown[0] == "exportInstances") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
-                    optionMenuGrp -e -value $optionBreakDown[1] defaultMeshSchemePopup;
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
+                } else if ($optionBreakDown[0] == "exportSkels") {
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "exportSkelsPopup");
                 } else if ($optionBreakDown[0] == "exportSkin") {
-                    optionMenuGrp -e -value $optionBreakDown[1] exportSkinClustersPopup;
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "exportSkinClustersPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
+                } else if ($optionBreakDown[0] == "stripNamespaces") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "stripNamespacesCheckBox");
                 } else if ($optionBreakDown[0] == "animation") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
+                } else if ($optionBreakDown[0] == "eulerFilter") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "eulerFilterCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime=$optionBreakDown[1];
                     intFieldGrp -e -v1 $startTime startTimeField;
                 } else if ($optionBreakDown[0] == "endTime") {
                     int $endTime; $endTime=$optionBreakDown[1];
                     intFieldGrp -e -v1 $endTime endTimeField;
-                } else if ($optionBreakDown[0] == "frameSample") {
-                    float $frameSample = $optionBreakDown[1];
-                    string $curText = `textFieldGrp -q -text frameSamplesField`;
-                    if (size($curText)) {
-                        $curText = $curText + "; " + (string) $frameSample;
-                    }
-                    else {
-                        $curText = (string) $frameSample;
-                    }
-                    textFieldGrp -e -text $curText frameSamplesField;
+                } else if ($optionBreakDown[0] == "frameStride") {
+                    float $frameStride = $optionBreakDown[1];
+                    floatFieldGrp -e -v1 $frameStride frameStrideField;
                 } else if ($optionBreakDown[0] == "parentScope") {
                     usdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
-                }
+                } else if ($optionBreakDown[0] == "compatibility") {
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "compatibilityPopup");
+                } 
             }
         }
         // Set visibility for anim widgets
@@ -240,26 +271,32 @@ global proc int usdTranslatorExport (string $parent,
     } else if ($action == "query") {
     
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferencesAsInstanceable", "exportReferencesAsInstanceableCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportRefsAsInstanceable", "exportRefsAsInstanceableCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportCollectionBasedBindings", "exportCollectionBasedBindingsCheckBox");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeUVs", "normalizeUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferenceObjects", "exportReferenceObjectsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "allCameras", "allCamerasCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "filterTypes", "filterTypesTextField");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "defaultCameras", "defaultCamerasCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "renderLayerMode", "renderLayerModePopup");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeXForm", "mergeXFormCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportInstances", "exportInstancesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkels", "exportSkelsPopup");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkin", "exportSkinClustersPopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "stripNamespaces", "stripNamespacesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
-        $currentOptions = usdTranslatorExport_AppendMultiFloatFromTextField($currentOptions, "frameSample", "frameSamplesField");
+        $currentOptions = usdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "compatibility", "compatibilityPopup");
                 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

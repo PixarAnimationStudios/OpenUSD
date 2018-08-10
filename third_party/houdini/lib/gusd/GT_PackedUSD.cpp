@@ -534,13 +534,6 @@ doSoftCopy() const
 { return new GusdGT_PackedUSD(*this); }
 
 
-bool GusdGT_PackedUSD::
-getUniqueID(int64& id) const
-{
-    id = getPrimitiveType();
-    return true;
-}
-
 /* static */
 int GusdGT_PackedUSD::
 getStaticPrimitiveType() 

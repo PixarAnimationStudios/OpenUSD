@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file writeUtil.h
+/// \file usdMaya/writeUtil.h
 
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/UserTaggedAttribute.h"
+#include "usdMaya/userTaggedAttribute.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
@@ -54,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdUtilsSparseValueWriter;
 
 /// This struct contains helpers for writing USD (thus reading Maya data).
-struct PxrUsdMayaWriteUtil
+struct UsdMayaWriteUtil
 {
     /// \name Helpers for writing USD
     /// \{
@@ -72,7 +72,7 @@ struct PxrUsdMayaWriteUtil
     static SdfValueTypeName GetUsdTypeName(
             const MPlug& attrPlug,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
@@ -90,7 +90,7 @@ struct PxrUsdMayaWriteUtil
             const std::string& attrName,
             const bool custom = false,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a primvar on \p imageable with
     /// the name \p primvarName. Note, it's value will not be set.
@@ -106,7 +106,7 @@ struct PxrUsdMayaWriteUtil
             const TfToken& interpolation = TfToken(),
             const int elementSize = -1,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a UsdRi attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
@@ -121,7 +121,7 @@ struct PxrUsdMayaWriteUtil
             const std::string& attrName,
             const std::string& nameSpace = "user",
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, reads its value and returns it as a wrapped
     /// VtValue. The type of the value is determined by consulting the given
@@ -131,6 +131,12 @@ struct PxrUsdMayaWriteUtil
     static VtValue GetVtValue(
             const MPlug& attrPlug,
             const SdfValueTypeName& typeName);
+
+    PXRUSDMAYA_API
+    static VtValue GetVtValue(
+            const MPlug& attrPlug,
+            const TfType& type,
+            const TfToken& role);
 
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.
@@ -153,6 +159,55 @@ struct PxrUsdMayaWriteUtil
             const MDagPath& dagPath,
             const UsdPrim& usdPrim,
             const UsdTimeCode& usdTime,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+
+    /// Writes all of the adaptor metadata from \p mayaObject onto the \p prim.
+    /// Returns true if successful (even if there was nothing to export).
+    PXRUSDMAYA_API
+    static bool WriteMetadataToPrim(
+            const MObject& mayaObject,
+            const UsdPrim& prim);
+
+    /// Writes all of the adaptor API schema attributes from \p mayaObject onto
+    /// the \p prim. Only attributes on applied schemas will be written to
+    /// \p prim.
+    /// Returns true if successful (even if there was nothing to export).
+    /// \sa UsdMayaAdaptor::GetAppliedSchemas
+    PXRUSDMAYA_API
+    static bool WriteAPISchemaAttributesToPrim(
+            const MObject& mayaObject,
+            const UsdPrim& prim,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+
+    template <typename T>
+    static size_t WriteSchemaAttributesToPrim(
+            const MObject& object,
+            const UsdPrim& prim,
+            const std::vector<TfToken>& attributeNames,
+            const UsdTimeCode& usdTime = UsdTimeCode::Default(),
+            UsdUtilsSparseValueWriter *valueWriter=nullptr)
+    {
+        return WriteSchemaAttributesToPrim(
+                object,
+                prim,
+                TfType::Find<T>(),
+                attributeNames,
+                usdTime,
+                valueWriter);
+    }
+
+    /// Writes schema attributes specified by \attributeNames for the schema
+    /// with type \p schemaType to the prim \p prim.
+    /// Values are read at the current Maya time, and are written into the USD
+    /// stage at time \p usdTime. If the optional \p valueWriter is provided,
+    /// it will be used to write the values.
+    /// Returns the number of attributes actually written to the USD stage.
+    static size_t WriteSchemaAttributesToPrim(
+            const MObject& object,
+            const UsdPrim& prim,
+            const TfType& schemaType,
+            const std::vector<TfToken>& attributeNames,
+            const UsdTimeCode& usdTime = UsdTimeCode::Default(),
             UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// Authors class inherits on \p usdPrim.  \p inheritClassNames are
@@ -215,9 +270,39 @@ struct PxrUsdMayaWriteUtil
             VtVec3fArray* val);
     /// \}
 
+    /// \name Frame/time utilities {
+
+    /// Gets an ordered list of frame samples for the given \p frameRange,
+    /// advancing the time by \p stride on each iteration, and computing extra
+    /// subframe samples using \p subframeOffsets.
+    /// \p stride determines how much to increment the "current time" on each
+    /// iteration; whenever the current time is incremented past the end of
+    /// \p frameRange, iteration will stop.
+    /// \p subframeOffsets is treated as a set of offsets from the
+    /// "current time"; empty \p subframeOffsets is equivalent to {0.0}, which
+    /// means to only add one frame sample per time increment.
+    ///
+    /// Raises a runtime error and returns an empty list of time samples if
+    /// \p stride is not greater than 0.
+    /// Warns if any \p subframeOffsets fall outside of the open interval
+    /// (-\p stride, +\p stride), but returns a valid result in that case,
+    /// ensuring that the returned list is sorted. 
+    ///
+    /// Example: frameRange = [1, 5], subframeOffsets = {0.0, 0.9}, stride = 2.0
+    ///     This gives the time samples [1, 1.9, 3, 3.9, 5, 5.9].
+    ///     Note that the \p subframeOffsets allows the last frame to go
+    ///     _outside_ the specified \p frameRange.
+    PXRUSDMAYA_API
+    static std::vector<double> GetTimeSamples(
+            const GfInterval& frameRange,
+            const std::set<double>& subframeOffsets,
+            const double stride = 1.0);
+
+    /// \}
+
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_WRITEUTIL_H
+#endif

@@ -49,9 +49,9 @@ public:
 
     static TfToken const &GetSoftwareVersionToken();
 
-    static bool CanRead(const std::string &fileName);
+    static bool CanRead(const std::string &assetPath);
     bool Save(const std::string &fileName);
-    bool Open(const std::string &fileName);
+    bool Open(const std::string &assetPath);
 
     virtual void CreateSpec(const SdfAbstractDataSpecId &id, 
                             SdfSpecType specType);

@@ -39,7 +39,7 @@ PXR_NAMESPACE_USING_DIRECTIVE;
 
 void wrapRoundTripUtil()
 {
-    typedef PxrUsdMayaRoundTripUtil This;
+    typedef UsdMayaRoundTripUtil This;
     scope RoundTripUtil = class_<This>("RoundTripUtil", no_init)
         .def("IsAttributeUserAuthored", This::IsAttributeUserAuthored)
         .staticmethod("IsAttributeUserAuthored")

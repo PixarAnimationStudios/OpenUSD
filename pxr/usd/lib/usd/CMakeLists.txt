@@ -59,7 +59,9 @@ pxr_library(usd
         usdFileFormat
         usdaFileFormat
         usdcFileFormat
+        usdzFileFormat
         variantSets
+        zipFile
 
     PYTHON_PUBLIC_CLASSES
         pyEditContext
@@ -74,6 +76,7 @@ pxr_library(usd
         instanceKey
         integerCoding
         interpolators
+        usdzResolver
         valueUtils
 
     PUBLIC_HEADERS
@@ -123,6 +126,7 @@ pxr_library(usd
         wrapUtils.cpp
         wrapVariantSets.cpp
         wrapVersion.cpp 
+        wrapZipFile.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -189,10 +193,12 @@ pxr_test_scripts(
     testenv/testUsdStagePopulationMasks.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
+    testenv/testUsdUsdzFileFormat.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
     testenv/testUsdVariantFallbacks.py
     testenv/testUsdVariants.py
+    testenv/testUsdZipFile.py
 )
 
 pxr_build_test(testUsdAttributeBlockingCpp
@@ -295,6 +301,16 @@ pxr_build_test(testUsdSchemaBase
         usd
     CPPFILES
         testenv/testUsdSchemaBase.cpp
+)
+
+pxr_build_test(testUsdUsdzResolver
+    LIBRARIES
+        ar
+        arch
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdUsdzResolver.cpp
 )
 
 pxr_install_test_dir(
@@ -440,6 +456,21 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdCollectionAPI
     DEST testUsdCollectionAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUsdzFileFormat
+    DEST testUsdUsdzFileFormat
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUsdzResolver
+    DEST testUsdUsdzResolver
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdZipFile.testenv
+    DEST testUsdZipFile
 )
 
 pxr_register_test(testUsdAttributeBlocking
@@ -768,5 +799,17 @@ pxr_register_test(testUsdSchemaBase
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUsdzFileFormat
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzFileFormat"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdZipFile
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdZipFile"
     EXPECTED_RETURN_CODE 0
 )

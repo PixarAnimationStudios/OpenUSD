@@ -110,7 +110,7 @@ HdComputedBufferSource::GetTupleType() const
     return _result->GetTupleType();
 }
 
-int
+size_t
 HdComputedBufferSource::GetNumElements() const
 {
     // GetNumElements returns 0 for the empty result.
@@ -148,7 +148,7 @@ HdNullBufferSource::GetTupleType() const
     return {HdTypeInvalid, 0};
 }
 
-int
+size_t
 HdNullBufferSource::GetNumElements() const
 {
     TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer range");
@@ -156,7 +156,7 @@ HdNullBufferSource::GetNumElements() const
 }
 
 void
-HdNullBufferSource::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdNullBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }

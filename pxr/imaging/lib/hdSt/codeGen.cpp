@@ -405,8 +405,26 @@ HdSt_CodeGen::Compile()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // create GLSL program.
+    // shader sources
+    // geometric shader owns main()
+    std::string vertexShader =
+        _geometricShader->GetSource(HdShaderTokens->vertexShader);
+    std::string tessControlShader =
+        _geometricShader->GetSource(HdShaderTokens->tessControlShader);
+    std::string tessEvalShader =
+        _geometricShader->GetSource(HdShaderTokens->tessEvalShader);
+    std::string geometryShader =
+        _geometricShader->GetSource(HdShaderTokens->geometryShader);
+    std::string fragmentShader =
+        _geometricShader->GetSource(HdShaderTokens->fragmentShader);
 
+    bool hasVS  = (!vertexShader.empty());
+    bool hasTCS = (!tessControlShader.empty());
+    bool hasTES = (!tessEvalShader.empty());
+    bool hasGS  = (!geometryShader.empty());
+    bool hasFS  = (!fragmentShader.empty());
+
+    // create GLSL program.
     HdStGLSLProgramSharedPtr glslProgram(
         new HdStGLSLProgram(HdTokens->drawingShader));
 
@@ -563,11 +581,15 @@ HdSt_CodeGen::Compile()
                << _metaData.instancerNumLevels << "\n"
                << "#define HD_INSTANCE_INDEX_WIDTH "
                << (_metaData.instancerNumLevels+1) << "\n"; 
-   TF_FOR_ALL (it, _metaData.elementData) {
+   if (!_geometricShader->IsPrimTypePoints()) {
+      TF_FOR_ALL (it, _metaData.elementData) {
         _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
-    }
-    TF_FOR_ALL (it, _metaData.fvarData) {
-        _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+      }
+      if (hasGS) {
+        TF_FOR_ALL (it, _metaData.fvarData) {
+           _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+        }
+      }
     }
     TF_FOR_ALL (it, _metaData.vertexData) {
         _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
@@ -628,7 +650,7 @@ HdSt_CodeGen::Compile()
     _GenerateConstantPrimvar();
     _GenerateInstancePrimvar();
     _GenerateElementPrimvar();
-    _GenerateVertexPrimvar();
+    _GenerateVertexAndFaceVaryingPrimvar(hasGS);
 
     //generate shader parameters
     _GenerateShaderParameters();
@@ -645,25 +667,6 @@ HdSt_CodeGen::Compile()
     _genTES << _procTES.str();
     _genGS  << _procGS.str();
 
-    // shader sources
-
-    // geometric shader owns main()
-    std::string vertexShader =
-        _geometricShader->GetSource(HdShaderTokens->vertexShader);
-    std::string tessControlShader =
-        _geometricShader->GetSource(HdShaderTokens->tessControlShader);
-    std::string tessEvalShader =
-        _geometricShader->GetSource(HdShaderTokens->tessEvalShader);
-    std::string geometryShader =
-        _geometricShader->GetSource(HdShaderTokens->geometryShader);
-    std::string fragmentShader =
-        _geometricShader->GetSource(HdShaderTokens->fragmentShader);
-
-    bool hasVS  = (!vertexShader.empty());
-    bool hasTCS = (!tessControlShader.empty());
-    bool hasTES = (!tessEvalShader.empty());
-    bool hasGS  = (!geometryShader.empty());
-    bool hasFS  = (!fragmentShader.empty());
 
     // other shaders (renderpass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
@@ -2022,10 +2025,24 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         // users to call them -- we really should restructure whatever is
         // necessary to avoid having to do this and thus guarantee that users
         // can never call bogus versions of these functions.
-        accessors
-            << "int GetElementID() {\n"
-            << "  return 0;\n"
-            << "}\n";
+
+        // Use a fallback of -1, so that points aren't selection highlighted
+        // when face 0 is selected. This would be the case if we returned 0,
+        // since the selection highlighting code is repr-agnostic.
+        // It is safe to do this for points, since  we don't generate accessors 
+        // for element primvars, and thus don't use it as an index into
+        // elementCoord.
+        if (_geometricShader->IsPrimTypePoints()) {
+            accessors
+              << "int GetElementID() {\n"
+              << "  return -1;\n"
+              << "}\n";  
+        } else {
+            accessors
+                << "int GetElementID() {\n"
+                << "  return 0;\n"
+                << "}\n";
+        }
         accessors
             << "int GetAggregatedElementID() {\n"
             << "  return GetElementID();\n"
@@ -2094,7 +2111,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             // nothing to do. meshShaderKey takes care of it.
         }
     } else {
-        // The functions below are used in picking (id render) and selection
+        // The functions below are used in picking (id render) and/or selection
         // highlighting, and are expected to be defined. Generate fallback
         // versions when we don't bind an edgeIndices buffer.
         accessors
@@ -2107,24 +2124,31 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             << "}\n";
         accessors
             << "bool IsFragmentOnEdge() {\n"
-            << "return false;\n"
+            << "  return false;\n"
+            << "}\n";
+        accessors
+            << "float GetSelectedEdgeOpacity() {\n"
+            << "  return 0.0;\n"
             << "}\n";
     }
     declarations
         << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
         << "int GetPrimitiveEdgeId();\n"
-        << "bool IsFragmentOnEdge();\n";
+        << "bool IsFragmentOnEdge();\n"
+        << "float GetSelectedEdgeOpacity();\n";
 
     // Uniform primvar data declarations & accessors
-    TF_FOR_ALL (it, _metaData.elementData) {
-        HdBinding binding = it->first;
-        TfToken const &name = it->second.name;
-        TfToken const &dataType = it->second.dataType;
+    if (!_geometricShader->IsPrimTypePoints()) {
+        TF_FOR_ALL (it, _metaData.elementData) {
+            HdBinding binding = it->first;
+            TfToken const &name = it->second.name;
+            TfToken const &dataType = it->second.dataType;
 
-        _EmitDeclaration(declarations, name, dataType, binding);
-        // AggregatedElementID gives us the buffer index post batching, which
-        // is what we need for accessing element (uniform) primvar data.
-        _EmitAccessor(accessors, name, dataType, binding,"GetAggregatedElementID()");
+            _EmitDeclaration(declarations, name, dataType, binding);
+            // AggregatedElementID gives us the buffer index post batching, which
+            // is what we need for accessing element (uniform) primvar data.
+            _EmitAccessor(accessors, name, dataType, binding,"GetAggregatedElementID()");
+        }
     }
 
     // Emit primvar declarations and accessors.
@@ -2139,8 +2163,13 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 }
 
 void
-HdSt_CodeGen::_GenerateVertexPrimvar()
+HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
 {
+    // Vertex and FVar primvar flow into the fragment shader as per-fragment
+    // attribute data that has been interpolated by the rasterizer, and hence
+    // have similarities for code gen.
+    // While vertex primvar are authored per vertex and require plumbing
+    // through all shader stages, fVar is emitted only in the GS stage.
     /*
       // --------- vertex data declaration (VS) ----------
       layout (location = 0) in vec3 normals;
@@ -2277,23 +2306,27 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
     std::stringstream fvarDeclarations;
     std::stringstream interstageFVarData;
 
-    TF_FOR_ALL (it, _metaData.fvarData) {
-        HdBinding binding = it->first;
-        TfToken const &name = it->second.name;
-        TfToken const &dataType = it->second.dataType;
+     if (hasGS) {
+        // FVar primvars are emitted only by the GS.
+        // If the GS isn't active, we can skip processing them.
+        TF_FOR_ALL (it, _metaData.fvarData) {
+            HdBinding binding = it->first;
+            TfToken const &name = it->second.name;
+            TfToken const &dataType = it->second.dataType;
 
-        _EmitDeclaration(fvarDeclarations, name, dataType, binding);
+            _EmitDeclaration(fvarDeclarations, name, dataType, binding);
 
-        interstageFVarData << "  " << dataType << " " << name << ";\n";
+            interstageFVarData << "  " << dataType << " " << name << ";\n";
 
-        // primvar accessors (only in GS and FS)
-        _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
-                            _geometricShader->GetPrimitiveType());
-        _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
-                            /*arraySize=*/1, NULL);
+            // primvar accessors (only in GS and FS)
+            _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
+                                _geometricShader->GetPrimitiveType());
+            _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
+                                /*arraySize=*/1, NULL);
 
-        _procGS << "  outPrimvars." << name 
-                                    <<" = HdGet_" << name << "(index);\n";
+            _procGS << "  outPrimvars." << name 
+                                        <<" = HdGet_" << name << "(index);\n";
+        }
     }
 
     _genVS  << vertexInputs.str()
@@ -2618,7 +2651,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "#if defined(HD_HAS_" << it->second.inPrimvars[0] << ")\n"
                     << "  return HdGet_" << it->second.inPrimvars[0] << "();\n"
                     << "#else\n"
-                    << "  return " << it->second.dataType << "(0);\n"
+                    << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
+                    << "  return shaderData[shaderCoord]." << it->second.name 
+                        << swizzle <<  ";\n"
                     << "#endif\n"
                     << "\n}\n"
                     ;

@@ -48,18 +48,18 @@ UsdSkelSkinningQuery::UsdSkelSkinningQuery(
     const UsdAttribute& jointIndices,
     const UsdAttribute& jointWeights,
     const UsdAttribute& geomBindTransform,
-    const VtTokenArray* jointOrder)
-    : _valid(false), _numInfluencesPerComponent(1),
+    const UsdAttribute& joints)
+    : _prim(prim), _valid(false), _numInfluencesPerComponent(1),
       _interpolation(UsdGeomTokens->constant),
       _jointIndicesPrimvar(jointIndices),
       _jointWeightsPrimvar(jointWeights),
       _geomBindTransformAttr(geomBindTransform)
 {
-    if(jointOrder) {
-        _jointOrder = *jointOrder;
-
-        _mapper = std::make_shared<UsdSkelAnimMapper>(
-            skelJointOrder, *jointOrder);
+    VtTokenArray jointOrder;
+    if (joints && joints.Get(&jointOrder)) {
+        _jointOrder = jointOrder;
+        _mapper =
+            std::make_shared<UsdSkelAnimMapper>(skelJointOrder, jointOrder);
     }
 
     if(!jointIndices) {
@@ -71,7 +71,7 @@ UsdSkelSkinningQuery::UsdSkelSkinningQuery(
         TF_WARN("jointWeights' is invalid.");
         return;
     }
-
+    
     // Validate joint influences.
 
     int indicesElementSize = _jointIndicesPrimvar.GetElementSize();
@@ -381,8 +381,8 @@ std::string
 UsdSkelSkinningQuery::GetDescription() const
 {   
     if(IsValid()) {
-        return TfStringPrintf("UsdSkelSkinningQuery %p (%s)",
-                              this, _interpolation.GetText());
+        return TfStringPrintf("UsdSkelSkinningQuery <%s>",
+                              _prim.GetPath().GetText());
     }
     return "invalid UsdSkelSkinningQuery";
 }

@@ -3,8 +3,6 @@
 //Last modified: Mon, Aug 08, 2016 04:16:04 PM
 //Codeset: UTF-8
 requires maya "2016";
-requires "stereoCamera" "10.0";
-requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -777,6 +775,7 @@ createNode groupId -n "groupId5";
 	setAttr ".ihi" 0;
 createNode lambert -n "Yellow";
 	rename -uid "109AE860-0000-148A-5708-408900000273";
+	setAttr ".dc" 1;
 	setAttr ".c" -type "float3" 1 1 0 ;
 	setAttr ".it" -type "float3" 0.60000002 0.60000002 0.60000002 ;
 createNode shadingEngine -n "lambert5SG";
@@ -922,7 +921,6 @@ select -ne :defaultRenderGlobals;
 	setAttr -k on ".clip";
 	setAttr -k on ".edm";
 	setAttr -k on ".edl";
-	setAttr ".ren" -type "string" "px_render";
 	setAttr -av -k on ".esr";
 	setAttr -k on ".ors";
 	setAttr ".outf" 3;

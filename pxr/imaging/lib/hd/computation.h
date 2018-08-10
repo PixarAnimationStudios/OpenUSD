@@ -44,7 +44,7 @@ typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 /// An interface class for GPU computation.
 ///
 /// GPU computation fills the result into range, which has to be allocated
-/// using buffer specs determined by AddBufferSpecs, and registered as a pair
+/// using buffer specs determined by GetBufferSpecs, and registered as a pair
 /// of computation and range.
 ///
 class HdComputation
@@ -68,12 +68,12 @@ public:
     /// Add the buffer spec for this computation into given bufferspec vector.
     /// Caller has to allocate the destination buffer with respect to the
     /// BufferSpecs, and passes the range when registering the computation.
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const = 0;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const = 0;
 
     /// This function is needed as HdComputation shares a templatized interface
     /// with HdBufferSource.
     ///
-    /// It is a check to see if the AddBufferSpecs would produce a valid result.
+    /// It is a check to see if the GetBufferSpecs would produce a valid result.
     bool IsValid() { return true; }
 };
 

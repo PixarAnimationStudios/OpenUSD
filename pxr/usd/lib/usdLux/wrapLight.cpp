@@ -122,14 +122,6 @@ void wrapUsdLuxLight()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -233,8 +225,10 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("ComputeBaseEmission", &UsdLuxLight::ComputeBaseEmission)
-        .def("GetLightLinkingAPI", &UsdLuxLight::GetLightLinkingAPI)
-        .def("GetShadowLinkingAPI", &UsdLuxLight::GetShadowLinkingAPI)
+        .def("GetLightLinkCollectionAPI",
+             &UsdLuxLight::GetLightLinkCollectionAPI)
+        .def("GetShadowLinkCollectionAPI",
+             &UsdLuxLight::GetShadowLinkCollectionAPI)
         ;
 }
 

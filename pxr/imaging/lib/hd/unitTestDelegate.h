@@ -85,6 +85,7 @@ public:
                  VtVec3fArray const &points,
                  VtIntArray const &numVerts,
                  VtIntArray const &verts,
+                 VtIntArray const &holes,
                  PxOsdSubdivTags const &subdivTags,
                  VtValue const &color,
                  HdInterpolation colorInterpolation,
@@ -226,6 +227,11 @@ public:
     HD_API
     void RebindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
 
+    /// Render buffers
+    HD_API
+    void AddRenderBuffer(SdfPath const &id, GfVec3i const& dims,
+                         HdFormat format, bool multiSampled);
+
     /// Camera
     HD_API
     void AddCamera(SdfPath const &id);
@@ -312,7 +318,7 @@ public:
     HD_API
     virtual bool GetDoubleSided(SdfPath const & id);
     HD_API
-    virtual int GetRefineLevel(SdfPath const & id);
+    virtual HdDisplayStyle GetDisplayStyle(SdfPath const & id) override;
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
     HD_API
@@ -331,6 +337,8 @@ public:
                                              SdfPath const& prototypeId);
 
     HD_API
+    virtual SdfPath GetMaterialId(SdfPath const& rprimId);
+    HD_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);    
@@ -345,6 +353,8 @@ public:
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    HD_API
+    virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const& id);
 
 private:
     struct _Mesh {
@@ -355,6 +365,7 @@ private:
               VtVec3fArray const &points,
               VtIntArray const &numVerts,
               VtIntArray const &verts,
+              VtIntArray const &holes,
               PxOsdSubdivTags const &subdivTags,
               VtValue const &color,
               HdInterpolation colorInterpolation,
@@ -363,7 +374,7 @@ private:
             scheme(scheme), orientation(orientation),
             transform(transform),
             points(points), numVerts(numVerts), verts(verts),
-            subdivTags(subdivTags), color(color),
+            holes(holes), subdivTags(subdivTags), color(color),
             colorInterpolation(colorInterpolation), guide(guide),
             doubleSided(doubleSided) { }
 
@@ -373,6 +384,7 @@ private:
         VtVec3fArray points;
         VtIntArray numVerts;
         VtIntArray verts;
+        VtIntArray holes;
         PxOsdSubdivTags subdivTags;
         VtValue color;
         HdInterpolation colorInterpolation;
@@ -465,6 +477,14 @@ private:
     struct _Task {
         VtDictionary params;
     };
+    struct _RenderBuffer {
+        _RenderBuffer() {}
+        _RenderBuffer(GfVec3i const &d, HdFormat f, bool ms)
+            : dims(d), format(f), multiSampled(ms) {}
+        GfVec3i dims;
+        HdFormat format;
+        bool multiSampled;
+    };
 
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Curves> _curves;
@@ -473,6 +493,7 @@ private:
     std::map<SdfPath, _MaterialHydra> _materialsHydra;
     std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, _Camera> _cameras;
+    std::map<SdfPath, _RenderBuffer> _renderBuffers;
     std::map<SdfPath, _Light> _lights;
     std::map<SdfPath, _Task> _tasks;
     TfHashSet<SdfPath, SdfPath::Hash> _hiddenRprims;

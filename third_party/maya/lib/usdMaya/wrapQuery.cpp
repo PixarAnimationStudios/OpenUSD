@@ -37,6 +37,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapQuery()
 {
-    def("GetPrim", PxrUsdMayaQuery::GetPrim);
-    def("ReloadStage", PxrUsdMayaQuery::ReloadStage);
+    def("GetPrim", UsdMayaQuery::GetPrim);
+    def("ReloadStage", UsdMayaQuery::ReloadStage);
 }

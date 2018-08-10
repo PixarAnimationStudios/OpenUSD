@@ -57,6 +57,14 @@ void wrapUsdSchemaBase()
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
+        .def("IsAPISchema", &UsdSchemaBase::IsAPISchema)
+        .def("IsConcrete", &UsdSchemaBase::IsConcrete) 
+        .def("IsTyped", &UsdSchemaBase::IsTyped) 
+        .def("IsAppliedAPISchema", &UsdSchemaBase::IsAppliedAPISchema) 
+        .def("IsMultipleApplyAPISchema", &UsdSchemaBase::IsMultipleApplyAPISchema) 
+
+        .def("GetSchemaType", &UsdSchemaBase::GetSchemaType)
+
         .def(!self)
 
         ;

@@ -236,6 +236,11 @@ public:
     static SdfLayerRefPtr CreateAnonymous(
         const std::string& tag = std::string());
 
+    /// Create an anonymous layer with a specific \p format.
+    SDF_API
+    static SdfLayerRefPtr CreateAnonymous(
+        const std::string &tag, const SdfFileFormatConstPtr &format);
+
     /// Returns true if this layer is an anonymous layer.
     SDF_API
     bool IsAnonymous() const;
@@ -261,9 +266,10 @@ public:
 
     /// Returns \c true if successful, \c false if an error occurred.
     /// Returns \c false if the layer has no remembered file name or the 
-    /// layer type cannot be saved.
+    /// layer type cannot be saved. The layer will not be overwritten if the 
+    /// file exists and the layer is not dirty unless \p force is true.
     SDF_API
-    bool Save() const;
+    bool Save(bool force = false) const;
 
     /// Exports this layer to a file.
     /// Returns \c true if successful, \c false if an error occurred.
@@ -525,6 +531,13 @@ public:
         return hasValue && (!outValue.isValueBlock);
     }
 
+    /// Return the type of the value for \p name on spec \p id.  If no such
+    /// field exists, return typeid(void).
+    std::type_info const &GetFieldTypeid(
+        const SdfAbstractDataSpecId &id, const TfToken &name) const {
+        return _data->GetTypeid(id, name);
+    }
+
     /// Return whether a value exists for the given \a id and \a fieldName and
     /// \a keyPath.  The \p keyPath is a ':'-separated path addressing an
     /// element in sub-dictionaries.  Optionally returns the value if it exists.
@@ -662,6 +675,13 @@ public:
                   const TfToken& fieldName, T* value) const;
     SDF_API
     bool HasField(const SdfPath& path, const TfToken& fieldName) const;
+
+    std::type_info const &GetFieldTypeid(
+        const SdfPath &path, const TfToken &fieldName) const {
+        SdfAbstractDataSpecId specId(&path);
+        return GetFieldTypeid(specId, fieldName);
+    }
+
     template <class T>
     bool HasFieldDictKey(const SdfPath& path, const TfToken& fieldName,
                          const TfToken &keyPath, T* value) const;

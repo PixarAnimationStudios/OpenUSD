@@ -114,6 +114,7 @@ private:
     boost::optional<std::string> _ownedString;
     char const *_description;
     TfCallContext _context;
+    void *_localStack;
     TfScopeDescription *_prev; // link to parent scope.
 };
 

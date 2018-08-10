@@ -121,7 +121,11 @@ SdfPath::SdfPath(const std::string &path) {
     _InitWithString(path);
 }
 
-SdfPath::SdfPath(const Sdf_PathNodeConstRefPtr &pathNode) : _pathNode(pathNode) {}
+SdfPath::SdfPath(const Sdf_PathNodeConstRefPtr &pathNode)
+    : _pathNode(pathNode) {}
+
+SdfPath::SdfPath(Sdf_PathNodeConstRefPtr &&pathNode)
+    : _pathNode(std::move(pathNode)) {}
 
 TF_MAKE_STATIC_DATA(SdfPath, _emptyPath) {
     *_emptyPath = SdfPath();
@@ -1137,6 +1141,17 @@ SdfPath::IsValidIdentifier(const std::string &name)
     return TfIsValidIdentifier(name);
 }
 
+// We use our own _IsAlpha and _IsAlnum here for two reasons.  One, we want to
+// ensure that they follow C/Python identifier rules and are not subject to
+// various locale differences.  And two, since we are not consulting a locale,
+// it is faster.
+static constexpr bool _IsAlpha(int x) {
+    return ('a' <= (x|32)) && ((x|32) <= 'z');
+}
+static constexpr bool _IsAlnum(int x) {
+    return _IsAlpha(x) || (('0' <= x) && (x <= '9'));
+}
+
 bool
 SdfPath::IsValidNamespacedIdentifier(const std::string &name)
 {
@@ -1144,41 +1159,19 @@ SdfPath::IsValidNamespacedIdentifier(const std::string &name)
     // and if we tokenize on that delimiter then all tokens are valid C/Python
     // identifiers.  That means following a delimiter there must be an '_' or
     // alphabetic character.
-
-    // This code currently assumes the namespace delimiter is one character.
-    const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
-
-    std::string::const_iterator first = name.begin();
-    std::string::const_iterator last = name.end();
-
-    // Not empty and first character is alpha or '_'.
-    if (first == last || !(isalpha(*first) || (*first == '_')))
-        return false;
-    // Last character is not the namespace delimiter.
-    if (*(last - 1) == namespaceDelimiter)
-        return false;
-
-    for (++first; first != last; ++first) {
-        // Allow a namespace delimiter.
-        if (*first == namespaceDelimiter) {
-            // Skip delimiter.  We know we will not go beyond the end of
-            // the string because we checked before the loop that the
-            // last character was not the delimiter.
-            ++first;
-
-            // First character.
-            if (!(isalpha(*first) || (*first == '_')))
-                return false;
+    constexpr char delim = SDF_PATH_NS_DELIMITER_CHAR;
+    for (char const *p = name.c_str(); *p; ++p) {
+        if (!_IsAlpha(*p) && *p != '_') {
+            return false;
         }
-        else {
-            // Next character 
-            if (!(isalnum(*first) || (*first == '_')))
-                return false;
+        for (++p; _IsAlnum(*p) ||*p == '_'; ++p) {
+            /* consume identifier */
+        }
+        if (*p != delim) {
+            return !*p;
         }
     }
-
-    return true;
+    return false;
 }
 
 std::vector<std::string>

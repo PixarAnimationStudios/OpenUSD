@@ -264,8 +264,8 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         # PointBased and Curves
         curves = UsdGeom.BasisCurves.Define(stage, "/Curves")
-        self.assertEqual(curves.GetNormalsInterpolation(), UsdGeom.Tokens.varying)
-        self.assertEqual(curves.GetWidthsInterpolation(), UsdGeom.Tokens.varying)
+        self.assertEqual(curves.GetNormalsInterpolation(), UsdGeom.Tokens.vertex)
+        self.assertEqual(curves.GetWidthsInterpolation(), UsdGeom.Tokens.vertex)
 
         # Before we go, test that CreateXXXAttr performs as we expect in various
         # scenarios

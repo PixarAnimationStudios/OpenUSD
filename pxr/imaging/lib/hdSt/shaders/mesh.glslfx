@@ -48,19 +48,20 @@ out vec2 tesTessCoord;
 out vec4 gsPatchCoord;
 out vec2 gsTessCoord;
 
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+float GetPointRasterSize(int);
+void ProcessPointId(int);
+
 void main(void)
 {
     ProcessPrimvars();
 
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
     vec4 point        = vec4(HdGet_points().xyz, 1);
-    vec4 normal       = vec4(GetVertexNormal(), 0); // normalized
-
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
-    outData.Neye = vec4(transpose(transformInv *
-                                  GetWorldToViewInverseMatrix()) *
-                        normal).xyz;
+
+    outData.Neye = GetNormal(vec3(0), 0); // normalized
 
     // Fill out redundantly, since at this point we don't know
     // the following stages include tessellation or geometry shader.
@@ -69,11 +70,12 @@ void main(void)
     tesPatchCoord = gsPatchCoord = vec4(0);
     tesTessCoord = gsTessCoord = vec2(0);
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-    gl_PointSize = GetPointSize(gl_VertexID);
-    ApplyClipPlanes(outData.Peye);
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);
 
-    ProcessPointId();
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
 }
 
 --- --------------------------------------------------------------------------
@@ -217,7 +219,6 @@ void emit(int index, vec4 Peye, vec3 Neye,
     outData.Peye = Peye;
     outData.Neye = Neye;
     gsPatchCoord = GetPatchCoord(index);
-    gsPatchCoord.w = GetElementID() + 0.5;
     gsTessCoord = vec2(0);
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -245,15 +246,18 @@ void main(void)
 
     bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
 
-    vec3 Neye0 = GetTriGeometryNormal(
-        inData[0].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
-        isFlipped);
-    vec3 Neye1 = GetTriGeometryNormal(
-        inData[1].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
-        isFlipped);
-    vec3 Neye2 = GetTriGeometryNormal(
-        inData[2].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
-        isFlipped);
+    vec3 Neye0 = isFlipped ? -inData[0].Neye : inData[0].Neye;
+    Neye0 = GetNormal(Neye0, 0);
+    Neye0 = GetTriGeometryNormal(Neye0, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+    vec3 Neye1 = isFlipped ? -inData[1].Neye : inData[1].Neye;
+    Neye1 = GetNormal(Neye1, 0);
+    Neye1 = GetTriGeometryNormal(Neye1, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+    vec3 Neye2 = isFlipped ? -inData[2].Neye : inData[2].Neye;
+    Neye2 = GetNormal(Neye2, 0);
+    Neye2 = GetTriGeometryNormal(Neye2, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
 
     vec4 Peye0 = DisplacementTerminal(
         0, inData[0].Peye, Neye0, GetPatchCoord(0));
@@ -351,15 +355,15 @@ void main(void)
 
     bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
 
-    vec3 Neye0 = GetTriGeometryNormal(
-        inData[0].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
-        isFlipped);
-    vec3 Neye1 = GetTriGeometryNormal(
-        inData[1].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
-        isFlipped);
-    vec3 Neye2 = GetTriGeometryNormal(
-        inData[2].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
-        isFlipped);
+    vec3 Neye0 = GetNormal(inData[0].Neye, 0);
+    Neye0 = GetTriGeometryNormal(Neye0, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+    vec3 Neye1 = GetNormal(inData[1].Neye, 1);
+    Neye1 = GetTriGeometryNormal(Neye1, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+    vec3 Neye2 = GetNormal(inData[2].Neye, 2);
+    Neye2 = GetTriGeometryNormal(Neye2, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
 
     vec4 Peye0 = DisplacementTerminal(
         0, inData[0].Peye, Neye0, GetPatchCoord(0));
@@ -436,22 +440,18 @@ void main(void)
 
     bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
 
-    vec3 Neye0 = GetQuadGeometryNormal(
-        inData[0].Neye,
-        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
-        isFlipped);
-    vec3 Neye1 = GetQuadGeometryNormal(
-        inData[1].Neye,
-        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
-        isFlipped);
-    vec3 Neye2 = GetQuadGeometryNormal(
-        inData[2].Neye,
-        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
-        isFlipped);
-    vec3 Neye3 = GetQuadGeometryNormal(
-        inData[3].Neye,
-        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
-        isFlipped);
+    vec3 Neye0 = GetNormal(inData[0].Neye, 0);
+    Neye0 = GetQuadGeometryNormal(Neye0, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, inData[3].Peye, isFlipped);
+    vec3 Neye1 = GetNormal(inData[1].Neye, 1);
+    Neye1 = GetQuadGeometryNormal(Neye1, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, inData[3].Peye, isFlipped);
+    vec3 Neye2 = GetNormal(inData[2].Neye, 2);
+    Neye2 = GetQuadGeometryNormal(Neye2, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, inData[3].Peye, isFlipped);
+    vec3 Neye3 = GetNormal(inData[3].Neye, 3);
+    Neye3 = GetQuadGeometryNormal(Neye3, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, inData[3].Peye, isFlipped);
 
     vec4 Peye0 = DisplacementTerminal(
         0, inData[0].Peye, Neye0, GetPatchCoord(0));
@@ -533,9 +533,15 @@ void main(void)
 #endif
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
-    // Neye may be un-normalized, post rasterizer interpolation.
-    // We do _not_ normalize it, intentionally, for legacy testing reasons.
-    vec3 Neye = GetShadingNormal(inData.Neye, isFlipped);
+
+    vec3 Neye = inData.Neye;
+    // Normalize Neye after rasterizer interpolation.
+    if (length(Neye) > 0.0)
+        Neye = normalize(Neye);
+    // Give the shader key a chance to override the normal.
+    Neye = GetNormal(Neye, 0);
+    // Orient the normal for shading.
+    Neye = GetShadingNormal(Neye, isFlipped);
 
     vec4 patchCoord = GetPatchCoord();
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);

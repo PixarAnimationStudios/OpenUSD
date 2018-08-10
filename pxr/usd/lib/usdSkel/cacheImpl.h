@@ -38,8 +38,12 @@
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/skinningQuery.h"
 
+#include <boost/optional.hpp>
+
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/queuing_rw_mutex.h>
+
+#include <unordered_map>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,6 +51,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomXformCache;
 class UsdSkelRoot;
+
+
+struct UsdSkel_HashPrim {
+    inline size_t operator()(const UsdPrim& prim) const {
+        return hash_value(prim);
+    }
+
+    static bool equal(const UsdPrim& a, const UsdPrim& b) {
+        return a == b;
+    }
+
+    static size_t hash(const UsdPrim& prim) {
+        return hash_value(prim);
+    }
+};
 
 
 /// Internal cache implementation.
@@ -59,8 +78,8 @@ public:
         UsdAttribute jointIndicesAttr;
         UsdAttribute jointWeightsAttr;
         UsdAttribute geomBindTransformAttr;
-        boost::optional<VtTokenArray> jointOrder;
-        UsdSkelSkeletonQuery skelQuery;
+        UsdAttribute jointsAttr;
+        UsdPrim skel;
     };
     
     /// Scope for performing read-only operations on the cache.
@@ -71,11 +90,14 @@ public:
         // Getters for properties with a direct prim association.
         // These are produced on-demand rather than through Populate().
 
-        UsdSkel_AnimQueryImplRefPtr
+        UsdSkelAnimQuery
         FindOrCreateAnimQuery(const UsdPrim& prim);
 
         UsdSkel_SkelDefinitionRefPtr
         FindOrCreateSkelDefinition(const UsdPrim& prim);
+
+        UsdSkelSkeletonQuery
+        FindOrCreateSkelQuery(const UsdPrim& prim);
 
         /// Method for populating the cache with cache properties, for
         /// the set of properties that depend on inherited state.
@@ -84,28 +106,25 @@ public:
 
         // Getters for properties added to the cache through Populate().
 
-        UsdSkelSkeletonQuery GetSkelQuery(const UsdPrim& prim) const;
-
-        UsdSkelSkeletonQuery GetInheritedSkelQuery(const UsdPrim& prim) const;
-
         UsdSkelSkinningQuery
         GetSkinningQuery(const UsdPrim& prim) const;
 
     private:
-        UsdSkelSkeletonQuery
-        _FindOrCreateSkelQuery(const UsdPrim& instancePrim,
-                               const UsdPrim& skelPrim,
-                               const UsdSkelAnimQuery& animQuery);
 
         UsdSkelSkinningQuery
         _FindOrCreateSkinningQuery(const UsdPrim& skinnedPrim,
                                    const SkinningQueryKey& key);
 
+        using _PrimToSkinMap =
+            std::unordered_map<UsdPrim,SkinningQueryKey,UsdSkel_HashPrim>;
+
         /// Recursively populate the cache beneath \p prim.
         /// Returns the number of skinnable prims populated beneath \p prim.
-        void _RecursivePopulate(const UsdPrim& prim,
+        void _RecursivePopulate(const SdfPath& rootPath,
+                                const UsdPrim& prim,
                                 SkinningQueryKey key,
                                 UsdSkelAnimQuery animQuery,
+                                _PrimToSkinMap* skinBindingMap,
                                 size_t depth=1);
 
     private:
@@ -127,47 +146,25 @@ public:
 
 private:
 
-    struct _HashPrim {
-        static bool equal(const UsdPrim& a, const UsdPrim& b) {
-            return a == b;
-        }
-        
-        static size_t hash(const UsdPrim& prim) {
-            return hash_value(prim);
-        }
-    };
-
-    struct _HashSkinningQueryKey {
-        static bool equal(const SkinningQueryKey& a,
-                          const SkinningQueryKey& b);
-
-        static size_t hash(const SkinningQueryKey& key);
-    };
-
     using _PrimToAnimMap =
         tbb::concurrent_hash_map<UsdPrim,
                                  UsdSkel_AnimQueryImplRefPtr,
-                                 _HashPrim>;
+                                 UsdSkel_HashPrim>;
 
     using _PrimToSkelDefinitionMap =
         tbb::concurrent_hash_map<UsdPrim,
                                  UsdSkel_SkelDefinitionRefPtr,
-                                 _HashPrim>;
+                                 UsdSkel_HashPrim>;
 
     using _PrimToSkelQueryMap =
         tbb::concurrent_hash_map<UsdPrim,
                                  UsdSkelSkeletonQuery,
-                                 _HashPrim>;
+                                 UsdSkel_HashPrim>;
 
     using _PrimToSkinningQueryMap =
         tbb::concurrent_hash_map<UsdPrim,
                                  UsdSkelSkinningQuery,
-                                 _HashPrim>;
-
-    using _SkinningQueryMap =
-        tbb::concurrent_hash_map<SkinningQueryKey,
-                                 UsdSkelSkinningQuery,
-                                 _HashSkinningQueryKey>;
+                                 UsdSkel_HashPrim>;
 
     using _RWMutex = tbb::queuing_rw_mutex;
 
@@ -175,7 +172,6 @@ private:
     _PrimToSkelDefinitionMap _skelDefinitionCache;
     _PrimToSkelQueryMap _skelQueryCache;
     _PrimToSkinningQueryMap _primSkinningQueryCache;
-    _SkinningQueryMap _skinningQueryCache;
 
     /// Mutex around unsafe operations (eg., clearing the maps)
     mutable _RWMutex _mutex; // XXX: Not recursive!

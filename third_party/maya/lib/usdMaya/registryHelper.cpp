@@ -21,18 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/registryHelper.h"
+
 #include "usdMaya/debugCodes.h"
 
+#include "pxr/base/js/converter.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-
 #include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <maya/MGlobal.h>
+
+#include <map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -163,7 +167,7 @@ _PluginDictScopeToDebugString(
 
 /* static */
 void
-PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
+UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
         const std::vector<TfToken>& scope,
         const std::string& value)
 {
@@ -206,7 +210,7 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
 
 /* static */
 void
-PxrUsdMaya_RegistryHelper::LoadShadingModePlugins() {
+UsdMaya_RegistryHelper::LoadShadingModePlugins() {
     static std::once_flag _shadingModesLoaded;
     static std::vector<TfToken> scope = {_tokens->UsdMaya, _tokens->ShadingModePlugin};
     std::call_once(_shadingModesLoaded, [](){        
@@ -233,6 +237,53 @@ PxrUsdMaya_RegistryHelper::LoadShadingModePlugins() {
             }
         }
     });
+}
+
+/* static */
+VtDictionary
+UsdMaya_RegistryHelper::GetComposedInfoDictionary(
+    const std::vector<TfToken>& scope)
+{
+    VtDictionary result;
+
+    std::map<std::string, std::vector<std::string>> keyDefinitionSites;
+    PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
+    for (const PlugPluginPtr& plugin : plugins) {
+        JsObject curJsDict;
+        if (_ReadNestedDict(plugin->GetMetadata(), scope, &curJsDict)) {
+            const VtValue curValue =
+                    JsConvertToContainerType<VtValue, VtDictionary>(curJsDict);
+            if (curValue.IsHolding<VtDictionary>()) {
+                for (const std::pair<std::string, VtValue>& pair :
+                        curValue.UncheckedGet<VtDictionary>()) {
+                    result[pair.first] = pair.second;
+                    keyDefinitionSites[pair.first].push_back(plugin->GetName());
+                }
+            }
+            else {
+                TF_RUNTIME_ERROR("Unable to read scope '%s' from plugInfo for "
+                        "plugin '%s'",
+                        TfStringJoin(scope.begin(), scope.end(), "/").c_str(),
+                        plugin->GetName().c_str());
+            }
+        }
+    }
+
+    // Validate that keys are only defined once globally.
+    for (const std::pair<std::string, std::vector<std::string>>& pair :
+            keyDefinitionSites) {
+        if (pair.second.size() != 1) {
+            TF_RUNTIME_ERROR(
+                    "Key '%s' is defined in multiple plugins (%s). "
+                    "Key values must be defined in only one plugin at a time. "
+                    "Plugin values will be ignored for this key.",
+                    pair.first.c_str(),
+                    TfStringJoin(pair.second, ", ").c_str());
+            result.erase(pair.first);
+        }
+    }
+
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

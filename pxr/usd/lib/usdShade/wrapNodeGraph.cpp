@@ -69,14 +69,6 @@ void wrapUsdShadeNodeGraph()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -131,6 +123,7 @@ _WrapComputeOutputSource(const UsdShadeNodeGraph &self,
 
 WRAP_CUSTOM {
     _class
+        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
 
         .def("CreateOutput", 
@@ -159,8 +152,6 @@ WRAP_CUSTOM {
              (arg("computeTransitiveConsumers")=false))
 
     ;
-
-    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
 }
 
 } // anonymous namespace

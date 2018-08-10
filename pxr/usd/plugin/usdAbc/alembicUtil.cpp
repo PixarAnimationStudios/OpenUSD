@@ -341,6 +341,7 @@ UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
     data.AddConverter<GfVec3f, float32_t, 3>(SdfValueTypeNames->Color3f);
     data.AddConverter<GfVec3d, float64_t, 3>(SdfValueTypeNames->Color3d);
     data.AddConverter<GfMatrix4d, float64_t, 16>(SdfValueTypeNames->Frame4d);
+    data.AddConverter<GfVec2f, float32_t, 2>(SdfValueTypeNames->TexCoord2f);
 }
 
 } // namespace UsdAbc_AlembicUtil

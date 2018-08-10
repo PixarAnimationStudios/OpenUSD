@@ -24,11 +24,11 @@
 #ifndef PXRUSDMAYA_STAGECACHE_H
 #define PXRUSDMAYA_STAGECACHE_H
 
-/// \file stageCache.h
-
-#include "pxr/pxr.h"
+/// \file usdMaya/stageCache.h
 
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stageCache.h"
@@ -66,7 +66,7 @@ public:
     /// The stage is cached for the lifetime of the current Maya scene.
     static SdfLayerRefPtr GetSharedSessionLayer(
             const SdfPath& rootPath,
-            const std::map<std::string, std::string> variantSelections,
+            const std::map<std::string, std::string>& variantSelections,
             const TfToken& drawMode);
 };
 
@@ -74,4 +74,4 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYA_STAGECACHE_H
+#endif

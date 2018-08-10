@@ -1158,14 +1158,14 @@ PcpChanges::DidChangeSignificantly(PcpCache* cache, const SdfPath& path)
 }
 
 static bool
-_HasAnySpecs(const PcpPrimIndex& primIndex)
+_NoLongerHasAnySpecs(const PcpPrimIndex& primIndex)
 {
     for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
         if (PcpComposeSiteHasPrimSpecs(node)) {
-            return true;
+            return false;
         }
     }
-    return false;
+    return true;
 }
 
 void
@@ -1179,11 +1179,11 @@ PcpChanges::DidChangeSpecs(
         const bool primWasRemoved = !primWasAdded;
 
         const PcpPrimIndex* primIndex = cache->FindPrimIndex(path);
-        if (primIndex) {
+        if (primIndex && primIndex->HasSpecs()) {
             // If the inert spec removed was the last spec in this prim index,
             // the composed prim no longer exists, so mark it as a significant 
             // change.
-            if (primWasRemoved && !_HasAnySpecs(*primIndex)) {
+            if (primWasRemoved && _NoLongerHasAnySpecs(*primIndex)) {
                 DidChangeSignificantly(cache, path);
                 return;
             }

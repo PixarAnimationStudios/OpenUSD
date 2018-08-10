@@ -94,7 +94,8 @@ private:
         bool isDelta;
     };
 
-    using _CounterDeltaValues = std::map<TraceEvent::TimeStamp, _CounterValue>;
+    using _CounterDeltaValues =
+        std::multimap<TraceEvent::TimeStamp, _CounterValue>;
     using _CounterDeltaMap = std::map<TfToken, _CounterDeltaValues>;
 
     _CounterDeltaMap _counterDeltas;

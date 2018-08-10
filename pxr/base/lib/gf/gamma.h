@@ -36,6 +36,8 @@ class GfVec3f;
 class GfVec3d;
 class GfVec4f;
 class GfVec4d;
+class GfVec3h;
+class GfVec4h;
 
 /// Return a new vector with each component of \p v raised to the power \p
 /// gamma
@@ -47,6 +49,10 @@ GfVec3f GfApplyGamma(const GfVec3f &v, double gamma);
 GF_API
 GfVec3d GfApplyGamma(const GfVec3d &v, double gamma);
 
+/// \copydoc GfApplyGamma(GfVec3d,double)
+GF_API
+GfVec3h GfApplyGamma(const GfVec3h &v, double gamma);
+
 /// Return a new vector with the first three components of \p v raised to the
 /// power \p gamma and the fourth component unchanged.
 GF_API
@@ -57,21 +63,31 @@ GfVec4f GfApplyGamma(const GfVec4f &v, double gamma);
 GF_API
 GfVec4d GfApplyGamma(const GfVec4d &v, double gamma);
 
+/// \copydoc GfApplyGamma(GfVec4h,double)
+GF_API
+GfVec4h GfApplyGamma(const GfVec4h &v, double gamma);
+
 /// Return the system display gamma
 GF_API
 double GfGetDisplayGamma();
 
 /// Given a vec, \p v, representing an energy-linear RGB(A) color, return a
-/// vec of the same type converted to the system's display gamma This is
-/// instantiated for GfVec3f, GfVec4d, GfVec3d, and GfVec4d
-template <class T>
-T GfConvertLinearToDisplay(const T& v);
+/// vec of the same type converted to the system's display gamma.
+GF_API GfVec3f GfConvertLinearToDisplay(const GfVec3f &v);
+GF_API GfVec3d GfConvertLinearToDisplay(const GfVec3d &v);
+GF_API GfVec3h GfConvertLinearToDisplay(const GfVec3h &v);
+GF_API GfVec4f GfConvertLinearToDisplay(const GfVec4f &v);
+GF_API GfVec4d GfConvertLinearToDisplay(const GfVec4d &v);
+GF_API GfVec4h GfConvertLinearToDisplay(const GfVec4h &v);
 
 /// Given a vec, \p v, representing an RGB(A) color in the system's display
-/// gamma space, return an energy-linear vec of the same type. This is
-/// instantiated for GfVec3f, GfVec4d, GfVec3d, and GfVec4d
-template <class T>
-T GfConvertDisplayToLinear(const T& v);
+/// gamma space, return an energy-linear vec of the same type.
+GF_API GfVec3f GfConvertDisplayToLinear(const GfVec3f &v);
+GF_API GfVec3d GfConvertDisplayToLinear(const GfVec3d &v);
+GF_API GfVec3h GfConvertDisplayToLinear(const GfVec3h &v);
+GF_API GfVec4f GfConvertDisplayToLinear(const GfVec4f &v);
+GF_API GfVec4d GfConvertDisplayToLinear(const GfVec4d &v);
+GF_API GfVec4h GfConvertDisplayToLinear(const GfVec4h &v);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

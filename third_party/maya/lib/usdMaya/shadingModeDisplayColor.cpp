@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/translatorMaterial.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec3f.h"
@@ -38,6 +38,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/prim.h"
@@ -55,7 +56,7 @@
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnLambertShader.h>
-#include <maya/MGlobal.h>
+#include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -82,13 +83,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 namespace {
-class DisplayColorShadingModeExporter : public PxrUsdMayaShadingModeExporter {
+class DisplayColorShadingModeExporter : public UsdMayaShadingModeExporter
+{
 public:
     DisplayColorShadingModeExporter() {}
 private:
-    void Export(const PxrUsdMayaShadingModeExportContext& context,
-                UsdShadeMaterial * const mat, 
-                SdfPathSet * const boundPrimPaths) override 
+    void Export(const UsdMayaShadingModeExportContext& context,
+                UsdShadeMaterial * const mat,
+                SdfPathSet * const boundPrimPaths) override
     {
         MStatus status;
         const MFnDependencyNode ssDepNode(context.GetSurfaceShader(), &status);
@@ -100,7 +102,7 @@ private:
             return;
         }
 
-        const PxrUsdMayaShadingModeExportContext::AssignmentVector& assignments =
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
             context.GetAssignments();
         if (assignments.empty()) {
             return;
@@ -109,12 +111,13 @@ private:
         const UsdStageRefPtr& stage = context.GetUsdStage();
         const MColor mayaColor = lambertFn.color();
         const MColor mayaTransparency = lambertFn.transparency();
-        const GfVec3f color = PxrUsdMayaColorSpace::ConvertMayaToLinear(
-            GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
-        const GfVec3f transparency = PxrUsdMayaColorSpace::ConvertMayaToLinear(
+        const float diffuseCoeff = lambertFn.diffuseCoeff();
+        const GfVec3f color = UsdMayaColorSpace::ConvertMayaToLinear(
+            diffuseCoeff*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
+        const GfVec3f transparency = UsdMayaColorSpace::ConvertMayaToLinear(
             GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
 
-        VtArray<GfVec3f> displayColorAry;
+        VtVec3fArray displayColorAry;
         displayColorAry.push_back(color);
 
         // The simple UsdGeomGprim display shading schema only allows for a
@@ -122,7 +125,7 @@ private:
         // components since it would be ridiculous to apply the inverse weighting
         // (of the common graycale conversion) on re-import
         // The average is compute from the Maya color as is
-        VtArray<float> displayOpacityAry;
+        VtFloatArray displayOpacityAry;
         const float transparencyAvg = (mayaTransparency[0] +
                                        mayaTransparency[1] +
                                        mayaTransparency[2]) / 3.0f;
@@ -139,8 +142,15 @@ private:
 
             UsdPrim boundPrim = stage->GetPrimAtPath(boundPrimPath);
             if (!boundPrim) {
-                MGlobal::displayError("No prim bound to: " +
-                                      MString(boundPrimPath.GetText()));
+                TF_CODING_ERROR(
+                        "Couldn't find bound prim <%s>",
+                        boundPrimPath.GetText());
+                continue;
+            }
+
+            if (boundPrim.IsInstance() || boundPrim.IsInstanceProxy()) {
+                TF_WARN("Not authoring displayColor or displayOpacity for <%s> "
+                        "because it is instanced", boundPrimPath.GetText());
                 continue;
             }
 
@@ -235,13 +245,13 @@ private:
 };
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeExportContext, displayColor)
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, displayColor)
 {
-    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
+    UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "displayColor",
-        []() -> PxrUsdMayaShadingModeExporterPtr {
-            return PxrUsdMayaShadingModeExporterPtr(
-                static_cast<PxrUsdMayaShadingModeExporter*>(
+        []() -> UsdMayaShadingModeExporterPtr {
+            return UsdMayaShadingModeExporterPtr(
+                static_cast<UsdMayaShadingModeExporter*>(
                     new DisplayColorShadingModeExporter()));
         }
     );
@@ -260,37 +270,38 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
     // the gprim itself, for example, even if the Material did not have
     // displayOpacity authored. When the Material or gprim does not have
     // displayOpacity authored, we fall back to full opacity.
-    bool gotDisplayColorAndOpacity=false;
+    bool gotDisplayColorAndOpacity = false;
 
     // Get Display Color from USD (linear) and convert to Display
-    GfVec3f linearDisplayColor(.5,.5,.5), linearTransparency(0, 0, 0);
+    GfVec3f linearDisplayColor(.5,.5,.5);
+    GfVec3f linearTransparency(0, 0, 0);
 
-    UsdShadeInput shadeInput = shadeMaterial ? 
+    UsdShadeInput shadeInput = shadeMaterial ?
         shadeMaterial.GetInput(_tokens->displayColor) :
         UsdShadeInput();
 
     if (!shadeInput || !shadeInput.Get(&linearDisplayColor)) {
 
-        VtArray<GfVec3f> gprimDisplayColor(1);
-        if (primSchema && 
-            primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) 
-        {
-            linearDisplayColor=gprimDisplayColor[0];
-            VtArray<float> gprimDisplayOpacity(1);
-            if (primSchema.GetDisplayOpacityPrimvar().GetAttr()
-                                                     .HasAuthoredValueOpinion()
-                && primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
-                float trans = 1.0 - gprimDisplayOpacity[0];
+        VtVec3fArray gprimDisplayColor(1);
+        if (primSchema &&
+                primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) {
+            linearDisplayColor = gprimDisplayColor[0];
+            VtFloatArray gprimDisplayOpacity(1);
+            if (primSchema.GetDisplayOpacityPrimvar().GetAttr().HasAuthoredValueOpinion() &&
+                    primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
+                const float trans = 1.0 - gprimDisplayOpacity[0];
                 linearTransparency = GfVec3f(trans, trans, trans);
             }
             gotDisplayColorAndOpacity = true;
         } else {
-            MString warn = MString("Unable to retrieve DisplayColor on Material: ");
-            warn += shadeMaterial ? shadeMaterial.GetPrim().GetPath().GetText() : "<NONE>";
-            warn += " or GPrim: ";
-            warn += primSchema ? primSchema.GetPrim().GetPath().GetText() 
-                               : "<NONE>";
-            MGlobal::displayWarning(warn);
+            TF_WARN("Unable to retrieve displayColor on Material: %s "
+                    "or Gprim: %s",
+                    shadeMaterial ?
+                        shadeMaterial.GetPrim().GetPath().GetText() :
+                        "<NONE>",
+                    primSchema ?
+                        primSchema.GetPrim().GetPath().GetText() :
+                        "<NONE>");
         }
     } else {
         shadeMaterial
@@ -300,39 +311,72 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
         gotDisplayColorAndOpacity = true;
     }
 
-    GfVec3f displayColor = PxrUsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
-    GfVec3f transparencyColor = PxrUsdMayaColorSpace::ConvertLinearToMaya(linearTransparency);
-    if (gotDisplayColorAndOpacity) {
+    if (!gotDisplayColorAndOpacity) {
+        return MObject();
+    }
 
-        std::string shaderName(_tokens->MayaShaderName.GetText());
-        SdfPath shaderParentPath = SdfPath::AbsoluteRootPath();
-        if (shadeMaterial) {
-            const UsdPrim& shadeMaterialPrim = shadeMaterial.GetPrim();
-            shaderName = TfStringPrintf("%s_%s",
+    const GfVec3f displayColor =
+        UsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
+    const GfVec3f transparencyColor =
+        UsdMayaColorSpace::ConvertLinearToMaya(linearTransparency);
+
+    std::string shaderName(_tokens->MayaShaderName.GetText());
+    SdfPath shaderParentPath = SdfPath::AbsoluteRootPath();
+    if (shadeMaterial) {
+        const UsdPrim& shadeMaterialPrim = shadeMaterial.GetPrim();
+        shaderName =
+            TfStringPrintf("%s_%s",
                 shadeMaterialPrim.GetName().GetText(),
                 _tokens->MayaShaderName.GetText());
-            shaderParentPath = shadeMaterialPrim.GetPath();
-        }
+        shaderParentPath = shadeMaterialPrim.GetPath();
+    }
 
-        MString mShaderName(shaderName.c_str());
-        // Construct the lambert shader
-        MFnLambertShader lambertFn;
-        MObject shadingObj = lambertFn.create();
-        lambertFn.setName( mShaderName );
-        lambertFn.setColor(MColor(displayColor[0], displayColor[1], displayColor[2]));
-        lambertFn.setTransparency(MColor(transparencyColor[0], transparencyColor[1], transparencyColor[2]));
+    // Construct the lambert shader.
+    MFnLambertShader lambertFn;
+    MObject shadingObj = lambertFn.create();
+    lambertFn.setName(shaderName.c_str());
+    lambertFn.setColor(
+        MColor(displayColor[0], displayColor[1], displayColor[2]));
+    lambertFn.setTransparency(
+        MColor(transparencyColor[0], transparencyColor[1], transparencyColor[2]));
+    
+    // We explicitly set diffuse coefficient to 1.0 here since new lamberts
+    // default to 0.8. This is to make sure the color value matches visually
+    // when roundtripping since we bake the diffuseCoeff into the diffuse color
+    // at export.
+    lambertFn.setDiffuseCoeff(1.0);
 
-        const SdfPath lambertPath = shaderParentPath.AppendChild(
-            TfToken(lambertFn.name().asChar()));
-        context->AddCreatedObject(lambertPath, shadingObj);
+    const SdfPath lambertPath =
+        shaderParentPath.AppendChild(TfToken(lambertFn.name().asChar()));
+    context->AddCreatedObject(lambertPath, shadingObj);
 
-        // Connect the lambert surfaceShader to the Shading Group (set)
-        return lambertFn.findPlug("outColor", &status);
-    } 
+    // Find the outColor plug so we can connect it as the surface shader of the
+    // shading engine.
+    MPlug outputPlug = lambertFn.findPlug("outColor", &status);
+    CHECK_MSTATUS_AND_RETURN(status, MObject());
 
-    return MPlug();
+    // Create the shading engine.
+    MObject shadingEngine = context->CreateShadingEngine();
+    if (shadingEngine.isNull()) {
+        return MObject();
+    }
+    MFnSet fnSet(shadingEngine, &status);
+    if (status != MS::kSuccess) {
+        return MObject();
+    }
+
+    const TfToken surfaceShaderPlugName = context->GetSurfaceShaderPlugName();
+    if (!surfaceShaderPlugName.IsEmpty()) {
+        MPlug seSurfaceShaderPlg =
+            fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+        UsdMayaUtil::Connect(outputPlug,
+                                seSurfaceShaderPlg,
+                                /* clearDstPlug = */ true);
+    }
+
+    return shadingEngine;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

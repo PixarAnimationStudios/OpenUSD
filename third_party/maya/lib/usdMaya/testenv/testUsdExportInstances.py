@@ -35,7 +35,7 @@ from pxr import Usd
 from pxr import UsdGeom
 
 
-class testUsdExportMesh(unittest.TestCase):
+class testUsdExportInstances(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -73,12 +73,16 @@ class testUsdExportMesh(unittest.TestCase):
         expectedXForm = [
             ('/pCube1', None),
             ('/pCube1/pCubeShape1', '/InstanceSources/pCube1_pCubeShape1'),
-            ('/pCube1/pCube2', '/InstanceSources/pCube1_pCube2_pCubeShape2'),
-            ('/pCube1/pCube3', '/InstanceSources/pCube1_pCube2_pCubeShape2'),
+            ('/pCube1/pCube2', '/InstanceSources/pCube1_pCube2'),
+            ('/pCube1/pCube3', '/InstanceSources/pCube1_pCube3'),
             ('/pCube4', None),
             ('/pCube4/pCubeShape1', '/InstanceSources/pCube1_pCubeShape1'),
-            ('/pCube4/pCube2', '/InstanceSources/pCube1_pCube2_pCubeShape2'),
-            ('/pCube4/pCube3', '/InstanceSources/pCube1_pCube2_pCubeShape2'),
+            ('/pCube4/pCube2', '/InstanceSources/pCube1_pCube2'),
+            ('/pCube4/pCube3', '/InstanceSources/pCube1_pCube3'),
+            ('/InstanceSources/pCube1_pCube2/pCubeShape2',
+                    '/InstanceSources/pCube1_pCube2_pCubeShape2'),
+            ('/InstanceSources/pCube1_pCube3/pCubeShape2',
+                    '/InstanceSources/pCube1_pCube2_pCubeShape2'),
         ]
 
         layer = stage.GetLayerStack()[1]

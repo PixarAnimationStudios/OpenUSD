@@ -21,82 +21,85 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <maya/MDrawRegistry.h>
-#include <maya/MFnPlugin.h>
-#include <maya/MGlobal.h>
-#include <maya/MStatus.h>
-
 #include "pxr/pxr.h"
 #include "pxrUsd/api.h"
+
 #include "pxrUsdMayaGL/proxyDrawOverride.h"
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
-#include "usdMaya/pluginStaticData.h"
-#include "usdMaya/usdImport.h"
-#include "usdMaya/usdExport.h"
-#include "usdMaya/usdListShadingModes.h"
-#include "usdMaya/usdTranslatorImport.h"
-#include "usdMaya/usdTranslatorExport.h"
+#include "usdMaya/diagnosticDelegate.h"
+#include "usdMaya/exportCommand.h"
+#include "usdMaya/exportTranslator.h"
+#include "usdMaya/importCommand.h"
+#include "usdMaya/importTranslator.h"
+#include "usdMaya/listShadingModesCommand.h"
+#include "usdMaya/pointBasedDeformerNode.h"
+#include "usdMaya/proxyShape.h"
+#include "usdMaya/referenceAssembly.h"
+#include "usdMaya/stageData.h"
+#include "usdMaya/stageNode.h"
+#include "usdMaya/undoHelperCommand.h"
+
+#include <maya/MDrawRegistry.h>
+#include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
+#include <maya/MPxNode.h>
+#include <maya/MStatus.h>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static PxrUsdMayaPluginStaticData& _data(PxrUsdMayaPluginStaticData::pxrUsd);
 
 PXRUSD_API
-MStatus initializePlugin(
-    MObject obj) {
-
+MStatus
+initializePlugin(MObject obj)
+{
     MStatus status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
 
-
-    // we use lambdas to pass in MCreatorFunctions into the various Maya registration
-    // functions so that we can specify the static data that the registered
-    // shape/data/node should be using.
-
     status = plugin.registerData(
-            _data.stageData.typeName,
-            _data.stageData.typeId,
-            []() { 
-                return UsdMayaStageData::creator(_data.stageData);
-            });
-    CHECK_MSTATUS(status);
-
-    status = plugin.registerShape(
-            _data.proxyShape.typeName,
-            _data.proxyShape.typeId,
-            []() {
-                return UsdMayaProxyShape::creator(_data.proxyShape);  
-            },
-            []() {
-                return UsdMayaProxyShape::initialize(
-                    &(_data.proxyShape));
-            },
-            UsdMayaProxyShapeUI::creator,
-            &UsdMayaProxyDrawOverride::sm_drawDbClassification);
-
+        UsdMayaStageData::typeName,
+        UsdMayaStageData::mayaTypeId,
+        UsdMayaStageData::creator);
     CHECK_MSTATUS(status);
 
     status = plugin.registerNode(
-            _data.referenceAssembly.typeName,
-            _data.referenceAssembly.typeId,
-            []() {
-                return UsdMayaReferenceAssembly::creator(
-                    _data.referenceAssembly);
-            },
-            []() {
-                return UsdMayaReferenceAssembly::initialize(
-                    &(_data.referenceAssembly));
-            },
+        UsdMayaStageNode::typeName,
+        UsdMayaStageNode::typeId,
+        UsdMayaStageNode::creator,
+        UsdMayaStageNode::initialize);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerNode(
+        UsdMayaPointBasedDeformerNode::typeName,
+        UsdMayaPointBasedDeformerNode::typeId,
+        UsdMayaPointBasedDeformerNode::creator,
+        UsdMayaPointBasedDeformerNode::initialize,
+        MPxNode::kDeformerNode);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerShape(
+        UsdMayaProxyShape::typeName,
+        UsdMayaProxyShape::typeId,
+        UsdMayaProxyShape::creator,
+        UsdMayaProxyShape::initialize,
+        UsdMayaProxyShapeUI::creator,
+        &UsdMayaProxyDrawOverride::sm_drawDbClassification);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerNode(
+        UsdMayaReferenceAssembly::typeName,
+        UsdMayaReferenceAssembly::typeId,
+        UsdMayaReferenceAssembly::creator,
+        UsdMayaReferenceAssembly::initialize,
         MPxNode::kAssembly,
         &UsdMayaReferenceAssembly::_classification);
     CHECK_MSTATUS(status);
 
-    status =
-	MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-	    UsdMayaProxyDrawOverride::sm_drawDbClassification,
-            UsdMayaProxyDrawOverride::sm_drawRegistrantId,
-            UsdMayaProxyDrawOverride::Creator);
+    status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+        UsdMayaProxyDrawOverride::sm_drawDbClassification,
+        UsdMayaProxyDrawOverride::sm_drawRegistrantId,
+        UsdMayaProxyDrawOverride::Creator);
     CHECK_MSTATUS(status);
 
     status = MGlobal::sourceFile("usdMaya.mel");
@@ -107,7 +110,7 @@ MStatus initializePlugin(
     const MString assemblyTypeLabel("UsdReferenceAssembly");
     MString setLabelCmd;
     status = setLabelCmd.format("assembly -e -type ^1s -label ^2s",
-                                _data.referenceAssembly.typeName,
+                                UsdMayaReferenceAssembly::typeName,
                                 assemblyTypeLabel);
     CHECK_MSTATUS(status);
     status = MGlobal::executeCommand(setLabelCmd);
@@ -115,9 +118,9 @@ MStatus initializePlugin(
 
     // Procs stored in usdMaya.mel
     // Add assembly callbacks for accessing data without creating an MPxAssembly instance
-    status = MGlobal::executeCommand("assembly -e -repTypeLabelProc usdMaya_UsdMayaReferenceAssembly_repTypeLabel -type " + _data.referenceAssembly.typeName);
+    status = MGlobal::executeCommand("assembly -e -repTypeLabelProc usdMaya_UsdMayaReferenceAssembly_repTypeLabel -type " + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS(status);
-    status = MGlobal::executeCommand("assembly -e -listRepTypesProc usdMaya_UsdMayaReferenceAssembly_listRepTypes -type " + _data.referenceAssembly.typeName);
+    status = MGlobal::executeCommand("assembly -e -listRepTypesProc usdMaya_UsdMayaReferenceAssembly_listRepTypes -type " + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS(status);
 
     // Attribute Editor Templates
@@ -132,65 +135,69 @@ MStatus initializePlugin(
     status = MGlobal::executePythonCommand(attribEditorCmd);
     CHECK_MSTATUS(status);
 
-    status = plugin.registerCommand("usdExport", 
-            usdExport::creator,
-            usdExport::createSyntax );
+    status = plugin.registerCommand(
+        "usdExport",
+        UsdMayaExportCommand::creator,
+        UsdMayaExportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdExport");
     }
 
-    status = plugin.registerCommand("usdImport",
-            []() { 
-                return usdImport::creator(_data.referenceAssembly.typeName.asChar(),
-                                          _data.proxyShape.typeName.asChar());
-            }, 
-            usdImport::createSyntax );
-
+    status = plugin.registerCommand(
+        "usdImport",
+        UsdMayaImportCommand::creator,
+        UsdMayaImportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdImport");
     }
 
-    status = plugin.registerCommand("usdListShadingModes",
-                                    usdListShadingModes::creator,
-                                    usdListShadingModes::createSyntax);
-
+    status = plugin.registerCommand(
+        "usdListShadingModes",
+        UsdMayaListShadingModesCommand::creator,
+        UsdMayaListShadingModesCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdListShadingModes");
     }
-    
-    status = plugin.registerFileTranslator("pxrUsdImport", 
-                                    "", 
-                                    []() { 
-                                        return usdTranslatorImport::creator(
-                                            _data.referenceAssembly.typeName.asChar(),
-                                            _data.proxyShape.typeName.asChar());
-                                    }, 
-                                    "usdTranslatorImport", // options script name
-                                    const_cast<char*>(usdTranslatorImportDefaults), 
-                                    false);
 
+    status = plugin.registerCommand(
+        "usdUndoHelperCmd",
+        UsdMayaUndoHelperCommand::creator,
+        UsdMayaUndoHelperCommand::createSyntax);
+    if (!status) {
+        status.perror("registerCommand usdUndoHelperCmd");
+    }
+
+    status = plugin.registerFileTranslator(
+        "pxrUsdImport",
+        "",
+        UsdMayaImportTranslator::creator,
+        "usdTranslatorImport", // options script name
+        const_cast<char*>(UsdMayaImportTranslator::GetDefaultOptions().c_str()),
+        false);
     if (!status) {
         status.perror("pxrUsd: unable to register USD Import translator.");
     }
-    
-    status = plugin.registerFileTranslator("pxrUsdExport", 
-                                    "", 
-                                    usdTranslatorExport::creator,
-                                    "usdTranslatorExport", // options script name
-                                    const_cast<char*>(usdTranslatorExportDefaults), 
-                                    true);
 
+    status = plugin.registerFileTranslator(
+        "pxrUsdExport",
+        "",
+        UsdMayaExportTranslator::creator,
+        "usdTranslatorExport", // options script name
+        const_cast<char*>(UsdMayaExportTranslator::GetDefaultOptions().c_str()),
+        true);
     if (!status) {
         status.perror("pxrUsd: unable to register USD Export translator.");
     }
+
+    UsdMayaDiagnosticDelegate::InstallDelegate();
 
     return status;
 }
 
 PXRUSD_API
-MStatus uninitializePlugin(
-    MObject obj) {
-
+MStatus
+uninitializePlugin(MObject obj)
+{
     MStatus status;
     MFnPlugin plugin(obj);
 
@@ -198,7 +205,7 @@ MStatus uninitializePlugin(
     if (!status) {
         status.perror("deregisterCommand usdImport");
     }
-    
+
     status = plugin.deregisterCommand("usdExport");
     if (!status) {
         status.perror("deregisterCommand usdExport");
@@ -207,6 +214,11 @@ MStatus uninitializePlugin(
     status = plugin.deregisterCommand("usdListShadingModes");
     if (!status) {
         status.perror("deregisterCommand usdListShadingModes");
+    }
+
+    status = plugin.deregisterCommand("usdUndoHelperCmd");
+    if (!status) {
+        status.perror("deregisterCommand usdUndoHelperCmd");
     }
 
     status = plugin.deregisterFileTranslator("pxrUsdImport");
@@ -219,24 +231,30 @@ MStatus uninitializePlugin(
         status.perror("pxrUsd: unable to deregister USD Export translator.");
     }
 
-    status = MGlobal::executeCommand("assembly -e -deregister " + _data.referenceAssembly.typeName);
+    status = MGlobal::executeCommand("assembly -e -deregister " + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS(status);
 
-    status =
-	MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-	    UsdMayaProxyDrawOverride::sm_drawDbClassification,
-            UsdMayaProxyDrawOverride::sm_drawRegistrantId);
-
+    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
+        UsdMayaProxyDrawOverride::sm_drawDbClassification,
+        UsdMayaProxyDrawOverride::sm_drawRegistrantId);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterNode(_data.referenceAssembly.typeId);
+    status = plugin.deregisterNode(UsdMayaReferenceAssembly::typeId);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterNode(_data.proxyShape.typeId);
+    status = plugin.deregisterNode(UsdMayaProxyShape::typeId);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterData(_data.stageData.typeId);
+    status = plugin.deregisterNode(UsdMayaPointBasedDeformerNode::typeId);
     CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(UsdMayaStageNode::typeId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterData(UsdMayaStageData::mayaTypeId);
+    CHECK_MSTATUS(status);
+
+    UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;
 }

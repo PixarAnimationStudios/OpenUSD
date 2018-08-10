@@ -61,7 +61,7 @@ public:
     /// Returns the identifier by which this state is known. This
     /// identifier is a common associative key used by the SceneDelegate,
     /// RenderIndex, and for binding to the state (e.g. camera, light)
-    SdfPath const& GetID() const { return _id; }
+    SdfPath const& GetId() const { return _id; }
 
     /// Synchronizes state from the delegate to this object.
     /// @param[in, out]  dirtyBits: On input specifies which state is
@@ -79,10 +79,6 @@ public:
     /// deletable.
     HD_API
     virtual void Finalize(HdRenderParam *renderParam);
-
-    /// Accessor for tasks to get the parameter cached in this sprim object.
-    /// Don't communicate back to scene delegate within this function.
-    virtual VtValue Get(TfToken const &token) const = 0;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.

@@ -62,27 +62,18 @@ TF_DECLARE_REF_PTRS(UsdSkel_SkelDefinition);
 /// // Populate the cache for a skel root.
 /// skelCache.Populate(UsdSkelRoot(skelRootPrim));
 ///
-/// for(const auto& prim : UsdPrimRange(skelRootPrim) {
-///     if(UsdSkelSkeletonQuery = skelCache.GetSkelQuery(prim)) {
-///         ...
-///     }
+/// if (UsdSkelSkeletonQuery skelQuery = skelCache.GetSkelQuery(skelPrim)) {
+///     ...
 /// }
 /// \endcode
 ///
-/// If constructing a query through a cache, the caller is on the hook for
-/// resolving the inherited properties that a define a skeletal binding.
 class UsdSkelSkeletonQuery
 {
 public:
     UsdSkelSkeletonQuery() {}
 
-    USDSKEL_API
-    UsdSkelSkeletonQuery(const UsdPrim& prim,
-                         const UsdSkel_SkelDefinitionRefPtr& definition,
-                         const UsdSkelAnimQuery& anim=UsdSkelAnimQuery());
-
     /// Return true if this query is valid.
-    bool IsValid() const { return _prim && _definition; }
+    bool IsValid() const { return _definition; }
 
     /// Boolean conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
@@ -91,8 +82,7 @@ public:
     /// same UsdSkelSkeletonQuery, false otherwise.
     friend bool operator==(const UsdSkelSkeletonQuery& lhs,
                            const UsdSkelSkeletonQuery& rhs) {
-        return lhs._prim == rhs._prim &&
-               lhs._definition == rhs._definition &&
+        return lhs._definition == rhs._definition &&
                lhs._animQuery == rhs._animQuery;
     }
 
@@ -107,12 +97,12 @@ public:
     USDSKEL_API
     friend size_t hash_value(const UsdSkelSkeletonQuery& query);
 
-    /// Returns the prim at which this skeleton instance is bound.
-    USDSKEL_API
-    const UsdPrim& GetPrim() const;
-
     /// Returns the underlying Skeleton primitive corresponding to the
     /// bound skeleton instance, if any.
+    USDSKEL_API
+    UsdPrim GetPrim() const;
+
+    /// Returns the bound skeleton instance, if any.
     USDSKEL_API
     const UsdSkelSkeleton& GetSkeleton() const;
     
@@ -132,21 +122,6 @@ public:
     USDSKEL_API
     VtTokenArray GetJointOrder() const;
 
-    /// Compute a root animation transform. If no animation source is bound,
-    /// an identity matrix is returned.
-    USDSKEL_API
-    bool ComputeAnimTransform(GfMatrix4d* xform,
-                              UsdTimeCode time=UsdTimeCode::Default()) const;
-
-    /// Compute the local-to-world transform of the skeleton instance.
-    /// A Skeleton instance's local to world transform is:
-    /// \code
-    ///     animTransform * skelInstanceLocalToWorld
-    /// \endcode
-    USDSKEL_API
-    bool ComputeLocalToWorldTransform(GfMatrix4d* xform,
-                                      UsdGeomXformCache* xfCache) const;
-    
     /// Compute joint transforms in joint-local space, at \p time.
     /// This returns transforms in joint order of the skeleton.
     /// If \p atRest is false and an animation source is bound, local transforms
@@ -170,12 +145,24 @@ public:
                                     UsdTimeCode time,
                                     bool atRest=false) const;
 
+    /// Compute joint transforms in world space, at whatever time is configured
+    /// on \p xfCache.
+    /// This is equivalent to computing skel-space joint transforms with
+    /// CmoputeJointSkelTransforms(), and then concatenating all transforms
+    /// by the local-to-world transform of the Skeleton prim.
+    /// If \p atRest is true, any bound animation source is ignored, and
+    /// transforms are computed from the rest pose.
+    USDSKEL_API
+    bool ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
+                                     UsdGeomXformCache* xfCache,
+                                     bool atRest=false) const;
+
     /// Compute transforms representing the change in transformation
     /// of a joint from its rest pose, in skeleton space.
     ///
     /// I.e.,
     /// \code
-    ///     inverse(restTransform)*jointTransform
+    ///     inverse(bindTransform)*jointTransform
     /// \endcode
     ///
     /// These are the transforms usually required for skinning.
@@ -183,10 +170,19 @@ public:
     bool ComputeSkinningTransforms(VtMatrix4dArray* xforms,
                                    UsdTimeCode time) const;
 
+    /// Returns the world space joint transforms at bind time.
+    USDSKEL_API
+    bool GetJointWorldBindTransforms(VtMatrix4dArray* xforms) const;
+
     USDSKEL_API
     std::string GetDescription() const;
 
 private:
+
+    USDSKEL_API
+    UsdSkelSkeletonQuery(const UsdSkel_SkelDefinitionRefPtr& definition,
+                         const UsdSkelAnimQuery& anim=UsdSkelAnimQuery());
+
     bool _HasMappableAnim() const;
 
     bool _ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
@@ -201,10 +197,11 @@ private:
                                     UsdTimeCode time) const;
 
 private:
-    UsdPrim _prim;
     UsdSkel_SkelDefinitionRefPtr _definition;
     UsdSkelAnimQuery _animQuery;
     UsdSkelAnimMapper _animToSkelMapper;
+
+    friend class UsdSkel_CacheImpl;
 };
 
 

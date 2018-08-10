@@ -70,9 +70,7 @@ PxrUsdKatanaReadBlindData(
                 // generated "as is", we *do not* want the prmanStatement style
                 // "type"/"value" declaration to be created.
                 attrs.set(attrName, 
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
-                        vtValue, 
-                        /* asShaderParam */ true));
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue));
             }
             else if (blindAttr.HasAuthoredValueOpinion())
             {

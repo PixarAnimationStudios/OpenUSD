@@ -26,10 +26,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
-#include "pxr/usd/sdf/layerBase.h"
+#include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/data.h"
-#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/fileFormatRegistry.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/layerBase.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/trace/trace.h"
@@ -201,6 +202,19 @@ SdfFileFormat::IsSupportedExtension(
         false : std::count(_extensions.begin(), _extensions.end(), ext);
 }
 
+bool 
+SdfFileFormat::IsPackage() const
+{
+    return false;
+}
+
+std::string 
+SdfFileFormat::GetPackageRootLayerPath(
+    const std::string& resolvedPath) const
+{
+    return std::string();
+}
+
 bool
 SdfFileFormat::WriteToFile(
     const SdfLayerBase*,
@@ -245,14 +259,13 @@ SdfFileFormat::GetFileExtension(
         return s;
     }
 
-    // XXX: if it is a dot file (e.g. .menva) we append a temp
+    // XXX: if it is a dot file (e.g. .sdf) we append a temp
     // name to retain behavior of specifier stripping.
     // this is in place for backwards compatibility
     std::string strippedExtension = (s[0] == '.' ? 
         "temp_file_name" + s : s);
 
-    std::string extension 
-        = ArGetResolver().GetExtension(strippedExtension);
+    std::string extension = Sdf_GetExtension(strippedExtension);
        
     return extension.empty() ? s : extension;
 }

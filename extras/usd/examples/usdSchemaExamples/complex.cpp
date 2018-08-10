@@ -74,6 +74,11 @@ UsdSchemaExamplesComplex::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdSchemaExamplesComplex::_GetSchemaType() const {
+    return UsdSchemaExamplesComplex::schemaType;
+}
+
 /* static */
 const TfType &
 UsdSchemaExamplesComplex::_GetStaticTfType()

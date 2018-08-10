@@ -27,31 +27,51 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdSt/shaders/pointId.glslfx
 
---- --------------------------------------------------------------------------
--- glsl PointId.Vertex
-
-flat out int vsPointId;
-
-// Forward declare accessor method defined via code gen
-int GetBaseVertexOffset();
-
-void ProcessPointId()
-{
-    vsPointId = gl_VertexID - GetBaseVertexOffset();
-}
+#import $TOOLS/hdx/shaders/selection.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl PointId.Fragment.Points
-
-flat in int vsPointId;
+-- glsl PointId.Vertex.None
 
 int GetPointId()
 {
-    return vsPointId;
+    return -1;
 }
 
-bool IsFragmentOnPoint() {
-    return true;
+float GetPointRasterSize(int pointId)
+{
+    return GetPointSize();
+}
+
+void ProcessPointId(int pointId)
+{
+    // do nothing
+}
+
+--- --------------------------------------------------------------------------
+-- glsl PointId.Vertex.PointParam
+
+// Fwd declare accessor method defined via code gen
+int GetBaseVertexOffset();
+int GetPointId()
+{
+    return gl_VertexID - GetBaseVertexOffset();
+}
+
+// Fwd declare selection decoder method defined in hdx/shaders/selection.glslfx
+bool IsPointSelected(int);
+float GetPointRasterSize(int pointId)
+{
+    return IsPointSelected(pointId)? 
+                        GetPointSelectedSize() : GetPointSize();
+}
+
+// Plumb the pointId, for use in the FS.
+// XXX: This works only because the TES and GS stages are disabled when
+// rendering as points. If they are enabled, we need to add the plumbing.
+flat out int vsPointId;
+void ProcessPointId(int pointId)
+{
+    vsPointId = pointId;
 }
 
 --- --------------------------------------------------------------------------
@@ -64,4 +84,18 @@ int GetPointId()
 
 bool IsFragmentOnPoint() {
     return false;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl PointId.Fragment.PointParam
+
+flat in int vsPointId;
+
+int GetPointId()
+{
+    return vsPointId;
+}
+
+bool IsFragmentOnPoint() {
+    return true;
 }

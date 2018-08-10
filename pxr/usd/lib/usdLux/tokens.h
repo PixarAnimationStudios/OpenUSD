@@ -74,6 +74,18 @@ struct UsdLuxTokensType {
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken automatic;
+    /// \brief "collection:filterLink:includeRoot"
+    /// 
+    /// UsdLuxLightFilter
+    const TfToken collectionFilterLinkIncludeRoot;
+    /// \brief "collection:lightLink:includeRoot"
+    /// 
+    /// UsdLuxLight
+    const TfToken collectionLightLinkIncludeRoot;
+    /// \brief "collection:shadowLink:includeRoot"
+    /// 
+    /// UsdLuxLight
+    const TfToken collectionShadowLinkIncludeRoot;
     /// \brief "color"
     /// 
     /// UsdLuxLight
@@ -106,6 +118,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxLight
     const TfToken exposure;
+    /// \brief "filterLink"
+    /// 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent filter-linking of a UsdLuxLightFilter prim. 
+    const TfToken filterLink;
     /// \brief "filters"
     /// 
     /// UsdLuxLight
@@ -134,6 +150,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxCylinderLight
     const TfToken length;
+    /// \brief "lightLink"
+    /// 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent light-linking of a UsdLuxLight prim. 
+    const TfToken lightLink;
     /// \brief "lightList"
     /// 
     /// UsdLuxListAPI
@@ -186,6 +206,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxShadowAPI
     const TfToken shadowInclude;
+    /// \brief "shadowLink"
+    /// 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent shadow-linking of a UsdLuxLight prim. 
+    const TfToken shadowLink;
     /// \brief "shaping:cone:angle"
     /// 
     /// UsdLuxShapingAPI

@@ -158,11 +158,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #elif defined(ARCH_COMPILER_MSVC)
 
-#   include <SAL.h>
-#   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
-        _Printf_format_string_
-#   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)	\
-        _Printf_format_string_
+#   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg)
+#   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)
 #   define ARCH_NOINLINE // __declspec(noinline)
 #   define ARCH_UNUSED_ARG
 #   define ARCH_USED_FUNCTION

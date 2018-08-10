@@ -294,7 +294,13 @@ HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
     }
 
     VtIntArray const &faceVertexCounts = _topology->GetFaceVertexCounts();
-    VtIntArray const &holeFaces = _topology->GetHoleIndices();
+
+    // Faces tagged as holes can be skipped over only when not refined.
+    VtIntArray const &holeFaces =
+        (_topology->GetRefineLevel() > 0)
+            ? VtIntArray()
+            : _topology->GetHoleIndices();
+
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
 
     switch (dataType) {
@@ -860,7 +866,13 @@ HdMeshUtil::ComputeQuadrangulatedFaceVaryingPrimvar(
     }
 
     VtIntArray const &faceVertexCounts = _topology->GetFaceVertexCounts();
-    VtIntArray const &holeFaces = _topology->GetHoleIndices();
+
+    // Faces tagged as holes can be skipped over only when not refined.
+    VtIntArray const &holeFaces =
+        (_topology->GetRefineLevel() > 0)
+            ? VtIntArray()
+            : _topology->GetHoleIndices();
+
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
 
     switch (dataType) {

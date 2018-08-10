@@ -22,13 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file meshUtil.h
+/// \file usdMaya/meshUtil.h
 
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
@@ -45,41 +46,53 @@ class UsdGeomMesh;
     ((DisplayColorColorSetName, "displayColor")) \
     ((DisplayOpacityColorSetName, "displayOpacity"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
+    PXRUSDMAYA_API,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
-
-namespace PxrUsdMayaMeshUtil
+/// Utilities for dealing with USD and RenderMan for Maya mesh/subdiv tags.
+namespace UsdMayaMeshUtil
 {
+    /// Gets the internal emit-normals tag on the Maya \p mesh, placing it in
+    /// \p value. Returns true if the tag exists on the mesh, and false if not.
+    PXRUSDMAYA_API
+    bool GetEmitNormalsTag(const MFnMesh &mesh, bool* value);
 
+    /// Sets the internal emit-normals tag on the Maya \p mesh.
+    /// This value indicates to the exporter whether it should write out the
+    /// normals for the mesh to USD.
     PXRUSDMAYA_API
-    bool getEmitNormals(const MFnMesh &mesh, const TfToken& subdivScheme);
-    PXRUSDMAYA_API
-    TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
+    void SetEmitNormalsTag(MFnMesh &meshFn, const bool emitNormals);
+
+    /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     PXRUSDMAYA_API
     bool GetMeshNormals(
         const MFnMesh& mesh,
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation);
-    
-    PXRUSDMAYA_API
-    TfToken getSubdivScheme(const MFnMesh &mesh, const TfToken& defaultValue);
-    PXRUSDMAYA_API
-    TfToken setSubdivScheme(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
+    /// Gets the subdivision scheme tagged for the Maya mesh by consulting the
+    /// adaptor for \c UsdGeomMesh.subdivisionSurface, and then falling back to
+    /// the RenderMan for Maya attribute.
     PXRUSDMAYA_API
-    TfToken getSubdivInterpBoundary(const MFnMesh &mesh, const TfToken& defaultValue);
-    PXRUSDMAYA_API
-    TfToken setSubdivInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
+    TfToken GetSubdivScheme(const MFnMesh &mesh);
 
+    /// Gets the subdivision interpolate boundary tagged for the Maya mesh by
+    /// consulting the adaptor for \c UsdGeomMesh.interpolateBoundary, and then
+    /// falling back to the RenderMan for Maya attribute.
     PXRUSDMAYA_API
-    TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
-    PXRUSDMAYA_API
-    TfToken setSubdivFVLinearInterpolation(const UsdGeomMesh& primSchema, MFnMesh& meshFn);
+    TfToken GetSubdivInterpBoundary(const MFnMesh &mesh);
 
-} // namespace PxrUsdMayaMeshUtil
+    /// Gets the subdivision face-varying linear interpolation tagged for the
+    /// Maya mesh by consulting the adaptor for
+    /// \c UsdGeomMesh.faceVaryingLinearInterpolation, and then falling back to
+    /// the OpenSubdiv2-style tagging.
+    PXRUSDMAYA_API
+    TfToken GetSubdivFVLinearInterpolation(const MFnMesh& mesh);
+
+} // namespace UsdMayaMeshUtil
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MESH_UTIL_H
+#endif

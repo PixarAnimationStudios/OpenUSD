@@ -86,31 +86,41 @@ public:
                                               SdfPath const& cachePath,
                                               TfToken const& property) override;
 
-
+    USDIMAGING_API
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
     virtual void MarkReprDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
                                UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
     virtual void MarkCullStyleDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index) override;
 
 
     /// Returns color, opacity, and Usd interpolation token for a given
@@ -141,14 +151,12 @@ protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
 
-private:
+    // Give derived classes an opportunity to block GprimAdapter processing
+    // of certain primvars.
+    USDIMAGING_API
+    virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const;
 
-    // Helper method for the _DiscoverPrimvars methods above.
-    void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,
-                           SdfPath const& cachePath,
-                           UsdGeomPrimvar const& primvar,
-                           UsdTimeCode time,
-                           UsdImagingValueCache* valueCache) const;
+private:
 
     /// Reads the extent from the given prim. If the extent is not authored,
     /// an empty GfRange3d is returned, the extent will not be computed.

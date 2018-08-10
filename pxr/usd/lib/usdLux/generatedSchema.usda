@@ -8,9 +8,26 @@
 )
 
 class "Light" (
-    doc = "Base class for all lights."
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+    doc = """Base class for all lights.
+
+    <b>Linking</b>
+
+    Lights can be linked to geometry.  Linking controls which geometry
+    a light illuminates, and which geometry casts shadows from the light.
+
+    Linking is specified as collections (UsdCollectionAPI) which can
+    be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLight
+    uses its collections: if a collection is empty, the light is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this light-specific interpretation.
+    """
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -363,11 +380,28 @@ class "ShadowAPI" (
 }
 
 class LightFilter "LightFilter" (
+    apiSchemas = ["CollectionAPI:filterLink"]
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
-    shared."""
+    shared.
+
+    <b>Linking</b>
+
+    Filters can be linked to geometry.  Linking controls which geometry
+    a light-filter affects, when considering the light filters attached
+    to a light illuminating the geometry.
+
+    Linking is specified as a collection (UsdCollectionAPI) which can
+    be accessed via GetFilterLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLightFilter
+    uses its collection: if a collection is empty, the filter is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this filter-specific interpretation.
+    """
 )
 {
+    uniform bool collection:filterLink:includeRoot = 1
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -451,6 +485,7 @@ class LightFilter "LightFilter" (
 }
 
 class DistantLight "DistantLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = """Light emitted from a distant source along the -Z axis.
     Also known as a directional light."""
 )
@@ -461,6 +496,8 @@ class DistantLight "DistantLight" (
         Higher values broaden the light and therefore soften shadow edges.
         """
     )
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -590,10 +627,13 @@ class DistantLight "DistantLight" (
 }
 
 class DiskLight "DiskLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -725,11 +765,14 @@ class DiskLight "DiskLight" (
 }
 
 class RectLight "RectLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit in length in the X and Y axis."""
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -867,9 +910,12 @@ class RectLight "RectLight" (
 }
 
 class SphereLight "SphereLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = "Light emitted outward from a sphere."
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -1007,12 +1053,15 @@ class SphereLight "SphereLight" (
 }
 
 class CylinderLight "CylinderLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = """Light emitted outward from a cylinder.
     The cylinder is centered at the origin and has its major axis on the X axis.
     The cylinder does not emit light from the flat end-caps.
     """
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -1153,10 +1202,13 @@ class CylinderLight "CylinderLight" (
 }
 
 class GeometryLight "GeometryLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = """Light emitted outward from a geometric prim (UsdGeomGprim),
     which is typically a mesh."""
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -1288,10 +1340,13 @@ class GeometryLight "GeometryLight" (
 }
 
 class DomeLight "DomeLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     doc = """Light emitted inward from a distant external environment,
     such as a sky or IBL light probe."""
 )
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )

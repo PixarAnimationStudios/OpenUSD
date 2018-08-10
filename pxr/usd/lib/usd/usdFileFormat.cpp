@@ -298,6 +298,17 @@ UsdUsdFileFormat::_GetUnderlyingFileFormatForLayer(
         underlyingFileFormat : _GetDefaultFileFormat();
 }
 
+/* static */
+TfToken
+UsdUsdFileFormat::GetUnderlyingFormatForLayer(const SdfLayerBase *layerBase)
+{
+    if (layerBase->GetFileFormat()->GetFormatId() != UsdUsdFileFormatTokens->Id)
+        return TfToken();
+
+    auto fileFormat = _GetUnderlyingFileFormatForLayer(layerBase);
+    return _GetFormatArgumentForFileFormat(fileFormat);
+}
+
 bool
 UsdUsdFileFormat::WriteToFile(
     const SdfLayerBase* layerBase,

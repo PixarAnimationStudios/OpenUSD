@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file translatorSkel.h
+/// \file usdMaya/translatorSkel.h
 
 #ifndef PXRUSDMAYA_TRANSLATOR_SKEL_H
 #define PXRUSDMAYA_TRANSLATOR_SKEL_H
@@ -32,31 +32,62 @@
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
+#include "pxr/base/vt/array.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class UsdSkelSkeleton;
 class UsdSkelSkeletonQuery;
 class UsdSkelSkinningQuery;
 
 
-struct PxrUsdMayaTranslatorSkel
+struct UsdMayaTranslatorSkel
 {
+    /// Returns true if \p joint is being used to identify the root of
+    /// a UsdSkelSkeleton.
+    PXRUSDMAYA_API
+    static bool IsUsdSkeleton(const MDagPath& joint);
+
+    /// Returns true if \p Skeleton was originally generated from Maya.
+    /// This is based on bool metadata Maya:generated, and is used to
+    /// determine whether or not a joint should be created to represent a
+    /// Skeleton when importing a Skeleton from USD that was originally
+    /// created in Maya.
+    PXRUSDMAYA_API
+    static bool IsSkelMayaGenerated(const UsdSkelSkeleton& skel);
+
+    /// Mark a Skeleton as being originally exported from Maya.
+    PXRUSDMAYA_API
+    static void MarkSkelAsMayaGenerated(const UsdSkelSkeleton& skel);
+
     /// Create joint nodes for each joint in \p skelQuery.
     /// Animation is applied to the joints if \p args enable it.
     PXRUSDMAYA_API
-    static bool CreateJoints(const UsdSkelSkeletonQuery& skelQuery,
-                             MObject& parentNode,
-                             const PxrUsdMayaPrimReaderArgs& args,
-                             PxrUsdMayaPrimReaderContext* context,
-                             std::vector<MObject>* joints);
+    static bool CreateJointHierarchy(const UsdSkelSkeletonQuery& skelQuery,
+                                     MObject& parentNode,
+                                     const UsdMayaPrimReaderArgs& args,
+                                     UsdMayaPrimReaderContext* context,
+                                     VtArray<MObject>* joints);
 
-    /// Create a bind psoe wired up to joint nodes created for \p skelQuery.
+    /// Find the set of MObjects joint objects for a skeleton.
+    PXRUSDMAYA_API
+    static bool GetJoints(const UsdSkelSkeletonQuery& skelQuery,
+                          UsdMayaPrimReaderContext* context,
+                          VtArray<MObject>* joints);
+
+    /// Create a dagPose node holding a bind pose for skel \p skelQuery.
     PXRUSDMAYA_API
     static bool CreateBindPose(const UsdSkelSkeletonQuery& skelQuery,
-                               const std::vector<MObject>& joints,
-                               PxrUsdMayaPrimReaderContext* context,
+                               const VtArray<MObject>& joints,
+                               UsdMayaPrimReaderContext* context,
                                MObject* bindPoseNode);
+
+    /// Find the bind pose for a Skeleton.
+    PXRUSDMAYA_API
+    static MObject GetBindPose(const UsdSkelSkeletonQuery& skelQuery,
+                               UsdMayaPrimReaderContext* context);
 
     /// Create a skin cluster for skinning \p primToSkin.
     /// The skinning cluster is wired up to be driven by the joints
@@ -65,14 +96,14 @@ struct PxrUsdMayaTranslatorSkel
     PXRUSDMAYA_API
     static bool CreateSkinCluster(const UsdSkelSkeletonQuery& skelQuery,
                                   const UsdSkelSkinningQuery& skinningQuery,
-                                  const std::vector<MObject>& joints,
+                                  const VtArray<MObject>& joints,
                                   const UsdPrim& primToSkin,
-                                  const PxrUsdMayaPrimReaderArgs& args,
-                                  PxrUsdMayaPrimReaderContext* context,
+                                  const UsdMayaPrimReaderArgs& args,
+                                  UsdMayaPrimReaderContext* context,
                                   const MObject& bindPose=MObject());
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_SKEL_H
+#endif

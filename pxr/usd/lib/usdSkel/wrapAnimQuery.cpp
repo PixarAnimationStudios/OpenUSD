@@ -34,7 +34,6 @@
 #include "pxr/base/gf/interval.h"
 
 #include <boost/python.hpp>
-#include <boost/python/tuple.hpp>
 
 #include <vector>
 
@@ -45,16 +44,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 
 namespace {
-
-
-GfMatrix4d
-_ComputeTransform(const UsdSkelAnimQuery& self, UsdTimeCode time)
-{
-    GfMatrix4d xform;
-    if(!self.ComputeTransform(&xform, time))
-        xform.SetIdentity();
-    return xform;
-}
 
 
 VtMatrix4dArray
@@ -75,6 +64,15 @@ _ComputeJointLocalTransformComponents(const UsdSkelAnimQuery& self, UsdTimeCode 
     self.ComputeJointLocalTransformComponents(&translations, &rotations,
                                               &scales, time);
     return boost::python::make_tuple(translations, rotations, scales);
+}
+
+
+VtFloatArray
+_ComputeBlendShapeWeights(const UsdSkelAnimQuery& self, UsdTimeCode time)
+{
+    VtFloatArray weights;
+    self.ComputeBlendShapeWeights(&weights, time);
+    return weights;
 }
 
 
@@ -107,19 +105,21 @@ void wrapUsdSkelAnimQuery()
     class_<This>("AnimQuery", no_init)
 
         .def(!self)
+        .def(self == self)
+        .def(self != self)
 
         .def("__str__", &This::GetDescription)
 
         .def("GetPrim", &This::GetPrim)
-
-        .def("ComputeTransform", &_ComputeTransform,
-             (arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeJointLocalTransformComponents",
              &_ComputeJointLocalTransformComponents,
+             (arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeBlendShapeWeights", &_ComputeBlendShapeWeights,
              (arg("time")=UsdTimeCode::Default()))
 
         .def("GetJointTransformTimeSamples", &_GetJointTransformTimeSamples)
@@ -131,8 +131,8 @@ void wrapUsdSkelAnimQuery()
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
 
-        .def("TransformMightBeTimeVarying", &This::TransformMightBeTimeVarying)
-
         .def("GetJointOrder", &This::GetJointOrder)
+
+        .def("GetBlendShapeOrder", &This::GetBlendShapeOrder)
         ;
 }            

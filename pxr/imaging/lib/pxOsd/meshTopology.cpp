@@ -111,23 +111,6 @@ PxOsdMeshTopology::operator==(PxOsdMeshTopology const &other) const {
             _holeIndices == other._holeIndices);
 }
 
-void
-PxOsdMeshTopology::SetHoleIndices(VtIntArray const &holeIndices)
-{
-    if (TfDebug::IsEnabled(0)) {
-        // make sure faceIndices is given in ascending order.
-        const size_t nFaceIndices = holeIndices.size();
-        for (size_t i = 1; i < nFaceIndices; ++i) {
-            if (holeIndices[i] <= holeIndices[i-1]) {
-                // XXX: would be better to print the prim name.
-                TF_WARN("hole face indices are not in ascending order.");
-                return;
-            }
-        }
-    }
-    _holeIndices = holeIndices;
-}
-
 std::ostream&
 operator << (std::ostream &out, PxOsdMeshTopology const &topo)
 {

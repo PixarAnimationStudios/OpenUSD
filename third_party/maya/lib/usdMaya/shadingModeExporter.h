@@ -21,59 +21,70 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXRUSDMAYA_SHADING_MODE_EXPORTER_H
+#define PXRUSDMAYA_SHADING_MODE_EXPORTER_H
 
-#ifndef PXRUSDMAYA_SHADINGMODEEXPORTER_H
-#define PXRUSDMAYA_SHADINGMODEEXPORTER_H
-
-#include "pxr/pxr.h"
+/// \file usdMaya/shadingModeExporter.h
 
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/util.h"
 
+#include "pxr/pxr.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include <functional>
 #include <memory>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdMayaShadingModeExporter {
+
+class UsdMayaShadingModeExporter
+{
 public:
     PXRUSDMAYA_API
-    PxrUsdMayaShadingModeExporter();
+    UsdMayaShadingModeExporter();
     PXRUSDMAYA_API
-    virtual ~PxrUsdMayaShadingModeExporter();
+    virtual ~UsdMayaShadingModeExporter();
 
     PXRUSDMAYA_API
-    void DoExport(const UsdStageRefPtr& stage,
-                  const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
-                  const PxrUsdMayaExportParams &exportParams);
+    void DoExport(
+            const UsdStageRefPtr& stage,
+            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
+            const UsdMayaExportParams& exportParams);
 
     /// Called once, before any exports are started.
     ///
-    /// Because it is called before the the per-shading-engine loop, the shadingEngine
-    /// in the passed PxrUsdMayaShadingModeExportContext will be a null MObject.
+    /// Because it is called before the per-shading-engine loop, the shadingEngine
+    /// in the passed UsdMayaShadingModeExportContext will be a null MObject.
     PXRUSDMAYA_API
-    virtual void PreExport(const PxrUsdMayaShadingModeExportContext& context) {};
+    virtual void PreExport(UsdMayaShadingModeExportContext*  /*context*/) {};
 
     /// Called inside of a loop, per-shading-engine
     PXRUSDMAYA_API
-    virtual void Export(const PxrUsdMayaShadingModeExportContext& context,
-                        UsdShadeMaterial * const mat, 
-                        SdfPathSet * const boundPrimPaths)=0;
+    virtual void Export(
+            const UsdMayaShadingModeExportContext& context,
+            UsdShadeMaterial* const mat,
+            SdfPathSet* const boundPrimPaths) = 0;
 
     /// Called once, after Export is called for all shading engines.
     ///
-    /// Because it is called after the the per-shading-engine loop, the shadingEngine
-    /// in the passed PxrUsdMayaShadingModeExportContext will be a null MObject.
+    /// Because it is called after the per-shading-engine loop, the shadingEngine
+    /// in the passed UsdMayaShadingModeExportContext will be a null MObject.
     PXRUSDMAYA_API
-    virtual void PostExport(const PxrUsdMayaShadingModeExportContext& context) {};
+    virtual void PostExport(const UsdMayaShadingModeExportContext&  /*context*/) {};
 
 };
 
-using PxrUsdMayaShadingModeExporterPtr = std::shared_ptr<PxrUsdMayaShadingModeExporter>;
-using PxrUsdMayaShadingModeExporterCreator = std::function<std::shared_ptr<PxrUsdMayaShadingModeExporter>()>;
+using UsdMayaShadingModeExporterPtr = std::shared_ptr<UsdMayaShadingModeExporter>;
+using UsdMayaShadingModeExporterCreator = std::function<std::shared_ptr<UsdMayaShadingModeExporter>()>;
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_SHADINGMODEEXPORTER_H
+
+#endif

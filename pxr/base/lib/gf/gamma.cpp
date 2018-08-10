@@ -52,6 +52,13 @@ GfVec3d GfApplyGamma(const GfVec3d &v, double g) {
     return GfVec3d(pow(v[0],g),pow(v[1],g),pow(v[2],g));
 }
 
+GfVec3h GfApplyGamma(const GfVec3h &v, double g) {
+    // Explicitly cast half to float to avoid ambiguous call to pow(...)
+    return GfVec3h(pow(static_cast<float>(v[0]),g),
+                   pow(static_cast<float>(v[1]),g),
+                   pow(static_cast<float>(v[2]),g));
+}
+
 GfVec4f GfApplyGamma(const GfVec4f &v, double g) {
     return GfVec4f(pow(v[0],g),pow(v[1],g),pow(v[2],g),v[3]);
 }
@@ -60,23 +67,35 @@ GfVec4d GfApplyGamma(const GfVec4d &v, double g) {
     return GfVec4d(pow(v[0],g),pow(v[1],g),pow(v[2],g),v[3]);
 }
 
+GfVec4h GfApplyGamma(const GfVec4h &v, double g) {
+    // Explicitly cast half to float to avoid ambiguous call to pow(...)
+    return GfVec4h(pow(static_cast<float>(v[0]),g),
+                   pow(static_cast<float>(v[1]),g),
+                   pow(static_cast<float>(v[2]),g),
+                   v[3]);
+}
+
 template <class T>
-T GfConvertLinearToDisplay(const T& v) {
+static T Gf_ConvertLinearToDisplay(const T& v) {
     return GfApplyGamma(v,1.0/_DisplayGamma);
 }
 
 template <class T>
-T GfConvertDisplayToLinear(const T& v) {
+static T Gf_ConvertDisplayToLinear(const T& v) {
     return GfApplyGamma(v,_DisplayGamma);
 }
 
-template GF_API GfVec3f GfConvertLinearToDisplay<GfVec3f>(const GfVec3f&);
-template GF_API GfVec3d GfConvertLinearToDisplay<GfVec3d>(const GfVec3d&);
-template GF_API GfVec4f GfConvertLinearToDisplay<GfVec4f>(const GfVec4f&);
-template GF_API GfVec4d GfConvertLinearToDisplay<GfVec4d>(const GfVec4d&);
-template GF_API GfVec3f GfConvertDisplayToLinear<GfVec3f>(const GfVec3f&);
-template GF_API GfVec3d GfConvertDisplayToLinear<GfVec3d>(const GfVec3d&);
-template GF_API GfVec4f GfConvertDisplayToLinear<GfVec4f>(const GfVec4f&);
-template GF_API GfVec4d GfConvertDisplayToLinear<GfVec4d>(const GfVec4d&);
+GfVec3f GfConvertLinearToDisplay(const GfVec3f &v) { return Gf_ConvertLinearToDisplay(v); }
+GfVec3d GfConvertLinearToDisplay(const GfVec3d &v) { return Gf_ConvertLinearToDisplay(v); }
+GfVec3h GfConvertLinearToDisplay(const GfVec3h &v) { return Gf_ConvertLinearToDisplay(v); }
+GfVec4f GfConvertLinearToDisplay(const GfVec4f &v) { return Gf_ConvertLinearToDisplay(v); }
+GfVec4d GfConvertLinearToDisplay(const GfVec4d &v) { return Gf_ConvertLinearToDisplay(v); }
+GfVec4h GfConvertLinearToDisplay(const GfVec4h &v) { return Gf_ConvertLinearToDisplay(v); }
+GfVec3f GfConvertDisplayToLinear(const GfVec3f &v) { return Gf_ConvertDisplayToLinear(v); }
+GfVec3d GfConvertDisplayToLinear(const GfVec3d &v) { return Gf_ConvertDisplayToLinear(v); }
+GfVec3h GfConvertDisplayToLinear(const GfVec3h &v) { return Gf_ConvertDisplayToLinear(v); }
+GfVec4f GfConvertDisplayToLinear(const GfVec4f &v) { return Gf_ConvertDisplayToLinear(v); }
+GfVec4d GfConvertDisplayToLinear(const GfVec4d &v) { return Gf_ConvertDisplayToLinear(v); }
+GfVec4h GfConvertDisplayToLinear(const GfVec4h &v) { return Gf_ConvertDisplayToLinear(v); }
 
 PXR_NAMESPACE_CLOSE_SCOPE

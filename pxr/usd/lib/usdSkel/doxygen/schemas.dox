@@ -1,8 +1,6 @@
 /*!
 
-\page UsdSkel_Schemas Schemas
-
-\section UsdSkel_Schemas_Overview Overview
+\page UsdSkel_Schemas Schemas In-Depth
 
 Data in UsdSkel is stored in modular, reusable, instanceable parts,
 adhering to the following design principles:
@@ -40,22 +38,24 @@ schema types:
 - \ref UsdSkel_Skeleton "Skeleton":
   
   Defines the \ref UsdSkel_Term_SkeletonTopology "topology" of the skeleton,
-  as well as storing a _rest pose_.
+  as well as storing a _bind pose_. Skeletons are animated by attaching
+  a SkelAnimation.
 
-- \ref UsdSkel_Joint "Joint":
+- \ref UsdSkel_SkelAnimation "Skel Animation":
   
-  Concrete prim type used when defining the \ref UsdSkel_JointHierarchy
-  "joint hierarchy" of a skeleton.
+  Stores joint and blend shape animations, which may be applied to any
+  _Skeleton_.
 
-- \ref UsdSkel_PackedJointAnimation "Packed Joint Animation":
+- \ref UsdSkel_BlendShape "Blend Shape":
   
-  Stores animated joint transforms, which may be applied to any skeleton.
+  Stores an individual blend shape, and optional in-betweens, for a geometric
+  primitive.
 
 - \ref UsdSkel_BindingAPI "Binding API":
 
-  API schema used to describe what skeletons affect which primitives,
-  what animation sources drive the skeleton, as well as basic skinning
-  properties like joint influences.
+  API schema used to describe which skeletons affect which primitives,
+  as well as basic skinning properties like joint influences.
+  The BindingAPI is also used to attach a _SkelAnimation_ to a _Skeleton_.
 
 \section UsdSkel_JointOrder Joint Order
 
@@ -75,7 +75,7 @@ need to refer to actual primitives in the scene. They are used as a way to
 name and order joints in vectorized data. For example:
 
 \code
-def PackedJointAnimation "Anim" {
+def SkelAnimation "Anim" {
     uniform token[] = ["A", "A/B"]
 }
 def Skeleton "Skel" {
@@ -87,11 +87,11 @@ Note that in both example primitives above, the given paths do not reference
 any real primitives. Also note that each primitive has its own joint ordering,
 and that those orders need not be identical.
 
-The purpose of encoding orderings in this manner to allow for the creation
+The purpose of encoding orderings in this manner is to allow for the creation
 of **self-contained** assets. For example, it is possible to construct
-a \ref UsdSkel_PackedJointAnimation "packed joint animation" primitive
-independently from any skeleton definitions, which will remain valid even if a
-_skeleton_ that the animation is mapped to has a slightly different ordering.
+a \ref UsdSkel_SkelAnimation "skel animation" primitive independently from any
+skeleton definitions, which will remain valid even if a _skeleton_ that the
+animation is mapped to has a slightly different ordering.
 
 Part of the motivation for this is to allow for more robust, composed assets.
 When orderings are required to remain fixed, maintenance difficulties
@@ -105,11 +105,9 @@ for additional features like sparse authoring of animation data.
 Data can be remapped from one joint ordering to another using a
 UsdSkelAnimMapper, and is done so by matching joint names.
 
-\sa UsdSkelSkeleton::GetJointOrder, UsdSkelSkeleton::SetJointOrder,
-    UsdSkelPackedJointAnimation::GetJointOrder,
-    UsdSkelPackedJointAnimation::SetJointOrder,
-    UsdSkelBindingAPI::GetJointOrder, UsdSkelBindingAPI::SetJointOrder
-
+\sa UsdSkelAnimQuery::GetJointOrder,
+    UsdSkelSkeletonQuery::GetJointOrder,
+    UsdSkelSkinningQuery::GetJointOrder
 
 \section UsdSkel_SkelRoot Skeleton Root Schema
 
@@ -119,16 +117,13 @@ skeletal skinning behaviors, and is required when authoring skeletal data.
 A SkelRoot is a boundable primitive, and provides a place to encode the
 extents of all skinned primitives beneath it. It is neither expected nor
 required the descendent primitives that are being skinned will encode
-their own skinned extents.
+their own skinned extents. These extents are made available to renders
+to enable operations like out-of-camera culling, without requiring that
+skinned geometry be computed first.
 
 A SkelRoot additionally gives DCC apps a way of identifying which parts of a
 scene graph require skeletal processing, so that they can take different code
 paths, as is often required to consume skeletal data.
-
-Because a UsdSkelRoot prim encapsulates skeletal behavior, it is also the case
-that the inherited bindings set through the \ref UsdSkel_BindingAPI
-"Binding API Schema" have no effect when set on primitives that do not have
-a UsdSkelRoot primitive as one of their ancestors.
 
 It is possible to override a primitive's composed type in USD, in order
 to either enable or disable skeletal processing. For example:
@@ -144,17 +139,18 @@ to either enable or disable skeletal processing. For example:
 
 The UsdSkelSkeleton schema describes a skeleton. This schema is responsible
 both for establishing the _topology_ of a skeleton, as well as for identifying
-a _rest pose_.
+a _bind pose_.
 
 A skeleton itself provides only structure. Meshes are posed with a skeleton
 by way of \ref UsdSkel_BindingAPI "skeletal bindings" inside of 
 the "geometry hierarchy" of primitives.
 
-\subsection UsdSkel_JointHierarchy Skeleton: Joint Hierarchy
+\subsection UsdSkel_JointHierarchy Skeleton Schema: Joint Hierarchy
 
 The joints of a Skeleton are defined by the _joints_ attribute. This attribute
-encodes joints paths -- which must be valid SdfPath strings. The parent-child
-relationships of these paths establish parent-child relationships.
+encodes joint paths -- each of which is a valid SdfPath strings. The
+parent-child relationships that these paths describe are used to define the
+parent-child relationships of the joints themselves.
 
 For example:
 
@@ -162,6 +158,7 @@ For example:
 def Skeleton "Skel" {
     uniform token[] joints = ["A", "A/B",  "C", "C/D/E"]
 }
+\endcode
 
 In the above example, there are four joints:
 - `A`: A root joint (no parent)
@@ -182,14 +179,23 @@ can most easily be achieved by simply sorting the array.
 It's possible to test whether or not an array of joint paths defines a
 valid topology as follows:
 
+- C++:
 \code{.cpp}
 std::string whyNot;
 bool isValid = UsdSkelTopology(paths).Validate(&whyNot);
 \endcode
 
-\section UsdSkel_PackedJointAnimation Packed Joint Animation Schema
+- Python:
+\code{.py}
+(isValid,whyNot) = UsdSkel.Topology(paths).Validate()
+\endcode
 
-Schema describing vectorized joint animation data.
+\section UsdSkel_SkelAnimation Skel Animation Schema
+
+Schema describing skeletal animation, within which joint animations
+and blend shapes are stored in a vecorized form. A SkelAnimation encodes
+the animation of a Skeleton as a separate primitive to facilitate
+instancing workflows.
 
 Both as a storage optimization and to allow for value interpolation that
 preserves transform orthogonality, joint transforms are encoded as separate
@@ -208,21 +214,163 @@ UsdSkelSkeleton primitive to which they apply.
 
 An animation source is only valid if its _translation_, _rotation_, and
 _scale_ components are all authored, storing arrays size to the same size
-as the authored _joints_ array.
+as the authored _joints_ array. The effect of a skel animation prim may
+also be directly nullified by either deactivating the primitive, or by blocking
+the component attributes.
 
-The effect of a packed animation prim may also be nullified by either
-deactivating the primitive, or by blocking the component attributes.
+In addition to providing joint animations, a SkelAnimation may also provide
+blend shape weight animations. Blend shape weights are specified in a vectorized
+form using the _blendShapeWeights_ attribute. The _blendShapes_ attribute holds
+a token array which, for every element authored in _blendShapeWeights_,
+identifies which blend shape each weight value applies to.
 
-\subsection Animation Root Transform
+The point of this encoding is to decouple the blendshape weight animation from
+the description of how that animation maps to different skinnable shapes.
+Refer to the \ref UsdSkel_BindingAPI_BlendShapes 'BindingAPI: Blend Shapes'
+documentation for information on how these weights are mapped to skinnable
+primitives.
 
-A PackedJointAnimation is itself a UsdGeomXformable primitive, and may specify
-a local transformation. If such a local transform is defined, it provides
-a root transformation for the entire animation.
+\section UsdSkel_SkelAnimation_Binding Skel Animation Schema: Binding to Skeletons
 
-This is separate from the root transformation of the 
-\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance", and provides a way of
-making a distinction between the component of a character's _clip_ motion, and
-the model's own local-to-world transform.
+A _SkelAnimation_ is made to affect a _Skeleton_ by *binding* the animation
+to the skeleton, using the _skel:animationSource_ property of UsdSkelBindingAPI
+schema. For example:
+
+\code
+def SkelAnimation "Anim" {}
+def "Model" {
+    rel skel:animationSource = </Anim>
+    
+    def Skeleton "Skel" {}
+}
+\endcode
+
+When a _skel:animationSource_ property is defined, it is "inherited" down
+namespace, onto any _Skeleton_ primitive beneath it. So in the above example,
+`</Model/Skel>` will be affected by the SkelAnimation at `</Model/Anim>`.
+
+There are a couple reasons why data is separated in this manner:
+- Encoding animation separately means that different schemes can be developed
+  for describing the animation of a Skeleton. For example, it is possible
+  to define a "blender" animation type that encodes the blending of animation.
+- It is possible to apply different animations to _instanced assets_.
+  \sa UsdSkel_Instancing
+
+\section UsdSkel_BlendShape Blend Shape Schema
+
+Schema describing a single blend shape.
+
+Blend shapes specify a target shape, in terms of point offsets, for a
+point-based primitive. The offsets may hold a direct correspondance with the
+points of the point-based primitive to which they are meant to apply, or the
+points may specify a shape using a sparse subset of points. The mapping in the
+latter case is described using the *pointIndices* attribute. If a blend shape
+defines any \ref UsdSkel_BlendShape_Inbetweens "in-between shapes", the same
+*pointIndices* mapping additionaly applies to all in-between shapes.
+
+When a mesh is skinned in UsdSkel, blend shape application precedes the effect
+of skinning using joint transformations. If no in-between shapes are defined,
+a set of blend shapes is applied against an input point as follows:
+
+\f[
+    P' = P +\sum_i{w_ib_i} \\
+    \text{where:} \\
+    \begin{align*}
+       b_i    &= \text{Position offset of shape } i \\
+       P      &= \text{Initial point being deformed}
+    \end{align*}
+\f]
+
+In other words, the position offsets are multiplied against the corresponding
+weight value, and added against the input positions. Note that the above
+equation only describes application of blend shapes in the absence of
+in-between shapes.
+
+\subsection UsdSkel_BlendShape_Inbetweens Blend Shape: In-betweens
+
+Each blend shape prim may define in-between shapes, which specify explicit
+corrective shape to apply when the blend shape is resolved at different
+weights.
+
+For example, suppose that a blend shape defines a 'smile' shape.
+At a weight of 1, we apply the full effect of the shape. At in-between weight
+values, we linearly interpolate the shape back towards a neutral pose to derive
+an in-between shape. Using in-betweens, we can instead specify those in-between
+shapes explicitly. So instead of linearly interpolating to derive a 'half-smile'
+pose, we might provide an explicit shape corresponding to a weight of 0.5.
+
+Scene description for the scenario described above is as follows:
+
+\code
+def BlendShape "Smile" {
+    uniform vector3f[] inbetweens:halfSmile = [...] (weight = 0.5)
+}
+\endcode
+
+While an equivalent animation could be defined without in-betweens by animating
+the weights of two blend shapes separately, using in-betweens provides a more
+convenient encoding that allows us to decouple the specification of in-betweens
+from the primary weight animation.
+
+In-between shapes can be created via UsdSkelBlend::CreateInbetween(), and
+are manipulated and introspected using UsdSkelInbetweenShape objects.
+The in-between shapes themselves are encoded as attributes in the 'inbetweens:'
+namespace, using the 'weight' metadata field to indicate the weight value
+at which they apply.
+
+The in-between shapes corresponding to \f$weight = 0\f$ and \f$weight = 1\f$
+are **implicitly** defined on a blend shape. The former defines the null shape,
+for which all shape offset are zero, while the latter is the shape given by the
+_offsets_ property of the UsdSkelBlendShape primitive.
+Because the existence of those in-betweens is implied, it is considered an
+authoring error for any in-betweens to specify a weight of 0 or 1.
+
+We must also consider the behavior when multiple in-betweens have matching
+weight values. Although it would be possible to adopt an interpretation that
+allows all shapes to have meaning -- such as averaging across all shapes -- this
+introduces some ambiguity for interchange: If the in-betweens are averaged
+together, it's unclear what the _name_ should be given to the resulting shape.
+To avoid this ambiguous interpretation, in addition to treating in-betweens with
+a weight value of 0 or 1 as an authoring error, it is also considered an error
+for any two in-betweens of a blend shape to have the same weight value. Typical
+run-time behavior for these malformed in-betweens is to produce an error, but
+continue to process the blend shape while ignoring the malformed in-betweens.
+
+If we consider only the set of valid in-betweens, a set of blend shapes
+containing in-betweens are applied to a point as follows:
+
+\f[
+    P' = P + \sum_i{ [b_l(1 - \frac{w_i-\alpha_l}{\alpha_u-\alpha_l}) +
+                     b_u\frac{w_i-\alpha_l}{\alpha_u-\alpha_l}] } \\
+    \text{where:} \\
+    \begin{align*}
+        P        &= \text{Initial point being deformed} \\
+        w_i      &= \text{Weight value of blendshape } i \\
+        b_i      &= \text{Position offsets of blendshape } i \\
+        \alpha_i &= \text{Weight location of in-between blendshape } i \\
+        l        &= \text{The index of the nearest weight with weight }
+                          \leq w \text{, or the index of the in-between with
+                          the lowest weight value otherwise} \\
+        u        &= \text{The index of the next in-between with weight }
+                          \geq w_l, l \neq u \\
+    \end{align*}
+ \f]
+
+For example, given in-between weights of \f$[0.25, 0.5]\f$, if a blendshape
+weight is greater than 0.5, we interpolate between the shape at 0.5 and the
+implicit primary shape (\f$weight = 1\f$), adding the result to the base shape.
+If the weight is in the \f$[0.25,0.5]\f$ interval, we interpolate between the
+shapes at 0.25 and 0.5, adding the result to the base shape. Finally, if the
+weight is less than 0.25, we interpolate between the implicit null shape
+(\f$weight = 0\f$) and the shape at 0.25. Note also that this interpolation
+is _unbounded_, so if the input weight is, say, -0.25, then we have:
+\f[
+    (1 - \frac{w_i-\alpha_l}{\alpha_u-\alpha_l}) = (1 - \frac{-0.25 - 0}{0.25 - 0}) = 2 \\
+    \frac{w_i-\alpha_l}{\alpha_u-\alpha_l} = \frac{-0.25 - 0}{0.25 - 0} = -1
+\f]
+
+So at a weight value of -0.25, the shape at 0.25 is applied with a weight of -1.
+   
 
 \section UsdSkel_BindingAPI Binding API Schema
 
@@ -235,16 +383,14 @@ Since a UsdSkelRoot primitive provides encapsulation of skeletal data, bindings
 defined on any primitives that do not have a UsdSkelRoot primitive as one of
 their ancestors have no meaning, and should be ignored.
 
-\sa \ref UsdSkel_CodingExamples "Coding examples for reading skel data"
-
 \subsection UsdSkel_BindingAPI_Skeletons BindingAPI: Binding Skeletons
 
 Meshes are skinned based on \ref UsdSkel_Term_SkinningTransform
 "skinning transforms", computed from a UsdSkelSkeletonQuery, which is bound
 hierarchically using the _skel:skeleton_ relationship. The transforms for
 a bound skeleton are driven from an animation source, such as a
- \ref UsdSkel_PackedJointAnimation "packed joint animation", which is
-also bound hierarchically, via the _skel:animationSource_ binding relationship.
+ \ref UsdSkel_SkelAnimation "skel animation", which is also bound
+hierarchically, via the _skel:animationSource_ binding relationship.
 
 By defining bindings hierarchically, it is possible to define models that
 each have unique skeletal animations, while also being
@@ -257,7 +403,7 @@ def "Character" {
     def Skeleton "Skel" {}
 }
 
-def PackedJointAnimation "Anim" {}
+def SkelAnimation "Anim" {}
 
 over "Instance" (
     prepend references = </Character>
@@ -332,56 +478,6 @@ the animation at `</Anim1>`, and one at `</A/C>`, referencing the animation
 at `</Anim2>`. The _skel:animationSource_ relationship at `</A/B>` has no
 effect.
 
-\subsection UsdSkel_BindingAPI_JointInfluences BindingAPI: Joint Influences
-
-Joint influences for skinning points are defined via primvars,
-_primvars:skel:jointIndices_ and _primvars:skel:jointWeights_.
-The _jointIndices_ primvar provides an array giving the joint index of an
-influence, while the _jointWeights_ primvar provides a weight value
-corresponding to each of those indices.
-
-The indices in the _jointIndices_ primvar refer to joints based on the
-bound \ref UsdSkel_JointOrder "joint order". If the _skel:joints_
-attribute has been set, each index refers to the corresponding target
-of that token array. Otherwise, each index refers to a joint using the
-joint order of the bound _Skeleton_.
-
-In the common case, these primvars are configured with _vertex_ interpolation,
-and provide a run of N influences per point, where N is the _elementSize_
-of the primvars. See UsdGeomPrimvar for more information on the meaning
-of primvar interpolation and elementSize.
-
-No restrictions are placed on the _elementSize_ when defining joint influences.
-Because such a limit may vary among different DCC applications, we feel that
-it is inappropriate to hard-code any such restrictions at the file storage
-level. Instead, for clients that require a strict limit on the number of
-influences per point, UsdSkel provides helper method,
-\ref UsdSkelResizeInfluences, that can be used to enforce such limits
-within each client, as necessary.
-
-
-See the \ref UsdSkel_CE_Skinning "skinning coding examples" for an example
-of how resolved joint influences may be read.
-
-
-\subsection UsdSkel_BindingAPI_RigidDeformations BindingAPI: Rigid Deformations
-
-In addition to defining influences that vary per point, joint influences may be
-also defined with _constant_ interpolation. In this form, the _jointIndices_
-and _jointWeights_ arrays hold N scalar values, which apply to all points.
-Constant joint influences are supported both as a form of storage optimization,
-as well as for the sake of encoding _rigid deformations_. By identifying
-rigid deformations, some clients may be able to retain instancing properties
-that would otherwise be lost by skinning, by affecting only the transform of
-an instance rather than the deforming points of that instance.
-
-It is not expected that all clients know how to deal with rigid deformations.
-For those clients that don't understand rigid deformations, UsdSkel provides
-helper methods UsdSkelSkinningQuery::ComputeVaryingJointInfluences and
-\ref UsdSkelExpandConstantInfluencesToVarying which both provide a means of
-querying rigid deformations as if they had been encoded with influences
-per-point.
-
 \subsection UsdSkel_BindingAPI_StoringInfluences BindingAPI: Storing Influences
 
 To ensure correct skinning, joint influences should be normalized when they
@@ -394,6 +490,75 @@ Additionally, as part of our \ref UsdSkel_BestPractices "best practices",
 we suggest that joint influences be sorted from largest weight value to
 smallest. The \ref UsdSkelSortInfluences utility can be used to do so.
 UsdSkel does not currently *require* sorted joint influences, but may later
-add such restrictions, since they enable some skinning optimizations like 
-\ref UsdSkelResizeInfluences.
+add such restrictions, since they enable some skinning optimizations, such as 
+allowing a skinning kernel to exit from a point-deformation loop early.
+
+\subsection UsdSkel_BindingAPI_BlendShapes BindingAPI: Binding Blend Shapes
+
+UsdSkel decouples the encoding of blend shape animations from the description
+of how those animations map to skinnable primitives. This has numerous
+advantages, such as allowing the set of primitives skinned by a particular
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance" to be swapped out --
+via variants or other composition features -- with a different set of skinnable
+primitives, holding different blend shapes. This decoupling also means that
+an existing blend shape animation is not necessarily invalidated by asset
+changes that alter the set of shapes defined for a character.
+
+Given a skinnable primitive, the _skel:blendShapes_ and
+_skel:blendShapeTargets_ properties of the UsdSkelBindingAPI specify a mapping
+from the animation of the bound
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance" to different skinnable
+primitives.
+
+Note that because blend shapes are usually tightly coupled with individual
+geometric primitives, whereas other properties of UsdSkelBindingAPI are
+hierarchically inherited, these blendshape-related properties are *not*
+inherited from ancestor primitives in namespace, and are relevant only when
+specified directly on primitives.
+
+To bind blend shapes, the _skel:blendShapeTargets_ rel should be created, and
+set to target UsdSkelBlendShape primitives, which define each shape.
+Additionally, the _skel:blendShapes_ array should also be defined,
+providing a unique token per bound blend shape. For example:
+
+\code
+def Skeleton "Skel" {}
+
+def SkelAnimation "Anim"
+{
+    uniform token[] blendShapes = ["A","B","C","D"]
+    float[] blendShapeWeights = [1,0.75,0,0]
+}
+
+def Mesh "Mesh {
+    def BlendShape "Foo" {}
+    def BlendShape "Bar" {}
+
+    uniform token[] skel:blendShapes = ["B", "A"]
+    rel skel:blendShapeTargets = [<Foo>, <Bar>]
+
+    rel skel:skeleton = </Skel>
+    rel skel:animationSource = </Anim>
+}
+\endcode
+
+In the above example, note that the `</Anim>` primitive specifies more
+blend shapes than are actually used on `</Mesh>`. This is because an animation
+source is providing animation data for a **complete model** (I.e., multiple
+geometric primitives). The _skel:blendShape_ attribute, as defined on `</Mesh>`,
+provides a mapping between the _blendShapeWeights_ animation data on `</Anim`>
+-- which holds weight animation for multiple geometric primitives. The set
+of blend shape targets specified by the _skel:blendShapeTargets_ rel identifies,
+for each mapped blend shape token in _skel:blendShapes_, the target
+UsdSkelBlendShape primitive to which animation data should apply.
+
+From the example above, shape `</Mesh/Foo>` is using shapes `['B', 'A']` (in that
+order). First we map the _blendShapeWeights_ from the ordering specified by
+`</Anim.blendShapes>` to the ordering on `</Mesh.blendShapes>`, which gives
+local weight values of [0.75,1.0]. For each token in `</Mesh.blendShapes>`,
+the `</Mesh.blendShapeTargets>` rel identifies which UsdSkelBlendShape primitive
+that token maps to. So `B = </Mesh/Foo>` and `A = </Mesh/Bar>`. From this,
+we find that we our final blend shapes and weights, as pairs, are
+`[(</Mesh/Foo>, 0.75), (</Mesh/Bar>, 1.0)`.
+
 */

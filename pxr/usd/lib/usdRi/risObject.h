@@ -52,21 +52,17 @@ class SdfAssetPath;
 
 /// \class UsdRiRisObject
 ///
+/// \deprecated Specialized RIS shader schemas have been deprecated in 
+/// favor of all shader prims being simple UsdShadeShader.
 /// Represents a ris object with connectable parameters. 
 ///
 class UsdRiRisObject : public UsdShadeShader
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdRiRisObject on UsdPrim \p prim .
     /// Equivalent to UsdRiRisObject::Get(prim.GetStage(), prim.GetPath())
@@ -134,6 +130,13 @@ public:
     USDRI_API
     static UsdRiRisObject
     Define(const UsdStagePtr &stage, const SdfPath &path);
+
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDRI_API
+    virtual UsdSchemaType _GetSchemaType() const;
 
 private:
     // needs to invoke _GetStaticTfType.

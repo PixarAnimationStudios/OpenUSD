@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for other readers to use.
-struct PxrUsdMayaTranslatorUtil
+struct UsdMayaTranslatorUtil
 {
     /// \brief Often when creating a prim, we want to first create a Transform
     /// node. This is a small helper to do this. If the \p args provided
@@ -52,8 +52,26 @@ struct PxrUsdMayaTranslatorUtil
     CreateTransformNode(
             const UsdPrim& usdPrim,
             MObject& parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context,
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context,
+            MStatus* status,
+            MObject* mayaNodeObj);
+
+    /// \brief Creates a "dummy" transform node for the given prim, where the
+    /// dummy transform has all transform properties locked.
+    /// A UsdMayaAdaptor-compatible attribute for the typeName metadata will
+    /// be generated. If \p importTypeName is \c true, this attribute will
+    /// contain the \c typeName metadata of \p usdPrim, so the \c typeName will
+    /// be applied on export. Otherwise, this attribute will be set to the
+    /// empty string, so a typeless def will be generated on export.
+    PXRUSDMAYA_API
+    static bool
+    CreateDummyTransformNode(
+            const UsdPrim& usdPrim,
+            MObject& parentNode,
+            bool importTypeName,
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context,
             MStatus* status,
             MObject* mayaNodeObj);
 
@@ -66,7 +84,7 @@ struct PxrUsdMayaTranslatorUtil
             const UsdPrim& usdPrim,
             const MString& nodeTypeName,
             MObject& parentNode,
-            PxrUsdMayaPrimReaderContext* context,
+            UsdMayaPrimReaderContext* context,
             MStatus* status,
             MObject* mayaNodeObj);
 
@@ -79,7 +97,7 @@ struct PxrUsdMayaTranslatorUtil
             const SdfPath& usdPath,
             const MString& nodeTypeName,
             MObject& parentNode,
-            PxrUsdMayaPrimReaderContext* context,
+            UsdMayaPrimReaderContext* context,
             MStatus* status,
             MObject* mayaNodeObj);
 
@@ -95,29 +113,6 @@ struct PxrUsdMayaTranslatorUtil
             MObject& parentNode,
             MStatus* status,
             MObject* mayaNodeObj);
-
-    template <typename T>
-    static bool
-    GetTimeSamples(
-            const T& source,
-            const PxrUsdMayaPrimReaderArgs& args,
-            std::vector<double>* outSamples)
-    {
-        if (args.HasCustomFrameRange()) {
-            std::vector<double> tempSamples;
-            source.GetTimeSamples(&tempSamples);
-            bool didPushSample = false;
-            for (double t : tempSamples) {
-                if (t >= args.GetStartTime() && t <= args.GetEndTime()) {
-                    outSamples->push_back(t);
-                    didPushSample = true;
-                }
-            }
-            return didPushSample;
-        } else {
-            return source.GetTimeSamples(outSamples);
-        }
-    }
 
     /// Gets an API schema of the requested type for the given \p usdPrim.
     ///
@@ -139,4 +134,4 @@ struct PxrUsdMayaTranslatorUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_UTIL_H
+#endif

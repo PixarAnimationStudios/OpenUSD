@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdx)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 pxr_library(hdx
     LIBRARIES
         plug
@@ -59,6 +65,7 @@ pxr_library(hdx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassShadowShader.glslfx
+        shaders/selection.glslfx
 )
 
 if (X11_FOUND OR APPLE)

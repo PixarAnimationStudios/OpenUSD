@@ -20,11 +20,14 @@ pxr_library(usdSkel
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        animation
         animMapper
         animQuery
         bindingAPI
+        blendShape
         cache
         debugCodes
+        inbetweenShape
         packedJointAnimation
         root
         skeleton
@@ -36,6 +39,7 @@ pxr_library(usdSkel
 
     PUBLIC_HEADERS
         api.h
+        binding.h
 
     PRIVATE_CLASSES
         animQueryImpl
@@ -50,10 +54,14 @@ pxr_library(usdSkel
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
+        wrapBinding.cpp
         wrapBindingAPI.cpp
+        wrapBlendShape.cpp
         wrapCache.cpp
+        wrapInbetweenShape.cpp
         wrapPackedJointAnimation.cpp
         wrapRoot.cpp
         wrapSkeleton.cpp
@@ -69,3 +77,83 @@ pxr_library(usdSkel
         schema.usda:usdSkel/schema.usda
 )
    
+pxr_test_scripts(
+    testenv/testUsdSkelAnimMapper.py
+    testenv/testUsdSkelAnimQuery.py 
+    testenv/testUsdSkelBindingAPI.py
+    testenv/testUsdSkelCache.py
+    testenv/testUsdSkelRoot.py
+    testenv/testUsdSkelSkeletonQuery.py
+    testenv/testUsdSkelSkinningQuery.py
+    testenv/testUsdSkelTopology.py
+    testenv/testUsdSkelUtils.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelCache
+    DEST testUsdSkelCache
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelRoot
+    DEST testUsdSkelRoot
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelSkinningQuery
+    DEST testUsdSkelSkinningQuery
+)
+
+pxr_register_test(testUsdSkelAnimMapper
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimMapper"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelAnimQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimQuery"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelBindingAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBindingAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelCache
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelCache"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelRoot
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelRoot"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelSkeletonQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkeletonQuery"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelSkinningQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkinningQuery"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelTopology
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelTopology"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelUtils"
+    EXPECTED_RETURN_CODE 0
+)

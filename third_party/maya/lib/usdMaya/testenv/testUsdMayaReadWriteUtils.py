@@ -118,7 +118,7 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
         self.assertEqual(
                 cmds.attributeQuery("myAssetPath", n="group1", nn=True),
                 "kittens")
-        self.assertTrue(
+        self.assertFalse(
                 cmds.attributeQuery("myAssetPath", n="group1", uaf=True))
         cmds.setAttr(attrName, "cat.png", type="string")
         self.assertEqual(cmds.getAttr(attrName, type=True), "string")

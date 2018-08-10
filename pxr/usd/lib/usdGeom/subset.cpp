@@ -74,6 +74,11 @@ UsdGeomSubset::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomSubset::_GetSchemaType() const {
+    return UsdGeomSubset::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomSubset::_GetStaticTfType()
@@ -474,7 +479,7 @@ UsdGeomSubset::ValidateSubsets(
             indicesInFamily.size() != elementCount) {
             valid = false;
             if (reason) {
-                *reason += TfStringPrintf("Number of unique indices at time %s"
+                *reason += TfStringPrintf("Number of unique indices at time %s "
                     "does not match the element count %ld.", 
                     TfStringify(t).c_str(), elementCount);
             }
@@ -570,7 +575,7 @@ UsdGeomSubset::ValidateFamily(
                     if (!indicesInFamily.insert(index).second) {
                         valid = false;
                         if (reason) {
-                            *reason += TfStringPrintf("Found duplicate index %d"
+                            *reason += TfStringPrintf("Found duplicate index %d "
                                 "in GeomSubset at path <%s>.\n", index,
                                 subset.GetPath().GetText());
                         }
@@ -585,7 +590,7 @@ UsdGeomSubset::ValidateFamily(
         {
             valid = false;
             if (reason) {
-                *reason += TfStringPrintf("Number of unique indices at time %s"
+                *reason += TfStringPrintf("Number of unique indices at time %s "
                     "does not match the face count %ld.", 
                     TfStringify(t).c_str(), faceCount);
             }

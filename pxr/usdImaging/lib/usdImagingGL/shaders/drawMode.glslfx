@@ -56,6 +56,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 #endif
     }
 
+    // Apply selection pre-lighting
+    diffuse.rgb = ApplyColorOverrides(diffuse.rgbb).rgb;
+
     color.rgb = FallbackLighting(Peye.xyz, Neye, diffuse.rgb);
     color.a = diffuse.a;
     return color;
@@ -65,6 +68,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
+    // Apply selection pre-lighting
+    color.rgb = ApplyColorOverrides(color.rgbb).rgb;
+
     color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
     return color;
 }

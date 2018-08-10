@@ -97,6 +97,12 @@ public:
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index) override;
+
+
     // ---------------------------------------------------------------------- //
     /// \name Texture resources
     // ---------------------------------------------------------------------- //
@@ -132,6 +138,12 @@ private:
     /// shader.
     UsdPrim _GetSurfaceShaderPrim(const UsdShadeMaterial &material) const;
 
+    /// \brief Returns the root displacement shader prim for the material.
+    /// 
+    /// Returns an invalid prim if the material does not have a 'displacement' 
+    /// shader.
+    UsdPrim _GetDisplacementShaderPrim(const UsdShadeMaterial &material) const;
+
     /// \brief Populates the information in the material graph
     /// (identified by \c SdfPath objects) that this \p materialPrim uses.
     /// 
@@ -139,6 +151,7 @@ private:
     bool _GatherMaterialData(
         UsdPrim const& materialPrim,
         UsdPrim *shaderPrim,
+        UsdPrim *displacementShaderPrim,
         SdfPathVector *textureIDs,
         TfTokenVector *primvars,
         HdMaterialParamVector *materialParams) const;

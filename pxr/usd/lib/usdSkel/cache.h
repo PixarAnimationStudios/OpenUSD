@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/usdSkel/animQuery.h"
+#include "pxr/usd/usdSkel/binding.h"
 
 #include <memory>
 
@@ -40,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdSkelRoot;
+class UsdSkelSkeleton;
 class UsdSkelSkeletonQuery;
 class UsdSkelSkinningQuery;
 
@@ -65,20 +67,15 @@ public:
     USDSKEL_API
     bool Populate(const UsdSkelRoot& root);
 
-    /// Get a skel query at \p prim, if any is defined.
-    /// Skel queries are created wherever \em skel:skeleton relationships are set.
-    /// The caller must first Populate() the cache with the skel root containing
-    /// \p prim in order for any skel queries to be discoverabble.
+    /// Get a skel query for computing properties of \p skel.
+    /// This does not require Populate() to be called on the cache.
     USDSKEL_API
-    UsdSkelSkeletonQuery GetSkelQuery(const UsdPrim& prim) const;
+    UsdSkelSkeletonQuery GetSkelQuery(const UsdSkelSkeleton& skel) const;
 
-    /// Get a skel query at \p prim, or any of its ancestor (within the skel root),
-    /// if any is defined. Skel queries are created wherever \em skel:skeleton
-    /// relationships are set.
-    /// The caller must first Populate() the cache with the skel root containing
-    /// \p prim in order for any skel queries to be discoverabble.
+    /// Get an anim query corresponding to \p prim.
+    /// This does not require Populate() to be called on the cache.
     USDSKEL_API
-    UsdSkelSkeletonQuery GetInheritedSkelQuery(const UsdPrim& prim) const;
+    UsdSkelAnimQuery GetAnimQuery(const UsdPrim& prim) const;
 
     /// Get a skinning query at \p prim. Skinning queries are defined at any
     /// skinnable prims (I.e., boundable prims with fully defined joint
@@ -89,19 +86,17 @@ public:
     USDSKEL_API
     UsdSkelSkinningQuery GetSkinningQuery(const UsdPrim& prim) const;
 
-    /// Get an anim query corresponding to \p prim.
-    /// This does not require Populate() to be called on the cache.
+    /// Compute the set of skeleton bindings beneath \p skelRoot.
     USDSKEL_API
-    UsdSkelAnimQuery GetAnimQuery(const UsdPrim& prim);
+    bool ComputeSkelBindings(const UsdSkelRoot& skelRoot,
+                             std::vector<UsdSkelBinding>* bindings) const;
 
-    /// Get a vector of (prim,skinningQuery) pairs identifying the set of
-    /// prims that would be deformed by a skeleton bound at \p prim,
-    /// along with a query object that can be used to access skinning-related
-    /// information.
+    /// Compute the bindings corresponding to a single skeleton,
+    /// bound beneath \p skelRoot.
     USDSKEL_API
-    bool ComputeSkinnedPrims(
-        const UsdPrim& prim,
-        std::vector<std::pair<UsdPrim,UsdSkelSkinningQuery> >* pairs) const;
+    bool ComputeSkelBinding(const UsdSkelRoot& skelRoot,
+                            const UsdSkelSkeleton& skel,
+                            UsdSkelBinding* binding) const;
 
 private:
     std::shared_ptr<class UsdSkel_CacheImpl> _impl;

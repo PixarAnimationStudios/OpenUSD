@@ -21,62 +21,78 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/shadingModeRegistry.h"
+
 #include "usdMaya/registryHelper.h"
+#include "usdMaya/shadingModeExporter.h"
+#include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/shadingModeImporter.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
+
+#include <map>
+#include <string>
+#include <utility>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaShadingModeTokens, PXRUSDMAYA_SHADINGMODE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
+    PXRUSDMAYA_SHADINGMODE_TOKENS);
 
-typedef std::map<TfToken, PxrUsdMayaShadingModeExporterCreator> _ExportRegistry;
+
+typedef std::map<TfToken, UsdMayaShadingModeExporterCreator> _ExportRegistry;
 static _ExportRegistry _exportReg;
 
 bool
-PxrUsdMayaShadingModeRegistry::RegisterExporter(
+UsdMayaShadingModeRegistry::RegisterExporter(
         const std::string& name,
-        PxrUsdMayaShadingModeExporterCreator fn)
+        UsdMayaShadingModeExporterCreator fn)
 {
-    std::pair<_ExportRegistry::const_iterator, bool> insertStatus = _exportReg.insert(
+    std::pair<_ExportRegistry::const_iterator, bool> insertStatus =
+        _exportReg.insert(
             std::make_pair(TfToken(name), fn));
     return insertStatus.second;
 }
 
-PxrUsdMayaShadingModeExporterCreator
-PxrUsdMayaShadingModeRegistry::_GetExporter(const TfToken& name)
+UsdMayaShadingModeExporterCreator
+UsdMayaShadingModeRegistry::_GetExporter(const TfToken& name)
 {
-    PxrUsdMaya_RegistryHelper::LoadShadingModePlugins();
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeExportContext>();
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
     const auto it = _exportReg.find(name);
     return it == _exportReg.end() ? nullptr : it->second;
 }
 
-typedef std::map<TfToken, PxrUsdMayaShadingModeImporter> _ImportRegistry;
+typedef std::map<TfToken, UsdMayaShadingModeImporter> _ImportRegistry;
 static _ImportRegistry _importReg;
+
 bool
-PxrUsdMayaShadingModeRegistry::RegisterImporter(
+UsdMayaShadingModeRegistry::RegisterImporter(
         const std::string& name,
-        PxrUsdMayaShadingModeImporter fn)
+        UsdMayaShadingModeImporter fn)
 {
-    std::pair<_ImportRegistry::const_iterator, bool> insertStatus = _importReg.insert(
+    std::pair<_ImportRegistry::const_iterator, bool> insertStatus =
+        _importReg.insert(
             std::make_pair(TfToken(name), fn));
     return insertStatus.second;
 }
 
-PxrUsdMayaShadingModeImporter 
-PxrUsdMayaShadingModeRegistry::_GetImporter(const TfToken& name)
+UsdMayaShadingModeImporter
+UsdMayaShadingModeRegistry::_GetImporter(const TfToken& name)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeImportContext>();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeImportContext>();
     return _importReg[name];
 }
 
 TfTokenVector
-PxrUsdMayaShadingModeRegistry::_ListExporters() {
-    PxrUsdMaya_RegistryHelper::LoadShadingModePlugins();
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeExportContext>();
+UsdMayaShadingModeRegistry::_ListExporters() {
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
     TfTokenVector ret;
     ret.reserve(_exportReg.size());
     for (const auto& e : _exportReg) {
@@ -86,8 +102,8 @@ PxrUsdMayaShadingModeRegistry::_ListExporters() {
 }
 
 TfTokenVector
-PxrUsdMayaShadingModeRegistry::_ListImporters() {
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeImportContext>();
+UsdMayaShadingModeRegistry::_ListImporters() {
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeImportContext>();
     TfTokenVector ret;
     ret.reserve(_importReg.size());
     for (const auto& e : _importReg) {
@@ -96,22 +112,21 @@ PxrUsdMayaShadingModeRegistry::_ListImporters() {
     return ret;
 }
 
-TF_INSTANTIATE_SINGLETON(PxrUsdMayaShadingModeRegistry);
+TF_INSTANTIATE_SINGLETON(UsdMayaShadingModeRegistry);
 
-PxrUsdMayaShadingModeRegistry&
-PxrUsdMayaShadingModeRegistry::GetInstance() 
+UsdMayaShadingModeRegistry&
+UsdMayaShadingModeRegistry::GetInstance()
 {
-    return TfSingleton<PxrUsdMayaShadingModeRegistry>::GetInstance();
+    return TfSingleton<UsdMayaShadingModeRegistry>::GetInstance();
 }
 
-PxrUsdMayaShadingModeRegistry::PxrUsdMayaShadingModeRegistry()
+UsdMayaShadingModeRegistry::UsdMayaShadingModeRegistry()
 {
 }
 
-PxrUsdMayaShadingModeRegistry::~PxrUsdMayaShadingModeRegistry()
+UsdMayaShadingModeRegistry::~UsdMayaShadingModeRegistry()
 {
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -74,6 +74,11 @@ UsdShadeNodeGraph::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdShadeNodeGraph::_GetSchemaType() const {
+    return UsdShadeNodeGraph::schemaType;
+}
+
 /* static */
 const TfType &
 UsdShadeNodeGraph::_GetStaticTfType()
@@ -127,8 +132,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdShadeNodeGraph::operator UsdShadeConnectableAPI () const {
-    return UsdShadeConnectableAPI(GetPrim());
+UsdShadeNodeGraph::UsdShadeNodeGraph(const UsdShadeConnectableAPI &connectable)
+    : UsdShadeNodeGraph(connectable.GetPrim())
+{
 }
 
 UsdShadeConnectableAPI 

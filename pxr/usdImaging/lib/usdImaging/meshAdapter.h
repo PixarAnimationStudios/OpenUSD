@@ -97,11 +97,18 @@ public:
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index) override;
+    USDIMAGING_API
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index) override;
 
 protected:
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
 
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time) const;

@@ -441,16 +441,26 @@ Sdf_FileIOUtility::WriteNameVector(ostream &out,
 
 bool
 Sdf_FileIOUtility::WriteTimeSamples(ostream &out, size_t indent,
-                                    const SdfTimeSampleMap & samples)
+                                    const SdfPropertySpec &prop)
 {
-    TF_FOR_ALL(i, samples) {
-        Write(out, indent+1, "%s: ", TfStringify(i->first).c_str());
-        if (i->second.IsHolding<SdfPath>()) {
-            WriteSdfPath(out, 0, i->second.Get<SdfPath>() );
-        } else {
-            Puts(out, 0, StringFromVtValue( i->second ));
+    VtValue timeSamplesVal = prop.GetField(SdfFieldKeys->TimeSamples);
+    if (timeSamplesVal.IsHolding<SdfTimeSampleMap>()) {
+        SdfTimeSampleMap samples =
+            timeSamplesVal.UncheckedGet<SdfTimeSampleMap>();
+        TF_FOR_ALL(i, samples) {
+            Write(out, indent+1, "%s: ", TfStringify(i->first).c_str());
+            if (i->second.IsHolding<SdfPath>()) {
+                WriteSdfPath(out, 0, i->second.Get<SdfPath>() );
+            } else {
+                Puts(out, 0, StringFromVtValue( i->second ));
+            }
+            out << ",\n";
         }
-        out << ",\n";
+    }
+    else if (timeSamplesVal.IsHolding<SdfHumanReadableValue>()) {
+        Write(out, indent+1, "%s\n",
+              TfStringify(timeSamplesVal.
+                          UncheckedGet<SdfHumanReadableValue>()).c_str());
     }
     return true;
 }

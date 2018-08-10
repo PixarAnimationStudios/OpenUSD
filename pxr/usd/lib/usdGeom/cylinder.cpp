@@ -74,6 +74,11 @@ UsdGeomCylinder::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomCylinder::_GetSchemaType() const {
+    return UsdGeomCylinder::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomCylinder::_GetStaticTfType()

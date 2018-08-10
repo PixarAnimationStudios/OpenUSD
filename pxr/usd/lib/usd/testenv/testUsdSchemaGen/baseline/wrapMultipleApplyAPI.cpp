@@ -48,6 +48,26 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateTestAttrOneAttr(UsdContrivedMultipleApplyAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTestAttrOneAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateTestAttrTwoAttr(UsdContrivedMultipleApplyAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTestAttrTwoAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
+}
+
+static bool _WrapIsMultipleApplyAPIPath(const SdfPath &path) {
+    TfToken collectionName;
+    return UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
+        path, &collectionName);
+}
 
 } // anonymous namespace
 
@@ -59,32 +79,26 @@ void wrapUsdContrivedMultipleApplyAPI()
         cls("MultipleApplyAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(init<UsdPrim, TfToken>())
+        .def(init<UsdSchemaBase const&, TfToken>())
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get",
+            (UsdContrivedMultipleApplyAPI(*)(const UsdStagePtr &stage, 
+                                       const SdfPath &path))
+               &This::Get,
+            (arg("stage"), arg("path")))
+        .def("Get",
+            (UsdContrivedMultipleApplyAPI(*)(const UsdPrim &prim,
+                                       const TfToken &name))
+               &This::Get,
+            (arg("prim"), arg("name")))
         .staticmethod("Get")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsApplied", 
-            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
-        .staticmethod("IsApplied")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
+             arg("instanceName")=TfToken(),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
@@ -94,7 +108,23 @@ void wrapUsdContrivedMultipleApplyAPI()
 
         .def(!self)
 
+        
+        .def("GetTestAttrOneAttr",
+             &This::GetTestAttrOneAttr)
+        .def("CreateTestAttrOneAttr",
+             &_CreateTestAttrOneAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTestAttrTwoAttr",
+             &This::GetTestAttrTwoAttr)
+        .def("CreateTestAttrTwoAttr",
+             &_CreateTestAttrTwoAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
+        .def("IsMultipleApplyAPIPath", _WrapIsMultipleApplyAPIPath)
+            .staticmethod("IsMultipleApplyAPIPath")
     ;
 
     _CustomWrapCode(cls);

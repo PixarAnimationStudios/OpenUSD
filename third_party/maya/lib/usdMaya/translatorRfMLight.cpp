@@ -56,7 +56,6 @@
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -140,15 +139,12 @@ static
 bool
 _ReportError(const std::string& msg, const SdfPath& primPath=SdfPath())
 {
-    MString errorMsg(msg.c_str());
-
-    if (primPath.IsPrimPath()) {
-        errorMsg += MString(" for UsdLuxLight prim at path: ");
-        errorMsg += MString(primPath.GetText());
-    }
-
-    MGlobal::displayError(errorMsg);
-
+    TF_RUNTIME_ERROR(
+            "%s%s",
+            msg.c_str(),
+            primPath.IsPrimPath()
+                ? TfStringPrintf(" for Light <%s>", primPath.GetText()).c_str()
+                : "");
     return false;
 }
 
@@ -644,7 +640,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(aovNamePlug)) {
+    if (UsdMayaUtil::IsAuthored(aovNamePlug)) {
         MString mayaAovName;
         status = aovNamePlug.getValue(mayaAovName);
         if (status != MS::kSuccess) {
@@ -661,7 +657,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(inPrimaryHitPlug)) {
+    if (UsdMayaUtil::IsAuthored(inPrimaryHitPlug)) {
         bool mayaInPrimaryHit = true;
         status = inPrimaryHitPlug.getValue(mayaInPrimaryHit);
         if (status != MS::kSuccess) {
@@ -678,7 +674,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(inReflectionPlug)) {
+    if (UsdMayaUtil::IsAuthored(inReflectionPlug)) {
         bool mayaInReflection = true;
         status = inReflectionPlug.getValue(mayaInReflection);
         if (status != MS::kSuccess) {
@@ -695,7 +691,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(inRefractionPlug)) {
+    if (UsdMayaUtil::IsAuthored(inRefractionPlug)) {
         bool mayaInRefraction = true;
         status = inRefractionPlug.getValue(mayaInRefraction);
         if (status != MS::kSuccess) {
@@ -712,7 +708,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(invertPlug)) {
+    if (UsdMayaUtil::IsAuthored(invertPlug)) {
         bool mayaInvert = true;
         status = invertPlug.getValue(mayaInvert);
         if (status != MS::kSuccess) {
@@ -729,7 +725,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(onVolumeBoundariesPlug)) {
+    if (UsdMayaUtil::IsAuthored(onVolumeBoundariesPlug)) {
         bool mayaOnVolumeBoundaries = true;
         status = onVolumeBoundariesPlug.getValue(mayaOnVolumeBoundaries);
         if (status != MS::kSuccess) {
@@ -748,7 +744,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(useColorPlug)) {
+    if (UsdMayaUtil::IsAuthored(useColorPlug)) {
         bool mayaUseColor = true;
         status = useColorPlug.getValue(mayaUseColor);
         if (status != MS::kSuccess) {
@@ -765,7 +761,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(useThroughputPlug)) {
+    if (UsdMayaUtil::IsAuthored(useThroughputPlug)) {
         bool mayaUseThroughput = true;
         status = useThroughputPlug.getValue(mayaUseThroughput);
         if (status != MS::kSuccess) {
@@ -906,11 +902,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     aovLightSchema.GetUseThroughputAttr().Get(&lightUseThroughput);
 
     status = lightUseThroughputPlug.setValue(lightUseThroughput);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -932,7 +924,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(dayPlug)) {
+    if (UsdMayaUtil::IsAuthored(dayPlug)) {
         int mayaDay;
         status = dayPlug.getValue(mayaDay);
         if (status != MS::kSuccess) {
@@ -949,7 +941,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(hazinessPlug)) {
+    if (UsdMayaUtil::IsAuthored(hazinessPlug)) {
         float mayaHaziness;
         status = hazinessPlug.getValue(mayaHaziness);
         if (status != MS::kSuccess) {
@@ -965,7 +957,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(hourPlug)) {
+    if (UsdMayaUtil::IsAuthored(hourPlug)) {
         float mayaHour;
         status = hourPlug.getValue(mayaHour);
         if (status != MS::kSuccess) {
@@ -982,7 +974,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(latitudePlug)) {
+    if (UsdMayaUtil::IsAuthored(latitudePlug)) {
         float mayaLatitude;
         status = latitudePlug.getValue(mayaLatitude);
         if (status != MS::kSuccess) {
@@ -999,7 +991,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(longitudePlug)) {
+    if (UsdMayaUtil::IsAuthored(longitudePlug)) {
         float mayaLongitude;
         status = longitudePlug.getValue(mayaLongitude);
         if (status != MS::kSuccess) {
@@ -1016,7 +1008,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(monthPlug)) {
+    if (UsdMayaUtil::IsAuthored(monthPlug)) {
         int mayaMonth;
         status = monthPlug.getValue(mayaMonth);
         if (status != MS::kSuccess) {
@@ -1033,7 +1025,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(skyTintPlug)) {
+    if (UsdMayaUtil::IsAuthored(skyTintPlug)) {
         const GfVec3f mayaSkyTint(skyTintPlug.child(0).asFloat(),
                                   skyTintPlug.child(1).asFloat(),
                                   skyTintPlug.child(2).asFloat());
@@ -1048,7 +1040,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(sunDirectionPlug)) {
+    if (UsdMayaUtil::IsAuthored(sunDirectionPlug)) {
         const GfVec3f mayaSunDirection(sunDirectionPlug.child(0).asFloat(),
                                        sunDirectionPlug.child(1).asFloat(),
                                        sunDirectionPlug.child(2).asFloat());
@@ -1063,7 +1055,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(sunSizePlug)) {
+    if (UsdMayaUtil::IsAuthored(sunSizePlug)) {
         float mayaSunSize;
         status = sunSizePlug.getValue(mayaSunSize);
         if (status != MS::kSuccess) {
@@ -1080,7 +1072,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(sunTintPlug)) {
+    if (UsdMayaUtil::IsAuthored(sunTintPlug)) {
         const GfVec3f mayaSunTint(sunTintPlug.child(0).asFloat(),
                                   sunTintPlug.child(1).asFloat(),
                                   sunTintPlug.child(2).asFloat());
@@ -1094,7 +1086,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(yearPlug)) {
+    if (UsdMayaUtil::IsAuthored(yearPlug)) {
         int mayaYear;
         status = yearPlug.getValue(mayaYear);
         if (status != MS::kSuccess) {
@@ -1110,7 +1102,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(zonePlug)) {
+    if (UsdMayaUtil::IsAuthored(zonePlug)) {
         float mayaZone;
         status = zonePlug.getValue(mayaZone);
         if (status != MS::kSuccess) {
@@ -1316,11 +1308,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     envDayLightSchema.GetZoneAttr().Get(&lightZone);
 
     status = lightZonePlug.setValue(lightZone);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -1331,7 +1319,7 @@ bool
 _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
     UsdLuxShapingAPI shapingAPI =
-        PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(
+        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(
             lightSchema.GetPrim());
     if (!shapingAPI) {
         return false;
@@ -1346,7 +1334,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightFocusPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightFocusPlug)) {
         float mayaLightFocus = 0.0f;
         status = lightFocusPlug.getValue(mayaLightFocus);
         if (status != MS::kSuccess) {
@@ -1363,7 +1351,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightFocusTintPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightFocusTintPlug)) {
         const GfVec3f lightFocusTint(lightFocusTintPlug.child(0).asFloat(),
                                      lightFocusTintPlug.child(1).asFloat(),
                                      lightFocusTintPlug.child(2).asFloat());
@@ -1378,7 +1366,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightConeAnglePlug)) {
+    if (UsdMayaUtil::IsAuthored(lightConeAnglePlug)) {
         float mayaLightConeAngle = 90.0f;
         status = lightConeAnglePlug.getValue(mayaLightConeAngle);
         if (status != MS::kSuccess) {
@@ -1396,7 +1384,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightConeSoftnessPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightConeSoftnessPlug)) {
         float mayaLightConeSoftness = 0.0f;
         status = lightConeSoftnessPlug.getValue(mayaLightConeSoftness);
         if (status != MS::kSuccess) {
@@ -1414,7 +1402,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightProfileFilePlug)) {
+    if (UsdMayaUtil::IsAuthored(lightProfileFilePlug)) {
         MString mayaLightProfileFile;
         status = lightProfileFilePlug.getValue(mayaLightProfileFile);
         if (status != MS::kSuccess) {
@@ -1436,7 +1424,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightProfileScalePlug)) {
+    if (UsdMayaUtil::IsAuthored(lightProfileScalePlug)) {
         float mayaLightProfileScale = 1.0f;
         status = lightProfileScalePlug.getValue(mayaLightProfileScale);
         if (status != MS::kSuccess) {
@@ -1550,11 +1538,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     shapingAPI.GetShapingIesAngleScaleAttr().Get(&lightProfileScale);
 
     status = lightProfileScalePlug.setValue(lightProfileScale);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -1565,7 +1549,7 @@ bool
 _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
     UsdLuxShadowAPI shadowAPI =
-        PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(
+        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(
             lightSchema.GetPrim());
     if (!shadowAPI) {
         return false;
@@ -1580,7 +1564,7 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightEnableShadowsPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightEnableShadowsPlug)) {
         bool mayaLightEnableShadows = true;
         status = lightEnableShadowsPlug.getValue(mayaLightEnableShadows);
         if (status != MS::kSuccess) {
@@ -1603,7 +1587,7 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightShadowColorPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightShadowColorPlug)) {
         const GfVec3f lightShadowColor(lightShadowColorPlug.child(0).asFloat(),
                                        lightShadowColorPlug.child(1).asFloat(),
                                        lightShadowColorPlug.child(2).asFloat());
@@ -1618,7 +1602,7 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightShadowDistancePlug)) {
+    if (UsdMayaUtil::IsAuthored(lightShadowDistancePlug)) {
         float mayaLightShadowDistance = 0.0f;
         status = lightShadowDistancePlug.getValue(mayaLightShadowDistance);
         if (status != MS::kSuccess) {
@@ -1636,7 +1620,7 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightShadowFalloffPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightShadowFalloffPlug)) {
         float mayaLightShadowFalloff = 0.0f;
         status = lightShadowFalloffPlug.getValue(mayaLightShadowFalloff);
         if (status != MS::kSuccess) {
@@ -1654,7 +1638,7 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    if (PxrUsdMayaUtil::IsAuthored(lightShadowFalloffGammaPlug)) {
+    if (UsdMayaUtil::IsAuthored(lightShadowFalloffGammaPlug)) {
         float mayaLightShadowFalloffGamma = 1.0f;
         status =
             lightShadowFalloffGammaPlug.getValue(mayaLightShadowFalloffGamma);
@@ -1760,11 +1744,7 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     shadowAPI.GetShadowFalloffGammaAttr().Get(&lightShadowFalloffGamma);
 
     status = lightShadowFalloffGammaPlug.setValue(lightShadowFalloffGamma);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    return true;
+    return status == MS::kSuccess;
 }
 
 
@@ -1772,7 +1752,7 @@ static
 UsdLuxLight
 _DefineUsdLuxLightForMayaLight(
         const MFnDependencyNode& depFn,
-        PxrUsdMayaPrimWriterContext* context)
+        UsdMayaPrimWriterContext* context)
 {
     UsdLuxLight lightSchema;
 
@@ -1814,9 +1794,9 @@ _DefineUsdLuxLightForMayaLight(
 
 /* static */
 bool
-PxrUsdMayaTranslatorRfMLight::Write(
-        const PxrUsdMayaPrimWriterArgs& args,
-        PxrUsdMayaPrimWriterContext* context)
+UsdMayaTranslatorRfMLight::Write(
+        const UsdMayaPrimWriterArgs& args,
+        UsdMayaPrimWriterContext* context)
 {
     const SdfPath& authorPath = context->GetAuthorPath();
 
@@ -1889,9 +1869,9 @@ _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 
 /* static */
 bool
-PxrUsdMayaTranslatorRfMLight::Read(
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+UsdMayaTranslatorRfMLight::Read(
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     if (!usdPrim) {
@@ -1917,7 +1897,7 @@ PxrUsdMayaTranslatorRfMLight::Read(
 
     MStatus status;
     MObject mayaNodeTransformObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(
             usdPrim,
             parentNode,
             args,
@@ -1932,7 +1912,7 @@ PxrUsdMayaTranslatorRfMLight::Read(
         TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
 
     MObject lightObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateNode(
+    if (!UsdMayaTranslatorUtil::CreateNode(
             nodeName,
             MString(mayaLightTypeToken.GetText()),
             mayaNodeTransformObj,
@@ -1986,96 +1966,96 @@ PxrUsdMayaTranslatorRfMLight::Read(
 class PxrAovLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrAovLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrDiskLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrDiskLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrDistantLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrDistantLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrDomeLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrDomeLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDomeLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrEnvDayLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrEnvDayLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrMeshLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrMeshLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrRectLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrRectLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 
 class PxrSphereLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+    return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
 {
-    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 

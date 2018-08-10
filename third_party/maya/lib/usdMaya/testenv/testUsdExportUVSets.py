@@ -173,6 +173,7 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = self._GetCubeUsdMesh('OneMissingFaceCube')
 
         expectedValues = [
+            Gf.Vec2f(0.0, 0.0),
             Gf.Vec2f(0.375, 0),
             Gf.Vec2f(0.625, 0),
             Gf.Vec2f(0.625, 0.25),
@@ -186,18 +187,17 @@ class testUsdExportUVSets(unittest.TestCase):
             Gf.Vec2f(0.875, 0),
             Gf.Vec2f(0.875, 0.25),
             Gf.Vec2f(0.125, 0),
-            Gf.Vec2f(0.125, 0.25),
-            Gf.Vec2f(-1e+30, -1e+30)
+            Gf.Vec2f(0.125, 0.25)
         ]
         expectedIndices = [
-            0, 1, 2, 3,
-            3, 2, 4, 5,
-            14, 14, 14, 14,
-            6, 7, 8, 9,
-            1, 10, 11, 2,
-            12, 0, 3, 13
+            1, 2, 3, 4,
+            4, 3, 5, 6,
+            0, 0, 0, 0,
+            7, 8, 9, 10,
+            2, 11, 12, 3,
+            13, 1, 4, 14
         ]
-        expectedUnauthoredValuesIndex = len(expectedValues) - 1
+        expectedUnauthoredValuesIndex = 0
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
@@ -216,21 +216,21 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = self._GetCubeUsdMesh('OneAssignedFaceCube')
 
         expectedValues = [
+            Gf.Vec2f(0.0, 0.0),
             Gf.Vec2f(0.375, 0.5),
             Gf.Vec2f(0.625, 0.5),
             Gf.Vec2f(0.625, 0.75),
-            Gf.Vec2f(0.375, 0.75),
-            Gf.Vec2f(-1e+30, -1e+30)
+            Gf.Vec2f(0.375, 0.75)
         ]
         expectedIndices = [
-            4, 4, 4, 4,
-            4, 4, 4, 4,
-            0, 1, 2, 3,
-            4, 4, 4, 4,
-            4, 4, 4, 4,
-            4, 4, 4, 4
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            1, 2, 3, 4,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
         ]
-        expectedUnauthoredValuesIndex = len(expectedValues) - 1
+        expectedUnauthoredValuesIndex = 0
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 

@@ -1,0 +1,15 @@
+--- stb/stb_image_write.h	2018-02-11 11:57:53.000000000 -0800
++++ stb_image_write.h	2018-06-11 14:01:49.258945863 -0700
+@@ -694,7 +694,11 @@
+       s->func(s->context, buffer, len);
+ 
+       for(i=0; i < y; i++)
+-         stbiw__write_hdr_scanline(s, x, comp, scratch, data + comp*x*(stbi__flip_vertically_on_write ? y-1-i : i)*x);
++         // XXX PIXAR: fix to the following call to stbiw__write_hdr_scanline
++         // XXX Issue: Original included extra multiplication by x when computing 
++         // XXX        starting position of scanline
++         // XXX Fix  : deleted extra x 
++         stbiw__write_hdr_scanline(s, x, comp, scratch, data + comp*x*(stbi__flip_vertically_on_write ? y-1-i : i));
+       STBIW_FREE(scratch);
+       return 1;
+    }

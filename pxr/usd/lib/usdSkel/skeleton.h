@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
@@ -54,33 +54,26 @@ class SdfAssetPath;
 
 /// \class UsdSkelSkeleton
 ///
-/// Describes a skeleton. A Skeleton is responsible both for establishing
-/// the _topology_ of a skeleton, as well as for identifying a rest pose.
+/// Describes a skeleton. 
 /// 
 /// See the extended \ref UsdSkel_Skeleton "Skeleton Schema" documentation for
 /// more information.
 /// 
 ///
-class UsdSkelSkeleton : public UsdGeomImageable
+class UsdSkelSkeleton : public UsdGeomBoundable
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdSkelSkeleton on UsdPrim \p prim .
     /// Equivalent to UsdSkelSkeleton::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSkelSkeleton(const UsdPrim& prim=UsdPrim())
-        : UsdGeomImageable(prim)
+        : UsdGeomBoundable(prim)
     {
     }
 
@@ -88,7 +81,7 @@ public:
     /// Should be preferred over UsdSkelSkeleton(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSkelSkeleton(const UsdSchemaBase& schemaObj)
-        : UsdGeomImageable(schemaObj)
+        : UsdGeomBoundable(schemaObj)
     {
     }
 
@@ -142,6 +135,13 @@ public:
     static UsdSkelSkeleton
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDSKEL_API
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -181,12 +181,35 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // BINDTRANSFORMS 
+    // --------------------------------------------------------------------- //
+    /// Specifies the bind-pose transforms of each joint in
+    /// **world space**, in the ordering imposed by *joints*.
+    ///
+    /// \n  C++ Type: VtArray<GfMatrix4d>
+    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetBindTransformsAttr() const;
+
+    /// See GetBindTransformsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateBindTransformsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // RESTTRANSFORMS 
     // --------------------------------------------------------------------- //
-    /// Specifies rest transforms of each joint in 
-    /// **joint-local space**, in the ordering imposed by *joints*.
-    /// Joint transforms should all be given as orthogonal, affine
-    /// transformations.
+    /// Specifies the rest-pose transforms of each joint in
+    /// **local space**, in the ordering imposed by *joints*. This provides
+    /// fallback values for joint transforms when a Skeleton either has no
+    /// bound animation source, or when that animation source only contains
+    /// animation for a subset of a Skeleton's joints.
     ///
     /// \n  C++ Type: VtArray<GfMatrix4d>
     /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray

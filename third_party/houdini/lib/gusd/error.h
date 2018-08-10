@@ -89,7 +89,7 @@ GusdPostErrorHelper::Msg(const char* format, T&& arg1, Args&&... args) const
 /// Helper class used to propagate errors from different threads.
 /// There is a thread-local UT_ErrorManager for each thread in Houdini.
 /// Error reporting methods should generally just call UTaddError(),
-/// UTaddWarning(), etc. to report errors, -- or HEXTUT_ERR, and similar
+/// UTaddWarning(), etc. to report errors, -- or GUSD_ERR, and similar
 /// helpers above -- which will put errors on currently scoped UT_ErrorManager
 /// of the active thread.
 /// When splitting into threads, though, an additional step is required

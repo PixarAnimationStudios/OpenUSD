@@ -68,10 +68,15 @@ class SdfAssetPath;
 /// 
 /// \section UsdGeom_Mesh_Normals A Note About Normals
 /// 
-/// Although the \em normals attribute inherited from PointBased can be authored
-/// on any mesh, they are almost never needed for subdivided meshes, and only
-/// add rendering cost.  You may consider only authoring them for polygonal
-/// meshes.
+/// Normals should not be authored on a subdivided mesh, since subdivision
+/// algorithms define their own normals. They should only be authored for
+/// polygonal meshes.
+/// 
+/// The 'normals' attribute inherited from UsdGeomPointBased is not a generic
+/// primvar, but the number of elements in this attribute will be determined by
+/// its 'interpolation'.  See \ref UsdGeomPointBased::GetNormalsInterpolation() .
+/// If 'normals' and 'primvars:normals' are both specified, the latter has
+/// precedence.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
@@ -81,16 +86,10 @@ class SdfAssetPath;
 class UsdGeomMesh : public UsdGeomPointBased
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdGeomMesh on UsdPrim \p prim .
     /// Equivalent to UsdGeomMesh::Get(prim.GetStage(), prim.GetPath())
@@ -158,6 +157,13 @@ public:
     USDGEOM_API
     static UsdGeomMesh
     Define(const UsdStagePtr &stage, const SdfPath &path);
+
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDGEOM_API
+    virtual UsdSchemaType _GetSchemaType() const;
 
 private:
     // needs to invoke _GetStaticTfType.

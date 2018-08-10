@@ -36,6 +36,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -672,7 +673,7 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    UsdImagingInstancerContext const*
                                        instancerContext)
 {
-    // XXX: There is some prim/adapter dependancy here when the instancer
+    // XXX: There is some prim/adapter dependency here when the instancer
     // is a nested instancer.
     //
     // _UpdateInstanceMap() updates the instance indexes an instancer.
@@ -945,6 +946,19 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     _tokens->scale,
                     HdInterpolationInstance);
             }
+
+            // Convert non-constant primvars on UsdGeomPointInstancer
+            // into instance-rate primvars.
+            UsdGeomPrimvarsAPI primvars(instancer);
+            for (auto const &pv: primvars.GetPrimvars()) {
+                TfToken const& interp = pv.GetInterpolation();
+                if (interp != UsdGeomTokens->constant &&
+                    interp != UsdGeomTokens->uniform) {
+                    HdInterpolation interp = HdInterpolationInstance;
+                    _ComputeAndMergePrimvar(
+                        prim, cachePath, pv, time, valueCache, &interp);
+                }
+            }
         }
 
         // update instancer transform.
@@ -1131,7 +1145,7 @@ void
 UsdImagingPointInstancerAdapter::ProcessPrimResync(SdfPath const& usdPath,
                                              UsdImagingIndexProxy* index)
 {
-    // _ProcesPrimRemoval does the heavy lifting, returing a set of instancers
+    // _ProcesPrimRemoval does the heavy lifting, returning a set of instancers
     // to repopulate. Note that the child/prototype prims need not be in the
     // "toReload" list, as they will be discovered in the process of reloading
     // the root instancer prim.
@@ -1262,9 +1276,19 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
 {
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
 
-    // Calling the adapter below can invalidate the iterator, so we need to
-    // deference now.
-    const _ProtoRPrimMap &protoPrimMap = instIt->second.protoRprimMap;
+    // XXX: There's a nasty catch-22 where PI's ProcessPrimRemoval tries to
+    // remove that point instancer as well as any parents (since we don't have
+    // good invalidation for a parent PI when a child PI is removed/resynced,
+    // we resync the whole tree); and _UnloadInstancer tries to remove
+    // children.  This would cause an infinite loop, except that calling
+    // ProcessPrimRemoval on a child a second time is a no-op.  However,
+    // if a parent PI has multiple child PIs, the parent PI will be removed
+    // several times (usually resulting in a segfault).
+    //
+    // To guard against that, we remove instancerPath from _instancerData
+    // before traversing children, so that the parent PI is only removed once.
+    const _ProtoRPrimMap protoPrimMap = instIt->second.protoRprimMap;
+    _instancerData.erase(instIt);
 
     // First, we need to make sure all proto rprims are removed.
     TF_FOR_ALL(protoRprimIt, protoPrimMap) {
@@ -1277,9 +1301,6 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
     index->RemovePrimInfo(instancerPath);
-
-    // Don't use instIt as it may be invalid!
-    _instancerData.erase(instancerPath);
 }
 
 // -------------------------------------------------------------------------- //
@@ -1390,7 +1411,7 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
     // grabbing the lock, but it's not thread safe.
     std::lock_guard<std::mutex> lock(instrData.mutex);
 
-    // Grab the instancer visiblity, if it varies over time.
+    // Grab the instancer visibility, if it varies over time.
     if (instrData.dirtyBits & HdChangeTracker::DirtyVisibility) {
         instrData.visible = _GetInstancerVisible(instancerPath, time);
     }
@@ -1857,10 +1878,10 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
 /*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(
-    HdxSelectionHighlightMode const& highlightMode,
+    HdSelection::HighlightMode const& highlightMode,
     SdfPath const &path,
     VtIntArray const &instanceIndices,
-    HdxSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result)
 {
     SdfPath indexPath = _GetPathForIndex(path);
     SdfPathVector const& ids = _GetRprimSubtree(indexPath);

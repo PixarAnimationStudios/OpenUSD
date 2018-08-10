@@ -53,19 +53,20 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    SdfPath const& id = GetID();
+    SdfPath const& id = GetId();
     HdDirtyBits bits = *dirtyBits;
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
     //       can be separated functionally and have different 
     //       delegate methods.
     if ((bits & (DirtyParams | DirtyTexture)) != 0) {
+       HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         HdResourceRegistrySharedPtr const &resourceRegistry = 
-            sceneDelegate->GetRenderIndex().GetResourceRegistry();
+                                              renderIndex.GetResourceRegistry();
 
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
-        {
+        if (texID != HdTextureResource::ID(-1)) {
             HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
                 texInstance;
 
@@ -81,7 +82,18 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
                 // as this class.
                 _textureResource = texInstance.GetValue();
             }
+        } else {
+            _textureResource.reset();
         }
+
+        // The texture resource may have been cleared, so we need to release the
+        // old one.
+        //
+        // This is particularly important if the update is on the memory
+        // request.
+        // As the cache may be still holding on to the resource with a larger
+        // memory request.
+        renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
     }
 
     *dirtyBits = Clean;

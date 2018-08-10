@@ -45,6 +45,7 @@ HdChangeTracker::HdChangeTracker()
     , _generalState()
     , _collectionState()
     , _needsGarbageCollection(false)
+    , _needsBprimGarbageCollection(false)
     , _instancerRprimMap()
     , _varyingStateVersion(1)
     , _indexVersion(0)
@@ -373,6 +374,7 @@ HdChangeTracker::BprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_BPRIM_REMOVED).Msg("Bprim Removed: %s\n", id.GetText());
     _bprimState.erase(id);
+    _needsBprimGarbageCollection = true;
 }
 
 HdDirtyBits
@@ -437,9 +439,9 @@ HdChangeTracker::IsCullStyleDirty(SdfPath const& id)
 }
 
 bool 
-HdChangeTracker::IsRefineLevelDirty(SdfPath const& id)
+HdChangeTracker::IsDisplayStyleDirty(SdfPath const& id)
 {
-    return IsRefineLevelDirty(GetRprimDirtyBits(id), id);
+    return IsDisplayStyleDirty(GetRprimDirtyBits(id), id);
 }
 
 bool 
@@ -513,10 +515,10 @@ HdChangeTracker::IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsDisplayStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = (dirtyBits & DirtyRefineLevel) != 0;
-    _LogCacheAccess(HdTokens->refineLevel, id, !isDirty);
+    bool isDirty = (dirtyBits & DirtyDisplayStyle) != 0;
+    _LogCacheAccess(HdTokens->displayStyle, id, !isDirty);
     return isDirty;
 }
 
@@ -822,8 +824,8 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & DirtyExtent) {
         ss << "Extent ";
     }
-    if (dirtyBits & DirtyRefineLevel) {
-        ss << "RefineLevel ";
+    if (dirtyBits & DirtyDisplayStyle) {
+        ss << "DisplayStyle ";
     }
     if (dirtyBits & DirtyPoints) {
         ss << "Points ";
@@ -866,6 +868,9 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     }
     if (dirtyBits & DirtyRepr) {
         ss << "Repr ";
+    }
+    if (dirtyBits & DirtyCategories) {
+        ss << "Categories ";
     }
     if (dirtyBits & ~AllSceneDirtyBits) {
         ss << "CustomBits:";

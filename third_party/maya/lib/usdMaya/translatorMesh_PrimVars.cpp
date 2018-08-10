@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorMesh.h"
 
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/meshUtil.h"
+#include "usdMaya/readUtil.h"
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
 
@@ -35,20 +35,23 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/vt/array.h"
+
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
-#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshFaceVertex.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
+/// "Flattens out" the given \p interpolation onto face-vertexes of the given
+/// \p meshFn, returning a mapping of the face-vertex indices to data indices.
+/// Takes into account data authored sparsely if \p assignmentIndices and
+/// \p unauthoredValuesIndex are specified.
 static
 MIntArray
 _GetMayaFaceVertexAssignmentIds(
@@ -92,7 +95,7 @@ _GetMayaFaceVertexAssignmentIds(
 
 /* static */
 bool
-PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
+UsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
         const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
 {
@@ -101,67 +104,58 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     // Get the raw data before applying any indexing.
     VtVec2fArray uvValues;
     if (!primvar.Get(&uvValues) || uvValues.empty()) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not read UV values from primvar '%s' on mesh: %s",
-                           primvarName.GetText(),
-                           primvar.GetAttr().GetPrimPath().GetText()).c_str());
+        TF_WARN("Could not read UV values from primvar '%s' on mesh: %s",
+                primvarName.GetText(),
+                primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
     // This is the number of UV values assuming the primvar is NOT indexed.
-    size_t numUVs = uvValues.size();
-
     VtIntArray assignmentIndices;
-    int unauthoredValuesIndex = -1;
     if (primvar.GetIndices(&assignmentIndices)) {
         // The primvar IS indexed, so the indices array is what determines the
         // number of UV values.
-        numUVs = assignmentIndices.size();
-        unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+        int unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+
+        // Replace any index equal to unauthoredValuesIndex with -1.
+        if (unauthoredValuesIndex != -1) {
+            for (int& index : assignmentIndices) {
+                if (index == unauthoredValuesIndex) {
+                    index = -1;
+                }
+            }
+        }
+
+        // Furthermore, if unauthoredValuesIndex is valid for uvValues, then
+        // remove it from uvValues and shift the indices (we don't want to
+        // import the unauthored value into Maya, where it has no meaning).
+        if (unauthoredValuesIndex >= 0 &&
+                static_cast<size_t>(unauthoredValuesIndex) < uvValues.size()) {
+            // This moves [unauthoredValuesIndex + 1, end) to
+            // [unauthoredValuesIndex, end - 1), erasing the
+            // unauthoredValuesIndex.
+            std::move(
+                    uvValues.begin() + unauthoredValuesIndex + 1,
+                    uvValues.end(),
+                    uvValues.begin() + unauthoredValuesIndex);
+            uvValues.pop_back();
+
+            for (int& index : assignmentIndices) {
+                if (index > unauthoredValuesIndex) {
+                    index = index - 1;
+                }
+            }
+        }
     }
 
     // Go through the UV data and add the U and V values to separate
-    // MFloatArrays, taking into consideration that indexed data may have been
-    // authored sparsely. If the assignmentIndices array is empty then the data
-    // is NOT indexed, in which case we can use it directly.
-    // Note that with indexed data, the data is added to the arrays in ascending
-    // component ID order according to the primvar's interpolation (ascending
-    // face ID for uniform interpolation, ascending vertex ID for vertex
-    // interpolation, etc.). This ordering may be different from the way the
-    // values are ordered in the primvar. Because of this, we recycle the
-    // assignmentIndices array as we go to store the new mapping from component
-    // index to UV index.
+    // MFloatArrays.
     MFloatArray uCoords;
     MFloatArray vCoords;
-    for (size_t i = 0; i < numUVs; ++i) {
-        int uvIndex = i;
-
-        if (i < assignmentIndices.size()) {
-            // The data is indexed, so consult the indices array for the
-            // correct index into the data.
-            uvIndex = assignmentIndices[i];
-
-            if (uvIndex == unauthoredValuesIndex) {
-                // This component is unauthored, so just update the
-                // mapping in assignmentIndices and then skip the value.
-                // We don't actually use the value at the unassigned index.
-                assignmentIndices[i] = -1;
-                continue;
-            }
-
-            // We'll be appending a new value, so the current length of the
-            // array gives us the new value's index.
-            assignmentIndices[i] = uCoords.length();
-        }
-
-        uCoords.append(uvValues[uvIndex][0]);
-        vCoords.append(uvValues[uvIndex][1]);
+    for (const GfVec2f& v : uvValues) {
+        uCoords.append(v[0]);
+        vCoords.append(v[1]);
     }
-
-    // uCoords and vCoords now store all of the values and any unassigned
-    // components have had their indices set to -1, so update the unauthored
-    // values index.
-    unauthoredValuesIndex = -1;
 
     MStatus status;
     MString uvSetName(primvarName.GetText());
@@ -172,10 +166,9 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     } else {
         status = meshFn.createUVSet(uvSetName);
         if (status != MS::kSuccess) {
-            MGlobal::displayWarning(
-                TfStringPrintf("Unable to create UV set '%s' for mesh: %s",
-                               uvSetName.asChar(),
-                               meshFn.fullPathName().asChar()).c_str());
+            TF_WARN("Unable to create UV set '%s' for mesh: %s",
+                    uvSetName.asChar(),
+                    meshFn.fullPathName().asChar());
             return false;
         }
     }
@@ -190,10 +183,9 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     // We'll assign mesh components to these values below.
     status = meshFn.setUVs(uCoords, vCoords, &uvSetName);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unable to set UV data on UV set '%s' for mesh: %s",
-                           uvSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Unable to set UV data on UV set '%s' for mesh: %s",
+                uvSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -204,25 +196,23 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     MIntArray uvIds = _GetMayaFaceVertexAssignmentIds(meshFn,
                                                       interpolation,
                                                       assignmentIndices,
-                                                      unauthoredValuesIndex);
+                                                      -1);
 
     MIntArray vertexCounts;
     MIntArray vertexList;
     status = meshFn.getVertices(vertexCounts, vertexList);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not get vertex counts for UV set '%s' on mesh: %s",
-                           uvSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Could not get vertex counts for UV set '%s' on mesh: %s",
+                uvSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
     status = meshFn.assignUVs(vertexCounts, uvIds, &uvSetName);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not assign UV values to UV set '%s' on mesh: %s",
-                           uvSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Could not assign UV values to UV set '%s' on mesh: %s",
+                uvSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -231,7 +221,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
 
 /* static */
 bool
-PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
+UsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         const UsdGeomMesh& primSchema,
         const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
@@ -248,17 +238,17 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // Note that if BOTH displayColor and displayOpacity are authored, they will
     // be imported as separate color sets. We do not attempt to combine them
     // into a single color set.
-    if (primvarName == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
+    if (primvarName == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
             typeName == SdfValueTypeNames->FloatArray) {
-        if (!PxrUsdMayaRoundTripUtil::IsAttributeUserAuthored(primSchema.GetDisplayColorPrimvar())) {
-            colorSetName = PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
+        if (!UsdMayaRoundTripUtil::IsAttributeUserAuthored(primSchema.GetDisplayColorPrimvar())) {
+            colorSetName = UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
         }
     }
 
     // We'll need to convert colors from linear to display if this color set is
     // for display colors.
     const bool isDisplayColor =
-        (colorSetName == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText());
+        (colorSetName == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText());
 
     // Get the raw data before applying any indexing. We'll only populate one
     // of these arrays based on the primvar's typeName, and we'll also set the
@@ -295,19 +285,18 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
             numValues = rgbaArray.size();
         }
     } else {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unsupported color set primvar type '%s' for primvar '%s' on mesh: %s",
-                           typeName.GetAsToken().GetText(),
-                           primvarName.GetText(),
-                           primvar.GetAttr().GetPrimPath().GetText()).c_str());
+        TF_WARN("Unsupported color set primvar type '%s' for primvar '%s' on "
+                "mesh: %s",
+                typeName.GetAsToken().GetText(),
+                primvarName.GetText(),
+                primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
     if (status != MS::kSuccess || numValues == 0) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not read color set values from primvar '%s' on mesh: %s",
-                           primvarName.GetText(),
-                           primvar.GetAttr().GetPrimPath().GetText()).c_str());
+        TF_WARN("Could not read color set values from primvar '%s' on mesh: %s",
+                primvarName.GetText(),
+                primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
@@ -375,7 +364,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         }
 
         if (isDisplayColor) {
-            colorValue = PxrUsdMayaColorSpace::ConvertLinearToMaya(colorValue);
+            colorValue = UsdMayaColorSpace::ConvertLinearToMaya(colorValue);
         }
 
         MColor mColor(colorValue[0], colorValue[1], colorValue[2], colorValue[3]);
@@ -386,14 +375,13 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // have had their indices set to -1, so update the unauthored values index.
     unauthoredValuesIndex = -1;
 
-    const bool clamped = PxrUsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
+    const bool clamped = UsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
 
-    status = meshFn.createColorSet(colorSetName, NULL, clamped, colorRep);
+    status = meshFn.createColorSet(colorSetName, nullptr, clamped, colorRep);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unable to create color set '%s' for mesh: %s",
-                           colorSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Unable to create color set '%s' for mesh: %s",
+                colorSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -401,10 +389,9 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // primvar. We'll assign mesh components to these values below.
     status = meshFn.setColors(colorArray, &colorSetName, colorRep);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Unable to set color data on color set '%s' for mesh: %s",
-                           colorSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Unable to set color data on color set '%s' for mesh: %s",
+                colorSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
@@ -419,14 +406,64 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     status = meshFn.assignColors(colorIds, &colorSetName);
     if (status != MS::kSuccess) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Could not assign color values to color set '%s' on mesh: %s",
-                           colorSetName.asChar(),
-                           meshFn.fullPathName().asChar()).c_str());
+        TF_WARN("Could not assign color values to color set '%s' on mesh: %s",
+                colorSetName.asChar(),
+                meshFn.fullPathName().asChar());
         return false;
     }
 
     return true;
+}
+bool
+UsdMayaTranslatorMesh::_AssignConstantPrimvarToMesh(
+        const UsdGeomPrimvar& primvar, 
+        MFnMesh& meshFn)
+{
+
+    const TfToken& name = primvar.GetBaseName();
+    const SdfValueTypeName& typeName = primvar.GetTypeName();
+    const SdfVariability& variability = SdfVariabilityUniform;
+    const TfToken& interpolation = primvar.GetInterpolation();
+
+    if (interpolation != UsdGeomTokens->constant) {
+        return false;
+    }
+
+    // create attribute
+    MObject attrObj = 
+        UsdMayaReadUtil::FindOrCreateMayaAttr(
+            typeName, 
+            variability, 
+            meshFn, 
+            name.GetText(),
+            name.GetText());
+
+    if (attrObj.isNull()) {
+        return false;
+    }
+
+    // set attribute value
+    VtValue primvarData;
+    MDGModifier modifier;
+
+    primvar.Get(&primvarData);
+
+    MStatus status;
+    MPlug plug = meshFn.findPlug(
+        name.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+
+    if (status != MS::kSuccess || plug.isNull()) {
+        return false;
+    }
+
+    if (!UsdMayaReadUtil::SetMayaAttr(plug, primvarData, modifier)) {
+        return false;
+    }
+
+    return true;
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -74,6 +74,11 @@ UsdKatanaBlindDataObject::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdKatanaBlindDataObject::_GetSchemaType() const {
+    return UsdKatanaBlindDataObject::schemaType;
+}
+
 /* static */
 const TfType &
 UsdKatanaBlindDataObject::_GetStaticTfType()

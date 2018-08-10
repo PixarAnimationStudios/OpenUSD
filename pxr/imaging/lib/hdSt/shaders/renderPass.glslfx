@@ -87,18 +87,44 @@ float GetTessLevel() {
     return 1;
 #endif
 }
-float GetPointSize(int vertexID) {
+float GetPointSize() {
 #if defined(HD_HAS_pointSize)
     return HdGet_pointSize();
 #else
     return 3.0;
 #endif
 }
+float GetPointSelectedSize() {
+#if defined(HD_HAS_pointSelectedSize)
+    return HdGet_pointSelectedSize();
+#else
+    return 5.0;
+#endif
+}
 vec4  GetWireframeColor() {
-#if defined(HD_HAS_wireframeColor)
+// Individual prims can specify an alternative wireframe color
+// to one specified in the render pass.  This is used in cases were
+// there is not enough contrast with the normal one. 
+#if defined(HD_HAS_overrideWireframeColor)
+    return HdGet_overrideWireframeColor();
+#elif defined(HD_HAS_wireframeColor)
     return HdGet_wireframeColor();
 #else
     return vec4(0,0,0,0);
+#endif
+}
+vec4  GetMaskColor() {
+#if defined(HD_HAS_maskColor)
+    return HdGet_maskColor();
+#else
+    return vec4(0.5,0,0,1);
+#endif
+}
+vec4  GetIndicatorColor() {
+#if defined(HD_HAS_indicatorColor)
+    return HdGet_indicatorColor();
+#else
+    return vec4(0,0.5,0,1);
 #endif
 }
 
@@ -169,31 +195,37 @@ void ApplyClipPlanes(vec4 Peye)
 
 -- glsl RenderPass.RenderColorOutput
 
+// XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
+// color override methods, since they're currently duplicated. This is because
+// we don't have a mixin token for color overrides in a render pass yet.
 vec4 ApplyColorOverrides(vec4 color)
 {
-#if defined(HD_HAS_scalarOverride)
-    // Allow a scalar value to override the color from the surface
-    // for previewing heatmaps. This is useful for editing workflows.
-#if defined(HD_HAS_scalarOverrideColorRamp)
-    int rampCount = constantPrimvars[GetDrawingCoord().constantCoord].
-                scalarOverrideColorRamp.length();
-    float scalar = HdGet_scalarOverride() * float(rampCount - 1);
-    float baseIndex = floor(scalar);
-    float nextIndex = min(float(rampCount - 1), baseIndex + 1.0);
-    float interp = scalar - baseIndex;
-    color = mix(HdGet_scalarOverrideColorRamp(int(baseIndex)),
-                HdGet_scalarOverrideColorRamp(int(nextIndex)),
-                interp);
-#else
-    // If no ramp is given just gamma correct the scalar as greyscale.
-    color.rgb = vec3(pow(HdGet_scalarOverride(), 2.2));
-#endif // HD_HAS_scalarOverrideColorRamp
-
-#elif defined(HD_HAS_overrideColor)
+#if defined(HD_HAS_overrideColor)
     // Mix in override color
     vec4 overrideColor = HdGet_overrideColor();
     color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
 #endif
+    return color;
+}
+
+vec3 ApplyMaskColor(vec4 color, float weight, vec4 maskColor)
+{
+    float strength = maskColor.a * clamp(weight, 0, 1);
+    return mix(color.rgb, maskColor.rgb, strength);
+}
+
+vec4 ApplyColorOverridesPostLighting(vec4 color)
+{
+    #if defined(HD_HAS_maskWeight)
+        float maskWeight = HdGet_maskWeight();
+        vec4 maskColor = GetMaskColor();
+        color.rgb = ApplyMaskColor(color, maskWeight, maskColor);
+    #endif
+    #if defined(HD_HAS_indicatorWeight)
+        float indicatorWeight = HdGet_indicatorWeight();
+        vec4 indicatorColor = GetIndicatorColor();
+        color.rgb = ApplyMaskColor(color, indicatorWeight, indicatorColor);
+    #endif
     return color;
 }
 

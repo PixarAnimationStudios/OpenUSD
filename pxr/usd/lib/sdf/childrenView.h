@@ -183,7 +183,7 @@ public:
 
 private:
 
-    // An interator type for the internal unfiltered data storage. This
+    // An iterator type for the internal unfiltered data storage. This
     // iterator holds a pointer to its owning object and an index into
     // the owner's storage. That allows the iterator to operate without
     // knowing anything about the specific data storage that's used,

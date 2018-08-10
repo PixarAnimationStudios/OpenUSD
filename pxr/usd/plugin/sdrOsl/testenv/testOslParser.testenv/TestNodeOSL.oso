@@ -1,0 +1,31 @@
+OpenShadingLanguage 1.00
+# Compiled by oslc 1.7.4.pixar38bde12
+# options: -o TestNodeOSL.oso
+shader TestNodeOSL	%meta{string,category,"testing"} %meta{string,departments,"testDept"} %meta{string,help,"This is the test node"} %meta{string,label,"TestNodeLabel"} %meta{string,primvars,"primvar1|primvar2|primvar3|$primvarNamingProperty|$invalidPrimvarNamingProperty"} %meta{string,uncategorizedMetadata,"uncategorized"} 
+param	float	inputA	0		%meta{string,widget,"number"} %meta{string,label,"inputA label"} %meta{string,page,"inputs1"} %meta{string,help,"inputA help message"} %meta{int,uncategorized,1}  %read{2147483647,-1} %write{2147483647,-1}
+param	int	inputB	0		%meta{string,widget,"number"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	float	inputC	2		%meta{string,widget,"number"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	int[1]	inputD	1		%meta{string,widget,"dynamicArray"} %meta{string,isDynamicArray,"1"} %meta{string,arraySize,"-1"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	float[2]	inputF2	1 2		%meta{string,widget,"null"} %meta{string,page,"inputs2"} %meta{int,connectable,0}  %read{2147483647,-1} %write{2147483647,-1}
+param	float[3]	inputF3	1 2 3		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	float[4]	inputF4	1 2 3 4		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	float[5]	inputF5	1 2 3 4 5		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	string	inputInterp	"linear"		%meta{string,widget,"null"} %meta{string,page,"inputs2"} %meta{string,options,"linear|catmull-rom|bspline|constant"} %meta{int,connectable,0}  %read{2147483647,-1} %write{2147483647,-1}
+param	string	inputOptions	"opt1"		%meta{string,widget,"null"} %meta{string,page,"inputs2"} %meta{string,options,"opt1:opt1val|opt2:opt2val"} %meta{int,connectable,0}  %read{2147483647,-1} %write{2147483647,-1}
+param	point	inputPoint	0 0 0		%meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	normal	inputNormal	0 0 0		%meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	struct TestStruct	inputStruct			%meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1} %struct{"TestStruct"} %structfields{foo} %structfieldtypes{"f"} %structnfields{1}
+param	float	inputStruct.foo	0		%meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1} %mystruct{inputStruct} %mystructfield{0}
+param	string	inputAssetIdentifier	""		%meta{string,page,"inputs2"} %meta{string,widget,"assetIdInput"}  %read{2147483647,-1} %write{2147483647,-1}
+param	string	primvarNamingProperty	""		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	int	invalidPrimvarNamingProperty	0		%meta{string,widget,"number"} %meta{string,page,"inputs2"} %meta{string,help,"Invalid because a primvar naming property must have a string type"}  %read{2147483647,-1} %write{2147483647,-1}
+oparam	float	resultF	0		%meta{string,widget,"null"} %meta{string,page,"results"}  %read{2147483647,-1} %write{2147483647,-1}
+oparam	float[2]	resultF2	1 2		%meta{string,widget,"null"} %meta{string,page,"results"}  %read{2147483647,-1} %write{2147483647,-1}
+oparam	float[3]	resultF3	1 2 3		%meta{string,widget,"null"} %meta{string,page,"results"}  %read{2147483647,-1} %write{2147483647,-1}
+oparam	int	resultI	0		%meta{string,widget,"null"} %meta{string,page,"results"} %meta{int,uncategorized,1}  %read{2147483647,-1} %write{2147483647,-1}
+oparam	point	outputPoint	0 0 0		%read{2147483647,-1} %write{2147483647,-1}
+oparam	normal	outputNormal	0 0 0		%read{2147483647,-1} %write{2147483647,-1}
+oparam	color	outputColor	0 0 0		%read{2147483647,-1} %write{2147483647,-1}
+oparam	vector	outputVector	0 0 0		%read{2147483647,-1} %write{2147483647,-1}
+code ___main___
+	end

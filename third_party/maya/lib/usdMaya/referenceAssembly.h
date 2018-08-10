@@ -21,29 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_REFERENCEASSEMBLY_H
-#define PXRUSDMAYA_REFERENCEASSEMBLY_H
+#ifndef PXRUSDMAYA_REFERENCE_ASSEMBLY_H
+#define PXRUSDMAYA_REFERENCE_ASSEMBLY_H
 
-/// \file referenceAssembly.h
+/// \file usdMaya/referenceAssembly.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/stage.h"
 
-#include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
+#include <maya/MDGModifier.h>
 #include <maya/MPxAssembly.h>
 #include <maya/MPxRepresentation.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
-
-#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>
@@ -53,151 +53,148 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define PXRUSDMAYA_VARIANT_SET_TOKENS                  \
+#define PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS \
+    ((MayaTypeName, "pxrUsdReferenceAssembly"))
+
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaReferenceAssemblyTokens,
+                         PXRUSDMAYA_API,
+                         PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS);
+
+
+#define PXRUSDMAYA_VARIANT_SET_TOKENS \
     ((PlugNamePrefix, "usdVariantSet_"))
 
-TF_DECLARE_PUBLIC_TOKENS(
-    PxrUsdMayaVariantSetTokens, PXRUSDMAYA_API, PXRUSDMAYA_VARIANT_SET_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaVariantSetTokens,
+                         PXRUSDMAYA_API,
+                         PXRUSDMAYA_VARIANT_SET_TOKENS);
+
 
 /// Returns the PIXMAYA_USE_USD_ASSEM_NAMESPACE env setting.
 PXRUSDMAYA_API
 bool UsdMayaUseUsdAssemblyNamespace();
 
 
-class UsdMayaReferenceAssembly : public MPxAssembly, 
-    public PxrUsdMayaUsdPrimProvider
+class UsdMayaReferenceAssembly : public MPxAssembly,
+                                 public UsdMayaUsdPrimProvider
 {
 public:
     PXRUSDMAYA_API
+    static const MTypeId typeId;
+    PXRUSDMAYA_API
+    static const MString typeName;
+    PXRUSDMAYA_API
     static const MString _classification;
 
-    /// \brief Helper struct to hold MObjects for this class.
-    ///
-    /// These would normally be static members but since we have this class
-    /// registered in multiple plugins, we have the actual data stored
-    /// statically in the plugin.cpp.  
-    ///
-    /// A reference to this is setup by creator().
-    /// 
-    /// \sa PxrUsdMayaPluginStaticData
-    struct PluginStaticData {
-
-        // these get set in initialize()
-        MObject filePath;
-        MObject primPath;
-        MObject excludePrimPaths;
-        MObject time;
-        MObject complexity;
-        MObject tint;
-        MObject tintColor;
-        MObject kind;
-        MObject initialRep;
-        MObject repNamespace;
-        MObject drawMode;
-        MObject inStageData;
-        MObject inStageDataCached;
-        MObject outStageData;
-        std::vector<MObject> attrsAffectingRepresentation;
-
-        // this will not change once constructed.
-        const MTypeId typeId;
-        const MString typeName;
-        const MTypeId stageDataTypeId;
-
-        // this node uses data from proxyShape to make connections between the
-        // two.
-        const UsdMayaProxyShape::PluginStaticData& proxyShape;
-
-        PluginStaticData(
-                const MTypeId& typeId,
-                const MString& typeName,
-                const MTypeId& stageDataTypeId,
-                const UsdMayaProxyShape::PluginStaticData& proxyShape) :
-            typeId(typeId),
-            typeName(typeName),
-            stageDataTypeId(stageDataTypeId),
-            proxyShape(proxyShape)
-        { }
-    };
+    // Attributes
+    PXRUSDMAYA_API
+    static MObject filePathAttr;
+    PXRUSDMAYA_API
+    static MObject primPathAttr;
+    PXRUSDMAYA_API
+    static MObject excludePrimPathsAttr;
+    PXRUSDMAYA_API
+    static MObject timeAttr;
+    PXRUSDMAYA_API
+    static MObject complexityAttr;
+    PXRUSDMAYA_API
+    static MObject tintAttr;
+    PXRUSDMAYA_API
+    static MObject tintColorAttr;
+    PXRUSDMAYA_API
+    static MObject kindAttr;
+    PXRUSDMAYA_API
+    static MObject initialRepAttr;
+    PXRUSDMAYA_API
+    static MObject repNamespaceAttr;
+    PXRUSDMAYA_API
+    static MObject drawModeAttr;
+    PXRUSDMAYA_API
+    static MObject inStageDataAttr;
+    PXRUSDMAYA_API
+    static MObject inStageDataCachedAttr;
+    PXRUSDMAYA_API
+    static MObject outStageDataAttr;
+    PXRUSDMAYA_API
+    static std::vector<MObject> attrsAffectingRepresentation;
 
     // Static Member Functions ==
     PXRUSDMAYA_API
-    static void* creator(const PluginStaticData& psData);
+    static void* creator();
     PXRUSDMAYA_API
-    static MStatus initialize(PluginStaticData* psData);
+    static MStatus initialize();
 
     // == Base Class Virtuals ==
     PXRUSDMAYA_API
-    virtual MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
     PXRUSDMAYA_API
-    virtual bool setInternalValueInContext(
+    bool setInternalValueInContext(
             const MPlug& plug,
             const MDataHandle& dataHandle,
             MDGContext& ctx) override;
 
     // Required overrides
     PXRUSDMAYA_API
-    virtual MString createRepresentation(
+    MString createRepresentation(
             const MString& input,
             const MString& type,
             const MString& representation,
-            MDagModifier* undoRedo = NULL,
-            MStatus* ReturnStatus = NULL) override;
-    
+            MDagModifier* undoRedo = nullptr,
+            MStatus* ReturnStatus = nullptr) override;
+
     PXRUSDMAYA_API
-    virtual MString getActive() const override;
+    MString getActive() const override;
     PXRUSDMAYA_API
-    virtual MStringArray getRepresentations(
-            MStatus* ReturnStatus = NULL) const override;
+    MStringArray getRepresentations(
+            MStatus* ReturnStatus = nullptr) const override;
     PXRUSDMAYA_API
-    virtual MString getRepType(const MString& representation) const override;
+    MString getRepType(const MString& representation) const override;
     PXRUSDMAYA_API
-    virtual MString getRepLabel(const MString& representation) const override;
+    MString getRepLabel(const MString& representation) const override;
     PXRUSDMAYA_API
-    virtual MStringArray repTypes() const override;
+    MStringArray repTypes() const override;
     PXRUSDMAYA_API
-    virtual MStatus deleteRepresentation(
+    MStatus deleteRepresentation(
             const MString& representation) override;
     PXRUSDMAYA_API
-    virtual MStatus deleteAllRepresentations() override;
+    MStatus deleteAllRepresentations() override;
     PXRUSDMAYA_API
-    virtual MString setRepName(
+    MString setRepName(
             const MString& representation,
             const MString& newName,
-            MStatus* ReturnStatus = NULL) override;
+            MStatus* ReturnStatus = nullptr) override;
     PXRUSDMAYA_API
-    virtual MStatus setRepLabel(
+    MStatus setRepLabel(
             const MString& representation,
             const MString& label) override;
     PXRUSDMAYA_API
-    virtual bool activateRep(const MString& representation) override;
+    bool activateRep(const MString& representation) override;
 
     // Optional overrides
     PXRUSDMAYA_API
-    virtual bool supportsEdits() const override { return true; };
+    bool supportsEdits() const override { return true; };
     PXRUSDMAYA_API
-    virtual bool supportsMemberChanges() const override { return false; };
+    bool supportsMemberChanges() const override { return false; };
     PXRUSDMAYA_API
-    virtual bool canRepApplyEdits(const MString& rep) const override {
+    bool canRepApplyEdits(const MString& rep) const override {
         return (rep.length() > 0);
     };
 
     PXRUSDMAYA_API
-    virtual void postLoad() override;
+    void postLoad() override;
     PXRUSDMAYA_API
-    virtual bool inactivateRep() override;
+    bool inactivateRep() override;
     PXRUSDMAYA_API
-    virtual MString getRepNamespace() const override;
+    MString getRepNamespace() const override;
     PXRUSDMAYA_API
-    virtual void updateRepNamespace(const MString& repNamespace) override;
+    void updateRepNamespace(const MString& repNamespace) override;
 
     PXRUSDMAYA_API
-    virtual MStatus setDependentsDirty(
+    MStatus setDependentsDirty(
             const MPlug& plug,
             MPlugArray& plugArray) override;
 
-    // PxrUsdMayaUsdPrimProvider overrides:
+    // UsdMayaUsdPrimProvider overrides:
     PXRUSDMAYA_API
     UsdPrim usdPrim() const override;
 
@@ -233,10 +230,9 @@ public:
   private:
 
     friend class UsdMayaRepresentationBase;
-    const PluginStaticData& _psData;
 
-    UsdMayaReferenceAssembly(const PluginStaticData& psData);
-    virtual ~UsdMayaReferenceAssembly();
+    UsdMayaReferenceAssembly();
+    ~UsdMayaReferenceAssembly() override;
 
     // Private Class functions
     MStatus computeInStageDataCached(MDataBlock& dataBlock);
@@ -269,9 +265,9 @@ public:
     // was edited directly (in which case _updatingRepNamespace == false).
     bool _updatingRepNamespace;
 
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> > _representations;
-    bool _activateRepOnFileLoad; 
-    boost::shared_ptr<MPxRepresentation> _activeRep;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> > _representations;
+    bool _activateRepOnFileLoad;
+    std::shared_ptr<MPxRepresentation> _activeRep;
     bool _inSetInternalValue;
     bool _hasEdits;
 };
@@ -289,7 +285,7 @@ class UsdMayaRepresentationBase : public MPxRepresentation
     PXRUSDMAYA_API
     UsdMayaRepresentationBase(MPxAssembly *assembly, const MString &name);
     PXRUSDMAYA_API
-    virtual ~UsdMayaRepresentationBase() {};
+    ~UsdMayaRepresentationBase() override {};
 
     bool activate() override = 0;
     PXRUSDMAYA_API
@@ -304,17 +300,15 @@ class UsdMayaRepresentationBase : public MPxRepresentation
     // == New functions for UsdMayaRepresentationBase ==
     // Expose protected function getAssembly() as public
     MPxAssembly* GetAssembly()  { return getAssembly(); };
-
-  protected:
-    // == Protected Data
-    const UsdMayaReferenceAssembly::PluginStaticData& _psData;
 };
 
-class UsdMayaRepresentationProxyBase : public UsdMayaRepresentationBase 
+class UsdMayaRepresentationProxyBase : public UsdMayaRepresentationBase
 {
   public:
-    UsdMayaRepresentationProxyBase(MPxAssembly *assembly, const MString &name, 
-            bool proxyIsSoftSelectable) : 
+    UsdMayaRepresentationProxyBase(
+            MPxAssembly *assembly,
+            const MString &name,
+            bool proxyIsSoftSelectable) :
         UsdMayaRepresentationBase(assembly, name),
         _proxyIsSoftSelectable(proxyIsSoftSelectable) {};
 
@@ -325,8 +319,9 @@ class UsdMayaRepresentationProxyBase : public UsdMayaRepresentationBase
 
   protected:
     PXRUSDMAYA_API
-    virtual void _OverrideProxyPlugs(MFnDependencyNode &shapeFn,
-                                     MDGModifier &dgMod);
+    virtual void _OverrideProxyPlugs(
+            MFnDependencyNode &shapeFn,
+            MDGModifier &dgMod);
 
   private:
     void _PushEditsToProxy();
@@ -339,9 +334,9 @@ class UsdMayaRepresentationProxyBase : public UsdMayaRepresentationBase
 // ===========================================================
 //
 // Render a collapsed USD File
-//   Draw the subgraph using a single UsdMayaProxyShape.  
+//   Draw the subgraph using a single UsdMayaProxyShape.
 //
-class UsdMayaRepresentationCollapsed : public UsdMayaRepresentationProxyBase 
+class UsdMayaRepresentationCollapsed : public UsdMayaRepresentationProxyBase
 {
   public:
     // == Statics
@@ -350,7 +345,7 @@ class UsdMayaRepresentationCollapsed : public UsdMayaRepresentationProxyBase
 
     // == Overrides for MPxRepresentation ==
     PXRUSDMAYA_API
-    UsdMayaRepresentationCollapsed(MPxAssembly *assembly, const MString &name) : 
+    UsdMayaRepresentationCollapsed(MPxAssembly *assembly, const MString &name) :
 
         // We only support soft selection on "collapsed" proxies.  While we may
         // want to move proxies that are not root of the model, we suspect this
@@ -370,9 +365,9 @@ class UsdMayaRepresentationCollapsed : public UsdMayaRepresentationProxyBase
 // ===========================================================
 //
 // Render a USD model as a single set of collapsed cards.
-//   Draw the subgraph using a single UsdMayaProxyShape.  
+//   Draw the subgraph using a single UsdMayaProxyShape.
 //
-class UsdMayaRepresentationCards : public UsdMayaRepresentationProxyBase 
+class UsdMayaRepresentationCards : public UsdMayaRepresentationProxyBase
 {
   public:
     // == Statics
@@ -381,7 +376,7 @@ class UsdMayaRepresentationCards : public UsdMayaRepresentationProxyBase
 
     // == Overrides for MPxRepresentation ==
     PXRUSDMAYA_API
-    UsdMayaRepresentationCards(MPxAssembly *assembly, const MString &name) : 
+    UsdMayaRepresentationCards(MPxAssembly *assembly, const MString &name) :
 
       // We only support soft selection on "collapsed" proxies.  While we may
       // want to move proxies that are not root of the model, we suspect this
@@ -406,7 +401,7 @@ class UsdMayaRepresentationCards : public UsdMayaRepresentationProxyBase
 // ===========================================================
 //
 // Render a collapsed USD File
-//   Draw the subgraph using a single UsdMayaProxyShape.  
+//   Draw the subgraph using a single UsdMayaProxyShape.
 //
 class UsdMayaRepresentationPlayback : public UsdMayaRepresentationProxyBase
 {
@@ -416,7 +411,7 @@ class UsdMayaRepresentationPlayback : public UsdMayaRepresentationProxyBase
     static const MString _assemblyType;
 
     // == Overrides for MPxRepresentation ==
-    UsdMayaRepresentationPlayback(MPxAssembly *assembly, const MString &name) : 
+    UsdMayaRepresentationPlayback(MPxAssembly *assembly, const MString &name) :
         UsdMayaRepresentationProxyBase(assembly, name, false) {};
 
     MString getType() const override {
@@ -436,11 +431,11 @@ class UsdMayaRepresentationPlayback : public UsdMayaRepresentationProxyBase
 
 // Base class for representations that unroll a hierarchy.
 
-class UsdMayaRepresentationHierBase : public UsdMayaRepresentationBase 
+class UsdMayaRepresentationHierBase : public UsdMayaRepresentationBase
 {
   public:
     // == Overrides for MPxRepresentation ==
-    UsdMayaRepresentationHierBase(MPxAssembly *assembly, const MString &name) : 
+    UsdMayaRepresentationHierBase(MPxAssembly *assembly, const MString &name) :
         UsdMayaRepresentationBase(assembly, name) {};
 
     PXRUSDMAYA_API
@@ -461,7 +456,7 @@ class UsdMayaRepresentationHierBase : public UsdMayaRepresentationBase
 //   Imports xforms as maya groups and other prims as usdPrimShapes.
 //   Children that are models, model groups, and sets will be imported as UsdAssemblies
 //
-class UsdMayaRepresentationExpanded : public UsdMayaRepresentationHierBase 
+class UsdMayaRepresentationExpanded : public UsdMayaRepresentationHierBase
 {
   public:
     // == Statics
@@ -469,7 +464,7 @@ class UsdMayaRepresentationExpanded : public UsdMayaRepresentationHierBase
     static const MString _assemblyType;
 
     // == Overrides for MPxRepresentation ==
-    UsdMayaRepresentationExpanded(MPxAssembly *assembly, const MString &name) : 
+    UsdMayaRepresentationExpanded(MPxAssembly *assembly, const MString &name) :
         UsdMayaRepresentationHierBase(assembly, name) {};
 
     MString getType() const override {
@@ -482,10 +477,10 @@ class UsdMayaRepresentationExpanded : public UsdMayaRepresentationHierBase
 
 // ===========================================================
 //
-// 
+//
 // Imports the USD subgraph (via usdImport command) as full maya geometry.
 //
-class UsdMayaRepresentationFull : public UsdMayaRepresentationHierBase 
+class UsdMayaRepresentationFull : public UsdMayaRepresentationHierBase
 {
   public:
     // == Statics
@@ -493,7 +488,7 @@ class UsdMayaRepresentationFull : public UsdMayaRepresentationHierBase
     static const MString _assemblyType;
 
     // == Overrides for MPxRepresentation ==
-    UsdMayaRepresentationFull(MPxAssembly *assembly, const MString &name) : 
+    UsdMayaRepresentationFull(MPxAssembly *assembly, const MString &name) :
         UsdMayaRepresentationHierBase(assembly, name) {};
 
     MString getType() const override {
@@ -504,4 +499,5 @@ class UsdMayaRepresentationFull : public UsdMayaRepresentationHierBase
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_REFERENCEASSEMBLY_H
+
+#endif

@@ -72,6 +72,11 @@ public:
     HD_API
     virtual ~HdRprim();
 
+    /// Returns the identifier of this Rprim. This is both used in the
+    /// RenderIndex and the SceneDelegate and acts as the associative key for
+    /// the Rprim in both contexts.
+    SdfPath const& GetId() const { return _id; }
+
     /// Update objects representation based on dirty bits.
     /// @param[in, out]  dirtyBits: On input specifies which state is
     ///                             is dirty and can be pulled from the scene
@@ -90,6 +95,14 @@ public:
     HD_API
     virtual void Finalize(HdRenderParam *renderParam);
 
+    /// Returns the set of dirty bits that should be
+    /// added to the change tracker for this prim, when this prim is inserted.
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const = 0;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim-specific API
+    // ---------------------------------------------------------------------- //
+
     /// Returns the draw items for the requested reprName, if any.
     /// These draw items should be constructed and cached beforehand by Sync().
     /// If no draw items exist, or reprName cannot be found, nullptr
@@ -101,11 +114,6 @@ public:
     /// Returns the render tag associated to this rprim
     HD_API
     TfToken GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const;
-
-    /// Returns the identifier of this Rprim. This is both used in the
-    /// RenderIndex and the SceneDelegate and acts as the associative key for
-    /// the Rprim in both contexts.
-    SdfPath const& GetId() const { return _id; }
 
     /// Returns the identifier of the instancer (if any) for this Rprim. If this
     /// Rprim is not instanced, an empty SdfPath will be returned.
@@ -139,11 +147,6 @@ public:
     /// See the implementation for the finer details.
     HD_API
     bool CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const;
-
-    /// Returns the set of dirty bits that should be
-    /// added to the change tracker for this prim, when this prim is inserted.
-    HD_API
-    HdDirtyBits GetInitialDirtyBitsMask() const;
 
     /// This function gives an Rprim the chance to set additional dirty bits
     /// based on those set in the change tracker, before passing the dirty bits
@@ -188,12 +191,6 @@ public:
     inline VtValue GetPrimvar(HdSceneDelegate* delegate, const TfToken &name)  const;
 
 protected:
-    /// Update objects representation based on dirty bits.
-    HD_API
-    void _Sync(HdSceneDelegate* delegate,
-              TfToken const &reprName, bool forced,
-              HdDirtyBits *dirtyBits);
-
     HD_API
     HdReprSharedPtr const & _GetRepr(TfToken const &reprName) const;
 
@@ -211,7 +208,8 @@ protected:
     HD_API
     void _PopulateConstantPrimvars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits);
+                                   HdDirtyBits *dirtyBits,
+                                   HdPrimvarDescriptorVector const &constantPrimvars);
 
     HD_API
     VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
@@ -232,10 +230,14 @@ protected:
     HD_API
     void _UpdateReprName(HdSceneDelegate* delegate, HdDirtyBits *dirtyBits);
 
-    virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 
     virtual void _InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits) = 0;
+
+    /// Sets a new material binding to be used by this rprim
+    HD_API
+    void _SetMaterialId(HdChangeTracker &changeTracker,
+                        SdfPath const& materialId);
 
 private:
     SdfPath _id;
@@ -244,10 +246,6 @@ private:
 
     // Used for id renders.
     int32_t _primId;
-
-    /// Sets a new material binding to be used by this rprim
-    void _SetMaterialId(HdChangeTracker &changeTracker,
-                        SdfPath const& materialId);
 
 protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility

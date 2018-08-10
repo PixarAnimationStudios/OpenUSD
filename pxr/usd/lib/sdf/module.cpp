@@ -34,7 +34,6 @@ TF_WRAP_MODULE
     TF_WRAP( ChangeBlock );
     TF_WRAP( CleanupEnabler );
     TF_WRAP( CopyUtils );
-    TF_WRAP( TextReferenceParser );
     TF_WRAP( FileFormat );
     TF_WRAP( LayerBase );
     TF_WRAP( Layer ); // Needs to come after wrapping for base SdfLayerBase

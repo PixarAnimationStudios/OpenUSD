@@ -95,7 +95,7 @@ public:
     TfTokenVector const &GetRenderTags();
 
     /// Return the render index
-    HdRenderIndex * const GetRenderIndex() const { return _renderIndex; }
+    HdRenderIndex* GetRenderIndex() const { return _renderIndex; }
 
     // ---------------------------------------------------------------------- //
     /// \name Synchronization

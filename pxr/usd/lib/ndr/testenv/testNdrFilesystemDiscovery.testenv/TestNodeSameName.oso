@@ -1,0 +1,7 @@
+OpenShadingLanguage 1.00
+# Compiled by oslc 1.7.4.pixar38bde12
+# options: -o TestNodeSameName.oso
+shader TestNodeSameName
+param	float	inputA	0		%read{2147483647,-1} %write{2147483647,-1}
+code ___main___
+	end

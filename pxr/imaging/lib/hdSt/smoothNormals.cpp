@@ -204,7 +204,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 }
 
 void
-HdSt_SmoothNormalsComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_SmoothNormalsComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(_dstName, HdTupleType {_dstDataType, 1});
 }

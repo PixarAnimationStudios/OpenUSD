@@ -25,24 +25,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrUsdMayaPrimReader::PxrUsdMayaPrimReader(const PxrUsdMayaPrimReaderArgs& args)
+UsdMayaPrimReader::UsdMayaPrimReader(const UsdMayaPrimReaderArgs& args)
     : _args(args)
 {
 }
 
 bool
-PxrUsdMayaPrimReader::HasPostReadSubtree() const
+UsdMayaPrimReader::HasPostReadSubtree() const
 {
     return false;
 }
 
 void
-PxrUsdMayaPrimReader::PostReadSubtree(PxrUsdMayaPrimReaderContext*)
+UsdMayaPrimReader::PostReadSubtree(UsdMayaPrimReaderContext*)
 {
 }
 
-const PxrUsdMayaPrimReaderArgs&
-PxrUsdMayaPrimReader::_GetArgs() {
+const UsdMayaPrimReaderArgs&
+UsdMayaPrimReader::_GetArgs() {
     return _args;
 }
 

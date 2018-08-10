@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<materialx version="1.35">
+  <nodedef name="nd_integer" node="UsdMtlxTestNode" type="integer">
+    <input name="in" type="integer"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <nodedef name="nd_float" node="UsdMtlxTestNode" type="float">
+    <input name="in" type="float"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <nodedef name="nd_string" node="UsdMtlxTestNode" type="string">
+    <input name="in" type="string"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <nodedef name="nd_vector" node="UsdMtlxTestNode" type="vector3">
+    <input name="in" type="vector3"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <nodedef name="nd_boolean" node="UsdMtlxTestNode" type="boolean">
+    <input name="in" type="boolean"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <typedef name="customtype"/>
+  <nodedef name="nd_customtype" node="UsdMtlxTestNode" type="customtype">
+    <input name="in" type="customtype"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <nodedef name="nd_surface" node="UsdMtlxTestNode" type="surfaceshader">
+    <input name="in" type="string"/>
+    <parameter name="note" type="string" value=""/>
+  </nodedef>
+  <implementation name="im_integer" nodedef="nd_integer" file="mx_integer.osl" function="mx_integer"/>
+  <implementation name="im_float" nodedef="nd_float" file="mx_float.osl" function="mx_float"/>
+  <implementation name="im_string" nodedef="nd_string" file="mx_string.osl" function="mx_string"/>
+  <implementation name="im_vector" nodedef="nd_vector" file="mx_vector.osl" function="mx_vector"/>
+  <implementation name="im_boolean" nodedef="nd_boolean" file="mx_boolean.osl" function="mx_boolean"/>
+  <implementation name="im_customtype" nodedef="nd_customtype" file="mx_customtype.osl" function="mx_customtype"/>
+  <implementation name="im_surface" nodedef="nd_surface" file="mx_surface.osl" function="mx_surface"/>
+</materialx>

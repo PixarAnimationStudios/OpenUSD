@@ -113,14 +113,11 @@ public:
     /// \name Holes
     /// @{
 
-    /// Sets hole face indices for the control mesh. faceIndices needs to be
-    /// sorted in ascending order.
-    ///
-    /// \note Currently this tag is a duplicate from PxOsdSubdivTags, which is
-    /// used for refined holes. This distinction allows the user to enable or
-    /// disable holes in either representation independently.
+    /// Sets hole face indices for the control mesh.
     PXOSD_API
-    void SetHoleIndices(VtIntArray const &holeFaceIndices);
+    void SetHoleIndices(VtIntArray const &holeFaceIndices) {
+        _holeIndices = holeFaceIndices;
+    }
 
     /// Returns the hole face indices.
     VtIntArray const &GetHoleIndices() const {

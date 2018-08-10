@@ -34,6 +34,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
@@ -499,6 +500,18 @@ std::ostream&
 operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
+}
+
+std::ostream &
+operator<<(std::ostream &out, const SdfHumanReadableValue &hrval)
+{
+    return out << "<< " << hrval.GetText() << " >>";
+}
+
+size_t
+hash_value(const SdfHumanReadableValue &hrval)
+{
+    return TfHash()(hrval.GetText());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

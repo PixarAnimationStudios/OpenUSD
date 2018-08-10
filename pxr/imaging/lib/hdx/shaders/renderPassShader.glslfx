@@ -29,6 +29,7 @@
 
 #import $TOOLS/hdSt/shaders/renderPass.glslfx
 #import $TOOLS/hdx/shaders/renderPass.glslfx
+#import $TOOLS/hdx/shaders/selection.glslfx
 
 -- configuration
 {
@@ -53,6 +54,8 @@
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ShouldCullFace",
+                            "Selection.DecodeUtils",
+                            "Selection.ComputeColor",
                             "HdxRenderPass.RenderColorOutputWithSelection" ]
             }
         }

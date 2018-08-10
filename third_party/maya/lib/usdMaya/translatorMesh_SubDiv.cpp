@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorMesh.h"
 
 #include "usdMaya/util.h"
@@ -36,8 +35,8 @@
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
-#include <maya/MItMeshVertex.h>
 #include <maya/MItMeshEdge.h>
+#include <maya/MItMeshVertex.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
@@ -65,7 +64,7 @@ _AddCreaseSet(
     // .../lib/python2.7/site-packages/maya/app/general/creaseSetEditor.py
 
     MObject creasePartitionObj;
-    *statusOK = PxrUsdMayaUtil::GetMObjectByName(":creasePartition",
+    *statusOK = UsdMayaUtil::GetMObjectByName(":creasePartition",
                                                  creasePartitionObj);
 
     if (creasePartitionObj.isNull()) {
@@ -75,7 +74,7 @@ _AddCreaseSet(
         const std::string partitionName = MGlobal::executeCommandStringResult(
             "createNode \"partition\" -shared -name \":creasePartition\"").asChar();
 
-        *statusOK = PxrUsdMayaUtil::GetMObjectByName(partitionName,
+        *statusOK = UsdMayaUtil::GetMObjectByName(partitionName,
                                                      creasePartitionObj);
         if (!*statusOK) {
             return false;
@@ -113,7 +112,7 @@ _AddCreaseSet(
 
 /* static */
 bool 
-PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema, MObject &meshObj, MFnMesh &meshFn)
+UsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema, MObject &meshObj, MFnMesh &meshFn)
 {
     // We may want to provide the option in the future, but for now, we
     // default to using crease sets when setting crease data.
@@ -138,7 +137,7 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
     VtArray<float> subdCornerSharpnesses;
     primSchema.GetCornerIndicesAttr().Get(&subdCornerIndices); // not animatable
     primSchema.GetCornerSharpnessesAttr().Get(&subdCornerSharpnesses); // not animatable
-    if (subdCornerIndices.size()) {
+    if (!subdCornerIndices.empty()) {
         if (subdCornerIndices.size() == subdCornerSharpnesses.size() ) {
             statusOK.clear();
             
@@ -180,16 +179,16 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
             }
             
             if (!statusOK) {
-                MGlobal::displayError(
-                    TfStringPrintf("Unable to set Crease Vertices on <%s>: %s", 
+                TF_RUNTIME_ERROR("Unable to set Crease Vertices on <%s>: %s", 
                         meshFn.fullPathName().asChar(),
-                        statusOK.errorString().asChar()).c_str());
+                        statusOK.errorString().asChar());
                 return false;
             }
             
         } else {
-            MGlobal::displayError(TfStringPrintf("Mismatch between Corner Indices & Sharpness on <%s>", 
-                    primSchema.GetPrim().GetPath().GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Mismatch between Corner Indices & Sharpness on <%s>", 
+                    primSchema.GetPrim().GetPath().GetText());
             return false;
         }
     }
@@ -201,7 +200,7 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
     primSchema.GetCreaseLengthsAttr().Get(&subdCreaseLengths);
     primSchema.GetCreaseIndicesAttr().Get(&subdCreaseIndices);
     primSchema.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses);
-    if (subdCreaseLengths.size()) {
+    if (!subdCreaseLengths.empty()) {
         if (subdCreaseLengths.size() == subdCreaseSharpnesses.size() ) {
             MUintArray   mayaCreaseEdgeIds;
             MDoubleArray mayaCreaseEdgeValues;
@@ -265,16 +264,16 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
             }
             
             if (!statusOK) {
-                MGlobal::displayError(
-                    TfStringPrintf("Unable to set Crease Edges on <%s>: %s", 
+                TF_RUNTIME_ERROR("Unable to set Crease Edges on <%s>: %s", 
                         meshFn.fullPathName().asChar(),
-                        statusOK.errorString().asChar()).c_str());
+                        statusOK.errorString().asChar());
                 return false;
             }
 
         } else {
-            MGlobal::displayError(TfStringPrintf("Mismatch between Crease Lengths & Sharpness on <%s>", 
-                    primSchema.GetPrim().GetPath().GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Mismatch between Crease Lengths & Sharpness on <%s>", 
+                    primSchema.GetPrim().GetPath().GetText());
             return false;
         }
     }
@@ -286,10 +285,9 @@ PxrUsdMayaTranslatorMesh::_AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema
 
             if (!_AddCreaseSet( meshFn.name().asChar(),
                                 creaseLevel, elemList, &statusOK )){
-                MGlobal::displayError(
-                    TfStringPrintf("Unable to set crease sets on <%s>: %s", 
+                TF_RUNTIME_ERROR("Unable to set crease sets on <%s>: %s", 
                         meshFn.fullPathName().asChar(),
-                        statusOK.errorString().asChar()).c_str());
+                        statusOK.errorString().asChar());
                 return false;
             }
         }

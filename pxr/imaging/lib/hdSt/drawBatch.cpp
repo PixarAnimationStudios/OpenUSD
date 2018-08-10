@@ -273,7 +273,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // glew has to be intialized
+    // glew has to be initialized
     if (!glLinkProgram) {
         return false;
     }

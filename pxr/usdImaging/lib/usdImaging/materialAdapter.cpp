@@ -29,7 +29,8 @@
 #include "pxr/imaging/hd/material.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdRi/materialAPI.h"
+#include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,6 +75,15 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    // Also register this adapter on behalf of any descendent
+    // UsdShadeShader prims, since they are consumed to
+    // create the material network.
+    for (UsdPrim const& child: prim.GetDescendants()) {
+        if (child.IsA<UsdShadeShader>()) {
+            index->AddPrimInfo(child.GetPath(), child, shared_from_this());
+        }
+    }
 
     return prim.GetPath();
 }
@@ -128,8 +138,9 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                TfToken const& propertyName)
 {
-    // XXX: This doesn't get notifications for dependent nodes.
-    return HdChangeTracker::AllDirty;
+    // The only meaningful change is to dirty the computed resource,
+    // an HdMaterialNetwork.
+    return HdMaterial::DirtyResource;
 }
 
 /* virtual */
@@ -139,8 +150,43 @@ UsdImagingMaterialAdapter::MarkDirty(UsdPrim const& prim,
                                    HdDirtyBits dirty,
                                    UsdImagingIndexProxy* index)
 {
-    index->MarkSprimDirty(cachePath, dirty);
+    // If this is invoked on behalf of a Shader prim underneath a
+    // Material prim, walk up to the enclosing Material.
+    SdfPath materialCachePath = cachePath;
+    UsdPrim materialPrim = prim;
+    while (materialPrim && !materialPrim.IsA<UsdShadeMaterial>()) {
+        materialPrim = materialPrim.GetParent();
+        materialCachePath = materialCachePath.GetParentPath();
+    }
+    if (!TF_VERIFY(materialPrim)) {
+        return;
+    }
+
+    index->MarkSprimDirty(materialCachePath, dirty);
 }
+
+
+/* virtual */
+void
+UsdImagingMaterialAdapter::MarkMaterialDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    // If this is invoked on behalf of a Shader prim underneath a
+    // Material prim, walk up to the enclosing Material.
+    SdfPath materialCachePath = cachePath;
+    UsdPrim materialPrim = prim;
+    while (materialPrim && !materialPrim.IsA<UsdShadeMaterial>()) {
+        materialPrim = materialPrim.GetParent();
+        materialCachePath = materialCachePath.GetParentPath();
+    }
+    if (!TF_VERIFY(materialPrim)) {
+        return;
+    }
+
+    index->MarkSprimDirty(materialCachePath, HdMaterial::DirtyResource);
+}
+
 
 /* virtual */
 void
@@ -151,13 +197,13 @@ UsdImagingMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
 }
 
 static
-void extractPrimvarsFromNode(UsdShadeShader const & shadeNode, 
+void _ExtractPrimvarsFromNode(UsdShadeShader const & shadeNode, 
                              HdMaterialNode const & node, 
                              HdMaterialNetwork *materialNetwork)
 {
     // Check if it is a node that reads primvars.
     // XXX : We could be looking at more stuff here like manifolds..
-    if (node.type == TfToken("Primvar_3")) {
+    if (node.identifier == TfToken("Primvar_3")) {
         // Extract the primvar name from the usd shade node
         // and store it in the list of primvars in the network
         UsdShadeInput nameAttrib = shadeNode.GetInput(TfToken("varname"));
@@ -175,8 +221,9 @@ void extractPrimvarsFromNode(UsdShadeShader const & shadeNode,
 // Walk the shader graph and emit nodes in topological order
 // to avoid forward-references.
 static
-void walkGraph(UsdShadeShader const & shadeNode, 
-               HdMaterialNetwork *materialNetwork)
+void _WalkGraph(UsdShadeShader const & shadeNode, 
+               HdMaterialNetwork *materialNetwork,
+               const TfTokenVector &shaderSourceTypes)
 {
     // Store the path of the node
     HdMaterialNode node;
@@ -197,48 +244,75 @@ void walkGraph(UsdShadeShader const & shadeNode,
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
         UsdShadeConnectableAPI source;
-        TfToken outputName;
+        TfToken sourceName;
         UsdShadeAttributeType sourceType;
         if (UsdShadeConnectableAPI::GetConnectedSource(input, 
-                &source, &outputName, &sourceType)) {
-            // When we find a connection, we try to walk it.
-            UsdShadeShader connectedNode(source);
-            walkGraph(connectedNode, materialNetwork);
+                &source, &sourceName, &sourceType)) {
+            // When we find a connection to a shading node output,
+            // walk the upstream shading node.  Do not do this for
+            // other sources (ex: a connection to a material
+            // public interface parameter), since they are not
+            // part of the shading node graph.
+            if (sourceType == UsdShadeAttributeType::Output) {
+                UsdShadeShader connectedNode(source);
+                _WalkGraph(connectedNode, materialNetwork, shaderSourceTypes);
+            }
         }
     }
 
-    // Extract the type of the node
-    VtValue value;
-    shadeNode.GetIdAttr().Get(&value);
-    if (value.IsHolding<TfToken>()){
-        node.type = value.UncheckedGet<TfToken>();
+    // Extract the identifier of the node
+    TfToken id;
+    if (!shadeNode.GetShaderId(&id)) {
+        for (auto &sourceType : shaderSourceTypes) {
+            if (SdrShaderNodeConstPtr n = 
+                    shadeNode.GetShaderNodeForSourceType(sourceType)) {
+                id = n->GetIdentifier();
+                break;
+            }
+        }
+    }
+
+    if (!id.IsEmpty()) {
+        node.identifier = id;
 
         // If a node is recognizable, we will try to extract the primvar 
         // names that is using since this can help render delegates 
         // optimize what what is needed from a prim when making data 
         // accessible for renderers.
-        extractPrimvarsFromNode(shadeNode, node, materialNetwork);
+        _ExtractPrimvarsFromNode(shadeNode, node, materialNetwork);
     } else {
         TF_WARN("UsdShade Shader without an id: %s.", node.path.GetText());
-        node.type = TfToken("PbsNetworkMaterialStandIn_2");
+        node.identifier = TfToken("PbsNetworkMaterialStandIn_2");
     }
 
     // Add the parameters and the relationships of this node
+    VtValue value;
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
         UsdShadeConnectableAPI source;
-        TfToken outputName;
+        TfToken sourceName;
         UsdShadeAttributeType sourceType;
         if (UsdShadeConnectableAPI::GetConnectedSource(input,
-            &source, &outputName, &sourceType)) {
-            
-            // Store the relationship
-            HdMaterialRelationship relationship;
-            relationship.sourceId = shadeNode.GetPath();
-            relationship.sourceTerminal = input.GetBaseName();
-            relationship.remoteId = source.GetPath();
-            relationship.remoteTerminal = outputName;
-            materialNetwork->relationships.push_back(relationship);
+            &source, &sourceName, &sourceType)) {
+            if (sourceType == UsdShadeAttributeType::Output) {
+                // Store the relationship
+                HdMaterialRelationship relationship;
+                relationship.outputId = shadeNode.GetPath();
+                relationship.outputName = input.GetBaseName();
+                relationship.inputId = source.GetPath();
+                relationship.inputName = sourceName;
+                materialNetwork->relationships.push_back(relationship);
+            } else if (sourceType == UsdShadeAttributeType::Input) {
+                // Connected to an input on the public interface.
+                // The source is not a node in the shader network, so
+                // pull the value and pass it in as a parameter.
+                if (UsdShadeInput connectedInput =
+                    source.GetInput(sourceName)) {
+                    if (connectedInput.Get(&value)) {
+                        node.parameters[input.GetBaseName()] = value;
+                    }
+                }
+            }
         } else {
             // Parameters detected, let's store it
             if (input.Get(&value)) {
@@ -254,25 +328,22 @@ void
 UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim, 
     HdMaterialNetworkMap *materialNetworkMap) const
 {
-    // This function expects a usdPrim of type Material. However, it will
-    // only be able to fill the HdMaterialNetwork structures if the Material
-    // contains a material network with a riLook relationship. Otherwise, it
-    // will return the HdMaterialNetwork structures without any change.
-    UsdRiMaterialAPI m(usdPrim);
-
-    // For each network type:
-    // Resolve the binding to the first node which
-    // is usually the standin node in the case of a UsdRi.
-    // If it fails to provide a relationship then we are not in a 
-    // usdPrim that contains a correct terminal to a UsdShade Shader node.
-    if (UsdShadeShader surfaceShader = m.GetSurface()) {
-        walkGraph(surfaceShader,
-                  &materialNetworkMap->map[UsdImagingTokens->bxdf]);
+    UsdShadeMaterial material(usdPrim);
+    if (!material) {
+        TF_RUNTIME_ERROR("Expected material prim at <%s> to be of type "
+                         "'UsdShadeMaterial', not type '%s'; ignoring",
+                         usdPrim.GetPath().GetText(),
+                         usdPrim.GetTypeName().GetText());
+        return;
     }
-
-    if (UsdShadeShader dispShader = m.GetDisplacement()) {
-        walkGraph(dispShader,
-                  &materialNetworkMap->map[UsdImagingTokens->displacement]);
+    const TfToken context = _GetMaterialNetworkSelector();
+    if (UsdShadeShader s = material.ComputeSurfaceSource(context)) {
+        _WalkGraph(s, &materialNetworkMap->map[UsdImagingTokens->bxdf],
+                  _GetShaderSourceTypes());
+    }
+    if (UsdShadeShader d = material.ComputeDisplacementSource(context)) {
+        _WalkGraph(d, &materialNetworkMap->map[UsdImagingTokens->displacement],
+                  _GetShaderSourceTypes());
     }
 }
 

@@ -30,22 +30,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((baseGLSLFX,      "points.glslfx"))
+    ((baseGLSLFX,         "points.glslfx"))
 
-     // point id fallback mixin
-    ((pointIdVS,       "PointId.Vertex"))
-    ((pointIdFS,       "PointId.Fragment.Points"))
+    // point id fallback mixin
+    // The only reason this is here is to generate fallback versions of
+    // functions to keep the compiler happy during code gen.
+    ((pointIdVS,          "PointId.Vertex.None"))
+    ((pointIdFS,          "PointId.Fragment.Fallback"))
 
     // main for all the shader stages
-    ((mainVS,          "Point.Vertex"))
-    ((mainFS,          "Point.Fragment"))
+    ((mainVS,             "Point.Vertex"))
+    ((mainFS,             "Point.Fragment"))
 
     // terminals
-    ((commonFS,        "Fragment.CommonTerminals"))
-    ((surfaceFS,       "Fragment.Surface"))
+    ((commonFS,           "Fragment.CommonTerminals"))
+    ((surfaceFS,          "Fragment.Surface"))
+    ((noScalarOverrideFS, "Fragment.NoScalarOverride"))
     
     // instancing
-    ((instancing,      "Instancing.Transform"))
+    ((instancing,         "Instancing.Transform"))
 );
 
 HdSt_PointsShaderKey::HdSt_PointsShaderKey()
@@ -56,11 +59,13 @@ HdSt_PointsShaderKey::HdSt_PointsShaderKey()
     VS[2] = _tokens->pointIdVS;
     VS[3] = TfToken();
 
-    FS[0] = _tokens->surfaceFS;
-    FS[1] = _tokens->commonFS;
-    FS[2] = _tokens->mainFS;
-    FS[3] = _tokens->pointIdFS;
-    FS[4] = TfToken();
+    // Common must be first as it defines terminal interfaces
+    FS[0] = _tokens->commonFS;
+    FS[1] = _tokens->surfaceFS;
+    FS[2] = _tokens->noScalarOverrideFS;
+    FS[3] = _tokens->mainFS;
+    FS[4] = _tokens->pointIdFS;
+    FS[5] = TfToken();
 }
 
 HdSt_PointsShaderKey::~HdSt_PointsShaderKey()

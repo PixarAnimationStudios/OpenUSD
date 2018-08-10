@@ -66,10 +66,10 @@ HdStPoints::Sync(HdSceneDelegate* delegate,
 {
     TF_UNUSED(renderParam);
 
-    HdRprim::_Sync(delegate,
-                  reprName,
-                  forcedRepr,
-                  dirtyBits);
+    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
+                       delegate->GetMaterialId(GetId()));
+    }
 
     TfToken calcReprName = _GetReprName(reprName, forcedRepr);
     _UpdateRepr(delegate, calcReprName, dirtyBits);
@@ -91,7 +91,9 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits);
+    HdPrimvarDescriptorVector constantPrimvars =
+        GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
+    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits, constantPrimvars);
 
     /* MATERIAL SHADER */
     drawItem->SetMaterialShaderFromRenderIndex(
@@ -219,9 +221,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         !drawItem->GetVertexPrimvarRange()->IsValid()) {
         // initialize buffer array
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(it, sources) {
-            (*it)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
@@ -247,7 +247,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 }
 
 HdDirtyBits 
-HdStPoints::_GetInitialDirtyBits() const
+HdStPoints::GetInitialDirtyBitsMask() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr

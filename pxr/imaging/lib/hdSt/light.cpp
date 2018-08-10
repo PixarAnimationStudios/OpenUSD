@@ -88,7 +88,7 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    SdfPath const &id = GetID();
+    SdfPath const &id = GetId();
 
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
@@ -158,7 +158,6 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
     *dirtyBits = Clean;
 }
 
-/* virtual */
 VtValue
 HdStLight::Get(TfToken const &token) const
 {

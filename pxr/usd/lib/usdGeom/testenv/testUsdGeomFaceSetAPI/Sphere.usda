@@ -117,10 +117,10 @@ def Xform "Sphere" (
             rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert.diffuseColor>
             rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert.transmissionColor>
 
-            def RisBxdf "initialShadingGroup_lambert"
+            def Shader "initialShadingGroup_lambert"
             {
                 ColorFloat diffuseColor
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
                 ColorFloat transmissionColor
             }
         }
@@ -133,10 +133,10 @@ def Xform "Sphere" (
             rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/lambert2SG/lambert2SG_lambert.diffuseColor>
             rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/lambert2SG/lambert2SG_lambert.transmissionColor>
 
-            def RisBxdf "lambert2SG_lambert"
+            def Shader "lambert2SG_lambert"
             {
                 ColorFloat diffuseColor
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
                 ColorFloat transmissionColor
             }
         }
@@ -149,10 +149,10 @@ def Xform "Sphere" (
             rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/lambert3SG/lambert3SG_lambert.diffuseColor>
             rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/lambert3SG/lambert3SG_lambert.transmissionColor>
 
-            def RisBxdf "lambert3SG_lambert"
+            def Shader "lambert3SG_lambert"
             {
                 ColorFloat diffuseColor
-                asset info:filePath = @PxrDiffuse@
+                uniform token info:id = "PxrDiffuse"
                 ColorFloat transmissionColor
             }
         }

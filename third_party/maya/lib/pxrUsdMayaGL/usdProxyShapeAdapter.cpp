@@ -75,25 +75,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 /* virtual */
 bool
-PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility()
+PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(
+    const MSelectionList& isolatedObjects)
 {
-    MStatus status;
-    const MHWRender::DisplayStatus displayStatus =
-        MHWRender::MGeometryUtilities::displayStatus(_shapeDagPath, &status);
-    if (status != MS::kSuccess) {
+    bool isVisible;
+    if (!_GetVisibility(_shapeDagPath, isolatedObjects, &isVisible)) {
         return false;
     }
-
-    // The displayStatus() method above does not account for things like
-    // display layers, so we also check the shape's dag path for its visibility
-    // state.
-    const bool dagPathIsVisible = _shapeDagPath.isVisible(&status);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    const bool isVisible =
-        (displayStatus != MHWRender::kInvisible) && dagPathIsVisible;
 
     if (_delegate && _delegate->GetRootVisibility() != isVisible) {
         _delegate->SetRootVisibility(isVisible);
@@ -339,7 +327,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     // shapes with different Maya types.
     const TfToken delegateName(
         TfStringPrintf("%s_%zx",
-                       PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+                       UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
                        shapeHash));
 
     const SdfPath delegateId = delegatePrefix.AppendChild(delegateName);

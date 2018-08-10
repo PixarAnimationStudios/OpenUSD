@@ -1,0 +1,85 @@
+#usda 1.0
+
+def Skeleton "Skel1" {
+}
+
+def Skeleton "Skel2" {
+}
+
+def Skeleton "Skel3" {
+}
+
+def SkelAnimation "Anim1" {
+}
+
+def SkelAnimation "Anim2" {
+}
+
+
+def SkelRoot "JointInfluences" {
+    rel skel:skeleton = </Skel1>
+
+    def Scope "ErrorCases" {
+
+        # All of these cases define invalid joint influences.
+        # UsdSkelBindingMap::Populate() should not produce targets for any of these.
+
+        def Mesh "MismatchedInterpolation" {
+            # interpolations must match
+            int[] primvars:skel:jointIndices = [] (interpolation = "constant")
+            float[] primvars:skel:jointWeights = [] (interpolation = "vertex")
+        }
+        def Mesh "InvalidInterpolation1" {
+            # interpolation must be constant or vertex
+            int[] primvars:skel:jointIndices = [] (interpolation = "uniform")
+            float[] primvars:skel:jointWeights = [] (interpolation = "uniform")
+        }
+        def Mesh "InvalidInterpolation2" {
+            # 'varying' interpolation is also invalid, per schema spec
+            int[] primvars:skel:jointIndices = [] (interpolation = "varying")
+            float[] primvars:skel:jointWeights = [] (interpolation = "varying")
+        }
+        def Mesh "MismatchedElementSize" {
+            # elementSize must match
+            int[] primvars:skel:jointIndices = [] (elementSize = 3)
+            flaot[] primvars:skel:jointWeights = [] (elementSize = 4)
+        }
+        def Mesh "InvalidElementSize" {
+            # elementSize must be > 0
+            int[] primvars:skel:jointIndices = [] (elementSize = -1)
+            flaot[] primvars:skel:jointWeights = [] (elementSize = -1)
+        }
+
+        # These cases also have invalid joint influences,
+        # but UsdSkelBindingMap::Populate() will still produce targets, because
+        # the validation doesn't occur until joint influence arrays are requested.
+
+        def Mesh "MismatchedArraySize" {
+            # array sizes must match
+            int[] primvars:skel:jointIndices = [1,2,3]
+            float[] primvars:skel:jointWeights = [1]
+        }
+        def Mesh "InvalidArraySize1" {
+            # array size must be multiple of the elementSize
+            int[] primvars:skel:jointIndices = [1,2,3] (elementSize=2; interpolation="vertex")
+            float[] primvars:skel:jointWeights = [1,1,1] (elementSize=2; interpolation="vertex")
+        }
+        def Mesh "InvalidArraySize2" {
+            # with constant interpolation, array size must equal elementSize.
+            int[] primvars:skel:jointIndices = [1,2,3,4] (elementSize=2; interpolation="constant")
+            float[] primvars:skel:jointWeights = [1,1,1,1] (elementSize=2; interpolation="constant")
+        }
+    }
+
+    # Non-error cases.
+    def Mesh "RigidWeights" {
+        # valid rigid weighting
+        int[] primvars:skel:jointIndices = [1,2,3] (elementSize=3; interpolation="constant")
+        float[] primvars:skel:jointWeights = [5,6,7] (elementSize=3; interpolation="constant")
+    }
+    def Mesh "NonRigidWeights" {
+        # valid non-rigid weighting
+        int[] primvars:skel:jointIndices = [1,2,3,4] (elementSize=2; interpolation="vertex")
+        float[] primvars:skel:jointWeights = [5,6,7,8] (elementSize=2; interpolation="vertex")
+    }
+}

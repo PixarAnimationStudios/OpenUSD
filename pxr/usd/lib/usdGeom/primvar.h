@@ -528,6 +528,11 @@ public:
     /// an invalid attribute otherwise.
     USDGEOM_API
     UsdAttribute GetIndicesAttr() const;
+
+    /// Returns the existing indices attribute if the primvar is indexed
+    /// or creates a new one.
+    USDGEOM_API
+    UsdAttribute CreateIndicesAttr() const;
     
     /// Set the index that represents unauthored values in the indices array.
     /// 
@@ -758,10 +763,10 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
         }
 
         TF_WARN("Found %ld invalid indices at positions [%s%s] that are out of "
-            "range [0,%ld) for primvar <%s>.", invalidIndexPositions.size(), 
-            TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
-            invalidIndexPositions.size() > 5 ? ", ..." : "",
-            authored.size(), _attr.GetPath().GetText());
+                "range [0,%ld) for primvar %s.", invalidIndexPositions.size(), 
+                TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
+                invalidIndexPositions.size() > 5 ? ", ..." : "",
+                authored.size(), UsdDescribe(_attr).c_str());
     }
 
     return success;

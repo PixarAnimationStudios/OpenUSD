@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImagingGL)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 # Note: both python include directives are included for compatibility.
 pxr_library(usdImagingGL
     LIBRARIES
@@ -68,6 +74,7 @@ pxr_library(usdImagingGL
     RESOURCE_FILES
         plugInfo.json
         shaders/drawMode.glslfx
+        shaders/previewSurface.glslfx
 )
 
 if (X11_FOUND OR APPLE)

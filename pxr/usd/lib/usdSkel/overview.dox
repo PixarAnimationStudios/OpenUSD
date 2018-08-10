@@ -22,30 +22,45 @@ an introduction key schemas and API concepts.
   - \ref UsdSkel_Term
   - \ref UsdSkel_SkinnablePrims
   - \ref UsdSkel_TransformSpaces
+- \subpage UsdSkel_SchemaOverview
+  - \ref UsdSkel_SchemaOverview_SkinningAnArm
+    - \ref UsdSkel_SchemaOverview_SkelRoot
+    - \ref UsdSkel_SchemaOverview_DefiningSkeletons
+    - \ref UsdSkel_SchemaOverview_SkelAnimations
+    - \ref UsdSkel_SchemaOverview_BindingSkeletons
+    - \ref UsdSkel_SchemaOverview_JointInfluences
+    - \ref UsdSkel_SchemaOverview_GeomBindTransform
+- \subpage UsdSkel_API_Intro
+  - \ref UsdSkel_API_SkeletonQuery
+  - \ref UsdSkel_API_JointPathsAndNames
+  - \ref UsdSkel_API_JointHierarchy
+  - \ref UsdSkel_API_SkeletonBindings
+  - \ref UsdSkel_API_DiscoveringBindings
+  - \ref UsdSkel_API_ExtractingJointInfluences
+- \subpage UsdSkel_Schemas
+  - \ref UsdSkel_Schemas_Overview
+  - \ref UsdSkel_JointOrder
+  - \ref UsdSkel_SkelRoot
+  - \ref UsdSkel_Skeleton
+    - \ref UsdSkel_JointHierarchy
+  - \ref UsdSkel_SkelAnimation
+    - \ref UsdSkel_SkelAnimation_Binding
+  - \ref UsdSkel_BlendShape
+  - \ref UsdSkel_BindingAPI
+    - \ref UsdSkel_BindingAPI_Skeletons
+    - \ref UsdSkel_BindingAPI_JointInfluences
+    - \ref UsdSkel_BindingAPI_RigidDeformations
+    - \ref UsdSkel_BindingAPI_StoringInfluences
+    - \ref UsdSkel_BindingAPI_BlendShapes
+- \subpage UsdSkel_Instancing
+    - \ref UsdSkel_Instancing_BindState
+    - \ref UsdSkel_Instancing_Example
 - \subpage UsdSkel_OM
   - \ref UsdSkel_OM_Cache
   - \ref UsdSkel_OM_SkeletonQuery
   - \ref UsdSkel_OM_AnimQuery
   - \ref UsdSkel_OM_SkinningQuery
   - \ref UsdSkel_OM_AnimMapper
-- \subpage UsdSkel_Schemas
-  - \ref UsdSkel_Schemas_Overview
-  - \ref UsdSkel_JointOrder
-  - \ref UsdSkel_SkelRoot
-  - \ref UsdSkel_Joint
-  - \ref UsdSkel_Skeleton
-    - \ref UsdSkel_JointHierarchy
-  - \ref UsdSkel_PackedJointAnimation
-  - \ref UsdSkel_BindingAPI
-    - \ref UsdSkel_BindingAPI_Skeletons
-    - \ref UsdSkel_BindingAPI_JointInfluences
-    - \ref UsdSkel_BindingAPI_RigidDeformations
-    - \ref UsdSkel_BindingAPI_StoringInfluences
- - \subpage UsdSkel_CodingExamples
-   - \ref UsdSkel_CE_PopulateCache
-   - \ref UsdSkel_CE_AccessingSkels
-   - \ref UsdSkel_CE_FindSkinnables
-   - \ref UsdSkel_CE_Skinning
- - \subpage UsdSkel_BestPractices
+- \subpage UsdSkel_BestPractices
 
 */

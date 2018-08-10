@@ -122,7 +122,7 @@ protected:
         }
 
         /// Returns the number of elements allocated
-        virtual int GetNumElements() const {
+        virtual size_t GetNumElements() const {
             return _numElements;
         }
 
@@ -185,7 +185,7 @@ protected:
 
     private:
         _SimpleBufferArray * _bufferArray;
-        int _numElements;
+        size_t _numElements;
     };
 
     typedef boost::shared_ptr<_SimpleBufferArray>

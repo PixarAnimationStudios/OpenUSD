@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glf)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 set(optionalPublicClasses "")
 if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
@@ -14,8 +20,18 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
 endif()
 
+set (optionalCppFiles "")
+set (plugInfo plugInfo_NoOIIO.json)
+if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
+    set (plugInfo plugInfo.json)
+    list(APPEND optionalCppFiles oiioImage.cpp)
+    list(APPEND optionalLibs ${OIIO_LIBRARIES})
+    list(APPEND optionalIncludeDirs ${OIIO_INCLUDE_DIRS})
+endif()
+
 pxr_library(glf
     LIBRARIES
+        ar
         arch
         garch
         gf
@@ -29,14 +45,12 @@ pxr_library(glf
         ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${OPENGL_glu_LIBRARY}
-        ${OIIO_LIBRARIES}
         ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
         ${OPENEXR_LIBRARY}
         ${optionalLibs}
 
     INCLUDE_DIRS
-        ${OIIO_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${GLEW_INCLUDE_DIR}
         ${OPENEXR_INCLUDE_DIRS}
@@ -84,10 +98,14 @@ pxr_library(glf
         
     PRIVATE_HEADERS
         rankedTypeMap.h
+        stb/stb_image.h
+        stb/stb_image_resize.h
+        stb/stb_image_write.h
 
     CPPFILES
         dictionary.cpp
-        oiioImage.cpp
+        ${optionalCppFiles}
+        stbImage.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -109,7 +127,7 @@ pxr_library(glf
         __init__.py
 
     RESOURCE_FILES
-        plugInfo.json
+        ${plugInfo}:plugInfo.json 
         shaders/ptexTexture.glslfx
         shaders/pcfShader.glslfx
         shaders/simpleLighting.glslfx

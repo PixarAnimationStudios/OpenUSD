@@ -47,6 +47,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdTyped : public UsdSchemaBase
 {
 public:
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType in usd/common.h
+    static const UsdSchemaType schemaType = UsdSchemaType::AbstractBase;
 
     /// Construct a UsdTyped on UsdPrim \p prim .
     /// Equivalent to UsdTyped::Get(prim.GetStage(), prim.GetPath())

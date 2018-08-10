@@ -24,12 +24,15 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
 
-#include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "pxr/usd/usdGeom/gprim.h"
+/// \file translatorGprim.h
 
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterContext.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usdGeom/gprim.h"
 
 #include <maya/MObject.h>
 
@@ -37,23 +40,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for reading UsdGeomGprim.
-struct PxrUsdMayaTranslatorGprim
+struct UsdMayaTranslatorGprim
 {
     PXRUSDMAYA_API
     static void Read(
             const UsdGeomGprim& gprim, 
             MObject mayaNode,
-            PxrUsdMayaPrimReaderContext* context);
+            UsdMayaPrimReaderContext* context);
 
     PXRUSDMAYA_API
     static void Write(
             const MObject& mayaNode,
             const UsdGeomGprim& gprim, 
-            PxrUsdMayaPrimWriterContext* context);
+            UsdMayaPrimWriterContext* context);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSD_TRANSLATOR_GPRIM_H
+#endif
 

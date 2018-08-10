@@ -14,6 +14,8 @@ pxr_library(trace
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        aggregateTree
+        aggregateNode
         category
         collection
         collectionNotice
@@ -26,17 +28,20 @@ pxr_library(trace
         eventData
         eventList
         eventNode
+        eventTree
         key
         reporter
         reporterBase
+        reporterDataSourceBase
+        reporterDataSourceCollection
+        reporterDataSourceCollector
         serialization
-        singleEventGraph
-        singleEventNode
-        singleEventTreeReport
         staticKeyData
         threads
 
     PRIVATE_CLASSES
+        aggregateTreeBuilder
+        eventTreeBuilder
         jsonSerialization
 
     PUBLIC_HEADERS
@@ -50,8 +55,8 @@ pxr_library(trace
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAggregateNode.cpp
         wrapCollector.cpp
-        wrapEventNode.cpp
         wrapReporter.cpp
         wrapTestTrace.cpp
 
@@ -114,6 +119,13 @@ pxr_build_test(testTraceCounters
         trace
     CPPFILES
         testenv/testTraceCounters.cpp
+)
+
+pxr_build_test(testTraceReportPerf
+    LIBRARIES
+        trace
+    CPPFILES
+        testenv/testTraceReportPerf.cpp
 )
 
 pxr_test_scripts(
@@ -241,4 +253,8 @@ pxr_register_test(testTraceSerialization
 
 pxr_register_test(testTraceCounters
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCounters"
+)
+
+pxr_register_test(testTraceReportPerf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
 )

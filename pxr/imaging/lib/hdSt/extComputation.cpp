@@ -67,7 +67,7 @@ _AllocateComputationDataRange(
         HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
     HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, inputs);
+    HdBufferSpec::GetBufferSpecs(inputs, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr inputRange =
         resourceRegistry->AllocateShaderStorageBufferArrayRange(
@@ -85,7 +85,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
-        "HdStExtComputation::Sync %s\n", GetID().GetText());
+        "HdStExtComputation::Sync %s\n", GetId().GetText());
 
     HdExtComputation::_Sync(sceneDelegate, renderParam, dirtyBits);
 
@@ -102,7 +102,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
     HdBufferSourceVector inputs;
     for (TfToken const & inputName: GetSceneInputNames()) {
-        VtValue inputValue = sceneDelegate->Get(GetID(), inputName);
+        VtValue inputValue = sceneDelegate->Get(GetId(), inputName);
         size_t arraySize =
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
         HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(
@@ -128,14 +128,14 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
                 TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
                     "Allocated shared ExtComputation buffer range: %s: %p\n",
-                    GetID().GetText(), (void *)_inputRange.get());
+                    GetId().GetText(), (void *)_inputRange.get());
             } else {
                 // Share the existing buffer range for this input key
                 _inputRange = barInstance.GetValue();
 
                 TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
                     "Reused shared ExtComputation buffer range: %s: %p\n",
-                    GetID().GetText(), (void *)_inputRange.get());
+                    GetId().GetText(), (void *)_inputRange.get());
             }
 
         } else {
@@ -143,13 +143,10 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
             _inputRange = _AllocateComputationDataRange(inputs,
                                                         resourceRegistry);
         }
-    }
-}
 
-VtValue
-HdStExtComputation::Get(TfToken const &token) const
-{
-    return VtValue();
+        // Make sure that we also release any stale input range data
+        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

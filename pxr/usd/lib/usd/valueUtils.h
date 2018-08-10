@@ -72,8 +72,7 @@ Usd_ValueContainsBlock(const SdfAbstractDataValue* value)
 inline bool
 Usd_ValueContainsBlock(const SdfAbstractDataConstValue* value)
 {
-    const std::type_info& valueBlockTypeId(typeid(SdfValueBlock));
-    return value && value->valueType == valueBlockTypeId;
+    return value && value->valueType == typeid(SdfValueBlock);
 }
 
 /// If \p value contains an SdfValueBlock, clear the value and

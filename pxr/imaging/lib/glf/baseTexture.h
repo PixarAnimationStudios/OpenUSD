@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -54,33 +55,39 @@ public:
     virtual ~GlfBaseTexture();
 
     /// Returns the OpenGl texture name for the texture. 
-    GLuint GetGlTextureName() const {
-        return _textureName;
-    }
+    GLF_API
+    GLuint GetGlTextureName();
 
-    int	GetWidth() const {
-        return _currentWidth;
-    }
+    GLF_API
+    int	GetWidth();
 
-    int GetHeight() const {
-        return _currentHeight;
-    }
+    GLF_API
+    int GetHeight();
 
-    int GetFormat() const {
-        return _format;
-    }
+    GLF_API
+    int GetFormat();
 
     // GlfTexture overrides
     GLF_API
     virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName) const;
+                                      GLuint samplerName);
     GLF_API
-    virtual VtDictionary GetTextureInfo() const;
+    virtual VtDictionary GetTextureInfo(bool forceLoad);
+
 
 protected:
     
     GLF_API
     GlfBaseTexture();
+
+    GLF_API
+    GlfBaseTexture(GlfImage::ImageOriginLocation originLocation);
+
+    GLF_API
+    virtual void _OnMemoryRequestedDirty() final;
+
+    GLF_API
+    virtual void _ReadTexture() = 0;
 
     GLF_API
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
@@ -92,12 +99,16 @@ protected:
                         int const unpackCropLeft = 0,
                         int const unpackCropRight = 0);
 
+    GLF_API
+    void _SetLoaded();
+
 private:
 
     // GL texture object
     const GLuint _textureName;
 
     // required for stats/tracking
+    bool    _loaded;
     int     _currentWidth, _currentHeight;
     int     _format;
     bool    _hasWrapModeS;

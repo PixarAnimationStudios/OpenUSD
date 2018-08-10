@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_LINUX)
@@ -48,7 +49,15 @@ ArchGetAddressInfo(
     Dl_info info;
     if (dladdr(address, &info)) {
         if (objectPath) {
-            *objectPath = info.dli_fname;
+            // The object filename may be a relative path if, for instance,
+            // the given address comes from an executable that was invoked
+            // with a relative path, or from a shared library that was 
+            // dlopen'd with a relative path. We want to always return 
+            // absolute paths, so do the resolution here.
+            //
+            // This may be incorrect if the current working directory was 
+            // changed after the source object was loaded.
+            *objectPath = ArchAbsPath(info.dli_fname);
         }
         if (baseAddress) {
             *baseAddress = info.dli_fbase;

@@ -3,7 +3,8 @@
         {
             "Info": {
                 "Types": {
-                    "ArResolver": {}
+                    "ArResolver": {},
+                    "ArPackageResolver": {}
                 }
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 

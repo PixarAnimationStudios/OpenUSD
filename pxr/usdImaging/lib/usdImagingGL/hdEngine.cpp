@@ -163,6 +163,9 @@ UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& param
     // all prim refine levels will be dirtied.
     int refineLevel = _GetRefineLevel(params.complexity);
     _delegate->SetRefineLevelFallback(refineLevel);
+
+    // Apply any queued up scene edits.
+    _delegate->ApplyPendingUpdates();
 }
 
 void
@@ -631,6 +634,10 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
 void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
+    // Forward hw shading enable to delegate
+    _delegate->SetHardwareShadingEnabled(params.enableHardwareShading);
+
+
     // User is responsible for initializing GL context and glew
     bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
 
@@ -806,10 +813,10 @@ void
 UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 {
     // populate new selection
-    HdxSelectionSharedPtr selection(new HdxSelection);
+    HdSelectionSharedPtr selection(new HdSelection);
     // XXX: Usdview currently supports selection on click. If we extend to
     // rollover (locate) selection, we need to pass that mode here.
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
     for (SdfPath const& path : paths) {
         _delegate->PopulateSelection(mode,
                                      path,
@@ -825,7 +832,7 @@ UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 void
 UsdImagingGLHdEngine::ClearSelected()
 {
-    HdxSelectionSharedPtr selection(new HdxSelection);
+    HdSelectionSharedPtr selection(new HdSelection);
     _selTracker->SetSelection(selection);
 }
 
@@ -833,13 +840,13 @@ UsdImagingGLHdEngine::ClearSelected()
 void
 UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
-    HdxSelectionSharedPtr selection = _selTracker->GetSelectionMap();
+    HdSelectionSharedPtr selection = _selTracker->GetSelectionMap();
     if (!selection) {
-        selection.reset(new HdxSelection);
+        selection.reset(new HdSelection);
     }
     // XXX: Usdview currently supports selection on click. If we extend to
     // rollover (locate) selection, we need to pass that mode here.
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
     _delegate->PopulateSelection(mode, path, instanceIndex, selection);
 
     // set the result back to selection tracker
@@ -933,9 +940,9 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
         rootTransform = _delegate->GetRootTransform();
         isVisible = _delegate->GetRootVisibility();
     }
-    HdxSelectionSharedPtr selection = _selTracker->GetSelectionMap();
+    HdSelectionSharedPtr selection = _selTracker->GetSelectionMap();
     if (!selection) {
-        selection.reset(new HdxSelection);
+        selection.reset(new HdSelection);
     }
 
     // Delete hydra state.

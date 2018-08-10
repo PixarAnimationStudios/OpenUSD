@@ -291,6 +291,58 @@ TestFilePermissions()
 #endif
 }
 
+static void
+TestDiscard()
+{
+    {
+        ofstream ofs("testTf_Discard.txt");
+        TF_AXIOM(ofs.good());
+        ofs << "Existing content" << endl;
+        ofs.close();
+    }
+
+    TF_AXIOM(TfIsFile("testTf_Discard.txt"));
+    
+    // Calling Discard on file opened for Update is an error.
+    {
+        TfErrorMark m;
+
+        auto outf = TfSafeOutputFile::Update("testTf_Discard.txt");
+        outf.Discard();
+
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
+
+    // Verify that new content written will not overwrite existing
+    // content if Discard is called on TfSafeOutputFile opened for
+    // Replace.
+    {
+        auto outf = TfSafeOutputFile::Replace("testTf_Discard.txt");
+        fprintf(outf.Get(), "New Content");
+        outf.Discard();
+
+        TF_AXIOM(!outf.Get());
+
+        ifstream ifs("testTf_Discard.txt");
+        string content;
+        getline(ifs, content);
+        fprintf(stderr, "content = '%s'\n", content.c_str());
+        TF_AXIOM(content == "Existing content");
+    }
+    
+    // Verify that new file won't be written if Discard is called on
+    // TfSafeOutputFile opened for Replace.
+    {
+        auto outf = TfSafeOutputFile::Replace("testTf_Discard_New.txt");
+        fprintf(outf.Get(), "New Content");
+        outf.Discard();
+
+        TF_AXIOM(!outf.Get());
+        TF_AXIOM(!TfIsFile("testTf_Discard_New.txt"));
+    }
+}
+
 static bool
 Test_TfSafeOutputFile()
 {
@@ -303,6 +355,7 @@ Test_TfSafeOutputFile()
     TestReplaceSymlink();
 #endif
     TestFilePermissions();
+    TestDiscard();
 
     return true;
 }

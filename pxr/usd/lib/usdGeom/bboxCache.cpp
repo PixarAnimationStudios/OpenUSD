@@ -411,7 +411,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         }
 
         // If this is an ancestor of a path that's skipped, then we must
-        // continue the travesal down to find prims whose bounds can be
+        // continue the traversal down to find prims whose bounds can be
         // included.
         if (ancestorsOfPathsToSkip.find(primPath) !=
                 ancestorsOfPathsToSkip.end()) {
@@ -419,7 +419,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         }
 
         // Check if any of the descendants of the prim have transform overrides.
-        // If yes, we need to continue the travesal down to find prims whose
+        // If yes, we need to continue the traversal down to find prims whose
         // bounds can be included.
         if (ancestorsOfOverrides.find(primPath) != ancestorsOfOverrides.end()) {
             continue;
@@ -676,7 +676,15 @@ bool
 UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    // Only imageable prims participate in child bounds accumulation.
+    
+    // If the prim is typeless or has an unknown type, it may have descendants 
+    // that are imageable. Hence, we include it in bbox computations.
+    if (!prim.IsA<UsdTyped>()) {
+        return true;
+    }
+
+    // If the prim is typed it can participate in child bound accumulation only 
+    // if it is imageable.
     if (!prim.IsA<UsdGeomImageable>()) {
         TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded, not IMAGEABLE type. "
                                    "prim: %s, primType: %s\n",
@@ -1158,7 +1166,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             successGettingExtent = extent.size() == 2;
             if (!successGettingExtent) {
                 TF_WARN("[BBox Cache] Extent for <%s> is of size %zu "
-                        "instead of 2.", prim.GetPath().GetString().c_str(),
+                        "instead of 2.", prim.GetPath().GetText(),
                         extent.size());
             }
         }
@@ -1192,6 +1200,16 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
 
                 successGettingExtent = _ComputeExtent(boundableObj, &extent);
             }
+
+            if (successGettingExtent) {
+                // Extent computation reported success, but validate the result.
+                successGettingExtent = extent.size() == 2;
+                if (!successGettingExtent) {
+                    TF_WARN("[BBox Cache] Computed extent for <%s> is of size %zu "
+                            "instead of 2.", prim.GetPath().GetText(),
+                            extent.size());
+                }
+            }
         }
 
         // On Successful extent, create BBox for purpose.
@@ -1219,7 +1237,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     //  3) Accumulate the results into this cache entry.
     //
 
-    // Filter childen and queue children.
+    // Filter children and queue children.
     if (!pruneChildren) {
         // Compute the enclosing model's (or subcomponent's) inverse CTM.
         // This will be used to compute the child bounds in model-space.

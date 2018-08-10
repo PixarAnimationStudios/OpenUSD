@@ -34,6 +34,7 @@ operator==(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
 {
     return  lhs.parameters == rhs.parameters && 
             lhs.textures == rhs.textures     && 
+            lhs.textureFallbackValues == rhs.textureFallbackValues && 
             lhs.attributes == rhs.attributes;
 }
 
@@ -46,7 +47,9 @@ operator!=(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
 std::ostream&
 operator<<(std::ostream& out, const HdxShaderInputs& pv)
 {
-    out <<  pv.parameters << " " << pv.textures << " ";
+    out << pv.parameters << " "
+        << pv.textures << " "
+        << pv.textureFallbackValues << " ";
 
     TF_FOR_ALL(it, pv.attributes) {
         out << *it;

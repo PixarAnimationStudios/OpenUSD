@@ -24,10 +24,12 @@
 #ifndef PXRUSDMAYA_COLORSPACE_H
 #define PXRUSDMAYA_COLORSPACE_H
 
-/// \file colorSpace.h
+/// \file usdMaya/colorSpace.h
+
+#include "usdMaya/api.h"
 
 #include "pxr/pxr.h"
-#include "usdMaya/api.h"
+
 #include "pxr/base/gf/gamma.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -35,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Helper functions for dealing with colors stored in Maya.
 ///
 /// Technically, this doesn't need to be tied to Usd.
-namespace PxrUsdMayaColorSpace
+namespace UsdMayaColorSpace
 {
 
 /// Returns true if we treat colors from Maya as linear colors.
@@ -77,9 +79,9 @@ ConvertMayaToLinear(const T& mayaColor)
     return IsColorManaged() ? mayaColor : GfConvertDisplayToLinear(mayaColor);
 }
 
-}; // PxrUsdMayaColorSpace
+}; // UsdMayaColorSpace
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_COLORSPACE_H
+#endif
 

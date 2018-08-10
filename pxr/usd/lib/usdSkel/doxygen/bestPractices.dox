@@ -2,7 +2,15 @@
 
 \page UsdSkel_BestPractices Best Practices
 
-\section UsdSkel_BP_TransformDecomposition Transform Decomposition
+\section UsdSkel_BestPractices_JointTransforms Joint Transforms
+
+Currently, UsdSkel only supports encoding orthogonal joint animations.
+The joint transforms that make up those animations need not be orthonormal,
+however it is recommended: In practice, not all applications support
+non-orthonormal transformations on joints, so interchange may not be
+successful if not adhering to clean, orthonormal transforms.
+
+\section UsdSkel_BestPractices_TransformDecomposition Transform Decomposition
 
 UsdSkel provides its own transform decomposition method, 
 \ref UsdSkelDecomposeTransforms, for decomposing a transform into translate,
@@ -18,10 +26,10 @@ rotate and scale components, but that recombine to form the same transforms,
 so it may not be valid to set, say, rotations but not translations.
 
 To avoid hard to debug transform composition issues, it is recommended that
-whenever any of the transform components is set on a UsdSkelPackedJointAnimation
+whenever any of the transform components is set on a UsdSkelAnimation
 primitive, **all** of the components are set.
 
-\section UsdSkel_BP_CreatingPrimvars Creating Primvars
+\section UsdSkel_BestPractices_CreatingPrimvars Creating Primvars
 
 When creating primvars using the UsdSkelBindingAPI, it is good practice
 to **always** specify both the primvar _interpolation_ and _elementSize_.
@@ -31,14 +39,14 @@ Users are encouraged to use the UsdSkelBindingAPI::CreateJointIndicesPrimvar and
 UsdSkelBindingAPI::CreateJointWeightsPrimvar helper methods, which ensure that
 those properties are always correctly defined.
 
-\section UsdSkel_BP_SkinnedPrimTypes Skinned Prim Types
+\section UsdSkel_BestPractices_SkinnedPrimTypes Skinned Prim Types
 
 It's easy to fall into the trap of assuming that all \ref UsdSkel_SkinnablePrims
 "skinnable prims" will be UsdGeomMesh types, or similar. This is not true: any
 UsdGeomBoundable primitive may be treated as being skinnable. It is the client's
 responsibility to determine if they know how to skin a given primitive.
 
-\section UsdSkel_BP_NumInfluences Number of Influences
+\section UsdSkel_BestPractices_NumInfluences Number of Influences
 
 Clients should not assume that the number of influences -- I.e,. the primvar
 _elementSize_ --  will be within some threshold that they consider _reasonable_.
@@ -46,7 +54,7 @@ If it is desired that a maximum number of influences be enforced, the client
 should enforce that by truncating the resulting influences themselves. The
 \ref UsdSkelResizeInfluences helper method may be used towards that end.
 
-\section UsdSkel_BP_JointInfluences Joint Influences
+\section UsdSkel_BestPractices_JointInfluences Joint Influences
 
 UsdSkel does not currently require joint weighting to be normalized, or sorted.
 It is, however, recommended. This can be done prior to writing data to USD

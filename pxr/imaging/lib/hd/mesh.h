@@ -55,19 +55,21 @@ struct HdMeshReprDesc {
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
-                   bool smoothNormals = false,
+                   bool flatShadingEnabled = true,
                    bool blendWireframeColor = true,
                    bool doubleSided = false,
                    float lineWidth = 0,
-                   bool useCustomDisplacement = true)
+                   bool useCustomDisplacement = true,
+                   bool enableScalarOverride = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
-        , smoothNormals(smoothNormals)
+        , flatShadingEnabled(flatShadingEnabled)
         , blendWireframeColor(blendWireframeColor)
         , doubleSided(doubleSided)
         , lineWidth(lineWidth)
         , useCustomDisplacement(useCustomDisplacement)
+        , enableScalarOverride(enableScalarOverride)
         {}
 
     /// The rendering style: draw refined/unrefined, edge, points, etc.
@@ -77,8 +79,8 @@ struct HdMeshReprDesc {
     /// Specifies how the fragment color should be computed from surfaceShader;
     /// this can be used to render a mesh lit, unlit, unshaded, etc.
     TfToken         shadingTerminal;
-    /// Does this mesh need to generate smooth normals?
-    bool            smoothNormals;
+    /// Does this mesh want flat shading?
+    bool            flatShadingEnabled;
     /// Should the wireframe color be blended into the color primvar?
     bool            blendWireframeColor;
     /// Should this mesh be treated as double-sided? The resolved value is
@@ -88,6 +90,10 @@ struct HdMeshReprDesc {
     float           lineWidth;
     /// Should this mesh use displacementShader() to displace points?
     bool            useCustomDisplacement;
+    /// Should scalar override be allowed on this drawItem.
+    /// scalar override allows for visualization of a single float value
+    /// across a prim.
+    bool            enableScalarOverride;
 };
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.
@@ -108,7 +114,7 @@ public:
     /// Topological accessors via the scene delegate
     ///
     inline HdMeshTopology  GetMeshTopology(HdSceneDelegate* delegate) const;
-    inline int             GetRefineLevel(HdSceneDelegate* delegate)  const;
+    inline HdDisplayStyle  GetDisplayStyle(HdSceneDelegate* delegate)  const;
     inline PxOsdSubdivTags GetSubdivTags(HdSceneDelegate* delegate)   const;
 
     /// Topology getter
@@ -175,10 +181,10 @@ HdMesh::GetMeshTopology(HdSceneDelegate* delegate) const
     return delegate->GetMeshTopology(GetId());
 }
 
-inline int
-HdMesh::GetRefineLevel(HdSceneDelegate* delegate) const
+inline HdDisplayStyle
+HdMesh::GetDisplayStyle(HdSceneDelegate* delegate) const
 {
-    return delegate->GetRefineLevel(GetId());
+    return delegate->GetDisplayStyle(GetId());
 }
 
 inline PxOsdSubdivTags

@@ -6,6 +6,8 @@ pxr_library(usdShade
         tf
         vt
         sdf
+        ndr
+        sdr
         usd
         usdGeom
 

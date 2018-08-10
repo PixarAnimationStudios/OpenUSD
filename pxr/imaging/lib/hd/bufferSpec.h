@@ -57,11 +57,11 @@ struct HdBufferSpec final {
 
     /// Util function for adding buffer specs of sources into bufferspecs.
     template<typename T>
-    static void AddBufferSpecs(HdBufferSpecVector *bufferSpecs,
-                               T const &sources) {
-        TF_FOR_ALL (it, sources) {
-            if ((*it)->IsValid()) {
-                (*it)->AddBufferSpecs(bufferSpecs);
+    static void GetBufferSpecs(T const &sources,
+                               HdBufferSpecVector *bufferSpecs) {
+        for (auto const &src : sources) {
+            if (src->IsValid()) {
+                src->GetBufferSpecs(bufferSpecs);
             }
         }
     }

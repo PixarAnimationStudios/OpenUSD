@@ -357,5 +357,25 @@ class TestUsdPayloads(unittest.TestCase):
             # considered loaded.
             self.assertTrue(baz.IsLoaded())
 
+    def test_Bug160419(self):
+        for fmt in allFormats:
+            payloadLayer = Sdf.Layer.CreateAnonymous("payload."+fmt)
+            Sdf.CreatePrimInLayer(payloadLayer, "/Payload/Cube")
+
+            rootLayer = Sdf.Layer.CreateAnonymous("root."+fmt)
+            refPrim = Sdf.PrimSpec(rootLayer, "Ref", Sdf.SpecifierDef)
+            refPrim = Sdf.PrimSpec(refPrim, "Child", Sdf.SpecifierDef)
+            refPrim.payload = Sdf.Payload(payloadLayer.identifier, "/Payload")
+
+            rootPrim = Sdf.PrimSpec(rootLayer, "Root", Sdf.SpecifierDef)
+            rootPrim.referenceList.Prepend(
+                Sdf.Reference(primPath="/Ref/Child"))
+
+            stage = Usd.Stage.Open(rootLayer)
+            self.assertEqual(set(stage.GetLoadSet()),
+                             set([Sdf.Path("/Ref/Child"), Sdf.Path("/Root")]))
+            self.assertTrue(stage.GetPrimAtPath("/Root").IsLoaded())
+            self.assertTrue(stage.GetPrimAtPath("/Ref/Child").IsLoaded())
+
 if __name__ == "__main__":
     unittest.main()

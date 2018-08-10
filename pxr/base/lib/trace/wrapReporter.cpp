@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/trace/reporter.h"
+#include "pxr/base/trace/reporterDataSourceCollector.h"
 
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -86,9 +87,9 @@ _ReportChromeTracingToFile(
 
 
 static TraceReporterRefPtr
-_Constructor1(const std::string &label, const TraceCollectorPtr &collector)
+_Constructor1(const std::string &label)
 {
-    return TraceReporter::New(label, collector);
+    return TraceReporter::New(label, TraceReporterDataSourceCollector::New());
 }
 
 void wrapReporter()
@@ -100,8 +101,6 @@ void wrapReporter()
         class_<This, ThisPtr, boost::noncopyable>("Reporter", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(_Constructor1))
-
-        .def("GetCollector", &This::GetCollector)
 
         .def("GetLabel", &This::GetLabel,
              return_value_policy<return_by_value>())
@@ -118,9 +117,9 @@ void wrapReporter()
         .def("ReportChromeTracing", &::_ReportChromeTracing)
         .def("ReportChromeTracingToFile", &::_ReportChromeTracingToFile)
 
-        .add_property("treeRoot", &This::GetTreeRoot)
+        .add_property("aggregateTreeRoot", &This::GetAggregateTreeRoot)
 
-        .def("UpdateTree", &This::UpdateTree)
+        .def("UpdateAggregateTree", &This::UpdateAggregateTree)
 
         .def("ClearTree", &This::ClearTree)
 

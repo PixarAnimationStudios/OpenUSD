@@ -82,6 +82,11 @@ public:
     /// temporary file over the target file to replace it.
     TF_API void Close();
 
+    /// Close the file.  If the file was opened with Replace(), the temporary
+    /// file is removed and not renamed over the target file.  It is an error
+    /// to call this for files opened for Update.
+    TF_API void Discard();
+
     /// Return the opened FILE *.
     FILE *Get() const { return _file; }
     

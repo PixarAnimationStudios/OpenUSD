@@ -54,7 +54,7 @@ public:
     /// Sdf_CleanupEnabler on the stack.
     void AddSpecIfTracking(SdfSpecHandle const &spec);
 
-    /// Return the authoring monitor indentified by the index
+    /// Return the authoring monitor identified by the index
     void CleanupSpecs();
 
 private:

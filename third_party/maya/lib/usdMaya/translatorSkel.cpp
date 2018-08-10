@@ -30,6 +30,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/skinningQuery.h"
 #include "pxr/usd/usdSkel/topology.h"
@@ -43,9 +44,11 @@
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MMatrix.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
@@ -66,16 +69,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 //      apply skel's joint anim to each joint
 //      set joint.segmentScaleCompent = false
 //
-//    Create bind pose:
+//    Create dagPose:
 //
 //      Not necessary for skinning, but enables things like the dagPose cmd.
-//    create 'bindPose' node of type dagPose
-//    connect joint_i.message -> bindPose.members[i]
-//    connect joint_i.bindPose -> bindPose.worldMatrix[i]
-//    connect bindPose.members[x] -> bindPose.parents[y]
+//      Also a requirement for round-tripping the Skeleton's restTransforms.
+//
+//    create dagPose node
+//    connect joint_i.message -> dagPose.members[i]
+//    connect bindPose.members[x] -> dagPose.parents[y]
 //      where x,y establish proper parent-child relationships
 //    connect bindPose.world -> bindPose.parents[i] for each root joint.
-//    set bindPose.xformMatrix[i] = joint_local_rest_xform[i]
+//    set bindPOse.worldMatrix[i] = jointSkelRestXforms[i]
+//    set bindPose.xformMatrix[i] = jointLocalRestXforms[i]
 //
 //  PER SKINNED MESH:
 //
@@ -93,18 +98,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 //          weights[vertex][joint]
 //      set skinCluster.geomMatrix to USD gprim's geomBindTransform.
 //
-//    create mesh_rest as a copy of the input mesh
-//      set mesh_rest.intermediateObject = true
-//    connect mesh_rest.outMesh -> skinClusterGroupParts.inputGeometry
+//    create restMesh as a copy of the input mesh
+//      set restMesh.intermediateObject = true
+//    connect restMesh.outMesh -> skinClusterGroupParts.inputGeometry
 //
 //    connect skinClusterGroupId.groupId -> skinClusterGroupParts.groupId
-//    connect skinClusterGroupId.groupId -> skinCluster.input[0].groupId
+//    connect skinClusterGroupParts.groupId -> skinCluster.input[0].groupId
+//  TODO:
 //    connect groupId.groupId ->
 //      mesh.instObjGroups[0].objectGroups[0].objectGroupId
+//
 //    connect skinClusterGroupParts.outputGeometry ->
 //      skinCluster.input[0].inputGeometry
 //    connect skinCluster.outputGeometry[0] -> mesh.inMesh
-//    connect joint_i.worldMatrix[0] -> skinCluster.matrix[i]
+//    connect joints[i].worldMatrix[0] -> skinCluster.matrix[i]
 //    connect bindPose.message -> skinCluster.bindPose
 //    set skinCluster.bindPreMatrix[i] to the inverse of the skel-space
 //      transform of joint i
@@ -115,6 +122,10 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (Animation)
+    (bindPose)
+    (Maya)
+    (generated)
     (Skeleton)
 );
 
@@ -127,11 +138,11 @@ struct _MayaTokensData {
     const MString jointType{"joint"};
     const MString meshType{"mesh"};
     const MString skinClusterType{"skinCluster"};
-    const MString transformType{"transform"};
 
     // Plugs, etc.
     const MString bindPose{"bindPose"};
     const MString bindPreMatrix{"bindPreMatrix"};
+    const MString drawStyle{"drawStyle"};
     const MString geomMatrix{"geomMatrix"};
     const MString groupId{"groupId"};
     const MString inheritsTransform{"inheritsTransform"};
@@ -141,9 +152,12 @@ struct _MayaTokensData {
     const MString inMesh{"inMesh"};
     const MString intermediateObject{"intermediateObject"};
     const MString instObjGroups{"instObjGroups"};
+    const MString USD_isUsdSkeleton{"USD_isUsdSkeleton"};
     const MString matrix{"matrix"};
     const MString members{"members"};
     const MString message{"message"};
+    const MString none{"none"};
+    const MString normalizeWeights{"normalizeWeights"};
     const MString objectGroups{"objectGroups"};
     const MString objectGroupId{"objectGroupId"};
     const MString outputGeometry{"outputGeometry"};
@@ -176,14 +190,14 @@ _SetAnimPlugData(MFnDependencyNode& depNode,
                  const MString& attr,
                  MDoubleArray& values, 
                  MTimeArray& times,
-                 const PxrUsdMayaPrimReaderContext* context)
+                 const UsdMayaPrimReaderContext* context)
 {
     MStatus status;
 
     MPlug plug = depNode.findPlug(attr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    if(!plug.isKeyable()) {
+    if (!plug.isKeyable()) {
         status = plug.setKeyable(true);
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
@@ -196,7 +210,7 @@ _SetAnimPlugData(MFnDependencyNode& depNode,
     status = animFn.addKeys(&times, &values);
     CHECK_MSTATUS_AND_RETURN(status, false);
     
-    if(context) {
+    if (context) {
         // Register node for undo/redo
         context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
     }
@@ -211,21 +225,21 @@ bool
 _SetTransformAnim(MFnDependencyNode& transformNode,
                   const std::vector<GfMatrix4d>& xforms,
                   MTimeArray& times,
-                  const PxrUsdMayaPrimReaderContext* context)
+                  const UsdMayaPrimReaderContext* context)
 {
-    if(xforms.size() != times.length()) {
+    if (xforms.size() != times.length()) {
         TF_WARN("xforms size [%zu] != times size [%du].",
                 xforms.size(), times.length());
         return false;
     }
-    if(xforms.empty())
+    if (xforms.empty())
         return true;
 
     MStatus status;
 
     const unsigned int numSamples = times.length();
 
-    if(numSamples > 1) {
+    if (numSamples > 1) {
         MDoubleArray translates[3] = {
             MDoubleArray(numSamples),
             MDoubleArray(numSamples),   
@@ -243,12 +257,12 @@ _SetTransformAnim(MFnDependencyNode& transformNode,
         };
 
         // Decompose all transforms.
-        for(unsigned int i = 0; i < numSamples; ++i) {
+        for (unsigned int i = 0; i < numSamples; ++i) {
             const auto& xform = xforms[i];
             GfVec3d t, r, s;
-            if(PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+            if (UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
                    xform, &t, &r, &s)) {
-                for(int c = 0 ; c < 3; ++c) {
+                for (int c = 0 ; c < 3; ++c) {
                     translates[c][i] = t[c];
                     rotates[c][i] = r[c];
                     scales[c][i] = s[c];
@@ -256,8 +270,8 @@ _SetTransformAnim(MFnDependencyNode& transformNode,
             }
         }
 
-        for(int c = 0; c < 3; ++c) {
-            if(!_SetAnimPlugData(transformNode, _MayaTokens->translates[c],
+        for (int c = 0; c < 3; ++c) {
+            if (!_SetAnimPlugData(transformNode, _MayaTokens->translates[c],
                                  translates[c], times, context) ||
                !_SetAnimPlugData(transformNode, _MayaTokens->rotates[c],
                                  rotates[c], times, context) ||
@@ -269,14 +283,14 @@ _SetTransformAnim(MFnDependencyNode& transformNode,
     } else {
         const auto& xform = xforms.front();
         GfVec3d t, r, s;
-        if(PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+        if (UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
                xform, &t, &r, &s)) {
-            for(int c = 0; c < 3; ++c) {
-                if(!PxrUsdMayaUtil::setPlugValue(
+            for (int c = 0; c < 3; ++c) {
+                if (!UsdMayaUtil::setPlugValue(
                        transformNode, _MayaTokens->translates[c], t[c]) ||
-                   !PxrUsdMayaUtil::setPlugValue(
+                   !UsdMayaUtil::setPlugValue(
                        transformNode, _MayaTokens->rotates[c], r[c]) ||
-                   !PxrUsdMayaUtil::setPlugValue(
+                   !UsdMayaUtil::setPlugValue(
                        transformNode, _MayaTokens->scales[c], s[c])) {
                     return false;
                 }
@@ -289,25 +303,21 @@ _SetTransformAnim(MFnDependencyNode& transformNode,
 
 void
 _GetJointAnimTimeSamples(const UsdSkelSkeletonQuery& skelQuery,
-                         const PxrUsdMayaPrimReaderArgs& args,
+                         const UsdMayaPrimReaderArgs& args,
                          std::vector<double>* times)
 {
-    if(args.GetReadAnimData()) {
-        if(UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
-            if(args.HasCustomFrameRange()) {
-                // BUG 157462: Querying time samples over an interval may be
-                // incorrect at the boundaries of the interval. It's more
-                // correct to use 'GetBracketingTimeSamples'. But UsdSkel is
-                // waiting on alternate time-querying API before providing
-                // such queries.
-                animQuery.GetJointTransformTimeSamplesInInterval(
-                    GfInterval(args.GetStartTime(), args.GetEndTime()), times);
-            } else {
-                animQuery.GetJointTransformTimeSamples(times);
-            }
+    if (!args.GetTimeInterval().IsEmpty()) {
+        if (UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
+            // BUG 157462: Querying time samples over an interval may be
+            // incorrect at the boundaries of the interval. It's more
+            // correct to use 'GetBracketingTimeSamples'. But UsdSkel is
+            // waiting on alternate time-querying API before providing
+            // such queries.
+            animQuery.GetJointTransformTimeSamplesInInterval(
+                    args.GetTimeInterval(), times);
         }
     }
-    if(times->empty()) {
+    if (times->empty()) {
         // Sample at just the earliest time.
         // It's *okay* that the single value fallback is not the default time.
         times->resize(1, UsdTimeCode::EarliestTime().GetValue());
@@ -315,14 +325,28 @@ _GetJointAnimTimeSamples(const UsdSkelSkeletonQuery& skelQuery,
 }
 
 
+/// Get the absolute path to \p joint, within \p containerPath.
+SdfPath
+_GetJointPath(const SdfPath& containerPath, const TfToken& joint)
+{
+    SdfPath jointPath(joint);
+    if (jointPath.IsAbsolutePath()) {
+        jointPath = jointPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
+    }
+    if (!jointPath.IsEmpty()) {
+        return containerPath.AppendPath(jointPath);
+    }
+    return SdfPath();
+}
+
 
 /// Create joint nodes for each joint in the joint order of \p skelQuery.
 /// If successful, \p jointNodes holds the ordered set of joint nodes.
 bool
 _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
-                  const SdfPath& skelPath,
-                  PxrUsdMayaPrimReaderContext* context,
-                  std::vector<MObject>* jointNodes)
+                  const SdfPath& containerPath,
+                  UsdMayaPrimReaderContext* context,
+                  VtArray<MObject>* jointNodes)
 {
     MStatus status;
     
@@ -335,26 +359,24 @@ _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
     // Joints are ordered so that ancestors precede descendants.
     // So we can iterate over joints in order and be assured that parent
     // joints will be created before their children.
-    for(size_t i = 0; i < numJoints; ++i) {
-
-        const SdfPath jointPath(jointNames[i]);
-        if(jointPath.IsEmpty())
+    for (size_t i = 0; i < numJoints; ++i) {
+        
+        const SdfPath jointPath = _GetJointPath(containerPath, jointNames[i]);
+        if (!jointPath.IsPrimPath())
             continue;
 
-        SdfPath absJointPath = skelPath.AppendPath(jointPath);
-
         MObject parentJoint =
-            context->GetMayaNode(absJointPath.GetParentPath(), true);
-        if(parentJoint.isNull()) {
+            context->GetMayaNode(jointPath.GetParentPath(), true);
+        if (parentJoint.isNull()) {
             TF_WARN("Could not find parent node for joint <%s>.",
-                    absJointPath.GetText());
+                    jointPath.GetText());
             return false;
         }
 
-        if(!PxrUsdMayaTranslatorUtil::CreateNode(absJointPath,
-                                                 _MayaTokens->jointType,
-                                                 parentJoint, context,
-                                                 &status, &(*jointNodes)[i])) {
+        if (!UsdMayaTranslatorUtil::CreateNode(jointPath,
+                                                  _MayaTokens->jointType,
+                                                  parentJoint, context,
+                                                  &status, &(*jointNodes)[i])) {
             return false;
         }
     }
@@ -370,7 +392,7 @@ _CreateJointNodes(const UsdSkelSkeletonQuery& skelQuery,
 /// representation, so the imaging representations cannot be identical.
 bool
 _SetJointRadii(const UsdSkelSkeletonQuery& skelQuery,
-               const std::vector<MObject>& jointNodes,
+               const VtArray<MObject>& jointNodes,
                const VtMatrix4dArray& restXforms)
 {
     MStatus status;
@@ -380,11 +402,11 @@ _SetJointRadii(const UsdSkelSkeletonQuery& skelQuery,
 
     std::vector<float> radii(numJoints, 1);
     std::vector<int> childCounts(numJoints, 0);
-    for(size_t i = 0; i < numJoints; ++i) {
+    for (size_t i = 0; i < numJoints; ++i) {
         const GfVec3d pivot = restXforms[i].ExtractTranslation();
 
         int parent = skelQuery.GetTopology().GetParent(i);
-        if(parent >= 0 && static_cast<size_t>(parent) < numJoints) {
+        if (parent >= 0 && static_cast<size_t>(parent) < numJoints) {
             GfVec3d parentPivot = restXforms[parent].ExtractTranslation();
             double length = (pivot - parentPivot).GetLength();
 
@@ -397,22 +419,22 @@ _SetJointRadii(const UsdSkelSkeletonQuery& skelQuery,
     }
 
     // Compute average radii for parent joints, and set resolved values.
-    for(size_t i = 0; i < numJoints; ++i) {
-        if(jointDep.setObject(jointNodes[i])) {
+    for (size_t i = 0; i < numJoints; ++i) {
+        if (jointDep.setObject(jointNodes[i])) {
             int count = childCounts[i];
             double radius = 1.0;
-            if(count > 0) {
+            if (count > 0) {
                 radius = radii[i]/count;
             } else {
                 int parent = skelQuery.GetTopology().GetParent(i);
                 // Leaf joint. Use the same size as the parent joint.
-                if(parent >= 0 && static_cast<size_t>(parent) < numJoints) {
+                if (parent >= 0 && static_cast<size_t>(parent) < numJoints) {
                     radius = radii[parent];
                 }
             }
             radii[i] = radius;
 
-            if(!PxrUsdMayaUtil::setPlugValue(
+            if (!UsdMayaUtil::setPlugValue(
                    jointDep, _MayaTokens->radius, radius)) {
                 return false;
             }
@@ -426,33 +448,33 @@ _SetJointRadii(const UsdSkelSkeletonQuery& skelQuery,
 /// state of the equivalent joints as defined in \p skelQuery.
 bool
 _CopyJointRestStatesFromSkel(const UsdSkelSkeletonQuery& skelQuery,
-                             const std::vector<MObject>& jointNodes)
+                             const VtArray<MObject>& jointNodes)
 {
     const size_t numJoints = jointNodes.size();
     // Compute skel-space rest xforms to store as the bindPose of each joint.
     VtMatrix4dArray restXforms;
-    if(!skelQuery.ComputeJointSkelTransforms(
+    if (!skelQuery.ComputeJointSkelTransforms(
            &restXforms, UsdTimeCode::Default(), /*atRest*/ true)) {
         return false;
     }
 
-    if(!TF_VERIFY(restXforms.size() == numJoints))
+    if (!TF_VERIFY(restXforms.size() == numJoints))
         return false;
 
     MStatus status;
     MFnDependencyNode jointDep;
 
-    for(size_t i = 0; i < numJoints; ++i) {
+    for (size_t i = 0; i < numJoints; ++i) {
         
-        if(jointDep.setObject(jointNodes[i])) {
-            if(!PxrUsdMayaUtil::setPlugMatrix(jointDep, _MayaTokens->bindPose,
+        if (jointDep.setObject(jointNodes[i])) {
+            if (!UsdMayaUtil::setPlugMatrix(jointDep, _MayaTokens->bindPose,
                                               restXforms[i])) {
                 return false;
             }
 
             // Scale does not inherit as expected without disabling
             // segmentScaleCompensate
-            if(!PxrUsdMayaUtil::setPlugValue(
+            if (!UsdMayaUtil::setPlugValue(
                    jointDep, _MayaTokens->segmentScaleCompensate, false)) {
                 return false;
             }
@@ -466,55 +488,75 @@ _CopyJointRestStatesFromSkel(const UsdSkelSkeletonQuery& skelQuery,
         // Will revisit this as-needed.  
     }
 
-    if(!_SetJointRadii(skelQuery, jointNodes, restXforms))
+    if (!_SetJointRadii(skelQuery, jointNodes, restXforms))
         return false;
     
     return true;
 }
 
 
-/// Apply animation (joints and root anim transform)
-/// from \p skelQuery onto \p jointNodes.
+/// Apply joint animation, as computed from from \p skelQuery,
+/// onto \p jointNodes.
+/// If \p jointContainerIsSkeleton is true, the \p jointContainer node
+/// represents the Skeleton itself, and should hold the local transform
+/// anim of the Skeleton. Otherwise, the local transform of the Skeleton
+/// is concatenated onto the root joints.
 bool
 _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
-                  const MObject& skelTransform,
-                  const std::vector<MObject>& jointNodes,
-                  const PxrUsdMayaPrimReaderArgs& args,
-                  PxrUsdMayaPrimReaderContext* context)
+                  const MObject& jointContainer,
+                  const VtArray<MObject>& jointNodes,
+                  bool jointContainerIsSkeleton,
+                  const UsdMayaPrimReaderArgs& args,
+                  UsdMayaPrimReaderContext* context)
 {
     std::vector<double> usdTimes;
     _GetJointAnimTimeSamples(skelQuery, args, &usdTimes);
     MTimeArray mayaTimes;
     mayaTimes.setLength(usdTimes.size());
-    for(size_t i = 0; i < usdTimes.size(); ++i) {
+    for (size_t i = 0; i < usdTimes.size(); ++i) {
         mayaTimes[i] = usdTimes[i];
     }
 
     MStatus status;
 
-    if(UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
-        // Skel has an animation source.
-        // Copy the animation source's transform onto the skel.
-
-        std::vector<GfMatrix4d> xforms(usdTimes.size());
-        for(size_t i = 0; i < usdTimes.size(); ++i) {
-            if(!skelQuery.ComputeAnimTransform(&xforms[i], usdTimes[i])) {
-                xforms[i].SetIdentity();
-            }
+    // Pre-sample the Skeleton's local transforms.
+    std::vector<GfMatrix4d> skelLocalXforms(usdTimes.size());
+    UsdGeomXformable::XformQuery xfQuery(skelQuery.GetSkeleton());
+    for (size_t i = 0; i < usdTimes.size(); ++i) {
+        if (!xfQuery.GetLocalTransformation(&skelLocalXforms[i], usdTimes[i])) {
+            skelLocalXforms[i].SetIdentity();
         }
-        MFnDependencyNode transformDep(skelTransform, &status);
+    }
+
+    if (jointContainerIsSkeleton) {
+        // The jointContainer is being used to represent the Skeleton.
+        // Copy the Skeleton's local transforms onto the container.
+
+        MFnDependencyNode skelXformDep(jointContainer, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        if(!_SetTransformAnim(transformDep, xforms, mayaTimes, context)) {
+        if (!_SetTransformAnim(skelXformDep, skelLocalXforms,
+                               mayaTimes, context)) {
             return false;
         }
     }
 
     // Pre-sample all joint animation.
     std::vector<VtMatrix4dArray> samples(usdTimes.size());
-    for(size_t i = 0; i < samples.size(); ++i) {
-        if(!skelQuery.ComputeJointLocalTransforms(&samples[i], usdTimes[i])) {
+    for (size_t i = 0; i < samples.size(); ++i) {
+        if (!skelQuery.ComputeJointLocalTransforms(&samples[i], usdTimes[i])) {
             return false;
+        }
+        if (!jointContainerIsSkeleton) {
+            // We do not have a node to receive the local transforms of the
+            // Skeleton, so any local transforms on the Skeleton must be
+            // concatened onto the root joints instead.
+            for (size_t j = 0; j < skelQuery.GetTopology().GetNumJoints(); ++j){
+                if (skelQuery.GetTopology().GetParent(j) < 0) {
+                    // This is a root joint. Concat by the local skel xform.
+                    samples[i][j] *= skelLocalXforms[i];
+                }
+            }
         }
     }
 
@@ -522,17 +564,17 @@ _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 
     std::vector<GfMatrix4d> xforms(samples.size());
 
-    for(size_t jointIdx = 0; jointIdx < jointNodes.size(); ++jointIdx) {
+    for (size_t jointIdx = 0; jointIdx < jointNodes.size(); ++jointIdx) {
 
-        if(!jointDep.setObject(jointNodes[jointIdx]))
+        if (!jointDep.setObject(jointNodes[jointIdx]))
             continue;
 
         // Get the transforms of just this joint.
-        for(size_t i = 0; i < samples.size(); ++i) {
+        for (size_t i = 0; i < samples.size(); ++i) {
             xforms[i] = samples[i][jointIdx];
         }
 
-        if(!_SetTransformAnim(jointDep, xforms, mayaTimes, context))
+        if (!_SetTransformAnim(jointDep, xforms, mayaTimes, context))
             return false;
     }
     return true;
@@ -544,159 +586,334 @@ _CopyAnimFromSkel(const UsdSkelSkeletonQuery& skelQuery,
 
 /* static */
 bool
-PxrUsdMayaTranslatorSkel::CreateJoints(
-    const UsdSkelSkeletonQuery& skelQuery,
-    MObject& parentNode,
-    const PxrUsdMayaPrimReaderArgs& args,
-    PxrUsdMayaPrimReaderContext* context,
-    std::vector<MObject>* joints)
+UsdMayaTranslatorSkel::IsUsdSkeleton(const MDagPath& joint)
 {
-    if(!skelQuery) {    
-        TF_CODING_ERROR("'skelQuery' is invalid");
-        return false;
+    MFnDependencyNode jointDep(joint.node());
+    MPlug plug = jointDep.findPlug(_MayaTokens->USD_isUsdSkeleton);
+    if (!plug.isNull()) {
+        return plug.asBool();
     }
-    if(!joints) {   
-        TF_CODING_ERROR("'joints' is null");
-        return false;
-    }
-
-
-    // Create a plain transform as a container for all joints.
-    // This transform will also be where the transform of the skel's
-    // animation source will be written.
-    SdfPath skelPath = 
-        skelQuery.GetPrim().GetPath().AppendChild(_tokens->Skeleton);
-
-    MStatus status;
-    MObject skelTransform;  
-    if(!PxrUsdMayaTranslatorUtil::CreateNode(
-           skelPath, _MayaTokens->transformType, parentNode,
-           context, &status, &skelTransform)) {
-        return false;
-    }
-
-    return _CreateJointNodes(skelQuery, skelPath, context, joints) &&
-           _CopyJointRestStatesFromSkel(skelQuery, *joints) &&
-           _CopyAnimFromSkel(skelQuery, skelTransform, *joints, args, context);
+    return false;
 }
 
 
 /* static */
 bool
-PxrUsdMayaTranslatorSkel::CreateBindPose(
-    const UsdSkelSkeletonQuery& skelQuery,
-    const std::vector<MObject>& joints,
-    PxrUsdMayaPrimReaderContext* context,
-    MObject* bindPoseNode)
+UsdMayaTranslatorSkel::IsSkelMayaGenerated(const UsdSkelSkeleton& skel)
 {
-    if(!skelQuery) {
-        TF_CODING_ERROR("'skelQuery' is invalid.");
+    VtValue mayaData = skel.GetPrim().GetCustomDataByKey(_tokens->Maya);
+    if (mayaData.IsHolding<VtDictionary>()) {
+        const VtDictionary& mayaDict = mayaData.UncheckedGet<VtDictionary>();
+        const VtValue* val = mayaDict.GetValueAtPath(_tokens->generated);
+        if (val && val->IsHolding<bool>())
+            return val->UncheckedGet<bool>();
+    }
+    return false;
+}
+
+
+/* static */
+void
+UsdMayaTranslatorSkel::MarkSkelAsMayaGenerated(const UsdSkelSkeleton& skel)
+{
+    VtValue mayaData = skel.GetPrim().GetCustomDataByKey(_tokens->Maya);
+
+    VtDictionary newDict;
+    if (mayaData.IsHolding<VtDictionary>())
+        newDict = mayaData.UncheckedGet<VtDictionary>();
+    newDict[_tokens->generated] = VtValue(true);
+    skel.GetPrim().SetCustomDataByKey(_tokens->Maya, VtValue(newDict));
+}
+
+
+/* static */
+bool
+UsdMayaTranslatorSkel::CreateJointHierarchy(
+    const UsdSkelSkeletonQuery& skelQuery,
+    MObject& parentNode,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext* context,
+    VtArray<MObject>* joints)
+{
+    if (!skelQuery) {    
+        TF_CODING_ERROR("'skelQuery' is invalid");
         return false;
     }
-    if(!bindPoseNode) {
-        TF_CODING_ERROR("'bindPoseNode' is null.");
+    if (!joints) {   
+        TF_CODING_ERROR("'joints' is null");
         return false;
     }
 
     MStatus status;
-    MDGModifier dgMod;
 
-    *bindPoseNode = dgMod.createNode(_MayaTokens->dagPoseType, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    status = dgMod.renameNode(*bindPoseNode, _MayaTokens->bindPose);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    SdfPath jointContainerPath;
+    bool jointContainerIsSkeleton = false;
+    MObject jointContainer;
+    if (IsSkelMayaGenerated(skelQuery.GetSkeleton())) {
+        // If a joint hierarchy was originally exported from Maya, then
+        // we do not want to add a node to represent the Skeleton in Maya,
+        // because the originally joint hierarchy didn't have one. We prefer
+        // to try and maintain the originally joint hierarchy.
+        // Instead of creating a joint for the Skeleton, we will put joints
+        // beneath the parent of the Skeleton.
+        jointContainerPath = skelQuery.GetPrim().GetPath().GetParentPath();
+        jointContainer = parentNode;
+    } else {
+        // The Skeleton did not originate from Maya. It may have multiple root
+        // joints, and the Skeleton prim itself may have local transforms.
+        // The best way to preserve the source data is by creating a node for
+        // the Skeleton itself. For convenience, we create an additional joint
+        // node to represent the Skeleton, since the current export support
+        // for skeletons converts the root-most joint of a joint hierarchy
+        // to a Skeleton prim.
+        jointContainerPath = skelQuery.GetPrim().GetPath();
+        jointContainerIsSkeleton = true;
 
-    MFnDependencyNode bindPoseDep(*bindPoseNode, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    context->RegisterNewMayaNode(bindPoseDep.name().asChar(), *bindPoseNode);
+        // Create a joint to represent thte Skeleton.
+        if (!UsdMayaTranslatorUtil::CreateNode(
+                jointContainerPath, _MayaTokens->jointType, parentNode,
+                context, &status, &jointContainer)) {
+            return false;
+        }
 
-    const size_t numJoints = joints.size();
+        MFnDependencyNode skelXformJointDep(jointContainer, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
 
-    MPlug members = bindPoseDep.findPlug(_MayaTokens->members, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    status = members.setNumElements(numJoints);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+        // Create an attribute to indicate to export that this joint
+        // represents UsdSkelSkeleton's transform.
+        MObject attrObj = MFnNumericAttribute().create(
+                _MayaTokens->USD_isUsdSkeleton,
+                _MayaTokens->USD_isUsdSkeleton,
+                MFnNumericData::kBoolean,
+                true,
+                &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
 
-    MPlug world = bindPoseDep.findPlug(_MayaTokens->world, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+        status = skelXformJointDep.addAttribute(attrObj);
+        CHECK_MSTATUS_AND_RETURN(status, false);
 
-    MPlug worldMatrix = bindPoseDep.findPlug(_MayaTokens->worldMatrix, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    status = worldMatrix.setNumElements(numJoints);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+        UsdMayaUtil::setPlugValue(
+                skelXformJointDep, _MayaTokens->USD_isUsdSkeleton, true);
 
-    MPlug xformMatrix = bindPoseDep.findPlug(_MayaTokens->xformMatrix, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    status = xformMatrix.setNumElements(numJoints);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+        // Change the draw style of the extra joints so that it is not drawn.
+        UsdMayaUtil::setPlugValue(skelXformJointDep, 
+                                     _MayaTokens->drawStyle, 2 /*None*/);
+    }
 
-    MPlug parents = bindPoseDep.findPlug(_MayaTokens->parents, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    status = parents.setNumElements(numJoints);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    return _CreateJointNodes(skelQuery, jointContainerPath, context, joints) &&
+           _CopyJointRestStatesFromSkel(skelQuery, *joints) &&
+           _CopyAnimFromSkel(skelQuery, jointContainer, *joints,
+                             jointContainerIsSkeleton, args, context);
+}
 
-    VtMatrix4dArray xforms;
-    if(!skelQuery.ComputeJointLocalTransforms(
-           &xforms, UsdTimeCode::Default(), /*atRest*/ true)) {
+
+bool
+UsdMayaTranslatorSkel::GetJoints(const UsdSkelSkeletonQuery& skelQuery,
+                                    UsdMayaPrimReaderContext* context,
+                                    VtArray<MObject>* joints)
+{
+    if (!skelQuery) {
+        TF_CODING_ERROR("'skelQuery is invalid.");
+        return false;
+    }
+    if (!joints) {
+        TF_CODING_ERROR("'joints' pointer is null.");
         return false;
     }
 
-    // Wire up per-joint connections.
-    MFnDependencyNode jointDep, jointParentDep;
-    for(size_t i = 0; i < numJoints; ++i) {
-        if(jointDep.setObject(joints[i])) {
-            // Connect joint_i.message -> bindPose.members[i]
-            MPlug jointMessage =
-                jointDep.findPlug(_MayaTokens->message, &status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
+    joints->clear();
+    joints->reserve(skelQuery.GetJointOrder().size());
 
-            MPlug membersI = members.elementByLogicalIndex(i, &status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
+    // Depending on whether or not the prim has Maya:generated metadata,
+    // we may have a node in Maya that represents the Skeleton, or we might
+    // not. See UsdMayaTranslatorSkel::CreateJointHierarchy for a deeper
+    // explanation of why there is a difference.
+    SdfPath jointContainerPath;
+    if (IsSkelMayaGenerated(skelQuery.GetSkeleton())) {
+        jointContainerPath =
+            skelQuery.GetSkeleton().GetPrim().GetPath().GetParentPath();
+    } else {
+        jointContainerPath = skelQuery.GetSkeleton().GetPrim().GetPath();
+    }
 
-            status = dgMod.connect(jointMessage,  membersI);
-            CHECK_MSTATUS_AND_RETURN(status, false);
+    for (const TfToken& joint : skelQuery.GetJointOrder()) {
+        const SdfPath jointPath = _GetJointPath(jointContainerPath, joint);
 
-            // Connect joint_i.bindPose -> bindPose.worldMatrix[i]
-            MPlug jointBindPose =
-                jointDep.findPlug(_MayaTokens->bindPose, &status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
-            MPlug worldMatrixI =
-                worldMatrix.elementByLogicalIndex(i, &status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
-            status = dgMod.connect(jointBindPose, worldMatrixI);
-            CHECK_MSTATUS_AND_RETURN(status, false);
+        MObject jointObj;
+        if (jointPath.IsPrimPath()) {
+            jointObj = context->GetMayaNode(jointPath, false);
+        }
+        joints->push_back(jointObj);
+    }
+    return true;
+}
 
-            MPlug parentsI = parents.elementByLogicalIndex(i, &status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
 
-            int parentIdx = skelQuery.GetTopology().GetParent(i);
-            if(parentIdx >= 0 && static_cast<size_t>(parentIdx) < numJoints) {
-                // Connect bindPose.members[parent] -> bindPose.parents[child]
-                MPlug parentMember =
-                    members.elementByLogicalIndex(parentIdx, &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-                status = dgMod.connect(parentMember, parentsI);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-            } else {
-                // Connect bindPose.world -> bindPose.parents[i]
-                status = dgMod.connect(world, parentsI);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-            }
+namespace {
 
-            // Set xformMatrix[i] = joint_local_xform[i]
-            MPlug xformMatrixI = xformMatrix.elementByLogicalIndex(i, &status);
+
+SdfPath
+_GetBindPosePrimPath(const SdfPath& skelPath)
+{
+    return skelPath.AppendChild(TfToken(skelPath.GetName() + "_bindPose"));
+}
+
+
+/// Create a dagPose node for the objects in \p members, whose transforms
+/// are given by \p localXforms and \p worldXforms.
+/// The \p parentIndices array gives the index of the parent of each member,
+/// or -1 if a member has no parent.
+bool
+_CreateDagPose(const SdfPath& path,
+               const VtArray<MObject>& members,
+               const VtIntArray& parentIndices,
+               const VtMatrix4dArray& localXforms,
+               const VtMatrix4dArray& worldXforms,
+               UsdMayaPrimReaderContext* context,
+               MObject* dagPoseNode)
+{
+    MStatus status;
+    MDGModifier dgMod;
+
+    *dagPoseNode = dgMod.createNode(_MayaTokens->dagPoseType, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    status = dgMod.renameNode(*dagPoseNode, MString(path.GetName().c_str()));
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MFnDependencyNode dagPoseDep(*dagPoseNode, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    context->RegisterNewMayaNode(path.GetText(), *dagPoseNode);
+
+    const size_t numMembers = members.size();
+
+    MPlug membersPlug = dagPoseDep.findPlug(_MayaTokens->members, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = membersPlug.setNumElements(numMembers);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MPlug worldPlug = dagPoseDep.findPlug(_MayaTokens->world, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MPlug worldMatrixPlug =
+        dagPoseDep.findPlug(_MayaTokens->worldMatrix, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = worldMatrixPlug.setNumElements(numMembers);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MPlug xformMatrixPlug =
+        dagPoseDep.findPlug(_MayaTokens->xformMatrix, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = xformMatrixPlug.setNumElements(numMembers);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MPlug parentsPlug = dagPoseDep.findPlug(_MayaTokens->parents, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = parentsPlug.setNumElements(numMembers);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Wire up per-member connections.
+    MFnDependencyNode memberDep;
+    for (size_t i = 0; i < numMembers; ++i) {
+
+        status = memberDep.setObject(members[i]);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        // Connect members[i].message -> dagPose.members[i]
+        MPlug memberMessagePlug =
+            memberDep.findPlug(_MayaTokens->message, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        status = dgMod.connect(memberMessagePlug,
+                               membersPlug.elementByLogicalIndex(i));
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        int parentIdx = parentIndices[i];
+
+        MPlug parentsI = parentsPlug.elementByLogicalIndex(i);
+
+        if (parentIdx >= 0 && static_cast<size_t>(parentIdx) < numMembers) {
+            // Connect dagPose.members[parent] -> dagPose.parents[child]
+            MPlug parentMemberPlug =
+                membersPlug.elementByLogicalIndex(parentIdx);
+
+            status = dgMod.connect(parentMemberPlug, parentsI);
             CHECK_MSTATUS_AND_RETURN(status, false);
-            if(!PxrUsdMayaUtil::setPlugMatrix(xforms[i], xformMatrixI)) {
-                return false;
-            }
+        } else {
+            // Connect bindPose.world -> bindPose.parents[i]
+            status = dgMod.connect(worldPlug, parentsI);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+
+        // Set worldMatrix[i] = worldXforms[i]
+        MPlug worldMatrixI = worldMatrixPlug.elementByLogicalIndex(i);
+        if (!UsdMayaUtil::setPlugMatrix(worldXforms[i], worldMatrixI)) {
+            return false;
+        }
+
+        // Set xformMatrix[i] = localXforms[i]
+        MPlug xformMatrixI = xformMatrixPlug.elementByLogicalIndex(i);
+        if (!UsdMayaUtil::setPlugMatrix(localXforms[i], xformMatrixI)) {
+            return false;
         }
     }
 
     status = dgMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    return PxrUsdMayaUtil::setPlugValue(
-        bindPoseDep, _MayaTokens->bindPose, true);
+    return UsdMayaUtil::setPlugValue(
+        dagPoseDep, _MayaTokens->bindPose, true);
+}
+
+
+} // namespace
+
+
+bool
+UsdMayaTranslatorSkel::CreateBindPose(
+    const UsdSkelSkeletonQuery& skelQuery,
+    const VtArray<MObject>& joints,
+    UsdMayaPrimReaderContext* context,
+    MObject* bindPoseNode)
+{
+    if (!skelQuery) {
+        TF_CODING_ERROR("'skelQuery' is invalid.");
+        return false;
+    }
+    if (!bindPoseNode) {
+        TF_CODING_ERROR("'bindPoseNode' is null.");
+        return false;
+    }
+
+    VtMatrix4dArray localXforms, worldXforms;
+    if (!skelQuery.ComputeJointLocalTransforms(
+            &localXforms, UsdTimeCode::Default(), /*atRest*/ true)) {
+        TF_WARN("%s -- Failed reading rest transforms. No dagPose "
+                "will be created for the Skeleton.",
+                skelQuery.GetPrim().GetPath().GetText());
+        return false;
+    }
+    if (!skelQuery.GetJointWorldBindTransforms(&worldXforms)) {
+        TF_WARN("%s -- Failed reading bind transforms. No dagPose "
+                "will be created for the Skeleton.",
+                skelQuery.GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    SdfPath path = _GetBindPosePrimPath(skelQuery.GetPrim().GetPath());
+
+    return _CreateDagPose(path, joints,
+                          skelQuery.GetTopology().GetParentIndices(),
+                          localXforms, worldXforms, context, bindPoseNode);
+}
+
+
+MObject
+UsdMayaTranslatorSkel::GetBindPose(const UsdSkelSkeletonQuery& skelQuery,
+                                      UsdMayaPrimReaderContext* context)
+{
+    return context->GetMayaNode(
+        _GetBindPosePrimPath(skelQuery.GetPrim().GetPath()), false);
 }
 
 
@@ -706,13 +923,13 @@ namespace {
 bool
 _SetVaryingJointInfluences(const MFnMesh& meshFn,
                            const MObject& skinCluster,
-                           const std::vector<MObject>& joints,
+                           const VtArray<MObject>& joints,
                            const VtIntArray& indices,
                            const VtFloatArray& weights,
                            int numInfluencesPerPoint,
                            unsigned int numPoints)
 {
-    if(joints.size() == 0)
+    if (joints.empty())
         return true;
 
     MStatus status;
@@ -729,13 +946,13 @@ _SetVaryingJointInfluences(const MFnMesh& meshFn,
     // Compute a vertex-ordered weight arrays. Weights are stored as:
     //   vert_0_joint_0 ... vert_0_joint_n ... vert_n_joint_0 ... vert_n_joint_n
     MDoubleArray vertOrderedWeights(numPoints*numJoints, 0.0f); 
-    for(unsigned int pt = 0; pt < numPoints; ++pt) {
-        for(int c = 0; c < numInfluencesPerPoint; ++c) {
+    for (unsigned int pt = 0; pt < numPoints; ++pt) {
+        for (int c = 0; c < numInfluencesPerPoint; ++c) {
             int jointIdx = indices[pt*numInfluencesPerPoint+c];
-            if(jointIdx >= 0 
+            if (jointIdx >= 0 
                && static_cast<unsigned int>(jointIdx) < numJoints) {
                 float w = weights[pt*numInfluencesPerPoint+c];
-                // There may be multiple influence referencing the same joint
+                // There may be multiple influences referencing the same joint
                 // for this point. eg., 'unweighted' points are assigned
                 // index 0 and weight 0. Sum the weight contributions to ensure
                 // that we properly account for this.
@@ -745,7 +962,7 @@ _SetVaryingJointInfluences(const MFnMesh& meshFn,
     }
 
     MIntArray influenceIndices(numJoints);
-    for(unsigned int i = 0; i < numJoints; ++i) {
+    for (unsigned int i = 0; i < numJoints; ++i) {
         influenceIndices[i] = i;
     }
 
@@ -754,23 +971,53 @@ _SetVaryingJointInfluences(const MFnMesh& meshFn,
     components.create(MFn::kMeshVertComponent);
     components.setCompleteData(numPoints);
 
-    // XXX: Note that weights are expected to be pre-normalized in USD, so
-    // there's no real need to normalize them at during application.
-    // TODO: Sometimes seeing warnings about weights exceeding 1 for some
-    // verts, even if we explicitly pre-normalize them ourselves. The warnings
-    // seem innocusous (mesh deformations remain correct), but would still
-    // be good to know why we see warnings.
+    // XXX: Note that weights are expected to be pre-normalized in USD.
+    // In order to faithfully transfer our source data, we do not perform
+    // any normalization on import. Maya's weight normalization also seems
+    // finicky w.r.t. precision, and tends to throw warnings even when the
+    // weights have been properly normalized, so this also saves us from 
+    // unnecessary warning spam.
+    
+    // If the 'normalizeWeights' attribute of the skinCluster is set to
+    // 'interactive' -- and by default, it is -- then weights are still
+    // normalized even if we set normalize=false on
+    // MFnSkinCluster::normalize(). This fact is unfortunately not made
+    // clear in the MFnSkinCluster documentation... 
+    // Temporarily set the attr to 'none'
+
+    MPlug normalizeWeights =
+        skinClusterFn.findPlug(_MayaTokens->normalizeWeights, &status);
+    MString initialNormalizeWeights;
+    if (!normalizeWeights.isNull()) {
+        initialNormalizeWeights = normalizeWeights.asString();
+        normalizeWeights.setString(_MayaTokens->none);
+    }
+
+    status = skinClusterFn.setObject(skinCluster);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Apply the weights. Note that this fails with kInvalidParameter
+    // if the influenceIndices are invalid. Validity is based on the
+    // set of joints wired up to the skinCluster.
     status = skinClusterFn.setWeights(dagPath, components.object(),
                                       influenceIndices, vertOrderedWeights,
                                       /*normalize*/ false);
     CHECK_MSTATUS_AND_RETURN(status, false);
+
+
+    // Reset the normalization flag to its previous value.
+    if (!normalizeWeights.isNull()) {
+        normalizeWeights.setString(initialNormalizeWeights);
+    }
+
+
     return true;
 }
 
 
 bool
 _ComputeAndSetJointInfluences(const UsdSkelSkinningQuery& skinningQuery,
-                              const std::vector<MObject>& joints,
+                              const VtArray<MObject>& joints,
                               const MObject& skinCluster,
                               const MObject& shapeToSkin)
 {
@@ -784,7 +1031,7 @@ _ComputeAndSetJointInfluences(const UsdSkelSkinningQuery& skinningQuery,
 
     VtIntArray indices;
     VtFloatArray weights;
-    if(skinningQuery.ComputeVaryingJointInfluences(
+    if (skinningQuery.ComputeVaryingJointInfluences(
            numPoints, &indices, &weights)) {
 
         return _SetVaryingJointInfluences(
@@ -819,7 +1066,7 @@ _CreateRestMesh(const MObject& inputMesh,
     status = dgMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    return PxrUsdMayaUtil::setPlugValue(
+    return UsdMayaUtil::setPlugValue(
         *restMesh, _MayaTokens->intermediateObject, true);
 }
 
@@ -829,10 +1076,10 @@ bool
 _ClearIncomingConnections(MPlug& plug)
 {
     MPlugArray connections;
-    if(plug.connectedTo(connections, /*asDst*/ true, /*asSrc*/ false)) {
+    if (plug.connectedTo(connections, /*asDst*/ true, /*asSrc*/ false)) {
         MStatus status;
         MDGModifier dgMod;
-        for(unsigned int i = 0; i < connections.length(); ++i) {
+        for (unsigned int i = 0; i < connections.length(); ++i) {
             status = dgMod.disconnect(plug, connections[i]);
             CHECK_MSTATUS_AND_RETURN(status, false);
         }
@@ -855,28 +1102,28 @@ _ConfigureSkinnedObjectTransform(const UsdSkelSkinningQuery& skinningQuery,
     // Make sure transforms are not ineherited.
     // Otherwise we get a double transform when a transform ancestor
     // affects both this object and the joints that drive the skinned object.
-    if(!PxrUsdMayaUtil::setPlugValue(
+    if (!UsdMayaUtil::setPlugValue(
            transformDep, _MayaTokens->inheritsTransform, false)) {
         return false;
     }
 
     // The transform needs to be set to the geomBindTransform.
     GfVec3d t, r, s;
-    if(PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+    if (UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
            skinningQuery.GetGeomBindTransform(), &t, &r, &s)) {
 
-        for(const auto& pair : {std::make_pair(t, _MayaTokens->translates),
-                                std::make_pair(r, _MayaTokens->rotates),
-                                std::make_pair(s, _MayaTokens->scales)}) {
+        for (const auto& pair : {std::make_pair(t, _MayaTokens->translates),
+                                 std::make_pair(r, _MayaTokens->rotates),
+                                 std::make_pair(s, _MayaTokens->scales)}) {
 
-            for(int c = 0; c < 3; ++c) {
+            for (int c = 0; c < 3; ++c) {
                 MPlug plug = transformDep.findPlug(pair.second[c], &status);
                 CHECK_MSTATUS_AND_RETURN(status, false);
 
                 // Before setting each plug, make sure there are no connections.
                 // Usd import may have already wired up some connections
                 // (eg., animation channels)
-                if(!_ClearIncomingConnections(plug))
+                if (!_ClearIncomingConnections(plug))
                     return false;
 
                 status = plug.setValue(pair.first[c]);
@@ -894,32 +1141,32 @@ _ConfigureSkinnedObjectTransform(const UsdSkelSkinningQuery& skinningQuery,
 
 /* static */
 bool
-PxrUsdMayaTranslatorSkel::CreateSkinCluster(
+UsdMayaTranslatorSkel::CreateSkinCluster(
     const UsdSkelSkeletonQuery& skelQuery,
     const UsdSkelSkinningQuery& skinningQuery,
-    const std::vector<MObject>& joints,
+    const VtArray<MObject>& joints,
     const UsdPrim& primToSkin,
-    const PxrUsdMayaPrimReaderArgs& args,
-    PxrUsdMayaPrimReaderContext* context,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext* context,
     const MObject& bindPose)
 {
     MStatus status;
 
-    if(!skelQuery) {
+    if (!skelQuery) {
         TF_CODING_ERROR("'skelQuery' is invalid");
         return false;
     }
-    if(!skinningQuery) {
+    if (!skinningQuery) {
         TF_CODING_ERROR("'skinningQuery is invalid");
     }
-    if(!primToSkin) {
+    if (!primToSkin) {
         TF_CODING_ERROR("'primToSkin 'is invalid"); 
         return false;
     }
 
     // Resolve the input mesh.
     MObject objToSkin = context->GetMayaNode(primToSkin.GetPath(), false);
-    if(objToSkin.isNull()) {
+    if (objToSkin.isNull()) {
         // XXX: Not an error (import may have chosen to exclude the prim).
         return true;
     }
@@ -933,7 +1180,7 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
     MObject shapeToSkin = shapeDagPath.node(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     
-    if(shapeToSkin.apiType() != MFn::kMesh) {
+    if (shapeToSkin.apiType() != MFn::kMesh) {
         // USD considers this prim skinnable, but in Maya, we currently only
         // know how to skin meshes. Skip it.
         return true;
@@ -943,11 +1190,11 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MObject restMesh;
-    if(!_CreateRestMesh(shapeToSkin, parentTransform, &restMesh)) {
+    if (!_CreateRestMesh(shapeToSkin, parentTransform, &restMesh)) {
         return false;
     }
 
-    if(!_ConfigureSkinnedObjectTransform(skinningQuery, parentTransform)){ 
+    if (!_ConfigureSkinnedObjectTransform(skinningQuery, parentTransform)){ 
         return false;
     }
 
@@ -955,6 +1202,11 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
 
     MObject skinCluster =
         dgMod.createNode(_MayaTokens->skinClusterType, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    std::string skinClusterName = 
+        TfStringPrintf("skinCluster_%s", primToSkin.GetName().GetText());
+    status = dgMod.renameNode(skinCluster, MString(skinClusterName.c_str()));
+                              
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MObject groupId = dgMod.createNode(_MayaTokens->groupIdType, &status);
@@ -1045,14 +1297,14 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         MPlug objectGroups =
-            PxrUsdMayaUtil::FindChildPlugByName(instObjGroups0,
+            UsdMayaUtil::FindChildPlugByName(instObjGroups0,
                                                 _MayaTokens->objectGroups);
         MPlug objectGroups0 =
             objectGroups.elementByLogicalIndex(0, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         MPlug objectGroupId =
-            PxrUsdMayaUtil::FindChildPlugByName(objectGroups0,
+            UsdMayaUtil::FindChildPlugByName(objectGroups0,
                                                 _MayaTokens->objectGroupId);
         
         status = dgMod.connect(groupIdGroupId, objectGroupId);
@@ -1071,7 +1323,7 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
     // groupParts.outputGeometry -> skinCluster.input[0].inputGeometry
     {
         MPlug skinClusterInputGeometry =
-            PxrUsdMayaUtil::FindChildPlugByName(skinClusterInput0,
+            UsdMayaUtil::FindChildPlugByName(skinClusterInput0,
                                                 _MayaTokens->inputGeometry);
 
         MPlug groupPartsOutputGeometry =
@@ -1086,7 +1338,7 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
     // Connect groupId.groupId -> skinCluster.input[0].groupId
     {
         MPlug skinClusterGroupId =
-            PxrUsdMayaUtil::FindChildPlugByName(skinClusterInput0,
+            UsdMayaUtil::FindChildPlugByName(skinClusterInput0,
                                                 _MayaTokens->groupId);
 
         status = dgMod.connect(groupIdGroupId, skinClusterGroupId);
@@ -1111,12 +1363,11 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
     
-    // Connect joint_i.worldMatrix[0] -> skinCluster.matrix[i]
-    // Set skinCluster.bindPreMatrix[i] = joint_i_skel_rest_xform
+    // Connect joints[i].worldMatrix[0] -> skinCluster.matrix[i]
+    // Set skinCluster.bindPreMatrix[i] = inv(jointWorldBindXforms[i])
     {
-        VtMatrix4dArray restXforms;
-        if(!skelQuery.ComputeJointSkelTransforms(
-               &restXforms, UsdTimeCode::Default(), /*atRest*/ true)) {
+        VtMatrix4dArray bindXforms;
+        if (!skelQuery.GetJointWorldBindTransforms(&bindXforms)) {
             return false;
         }
 
@@ -1133,36 +1384,37 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         MFnDependencyNode jointDep;
-        for(size_t i = 0; i < joints.size(); ++i) {
-            if(jointDep.setObject(joints[i])) {
-                MPlug jointWorldMatrix =
-                    jointDep.findPlug(_MayaTokens->worldMatrix);
-                CHECK_MSTATUS_AND_RETURN(status, false);
+        for (size_t i = 0; i < joints.size(); ++i) {
+            status = jointDep.setObject(joints[i]);
+            CHECK_MSTATUS_AND_RETURN(status, false);
 
-                MPlug jointWorldMatrix0 =
-                    jointWorldMatrix.elementByLogicalIndex(0, &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
+            MPlug jointWorldMatrix =
+                jointDep.findPlug(_MayaTokens->worldMatrix);
+            CHECK_MSTATUS_AND_RETURN(status, false);
 
-                MPlug skinClusterMatrixI =
-                    skinClusterMatrix.elementByLogicalIndex(i, &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
+            MPlug jointWorldMatrix0 =
+                jointWorldMatrix.elementByLogicalIndex(0, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
 
-                status = dgMod.connect(jointWorldMatrix0, skinClusterMatrixI);
-                CHECK_MSTATUS_AND_RETURN(status, false);
+            MPlug skinClusterMatrixI =
+                skinClusterMatrix.elementByLogicalIndex(i, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
 
-                MPlug bindPreMatrixI =
-                    bindPreMatrix.elementByLogicalIndex(i, &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-                if(!PxrUsdMayaUtil::setPlugMatrix(
-                       restXforms[i].GetInverse(), bindPreMatrixI)) {
-                    return false;
-                }
+            status = dgMod.connect(jointWorldMatrix0, skinClusterMatrixI);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+
+            MPlug bindPreMatrixI =
+                bindPreMatrix.elementByLogicalIndex(i, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            if (!UsdMayaUtil::setPlugMatrix(
+                   bindXforms[i].GetInverse(), bindPreMatrixI)) {
+                return false;
             }
         }
     }
 
     // Connect dagPose.message -> skinCluster.bindPose, if any bind pose exists.
-    if(!bindPose.isNull()) {
+    if (!bindPose.isNull()) {
         MFnDependencyNode bindPoseDep(bindPose, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         MPlug bindPoseMessage =
@@ -1179,8 +1431,8 @@ PxrUsdMayaTranslatorSkel::CreateSkinCluster(
     status = dgMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    if(!PxrUsdMayaUtil::setPlugMatrix(skinClusterDep, _MayaTokens->geomMatrix,
-                                      skinningQuery.GetGeomBindTransform())) {
+    if (!UsdMayaUtil::setPlugMatrix(skinClusterDep, _MayaTokens->geomMatrix,
+                                       skinningQuery.GetGeomBindTransform())) {
         return false;
     }
 

@@ -24,7 +24,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/trace/reporter.h"
-#include "pxr/base/trace/singleEventNode.h"
+#include "pxr/base/trace/eventNode.h"
 
 #include <iostream>
 
@@ -51,17 +51,17 @@ int main(int argc, char* argv[]) {
     collector->SetEnabled(false);
     reporter->ReportChromeTracing(std::cout);
 
-    TraceEventNodeRefPtr threadNode =
-        reporter->GetTreeRoot()->GetChild("Main Thread");
+    TraceAggregateNodeRefPtr threadNode =
+        reporter->GetAggregateTreeRoot()->GetChild("Main Thread");
     TF_AXIOM(threadNode);
 
-    TraceEventNodeRefPtr funcNode = threadNode->GetChild("TestMacros");
+    TraceAggregateNodeRefPtr funcNode = threadNode->GetChild("TestMacros");
     TF_AXIOM(funcNode);
 
-    TraceEventNodeRefPtr scopeNode = funcNode->GetChild("Test Scope");
+    TraceAggregateNodeRefPtr scopeNode = funcNode->GetChild("Test Scope");
     TF_AXIOM(scopeNode);
 
-    TraceEventNodeRefPtr innerScopeNode = 
+    TraceAggregateNodeRefPtr innerScopeNode = 
         scopeNode->GetChild("TestMacros (Inner Scope)");
     TF_AXIOM(innerScopeNode);
 

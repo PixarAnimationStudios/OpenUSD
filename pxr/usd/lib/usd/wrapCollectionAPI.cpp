@@ -48,6 +48,26 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateExpansionRuleAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateExpansionRuleAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateIncludeRootAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateIncludeRootAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
+
+static bool _WrapIsCollectionAPIPath(const SdfPath &path) {
+    TfToken collectionName;
+    return UsdCollectionAPI::IsCollectionAPIPath(
+        path, &collectionName);
+}
 
 } // anonymous namespace
 
@@ -59,32 +79,26 @@ void wrapUsdCollectionAPI()
         cls("CollectionAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(init<UsdPrim, TfToken>())
+        .def(init<UsdSchemaBase const&, TfToken>())
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get",
+            (UsdCollectionAPI(*)(const UsdStagePtr &stage, 
+                                       const SdfPath &path))
+               &This::Get,
+            (arg("stage"), arg("path")))
+        .def("Get",
+            (UsdCollectionAPI(*)(const UsdPrim &prim,
+                                       const TfToken &name))
+               &This::Get,
+            (arg("prim"), arg("name")))
         .staticmethod("Get")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsApplied", 
-            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
-        .staticmethod("IsApplied")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
+             arg("instanceName")=TfToken(),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
@@ -94,7 +108,33 @@ void wrapUsdCollectionAPI()
 
         .def(!self)
 
+        
+        .def("GetExpansionRuleAttr",
+             &This::GetExpansionRuleAttr)
+        .def("CreateExpansionRuleAttr",
+             &_CreateExpansionRuleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetIncludeRootAttr",
+             &This::GetIncludeRootAttr)
+        .def("CreateIncludeRootAttr",
+             &_CreateIncludeRootAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
+        
+        .def("GetIncludesRel",
+             &This::GetIncludesRel)
+        .def("CreateIncludesRel",
+             &This::CreateIncludesRel)
+        
+        .def("GetExcludesRel",
+             &This::GetExcludesRel)
+        .def("CreateExcludesRel",
+             &This::CreateExcludesRel)
+        .def("IsCollectionAPIPath", _WrapIsCollectionAPIPath)
+            .staticmethod("IsCollectionAPIPath")
     ;
 
     _CustomWrapCode(cls);
@@ -122,11 +162,6 @@ void wrapUsdCollectionAPI()
 #include <boost/python/tuple.hpp>
 
 namespace {
-
-static bool _WrapIsCollectionPath(const SdfPath &path) {
-    TfToken collectionName;
-    return UsdCollectionAPI::IsCollectionPath(path, &collectionName);
-}
 
 static object _WrapValidate(const UsdCollectionAPI &coll) {
     std::string reason; 
@@ -161,6 +196,9 @@ WRAP_CUSTOM {
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
              (arg("path"), arg("parentExpansionRule")))
         .def("HasExcludes", &MQuery::HasExcludes)
+        .def("GetAsPathExpansionRuleMap",
+             &MQuery::GetAsPathExpansionRuleMap,
+             return_value_policy<TfPyMapToDictionary>())
         .def("__hash__", &MQuery::GetHash)
         .def(self == self)
         .def(self != self)
@@ -181,7 +219,7 @@ WRAP_CUSTOM {
 
         .def("GetCollection", 
              (UsdCollectionAPI(*)(const UsdPrim &prim, 
-                                        const TfToken &name))
+                                  const TfToken &name))
                 &This::GetCollection,
              (arg("prim"), arg("name")))
         .def("GetCollection", 
@@ -198,24 +236,18 @@ WRAP_CUSTOM {
         .def("GetName", &This::GetName)
         .def("GetCollectionPath", &This::GetCollectionPath)
 
+        .def("GetNamedCollectionPath", 
+             &This::GetNamedCollectionPath,
+             (arg("prim"), arg("collectionName")))
+            .staticmethod("GetNamedCollectionPath")
+
         .def("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
             arg("baseName"))
             .staticmethod("IsSchemaPropertyBaseName")
 
-        .def("IsCollectionPath", _WrapIsCollectionPath)
-            .staticmethod("IsCollectionPath")
-
         .def("ComputeMembershipQuery", _ComputeMembershipQuery)
 
         .def("HasNoIncludedPaths", &This::HasNoIncludedPaths)
-        
-        .def("GetExpansionRuleAttr", &This::GetExpansionRuleAttr)
-        .def("CreateExpansionRuleAttr", &This::CreateExpansionRuleAttr)
-
-        .def("GetIncludesRel", &This::GetIncludesRel)
-        .def("CreateIncludesRel", &This::CreateIncludesRel)
-        .def("GetExcludesRel", &This::GetExcludesRel)
-        .def("CreateExcludesRel", &This::CreateExcludesRel)
 
         .def("IncludePath", &This::IncludePath, arg("pathToInclude"))
         .def("ExcludePath", &This::ExcludePath, arg("pathToExclude"))
@@ -234,7 +266,7 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
              .staticmethod("ComputeIncludedPaths")
 
-        .def("ClearCollection", &This::ClearCollection)
+        .def("ResetCollection", &This::ResetCollection)
         .def("BlockCollection", &This::BlockCollection)
      ;
 }

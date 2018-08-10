@@ -1,0 +1,6 @@
+<!-- This node has no purpose other than to ensure it is discovered -->
+<args format="1.0">
+    <param name="inputA"
+           type="float"
+           default="0.0" />
+</args>

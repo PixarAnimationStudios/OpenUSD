@@ -47,9 +47,6 @@ PxOsdSubdivTags::ComputeHash() const {
     hash = ArchHash64((const char*)&_trianglesSubdivision,
                       sizeof(_trianglesSubdivision), hash);
 
-    hash = ArchHash64((const char*)_holeIndices.cdata(),
-                      _holeIndices.size() * sizeof(int), hash);
-
     hash = ArchHash64((const char*)_cornerIndices.cdata(),
                       _cornerIndices.size() * sizeof(int), hash);
 
@@ -79,8 +76,7 @@ operator << (std::ostream &out, PxOsdSubdivTags const &st)
         << st.GetCreaseLengths() << "), ("
         << st.GetCreaseWeights() << "), ("
         << st.GetCornerIndices() << "), ("
-        << st.GetCornerWeights() << "), ("
-        << st.GetHoleIndices()   << "))";
+        << st.GetCornerWeights() << "))";
     return out;
 }
 
@@ -95,8 +91,7 @@ operator==(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs)
         && lhs.GetCreaseLengths() == rhs.GetCreaseLengths()
         && lhs.GetCreaseWeights() == rhs.GetCreaseWeights()
         && lhs.GetCornerIndices() == rhs.GetCornerIndices()
-        && lhs.GetCornerWeights() == rhs.GetCornerWeights()
-        && lhs.GetHoleIndices() == rhs.GetHoleIndices();
+        && lhs.GetCornerWeights() == rhs.GetCornerWeights();
 }
 
 bool 

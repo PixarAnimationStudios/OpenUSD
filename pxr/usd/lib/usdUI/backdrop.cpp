@@ -74,6 +74,11 @@ UsdUIBackdrop::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdUIBackdrop::_GetSchemaType() const {
+    return UsdUIBackdrop::schemaType;
+}
+
 /* static */
 const TfType &
 UsdUIBackdrop::_GetStaticTfType()

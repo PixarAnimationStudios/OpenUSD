@@ -30,6 +30,7 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -185,6 +186,14 @@ UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
 }
 
 /*virtual*/
+void
+UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
+                                         SdfPath const& usdPath,
+                                         UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
 SdfPath
 UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 {
@@ -262,6 +271,15 @@ UsdImagingPrimAdapter::SamplePrimvar(
         }
     }
 
+    // Fallback for adapters that do not read primvars from USD, but
+    // instead synthesize them -- ex: Cube, Cylinder, Capsule.
+    if (maxNumSamples > 0) {
+        times[0] = 0;
+        if (_GetValueCache()->ExtractPrimvar(cachePath, key, &samples[0])) {
+            return samples[0].IsEmpty() ? 0 : 1;
+        }
+    }
+
     return 0;
 }
 
@@ -297,10 +315,10 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::PopulateSelection(HdxSelectionHighlightMode const& mode,
+UsdImagingPrimAdapter::PopulateSelection(HdSelection::HighlightMode const& mode,
                                          SdfPath const &usdPath,
                                          VtIntArray const &instanceIndices,
-                                         HdxSelectionSharedPtr const &result)
+                                         HdSelectionSharedPtr const &result)
 {
     const SdfPath indexPath = _delegate->GetPathForIndex(usdPath);
 
@@ -437,11 +455,25 @@ UsdImagingPrimAdapter::_GetRprimSubtree(SdfPath const& indexPath) const
     return _delegate->GetRenderIndex().GetRprimSubtree(indexPath);
 }
 
-bool 
-UsdImagingPrimAdapter::_CanComputeMaterialNetworks() const
+TfToken
+UsdImagingPrimAdapter::_GetMaterialBindingPurpose() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
-        CanComputeMaterialNetworks();
+        GetMaterialBindingPurpose();
+}
+
+TfToken
+UsdImagingPrimAdapter::_GetMaterialNetworkSelector() const
+{
+    return _delegate->GetRenderIndex().GetRenderDelegate()->
+        GetMaterialNetworkSelector();
+}
+
+TfTokenVector 
+UsdImagingPrimAdapter::_GetShaderSourceTypes() const
+{
+    return _delegate->GetRenderIndex().GetRenderDelegate()->
+            GetShaderSourceTypes();
 }
 
 bool 
@@ -466,13 +498,91 @@ UsdImagingPrimAdapter::_MergePrimvar(
         *it = primvar;
 }
 
+/* static */
+HdInterpolation
+UsdImagingPrimAdapter::_UsdToHdInterpolation(TfToken const& usdInterp)
+{
+    if (usdInterp == UsdGeomTokens->uniform) {
+        return HdInterpolationUniform;
+    } else if (usdInterp == UsdGeomTokens->vertex) {
+        return HdInterpolationVertex;
+    } else if (usdInterp == UsdGeomTokens->varying) {
+        return HdInterpolationVarying;
+    } else if (usdInterp == UsdGeomTokens->faceVarying) {
+        return HdInterpolationFaceVarying;
+    } else if (usdInterp == UsdGeomTokens->constant) {
+        return HdInterpolationConstant;
+    }
+    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
+                    usdInterp.GetText());
+    return HdInterpolationConstant;
+}
+
+/* static */
+TfToken
+UsdImagingPrimAdapter::_UsdToHdRole(TfToken const& usdRole)
+{
+    if (usdRole == SdfValueRoleNames->Point) {
+        return HdPrimvarRoleTokens->point;
+    } else if (usdRole == SdfValueRoleNames->Normal) {
+        return HdPrimvarRoleTokens->normal;
+    } else if (usdRole == SdfValueRoleNames->Vector) {
+        return HdPrimvarRoleTokens->vector;
+    } else if (usdRole == SdfValueRoleNames->Color) {
+        return HdPrimvarRoleTokens->color;
+    } else if (usdRole == SdfValueRoleNames->TextureCoordinate) {
+        return HdPrimvarRoleTokens->textureCoordinate;
+    }
+    // Empty token means no role specified
+    return TfToken();
+}
+
+
+void 
+UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
+    UsdPrim const& gprim,
+    SdfPath const& cachePath,
+    UsdGeomPrimvar const& primvar,
+    UsdTimeCode time,
+    UsdImagingValueCache* valueCache,
+    HdInterpolation *interpOverride) const
+{
+    VtValue v;
+    TfToken primvarName = primvar.GetPrimvarName();
+    if (primvar.ComputeFlattened(&v, time)) {
+        valueCache->GetPrimvar(cachePath, primvarName) = v;
+        HdInterpolation interp = interpOverride ? *interpOverride
+            : _UsdToHdInterpolation(primvar.GetInterpolation());
+        TfToken role = _UsdToHdRole(primvar.GetAttr().GetRoleName());
+        TF_DEBUG(USDIMAGING_SHADERS)
+            .Msg("UsdImaging: found primvar (%s %s) %s, interp %s\n",
+                 gprim.GetPath().GetText(),
+                 cachePath.GetText(),
+                 primvarName.GetText(),
+                 TfEnum::GetName(interp).c_str());
+        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                      primvarName, interp, role);
+    } else {
+        TF_DEBUG(USDIMAGING_SHADERS)
+            .Msg( "\t\t No primvar on <%s> named %s\n",
+                  gprim.GetPath().GetText(), primvarName.GetText());
+    }
+}
+
+UsdImaging_CollectionCache&
+UsdImagingPrimAdapter::_GetCollectionCache() const
+{
+    return _delegate->_collectionCache;
+}
+
 bool 
 UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   TfToken const& attrName, 
                                   HdDirtyBits dirtyFlag,
                                   TfToken const& perfToken,
                                   HdDirtyBits* dirtyFlags,
-                                  bool isInherited) const
+                                  bool isInherited,
+                                  bool *exists) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -480,14 +590,21 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
 
+    if (exists != nullptr) {
+        *exists = false;
+    }
+
     do {
         UsdAttribute attr = prim.GetAttribute(attrName);
 
+        if (attr && exists != nullptr) {
+            *exists = true;
+        }
         if (attr.ValueMightBeTimeVarying()){
             (*dirtyFlags) |= dirtyFlag;
             HD_PERF_COUNTER_INCR(perfToken);
             return true;
-        } 
+        }
         prim = prim.GetParent();
 
     } while (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());

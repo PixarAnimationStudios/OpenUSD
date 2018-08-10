@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
+
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
@@ -39,6 +39,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
@@ -46,8 +47,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
@@ -62,14 +63,13 @@
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
-#include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
-#include <maya/MPoint.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
@@ -86,7 +86,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
                         PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
@@ -104,6 +104,9 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
 UsdMayaProxyShape::ClosestPointDelegate
 UsdMayaProxyShape::_sharedClosestPointDelegate = nullptr;
 
+UsdMayaProxyShape::ObjectSoftSelectEnabledDelgate
+UsdMayaProxyShape::_sharedObjectSoftSelectEnabledDelgate = nullptr;
+
 bool
 UsdMayaIsBoundingBoxModeEnabled()
 {
@@ -112,16 +115,38 @@ UsdMayaIsBoundingBoxModeEnabled()
 
 // ========================================================
 
+const MTypeId UsdMayaProxyShape::typeId(0x0010A259);
+const MString UsdMayaProxyShape::typeName(
+    UsdMayaProxyShapeTokens->MayaTypeName.GetText());
+
+// Attributes
+MObject UsdMayaProxyShape::filePathAttr;
+MObject UsdMayaProxyShape::primPathAttr;
+MObject UsdMayaProxyShape::excludePrimPathsAttr;
+MObject UsdMayaProxyShape::timeAttr;
+MObject UsdMayaProxyShape::variantKeyAttr;
+MObject UsdMayaProxyShape::complexityAttr;
+MObject UsdMayaProxyShape::inStageDataAttr;
+MObject UsdMayaProxyShape::inStageDataCachedAttr;
+MObject UsdMayaProxyShape::fastPlaybackAttr;
+MObject UsdMayaProxyShape::tintAttr;
+MObject UsdMayaProxyShape::tintColorAttr;
+MObject UsdMayaProxyShape::outStageDataAttr;
+MObject UsdMayaProxyShape::displayGuidesAttr;
+MObject UsdMayaProxyShape::displayRenderGuidesAttr;
+MObject UsdMayaProxyShape::softSelectableAttr;
+
+
 /* static */
 void*
-UsdMayaProxyShape::creator(const PluginStaticData& psData)
+UsdMayaProxyShape::creator()
 {
-    return new UsdMayaProxyShape(psData);
+    return new UsdMayaProxyShape();
 }
 
 /* static */
 MStatus
-UsdMayaProxyShape::initialize(PluginStaticData* psData)
+UsdMayaProxyShape::initialize()
 {
     MStatus retValue = MS::kSuccess;
 
@@ -134,251 +159,204 @@ UsdMayaProxyShape::initialize(PluginStaticData* psData)
     MFnTypedAttribute    typedAttrFn;
     MFnUnitAttribute     unitAttrFn;
 
-    psData->filePath = typedAttrFn.create(
+    filePathAttr = typedAttrFn.create(
         "filePath",
         "fp",
         MFnData::kString,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
     typedAttrFn.setReadable(false);
-    typedAttrFn.setStorable(true);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->filePath);
+    retValue = addAttribute(filePathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->primPath = typedAttrFn.create(
+    primPathAttr = typedAttrFn.create(
         "primPath",
         "pp",
         MFnData::kString,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
-    typedAttrFn.setStorable(true);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->primPath);
+    retValue = addAttribute(primPathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->excludePrimPaths = typedAttrFn.create(
+    excludePrimPathsAttr = typedAttrFn.create(
         "excludePrimPaths",
         "epp",
         MFnData::kString,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
-    typedAttrFn.setStorable(true);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->excludePrimPaths);
+    retValue = addAttribute(excludePrimPathsAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->time = unitAttrFn.create(
+    timeAttr = unitAttrFn.create(
         "time",
         "tm",
         MFnUnitAttribute::kTime,
         0.0,
         &retValue);
-    unitAttrFn.setCached(true);
-    unitAttrFn.setConnectable(true);
-    unitAttrFn.setReadable(true);
-    unitAttrFn.setStorable(true);
-    unitAttrFn.setWritable(true);
     unitAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->time);
+    retValue = addAttribute(timeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->variantKey = typedAttrFn.create(
+    variantKeyAttr = typedAttrFn.create(
         "variantKey",
         "variantKey",
         MFnData::kString,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
     typedAttrFn.setReadable(false);
-    typedAttrFn.setStorable(true);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->variantKey);
+    retValue = addAttribute(variantKeyAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->complexity = numericAttrFn.create(
+    complexityAttr = numericAttrFn.create(
         "complexity",
         "cplx",
         MFnNumericData::kInt,
         0,
         &retValue);
-    numericAttrFn.setWritable(true);
-    numericAttrFn.setKeyable(true);
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
     numericAttrFn.setStorable(false); // not written to the file
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->complexity);
+    retValue = addAttribute(complexityAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->inStageData = typedAttrFn.create(
+    inStageDataAttr = typedAttrFn.create(
         "inStageData",
         "id",
-        psData->stageDataTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
     typedAttrFn.setReadable(false);
     typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setDisconnectBehavior(MFnNumericAttribute::kReset); // on disconnect, reset to Null
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->inStageData);
+    retValue = addAttribute(inStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // inStageData or filepath-> inStageDataCached -> outStageData
-    psData->inStageDataCached = typedAttrFn.create(
+    inStageDataCachedAttr = typedAttrFn.create(
         "inStageDataCached",
         "idc",
-        psData->stageDataTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->inStageDataCached);
+    retValue = addAttribute(inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->fastPlayback = numericAttrFn.create(
+    fastPlaybackAttr = numericAttrFn.create(
         "fastPlayback",
         "fs",
         MFnNumericData::kBoolean,
         0,
         &retValue);
     numericAttrFn.setInternal(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->fastPlayback);
+    retValue = addAttribute(fastPlaybackAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->tint = numericAttrFn.create(
+    tintAttr = numericAttrFn.create(
         "tint",
         "tn",
         MFnNumericData::kBoolean,
         0,
         &retValue);
     numericAttrFn.setInternal(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->tint);
+    retValue = addAttribute(tintAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->tintColor = numericAttrFn.createColor(
+    tintColorAttr = numericAttrFn.createColor(
         "tintColor",
         "tcol",
         &retValue);
-    numericAttrFn.setCached(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->tintColor);
+    retValue = addAttribute(tintColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->outStageData = typedAttrFn.create(
+    outStageDataAttr = typedAttrFn.create(
         "outStageData",
         "od",
-        psData->stageDataTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &retValue);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(psData->outStageData);
+    retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->displayGuides = numericAttrFn.create(
+    displayGuidesAttr = numericAttrFn.create(
         "displayGuides",
         "displayGuides",
         MFnNumericData::kBoolean,
         0.0,
         &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setCached(true);
     numericAttrFn.setKeyable(true);
     numericAttrFn.setReadable(false);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
-    retValue = addAttribute(psData->displayGuides);
+    retValue = addAttribute(displayGuidesAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->displayRenderGuides = numericAttrFn.create(
+    displayRenderGuidesAttr = numericAttrFn.create(
         "displayRenderGuides",
         "displayRenderGuides",
         MFnNumericData::kBoolean,
         0.0,
         &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setCached(true);
     numericAttrFn.setKeyable(true);
     numericAttrFn.setReadable(false);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
-    retValue = addAttribute(psData->displayRenderGuides);
+    retValue = addAttribute(displayRenderGuidesAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->softSelectable = numericAttrFn.create(
+    softSelectableAttr = numericAttrFn.create(
         "softSelectable",
         "softSelectable",
         MFnNumericData::kBoolean,
         0.0,
         &retValue);
-    numericAttrFn.setKeyable(false);
     numericAttrFn.setStorable(false);
     numericAttrFn.setAffectsAppearance(true);
-    retValue = addAttribute(psData->softSelectable);
+    retValue = addAttribute(softSelectableAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     //
     // add attribute dependencies
     //
-    retValue = attributeAffects(psData->filePath, psData->inStageDataCached);
-    retValue = attributeAffects(psData->filePath, psData->outStageData);
+    retValue = attributeAffects(filePathAttr, inStageDataCachedAttr);
+    retValue = attributeAffects(filePathAttr, outStageDataAttr);
 
-    retValue = attributeAffects(psData->primPath, psData->inStageDataCached);
-    retValue = attributeAffects(psData->primPath, psData->outStageData);
+    retValue = attributeAffects(primPathAttr, inStageDataCachedAttr);
+    retValue = attributeAffects(primPathAttr, outStageDataAttr);
 
-    retValue = attributeAffects(psData->variantKey, psData->inStageDataCached);
-    retValue = attributeAffects(psData->variantKey, psData->outStageData);
+    retValue = attributeAffects(variantKeyAttr, inStageDataCachedAttr);
+    retValue = attributeAffects(variantKeyAttr, outStageDataAttr);
 
-    retValue = attributeAffects(psData->inStageData, psData->inStageDataCached);
-    retValue = attributeAffects(psData->inStageData, psData->outStageData);
+    retValue = attributeAffects(inStageDataAttr, inStageDataCachedAttr);
+    retValue = attributeAffects(inStageDataAttr, outStageDataAttr);
 
-    retValue = attributeAffects(psData->inStageDataCached, psData->outStageData);
+    retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
 
     return retValue;
 }
@@ -389,12 +367,11 @@ UsdMayaProxyShape::GetShapeAtDagPath(const MDagPath& dagPath)
 {
     MObject mObj = dagPath.node();
     if (mObj.apiType() != MFn::kPluginShape) {
-        MGlobal::displayError(
-            TfStringPrintf(
+        TF_CODING_ERROR(
                 "Could not get UsdMayaProxyShape for non-plugin shape node "
-                "at dag path: %s (apiTypeStr = %s)",
+                "at DAG path: %s (apiTypeStr = %s)",
                 dagPath.fullPathName().asChar(),
-                mObj.apiTypeStr()).c_str());
+                mObj.apiTypeStr());
         return nullptr;
     }
 
@@ -402,10 +379,9 @@ UsdMayaProxyShape::GetShapeAtDagPath(const MDagPath& dagPath)
     UsdMayaProxyShape* pShape =
         static_cast<UsdMayaProxyShape*>(depNodeFn.userNode());
     if (!pShape) {
-        MGlobal::displayError(
-            TfStringPrintf(
-                "Could not get UsdMayaProxyShape for node at dag path: %s",
-                dagPath.fullPathName().asChar()).c_str());
+        TF_CODING_ERROR(
+                "Could not get UsdMayaProxyShape for node at DAG path: %s",
+                dagPath.fullPathName().asChar());
         return nullptr;
     }
 
@@ -417,6 +393,26 @@ void
 UsdMayaProxyShape::SetClosestPointDelegate(ClosestPointDelegate delegate)
 {
     _sharedClosestPointDelegate = delegate;
+}
+
+/* static */
+void
+UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
+        ObjectSoftSelectEnabledDelgate delegate)
+{
+    _sharedObjectSoftSelectEnabledDelgate = delegate;
+}
+
+/* static */
+bool
+UsdMayaProxyShape::GetObjectSoftSelectEnabled()
+{
+    // If the delegate isn't set, we just assume soft select isn't currently
+    // enabled - this will mean that the object is selectable in VP2, by default
+    if (!_sharedObjectSoftSelectEnabledDelgate) {
+        return false;
+    }
+    return _sharedObjectSoftSelectEnabledDelgate();
 }
 
 /* virtual */
@@ -433,13 +429,13 @@ UsdMayaProxyShape::postConstructor()
 MStatus
 UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-    if (plug == _psData.excludePrimPaths ||
-            plug == _psData.time ||
-            plug == _psData.complexity ||
-            plug == _psData.tint ||
-            plug == _psData.tintColor ||
-            plug == _psData.displayGuides ||
-            plug == _psData.displayRenderGuides) {
+    if (plug == excludePrimPathsAttr ||
+            plug == timeAttr ||
+            plug == complexityAttr ||
+            plug == tintAttr ||
+            plug == tintColorAttr ||
+            plug == displayGuidesAttr ||
+            plug == displayRenderGuidesAttr) {
         // If the attribute that needs to be computed is one of these, then it
         // does not affect the ouput stage data, but it *does* affect imaging
         // the shape. In that case, we notify Maya that the shape needs to be
@@ -451,10 +447,10 @@ UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
         MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
         return MS::kUnknownParameter;
     }
-    else if (plug == _psData.inStageDataCached) {
+    else if (plug == inStageDataCachedAttr) {
         return computeInStageDataCached(dataBlock);
     }
-    else if (plug == _psData.outStageData) {
+    else if (plug == outStageDataAttr) {
         return computeOutStageData(dataBlock);
     }
 
@@ -466,7 +462,7 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
-    MDataHandle inDataHandle = dataBlock.inputValue(_psData.inStageData, &retValue);
+    MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
@@ -474,7 +470,7 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
         //
         // Propagate inData -> inDataCached
         //
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(_psData.inStageDataCached, &retValue);
+        MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         inDataCachedHandle.copy(inDataHandle);
@@ -488,7 +484,7 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
         //
 
         // Get input attr values
-        const MString file = dataBlock.inputValue(_psData.filePath, &retValue).asString();
+        const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         //
@@ -502,7 +498,7 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
 
         // get the variantKey
         MDataHandle variantKeyHandle =
-            dataBlock.inputValue(_psData.variantKey, &retValue);
+            dataBlock.inputValue(variantKeyAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         const MString variantKey = variantKeyHandle.asString();
 
@@ -515,12 +511,12 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
 
             // Get the primPath
             const MString primPathMString =
-                dataBlock.inputValue(_psData.primPath, &retValue).asString();
+                dataBlock.inputValue(primPathAttr, &retValue).asString();
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
             std::vector<std::string> primPathEltStrs =
                 TfStringTokenize(primPathMString.asChar(),"/");
-            if (primPathEltStrs.size() > 0) {
+            if (!primPathEltStrs.empty()) {
                 sessionLayer =
                     UsdUtilsStageCache::GetSessionLayerForVariantSelections(
                         TfToken(primPathEltStrs[0]), variantSelections);
@@ -546,32 +542,30 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
         }
 
         // Create the output outData ========
-        MFnPluginData pluginDataFactory;
-        MObject aUsdStageDataObject = pluginDataFactory.create(
-                _psData.stageDataTypeId,
-            &retValue);
+        MFnPluginData pluginDataFn;
+        MObject stageDataObj =
+            pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        UsdMayaStageData* usdStageData =
-            reinterpret_cast<UsdMayaStageData*>(
-                pluginDataFactory.data(&retValue));
+        UsdMayaStageData* stageData =
+            reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         // Set the outUsdStageData
-        usdStageData->stage    = usdStage;
-        usdStageData->primPath = primPath;
+        stageData->stage = usdStage;
+        stageData->primPath = primPath;
 
         //
         // set the data on the output plug
         //
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(_psData.inStageDataCached, &retValue);
+        MDataHandle inDataCachedHandle =
+            dataBlock.outputValue(inStageDataCachedAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        inDataCachedHandle.set(usdStageData);
+        inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
         return MS::kSuccess;
     }
-    return MS::kFailure;
 }
 
 MStatus
@@ -581,7 +575,12 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
 
     TfReset(_boundingBoxCache);
 
-    MDataHandle inDataCachedHandle = dataBlock.inputValue(_psData.inStageDataCached, &retValue);
+    // Reset the stage listener until we determine that everything is valid.
+    _stageNoticeListener.SetStage(UsdStageWeakPtr());
+    _stageNoticeListener.SetStageContentsChangedCallback(nullptr);
+
+    MDataHandle inDataCachedHandle =
+        dataBlock.inputValue(inStageDataCachedAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     UsdStageRefPtr usdStage;
@@ -597,14 +596,14 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
     // Propagate inDataCached -> outData
     // and return
     if (!usdStage) {
-        MDataHandle outDataHandle = dataBlock.outputValue(_psData.outStageData, &retValue);
+        MDataHandle outDataHandle = dataBlock.outputValue(outStageDataAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         outDataHandle.copy(inDataCachedHandle);
         return MS::kSuccess;
     }
 
     // Get the primPath
-    const MString primPath = dataBlock.inputValue(_psData.primPath, &retValue).asString();
+    const MString primPath = dataBlock.inputValue(primPathAttr, &retValue).asString();
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Get the prim
@@ -620,39 +619,47 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
             usdPrim = usdStage->GetPrimAtPath( primPath );
         }
         else {
-            MGlobal::displayWarning(
-                MPxSurfaceShape::name() + ": Stage primPath '" +
-                MString(inData->primPath.GetText()) +
-                "'' not a parent of primPath '");
+            TF_WARN("%s: Shape primPath <%s> is not a descendant of input "
+                    "stage primPath <%s>",
+                    MPxSurfaceShape::name().asChar(),
+                    primPath.GetText(),
+                    inData->primPath.GetText());
         }
     } else {
         usdPrim = usdStage->GetPseudoRoot();
     }
 
     // Create the output outData
-    MFnPluginData pluginDataFactory;
-    MObject aUsdStageDataObject = pluginDataFactory.create(
-            _psData.stageDataTypeId,
-        &retValue);
+    MFnPluginData pluginDataFn;
+    MObject stageDataObj =
+        pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    UsdMayaStageData* usdStageData =
-        reinterpret_cast<UsdMayaStageData*>(
-            pluginDataFactory.data(&retValue));
+    UsdMayaStageData* stageData =
+        reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Set the outUsdStageData
-    usdStageData->stage    = usdStage;
-    usdStageData->primPath = usdPrim ? usdPrim.GetPath() : usdStage->GetPseudoRoot().GetPath();
+    stageData->stage = usdStage;
+    stageData->primPath = usdPrim ? usdPrim.GetPath() :
+                                    usdStage->GetPseudoRoot().GetPath();
 
     //
     // set the data on the output plug
     //
-    MDataHandle outDataHandle = dataBlock.outputValue(_psData.outStageData, &retValue);
+    MDataHandle outDataHandle =
+        dataBlock.outputValue(outStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    outDataHandle.set(usdStageData);
+    outDataHandle.set(stageData);
     outDataHandle.setClean();
+
+    // Start listening for notices for the USD stage.
+    _stageNoticeListener.SetStage(usdStage);
+    _stageNoticeListener.SetStageContentsChangedCallback(
+        std::bind(&UsdMayaProxyShape::_OnStageContentsChanged,
+                  this,
+                  std::placeholders::_1));
 
     return MS::kSuccess;
 }
@@ -678,14 +685,14 @@ UsdMayaProxyShape::boundingBox() const
     // Make sure outStage is up to date
     UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
     MDataBlock dataBlock = nonConstThis->forceCache();
-    dataBlock.inputValue( _psData.outStageData, &status);
+    dataBlock.inputValue(outStageDataAttr, &status);
     CHECK_MSTATUS_AND_RETURN(status, MBoundingBox() );
 
     // XXX:
     // If we could cheaply determine whether a stage only has static geometry,
     // we could make this value a constant one for that case, avoiding the
     // memory overhead of a cache entry per frame
-    MDataHandle timeHandle = dataBlock.inputValue(_psData.time, &status);
+    MDataHandle timeHandle = dataBlock.inputValue(timeAttr, &status);
     UsdTimeCode currTime = UsdTimeCode(timeHandle.asTime().value());
 
     std::map<UsdTimeCode, MBoundingBox>::const_iterator cacheLookup =
@@ -753,7 +760,7 @@ UsdMayaProxyShape::isStageValid() const
     UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
     MDataBlock dataBlock = nonConstThis->forceCache();
 
-    MDataHandle outDataHandle = dataBlock.inputValue( _psData.outStageData, &localStatus);
+    MDataHandle outDataHandle = dataBlock.inputValue(outStageDataAttr, &localStatus);
     CHECK_MSTATUS_AND_RETURN(localStatus, false);
 
     UsdMayaStageData* outData =
@@ -784,7 +791,7 @@ UsdMayaProxyShape::setInternalValueInContext(
         const MDataHandle& dataHandle,
         MDGContext& ctx)
 {
-    if (plug == _psData.fastPlayback) {
+    if (plug == fastPlaybackAttr) {
         _useFastPlayback = dataHandle.asBool();
         return true;
     }
@@ -799,7 +806,7 @@ UsdMayaProxyShape::getInternalValueInContext(
         MDataHandle& dataHandle,
         MDGContext& ctx)
 {
-    if (plug == _psData.fastPlayback) {
+    if (plug == fastPlaybackAttr) {
         dataHandle.set(_useFastPlayback);
         return true;
     }
@@ -820,7 +827,8 @@ UsdMayaProxyShape::_GetUsdPrim(MDataBlock dataBlock) const
     MStatus localStatus;
     UsdPrim usdPrim;
 
-    MDataHandle outDataHandle = dataBlock.inputValue( _psData.outStageData, &localStatus);
+    MDataHandle outDataHandle =
+        dataBlock.inputValue(outStageDataAttr, &localStatus);
     CHECK_MSTATUS_AND_RETURN(localStatus, usdPrim);
 
     UsdMayaStageData* outData = dynamic_cast<UsdMayaStageData*>(outDataHandle.asPluginData());
@@ -851,7 +859,7 @@ UsdMayaProxyShape::_GetComplexity(MDataBlock dataBlock) const
     int complexity = 0;
     MStatus status;
 
-    complexity = dataBlock.inputValue( _psData.complexity, &status).asInt();
+    complexity = dataBlock.inputValue(complexityAttr, &status).asInt();
 
     return complexity;
 }
@@ -867,7 +875,7 @@ UsdMayaProxyShape::_GetTime(MDataBlock dataBlock) const
 {
     MStatus status;
 
-    return UsdTimeCode(dataBlock.inputValue(_psData.time, &status).asTime().value());
+    return UsdTimeCode(dataBlock.inputValue(timeAttr, &status).asTime().value());
 }
 
 SdfPathVector
@@ -882,7 +890,7 @@ UsdMayaProxyShape::_GetExcludePrimPaths(MDataBlock dataBlock) const
     SdfPathVector ret;
 
     const MString excludePrimPathsStr =
-        dataBlock.inputValue(_psData.excludePrimPaths).asString();
+        dataBlock.inputValue(excludePrimPathsAttr).asString();
     std::vector<std::string> excludePrimPaths =
         TfStringTokenize(excludePrimPathsStr.asChar(), ",");
     ret.resize(excludePrimPaths.size());
@@ -905,7 +913,8 @@ UsdMayaProxyShape::_GetDisplayGuides(MDataBlock dataBlock) const
     MStatus status;
     bool retValue = true;
 
-    MDataHandle displayGuidesHandle = dataBlock.inputValue( _psData.displayGuides, &status);
+    MDataHandle displayGuidesHandle =
+        dataBlock.inputValue(displayGuidesAttr, &status);
     CHECK_MSTATUS_AND_RETURN(status, true );
 
     retValue = displayGuidesHandle.asBool();
@@ -925,7 +934,8 @@ UsdMayaProxyShape::_GetDisplayRenderGuides(MDataBlock dataBlock) const
     MStatus status;
     bool retValue = true;
 
-    MDataHandle displayRenderGuidesHandle = dataBlock.inputValue( _psData.displayRenderGuides, &status);
+    MDataHandle displayRenderGuidesHandle =
+        dataBlock.inputValue(displayRenderGuidesAttr, &status);
     CHECK_MSTATUS_AND_RETURN(status, true );
 
     retValue = displayRenderGuidesHandle.asBool();
@@ -948,12 +958,12 @@ UsdMayaProxyShape::_GetTint(MDataBlock dataBlock, GfVec4f* outTintColor) const
     MStatus status;
     bool retValue = true;
 
-    MDataHandle tintHandle = dataBlock.inputValue( _psData.tint, &status);
+    MDataHandle tintHandle = dataBlock.inputValue(tintAttr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     retValue = tintHandle.asBool();
 
-    MDataHandle tintColorHandle = dataBlock.inputValue( _psData.tintColor, &status);
+    MDataHandle tintColorHandle = dataBlock.inputValue(tintColorAttr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     float3 &tintColor = tintColorHandle.asFloat3();
@@ -990,10 +1000,9 @@ UsdMayaProxyShape::GetAllRenderAttributes(
     return true;
 }
 
-UsdMayaProxyShape::UsdMayaProxyShape(const PluginStaticData& psData) :
-        MPxSurfaceShape(),
-        _psData(psData),
-        _useFastPlayback(false)
+UsdMayaProxyShape::UsdMayaProxyShape() :
+    MPxSurfaceShape(),
+    _useFastPlayback(false)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaProxyShape>();
 }
@@ -1009,13 +1018,29 @@ UsdMayaProxyShape::~UsdMayaProxyShape()
 MSelectionMask
 UsdMayaProxyShape::getShapeSelectionMask() const
 {
-    if (_CanBeSoftSelected()) {
-        // to support soft selection (mode=Object), we need to add kSelectMeshes
-        // to our selection mask.
-        MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
-        return MSelectionMask(selType);
+    // The intent of this function is to control whether this object is
+    // selectable at all in VP2
+
+    // However, due to a bug / quirk, it could be used to specifically control
+    // whether the object was SOFT-selectable if you were using
+    // MAYA_VP2_USE_VP1_SELECTON; in this mode, this setting is NOT querierd
+    // when doing "normal" selection, but IS queried when doing soft
+    // selection.
+
+    // Unfortunately, it is queried for both "normal" selection AND soft
+    // selection if you are using "true" VP2 selection.  So in order to
+    // control soft selection, in both modes, we keep track of whether
+    // we currently have object soft-select enabled, and then return an empty
+    // selection mask if it is, but this object is set to be non-soft-selectable
+
+    static const MSelectionMask emptyMask;
+    static const MSelectionMask normalMask(MSelectionMask::kSelectMeshes);
+
+    if (GetObjectSoftSelectEnabled() && !_CanBeSoftSelected()) {
+        // Disable selection, to disable soft-selection
+        return emptyMask;
     }
-    return MPxSurfaceShape::getShapeSelectionMask();
+    return normalMask;
 }
 
 bool
@@ -1024,12 +1049,22 @@ UsdMayaProxyShape::_CanBeSoftSelected() const
     UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
     MDataBlock dataBlock = nonConstThis->forceCache();
     MStatus status;
-    MDataHandle softSelHandle = dataBlock.inputValue(_psData.softSelectable, &status);
+    MDataHandle softSelHandle =
+        dataBlock.inputValue(softSelectableAttr, &status);
     if (!status) {
         return false;
     }
-    return softSelHandle.asBool();
 
+    return softSelHandle.asBool();
+}
+
+void
+UsdMayaProxyShape::_OnStageContentsChanged(
+        const UsdNotice::StageContentsChanged& notice)
+{
+    // If the USD stage this proxy represents changes without Maya's knowledge,
+    // we need to inform Maya that the shape is dirty and needs to be redrawn.
+    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 }
 
 bool
@@ -1038,8 +1073,8 @@ UsdMayaProxyShape::closestPoint(
     const MVector& rayDirection,
     MPoint& theClosestPoint,
     MVector& theClosestNormal,
-    bool findClosestOnMiss,
-    double tolerance)
+    bool  /*findClosestOnMiss*/,
+    double  /*tolerance*/)
 {
     if (_sharedClosestPointDelegate) {
         GfRay ray(

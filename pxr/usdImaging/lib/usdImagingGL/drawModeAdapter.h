@@ -114,6 +114,12 @@ public:
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index) override;
+
+
     // ---------------------------------------------------------------------- //
     /// \name Texture resources
     // ---------------------------------------------------------------------- //

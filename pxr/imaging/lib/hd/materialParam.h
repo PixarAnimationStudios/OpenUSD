@@ -46,12 +46,24 @@ class HdMaterialParam {
 public:
     typedef size_t ID;
 
+    // Indicates the kind of material parameter.
+    enum ParamType {
+        // This is a shader specified fallback value that is
+        // not connected to either a primvar or texture.
+        ParamTypeFallback,
+        // This is a parameter that is connected to a primvar.
+        ParamTypePrimvar,
+        // This is a parameter that is connected to a texture.
+        ParamTypeTexture
+    };
+
     HD_API
-    HdMaterialParam(TfToken const& name, 
-                  VtValue const& fallbackValue,
-                  SdfPath const& connection=SdfPath(),
-                  TfTokenVector const& samplerCoords=TfTokenVector(),
-                  bool isPtex = false);
+    HdMaterialParam(ParamType paramType,
+                    TfToken const& name, 
+                    VtValue const& fallbackValue,
+                    SdfPath const& connection=SdfPath(),
+                    TfTokenVector const& samplerCoords=TfTokenVector(),
+                    bool isPtex = false);
 
     HD_API
     ~HdMaterialParam();
@@ -63,6 +75,8 @@ public:
 
     TfToken const& GetName() const { return _name; }
 
+    ParamType GetParamType() const { return _paramType; }
+
     HD_API
     HdTupleType GetTupleType() const;
 
@@ -71,13 +85,13 @@ public:
     SdfPath const& GetConnection() const { return _connection; }
 
     bool IsTexture() const {
-        return !IsFallback() && _connection.IsAbsolutePath();
+        return GetParamType() == ParamTypeTexture;
     }
     bool IsPrimvar() const {
-        return !IsFallback() && !IsTexture();
+        return GetParamType() == ParamTypePrimvar;
     }
     bool IsFallback() const {
-        return _connection.IsEmpty();
+        return GetParamType() == ParamTypeFallback;
     }
 
     // XXX: we don't want this, we need a better way of supplying this answer.
@@ -88,6 +102,7 @@ public:
     TfTokenVector const& GetSamplerCoordinates() const;
 
 private:
+    ParamType _paramType;
     TfToken _name;
     VtValue _fallbackValue;
     SdfPath _connection;

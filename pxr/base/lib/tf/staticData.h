@@ -141,7 +141,7 @@ private:
         if (ARCH_LIKELY(_data.compare_exchange_strong(n, tmp)))
             return tmp;
 
-        // Another thread won the intitialization race.
+        // Another thread won the initialization race.
         delete tmp;
         return _data;
     }

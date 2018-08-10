@@ -34,6 +34,8 @@
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
+#include <maya/MMessage.h>
+#include <maya/MObject.h>
 #include <maya/MPointArray.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
@@ -80,6 +82,18 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
         // must declare _shapeAdapter as mutable so that we're able to modify
         // it.
         mutable PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
+
+        // In Viewport 2.0, the MPxDrawOverride destructor is called when its
+        // shape is deleted, in which case the shape's adapter is removed from
+        // the batch renderer. In the legacy viewport though, that's not the
+        // case. The MPxSurfaceShapeUI destructor may not get called until the
+        // scene is closed or Maya exits. As a result, MPxSurfaceShapeUI
+        // objects must listen for node removal messages from Maya and remove
+        // their shape adapter from the batch renderer if their node is the one
+        // being removed. Otherwise, deleted shapes may still be drawn.
+        static void _OnNodeRemoved(MObject& node, void* clientData);
+
+        MCallbackId _onNodeRemovedCallbackId;
 };
 
 

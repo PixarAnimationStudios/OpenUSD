@@ -41,6 +41,8 @@ HdRenderPassState::HdRenderPassState()
     , _cullMatrix(1)
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
     , _pointSize(3.0)
     , _pointSelectedSize(3.0)
@@ -119,6 +121,18 @@ HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 }
 
 void
+HdRenderPassState::SetMaskColor(GfVec4f const &color)
+{
+    _maskColor = color;
+}
+
+void
+HdRenderPassState::SetIndicatorColor(GfVec4f const &color)
+{
+    _indicatorColor = color;
+}
+
+void
 HdRenderPassState::SetPointColor(GfVec4f const &color)
 {
     _pointColor = color;
@@ -176,6 +190,19 @@ HdRenderPassState::ClipPlanesVector const &
 HdRenderPassState::GetClipPlanes() const
 {
     return _clipPlanes;
+}
+
+void
+HdRenderPassState::SetAttachments(
+        HdRenderPassAttachmentVector const& attachments)
+{
+    _attachments = attachments;
+}
+
+HdRenderPassAttachmentVector const&
+HdRenderPassState::GetAttachments() const
+{
+    return _attachments;
 }
 
 void
@@ -250,6 +277,32 @@ void
 HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
 {
     _colorMask = mask;
+}
+
+std::ostream& operator<<(std::ostream& out,
+                         const HdRenderPassAttachment& desc)
+{
+    out << "RenderPassAttachment: {"
+        << desc.aovName << ", "
+        << desc.renderBuffer << ", "
+        << desc.renderBufferId << ", "
+        << desc.clearValue << "}";
+    return out;
+}
+
+bool operator==(const HdRenderPassAttachment& lhs,
+                const HdRenderPassAttachment& rhs)
+{
+    return lhs.aovName           == rhs.aovName          &&
+           lhs.renderBuffer      == rhs.renderBuffer     &&
+           lhs.renderBufferId    == rhs.renderBufferId   &&
+           lhs.clearValue        == rhs.clearValue;
+}
+
+bool operator!=(const HdRenderPassAttachment& lhs,
+                const HdRenderPassAttachment& rhs)
+{
+    return !(lhs == rhs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -43,21 +43,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// that repeated calls to Resolve with the same parameters will
 /// return the same result.
 ///
-/// \see \ref ArResolver_scopedCache_impl "Scoped Resolution Cache"
+/// \see \ref ArResolver_scopedCache "Scoped Resolution Cache"
 class ArResolverScopedCache
     : public boost::noncopyable
 {
 public:
-    /// Begin an asset resolver cache scope.
+    /// Begin an asset resolver cache scope. 
+    ///
+    /// Calls ArResolver::BeginCacheScope on the configured asset resolver
+    /// and saves the cacheScopeData populated by that function.
     AR_API
     ArResolverScopedCache();
 
     /// Begin an asset resolver cache scope that shares data
     /// with the given \p parent scope.
+    ///
+    /// Calls ArResolver::BeginCacheScope on the configured asset resolver,
+    /// saves the cacheScopeData stored in \p parent and passes that to that
+    /// function.
     AR_API
     explicit ArResolverScopedCache(const ArResolverScopedCache* parent);
 
     /// End an asset resolver cache scope.
+    ///
+    /// Calls ArResolver::EndCacheScope on the configured asset resolver,
+    /// passing the saved cacheScopeData to that function.
     AR_API
     ~ArResolverScopedCache();
 

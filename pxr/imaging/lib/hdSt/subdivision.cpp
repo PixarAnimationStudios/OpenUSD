@@ -63,7 +63,7 @@ HdSt_OsdTopologyComputation::HdSt_OsdTopologyComputation(
 
 /*virtual*/
 void
-HdSt_OsdTopologyComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdTopologyComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }
@@ -78,7 +78,7 @@ HdSt_OsdIndexComputation::HdSt_OsdIndexComputation(
 
 /*virtual*/
 void
-HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
@@ -147,7 +147,7 @@ HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
 }
 
 void
-HdSt_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdRefineComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
     //

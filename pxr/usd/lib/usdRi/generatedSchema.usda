@@ -31,15 +31,34 @@ class RslShader "RslShader"
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
     asset info:sloPath
 }
 
 class RisObject "RisObject" (
-    doc = "Represents a ris object with connectable parameters. "
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris object with connectable parameters. """
 )
 {
     asset info:argsPath
@@ -48,14 +67,33 @@ class RisObject "RisObject" (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
 }
 
 class RisPattern "RisPattern" (
-    doc = "Represents a ris pattern object. Multiple of these can be assigned."
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris pattern object. Multiple of these can be assigned."""
 )
 {
     asset info:argsPath
@@ -64,14 +102,33 @@ class RisPattern "RisPattern" (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
 }
 
 class RisOslPattern "RisOslPattern" (
-    doc = "Represents a ris osl pattern object."
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris osl pattern object."""
 )
 {
     asset info:argsPath
@@ -82,15 +139,34 @@ class RisOslPattern "RisOslPattern" (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
     asset info:oslPath
 }
 
 class RisBxdf "RisBxdf" (
-    doc = "Represents a ris bxdf object. One of these is assigned at one time."
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris bxdf object. One of these is assigned at one time."""
 )
 {
     asset info:argsPath
@@ -99,8 +175,25 @@ class RisBxdf "RisBxdf" (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
 }
@@ -282,8 +375,12 @@ class "RiTextureAPI" (
     )
 }
 
-class PxrEnvDayLight "PxrEnvDayLight"
+class PxrEnvDayLight "PxrEnvDayLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+)
 {
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -495,13 +592,17 @@ class PxrEnvDayLight "PxrEnvDayLight"
     )
 }
 
-class PxrAovLight "PxrAovLight"
+class PxrAovLight "PxrAovLight" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+)
 {
     string aovName = "" (
         displayGroup = "Advanced"
         displayName = "AOV Name"
         doc = "The name of the AOV to write to."
     )
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -677,9 +778,11 @@ class PxrAovLight "PxrAovLight"
 }
 
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
+    apiSchemas = ["CollectionAPI:filterLink"]
     doc = "Multiplies the intensity of a given light."
 )
 {
+    uniform bool collection:filterLink:includeRoot = 1
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -763,6 +866,7 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 }
 
 class PxrBarnLightFilter "PxrBarnLightFilter" (
+    apiSchemas = ["CollectionAPI:filterLink"]
     doc = "Simulated geometric barn doors that control the spread of light."
 )
 {
@@ -808,6 +912,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         doc = """Chooses a physical or analytic evaluation model for
         the barn."""
     )
+    uniform bool collection:filterLink:includeRoot = 1
     float edge:bottom = 0 (
         doc = "Additional adjustment to the top region."
     )
@@ -939,6 +1044,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
 }
 
 class PxrCookieLightFilter "PxrCookieLightFilter" (
+    apiSchemas = ["CollectionAPI:filterLink"]
     doc = "A textured surface that filters light."
 )
 {
@@ -1019,6 +1125,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         Otherwise, it only follows the orientation of the filter. WARNING:
         This does not work with dome and mesh lights."""
     )
+    uniform bool collection:filterLink:includeRoot = 1
     float color:contrast = 1 (
         doc = """Contrast control (less than 1 = contrast reduction,
         larger than 1 = contrast increase)."""
@@ -1175,9 +1282,11 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 }
 
 class PxrRampLightFilter "PxrRampLightFilter" (
+    apiSchemas = ["CollectionAPI:filterLink"]
     doc = "A ramp to modulate how a light falls off with distance."
 )
 {
+    uniform bool collection:filterLink:includeRoot = 1
     float falloffRamp:beginDistance = 0
     float falloffRamp:endDistance = 10
     rel proxyPrim (
@@ -1267,9 +1376,11 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 }
 
 class PxrRodLightFilter "PxrRodLightFilter" (
+    apiSchemas = ["CollectionAPI:filterLink"]
     doc = "Simulates a rod or capsule-shaped region to modulate light."
 )
 {
+    uniform bool collection:filterLink:includeRoot = 1
     float color:saturation = 1 (
         doc = """Saturation of the result (0=greyscale, 1=normal,
         >1=boosted colors)."""

@@ -66,18 +66,6 @@ void wrapUsdShadeConnectableAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsApplied", 
-            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
-        .staticmethod("IsApplied")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -250,8 +238,9 @@ WRAP_CUSTOM {
 
     ;
 
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeNodeGraph>();
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeShader>();
+    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
+    implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
+
 }
 
 } // anonymous namespace

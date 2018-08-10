@@ -31,6 +31,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/imaging/hdx/intersector.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -217,20 +218,24 @@ UsdMayaProxyDrawOverride::userSelect(
         return false;
     }
 
-    GfVec3f batchHitPoint;
-    const bool didHit =
+    const HdxIntersector::HitSet* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
             selectInfo,
             context,
-            selectInfo.singleSelection(),
-            &batchHitPoint);
+            selectInfo.singleSelection());
 
-    if (didHit) {
-        hitPoint = MPoint(batchHitPoint[0], batchHitPoint[1], batchHitPoint[2]);
+    const HdxIntersector::Hit* nearestHit =
+        UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
+
+    if (!nearestHit) {
+        return false;
     }
 
-    return didHit;
+    const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
+    hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+
+    return true;
 }
 
 #endif // MAYA_API_VERSION >= 201800

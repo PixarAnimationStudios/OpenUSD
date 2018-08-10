@@ -23,7 +23,8 @@
 #
 from qt import QtCore, QtGui, QtWidgets
 from usdviewContextMenuItem import UsdviewContextMenuItem
-import os
+import os, subprocess
+from pxr import Ar
 
 #
 # Specialized context menu for running commands in the layer stack view.
@@ -78,6 +79,8 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         import platform
         from distutils.spawn import find_executable
         usdedit = find_executable('usdedit')
+        if not usdedit:
+            usdedit = find_executable('usdedit', path=os.path.abspath(os.path.dirname(sys.argv[0])))
 
         if not usdedit and (platform.system() == 'Windows'):
             for path in os.environ['PATH'].split(os.pathsep):
@@ -108,11 +111,17 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
 
         # Get layer path from item
         layerPath = getattr(self._item, "layerPath")
-        if not layerPath or not os.path.exists(layerPath):
+        if not layerPath:
             print "Error: Could not find layer file."
             return
 
-        layerName = os.path.basename(layerPath) + ".tmp"
+        if Ar.IsPackageRelativePath(layerPath):
+            layerName = os.path.basename(
+                Ar.SplitPackageRelativePathInner(layerPath)[1])
+        else:
+            layerName = os.path.basename(layerPath)
+        
+        layerName += ".tmp"
 
         usdeditExe = self._FindUsdEdit()
         if not usdeditExe:
@@ -120,7 +129,10 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
             return
 
         print "Opening file: %s" % layerPath
-        os.system("%s -n %s -p %s &" % (usdeditExe, layerPath, layerName))
+
+        command =  [usdeditExe,'-n',layerPath,'-p',layerName]
+
+        subprocess.Popen(command, close_fds=True)
 
 #
 # Opens the layer using usdview.
@@ -139,7 +151,7 @@ class UsdviewLayerMenuItem(LayerStackContextMenuItem):
 
         # Get layer path from item
         layerPath = getattr(self._item, "layerPath")
-        if not layerPath or not os.path.exists(layerPath):
+        if not layerPath:
             return
 
         print "Spawning usdview %s" % layerPath
@@ -157,7 +169,7 @@ class CopyLayerPathMenuItem(LayerStackContextMenuItem):
             return
 
         layerPath = getattr(self._item, "layerPath")
-        if not layerPath or not os.path.exists(layerPath):
+        if not layerPath:
             return
 
         cb = QtWidgets.QApplication.clipboard()

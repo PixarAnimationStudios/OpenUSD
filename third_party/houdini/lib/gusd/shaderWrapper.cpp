@@ -28,9 +28,6 @@
 #include <pxr/usd/usdShade/connectableAPI.h>
 
 #include <pxr/usd/usdRi/materialAPI.h>
-#include <pxr/usd/usdRi/risBxdf.h>
-#include <pxr/usd/usdRi/risPattern.h>
-#include <pxr/usd/usdRi/risOslPattern.h>
 
 #include <DEP/DEP_MicroNode.h>
 #include <PRM/PRM_ParmList.h>
@@ -116,7 +113,7 @@ _buildCustomOslNode(const VOP_Node* vopNode,
     return true;
 }
 
-UsdRiRisObject
+UsdShadeShader
 _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                         UsdStagePtr& stage,
                         const SdfPath& lookPath,
@@ -129,45 +126,28 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
 
     UT_String shaderName(vopNode->getShaderName(false, nodeType));
 
-    bool isCustomOsl =
-        _buildCustomOslNode(vopNode, shaderName, shaderOutDir);
+    _buildCustomOslNode(vopNode, shaderName, shaderOutDir);
 
-    const VtValue pathAttr(SdfAssetPath(shaderName.toStdString()));
+    const VtValue pathAttr(TfToken(shaderName.toStdString()));
 
-    const SdfPath risObjectPath = lookPath.AppendPath(SdfPath(nodeName));
-    UsdRiRisObject risObject;
+    const SdfPath shaderObjectPath = lookPath.AppendPath(SdfPath(nodeName));
+    UsdShadeShader shaderObject;
 
     // Check if this node has already been visited. If so, retrieve
     // its corresponding UsdRiRisObject from the usd stage.
     if(visitedVops.find(nodeName) != visitedVops.end()) {
-        risObject = UsdRiRisObject(stage->GetPrimAtPath(risObjectPath));
+        shaderObject = UsdShadeShader(stage->GetPrimAtPath(shaderObjectPath));
     } else {
         // The node hasn't been visited yet.
-        if (isCustomOsl) {
-            UsdRiRisOslPattern oslPattern =
-                UsdRiRisOslPattern::Define(stage, risObjectPath);
-            oslPattern.CreateOslPathAttr(pathAttr);
-            risObject = oslPattern;
-        } else {
-            switch (nodeType) {
-                case VOP_BSDF_SHADER:
-                    risObject = UsdRiRisBxdf::Define(stage, risObjectPath);
-                    break;
-                case VOP_GENERIC_SHADER:
-                    risObject = UsdRiRisPattern::Define(stage, risObjectPath);
-                    break;
-                default:
-                    break;
-            }
-            risObject.CreateFilePathAttr(pathAttr);
-        }
+        shaderObject = UsdShadeShader::Define(stage, shaderObjectPath);
+        shaderObject.CreateIdAttr(pathAttr);
         visitedVops.insert(nodeName);
     }
 
-    if(!risObject.GetPrim().IsValid()) {
+    if(!shaderObject.GetPrim().IsValid()) {
         TF_CODING_ERROR("Error creating or retrieving USD prim '%s'.",
                          nodeName.c_str());
-        return UsdRiRisObject();
+        return UsdShadeShader();
     }
 
     //
@@ -227,12 +207,12 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                 bool isInteger = parm->getChoiceListPtr() && str.isInteger(); 
 
                 if(isInteger) {
-                    shadeInput = risObject.CreateInput(TfToken(parm->getToken()),
+                    shadeInput = shaderObject.CreateInput(TfToken(parm->getToken()),
                                                     SdfValueTypeNames->Int);
 
                 }
                 else {
-                    shadeInput = risObject.CreateInput(TfToken(parm->getToken()),
+                    shadeInput = shaderObject.CreateInput(TfToken(parm->getToken()),
                                                     SdfValueTypeNames->String);
                 }
 
@@ -251,7 +231,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                      strcmp(type, "float[]") == 0) {
 
                 UsdShadeInput shadeInput 
-                    = risObject.CreateInput(TfToken(parm->getToken()),
+                    = shaderObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Float);
                 parmDeps[parm] = shadeInput;
 
@@ -265,7 +245,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                      strcmp(type, "int[]") == 0) {
 
                 UsdShadeInput shadeInput 
-                    = risObject.CreateInput(TfToken(parm->getToken()),
+                    = shaderObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Int);
                 parmDeps[parm] = shadeInput;
 
@@ -279,7 +259,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                      strcmp(type, "color[]") == 0) {
 
                 UsdShadeInput shadeInput 
-                    = risObject.CreateInput(TfToken(parm->getToken()),
+                    = shaderObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Color3d);
                 parmDeps[parm] = shadeInput;
 
@@ -293,7 +273,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                      strcmp(type, "normal[]") == 0) {
 
                 UsdShadeInput shadeInput 
-                    = risObject.CreateInput(TfToken(parm->getToken()),
+                    = shaderObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Normal3d);
                 parmDeps[parm] = shadeInput;
 
@@ -307,7 +287,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                      strcmp(type, "point[]") == 0) {
 
                 UsdShadeInput shadeInput 
-                    = risObject.CreateInput(TfToken(parm->getToken()),
+                    = shaderObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Point3d);
                 parmDeps[parm] = shadeInput;
 
@@ -321,7 +301,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                      strcmp(type, "vector[]") == 0) {
 
                 UsdShadeInput shadeInput 
-                    = risObject.CreateInput(TfToken(parm->getToken()),
+                    = shaderObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Vector3d);
                 parmDeps[parm] = shadeInput;
 
@@ -347,7 +327,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
             int outIdx
                 = inputVop->whichOutputIs(const_cast<VOP_Node*>(vopNode), inIdx);
 
-            UsdRiRisObject inputPrim = _vopGraphToUsdTraversal(inputVop,
+            UsdShadeShader inputPrim = _vopGraphToUsdTraversal(inputVop,
                                                                stage,
                                                                lookPath,
                                                                visitedVops,
@@ -359,14 +339,14 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
             inputVop->getOutputName(outputName,outIdx);
 
             UsdShadeInput shadeInput
-                = risObject.GetInput(TfToken(inputName.toStdString()));
+                = shaderObject.GetInput(TfToken(inputName.toStdString()));
             UsdShadeConnectableAPI::ConnectToSource(shadeInput, 
                 inputPrim, TfToken(outputName.toStdString()));
 
         }
     }
 
-    return risObject;
+    return shaderObject;
 }
 
 

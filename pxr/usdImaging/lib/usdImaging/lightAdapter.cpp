@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/light.h"
+#include "pxr/usd/usdLux/light.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -42,7 +43,7 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, UsdImagingLightAdapter is abstract.
 }
 
-TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 0, 
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 1, 
                       "Enable loading scene lights.");
 bool _IsEnabledSceneLights() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_SCENE_LIGHTS) == 1;
@@ -74,6 +75,22 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         if (attr.GetNumTimeSamples()>1){
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
         }
+    }
+
+    UsdImagingValueCache* valueCache = _GetValueCache();
+
+    // See UsdImagingGprimAdapter::TrackVariability() for reasoning
+    // why we use time 1.0 here.
+    UsdTimeCode time(1.0);
+    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+
+    UsdLuxLight light(prim);
+    if (TF_VERIFY(light)) {
+        UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
+        collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
+        collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
+        // TODO: When collections change we need to invalidate affected
+        // prims with the DirtyCollections flag.
     }
 }
 

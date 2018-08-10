@@ -413,6 +413,22 @@ def TestBug125048():
     # The following computation used to trip a verify.
     bboxCache.ComputeUntransformedBound(geomPrim)
 
+def TestBug127801():
+    """ Test that typeless defs are included in the traversal when computing 
+        bounds. 
+    """
+    stage = Usd.Stage.CreateInMemory()
+    world = stage.DefinePrim("/World")
+    char = stage.DefinePrim("/World/anim/char")
+    sphere = UsdGeom.Sphere.Define(stage, 
+        char.GetPath().AppendChild('sphere'))
+
+    bboxCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), 
+                                  includedPurposes=[UsdGeom.Tokens.default_],
+                                  useExtentsHint=True)
+    bbox = bboxCache.ComputeUntransformedBound(world)
+    assert not bbox.GetRange().IsEmpty()
+
 if __name__ == "__main__":
     Main()
     TestWithInstancing()
@@ -424,3 +440,5 @@ if __name__ == "__main__":
     Tf.Debug.SetDebugSymbolsByName("USDGEOM_BBOX", 0)
     TestBug113044()
     TestBug125048()
+    TestBug127801()
+

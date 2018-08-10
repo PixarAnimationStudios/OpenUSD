@@ -50,16 +50,16 @@ std::ostream& operator<<(std::ostream& out, const HdMaterialNetwork& pv)
 bool operator==(const HdMaterialRelationship& lhs, 
                 const HdMaterialRelationship& rhs)
 {
-    return lhs.sourceId       == rhs.sourceId && 
-           lhs.sourceTerminal == rhs.sourceTerminal &&
-           lhs.remoteId       == rhs.remoteId &&
-           lhs.remoteTerminal == rhs.remoteTerminal;
+    return lhs.outputId   == rhs.outputId && 
+           lhs.outputName == rhs.outputName &&
+           lhs.inputId    == rhs.inputId &&
+           lhs.inputName  == rhs.inputName;
 }
 
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
 {
     return lhs.path == rhs.path &&
-           lhs.type == rhs.type &&
+           lhs.identifier == rhs.identifier &&
            lhs.parameters == rhs.parameters;
 }
 

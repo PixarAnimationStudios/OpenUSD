@@ -74,6 +74,11 @@ UsdLuxCylinderLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdLuxCylinderLight::_GetSchemaType() const {
+    return UsdLuxCylinderLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxCylinderLight::_GetStaticTfType()

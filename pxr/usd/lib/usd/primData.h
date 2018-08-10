@@ -333,7 +333,8 @@ private:
 
     USD_API
     friend void Usd_IssueFatalPrimAccessError(Usd_PrimData const *p);
-    friend std::string Usd_DescribePrimData(const Usd_PrimData *p);
+    friend std::string
+    Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath);
 
     friend inline bool Usd_IsDead(Usd_PrimData const *p) {
         return p->_IsDead();

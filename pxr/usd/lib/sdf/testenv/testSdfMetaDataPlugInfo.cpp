@@ -190,6 +190,21 @@ void CheckListOp(const TfToken& key)
     TF_AXIOM(ListOp() == schema.GetFallback(key).Get<ListOp>());
 }
 
+void CheckExtraInfo(
+    const TfToken& fieldName,
+    const std::vector< std::pair<TfToken, JsValue> >& expectedInfos) {
+    const SdfSchema& instance = SdfSchema::GetInstance();
+    const SdfSchemaBase::FieldDefinition* field =
+        instance.GetFieldDefinition(fieldName);
+    const SdfSchemaBase::FieldDefinition::InfoVec& infoVec = field->GetInfo();
+    for (const std::pair<TfToken, JsValue>& expectedInfo : expectedInfos) {
+        TF_AXIOM(
+            std::find(
+                infoVec.begin(), infoVec.end(), expectedInfo)
+            != infoVec.end());
+    }
+}
+
 int main()
 {
     // Load a plugin that defines the test fields
@@ -251,6 +266,30 @@ int main()
     CheckPresent(TfToken("applies_to_prims_and_properties"), 
                  { SdfSpecTypePrim, SdfSpecTypeVariant,
                    SdfSpecTypeAttribute, SdfSpecTypeRelationship });
+
+    cout << "Checking \"extrainfo1\"\n";
+    CheckExtraInfo(
+        TfToken("extrainfo1"),
+        {
+            std::make_pair(TfToken("config"), JsValue(true))
+        });
+
+    cout << "Checking \"extrainfo2\"\n";
+    const std::vector<JsValue> expectedAuthors = {
+        JsValue("johndoe"), JsValue("marysue") };
+    CheckExtraInfo(
+        TfToken("extrainfo2"), 
+        {
+            std::make_pair(TfToken("config"), JsValue(false)),
+            std::make_pair(TfToken("authors"), JsValue(expectedAuthors))
+        });
+
+    cout << "Checking \"extrainfo3\"\n";
+    CheckExtraInfo(
+        TfToken("extrainfo3"),
+        {
+            std::make_pair(TfToken("version"), JsValue(uint64_t(1)))
+        });
 
     cout << "Passed!" << endl;
 

@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
@@ -55,6 +56,25 @@ HdRenderPassStateSharedPtr
 HdRenderDelegate::CreateRenderPassState() const
 {
     return boost::make_shared<HdRenderPassState>();
+}
+
+
+TfToken
+HdRenderDelegate::GetMaterialBindingPurpose() const
+{
+    return HdTokens->preview;
+}
+
+TfTokenVector 
+HdRenderDelegate::GetShaderSourceTypes() const
+{
+    return TfTokenVector();
+}
+
+TfToken 
+HdRenderDelegate::GetMaterialNetworkSelector() const
+{
+    return TfToken();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

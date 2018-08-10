@@ -209,7 +209,7 @@ HdStResourceRegistry::MergeBufferArrayRange(
 
     // get existing buffer specs
     HdBufferSpecVector oldBufferSpecs;
-    range->AddBufferSpecs(&oldBufferSpecs);
+    range->GetBufferSpecs(&oldBufferSpecs);
 
     // immutable ranges should always be migrated, otherwise compare bufferspec
     if (range->IsImmutable() || !HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {

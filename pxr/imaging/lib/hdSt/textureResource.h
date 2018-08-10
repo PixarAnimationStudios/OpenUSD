@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/textureResource.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/api.h"
 
 #include "pxr/imaging/glf/texture.h"
@@ -64,11 +65,22 @@ public:
 /// HdStSimpleTextureResource is a simple (non-drawtarget) texture.
 class HdStSimpleTextureResource : public HdStTextureResource {
 public:
+    /// Create a texture resource around a Glf handle.
+    /// While the texture handle maybe shared between many references to a
+    /// texture.
+    /// The texture resource represents a single texture binding.
+    ///
+    /// The memory request can be used to limit, the amount of texture memory
+    /// this reference requires of the texture.  Set to 0 for unrestricted.
     HDST_API
-    HdStSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex);
-    HDST_API
-    HdStSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex, 
-        HdWrap wrapS, HdWrap wrapT, HdMinFilter minFilter, HdMagFilter magFilter);
+    HdStSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle,
+                              bool isPtex,
+                              HdWrap wrapS,
+                              HdWrap wrapT,
+                              HdMinFilter minFilter,
+                              HdMagFilter magFilter,
+                              size_t memoryRequest = 0);
+
     HDST_API
     virtual ~HdStSimpleTextureResource();
 
@@ -88,6 +100,12 @@ private:
     float _maxAnisotropy;
     GLuint _sampler;
     bool _isPtex;
+    size_t _memoryRequest;
+
+    HdWrap _wrapS;
+    HdWrap _wrapT;
+    HdMinFilter _minFilter;
+    HdMagFilter _magFilter;
 };
 
 

@@ -28,6 +28,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/trace/collection.h"
 #include "pxr/base/js/value.h"
+#include "pxr/base/js/json.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,8 +40,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Chrome Tracing format. 
 class Trace_JSONSerialization {
 public:
-    /// Creates a JSON Value representation of \p collection.
-    static JsValue CollectionToJSON(const TraceCollection& collection);
+    /// Creates a JSON Value representation of \p collections.
+    static JsValue CollectionsToJSON(
+        const std::vector<std::shared_ptr<TraceCollection>>& collections);
 
     /// Creates a TraceCollection from a JSON value if possible.
     static std::unique_ptr<TraceCollection> CollectionFromJSON(const JsValue&);

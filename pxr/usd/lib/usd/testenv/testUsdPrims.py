@@ -61,6 +61,33 @@ class TestUsdPrim(unittest.TestCase):
             assert a == b
             assert hash(a) == hash(b)
 
+            # check for prims/props that exist
+            p = s.GetObjectAtPath(u'/foo')
+            assert p
+            assert type(p) is Usd.Prim
+
+            a = s.GetObjectAtPath(u'/foo.attr')
+            assert a
+            assert type(a) is Usd.Attribute
+
+            r = s.GetObjectAtPath(u'/foo.relationship')
+            assert r 
+            assert type(r) is Usd.Relationship
+
+            # check for prims/props that dont exist
+            p = s.GetObjectAtPath(u'/nonexistent')
+            assert not p
+            assert type(p) is Usd.Prim
+
+            a = s.GetObjectAtPath(u'/foo.nonexistentattr')
+            assert not a
+            assert type(a) is Usd.Property
+
+            r = s.GetObjectAtPath(u'/foo.nonexistentrelationship')
+            assert not r 
+            assert type(r) is Usd.Property
+
+
     def test_OverrideMetadata(self):
         for fmt in allFormats:
             weak = Sdf.Layer.CreateAnonymous('OverrideMetadataTest.'+fmt)
@@ -767,15 +794,24 @@ class TestUsdPrim(unittest.TestCase):
                 s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
 
     def test_AppliedSchemas(self):
-        self.assertTrue(Usd.ModelAPI.IsAPISchema())
-        self.assertTrue(Usd.ClipsAPI.IsAPISchema())
-        self.assertTrue(Usd.CollectionAPI.IsAPISchema())
+        self.assertTrue(Usd.ModelAPI().IsAPISchema())
+        self.assertTrue(Usd.ClipsAPI().IsAPISchema())
+        self.assertTrue(Usd.CollectionAPI().IsAPISchema())
 
-        self.assertFalse(Usd.ModelAPI.IsApplied())
-        self.assertFalse(Usd.ClipsAPI.IsApplied())
-        self.assertTrue(Usd.CollectionAPI.IsApplied())
+        self.assertFalse(Usd.ModelAPI().IsAppliedAPISchema())
+        self.assertFalse(Usd.ClipsAPI().IsAppliedAPISchema())
+        self.assertTrue(Usd.CollectionAPI().IsAppliedAPISchema())
 
-        self.assertTrue(Usd.CollectionAPI.IsMultipleApply())
+        self.assertTrue(Usd.CollectionAPI().IsMultipleApplyAPISchema())
+
+        self.assertTrue(
+            Usd.CollectionAPI().GetSchemaType() == Usd.SchemaType.MultipleApplyAPI)
+        self.assertTrue(
+            Usd.CollectionAPI().GetSchemaType() != Usd.SchemaType.SingleApplyAPI)
+        self.assertTrue(
+            Usd.ModelAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
+        self.assertTrue(
+            Usd.ClipsAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
 
         for fmt in allFormats:
             sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
@@ -834,6 +870,18 @@ class TestUsdPrim(unittest.TestCase):
             self.assertTrue(rootLayerSessionCollAPI)
             self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
                              world.GetAppliedSchemas())
+
+    def test_Bug160615(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('Bug160615.%s' % fmt)
+            p = s.OverridePrim('/Foo/Bar')
+            self.assertTrue(p)
+
+            s.RemovePrim(p.GetPath())
+            self.assertFalse(p)
+
+            p = s.OverridePrim('/Foo/Bar')
+            self.assertTrue(p)
 
 if __name__ == "__main__":
     unittest.main()

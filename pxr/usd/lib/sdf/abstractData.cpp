@@ -307,6 +307,13 @@ SdfAbstractData::VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
     }
 }
 
+std::type_info const &
+SdfAbstractData::GetTypeid(
+    const SdfAbstractDataSpecId &id, const TfToken &fieldName) const
+{
+    return Get(id, fieldName).GetTypeid();
+}
+
 bool
 SdfAbstractData::HasDictKey(const SdfAbstractDataSpecId& id,
                             const TfToken &fieldName,

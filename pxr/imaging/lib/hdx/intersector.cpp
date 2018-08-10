@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -60,6 +61,16 @@ _InitIdRenderPassState(HdRenderIndex *index)
     }
 
     return rps;
+}
+
+static bool
+_IsStreamRenderingBackend(HdRenderIndex *index)
+{
+    if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
+        return false;
+    }
+
+    return true;
 }
 
 HdxIntersector::HdxIntersector(HdRenderIndex *index)
@@ -130,6 +141,13 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
 {
     TRACE_FUNCTION();
 
+    // XXX: Check if we're using the stream render delegate. The current
+    // implementation needs to be extended to be truly backend agnostic.
+    if (!_IsStreamRenderingBackend(_index)) {
+        TF_DEBUG(HDX_INTERSECT).Msg("Picking/ID render is not supported by"
+        " non-Stream render delegates yet.\n");
+        return;
+    }
     // Make sure we're in a sane GL state before attempting anything.
     if (GlfHasLegacyGraphics()) {
         TF_RUNTIME_ERROR("framebuffer object not supported");
@@ -261,6 +279,13 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
 {
     TRACE_FUNCTION();
 
+    // XXX: Check if we're using the stream render delegate. The current
+    // implementation needs to be extended to be truly backend agnostic.
+    if (!_IsStreamRenderingBackend(_index)) {
+        TF_DEBUG(HDX_INTERSECT).Msg("Picking/ID render is not supported by"
+        " non-Stream render delegates yet.\n");
+        return false;
+    }
     // Make sure we're in a sane GL state before attempting anything.
     if (GlfHasLegacyGraphics()) {
         TF_RUNTIME_ERROR("framebuffer object not supported");

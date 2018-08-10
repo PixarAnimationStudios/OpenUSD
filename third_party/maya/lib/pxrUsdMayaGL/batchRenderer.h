@@ -32,6 +32,7 @@
 #include "pxrUsdMayaGL/sceneDelegate.h"
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
+#include "usdMaya/diagnosticDelegate.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -49,6 +50,7 @@
 #include <maya/MDrawContext.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MMessage.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
@@ -179,27 +181,33 @@ public:
     /// Tests the object from the given shape adapter for intersection with
     /// a given view using the legacy viewport.
     ///
-    /// \p hitPoint yields the point of intersection if \c true is returned.
+    /// Returns a pointer to a hit set if there was an intersection, or nullptr
+    /// otherwise.
     ///
+    /// The returned HitSet is owned by the batch renderer, and it will be
+    /// erased at the next selection, so clients should make copies if they
+    /// need the data to persist.
     PXRUSDMAYAGL_API
-    bool TestIntersection(
+    const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             M3dView& view,
-            const bool singleSelection,
-            GfVec3f* hitPoint);
+            const bool singleSelection);
 
     /// Tests the object from the given shape adapter for intersection with
     /// a given draw context in Viewport 2.0.
     ///
-    /// \p hitPoint yields the point of intersection if \c true is returned.
+    /// Returns a pointer to a hit set if there was an intersection, or nullptr
+    /// otherwise.
     ///
+    /// The returned HitSet is owned by the batch renderer, and it will be
+    /// erased at the next selection, so clients should make copies if they
+    /// need the data to persist.
     PXRUSDMAYAGL_API
-    bool TestIntersection(
+    const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             const MHWRender::MSelectionInfo& selectInfo,
             const MHWRender::MDrawContext& context,
-            const bool singleSelection,
-            GfVec3f* hitPoint);
+            const bool singleSelection);
 
     /// Tests the contents of the given custom collection (previously obtained
     /// via PopulateCustomCollection) for intersection with the current OpenGL
@@ -216,6 +224,25 @@ public:
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
             GfVec3d* hitPoint);
+
+    /// Utility function for finding the nearest hit (in terms of ndcDepth) in
+    /// the given \p hitSet.
+    ///
+    /// If \p hitSet is nullptr or is empty, nullptr is returned. Otherwise a
+    /// pointer to the nearest hit in \p hitSet is returned.
+    PXRUSDMAYAGL_API
+    static const HdxIntersector::Hit* GetNearestHit(
+            const HdxIntersector::HitSet* hitSet);
+
+    /// Returns whether soft selection for proxy shapes is currently enabled.
+    PXRUSDMAYAGL_API
+    inline bool GetObjectSoftSelectEnabled()
+    { return _objectSoftSelectEnabled; }
+
+    /// Starts batching all diagnostics until the end of the current frame draw.
+    /// The batch renderer will automatically release the diagnostics when Maya
+    /// is done rendering the frame.
+    void StartBatchingFrameDiagnostics();
 
 private:
 
@@ -251,8 +278,12 @@ private:
 
     /// Call to render all queued batches. May be called safely without
     /// performance hit when no batches are queued.
+    /// If \p view3d is null, then considers any isolated selection in that view
+    /// when determining visibility. If it's null, then assumes that there's no
+    /// isolated selection.
     void _RenderBatches(
             const MHWRender::MDrawContext* vp2Context,
+            const M3dView* view3d,
             const GfMatrix4d& worldToViewMatrix,
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport);
@@ -278,6 +309,21 @@ private:
     static void _OnMayaEndRenderCallback(
             MHWRender::MDrawContext& context,
             void* clientData);
+
+    /// Record changes to soft select options
+    ///
+    /// This callback is just so we don't have to query the soft selection
+    /// options through mel every time we have a selection event.
+    static void _OnSoftSelectOptionsChangedCallback(void* clientData);
+
+    /// Tries to get the viewport for the given draw context.
+    /// Returns true if the viewport was found, in which case it is returned in
+    /// the \p view parameter.
+    /// Returns false if there's not a 3D viewport (e.g. we're drawing into a
+    /// render view).
+    static bool _GetViewFromDrawContext(
+            const MHWRender::MDrawContext& context,
+            M3dView* view);
 
     /// Perform post-render state cleanup.
     ///
@@ -336,6 +382,8 @@ private:
     MUint64 _lastSelectionFrameStamp;
     bool _legacyRenderPending;
     bool _legacySelectionPending;
+    bool _objectSoftSelectEnabled;
+    MCallbackId _softSelectOptionsCallbackId;
 
     /// Type definition for a set of pointers to shape adapters.
     typedef std::unordered_set<PxrMayaHdShapeAdapter*> _ShapeAdapterSet;
@@ -396,13 +444,18 @@ private:
     /// occluded shapes will be included in the selection.
     HdRprimCollectionVector _GetIntersectionRprimCollections(
             _ShapeAdapterBucketsMap& bucketsMap,
+            const MSelectionList& isolatedObjects,
             const bool useDepthSelection) const;
 
     /// Populates the selection results using the given parameters by
     /// performing intersection tests against all of the shapes in the given
     /// \p bucketsMap.
+    /// If \p view3d is null, then considers any isolated selection in that view
+    /// when determining visibility. If it's null, then assumes that there's no
+    /// isolated selection.
     void _ComputeSelection(
             _ShapeAdapterBucketsMap& bucketsMap,
+            const M3dView* view3d,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
             const bool singleSelection);
@@ -417,11 +470,10 @@ private:
     /// ended.
     std::unordered_set<std::string> _drawnMayaRenderPasses;
 
-    typedef std::unordered_map<SdfPath, HdxIntersector::Hit, SdfPath::Hash> HitBatch;
-
     /// A cache of all selection results gathered since the last selection was
-    /// computed.
-    HitBatch _selectResults;
+    /// computed. It maps delegate IDs to a HitSet of all of the intersection
+    /// hits for that delegate ID.
+    std::unordered_map<SdfPath, HdxIntersector::HitSet, SdfPath::Hash> _selectResults;
 
     /// Hydra engine objects used to render batches.
     ///
@@ -453,6 +505,12 @@ private:
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
     UsdMayaGLSoftSelectHelper _softSelectHelper;
+
+    /// Shared diagnostic batch context. Used for cases where we want to batch
+    /// diagnostics across multiple function calls, e.g., batching all of the
+    /// Sync() diagnostics across all prepareForDraw() callbacks in a single
+    /// frame.
+    std::unique_ptr<UsdMayaDiagnosticBatchContext> _sharedDiagBatchCtx;
 };
 
 PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);

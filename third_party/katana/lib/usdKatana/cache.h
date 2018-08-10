@@ -120,6 +120,13 @@ public:
 
     SdfLayerRefPtr FindSessionLayer(
         const std::string& cacheKey) ;
+    
+    
+    SdfLayerRefPtr FindOrCreateSessionLayer(
+        const std::string& sessionAttrXML,
+        const std::string& rootLocation);
+
+    
 
 };
 

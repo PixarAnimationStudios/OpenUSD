@@ -35,6 +35,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
+typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPtr;
+typedef std::vector<HdStTextureResourceSharedPtr>
+                                HdStTextureResourceSharedPtrVector;
+
+class GlfGLSLFX;
 
 class HdStMaterial final: public HdMaterial {
 public:
@@ -50,11 +55,6 @@ public:
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
-
-    /// Accessor for tasks to get the parameter cached in this sprim object.
-    /// Don't communicate back to scene delegate within this function.
-    HDST_API
-    virtual VtValue Get(TfToken const &token) const override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
@@ -90,6 +90,10 @@ public:
     inline VtValue GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
                                          TfToken const &paramName) const;
 
+    /// Obtains the metadata dictionary for the material.
+    inline VtDictionary GetMaterialMetadata(
+        HdSceneDelegate* sceneDelegate) const;
+
     /// Obtain the scene delegates's globally unique id for the texture
     /// resource identified by textureId.
     inline HdTextureResource::ID GetTextureResourceID(
@@ -102,41 +106,62 @@ public:
     /// the method returns false.
     inline bool HasPtex() const;
 
+    /// Returns true if the material specifies limit surface evaluation.
+    inline bool HasLimitSurfaceEvaluation() const;
+
     /// Replaces the shader code object with an externally created one
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
     HDST_API
     void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
-
 private:
-    HdStSurfaceShaderSharedPtr _surfaceShader;
-    bool                       _hasPtex;
+    HdStTextureResourceSharedPtr
+    _GetTextureResource(HdSceneDelegate *sceneDelegate,
+                        HdMaterialParam const &param);
+
+    bool
+    _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
+
+    void _InitFallbackShader();
+
+    static GlfGLSLFX                  *_fallbackSurfaceShader;
+
+    HdStSurfaceShaderSharedPtr         _surfaceShader;
+    HdStTextureResourceSharedPtrVector _fallbackTextureResources;
+    bool                               _hasPtex;
+    bool                               _hasLimitSurfaceEvaluation;
 };
 
 inline std::string
 HdStMaterial::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetSurfaceShaderSource(GetID());
+    return sceneDelegate->GetSurfaceShaderSource(GetId());
 }
 
 inline std::string
 HdStMaterial::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetDisplacementShaderSource(GetID());
+    return sceneDelegate->GetDisplacementShaderSource(GetId());
 }
 
 inline HdMaterialParamVector
 HdStMaterial::GetMaterialParams(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetMaterialParams(GetID());
+    return sceneDelegate->GetMaterialParams(GetId());
 }
 
 inline VtValue
 HdStMaterial::GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
                                   TfToken const &paramName) const
 {
-    return sceneDelegate->GetMaterialParamValue(GetID(), paramName);
+    return sceneDelegate->GetMaterialParamValue(GetId(), paramName);
+}
+
+inline VtDictionary
+HdStMaterial::GetMaterialMetadata(HdSceneDelegate* sceneDelegate) const
+{
+    return sceneDelegate->GetMaterialMetadata(GetId());
 }
 
 inline HdTextureResource::ID
@@ -149,6 +174,11 @@ HdStMaterial::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
 inline bool HdStMaterial::HasPtex() const
 {
     return _hasPtex;
+}
+
+inline bool HdStMaterial::HasLimitSurfaceEvaluation() const
+{
+    return _hasLimitSurfaceEvaluation;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

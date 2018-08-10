@@ -258,15 +258,25 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
         numMipLevels-1, numMipLevels);
 }
 
+static bool
+_IsValidCrop(GlfImageSharedPtr image,
+             int cropTop, int cropBottom, int cropLeft, int cropRight)
+{
+    int cropImageWidth = image->GetWidth() - (cropLeft + cropRight);
+    int cropImageHeight = image->GetHeight() - (cropTop + cropBottom);
+    return (cropTop >= 0 && 
+            cropBottom >= 0 &&
+            cropLeft >= 0 &&
+            cropRight >= 0 &&
+            cropImageWidth > 0 &&
+            cropImageHeight > 0); 
+}
+
 bool
-GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
+GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
+                       GlfImage::ImageOriginLocation originLocation)
 {   
     TRACE_FUNCTION();
-
-    if (!TfPathExists(_filePath)) {
-        TF_WARN("Unable to find Texture '%s'.", _filePath.c_str());
-        return false;
-    }
 
     // Read the image from a file, if possible and necessary, a down-sampled
     // version
@@ -320,6 +330,12 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
             cropBottom = ceil(_params.cropBottom * degradedImage.scaleY);
             cropLeft   = ceil(_params.cropLeft * degradedImage.scaleX);
             cropRight  = ceil(_params.cropRight * degradedImage.scaleX);
+
+            //Check that cropping parameters are valid
+            if (!_IsValidCrop(image, cropTop, cropBottom, cropLeft, cropRight)) {
+                TF_CODING_ERROR("Failed to load Texture - Invalid crop");
+                return false;
+            }
 
             _resizedWidth = std::max(0, _resizedWidth - (cropLeft + cropRight));
             _resizedHeight = std::max(0, _resizedHeight - (cropTop + cropBottom));
@@ -402,9 +418,11 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         storage.width = mip.width;
         storage.height = mip.height;
         storage.format = _glFormat;
+        storage.flipped = (originLocation == GlfImage::OriginLowerLeft) ?
+                          (true) : (false);
         storage.type = _glType;
         storage.data = _rawBuffer.get() + mip.offset;
-
+        
         if (!image->ReadCropped(cropTop, cropBottom, cropLeft, cropRight, storage)) {
             TF_WARN("Unable to read Texture '%s'.", _filePath.c_str());
             return false;

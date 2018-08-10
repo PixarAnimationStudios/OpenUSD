@@ -157,10 +157,11 @@ public:
 
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
                                              SdfPath const& prototypeId);
-    virtual int GetRefineLevel(SdfPath const& id);
+    virtual HdDisplayStyle GetDisplayStyle(SdfPath const& id) override;
     virtual TfToken GetReprName(SdfPath const &id);
 
 
+    virtual SdfPath GetMaterialId(SdfPath const &rprimId);
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
     virtual HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId);

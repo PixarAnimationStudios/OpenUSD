@@ -125,8 +125,25 @@ class Shader "Shader" (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
 }

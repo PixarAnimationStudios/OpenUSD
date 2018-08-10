@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "foo"
+{
+    def "bar" (
+        references = [
+            @./ref_a.usd@,
+            @./ref_b.usd@
+        ]
+        clips = {
+            dictionary default = {
+                string templateAssetPath = "./clip.###.usd"
+            }
+            dictionary nonTemplated = {
+                asset[] assetPaths = [@./clip1.usda@, @./clip2.usda@]
+            }
+        }
+    )
+    {
+    }
+}

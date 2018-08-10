@@ -29,12 +29,13 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
+#include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/texture.h"
-#include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -217,6 +218,10 @@ public:
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index);
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -303,10 +308,10 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual bool PopulateSelection(HdxSelectionHighlightMode const& highlightMode,
+    virtual bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
                                    SdfPath const &usdPath,
                                    VtIntArray const &instanceIndices,
-                                   HdxSelectionSharedPtr const &result);
+                                   HdSelectionSharedPtr const &result);
 
     // ---------------------------------------------------------------------- //
     /// \name Texture resources
@@ -419,30 +424,48 @@ protected:
     USDIMAGING_API
     SdfPath _GetPrimPathFromInstancerChain(SdfPathVector const& instancerChain);
 
+    USDIMAGING_API
     UsdTimeCode _GetTimeWithOffset(float offset) const;
 
     // Converts \p stagePath to the path in the render index
+    USDIMAGING_API
     SdfPath _GetPathForIndex(SdfPath const& usdPath) const;
 
     // Returns the rprim paths in the renderIndex rooted at \p indexPath.
+    USDIMAGING_API
     SdfPathVector _GetRprimSubtree(SdfPath const& indexPath) const;
 
-    // Returns whether or not the render delegate can handle material networks.
-    bool _CanComputeMaterialNetworks() const;
+    // Returns the material binding purpose from the renderer delegate.
+    USDIMAGING_API
+    TfToken _GetMaterialBindingPurpose() const;
+
+    // Returns the material context from the renderer delegate.
+    USDIMAGING_API
+    TfToken _GetMaterialNetworkSelector() const;
+
+    // Returns the shader source type from the render delegate.
+    USDIMAGING_API
+    TfTokenVector _GetShaderSourceTypes() const;
 
     // Returns \c true if \p usdPath is included in the scene delegate's
     // invised path list.
+    USDIMAGING_API
     bool _IsInInvisedPaths(SdfPath const& usdPath) const;
 
     // Determines if an attribute is varying and if so, sets the given
     // \p dirtyFlag in the \p dirtyFlags and increments a perf counter. Returns
     // true if the attribute is varying.
+    //
+    // If \p exists is non-null, _IsVarying will store whether the attribute
+    // was found.  If the attribute is not found, it counts as non-varying.
     USDIMAGING_API
     bool _IsVarying(UsdPrim prim, TfToken const& attrName, 
            HdDirtyBits dirtyFlag, TfToken const& perfToken,
-           HdDirtyBits* dirtyFlags, bool isInherited) const;
+           HdDirtyBits* dirtyFlags, bool isInherited,
+           bool* exists = nullptr) const;
 
     // Returns whether or not the rprim at \p cachePath is refined.
+    USDIMAGING_API
     bool _IsRefined(SdfPath const& cachePath) const;
 
     // Determines if the prim's transform (CTM) is varying and if so, sets the 
@@ -463,8 +486,27 @@ protected:
         HdInterpolation interp,
         TfToken const& role = TfToken()) const;
 
+    // Convenience method for computing a primvar.
+    USDIMAGING_API
+    void _ComputeAndMergePrimvar(UsdPrim const& prim,
+                                 SdfPath const& cachePath,
+                                 UsdGeomPrimvar const& primvar,
+                                 UsdTimeCode time,
+                                 UsdImagingValueCache* valueCache,
+                                 HdInterpolation *interpOverride = nullptr)
+                                 const;
+
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
+
+    USDIMAGING_API
+    UsdImaging_CollectionCache& _GetCollectionCache() const;
+
+    // Conversion functions between usd and hydra enums.
+    USDIMAGING_API
+    static HdInterpolation _UsdToHdInterpolation(TfToken const& usdInterp);
+    USDIMAGING_API
+    static TfToken _UsdToHdRole(TfToken const& usdRole);
 
 private:
 

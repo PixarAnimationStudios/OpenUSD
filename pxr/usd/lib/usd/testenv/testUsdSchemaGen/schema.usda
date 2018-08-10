@@ -43,14 +43,50 @@ class "SingleApplyAPI" (
 {
 }
 
+class "EmptyMultipleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+    }
+)
+{
+}
+
+
 class "MultipleApplyAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "multipleApply"
         bool isPrivateApply = true
+        token propertyNamespacePrefix  = "test"
     }
 )
 {
+    int testAttrOne
+    double testAttrTwo
+}
+
+class "DerivedMultipleApplyAPI" (
+    inherits = </MultipleApplyAPI>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix = "derived"
+    }
+)
+{
+    int testAttrThree
+}
+
+class "PublicMultipleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "testo"
+    }
+)
+{
+    int testAttrOne
+    double testAttrTwo
 }
 
 class "Base" (
@@ -266,6 +302,13 @@ class TestPxHairman "TestPxHairman" (
         doc = """This exercises custom API naming."""
         customData = {
             string apiName = "Gofur_GeomOnHairdensity"
+        }
+    )
+
+    float attrWithoutGeneratedAccessorAPI (
+        doc = """This exercises empty apiName to skip accessor generation."""
+        customData = {
+            string apiName = ""
         }
     )
 }

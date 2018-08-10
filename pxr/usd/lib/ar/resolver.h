@@ -35,8 +35,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class ArResolverContext;
+class ArAsset;
 class ArAssetInfo;
+class ArResolverContext;
 class TfType;
 class VtValue;
 
@@ -123,7 +124,31 @@ public:
     // --------------------------------------------------------------------- //
     /// \anchor ArResolver_context
     /// \name Asset Resolver Context Operations
+    ///
     /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Binds the given context to this resolver.
+    ///
+    /// Clients should generally use ArResolverContextBinder instead of calling
+    /// this function directly.
+    ///
+    /// \see ArResolverContextBinder
+    AR_API
+    virtual void BindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData) = 0;
+
+    /// Unbind the given context from this resolver.
+    ///
+    /// Clients should generally use ArResolverContextBinder instead of calling
+    /// this function directly.
+    ///
+    /// \see ArResolverContextBinder
+    AR_API
+    virtual void UnbindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData) = 0;
 
     /// Return a default ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
@@ -143,21 +168,13 @@ public:
     virtual ArResolverContext CreateDefaultContextForAsset(
         const std::string& filePath) = 0;
 
-    /// Return a default ArResolverContext that may be bound to this resolver
-    /// to resolve assets located in the given \p fileDirectory when no other
-    /// context is explicitly specified.
-    ///
-    /// This function should not automatically bind this context, but should
-    /// create one that may be used later.
-    AR_API
-    virtual ArResolverContext CreateDefaultContextForDirectory(
-        const std::string& fileDirectory) = 0;
-
     /// Refresh any caches associated with the given context.
     AR_API
     virtual void RefreshContext(const ArResolverContext& context) = 0;
 
     /// Returns the currently-bound asset resolver context.
+    ///
+    /// \see ArResolver::BindContext, ArResolver::UnbindContext
     AR_API
     virtual ArResolverContext GetCurrentContext() = 0;
 
@@ -230,6 +247,21 @@ public:
         const std::string& path,
         const std::string& resolvedPath) = 0;
 
+    /// Returns an ArAsset object for the asset located at \p resolvedPath. 
+    /// Returns an invalid std::shared_ptr if object could not be created.
+    ///
+    /// The returned ArAsset object provides functions for accessing the
+    /// contents of the specified asset. 
+    ///
+    /// Note that clients may still be using the data associated with 
+    /// this object even after the last shared_ptr has been destroyed. For 
+    /// example, a client may have created a memory mapping using the FILE* 
+    /// presented in the ArAsset object; this would preclude truncating or
+    /// overwriting any of the contents of that file.
+    AR_API
+    virtual std::shared_ptr<ArAsset> OpenAsset(
+        const std::string& resolvedPath) = 0;
+
     /// Returns true if a file may be written to the given \p path, false
     /// otherwise. 
     /// 
@@ -252,7 +284,6 @@ public:
 
     /// @}
 
-protected:
     // --------------------------------------------------------------------- //
     /// \anchor ArResolver_scopedCache
     /// \name Scoped Resolution Cache
@@ -263,72 +294,53 @@ protected:
     /// that repeated calls to Resolve with the same parameters will
     /// return the same result.
     ///
-    /// Scoped caches are managed by ArResolverScopedCache instances, which
-    /// call ArResolver::_BeginCacheScope on construction and 
-    /// ArResolver::_EndCacheScope on destruction. Note that these instances 
-    /// may be nested. The resolver must cache the results of Resolve until 
-    /// the last instance is destroyed.
+    /// A resolution cache scope is opened by a call to BeginCacheScope and
+    /// must be closed with a matching call to EndCacheScope. The resolver must
+    /// cache the results of Resolve until the scope is closed. Note that these
+    /// calls may be nested.
     ///
-    /// ArResolverScopedCache instances only apply to the thread in
-    /// which they are created. If multiple threads are running and an
-    /// ArResolverScopedCache is created in one of those threads, caching
-    /// should be enabled in that thread only. 
+    /// Cache scopes are thread-specific: if multiple threads are running and
+    /// a cache scope is opened in one of those threads, caching should be
+    /// enabled in that thread only.
     ///
-    /// Resolvers can populate an ArResolverScopedCache with data
-    /// for implementation-specific purposes. An ArResolverScopedCache
-    /// may share this data with other instances, including instances that
-    /// are created in different threads. This allows cache data to be
-    /// shared across threads, which means the resolver must ensure it 
-    /// is safe to access this data concurrently.
+    /// When opening a scope, a resolver may return additional data for
+    /// implementation-specific purposes. This data may be shared across 
+    /// threads, so long as it is safe to access this data concurrently.
+    /// 
+    /// ArResolverScopedCache is an RAII object for managing cache scope 
+    /// lifetimes and data. Clients should generally use that class rather
+    /// than calling the BeginCacheScope and EndCacheScope functions manually.
     ///
     /// \see ArResolverScopedCache
     /// @{
     // --------------------------------------------------------------------- //
 
-    friend class ArResolverScopedCache;
-
-    /// Called by ArResolverScopedCache to mark the start of a resolution
-    /// caching scope. 
+    /// Mark the start of a resolution caching scope. 
     ///
-    /// Resolvers may fill \p cacheScopeData with arbitrary data, which will
-    /// be stored in the ArResolverScopedCache. If an ArResolverScopedCache
-    /// is constructed with data shared from another ArResolverScopedCache
-    /// instance, \p cacheScopeData will contain a copy of that data.
+    /// Clients should generally use ArResolverScopedCache instead of calling
+    /// this function directly.
+    ///
+    /// Resolvers may fill \p cacheScopeData with arbitrary data. Clients may
+    /// also pass in a \p cacheScopeData populated by an earlier call to
+    /// BeginCacheScope to allow the resolver access to that information.
+    ///
+    /// \see ArResolverScopedCache
     AR_API
-    virtual void _BeginCacheScope(
+    virtual void BeginCacheScope(
         VtValue* cacheScopeData) = 0;
 
-    /// Called by ArResolverScopedCache to mark the end of a resolution
-    /// caching scope.
+    /// Mark the end of a resolution caching scope.
     ///
-    /// \p cacheScopeData will contain the data stored in the 
-    /// ArResolverScopedCache from the call to ArResolver::_BeginCacheScope.
+    /// Clients should generally use ArResolverScopedCache instead of calling
+    /// this function directly.
+    ///
+    /// \p cacheScopeData should contain the data that was populated by the
+    /// previous corresponding call to BeginCacheScope.
+    ///
+    /// \see ArResolverScopedCache
     AR_API
-    virtual void _EndCacheScope(
+    virtual void EndCacheScope(
         VtValue* cacheScopeData) = 0;
-
-    /// @}
-
-    // --------------------------------------------------------------------- //
-    /// \anchor ArResolver_contextBinder
-    /// \name Asset Resolver Context Binder
-    ///
-    /// \see ArResolverContext
-    /// \see ArResolverContextBinder
-    /// @{
-    // --------------------------------------------------------------------- //
-
-    friend class ArResolverContextBinder;
-
-    AR_API
-    virtual void _BindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) = 0;
-
-    AR_API
-    virtual void _UnbindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) = 0;
 
     /// @}
 
@@ -352,12 +364,16 @@ protected:
 ///   selected. 
 ///
 /// - The plugin for the selected subclass will be loaded and an instance
-///   of the subclass will be constructed and returned.
+///   of the subclass will be constructed.
 ///
-/// - If an error occurs, an ArDefaultResolver will be constructed and returned.
+/// - If an error occurs, an ArDefaultResolver will be constructed.
 ///
-/// The constructed ArResolver subclass will be cached and returned by all
-/// subsequent calls to this function.
+/// The constructed ArResolver subclass will be cached and used to service
+/// function calls made on the returned resolver.
+///
+/// Note that this function may not return the constructed subclass itself, 
+/// meaning that dynamic casts to the subclass type may fail. See
+/// ArGetUnderlyingResolver if access to this object is needed.
 AR_API
 ArResolver& ArGetResolver();
 
@@ -381,10 +397,18 @@ void ArSetPreferredResolver(const std::string& resolverTypeName);
 /// in very specific cases. Consumers who want to retrieve an ArResolver to
 /// perform asset resolution should use \ref ArGetResolver.
 /// 
-/// These special-purpose functions are intended to help with the creation
-/// of ArResolver subclasses that wrap around other ArResolver subclasses.
-/// 
 /// @{
+
+/// Returns the underlying ArResolver instance used by ArGetResolver.
+///
+/// This function returns the instance of the ArResolver subclass used by 
+/// ArGetResolver and can be dynamic_cast to that type.
+///
+/// \warning This functions should typically not be used by consumers except
+/// in very specific cases. Consumers who want to retrieve an ArResolver to
+/// perform asset resolution should use \ref ArGetResolver.
+AR_API
+ArResolver& ArGetUnderlyingResolver();
 
 /// Returns list of TfTypes for available ArResolver subclasses.
 ///
@@ -413,7 +437,7 @@ std::vector<TfType> ArGetAvailableResolvers();
 /// If an error occurs, coding errors will be emitted and this function
 /// will return an ArDefaultResolver instance.
 ///
-/// Note that this function *does not* change the resolver returned by 
+/// Note that this function *does not* change the resolver used by 
 /// \ref ArGetResolver to an instance of \p resolverType.
 ///
 /// This function is not safe to call concurrently with itself or 

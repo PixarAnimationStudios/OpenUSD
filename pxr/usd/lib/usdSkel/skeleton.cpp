@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdSkelSkeleton,
-        TfType::Bases< UsdGeomImageable > >();
+        TfType::Bases< UsdGeomBoundable > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -72,6 +72,11 @@ UsdSkelSkeleton::Define(
     }
     return UsdSkelSkeleton(
         stage->DefinePrim(path, usdPrimTypeName));
+}
+
+/* virtual */
+UsdSchemaType UsdSkelSkeleton::_GetSchemaType() const {
+    return UsdSkelSkeleton::schemaType;
 }
 
 /* static */
@@ -115,6 +120,23 @@ UsdSkelSkeleton::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsel
 }
 
 UsdAttribute
+UsdSkelSkeleton::GetBindTransformsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->bindTransforms);
+}
+
+UsdAttribute
+UsdSkelSkeleton::CreateBindTransformsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->bindTransforms,
+                       SdfValueTypeNames->Matrix4dArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelSkeleton::GetRestTransformsAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->restTransforms);
@@ -149,11 +171,12 @@ UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->joints,
+        UsdSkelTokens->bindTransforms,
         UsdSkelTokens->restTransforms,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdGeomImageable::GetSchemaAttributeNames(true),
+            UsdGeomBoundable::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)
@@ -172,3 +195,54 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdSkel/cache.h"
+#include "pxr/usd/usdSkel/skeletonQuery.h"
+#include "pxr/usd/usdSkel/skinningQuery.h"
+#include "pxr/usd/usdSkel/utils.h"
+
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+/// Plugin extent method.
+static bool
+_ComputeExtent(const UsdGeomBoundable& boundable,
+               const UsdTimeCode& time,
+               const GfMatrix4d* transform,
+               VtVec3fArray* extent)
+{
+    UsdSkelSkeleton skel(boundable);
+    if (!TF_VERIFY(skel)) {
+        return false;
+    }
+
+    UsdSkelCache skelCache;
+
+    UsdSkelSkeletonQuery skelQuery =
+        skelCache.GetSkelQuery(UsdSkelSkeleton(boundable.GetPrim()));
+
+    if (TF_VERIFY(skelQuery)) {
+        // Compute skel-space joint transforms.
+        // The extent for this skel is based on the pivots of all joints.
+        VtMatrix4dArray skelXforms;
+        if (skelQuery.ComputeJointSkelTransforms(&skelXforms, time)) {
+            return UsdSkelComputeJointsExtent(skelXforms, extent,
+                                              /*padding*/ 0, transform);
+        }
+    }
+    return true;
+}
+
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdSkelSkeleton>(_ComputeExtent);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

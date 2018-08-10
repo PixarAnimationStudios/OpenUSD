@@ -254,6 +254,62 @@ size_t HdDataSizeOfType(HdType);
 HD_API
 size_t HdDataSizeOfTupleType(HdTupleType);
 
+/// \enum HdFormat
+///
+/// HdFormat describes the memory format of image buffers used in Hd.
+/// It's similar to HdType but with more specific associated semantics.
+///
+/// The list of supported formats is modelled after Vulkan and DXGI, though
+/// hydra only supports a subset.  Endian-ness is explicitly not captured;
+/// color data is assumed to always be RGBA.
+///
+/// For reference, see:
+///   https://vulkan.lunarg.com/doc/view/1.0.30.0/windows/vkspec.chunked/ch31s03.html
+enum HdFormat
+{
+    HdFormatInvalid=-1,
+
+    // UNorm8 - a 1-byte value representing a float between 0 and 1.
+    // float value = (unorm / 255.0f);
+    HdFormatUNorm8=0,
+    HdFormatUNorm8Vec2,
+    HdFormatUNorm8Vec3,
+    HdFormatUNorm8Vec4,
+
+    // SNorm8 - a 1-byte value representing a float between -1 and 1.
+    // float value = max(snorm / 127.0f, -1.0f);
+    HdFormatSNorm8,
+    HdFormatSNorm8Vec2,
+    HdFormatSNorm8Vec3,
+    HdFormatSNorm8Vec4,
+
+    // Float32 - a 4-byte IEEE float.
+    HdFormatFloat32,
+    HdFormatFloat32Vec2,
+    HdFormatFloat32Vec3,
+    HdFormatFloat32Vec4,
+
+    // Int32 - a 4-byte signed integer
+    HdFormatInt32,
+    HdFormatInt32Vec2,
+    HdFormatInt32Vec3,
+    HdFormatInt32Vec4,
+
+    HdFormatCount
+};
+
+/// Return the single-channel version of a given format.
+HD_API
+HdFormat HdGetComponentFormat(HdFormat f);
+
+/// Return the count of components in the given format.
+HD_API
+size_t HdGetComponentCount(HdFormat f);
+
+/// Return the size of a single element of the given format.
+/// For block formats, this will return 0.
+HD_API
+size_t HdDataSizeOfFormat(HdFormat f);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

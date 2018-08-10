@@ -1320,7 +1320,7 @@ GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask
 
                     TF_DEBUG(GUSD_STAGECACHE).Msg(
                         "[GusdStageCache::_MaskedStageCache::_OpenStage] "
-                        "%p -- Mapping prim <%s> to stage %s",  
+                        "%p -- Mapping prim <%s> to stage %s\n",  
                         this, maskedPath.GetText(), UsdDescribe(stage).c_str());
 
                     other->second = stage;
@@ -1394,6 +1394,13 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
 
                 if(!prims[primIndex] && sev >= UT_ERROR_ABORT)
                     return false;
+
+                // Map this prim onto the cache so that future prim lookups will
+                // return this stage. This is also needed in order for the cache
+                // to take ownership of the stage.
+                _StageMap::accessor acc;
+                _map.insert(acc, primPath);
+                acc->second = stage;
             }
         } else {
             if(sev >= UT_ERROR_ABORT)

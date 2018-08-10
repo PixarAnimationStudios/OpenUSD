@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Refs" (
+    references = [
+        @./single_usd.usdz@</Root_USD>,
+        @./single_usda.usdz@</Root_USDA>,
+        @./single_usdc.usdz@</Root_USDC>
+    ]
+)
+{
+}

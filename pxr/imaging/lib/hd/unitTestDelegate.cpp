@@ -68,11 +68,11 @@ HdUnitTestDelegate::SetRefineLevel(int level)
     _refineLevel = level;
     TF_FOR_ALL (it, _meshes) {
         GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-            it->first, HdChangeTracker::DirtyRefineLevel);
+            it->first, HdChangeTracker::DirtyDisplayStyle);
     }
     TF_FOR_ALL (it, _curves) {
         GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-            it->first, HdChangeTracker::DirtyRefineLevel);
+            it->first, HdChangeTracker::DirtyDisplayStyle);
     }
     TF_FOR_ALL (it, _refineLevels) {
         it->second = level;
@@ -131,7 +131,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
-                        points, numVerts, verts, PxOsdSubdivTags(),
+                        points, numVerts, verts, VtIntArray(), PxOsdSubdivTags(),
                         VtValue(GfVec4f(1)), HdInterpolationConstant, guide, doubleSided);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
@@ -144,6 +144,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
                              VtVec3fArray const &points,
                              VtIntArray const &numVerts,
                              VtIntArray const &verts,
+                             VtIntArray const &holes,
                              PxOsdSubdivTags const &subdivTags,
                              VtValue const &color,
                              HdInterpolation colorInterpolation,
@@ -159,7 +160,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
-                        points, numVerts, verts, subdivTags,
+                        points, numVerts, verts, holes, subdivTags,
                         color, colorInterpolation, guide, doubleSided);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
@@ -278,7 +279,6 @@ HdUnitTestDelegate::AddMaterialResource(SdfPath const &id,
                                          VtValue materialResource)
 {
     HdRenderIndex& index = GetRenderIndex();
-    TF_VERIFY(index.GetRenderDelegate()->CanComputeMaterialNetworks());
     index.InsertSprim(HdPrimTypeTokens->material, this, id);
     _materials[id] = materialResource;
 }
@@ -350,7 +350,7 @@ HdUnitTestDelegate::SetRefineLevel(SdfPath const &id, int refineLevel)
 {
     _refineLevels[id] = refineLevel;
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-    tracker.MarkRprimDirty(id, HdChangeTracker::DirtyRefineLevel);
+    tracker.MarkRprimDirty(id, HdChangeTracker::DirtyDisplayStyle);
 }
 
 void
@@ -475,6 +475,15 @@ HdUnitTestDelegate::UpdateInstancerPrototypes(float time)
 }
 
 void
+HdUnitTestDelegate::AddRenderBuffer(SdfPath const &id,
+    GfVec3i const& dims, HdFormat format, bool multiSampled)
+{
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
+    _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+}
+
+void
 HdUnitTestDelegate::AddCamera(SdfPath const &id)
 {
     HdRenderIndex& index = GetRenderIndex();
@@ -550,7 +559,8 @@ HdUnitTestDelegate::GetMeshTopology(SdfPath const& id)
     return HdMeshTopology(mesh.scheme,
                           mesh.orientation,
                           mesh.numVerts,
-                          mesh.verts);
+                          mesh.verts,
+                          mesh.holes);
 }
 
 /*virtual*/
@@ -614,14 +624,14 @@ HdUnitTestDelegate::GetDoubleSided(SdfPath const& id)
 }
 
 /*virtual*/
-int 
-HdUnitTestDelegate::GetRefineLevel(SdfPath const& id)
+HdDisplayStyle 
+HdUnitTestDelegate::GetDisplayStyle(SdfPath const& id)
 {
     if (_refineLevels.find(id) != _refineLevels.end()) {
-        return _refineLevels[id];
+        return HdDisplayStyle(_refineLevels[id]);
     }
     // returns fallback refinelevel
-    return _refineLevel;
+    return HdDisplayStyle(_refineLevel);
 }
 
 /*virtual*/
@@ -662,6 +672,15 @@ HdUnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
         return GfMatrix4d(instancer->rootTransform);
     }
     return GfMatrix4d(1);
+}
+
+/*virtual*/
+SdfPath 
+HdUnitTestDelegate::GetMaterialId(SdfPath const& rprimId)
+{
+    SdfPath materialId;
+    TfMapLookup(_materialBindings, rprimId, &materialId);
+    return materialId;
 }
 
 /*virtual*/
@@ -733,6 +752,16 @@ HdTextureResourceSharedPtr
 HdUnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
     return nullptr;
+}
+
+/*virtual*/
+HdRenderBufferDescriptor
+HdUnitTestDelegate::GetRenderBufferDescriptor(SdfPath const& id)
+{
+    if (_RenderBuffer *rb = TfMapLookupPtr(_renderBuffers, id)) {
+        return { rb->dims, rb->format, rb->multiSampled };
+    }
+    return HdRenderBufferDescriptor();
 }
 
 /*virtual*/
@@ -820,14 +849,7 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].translate);
         }
-    } else if (key == HdShaderTokens->material) {
-        SdfPath materialId;
-        TfMapLookup(_materialBindings, id, &materialId);
-
-        return VtValue(materialId);
-    }
-
-
+    } 
     return value;
 }
 
@@ -973,6 +995,7 @@ HdUnitTestDelegate::AddPolygons(
 
 
     PxOsdSubdivTags subdivTags;
+    VtIntArray holes;
     VtValue color;
 
     if (colorInterp == HdInterpolationConstant) {
@@ -1007,6 +1030,7 @@ HdUnitTestDelegate::AddPolygons(
             _BuildArray(points, sizeof(points)/sizeof(points[0])),
             _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
             _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            holes,
             subdivTags,
             color,
             colorInterp,
@@ -1074,6 +1098,7 @@ HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
     std::vector<GfVec3f> points;
     std::vector<int> numVerts;
     std::vector<int> verts;
+    VtIntArray holes;
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
@@ -1082,6 +1107,7 @@ HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
             _BuildArray(&points[0], points.size()),
             _BuildArray(&numVerts[0], numVerts.size()),
             _BuildArray(&verts[0], verts.size()),
+            holes,
             subdivTags,
             primvar,
             primvarInterpolation,
@@ -1101,6 +1127,7 @@ HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
     std::vector<GfVec3f> points;
     std::vector<int> numVerts;
     std::vector<int> verts;
+    VtIntArray holes;
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
@@ -1117,6 +1144,7 @@ HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
             _BuildArray(&points[0], points.size()),
             _BuildArray(&numVerts[0], numVerts.size()),
             _BuildArray(&verts[0], verts.size()),
+            holes,
             subdivTags,
             VtValue(colorArray),
             HdInterpolationUniform,
@@ -1136,6 +1164,7 @@ HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
     std::vector<GfVec3f> points;
     std::vector<int> numVerts;
     std::vector<int> verts;
+    VtIntArray holes;
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
@@ -1152,6 +1181,7 @@ HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
             _BuildArray(&points[0], points.size()),
             _BuildArray(&numVerts[0], numVerts.size()),
             _BuildArray(&verts[0], verts.size()),
+            holes,
             subdivTags,
             VtValue(colorArray),
             HdInterpolationVertex,
@@ -1171,6 +1201,7 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
     std::vector<GfVec3f> points;
     std::vector<int> numVerts;
     std::vector<int> verts;
+    VtIntArray holes;
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
@@ -1187,6 +1218,7 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
             _BuildArray(&points[0], points.size()),
             _BuildArray(&numVerts[0], numVerts.size()),
             _BuildArray(&verts[0], verts.size()),
+            holes,
             subdivTags,
             VtValue(colorArray),
             HdInterpolationFaceVarying,
@@ -1403,8 +1435,6 @@ HdUnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
     float cornerSharpnesses[] = { 5.0f };
 
     PxOsdSubdivTags subdivTags;
-    subdivTags.SetHoleIndices(_BuildArray(holes,
-        sizeof(holes)/sizeof(holes[0])));
     subdivTags.SetCreaseLengths(_BuildArray(creaseLengths,
         sizeof(creaseLengths)/sizeof(creaseLengths[0])));
     subdivTags.SetCreaseIndices(_BuildArray(creaseIndices,
@@ -1424,6 +1454,7 @@ HdUnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
             _BuildArray(points, sizeof(points)/sizeof(points[0])),
             _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
             _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            _BuildArray(holes, sizeof(holes)/sizeof(holes[0])),
             subdivTags,
             /*color=*/VtValue(GfVec4f(1)),
             /*colorInterpolation=*/HdInterpolationConstant,

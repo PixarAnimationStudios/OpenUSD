@@ -58,29 +58,26 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pivotTranslate) \
     (transform)
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaXformStackTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaXformStackTokens,
         PXRUSDMAYA_API,
         PXRUSDMAYA_XFORM_STACK_TOKENS);
 
-class _PxrUsdMayaXformOpClassificationData;
-class _PxrUsdMayaXformStackData;
-
-/// \class PxrUsdMayaXformOpClassification
+/// \class UsdMayaXformOpClassification
 /// \brief Defines a named "class" of xform operation
 ///
 /// Similar to UsdGeomXformOp, but without a specific attribute;
 /// UsdGeomXformOps can be thought of as "instances" of a
-/// PxrUsdMayaXformOpDefinition "type"
-class PxrUsdMayaXformOpClassification
+/// UsdMayaXformOpDefinition "type"
+class UsdMayaXformOpClassification
 {
 public:
-    PxrUsdMayaXformOpClassification(const TfToken &name,
+    UsdMayaXformOpClassification(const TfToken &name,
                                        UsdGeomXformOp::Type opType,
                                        bool isInvertedTwin=false);
 
-    PxrUsdMayaXformOpClassification();
+    UsdMayaXformOpClassification();
 
-    static PxrUsdMayaXformOpClassification const & NullInstance();
+    static UsdMayaXformOpClassification const & NullInstance();
 
     PXRUSDMAYA_API
     TfToken const &GetName() const;
@@ -98,7 +95,7 @@ public:
     bool IsCompatibleType(UsdGeomXformOp::Type otherType) const;
 
     PXRUSDMAYA_API
-    bool operator ==(const PxrUsdMayaXformOpClassification& other) const;
+    bool operator ==(const UsdMayaXformOpClassification& other) const;
 
     PXRUSDMAYA_API
     bool IsNull() const;
@@ -107,24 +104,25 @@ public:
     std::vector<TfToken> CompatibleAttrNames() const;
 
 private:
+    class _Data;
+
     // Because this is an immutable type, we keep a pointer to shared
     // data; this allows us to only have overhead associated with
     // a RefPtr, while having easy-python-wrapping (without overhead
     // of WeakPtr)
-    typedef TfRefPtr<_PxrUsdMayaXformOpClassificationData> DataRefPtr;
-
-    DataRefPtr _sharedData;
+    typedef TfRefPtr<_Data> _DataRefPtr;
+    _DataRefPtr _sharedData;
 };
 
-/// \class PxrUsdMayaXformStack
+/// \class UsdMayaXformStack
 /// \brief Defines a standard list of xform operations.
 ///
 /// Used to define the set and order of transforms that programs like
 /// Maya use and understand.
-class PxrUsdMayaXformStack
+class UsdMayaXformStack
 {
 public:
-    typedef PxrUsdMayaXformOpClassification OpClass;
+    typedef UsdMayaXformOpClassification OpClass;
     typedef std::vector<OpClass> OpClassList;
     typedef std::pair<const OpClass, const OpClass> OpClassPair;
 
@@ -169,15 +167,15 @@ public:
         }
     }
 
-    PxrUsdMayaXformStack(
+    UsdMayaXformStack(
             const OpClassList& ops,
             const std::vector<IndexPair>& inversionTwins,
             bool nameMatters=true);
 
     // Don't want to accidentally make a copy, since the only instances are supposed
     // to be static!
-    explicit PxrUsdMayaXformStack(const PxrUsdMayaXformStack& other) = default;
-    explicit PxrUsdMayaXformStack(PxrUsdMayaXformStack&& other) = default;
+    explicit UsdMayaXformStack(const UsdMayaXformStack& other) = default;
+    explicit UsdMayaXformStack(UsdMayaXformStack&& other) = default;
 
     PXRUSDMAYA_API
     OpClassList const & GetOps() const;
@@ -189,7 +187,7 @@ public:
     bool GetNameMatters() const;
 
     PXRUSDMAYA_API
-    PxrUsdMayaXformOpClassification const & operator[] (const size_t index) const;
+    UsdMayaXformOpClassification const & operator[] (const size_t index) const;
 
     PXRUSDMAYA_API
     size_t GetSize() const;
@@ -270,7 +268,7 @@ public:
     ///    scale
     ///    scalePivot^-1 (inverted twin)
     PXRUSDMAYA_API
-    static const PxrUsdMayaXformStack& MayaStack();
+    static const UsdMayaXformStack& MayaStack();
 
 
     /// \brief The Common API xform stack
@@ -282,7 +280,7 @@ public:
     ///    scale
     ///    pivot^-1 (inverted twin)
     PXRUSDMAYA_API
-    static const PxrUsdMayaXformStack& CommonStack();
+    static const UsdMayaXformStack& CommonStack();
 
     /// \brief xform "stack" consisting of only a single matrix xform
     ///
@@ -291,7 +289,7 @@ public:
     /// Consists of these xform operators:
     ///    transform
     PXRUSDMAYA_API
-    static const PxrUsdMayaXformStack& MatrixStack();
+    static const UsdMayaXformStack& MatrixStack();
 
     /// \brief Runs MatchingSubstack against the given list of stacks
     ///
@@ -300,19 +298,20 @@ public:
     PXRUSDMAYA_API
     static OpClassList
     FirstMatchingSubstack(
-            const std::vector<PxrUsdMayaXformStack const *>& stacks,
+            const std::vector<UsdMayaXformStack const *>& stacks,
             const std::vector<UsdGeomXformOp>& xformops);
 
 private:
+    class _Data;
+
     // Because this is an immutable type, we keep a pointer to shared
     // data; this allows us to only have overhead associated with
     // a RefPtr, while having easy-python-wrapping (without overhead
     // of WeakPtr)
-    typedef TfRefPtr<_PxrUsdMayaXformStackData> DataRefPtr;
-
-    DataRefPtr _sharedData;
+    typedef TfRefPtr<_Data> _DataRefPtr;
+    _DataRefPtr _sharedData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_XFORM_STACK_H
+#endif

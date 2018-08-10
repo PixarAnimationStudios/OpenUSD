@@ -24,8 +24,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
+
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/defineResolver.h"
+#include "pxr/usd/ar/filesystemAsset.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -87,7 +89,7 @@ ArDefaultResolver::SetDefaultSearchPath(
 void
 ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
 {
-    // no configuration takes place in search path resolver
+    _defaultContext = CreateDefaultContextForAsset(path);
 }
 
 bool
@@ -280,6 +282,18 @@ ArDefaultResolver::FetchToLocalResolvedPath(
     return true;
 }
 
+std::shared_ptr<ArAsset> 
+ArDefaultResolver::OpenAsset(
+    const std::string& resolvedPath)
+{
+    FILE* f = ArchOpenFile(resolvedPath.c_str(), "rb");
+    if (!f) {
+        return nullptr;
+    }
+
+    return std::shared_ptr<ArAsset>(new ArFilesystemAsset(f));
+}
+
 bool
 ArDefaultResolver::CanWriteLayerToPath(
     const std::string& path,
@@ -299,21 +313,21 @@ ArDefaultResolver::CanCreateNewLayerWithIdentifier(
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContext()
 {
-    return ArResolverContext(ArDefaultResolverContext());
+    return _defaultContext;
 }
 
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContextForAsset(
     const std::string& filePath)
 {
-    return ArResolverContext(ArDefaultResolverContext());
-}
+    if (filePath.empty()){
+        return ArResolverContext(ArDefaultResolverContext());
+    }
 
-ArResolverContext
-ArDefaultResolver::CreateDefaultContextForDirectory(
-    const std::string& fileDirectory)
-{
-    return ArResolverContext(ArDefaultResolverContext());
+    std::string assetDir = TfGetPathName(TfAbsPath(filePath));
+    
+    return ArResolverContext(ArDefaultResolverContext(
+                                 std::vector<std::string>(1, assetDir)));
 }
 
 void 
@@ -329,54 +343,27 @@ ArDefaultResolver::GetCurrentContext()
 }
 
 void 
-ArDefaultResolver::_BeginCacheScope(
+ArDefaultResolver::BeginCacheScope(
     VtValue* cacheScopeData)
 {
-    // cacheScopeData is held by ArResolverScopedCache instances
-    // but is only populated by this function, so we know it must 
-    // be empty (when constructing a regular ArResolverScopedCache)
-    // or holding on to a _CachePtr (when constructing an 
-    // ArResolverScopedCache that shares data with another one).
-    TF_VERIFY(cacheScopeData &&
-              (cacheScopeData->IsEmpty() ||
-               cacheScopeData->IsHolding<_CachePtr>()));
-
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-
-    if (cacheScopeData->IsHolding<_CachePtr>()) {
-        cacheStack.push_back(cacheScopeData->UncheckedGet<_CachePtr>());
-    }
-    else {
-        if (cacheStack.empty()) {
-            cacheStack.push_back(std::make_shared<_Cache>());
-        }
-        else {
-            cacheStack.push_back(cacheStack.back());
-        }
-    }
-
-    *cacheScopeData = cacheStack.back();
+    _threadCache.BeginCacheScope(cacheScopeData);
 }
 
 void 
-ArDefaultResolver::_EndCacheScope(
+ArDefaultResolver::EndCacheScope(
     VtValue* cacheScopeData)
 {
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-    if (TF_VERIFY(!cacheStack.empty())) {
-        cacheStack.pop_back();
-    }
+    _threadCache.EndCacheScope(cacheScopeData);
 }
 
 ArDefaultResolver::_CachePtr 
 ArDefaultResolver::_GetCurrentCache()
 {
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-    return (cacheStack.empty() ? _CachePtr() : cacheStack.back());
+    return _threadCache.GetCurrentCache();
 }
 
 void 
-ArDefaultResolver::_BindContext(
+ArDefaultResolver::BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
@@ -394,7 +381,7 @@ ArDefaultResolver::_BindContext(
 }
 
 void 
-ArDefaultResolver::_UnbindContext(
+ArDefaultResolver::UnbindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {

@@ -57,6 +57,13 @@ _CreateJointsAttr(UsdSkelSkeleton &self,
 }
         
 static UsdAttribute
+_CreateBindTransformsAttr(UsdSkelSkeleton &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateBindTransformsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4dArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateRestTransformsAttr(UsdSkelSkeleton &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRestTransformsAttr(
@@ -69,7 +76,7 @@ void wrapUsdSkelSkeleton()
 {
     typedef UsdSkelSkeleton This;
 
-    class_<This, bases<UsdGeomImageable> >
+    class_<This, bases<UsdGeomBoundable> >
         cls("Skeleton");
 
     cls
@@ -82,14 +89,6 @@ void wrapUsdSkelSkeleton()
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -108,6 +107,13 @@ void wrapUsdSkelSkeleton()
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
              &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetBindTransformsAttr",
+             &This::GetBindTransformsAttr)
+        .def("CreateBindTransformsAttr",
+             &_CreateBindTransformsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

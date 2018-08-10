@@ -458,6 +458,47 @@ class TestUsdInstancing(unittest.TestCase):
             ['/__Master_1/Prop_1/Scope', '/__Master_1/Prop_2/Scope', 
              '/__Master_5/Scope',])
 
+    def test_Nested2(self):
+        """Test loading and unloading instances with nested instances."""
+        nl = NoticeListener()
+
+        print "Opening stage with nothing loaded initially"
+        s = OpenStage('nested_2/root.usda', Usd.Stage.LoadNone)
+
+        instances = ['/A_1', '/A_2', '/A_3']
+        ValidateExpectedInstances(s,
+            { '/__Master_1': instances })
+
+        print "-" * 60
+        print "Loading instances"
+
+        s.LoadAndUnload(instances, [])
+        ValidateExpectedInstances(s,
+            { '/__Master_2': instances,
+              '/__Master_3': ['/__Master_2/B'] })
+        ValidateExpectedChanges(nl,
+            ['/A_1', '/A_2', '/A_3'])
+
+        print "-" * 60
+        print "Unloading instances"
+
+        s.LoadAndUnload([], instances)
+        ValidateExpectedInstances(s,
+            { '/__Master_4': instances })
+        ValidateExpectedChanges(nl,
+            ['/A_1', '/A_2', '/A_3'])
+
+        # Stress-test by repeatedly loading and unloading instances.
+        # Don't want too much output, so we delete the notice listener.
+        del nl
+
+        print "-" * 60
+        print "Stress-test loading and unloading instances"
+
+        for _ in xrange(100):
+            s.LoadAndUnload(instances, [])
+            s.LoadAndUnload([], instances)
+
     def test_Payloads(self):
         """Test instancing and change processing with asset structure involving
         payloads, including payloads nested inside instances and masters."""

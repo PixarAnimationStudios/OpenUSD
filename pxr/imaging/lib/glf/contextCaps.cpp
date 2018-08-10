@@ -50,6 +50,8 @@ TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
                       "Use GL copy buffer data");
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_DRAW_PARAMETERS, true,
+                      "Use GL shader draw params if available (OpenGL 4.5+)");
 
 TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
                       "GLSL version");
@@ -233,6 +235,9 @@ GlfContextCaps::_LoadCaps()
     if (!TfGetEnvSetting(GLF_ENABLE_DIRECT_STATE_ACCESS)) {
         directStateAccessEnabled = false;
     }
+    if (!TfGetEnvSetting(GLF_ENABLE_SHADER_DRAW_PARAMETERS)) {
+        shaderDrawParametersEnabled = false;
+    }
 
     // For debugging and unit testing
     if (TfGetEnvSetting(GLF_GLSL_VERSION) > 0) {
@@ -245,7 +250,7 @@ GlfContextCaps::_LoadCaps()
         bindlessTextureEnabled      &= (glslVersion >= 430);
         bindlessBufferEnabled       &= (glslVersion >= 430);
         shaderStorageBufferEnabled  &= (glslVersion >= 430);
-        shaderDrawParametersEnabled &= (glslVersion >= 460);
+        shaderDrawParametersEnabled &= (glslVersion >= 450);
     }
 
     // For driver issues workaround

@@ -240,5 +240,85 @@ class TestUsdBugs(unittest.TestCase):
         a.Set(zip(range(3), range(3), range(3)))
         self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(0,0,0), (1,1,1), (2,2,2)]))
 
+
+    def test_160884(self):
+        # Test that opening a stage that has a mask pointing beneath an instance
+        # doesn't crash.
+        from pxr import Usd, Sdf
+        import random
+        allFormats = ['usd' + x for x in 'ac']
+        for fmt in allFormats:
+            l = Sdf.Layer.CreateAnonymous('_bug160884.'+fmt)
+            l.ImportFromString('''#usda 1.0
+                (
+                    endTimeCode = 150
+                    startTimeCode = 100
+                    upAxis = "Y"
+                )
+
+                def Sphere "test"
+                {
+                    def Scope "scope1" {}
+                    def Scope "scope2" {}
+                    def Scope "scope3" {}
+                    def Scope "scope4" {}
+                    def Scope "scope5" {}
+                    def Scope "scope6" {}
+                    def Scope "scope7" {}
+                    def Scope "scope8" {}
+                    def Scope "scope9" {}
+                    def Scope "scope10" {}
+                    def Scope "scope11" {}
+                    def Scope "scope12" {}
+                    def Scope "scope13" {}
+                    def Scope "scope14" {}
+                    def Scope "scope15" {}
+                    def Scope "scope16" {}
+                    def Scope "scope17" {}
+                    def Scope "scope18" {}
+                    def Scope "scope19" {}
+                    def Scope "scope20" {}
+                }
+
+                def Scope "Location"
+                {
+
+                  def "asset1" (
+                      instanceable = True
+                      add references = </test>
+                  )
+                  {
+                  }
+
+                  def "asset2" (
+                      add references = </test>
+                  )
+                  {
+                  }
+
+                }
+
+                def Scope "Loc1" (
+                    instanceable = True
+                    add references = </Location>
+                )
+                {
+
+                }
+
+                def Scope "Loc2" (
+                    add references = </Location>
+                )
+                {
+
+                }
+                ''')
+
+            for i in range(1024):
+                stage = Usd.Stage.OpenMasked(
+                    l, Usd.StagePopulationMask(['/Loc%s/asset1/scope%s' %
+                                                (str(random.randint(1,20)),
+                                                 str(random.randint(1,2)))]))
+
 if __name__ == '__main__':
     unittest.main()

@@ -29,236 +29,140 @@
 
 #include "pxr/base/trace/api.h"
 #include "pxr/base/trace/event.h"
-#include "pxr/base/trace/threads.h"
+#include "pxr/base/trace/eventData.h"
 
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/arch/timing.h"
 
 #include <vector>
-#include "pxr/base/tf/hashmap.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
+TF_DECLARE_REF_PTRS(TraceEventNode);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class TraceEventNode
 ///
-/// A representation of a call tree. Each node represents one or more calls that
-/// occurred in the trace. Multiple calls to a child node are aggregated into one
-/// node.
+/// TraceEventNode is used to represents call tree of a trace. Each node 
+/// represents a Begin-End trace event pair, or a single Timespan event. This is
+/// useful for timeline views of a trace.
 ///
 
-class TraceEventNode : public TfRefBase, public TfWeakBase {
+class TraceEventNode : public TfRefBase {
 public:
 
-    using This = TraceEventNode;
-    using ThisPtr = TraceEventNodePtr;
-    using ThisRefPtr = TraceEventNodeRefPtr;
-
     using TimeStamp = TraceEvent::TimeStamp;
+    using AttributeData = TraceEventData;
+    using AttributeMap = std::multimap<TfToken, AttributeData>;
 
-    // This class is only used for validity checks.
-    // FIXME: This class should be removed.
-    class Id
-    {
-    public:
-        Id() : _valid(false) {}
-        Id(const TraceThreadId&) : _valid(true) {}
-        bool IsValid() const { return _valid; }
-    private:
-        bool _valid;
-    };
-
-    static ThisRefPtr New() {
-        return This::New(Id(), TfToken("root"), 0, 0);
+    /// Creates a new root node.
+    ///
+    static TraceEventNodeRefPtr New() {
+        return TraceEventNode::New(
+            TfToken("root"), TraceCategory::Default, 0.0, 0.0, {}, false);
     }
 
-    static ThisRefPtr New(const Id &id,
-                          const TfToken &key,
-                          const TimeStamp ts,
-                          const int count = 1,
-                          const int exclusiveCount = 1) {
-        return TfCreateRefPtr(new This(id, key, ts, count, exclusiveCount));
+    /// Creates a new node with \p key, \p category, \p beginTime and 
+    /// \p endTime.
+    static TraceEventNodeRefPtr New(const TfToken &key,
+                          const TraceCategoryId category,
+                          const TimeStamp beginTime,
+                          const TimeStamp endTime,
+                          TraceEventNodeRefPtrVector&& children,
+                          const bool separateEvents) {
+        return TfCreateRefPtr(
+            new TraceEventNode(
+                key,
+                category,
+                beginTime,
+                endTime,
+                std::move(children),
+                separateEvents));
     }
 
-    TRACE_API TraceEventNodeRefPtr 
-    Append(Id id, const TfToken &key, TimeStamp ts,
-           int c = 1, int xc = 1);
+    /// Appends a new child node with \p key, \p category, \p beginTime and 
+    /// \p endTime.
+    TraceEventNodeRefPtr Append(const TfToken &key, 
+                                      TraceCategoryId category,
+                                      TimeStamp beginTime,
+                                      TimeStamp endTime,
+                                      bool separateEvents);
 
-    TRACE_API void Append(TraceEventNodeRefPtr child);
+    /// Appends \p node as a child node.
+    void Append(TraceEventNodeRefPtr node);
 
-    /// Returns the node's key.
+    /// Returns the name of this node.
     TfToken GetKey() { return _key;}
 
-    /// Returns the node's id.
-    const Id &GetId() { return _id;}
+    /// Returns the category of this node.
+    TraceCategoryId GetCategory() const { return _category; }
+
+    /// Sets this node's begin and end time to the time extents of its direct 
+    /// children.
+    void SetBeginAndEndTimesFromChildren();
 
     /// \name Profile Data Accessors
     /// @{
 
-    /// Returns the total time of this node ands its children.
-    TimeStamp GetInclusiveTime() { return _ts; }
+    /// Returns the time that this scope started.
+    TimeStamp GetBeginTime() { return _beginTime; }
 
-    /// Returns the time spent in this node but not its children.
-    TRACE_API TimeStamp GetExclusiveTime(bool recursive = false);
-
-    /// Returns the call count of this node. \p recursive determines if 
-    /// recursive calls are counted.
-    int GetCount(bool recursive = false) const {
-        return recursive ? _recursiveCount : _count; 
-    }
-
-    /// Returns the exclusive count.
-    int GetExclusiveCount() const { return _exclusiveCount; }
+    /// Returns the time that this scope ended.
+    TimeStamp GetEndTime()   { return _endTime; }
 
     /// @}
-
-
-    /// \name Counter Value Accessors
-    /// @{
-
-    TRACE_API void AppendInclusiveCounterValue(int index, double value);
-
-    TRACE_API double GetInclusiveCounterValue(int index) const;
-
-    TRACE_API void AppendExclusiveCounterValue(int index, double value);
-
-    TRACE_API double GetExclusiveCounterValue(int index) const;
-
-    /// @}
-
 
     /// \name Children Accessors
     /// @{
-    const TraceEventNodePtrVector GetChildren() {
-        // convert to a vector of weak ptrs
-        return TraceEventNodePtrVector( _children.begin(),_children.end() );
-    }
 
+    /// Returns references to the children of this node.
     const TraceEventNodeRefPtrVector &GetChildrenRef() {
         return _children;
     }
 
-    TRACE_API TraceEventNodeRefPtr GetChild(const TfToken &key);
-    TraceEventNodeRefPtr GetChild(const std::string &key) {
-        return GetChild(TfToken(key));
-    }
-
     /// @}
 
+    /// Return the data associated with this node.
+    const AttributeMap& GetAttributes() const { return _attributes; }
 
-    /// Sets whether or not this node is expanded in a gui.
-    void SetExpanded(bool expanded) {
-        _expanded = expanded;
+    /// Add data to this node.
+    void AddAttribute(const TfToken& key, const AttributeData& attr);
+
+    /// Returns whether this node was created from a Begin-End pair or a single
+    /// Timespan event.
+    bool IsFromSeparateEvents() const {
+        return _fromSeparateEvents;
     }
-
-    /// Returns whether this node is expanded in a gui.
-    bool IsExpanded() {
-        return _expanded;
-    }
-
-    /// \name Recursion
-    /// @{
-
-    /// Scans the tree for recursive calls and updates the recursive counts.
-    ///
-    /// This call leaves the tree topology intact, and only updates the
-    /// recursion-related data in the node.  Prior to this call, recursion
-    /// data is invalid in the node.
-    TRACE_API void MarkRecursiveChildren();
-
-    /// Returns true if this node is simply a marker for a merged recursive 
-    /// subtree; otherwise returns false.
-    ///
-    /// This value is meaningless until this node or any of its ancestors have 
-    /// been marked with MarkRecursiveChildren().
-    bool IsRecursionMarker() const { return _isRecursionMarker; }
-
-    /// Returns true if this node is the head of a recursive call tree
-    /// (i.e. the function has been called recursively).  
-    ///
-    /// This value is meaningless until this node or any of its ancestors have 
-    /// been marked with MarkRecursiveChildren().
-    bool IsRecursionHead() const { return _isRecursionHead; }
-
-    /// @}
-
 
 private:
 
-    TraceEventNode(const Id &id, const TfToken &key, TimeStamp ts,
-              int count, int exclusiveCount) :
-        _id(id), _key(key), _ts(ts), _exclusiveTs(ts),
-        _count(count), _exclusiveCount(exclusiveCount),
-        _recursiveCount(count), _recursiveExclusiveTs(ts), _expanded(false), 
-        _isRecursionMarker(false), _isRecursionHead(false),
-        _isRecursionProcessed(false) {}
+    TraceEventNode(
+        const TfToken &key,
+        TraceCategoryId category,
+        TimeStamp beginTime, 
+        TimeStamp endTime,
+        TraceEventNodeRefPtrVector&& children,
+        bool separateEvents)
 
-    using _ChildDictionary = std::map<TfToken, size_t>;
+        : _key(key)
+        , _category(category)
+        , _beginTime(beginTime)
+        , _endTime(endTime)
+        , _children(std::move(children))
+        , _fromSeparateEvents(separateEvents)
+    {}
 
-    void _MergeRecursive(const TraceEventNodeRefPtr &node);
 
-    void _SetAsRecursionMarker(TraceEventNodePtr parent);
-
-    Id _id;
     TfToken _key;
-
-    TimeStamp _ts;  
-    TimeStamp _exclusiveTs;
-    int _count;
-    int _exclusiveCount;
-
-    // We keep the recursive counts separate so that we don't mess with 
-    // the collected data.
-    int _recursiveCount;
-    TraceEventNodePtr _recursionParent;
-    TimeStamp _recursiveExclusiveTs;
-
+    TraceCategoryId _category;
+    TimeStamp _beginTime;
+    TimeStamp _endTime;
     TraceEventNodeRefPtrVector _children;
-    _ChildDictionary _childrenByKey;
+    bool _fromSeparateEvents;
 
-    // A structure that holds on to the inclusive and exclusive counter
-    // values. These values are usually populated together, so it's beneficial
-    // to maintain them in a tightly packed structure.
-    struct _CounterValue {
-        _CounterValue() : inclusive(0.0), exclusive(0.0) {}
-        double inclusive;
-        double exclusive;
-    };
-
-    // XXX: Find a data structure that is better than a hash map.
-    //      We could use a vector for fast lookup, but it would be ideal to
-    //      maintain a sparse data structure. Many EventNodes will NOT have
-    //      counter values for specific counter indices. Also, many EventNodes
-    //      will not have counter values at all.
-    using _CounterValues = TfHashMap<int, _CounterValue>;
-
-    // The counter values associated with specific counter indices
-    _CounterValues _counterValues;
-    
-    unsigned int
-    // If multiple Trace Editors are to be pointed at the same Reporter, this
-    // might have to be changed
-                _expanded:1,
-
-    // This flag keeps track of whether or not this node is simply intended
-    // as a marker for the start of a recursive call tree.
-                _isRecursionMarker:1,
-
-    // This flag keeps track of whether or not a node is the head of a
-    // recursive call tree.  In other words, if it is a function that has been
-    // called recursively.
-                _isRecursionHead:1,
-
-    // This flag is used during recursive traversal to mark the node as having 
-    // been visited and avoid too much processing.
-                _isRecursionProcessed:1;
+    AttributeMap _attributes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

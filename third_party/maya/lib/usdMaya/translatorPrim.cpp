@@ -21,13 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorPrim.h"
 
+#include "usdMaya/readUtil.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
-#include "usdMaya/AttributeConverter.h"
-#include "usdMaya/AttributeConverterRegistry.h"
 
 #include "pxr/usd/usdGeom/imageable.h"
 
@@ -38,11 +36,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 void
-PxrUsdMayaTranslatorPrim::Read(
+UsdMayaTranslatorPrim::Read(
         const UsdPrim& prim,
         MObject mayaNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     UsdGeomImageable primSchema(prim);
     if (!primSchema) {
@@ -52,14 +50,14 @@ PxrUsdMayaTranslatorPrim::Read(
     }
 
     // Gather visibility
-    // If args.GetReadAnimData() is TRUE,
-    // pick the first avaiable sample or default
+    // If timeInterval is non-empty, pick the first available sample in the
+    // timeInterval or default.
     UsdTimeCode visTimeSample=UsdTimeCode::EarliestTime();
     std::vector<double> visTimeSamples;
     size_t visNumTimeSamples = 0;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(primSchema.GetVisibilityAttr(),
-                args, &visTimeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        primSchema.GetVisibilityAttr().GetTimeSamplesInInterval(
+                args.GetTimeInterval(), &visTimeSamples);
         visNumTimeSamples = visTimeSamples.size();
         if (visNumTimeSamples>0) {
             visTimeSample = visTimeSamples[0];
@@ -71,7 +69,7 @@ PxrUsdMayaTranslatorPrim::Read(
     TfToken visibilityTok;
 
     if (primSchema.GetVisibilityAttr().Get(&visibilityTok, visTimeSample)){
-        PxrUsdMayaUtil::setPlugValue(depFn, "visibility",
+        UsdMayaUtil::setPlugValue(depFn, "visibility",
                            visibilityTok != UsdGeomTokens->invisible);
     }
 
@@ -83,7 +81,8 @@ PxrUsdMayaTranslatorPrim::Read(
         // Populate the channel arrays
         for (unsigned int ti=0; ti < visNumTimeSamples; ++ti) {
             primSchema.GetVisibilityAttr().Get(&visibilityTok, visTimeSamples[ti]);
-            valueArray[ti] = (visibilityTok != UsdGeomTokens->invisible);
+            valueArray[ti] =
+                    static_cast<double>(visibilityTok != UsdGeomTokens->invisible);
         }
 
         // == Write to maya node ==
@@ -101,7 +100,7 @@ PxrUsdMayaTranslatorPrim::Read(
         // Add the keys
         plg = depFn.findPlug( "visibility" );
         if ( !plg.isNull() ) {
-            MObject animObj = animFn.create(plg, NULL, &status);
+            MObject animObj = animFn.create(plg, nullptr, &status);
             animFn.addKeys(&timeArray, &valueArray);
             if (context) {
                 context->RegisterNewMayaNode(
@@ -109,14 +108,16 @@ PxrUsdMayaTranslatorPrim::Read(
             }
         }
     }
-    
-    // Set "USD_" attributes to store USD-specific info on the Maya node.
-    // XXX: Handle animation properly in attribute converters.
-    std::vector<const AttributeConverter*> converters =
-            AttributeConverterRegistry::GetAllConverters();
-    for (const AttributeConverter* converter : converters) {
-        converter->UsdToMaya(prim, depFn, UsdTimeCode::EarliestTime());
-    }
+
+    // Process UsdGeomImageable typed schema (note that purpose is uniform).
+    UsdMayaReadUtil::ReadSchemaAttributesFromPrim<UsdGeomImageable>(
+            prim, mayaNode, {UsdGeomTokens->purpose});
+
+    // Process API schema attributes and strongly-typed metadata.
+    UsdMayaReadUtil::ReadMetadataFromPrim(
+            args.GetIncludeMetadataKeys(), prim, mayaNode);
+    UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+            args.GetIncludeAPINames(), prim, mayaNode);
 
     // XXX What about all the "user attributes" that PrimWriter exports???
 }

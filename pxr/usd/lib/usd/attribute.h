@@ -542,13 +542,13 @@ public:
 
     /// Gets the color space in which the attribute is authored.
     /// \sa SetColorSpace()
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "UsdStage Color Configuration API"
     USD_API
     TfToken GetColorSpace() const;
 
     /// Sets the color space of the attribute to \p colorSpace.
     /// \sa GetColorSpace()
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "UsdStage Color Configuration API"
     USD_API
     void SetColorSpace(const TfToken &colorSpace) const;
 

@@ -47,16 +47,32 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class GfMatrix3f;
+class GfMatrix4d;
+class GfRotation;
+class UsdPrim;
+class UsdPrimRange;
+class UsdRelationship;
+class UsdSkelRoot;
+class UsdSkelTopology;
+
+
 /// \defgroup UsdSkel_Utils Utilities
 /// @{
 
 
-class GfMatrix3f;
-class GfMatrix4d;
-class GfRotation;
-class UsdRelationship;
-class UsdSkelRoot;
-class UsdSkelTopology;
+/// Returns true if \p prim is a valid skel animation source.
+USDSKEL_API
+bool
+UsdSkelIsSkelAnimationPrim(const UsdPrim& prim);
+
+
+/// Returns true if \p prim is considered to be a skinnable primitive.
+/// Whether or not the prim is actually skinned additionally depends on whether
+/// or not the prim has a bound skeleton, and prop joint influences.
+USDSKEL_API
+bool
+UsdSkelIsSkinnablePrim(const UsdPrim& prim);
 
 
 /// \defgroup UsdSkel_JointTransformUtils Joint Transform Utilities
@@ -120,9 +136,9 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 
 
 /// Compute an extent from a set of skel-space joint transform.
-/// The \p rootXform may also be provided to provide an additional
-/// root transformation on top of all joints. This is useful for
-/// computing extents relative to a different space.
+/// The \p rootXform may also be set to provide an additional root
+/// transformation on top of all joints, which is useful for computing
+/// extent relative to a different space.
 USDSKEL_API
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& joints,
@@ -137,7 +153,7 @@ bool
 UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
                            size_t numXforms,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad=GfVec3f(0,0,0),
+                           float pad=0.0f,
                            const GfMatrix4d* rootXform=nullptr);
 
 
@@ -343,8 +359,8 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         GfMatrix4d* xform);
 
 
-/// Bake the effect of skinning prims using linear blend skinning (LBS)
-/// directly into points and transforms, over \p interval.
+/// Bake the effect of skinning prims directly into points and transforms,
+/// over \p interval.
 /// This is intended to serve as a complete reference implementation,
 /// providing a ground truth for testing and validation purposes.
 /// Since baking the effect of skinning will undo any IO gains that skeletal
@@ -353,9 +369,17 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 /// animation to an application that does not understand UsdSkel skinning.
 USDSKEL_API
 bool
-UsdSkelBakeSkinningLBS(const UsdSkelRoot& root,
-                       const GfInterval& interval=
-                           GfInterval::GetFullInterval());
+UsdSkelBakeSkinning(const UsdSkelRoot& root,
+                    const GfInterval& interval=GfInterval::GetFullInterval());
+
+
+/// Overload of UsdSkelBakeSkinning, which bakes the effect of skinning prims
+/// directly into points and transforms, for all SkelRoot prims in \p range.
+USDSKEL_API
+bool
+UsdSkelBakeSkinning(const UsdPrimRange& range,
+                    const GfInterval& interval=GfInterval::GetFullInterval());
+
 
 
 /// @}

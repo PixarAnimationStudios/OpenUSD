@@ -892,5 +892,24 @@ SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
     return NULL;
 }
 
+
+
+SdfLayerRefPtr UsdKatanaCache::FindOrCreateSessionLayer(
+        const std::string& sessionAttrXML,
+        const std::string& rootLocation)
+{
+    FnAttribute::GroupAttribute sessionAttr =
+            FnAttribute::Attribute::parseXML(sessionAttrXML.c_str());
+    
+    if (!sessionAttr.isValid())
+    {
+        sessionAttr = FnAttribute::GroupAttribute(true);
+    }
+    
+    return _FindOrCreateSessionLayer(sessionAttr, rootLocation);
+}
+
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

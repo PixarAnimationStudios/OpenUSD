@@ -106,6 +106,16 @@ pxr_test_scripts(
     testenv/testPcpCompositionResults.py
 )
 
+pxr_build_test(testPcpHardToReach
+    LIBRARIES
+        tf 
+        pcp 
+        sdf
+
+    CPPFILES
+        testenv/testPcpHardToReach.cpp
+)
+
 pxr_build_test(testPcpIterator
     LIBRARIES
         tf 
@@ -1319,6 +1329,11 @@ pxr_register_test(testPcpChanges
 pxr_register_test(testPcpDependencies
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDependencies"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpHardToReach
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpHardToReach"
     EXPECTED_RETURN_CODE 0
 )
 

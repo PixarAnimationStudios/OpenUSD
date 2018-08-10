@@ -61,6 +61,132 @@ class TestSdfLayer(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             l = Sdf.Layer.OpenAsAnonymous('foo.invalid')
 
+    def test_AnonymousIdentifiersDisplayName(self):
+        # Ensure anonymous identifiers work as expected
+
+        ident = 'anonIdent.sdf'
+        l = Sdf.Layer.CreateAnonymous(ident)
+        self.assertEqual(l.GetDisplayName(), ident)
+
+        identWithColons = 'anonIdent:afterColon.sdf'
+        l = Sdf.Layer.CreateAnonymous(identWithColons)
+        self.assertEqual(l.GetDisplayName(), identWithColons)
+
+        l = Sdf.Layer.CreateAnonymous()
+        self.assertEqual(l.GetDisplayName(), '')
+
+    def test_UpdateExternalReference(self):
+        srcLayer = Sdf.Layer.CreateAnonymous()
+        srcLayerStr = '''\
+#sdf 1.4.32
+(
+    subLayers = [
+        @sublayer_1.sdf@,
+        @sublayer_2.sdf@
+    ]
+)
+
+def "Root" (
+    payload = @payload_1.sdf@</Payload>
+    references = [
+        @ref_1.sdf@</Ref>,
+        @ref_2.sdf@</Ref2>
+    ]
+)
+{
+    def "Child" (
+        payload = @payload_1.sdf@</Payload>
+        references = [
+            @ref_1.sdf@</Ref>,
+            @ref_2.sdf@</Ref2>
+        ]
+    )
+    {
+    }
+
+    variantSet "v" = {
+        "x" (
+            payload = @payload_1.sdf@</Payload>
+            references = [
+                @ref_1.sdf@</Ref>,
+                @ref_2.sdf@</Ref2>
+            ]
+        ) {
+            def "ChildInVariant" (
+                payload = @payload_1.sdf@</Payload>
+                references = [
+                    @ref_1.sdf@</Ref>,
+                    @ref_2.sdf@</Ref2>
+                ]
+            )
+            {
+            }
+        }
+    }
+}
+        '''
+        srcLayer.ImportFromString(srcLayerStr)
+
+        # Calling UpdateExternalReference with an empty old layer path is
+        # not allowed.
+        origLayer = srcLayer.ExportToString()
+        self.assertFalse(srcLayer.UpdateExternalReference("", ""))
+        self.assertEqual(origLayer, srcLayer.ExportToString())
+
+        # Calling UpdateExternalReference with an asset path that does not
+        # exist should result in no changes to the layer.
+        self.assertTrue(srcLayer.UpdateExternalReference(
+            "nonexistent.sdf", "foo.sdf"))
+        self.assertEqual(origLayer, srcLayer.ExportToString())
+
+        # Test renaming / removing sublayers.
+        self.assertTrue(srcLayer.UpdateExternalReference(
+            "sublayer_1.sdf", "new_sublayer_1.sdf"))
+        self.assertEqual(
+            srcLayer.subLayerPaths, ["new_sublayer_1.sdf", "sublayer_2.sdf"])
+
+        self.assertTrue(srcLayer.UpdateExternalReference("sublayer_2.sdf", ""))
+        self.assertEqual(srcLayer.subLayerPaths, ["new_sublayer_1.sdf"])
+
+        # Test renaming / removing payloads.
+        primsWithReferences = [
+            srcLayer.GetPrimAtPath(p) for p in
+            ["/Root", "/Root/Child", "/Root{v=x}", "/Root{v=x}ChildInVariant"]
+        ]
+
+        self.assertTrue(srcLayer.UpdateExternalReference(
+            "payload_1.sdf", "payload_2.sdf"))
+        for prim in primsWithReferences:
+            self.assertEqual(
+                prim.payload, Sdf.Payload("payload_2.sdf", "/Payload"),
+                "Unexpected payload {0} at {1}".format(prim.payload, prim.path))
+
+        self.assertTrue(srcLayer.UpdateExternalReference(
+            "payload_2.sdf", ""))
+        for prim in primsWithReferences:
+            self.assertEqual(
+                prim.payload, Sdf.Payload(),
+                "Unexpected payload {0} at {1}".format(prim.payload, prim.path))
+
+        # Test renaming / removing references.
+        self.assertTrue(srcLayer.UpdateExternalReference(
+            "ref_1.sdf", "new_ref_1.sdf"))
+        for prim in primsWithReferences:
+            self.assertEqual(
+                prim.referenceList.explicitItems,
+                [Sdf.Reference("new_ref_1.sdf", "/Ref"),
+                 Sdf.Reference("ref_2.sdf", "/Ref2")],
+                "Unexpected references {0} at {1}"
+                .format(prim.referenceList, prim.path))
+
+        self.assertTrue(srcLayer.UpdateExternalReference(
+            "ref_2.sdf", ""))
+        for prim in primsWithReferences:
+            self.assertEqual(
+                prim.referenceList.explicitItems,
+                [Sdf.Reference("new_ref_1.sdf", "/Ref")],
+                "Unexpected references {0} at {1}"
+                .format(prim.referenceList, prim.path))
 
 if __name__ == "__main__":
     unittest.main()

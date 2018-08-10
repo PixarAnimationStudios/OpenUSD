@@ -120,7 +120,7 @@ HdSt_BasisCurvesIndexBuilderComputation::HdSt_BasisCurvesIndexBuilderComputation
 }
 
 void
-HdSt_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
+HdSt_BasisCurvesIndexBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     // index buffer
@@ -453,7 +453,7 @@ HdSt_BasisCurvesWidthsInterpolaterComputation::HdSt_BasisCurvesWidthsInterpolate
 }
 
 void
-HdSt_BasisCurvesWidthsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_BasisCurvesWidthsInterpolaterComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(HdTokens->widths, HdTupleType{HdTypeFloat, 1});
 }
@@ -521,7 +521,7 @@ HdSt_BasisCurvesNormalsInterpolaterComputation::HdSt_BasisCurvesNormalsInterpola
 }
 
 void
-HdSt_BasisCurvesNormalsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_BasisCurvesNormalsInterpolaterComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(HdTokens->normals, HdTupleType{HdTypeFloatVec3, 1});
 }

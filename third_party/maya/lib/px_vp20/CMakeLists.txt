@@ -1,5 +1,11 @@
 set(PXR_PACKAGE px_vp20)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         garch

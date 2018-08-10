@@ -112,7 +112,7 @@ HdStGLSLProgram::CompileShader(GLenum type,
         std::cout << std::flush;
     }
 
-    // glew has to be intialized
+    // glew has to be initialized
     if (!glCreateProgram)
         return false;
 

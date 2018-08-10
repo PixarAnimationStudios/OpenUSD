@@ -44,17 +44,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdSkelTopology
 {
 public:
+    /// Construct an empty topology.
     USDSKEL_API
     UsdSkelTopology();
 
-    /// Construct a skel topology from an ordered set of joint paths,
-    /// given as tokens.
+    /// Construct a skel topology from \p paths, an array holding ordered joint
+    /// paths as tokens.
+    /// Internally, each token must be converted to an SdfPath. If SdfPath
+    /// objects are already accessible, it is more efficient to use the
+    /// construct taking an SdfPath array.
     USDSKEL_API
     UsdSkelTopology(const VtTokenArray& paths);
 
-    /// Construct a skel topology from an ordered set of joint paths.
+    /// Construct a skel topology from \p paths, an array of size \p size,
+    /// holding ordered joint paths as tokens.
+    USDSKEL_API
+    UsdSkelTopology(const TfToken* paths, size_t size);
+
+    /// Construct a skel topology from \p paths, an array of joint paths.
     USDSKEL_API
     UsdSkelTopology(const SdfPathVector& paths);
+
+    /// Construct a skel topology from \p paths, an array of joints paths
+    /// of size \p size.
+    USDSKEL_API
+    UsdSkelTopology(const SdfPath* paths, size_t size);
 
     /// Construct a skel topology from an array of parent indices.
     /// For each joint, this provides the parent index of that

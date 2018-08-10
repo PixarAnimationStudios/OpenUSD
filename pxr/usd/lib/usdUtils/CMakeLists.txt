@@ -49,12 +49,14 @@ pxr_library(usdUtils
 
     PYMODULE_FILES
         __init__.py
+        complianceChecker.py
 )
 
 pxr_test_scripts(
     testenv/testUsdUtilsAuthoring.py
     testenv/testUsdUtilsSparseValueWriter.py  
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
+    testenv/testUsdUtilsCreateNewUsdzPackage.py
     testenv/testUsdUtilsDependencyExtractor.py 
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py 
@@ -87,6 +89,16 @@ pxr_build_test(testUsdUtilsStitchCpp
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsAuthoring
     DEST testUsdUtilsAuthoring
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackage
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewARKitUsdzPackage
 )
 
 pxr_install_test_dir(
@@ -159,6 +171,19 @@ pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegate
 
 pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegateCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackage
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage -l contents.txt package.usdz root.usd"
+    DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --arkit -l contents_arkit.txt package.usdz root.usd"
     EXPECTED_RETURN_CODE 0
 )
 

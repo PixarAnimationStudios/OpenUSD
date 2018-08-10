@@ -27,10 +27,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/debugCodes.h"
+#include "pxr/usd/sdf/fileFormat.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -209,9 +211,19 @@ string
 Sdf_GetAnonLayerDisplayName(
     const string& identifier)
 {
-    if (std::count(identifier.begin(), identifier.end(), ':') == 2)
-        return identifier.substr(identifier.rfind(':') + 1);
-    return std::string();
+    // We want to find the second occurence of ':', traversing from the left,
+    // in our identifier which is of the form anon:0x4rfs23:displayName
+    auto fst = std::find(identifier.begin(), identifier.end(), ':');
+    if (fst == identifier.end()) {
+        return std::string();
+    }
+
+    auto snd = std::find(fst + 1, identifier.end(), ':');
+    if (snd == identifier.end()) {
+        return std::string();
+    }
+
+    return identifier.substr(std::distance(identifier.begin(), snd) + 1);
 }
 
 string
@@ -355,7 +367,68 @@ Sdf_GetLayerDisplayName(
 
     string layerPath, arguments;
     Sdf_SplitIdentifier(identifier, &layerPath, &arguments);
+
+    // If the layer path is a package-relative path, we want
+    // the basename of the outermost package combined with
+    // the packaged path. For example, given:
+    //    "/tmp/asset.package[sub/dir/file.sdf]", 
+    // we want:
+    //    "asset.package[sub/dir/file.sdf]".
+    if (ArIsPackageRelativePath(layerPath)) {
+        std::pair<std::string, std::string> packagePath =
+            ArSplitPackageRelativePathOuter(layerPath);
+        packagePath.first = TfGetBaseName(packagePath.first);
+        return ArJoinPackageRelativePath(packagePath);
+    }
+
     return TfGetBaseName(layerPath);
+}
+
+string
+Sdf_GetExtension(
+    const string& identifier)
+{
+    return ArGetResolver().GetExtension(identifier);
+}
+
+bool
+Sdf_IsPackageOrPackagedLayer(
+    const SdfLayerHandle& layer)
+{
+    return Sdf_IsPackageOrPackagedLayer(
+        layer->GetFileFormat(), layer->GetIdentifier());
+}
+
+bool
+Sdf_IsPackageOrPackagedLayer(
+    const SdfFileFormatConstPtr& fileFormat,
+    const std::string& identifier)
+{
+    return fileFormat->IsPackage() || ArIsPackageRelativePath(identifier);
+}
+
+string 
+Sdf_CanonicalizeRealPath(
+    const string& realPath)
+{
+    // Use the given realPath as-is if it's a relative path, otherwise
+    // use TfAbsPath to compute a platform-dependent real path.
+    //
+    // XXX: This method needs to be re-examined as we move towards a
+    // less filesystem-dependent implementation.
+
+    // If realPath is a package-relative path, absolutize just the
+    // outer path; the packaged path has a specific format defined in
+    // Ar that we don't want to modify.
+    if (ArIsPackageRelativePath(realPath)) {
+        pair<string, string> packagePath = 
+            ArSplitPackageRelativePathOuter(realPath);
+        return TfIsRelativePath(packagePath.first) ?
+            realPath : ArJoinPackageRelativePath(
+                TfAbsPath(packagePath.first), packagePath.second);
+    }
+
+    return TfIsRelativePath(realPath) ? realPath : TfAbsPath(realPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

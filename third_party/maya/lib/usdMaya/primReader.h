@@ -24,27 +24,32 @@
 #ifndef PXRUSDMAYA_MAYAPRIMREADER_H
 #define PXRUSDMAYA_MAYAPRIMREADER_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/primReader.h
+
 #include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
+#include "pxr/pxr.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdMayaPrimReader
+class UsdMayaPrimReader
 {
 public:
     PXRUSDMAYA_API
-    PxrUsdMayaPrimReader(const PxrUsdMayaPrimReaderArgs&);
-    virtual ~PxrUsdMayaPrimReader() {};
+    UsdMayaPrimReader(const UsdMayaPrimReaderArgs&);
+    virtual ~UsdMayaPrimReader() {};
 
     /// Reads the USD prim given by the prim reader args into a Maya shape,
     /// modifying the prim reader context as a result.
     /// Callers must ensure \p context is non-null.
     /// Returns true if successful.
-    virtual bool Read(PxrUsdMayaPrimReaderContext* context) = 0;
+    PXRUSDMAYA_API
+    virtual bool Read(UsdMayaPrimReaderContext* context) = 0;
 
     /// Whether this prim reader specifies a PostReadSubtree step.
+    PXRUSDMAYA_API
     virtual bool HasPostReadSubtree() const;
 
     /// An additional import step that runs after all descendants of this prim
@@ -54,18 +59,20 @@ public:
     /// are run in the order:
     /// (1) Read A (2) Read B (3) PostReadSubtree B (4) PostReadSubtree A,
     /// (5) Read C (6) PostReadSubtree C
-    virtual void PostReadSubtree(PxrUsdMayaPrimReaderContext* context);
+    PXRUSDMAYA_API
+    virtual void PostReadSubtree(UsdMayaPrimReaderContext* context);
 
 protected:
     /// Input arguments. Read data about the input USD prim from here.
-    const PxrUsdMayaPrimReaderArgs& _GetArgs();
+    PXRUSDMAYA_API
+    const UsdMayaPrimReaderArgs& _GetArgs();
 
 private:
-    const PxrUsdMayaPrimReaderArgs _args;
+    const UsdMayaPrimReaderArgs _args;
 };
 
-typedef std::shared_ptr<PxrUsdMayaPrimReader> PxrUsdMayaPrimReaderPtr;
+typedef std::shared_ptr<UsdMayaPrimReader> UsdMayaPrimReaderSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_MAYAPRIMREADER_H
+#endif

@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -93,7 +94,7 @@ public:
     /// named \a identifier. If \a samplerId is specified, the bindings
     /// returned will use this samplerId for resources which can be sampled.
     virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerId = 0) const = 0;
+                                      GLuint samplerId = 0) = 0;
 
     /// Amount of memory used to store the texture
     GLF_API
@@ -107,7 +108,7 @@ public:
     GLF_API
     void SetMemoryRequested(size_t targetMemory);
 
-    virtual VtDictionary GetTextureInfo() const = 0;
+    virtual VtDictionary GetTextureInfo(bool forceLoad) = 0;
 
     GLF_API
     virtual bool IsMinFilterSupported(GLenum filter);
@@ -128,14 +129,24 @@ public:
     GLF_API
     size_t GetContentsID() const;
 
+    GLF_API
+    GlfImage::ImageOriginLocation GetOriginLocation() const;
+
+    GLF_API
+    bool IsOriginLowerLeft() const;
+
 protected:
     GLF_API
     GlfTexture();
 
     GLF_API
-    void _SetMemoryUsed(size_t size);
+    GlfTexture(GlfImage::ImageOriginLocation originLocation);
+
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    void _SetMemoryUsed(size_t size);
+    
+    GLF_API
+    virtual void _OnMemoryRequestedDirty();
 
     GLF_API
     void _UpdateContentsID();
@@ -144,23 +155,30 @@ private:
     size_t _memoryUsed;
     size_t _memoryRequested;
     size_t _contentsID;
+    GlfImage::ImageOriginLocation _originLocation;
 };
 
 class GlfTextureFactoryBase : public TfType::FactoryBase {
 public:
-    virtual GlfTextureRefPtr New(const TfToken& texturePath) const = 0;
-    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths) const = 0;
+    virtual GlfTextureRefPtr New(const TfToken& texturePath,
+                        GlfImage::ImageOriginLocation originLocation) const = 0;
+    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
+                        GlfImage::ImageOriginLocation originLocation) const = 0;
 };
 
 template <class T>
 class GlfTextureFactory : public GlfTextureFactoryBase {
 public:
-    virtual GlfTextureRefPtr New(const TfToken& texturePath) const
+    virtual GlfTextureRefPtr New(const TfToken& texturePath, 
+                                 GlfImage::ImageOriginLocation originLocation = 
+                                                GlfImage::OriginUpperLeft) const
     {
         return T::New(texturePath);
     }
 
-    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths) const
+    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
+                                 GlfImage::ImageOriginLocation originLocation = 
+                                                GlfImage::OriginUpperLeft) const
     {
         return TfNullPtr;
     }

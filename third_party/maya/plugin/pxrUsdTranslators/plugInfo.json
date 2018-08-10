@@ -1,0 +1,40 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "UsdMaya": {
+                    "PrimReader": {
+                        "mayaPlugin": "pxrUsdTranslators",
+                        "providesTranslator": [
+                            "UsdGeomCamera",
+                            "UsdGeomMesh",
+                            "UsdGeomNurbsCurves",
+                            "UsdGeomNurbsPatch",
+                            "UsdGeomScope",
+                            "UsdGeomXform",
+                            "UsdShadeMaterial",
+                            "UsdSkelRoot",
+                            "UsdSkelSkeleton"
+                        ]
+                    },
+                    "PrimWriter": {
+                        "mayaPlugin": "pxrUsdTranslators",
+                        "providesTranslator": [
+                            "camera",
+                            "instancer",
+                            "joint",
+                            "locator",
+                            "mesh",
+                            "nParticle",
+                            "nurbsCurve",
+                            "nurbsSurface",
+                            "particle"
+                        ]
+                    }
+                }
+            },
+            "Name": "@PLUG_INFO_PLUGIN_NAME@",
+            "Type": "python"
+        }
+    ]
+}

@@ -281,7 +281,6 @@ HdStRenderDelegate::_CreateFallbackMaterialPrim()
     return material;
 }
 
-
 void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
@@ -316,5 +315,16 @@ HdStRenderDelegate::IsSupported()
     return (GlfContextCaps::GetInstance().glVersion >= 400);
 }
 
+TfTokenVector
+HdStRenderDelegate::GetShaderSourceTypes() const
+{
+    return {GlfGLSLFXTokens->glslfx};
+}
+
+TfToken 
+HdStRenderDelegate::GetMaterialNetworkSelector() const
+{
+    return GlfGLSLFXTokens->glslfx;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

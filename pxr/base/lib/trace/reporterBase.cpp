@@ -30,9 +30,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceReporterBase::TraceReporterBase()
+TraceReporterBase::TraceReporterBase(DataSourcePtr dataSource)
+    : _dataSource(std::move(dataSource))
 {
-    TfNotice::Register(ThisPtr(this), &This::_OnTraceCollection);
+}
+
+bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
+{
+    std::vector<CollectionPtr> collections;
+    for (const CollectionPtr& col : _processedCollections) {
+        collections.push_back(col);
+    }
+    return TraceSerialization::Write(ostr, collections);
 }
 
 TraceReporterBase::~TraceReporterBase()
@@ -42,24 +51,21 @@ TraceReporterBase::~TraceReporterBase()
 void
 TraceReporterBase::_Clear()
 {
-    _pendingCollections.clear();
+    _processedCollections.clear();
+    if (_dataSource) {
+        _dataSource->Clear();
+    }
 }
 
 void
 TraceReporterBase::_Update()
 {
-    TraceCollector::GetInstance().CreateCollection();
-    std::shared_ptr<TraceCollection> collection;
-    while (_pendingCollections.try_pop(collection)) {
-        _ProcessCollection(collection);
-    }
-}
+    if (!_dataSource) return;
 
-void
-TraceReporterBase::_OnTraceCollection(const TraceCollectionAvailable& notice)
-{
-    if (_IsAcceptingCollections()) {
-        _pendingCollections.push(notice.GetCollection());
+    std::vector<CollectionPtr> data = _dataSource->ConsumeData();
+    for (const CollectionPtr& collection : data) {
+        _ProcessCollection(collection);
+        _processedCollections.push_back(collection);
     }
 }
 

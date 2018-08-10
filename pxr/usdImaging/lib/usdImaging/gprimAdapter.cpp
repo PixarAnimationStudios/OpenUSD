@@ -52,41 +52,6 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, GprimAdapter is abstract.
 }
 
-static HdInterpolation
-_UsdToHdInterpolation(TfToken const& usdInterp)
-{
-    if (usdInterp == UsdGeomTokens->uniform) {
-        return HdInterpolationUniform;
-    } else if (usdInterp == UsdGeomTokens->vertex) {
-        return HdInterpolationVertex;
-    } else if (usdInterp == UsdGeomTokens->varying) {
-        return HdInterpolationVarying;
-    } else if (usdInterp == UsdGeomTokens->faceVarying) {
-        return HdInterpolationFaceVarying;
-    } else if (usdInterp == UsdGeomTokens->constant) {
-        return HdInterpolationConstant;
-    }
-    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
-                    usdInterp.GetText());
-    return HdInterpolationConstant;
-}
-
-static TfToken
-_UsdToHdRole(TfToken const& usdRole)
-{
-    if (usdRole == SdfValueRoleNames->Point) {
-        return HdPrimvarRoleTokens->point;
-    } else if (usdRole == SdfValueRoleNames->Normal) {
-        return HdPrimvarRoleTokens->normal;
-    } else if (usdRole == SdfValueRoleNames->Vector) {
-        return HdPrimvarRoleTokens->vector;
-    } else if (usdRole == SdfValueRoleNames->Color) {
-        return HdPrimvarRoleTokens->color;
-    }
-    // Empty token means no role specified
-    return TfToken();
-}
-
 UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
 {
 }
@@ -230,32 +195,13 @@ UsdImagingGprimAdapter::_RemovePrim(SdfPath const& cachePath,
     index->RemoveRprim(cachePath);
 }
 
-void 
-UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
-    UsdGeomGprim const& gprim,
-    SdfPath const& cachePath,
-    UsdGeomPrimvar const& primvar,
-    UsdTimeCode time,
-    UsdImagingValueCache* valueCache) const
+bool
+UsdImagingGprimAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
 {
-    VtValue v;
-    TfToken primvarName = primvar.GetPrimvarName();
-    if (primvar.ComputeFlattened(&v, time)) {
-        TF_DEBUG(USDIMAGING_SHADERS)
-            .Msg("Found primvar %s\n", primvarName.GetText());
-        valueCache->GetPrimvar(cachePath, primvarName) = v;
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
-                      primvarName, 
-                      _UsdToHdInterpolation(primvar.GetInterpolation()),
-                      _UsdToHdRole(primvar.GetAttr().GetRoleName()));
-    } else {
-        TF_DEBUG(USDIMAGING_SHADERS)
-            .Msg( "\t\t No primvar on <%s> named %s\n",
-                  gprim.GetPath().GetText(), primvarName.GetText());
-    }
+    return false;
 }
 
-void 
+void
 UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
@@ -290,7 +236,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             _UsdToHdInterpolation(interpToken),
             HdPrimvarRoleTokens->color);
 
-        if (_CanComputeMaterialNetworks()) {
+        if (_GetMaterialBindingPurpose() == HdTokens->full) {
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
             // for the list of primvars.
@@ -298,13 +244,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
 
             // Local (non-inherited) primvars
             for (auto const &pv: primvars.GetPrimvars()) {
+                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                    continue;
+                }
                 _ComputeAndMergePrimvar(
-                    gprim, cachePath, pv, time, valueCache);
+                    prim, cachePath, pv, time, valueCache);
             }
             // Inherited primvars
             for (auto const &pv: primvars.FindInheritedPrimvars()) {
+                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                    continue;
+                }
                 _ComputeAndMergePrimvar(
-                    gprim, cachePath, pv, time, valueCache);
+                    prim, cachePath, pv, time, valueCache);
             }
 
         } else {
@@ -325,6 +277,9 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
 
                 UsdGeomPrimvarsAPI primvars(gprim);
                 for (auto const &pvName : matPrimvarNames) {
+                    if (_IsBuiltinPrimvar(pvName)) {
+                        continue;
+                    }
                     UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
                     if (!pv) {
                         // If not found, try as inherited primvar.
@@ -332,7 +287,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                     }
                     if (pv) {
                         _ComputeAndMergePrimvar(
-                            gprim, cachePath, pv, time, valueCache);
+                            prim, cachePath, pv, time, valueCache);
                     }
                 }
             }
@@ -381,6 +336,13 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     else if (propertyName == UsdGeomTokens->doubleSided) 
         return HdChangeTracker::DirtyDoubleSided;
+
+    else if (TfStringStartsWith(propertyName.GetString(),
+                               UsdShadeTokens->materialBinding.GetString()) ||
+             TfStringStartsWith(propertyName.GetString(),
+                                UsdTokens->collection.GetString())) {
+        return HdChangeTracker::DirtyMaterialId;
+    }
     
     // TODO: support sparse displayColor updates
 
@@ -401,7 +363,7 @@ UsdImagingGprimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
                                              SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index)
 {
-    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRefineLevel);
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyDisplayStyle);
 }
 
 void
@@ -434,6 +396,17 @@ UsdImagingGprimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
                                             UsdImagingIndexProxy* index)
 {
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyVisibility);
+}
+
+void
+UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
+                                          UsdImagingIndexProxy* index)
+{
+    // If the Usd material changed, it could mean the primvar set also changed
+    // Hydra doesn't currently manage detection and propagation of these
+    // changes, so we must mark the rprim dirty.
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
 }
 
 // -------------------------------------------------------------------------- //

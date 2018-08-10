@@ -175,7 +175,7 @@ public:
 public:
     const EntryList & GetEntryList() const { return _entries; }
 
-    // Change accessors/muators
+    // Change accessors/mutators
     Entry& GetEntry( const SdfPath & );
 
 private:

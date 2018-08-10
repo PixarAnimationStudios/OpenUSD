@@ -1,0 +1,164 @@
+#usda 1.0
+
+
+def SkelAnimation "Anim1" {}
+
+def SkelAnimation "Anim2" {}
+
+def SkelAnimation "InactiveAnim" (active=false) {}
+
+def Scope "InstancedModel" (
+    instanceable = true
+)
+{
+    def SkelAnimation "Anim" {
+    }
+   
+    def Skeleton "A" {}
+
+    def Skeleton "B" {
+        rel skel:animationSource = <../Anim>
+    }
+}
+
+def SkelRoot "AnimationSource" {
+
+    def Scope "Scope" {
+        rel skel:animationSource = </Anim1>
+
+        def Skeleton "A" {}
+    
+        def Skeleton "B" {
+            rel skel:animationSource = </Anim2>
+        }
+    }
+
+    def Skeleton "C" {}
+    
+    def Skeleton "D" {
+        rel skel:animationSource = </InactiveAnim>
+    }
+
+    over "Instance" (
+        add references = </InstancedModel>
+    )
+    {
+        rel skel:animationSource = </Anim1>
+    }
+}
+
+
+def SkelRoot "Skeleton" {
+
+    def Skeleton "SkelA" {}
+    def Skeleton "SkelB" {}
+    def Skeleton "InactiveSkel" (active=false) {}
+
+    def Scope "Scope" {
+        rel skel:animationSource = <../SkelA>
+
+        def Mesh "A" {}
+    
+        def Mesh "B" {
+            rel skel:animationSource = <../SkelB>
+        }
+    }
+
+    def Mesh "C" {}
+    
+    def Mesh "D" {
+        rel skel:skeleton = <../InactiveSkel>
+    }
+}
+
+
+def SkelRoot "IneheritedBindings" {
+    def Skeleton "SkelA" {}
+
+    def Scope "Model1" {
+        rel skel:skeleton = <../SkelA>
+        
+        def Scope "NonRigidScope1" {
+            # Non-xformable scope: cannot treat as rigid.
+            matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            
+            int[] primvars:skel:jointIndices = [] (interpolation = "constant")
+            float[] primvars:skel:jointWeights = [] (interpolation = "constant")
+
+            def Mesh "A" {
+                uniform token[] skel:joints = ["A", "B", "C"]
+            }
+
+            def Mesh "B" {
+                int[] primvars:skel:jointIndices = [] (interpolation = "vertex")
+                float[] primvars:skel:jointWeights = [] (interpolation = "vertex")
+            }
+        }
+
+        def Xform "NonRigidScope2" {
+            # child prims have bindings; should not be identified as rigid.
+            matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            int[] primvars:skel:jointIndices = [] (interpolation = "constant")
+            float[] primvars:skel:jointWeights = [] (interpolation = "constant")
+
+            def Mesh "A" {
+                uniform token[] skel:joints = ["A", "B", "C"]
+            }
+
+            def Cube "B" {
+            }
+        }
+        
+        def Xform "RigidScopeParent" {
+            # 
+            matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+
+            def Xform "RigidScope" {
+                # Xformable scope; can be treated as rigid.
+                # geomBindTransform should be inherited from the parent.
+
+                int[] primvars:skel:jointIndices = [] (interpolation = "constant")
+                float[] primvars:skel:jointWeights = [] (interpolation = "constant")
+                uniform bool skel:rigidlyDeformed = true
+
+                def Mesh "A" {}
+                
+                def Cube "B" {}
+            }
+        }
+    }
+
+    def Scope "Model2" {
+    }
+
+    def Scope "Model3" {
+        rel skel:animationSource = </Anim1>
+            
+        def Scope "SkelWithInactiveAnim" {
+            rel skel:skeleton = </Skel1>
+            rel skel:animationSource = </InactiveAnim>
+        }
+    }
+
+    def Scope "IndirectBindings" {
+
+        def Scope "Instance" {
+            rel skel:skeleton = </Skel1>
+        }
+
+        def Scope "Indirect" {
+            rel skel:skeletonInstance = <../Instance>
+
+            def Scope "Instance" {
+                # This binding references a different skel.
+                rel skel:skeleton = </Skel2>
+            }
+        }
+
+        def Scope "Illegal" {
+            # It's illegal for skel:skeletonInstance to refer to a prim outside
+            # of the containing SkelRoot.
+            rel skel:skeletonInstance = </Skel1>
+        }
+    }
+}

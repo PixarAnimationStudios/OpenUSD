@@ -22,15 +22,16 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file translatorMesh.h
+/// \file usdMaya/translatorMesh.h
 
 #ifndef PXRUSDMAYA_TRANSLATOR_MESH_H
 #define PXRUSDMAYA_TRANSLATOR_MESH_H
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"
@@ -43,15 +44,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for creating UsdGeomMesh
-struct PxrUsdMayaTranslatorMesh
+struct UsdMayaTranslatorMesh
 {
     /// Creates an MFnMesh under \p parentNode from \p mesh.
     PXRUSDMAYA_API
     static bool Create(
             const UsdGeomMesh& mesh,
             MObject parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 
 private:
     static bool _AssignSubDivTagsToMesh(
@@ -67,10 +68,16 @@ private:
             const UsdGeomMesh& primSchema,
             const UsdGeomPrimvar& primvar,
             MFnMesh& meshFn);
+
+    static bool _AssignConstantPrimvarToMesh(
+            const UsdGeomPrimvar& primvar, 
+            MFnMesh& meshFn);
+
+
 };
 
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_MESH_H
+#endif

@@ -28,7 +28,6 @@
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/pointInstancer.h"
-#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/kind/registry.h"
@@ -263,29 +262,6 @@ PxrUsdKatanaReadPointInstancer(
     //
     // Compute instance transform matrices.
     //
-
-    // Get velocityScale from the opArgs.
-    //
-    float opArgVelocityScale = FnKat::FloatAttribute(
-        inputAttrs.getChildByName("opArgs.velocityScale")).getValue(1.0f, false);
-    if (opArgVelocityScale != 1.0f)
-    {
-        // Print deprecation warning:
-        //
-        FnLogWarn("velocityScale is deprecated. Use PxrUsdInAttributeSet to "
-            "author the UsdGeomPointInstancer's motion:velocityScale attribute "
-            "instead.");
-
-        // To support the old behavior, we only apply the opArg velocityScale if
-        // there is no velocityScale authored on the point instancer.
-        //
-        UsdGeomMotionAPI motionAPI(instancer.GetPrim());
-        UsdAttribute velocityScaleAttr = motionAPI.GetVelocityScaleAttr();
-        if (velocityScaleAttr and velocityScaleAttr.HasAuthoredValueOpinion())
-        {
-            opArgVelocityScale = 1.0f;
-        }
-    }
     
     // Gather frame-relative sample times and add them to the current time to
     // generate absolute sample times.
@@ -296,8 +272,7 @@ PxrUsdKatanaReadPointInstancer(
     std::vector<UsdTimeCode> sampleTimes(sampleCount);
     for (size_t a = 0; a < sampleCount; ++a)
     {
-        sampleTimes[a] = UsdTimeCode(
-            currentTime + opArgVelocityScale * motionSampleTimes[a]);
+        sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
     }
 
     std::vector<VtArray<GfMatrix4d>> xformSamples(sampleCount);

@@ -61,6 +61,11 @@ UsdGeomPrimvarsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdGeomPrimvarsAPI::_GetSchemaType() const {
+    return UsdGeomPrimvarsAPI::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomPrimvarsAPI::_GetStaticTfType()
@@ -181,7 +186,7 @@ UsdGeomPrimvarsAPI::FindInheritedPrimvars() const
 {
     TRACE_FUNCTION();
     // Assume the number of primvars is relatively bounded and
-    // just use a vector to accumulate privmars up to the root prim.
+    // just use a vector to accumulate primvars up to the root prim.
     std::vector<UsdGeomPrimvar> primvars;
     UsdPrim prim = GetPrim();
     if (!prim) {
@@ -211,6 +216,20 @@ UsdGeomPrimvarsAPI::FindInheritedPrimvars() const
             }
         }
     }
+    // Discard any primvars resolved with non-constant interpolation.
+    // We do this as a post-pass to ensure that if a primvar is
+    // declared at multiple levels of namespace with different
+    // interpolation settings, the most descendant opinion wins.
+    for (size_t i=0; i < primvars.size(); ++i) {
+        if (primvars[i].GetInterpolation() != UsdGeomTokens->constant) {
+            // Swap to the end and truncate the vector.
+            // Don't bother to preserve order.
+            std::swap(primvars[i], primvars.back());
+            primvars.erase(--primvars.end());
+            // Revisit same position.
+            --i;
+        }
+    }
     return primvars;
 }
 
@@ -233,7 +252,13 @@ UsdGeomPrimvarsAPI::FindInheritedPrimvar(const TfToken &name) const
         UsdAttribute attr = prim.GetAttribute(attrName);
         if (attr && attr.IsAuthored()) {
             if (UsdGeomPrimvar pv = UsdGeomPrimvar(attr)) {
-                return pv;
+                // Only constant primvars can be inherited.
+                if (pv.GetInterpolation() == UsdGeomTokens->constant) {
+                    return pv;
+                } else {
+                    // Non-constant interpolation blocks inheritance.
+                    return UsdGeomPrimvar();
+                }
             }
         }
     }
@@ -269,7 +294,10 @@ UsdGeomPrimvarsAPI::HasInheritedPrimvar(const TfToken &name) const
          prim = prim.GetParent()) {
         UsdAttribute attr = prim.GetAttribute(attrName);
         if (attr && attr.IsAuthored() && UsdGeomPrimvar::IsPrimvar(attr)) {
-            return true;
+            // Only constant primvars can be inherited.
+            // Non-constant interpolation blocks inheritance.
+            return UsdGeomPrimvar(attr).GetInterpolation()
+                == UsdGeomTokens->constant;
         }
     }
     return false;

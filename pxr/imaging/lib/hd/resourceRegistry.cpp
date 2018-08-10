@@ -496,9 +496,6 @@ HdResourceRegistry::GarbageCollect()
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
 
-    // Cleanup texture registries
-    _textureResourceRegistry.GarbageCollect();
-
     // Prompt derived registries to collect their garbage.
     _GarbageCollect();
 }
@@ -507,6 +504,13 @@ void
 HdResourceRegistry::_GarbageCollect()
 {
     /* NOTHING */
+}
+
+void
+HdResourceRegistry::GarbageCollectBprims()
+{
+    // Cleanup texture registries
+    _textureResourceRegistry.GarbageCollect();
 }
 
 VtDictionary
@@ -547,11 +551,11 @@ HdResourceRegistry::GetResourceAllocation() const
 
     TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
         HdTextureResourceSharedPtr textureResource = textureResourceIt->second;
-        if (!TF_VERIFY(textureResource)) {
-            continue;
-        }
 
-        hydraTexturesMemory += textureResource->GetMemoryUsed();
+        // In the event of an asset error, texture resources can be null
+        if (textureResource) {
+            hydraTexturesMemory += textureResource->GetMemoryUsed();
+        }
     }
     result[HdPerfTokens->textureResourceMemory] = VtValue(hydraTexturesMemory);
     gpuMemoryUsed += hydraTexturesMemory;

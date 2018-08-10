@@ -99,7 +99,7 @@ public:
                                 SdfPath const &id);
 
     /// overrides
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() = 0;
 
 protected:
@@ -129,7 +129,7 @@ class HdSt_OsdIndexComputation : public HdComputedBufferSource {
 public:
     /// overrides
     virtual bool HasChainedBuffer() const override;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual HdBufferSourceVector GetChainedBuffers() const override;
     virtual bool Resolve() = 0;
 
@@ -165,8 +165,8 @@ public:
     virtual size_t ComputeHash() const override;
     virtual void const* GetData() const override;
     virtual HdTupleType GetTupleType() const override;
-    virtual int GetNumElements() const override;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual size_t GetNumElements() const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
     virtual bool HasPreChainedBuffer() const override;
     virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
@@ -195,7 +195,7 @@ public:
 
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual int GetNumOutputElements() const override;
 
     // A wrapper class to bridge between HdBufferResource and OpenSubdiv
@@ -210,7 +210,7 @@ public:
 
         // bit confusing, osd expects 'GetNumElements()' returns the num components,
         // in hydra sense
-        int GetNumElements() const {
+        size_t GetNumElements() const {
             return HdGetComponentCount(_resource->GetTupleType().type);
         }
         GLuint BindVBO() {
@@ -273,7 +273,7 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetTupleType() const
 }
 
 template <typename VERTEX_BUFFER>
-int
+size_t
 HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetNumElements() const
 {
     return _cpuVertexBuffer->GetNumVertices();
@@ -325,10 +325,10 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::_CheckValid() const
 
 template <typename VERTEX_BUFFER>
 void
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // produces same spec buffer as source
-    _source->AddBufferSpecs(specs);
+    _source->GetBufferSpecs(specs);
 }
 
 template <typename VERTEX_BUFFER>

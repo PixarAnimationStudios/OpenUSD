@@ -25,7 +25,6 @@
 #include "pxr/base/trace/staticKeyData.h"
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
 #include "pxr/base/arch/function.h"
 
 #include <cstring>

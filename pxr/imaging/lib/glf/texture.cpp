@@ -51,6 +51,15 @@ GlfTexture::GlfTexture( )
     : _memoryUsed(0)
     , _memoryRequested(INT_MAX)
     , _contentsID(_GetNewContentsID())
+    , _originLocation(GlfImage::OriginUpperLeft)
+{
+}
+
+GlfTexture::GlfTexture(GlfImage::ImageOriginLocation originLocation)
+    : _memoryUsed(0)
+    , _memoryRequested(INT_MAX)
+    , _contentsID(_GetNewContentsID())
+    , _originLocation(originLocation)
 {
 }
 
@@ -70,12 +79,12 @@ GlfTexture::SetMemoryRequested(size_t targetMemory)
 {
     if (_memoryRequested != targetMemory) {
         _memoryRequested = targetMemory;
-        _OnSetMemoryRequested(targetMemory);
+        _OnMemoryRequestedDirty();
     }
 }
 
 void
-GlfTexture::_OnSetMemoryRequested(size_t targetMemory)
+GlfTexture::_OnMemoryRequestedDirty()
 {
     // do nothing in base class
 }
@@ -122,6 +131,18 @@ void
 GlfTexture::_UpdateContentsID()
 {
     _contentsID = _GetNewContentsID();
+}
+
+GlfImage::ImageOriginLocation 
+GlfTexture::GetOriginLocation() const
+{
+    return _originLocation;
+}
+
+bool
+GlfTexture::IsOriginLowerLeft() const
+{
+    return _originLocation == GlfImage::OriginLowerLeft;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

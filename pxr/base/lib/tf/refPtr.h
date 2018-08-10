@@ -290,7 +290,7 @@
 /// from parent to child, everything is fine: if you "lose" the root of the
 /// tree, the tree will correctly destroy itself.
 ///
-/// But what if childen point back to parents?  Then a simple parent/child
+/// But what if children point back to parents?  Then a simple parent/child
 /// pair is stable, because the parent and child point at each other, and
 /// even if nobody else has a pointer to the parent, the reference count
 /// of the two nodes remains at one.
@@ -433,7 +433,6 @@
 #include "pxr/base/tf/typeFunctions.h"
 #include "pxr/base/tf/api.h"
 
-#include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 
 #include <boost/functional/hash_fwd.hpp>
@@ -572,6 +571,12 @@ struct Tf_RefPtr_Counter {
     }
 };
 
+// Helper to post a fatal error when a NULL Tf pointer is dereferenced.
+[[noreturn]]
+TF_API void
+Tf_PostNullSmartPtrDereferenceFatalError(
+    const TfCallContext &, const std::type_info &);
+
 /// \class TfRefPtr
 /// \ingroup group_tf_Memory
 ///
@@ -608,6 +613,19 @@ public:
     /// until the pointer is given a value.
     TfRefPtr() : _refBase(nullptr) {
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+    }
+
+    /// Moves the pointer managed by \p p to \c *this.
+    ///
+    /// After construction, \c *this will point to the object \p p had
+    /// been pointing at and \p p will be pointing at the NULL object. 
+    /// The reference count of the object being pointed at does not
+    /// change.
+    TfRefPtr(TfRefPtr<T>&& p) : _refBase(p._refBase) {
+        p._refBase = nullptr;
+        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
     }
 
     /// Initializes \c *this to point at \p p's object.
@@ -712,7 +730,7 @@ public:
     /// however that this has an important side effect, since it
     /// decrements the reference count of the object previously pointed
     /// to by \c ptr, possibly triggering destruction of that object.
-    TfRefPtr<T>& operator= (const TfRefPtr<T>& p) {
+    TfRefPtr<T>& operator=(const TfRefPtr<T>& p) {
         //
         // It is quite possible for
         //   ptr = TfNullPtr;
@@ -731,6 +749,27 @@ public:
 
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
+        return *this;
+    }
+
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object.
+    /// 
+    /// The object (if any) pointed at before the assignment has its
+    /// reference count decremented, while the reference count of the
+    /// object newly pointed at is not changed.
+    TfRefPtr<T>& operator=(TfRefPtr<T>&& p) {
+        // See comment in assignment operator.
+        Tf_RefPtrTracker_Assign(this, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, nullptr,
+                                p._GetObjectForTracking());
+
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._refBase;
+        p._refBase = nullptr;
+        
+        _RemoveRef(tmp);
         return *this;
     }
 
@@ -782,6 +821,31 @@ public:
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
 
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object. The reference count of the object
+    /// being pointed to is not changed.
+    ///
+    /// This initialization is legal only if
+    /// \code
+    ///     U* uPtr;
+    ///     T* tPtr = uPtr;
+    /// \endcode
+    /// is legal.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    TfRefPtr(TfRefPtr<U>&& p) : _refBase(p._refBase) {
+        if (!boost::is_same<T,U>::value) {
+            if (false)
+                _CheckTypeAssignability<U>();
+        }
+
+        p._refBase = nullptr;
+        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+    }
+
     /// Assigns pointer to point at \c p's object, and increments reference
     /// count.
     ///
@@ -795,7 +859,7 @@ public:
 #if !defined(doxygen)
     template <class U>
 #endif
-    TfRefPtr<T>& operator= (const TfRefPtr<U>& p) {
+    TfRefPtr<T>& operator=(const TfRefPtr<U>& p) {
         if (!boost::is_same<T,U>::value) {
             if (false)
                 _CheckTypeAssignability<U>();
@@ -808,6 +872,39 @@ public:
         _refBase = p._GetData();
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
+        return *this;
+    }
+
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object. The reference count of the object
+    /// being pointed to is not changed.
+    /// 
+    /// This assignment is legal only if
+    /// \code
+    ///     U* uPtr;
+    ///     T* tPtr;
+    ///     tPtr = uPtr;
+    /// \endcode
+    /// is legal.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    TfRefPtr<T>& operator=(TfRefPtr<U>&& p) {
+        if (!boost::is_same<T,U>::value) {
+            if (false)
+                _CheckTypeAssignability<U>();
+        }
+
+        Tf_RefPtrTracker_Assign(this,
+                                reinterpret_cast<T*>(p._GetObjectForTracking()),
+                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p,
+                                nullptr,
+                                reinterpret_cast<T*>(p._GetObjectForTracking()));
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._GetData();
+        p._refBase = nullptr;
+        _RemoveRef(tmp);
         return *this;
     }
 
@@ -884,10 +981,11 @@ public:
 
     /// Accessor to \c T's public members.
     T* operator ->() const {
-        if (ARCH_UNLIKELY(!_refBase))
-            TF_FATAL_ERROR("attempted member lookup on NULL %s",
-                           ArchGetDemangled(typeid(TfRefPtr)).c_str());
-        return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        if (ARCH_LIKELY(_refBase)) {
+            return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        }
+        static const TfCallContext ctx(TF_CALL_CONTEXT);
+        Tf_PostNullSmartPtrDereferenceFatalError(ctx, typeid(TfRefPtr));
     }
 
     /// Dereferences the stored pointer.

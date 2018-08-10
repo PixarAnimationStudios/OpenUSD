@@ -24,54 +24,44 @@
 #ifndef PXRUSDMAYA_FUNCTORPRIMREADER_H
 #define PXRUSDMAYA_FUNCTORPRIMREADER_H
 
-/// \file functorPrimReader.h
+/// \file usdMaya/functorPrimReader.h
 
-#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/primReader.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
+#include "usdMaya/primReaderRegistry.h"
+
+#include "pxr/pxr.h"
 
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class PxrUsdMayaFunctorPrimReader
+/// \class UsdMaya_FunctorPrimReader
 /// \brief This class is scaffolding to hold bare prim reader functions.
-/// It is used by the PXRUSDMAYA_DEFINE_READER macro.
 ///
-/// This class can be used as a base for plugins that read USD prims into
-/// Maya shapes, as long as you only need a single Read step and not the
-/// PostReadSubtree step.
-class PxrUsdMayaFunctorPrimReader : public PxrUsdMayaPrimReader
+/// It is used by the PXRUSDMAYA_DEFINE_READER macro.
+class UsdMaya_FunctorPrimReader final : public UsdMayaPrimReader
 {
 public:
-    typedef std::function< bool (
-            const PxrUsdMayaPrimReaderArgs&,
-            PxrUsdMayaPrimReaderContext*) > ReaderFn;
+    UsdMaya_FunctorPrimReader(
+            const UsdMayaPrimReaderArgs&,
+            UsdMayaPrimReaderRegistry::ReaderFn);
 
-    PXRUSDMAYA_API
-    PxrUsdMayaFunctorPrimReader(
-            const PxrUsdMayaPrimReaderArgs&,
-            ReaderFn);
+    bool Read(UsdMayaPrimReaderContext* context) override;
 
-    PXRUSDMAYA_API
-    bool Read(PxrUsdMayaPrimReaderContext* context) override;
+    static UsdMayaPrimReaderSharedPtr Create(
+            const UsdMayaPrimReaderArgs&,
+            UsdMayaPrimReaderRegistry::ReaderFn readerFn);
 
-    PXRUSDMAYA_API
-    static PxrUsdMayaPrimReaderPtr Create(
-            const PxrUsdMayaPrimReaderArgs&,
-            ReaderFn readerFn);
-
-    PXRUSDMAYA_API
-    static std::function< PxrUsdMayaPrimReaderPtr(
-            const PxrUsdMayaPrimReaderArgs&) >
-            CreateFactory(ReaderFn readerFn);
+    static UsdMayaPrimReaderRegistry::ReaderFactoryFn
+            CreateFactory(UsdMayaPrimReaderRegistry::ReaderFn readerFn);
 
 private:
-    ReaderFn _readerFn;
+    UsdMayaPrimReaderRegistry::ReaderFn _readerFn;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_FUNCTORPRIMREADER_H
+#endif

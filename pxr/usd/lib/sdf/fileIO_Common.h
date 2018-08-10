@@ -96,7 +96,7 @@ public:
                 size_t indent, const std::vector<TfToken> &vec);
 
     static bool WriteTimeSamples(std::ostream &out,
-                size_t indent, const SdfTimeSampleMap &);
+                size_t indent, const SdfPropertySpec &);
 
     static bool WriteRelocates(std::ostream &out,
                 size_t indent, bool multiLine,
@@ -816,10 +816,9 @@ Sdf_WriteAttribute(
 
     if (hasTimeSamples) {
         Sdf_FileIOUtility::Write(out, indent, "%s%s %s.timeSamples = {\n",
-                                variabilityStr.c_str(),
-                                typeName.c_str(), attr.GetName().c_str() );
-        Sdf_FileIOUtility::WriteTimeSamples( out, indent,
-                                            attr.GetTimeSampleMap() );
+                                 variabilityStr.c_str(),
+                                 typeName.c_str(), attr.GetName().c_str() );
+        Sdf_FileIOUtility::WriteTimeSamples(out, indent, attr);
         Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
@@ -1212,10 +1211,9 @@ Sdf_WriteRelationship(
 
     if (hasTimeSamples) {
         Sdf_FileIOUtility::Write(out, indent, "%srel %s.timeSamples = {\n",
-                                varyingStr.c_str(),
-                                rel.GetName().c_str());
-        Sdf_FileIOUtility::WriteTimeSamples( out, indent,
-                                            rel.GetTimeSampleMap() );
+                                 varyingStr.c_str(),
+                                 rel.GetName().c_str());
+        Sdf_FileIOUtility::WriteTimeSamples(out, indent, rel);
         Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 

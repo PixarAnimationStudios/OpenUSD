@@ -4,7 +4,6 @@
 //Codeset: UTF-8
 requires maya "2016";
 requires -nodeType "pxrUsdReferenceAssembly" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
-requires -nodeType "px_renderGlobals" "px_render" "1.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -246,8 +245,6 @@ createNode hyperLayout -n "hyperLayout2";
 createNode polyCube -n "polyCube1";
 	rename -uid "9FC738C0-0000-6269-582F-73B900000254";
 	setAttr ".cuv" 4;
-createNode px_renderGlobals -s -n "px_renderGlobals1";
-	rename -uid "996218C0-0000-05A4-596D-03AE0000025C";
 createNode hyperLayout -n "hyperLayout3";
 	rename -uid "996218C0-0000-05A4-596D-03B80000025E";
 	setAttr ".ihi" 0;
@@ -273,7 +270,6 @@ select -ne :initialShadingGroup;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
 select -ne :defaultRenderGlobals;
-	setAttr ".ren" -type "string" "px_render";
 	setAttr ".outf" 3;
 select -ne :defaultResolution;
 	setAttr ".pa" 1;

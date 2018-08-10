@@ -79,6 +79,24 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdTypeDoubleMat3);
     TF_ADD_ENUM_NAME(HdTypeDoubleMat4);
     TF_ADD_ENUM_NAME(HdTypeInt32_2_10_10_10_REV);
+
+    TF_ADD_ENUM_NAME(HdFormatInvalid);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8Vec2);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8Vec3);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8Vec4);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8Vec2);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8Vec3);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8Vec4);
+    TF_ADD_ENUM_NAME(HdFormatFloat32);
+    TF_ADD_ENUM_NAME(HdFormatFloat32Vec2);
+    TF_ADD_ENUM_NAME(HdFormatFloat32Vec3);
+    TF_ADD_ENUM_NAME(HdFormatFloat32Vec4);
+    TF_ADD_ENUM_NAME(HdFormatInt32);
+    TF_ADD_ENUM_NAME(HdFormatInt32Vec2);
+    TF_ADD_ENUM_NAME(HdFormatInt32Vec3);
+    TF_ADD_ENUM_NAME(HdFormatInt32Vec4);
 }
 
 const void* HdGetValueData(const VtValue &value)
@@ -309,6 +327,89 @@ size_t HdDataSizeOfType(HdType t)
 size_t HdDataSizeOfTupleType(HdTupleType tupleType)
 {
     return HdDataSizeOfType(tupleType.type) * tupleType.count;
+}
+
+HdFormat HdGetComponentFormat(HdFormat f)
+{
+    switch(f) {
+    case HdFormatUNorm8:
+    case HdFormatUNorm8Vec2:
+    case HdFormatUNorm8Vec3:
+    case HdFormatUNorm8Vec4:
+        return HdFormatUNorm8;
+    case HdFormatSNorm8:
+    case HdFormatSNorm8Vec2:
+    case HdFormatSNorm8Vec3:
+    case HdFormatSNorm8Vec4:
+        return HdFormatSNorm8;
+    case HdFormatFloat32:
+    case HdFormatFloat32Vec2:
+    case HdFormatFloat32Vec3:
+    case HdFormatFloat32Vec4:
+        return HdFormatFloat32;
+    case HdFormatInt32:
+    case HdFormatInt32Vec2:
+    case HdFormatInt32Vec3:
+    case HdFormatInt32Vec4:
+        return HdFormatInt32;
+    default:
+        return HdFormatInvalid;
+    }
+}
+
+size_t HdGetComponentCount(HdFormat f)
+{
+    switch (f) {
+    case HdFormatUNorm8Vec2:
+    case HdFormatSNorm8Vec2:
+    case HdFormatFloat32Vec2:
+    case HdFormatInt32Vec2:
+        return 2;
+    case HdFormatUNorm8Vec3:
+    case HdFormatSNorm8Vec3:
+    case HdFormatFloat32Vec3:
+    case HdFormatInt32Vec3:
+        return 3;
+    case HdFormatUNorm8Vec4:
+    case HdFormatSNorm8Vec4:
+    case HdFormatFloat32Vec4:
+    case HdFormatInt32Vec4:
+        return 4;
+    default:
+        return 1;
+    }
+}
+
+size_t HdDataSizeOfFormat(HdFormat f)
+{
+    switch(f) {
+    case HdFormatUNorm8:
+    case HdFormatSNorm8:
+        return 1;
+    case HdFormatUNorm8Vec2:
+    case HdFormatSNorm8Vec2:
+        return 2;
+    case HdFormatUNorm8Vec3:
+    case HdFormatSNorm8Vec3:
+        return 3;
+    case HdFormatUNorm8Vec4:
+    case HdFormatSNorm8Vec4:
+        return 4;
+    case HdFormatFloat32:
+    case HdFormatInt32:
+        return 4;
+    case HdFormatFloat32Vec2:
+    case HdFormatInt32Vec2:
+        return 8;
+    case HdFormatFloat32Vec3:
+    case HdFormatInt32Vec3:
+        return 12;
+    case HdFormatFloat32Vec4:
+    case HdFormatInt32Vec4:
+        return 16;
+    default:
+        return 0;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

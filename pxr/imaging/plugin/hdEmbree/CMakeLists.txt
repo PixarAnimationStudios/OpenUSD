@@ -5,6 +5,11 @@ if(NOT EMBREE_FOUND)
     message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: Embree")
     return()
 endif()
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
 
 pxr_plugin(hdEmbree
    LIBRARIES
@@ -28,6 +33,8 @@ pxr_plugin(hdEmbree
         instancer
         mesh
         meshSamplers
+        renderBuffer
+        renderer
         rendererPlugin
         renderDelegate
         renderPass

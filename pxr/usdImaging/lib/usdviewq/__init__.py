@@ -37,20 +37,21 @@ class InvalidUsdviewOption(Exception):
 
 class Launcher(object):
     '''
-    Base class for argument parsing and validation for UsdView
+    Base class for argument parsing, validation, and initialization for UsdView
 
     Subclasses can choose to override
       -- GetHelpDescription()
       -- RegisterOptions()
       -- ParseOptions()
       -- ValidateOptions()
+      -- GetResolverContext()
     '''
     def __init__(self):
         pass
 
     def Run(self):
         '''
-        the main entry point to launch a process using UsdView.
+        The main entry point to launch a process using UsdView.
         '''
 
         parser = argparse.ArgumentParser(prog=sys.argv[0],
@@ -167,9 +168,12 @@ class Launcher(object):
 
     def ValidateOptions(self, arg_parse_result):
         '''
-        Validate and potentially modifies the parsed arguments. Raises
-        InvalidUsdviewOption if an invalid option is found. If a child has
-        overridden ParseOptions, ValidateOptions is an opportunity to move
+        Called by Run(), after ParseOptions() is called. Validates and 
+        potentially modifies the parsed arguments. Raises InvalidUsdviewOption 
+        if an invalid option is found. If a derived class has overridden 
+        ParseOptions(), ValidateOptions() is an opportunity to process the
+        options and transmute other "core" options in response.  If 
+        overridden, derived classes should likely first call the base method.
         '''
 
         # split arg_parse_result.populationMask into paths.
@@ -210,6 +214,28 @@ class Launcher(object):
             raise InvalidUsdviewOption("cannot supply both --clearsettings " \
                                        "and --defaultsettings.")
 
+    def GetResolverContext(self, usdFile):
+        """
+        Create and return the ArResolverContext that will be used to Open
+        the Stage for the given usdFile.  Base implementation
+        creates a default asset context for the usdFile asset, but derived
+        classes can do more sophisticated resolver and context configuration.
+        
+        Will be called each time a new stage is opened.
+
+        It is not necessary to create an ArResolverContext for every UsdStage
+        one opens, as the Stage will use reasonable fallback behavior if no
+        context is provided.  For usdview, configuring an asset context by
+        default is reasonable, and allows clients that embed usdview to 
+        achieve different behavior when needed.
+        """
+        from pxr import Ar
+        
+        r = Ar.GetResolver()
+        r.ConfigureResolverForAsset(usdFile)
+        return r.CreateDefaultContextForAsset(usdFile)
+
+
     def LaunchPreamble(self, arg_parse_result):
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
@@ -233,7 +259,8 @@ class Launcher(object):
                                            resourceDir.replace("\\", "/"))
         app.setStyleSheet(sheetString)
 
-        appController = AppController(arg_parse_result)
+        contextCreator = lambda usdFile: self.GetResolverContext(usdFile)
+        appController = AppController(arg_parse_result, contextCreator)
 
         return (app, appController)
 

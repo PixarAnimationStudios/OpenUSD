@@ -619,7 +619,7 @@ UsdAttribute::GetConnections(SdfPathVector *sources) const
     if (!isClean) {
         stage->_ReportErrors(
             pcpErrors, otherErrors,
-            TfStringPrintf("Getting connections for attribute <%s>",
+            TfStringPrintf("getting connections for attribute <%s>",
                            GetPath().GetText()));
     }
 

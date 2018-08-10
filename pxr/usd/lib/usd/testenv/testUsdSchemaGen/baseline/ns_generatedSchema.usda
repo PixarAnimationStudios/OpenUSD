@@ -2,8 +2,8 @@
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
     customLayerData = {
-        string[] appliedAPISchemas = ["SingleApplyAPI", "MultipleApplyAPI"]
-        string[] multipleApplyAPISchemas = ["MultipleApplyAPI"]
+        string[] appliedAPISchemas = ["SingleApplyAPI", "EmptyMultipleApplyAPI", "MultipleApplyAPI", "DerivedMultipleApplyAPI", "PublicMultipleApplyAPI"]
+        string[] multipleApplyAPISchemas = ["EmptyMultipleApplyAPI", "MultipleApplyAPI", "DerivedMultipleApplyAPI", "PublicMultipleApplyAPI"]
     }
 )
 
@@ -15,8 +15,27 @@ class "SingleApplyAPI"
 {
 }
 
+class "EmptyMultipleApplyAPI"
+{
+}
+
 class "MultipleApplyAPI"
 {
+    int testAttrOne
+    double testAttrTwo
+}
+
+class "DerivedMultipleApplyAPI"
+{
+    int testAttrOne
+    int testAttrThree
+    double testAttrTwo
+}
+
+class "PublicMultipleApplyAPI"
+{
+    int testAttrOne
+    double testAttrTwo
 }
 
 class "Base" (
@@ -272,6 +291,9 @@ class Derived "Derived" (
 
 class TestPxHairman "TestPxHairman"
 {
+    float attrWithoutGeneratedAccessorAPI (
+        doc = "This exercises empty apiName to skip accessor generation."
+    )
     rel relCanShareApiNameWithAttr (
         doc = "This exercises custom API naming."
     )

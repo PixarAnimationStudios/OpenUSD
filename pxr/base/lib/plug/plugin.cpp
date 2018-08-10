@@ -230,11 +230,14 @@ PlugPlugin::_Load()
     if (false) {
 #endif // PXR_PYTHON_SUPPORT_ENABLED
     } else if (!IsResource()) {
-        // XXX -- This is a hack to handle a static/non-monolithic library
-        // build.  In this case some "plugins" will be static libraries
-        // directly linked into the executable and can't be dynamically
-        // loaded.  Just skip these since they're already loaded.
-        if (!TfStringEndsWith(_path, ARCH_STATIC_LIBRARY_SUFFIX)) {
+        // This plugin's library path may be empty if the plugin isn't
+        // separately loadable, e.g. it's part of a monolithic USD build
+        // or it's a static library.
+        if (_path.empty()) {
+            TF_DEBUG(PLUG_LOAD).Msg("No path to library for '%s'.\n", 
+                                    _name.c_str());
+        }
+        else {
             string dsoError;
             {
                 TRACE_FUNCTION_SCOPE("dlopen");

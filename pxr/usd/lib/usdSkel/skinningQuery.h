@@ -57,15 +57,13 @@ public:
     /// set through the UsdSkelBindingAPI, as inherited on \p prim.
     /// The resulting query will be marked valid only if the inherited
     /// properties provide proper valid joint influences.
-    /// The \p prim is passed only for the sake of validation messages,
-    /// as is not otherwise important.
     USDSKEL_API
     UsdSkelSkinningQuery(const UsdPrim& prim,
                          const VtTokenArray& skelJointOrder,
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
                          const UsdAttribute& geomBindTransform,
-                         const VtTokenArray* jointOrder=nullptr);
+                         const UsdAttribute& joints);
 
     /// Returns true if this query is valid.
     bool IsValid() const { return _valid; }
@@ -73,12 +71,21 @@ public:
     /// Boolena conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
 
+    const UsdPrim& GetPrim() const { return _prim; }
+
+    /// Returns the number of influences encoded for each component.
+    /// If the prim defines rigid joint influences, then this returns
+    /// the number of influences that map to every point. Otherwise,
+    /// this provides the number of influences per point.
+    /// \sa IsRigidlyDeformed
     int GetNumInfluencesPerComponent() const {
         return _numInfluencesPerComponent;
     }
 
     const TfToken& GetInterpolation() const { return _interpolation; }
 
+    /// Returns true if the held prim has the same joint influences
+    /// across all points, or false otherwise.
     USDSKEL_API
     bool IsRigidlyDeformed() const;
 
@@ -168,7 +175,6 @@ public:
                                  GfMatrix4d* xform,
                                  UsdTimeCode time=UsdTimeCode::Default()) const;
 
-
     /// Helper for computing an *approximate* padding for use in extents
     /// computations. The padding is computed as the difference between the
     /// pivots of the \p skelRestXforms -- _skeleton space_ joint transforms
@@ -187,6 +193,7 @@ public:
     std::string GetDescription() const;
 
 private:
+    UsdPrim _prim;
     bool _valid;
     int _numInfluencesPerComponent;
     TfToken _interpolation;

@@ -41,6 +41,7 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <functional>
 #include <iostream>

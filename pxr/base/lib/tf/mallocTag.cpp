@@ -1724,8 +1724,7 @@ _ReportMallocNode(
     std::ostream &out,
     const TfMallocTag::CallTree::PathNode &node,
     size_t level,
-    const boost::optional<std::string> &rootName =
-        boost::optional<std::string>())
+    const std::string *rootName = nullptr)
 {
     // Prune empty branches.
     if (node.nBytes == 0) {
@@ -1865,13 +1864,21 @@ TfMallocTag::CallTree::GetPrettyPrintString(PrintSetting setting,
 
 void
 TfMallocTag::CallTree::Report(
+    std::ostream &out) const
+{
+    const std::string emptyRootName;
+    Report(out, emptyRootName);
+}
+
+void
+TfMallocTag::CallTree::Report(
     std::ostream &out,
-    const boost::optional<std::string> &rootName) const
+    const std::string &rootName) const
 {
     out << "\nTree view  ==============\n";
     out << "      inclusive       exclusive\n";
 
-    _ReportMallocNode(out, this->root, 0, rootName);
+    _ReportMallocNode(out, this->root, 0, &rootName);
 
     // Also add the dominant call sites to the report.
     out << GetPrettyPrintString(CALLSITES);

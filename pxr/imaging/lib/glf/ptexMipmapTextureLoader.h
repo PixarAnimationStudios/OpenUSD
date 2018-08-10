@@ -126,6 +126,10 @@ private:
             return (a->height > b->height) ||
                    ((a->height == b->height) && (a->width > b->width));
         }
+
+        static bool sortByArea(const Block *a, const Block *b) {
+            return (a->GetNumTexels() > b->GetNumTexels());
+        }
     };
 
     struct Page;

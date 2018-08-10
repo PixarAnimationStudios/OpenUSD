@@ -375,7 +375,7 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTags(
     // holes
     //
 
-    VtIntArray const holeIndices = tags.GetHoleIndices();
+    VtIntArray const holeIndices = topology.GetHoleIndices();
 
     int numHoles = holeIndices.size();
 

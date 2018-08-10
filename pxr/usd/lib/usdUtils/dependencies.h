@@ -26,9 +26,17 @@
 
 /// \file usdUtils/dependencies.h
 ///
-/// Utilities for extracting asset dependencies from a USD file.
+/// Utilities for the following tasks that require consideration of a USD
+/// asset's external dependencies:
+/// * extracting asset dependencies from a USD file.
+/// * creating a USDZ package containing a given asset and all of its external 
+/// dependencies.
+/// * some time in the future, localize a given asset and all of its 
+/// dependencies into a specified directory.
+/// 
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdUtils/api.h"
 
 #include <string>
@@ -36,15 +44,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfAssetPath;
 
 /// Parses the file at \p filePath, identifying external references, and
 /// sorting them into separate type-based buckets. Sublayers are returned in
-/// the \p sublayers vector, references, whether prim references or values
-/// from asset path attributes, are returned in the \p references vector.
-/// Payload paths are returned in \p payloads.
-///
+/// the \p sublayers vector, references, whether prim references, value clip 
+/// references or values from asset path attributes, are returned in the 
+/// \p references vector. Payload paths are returned in \p payloads.
+/// 
 /// \note No recursive chasing of dependencies is performed; that is the
 /// client's responsibility, if desired.
+/// 
+/// \note Not all returned references are actually authored explicitly in the 
+/// layer. For example, templated clip asset paths are resolved and expanded 
+/// to include all available clip files that match the specified pattern.
 USDUTILS_API
 void UsdUtilsExtractExternalReferences(
     const std::string& filePath,
@@ -52,6 +65,75 @@ void UsdUtilsExtractExternalReferences(
     std::vector<std::string>* references,
     std::vector<std::string>* payloads);
 
+/// Creates a USDZ package containing the specified asset, identified by its 
+/// \p assetPath. The created package will include a localized version of the 
+/// asset itself and all of its external dependencies. Due to localization, the 
+/// packaged layers might be modified to have different asset paths.
+///
+/// You can optionally specify a different package-internal name for the first
+/// layer of the asset by specifying \p firstLayerName. By default,
+/// \p firstLayerName is empty, meaning that the original name is preserved.
+/// 
+/// Returns true if the package was created successfully.
+/// 
+/// \note Clients of this function must take care of configuring the asset 
+/// resolver context before invoking the function. To create a default 
+/// resolver context, use \ref CreateDefaultContextForAsset() with the 
+/// asset path.
+/// 
+/// \note If the given asset has a dependency on a directory (i.e. an external 
+/// reference to a directory path), the dependency is ignored and the contents 
+/// of the directory are not included in the created package. 
+USDUTILS_API
+bool
+UsdUtilsCreateNewUsdzPackage(
+    const SdfAssetPath& assetPath,
+    const std::string& usdzFilePath,
+    const std::string& firstLayerName=std::string());
+
+/// Similar to UsdUtilsCreateNewUsdzPackage, this function packages all of the 
+/// dependencies of the given asset. Assets targeted at the initial usdz 
+/// implementation in ARKit operate under greater constraints than usdz files 
+/// for more general 'in house' uses, and this option attempts to ensure that
+/// these constraints are honored; this may involve more transformations to the 
+/// data, which may cause loss of features such as VariantSets.
+///
+/// If \p firstLayerName is specified, it is modified to have the ".usdc" 
+/// extension, as required by the initial usdz implementation in ARKit.
+/// 
+/// Returns true if the package was created successfully.
+/// 
+/// \note Clients of this function must take care of configuring the asset 
+/// resolver context before invoking the function. To create a default 
+/// resolver context, use \ref CreateDefaultContextForAsset() with the 
+/// asset path.
+/// 
+/// \note If the given asset has a dependency on a directory (i.e. an external 
+/// reference to a directory path), the dependency is ignored and the contents 
+/// of the directory are not included in the created package. 
+USDUTILS_API
+bool
+UsdUtilsCreateNewARKitUsdzPackage(
+    const SdfAssetPath &assetPath,
+    const std::string &usdzFilePath,
+    const std::string &firstLayerName=std::string());
+
+/// Recursively computes all the dependencies of the given asset and populates
+/// \p layers with all the dependencies that can be opened as an SdfLayer. 
+/// All of the resolved non-layer dependencies are populated in \p assets.
+/// Any unresolved (layer and non-layer) asset paths are populated in 
+/// \p unresolvedPaths.
+/// 
+/// The input vectors to be populated with the results are are *cleared* before 
+/// any results are added to them.
+/// 
+/// Returns true if the given asset was resolved correctly.
+USDUTILS_API
+bool
+UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
+                               std::vector<SdfLayerRefPtr> *layers,
+                               std::vector<std::string> *assets,
+                               std::vector<std::string> *unresolvedPaths);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

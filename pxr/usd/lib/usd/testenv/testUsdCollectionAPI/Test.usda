@@ -7,6 +7,7 @@
 
 def "CollectionTest" (
     kind = "prop"
+    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules"]
 )
 {
     # simple explicit collection
@@ -89,6 +90,14 @@ def "CollectionTest" (
         </CollectionTest/Geom/Box>
     ]
 
+    token collection:invalidTopLevelRules:expasionRule = "explicitOnly"
+    rel collection:invalidTopLevelRules:includes = [
+        </A>,
+    ]
+    rel collection:invalidTopLevelRules:excludes = [
+        </B>
+    ]
+
 
     def "Geom"
     {
@@ -99,7 +108,9 @@ def "CollectionTest" (
         {
         }
  
-        def "Shapes" 
+        def "Shapes"  (
+            prepend apiSchemas = ["CollectionAPI:allShapes"]
+        )
         {
             token collection:allShapes:expansionRule = "explicitOnly"
             rel collection:allShapes:includes = [

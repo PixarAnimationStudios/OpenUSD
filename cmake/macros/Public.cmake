@@ -681,6 +681,23 @@ function(pxr_register_test TEST_NAME)
                 set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
             endforeach()
         endif()
+        
+        # If we're building static libraries, the C++ tests that link against
+        # these libraries will look for resource files in the "usd" subdirectory
+        # relative to where the tests are installed. However, the build installs
+        # these files in the "lib" directory where the libraries are installed. 
+        #
+        # We don't want to copy these resource files for each test, so instead
+        # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
+        # directory where these files are installed.
+        if (NOT TARGET shared_libs)
+            set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
+            if (PXR_OVERRIDE_PLUGINPATH_NAME)
+                set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
+            endif()
+
+            set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+        endif()
 
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
@@ -716,21 +733,33 @@ function(pxr_register_test TEST_NAME)
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
-    set(SHARE_INSTALL_PREFIX "share/usd")
-
     # Install a top-level plugInfo.json in the shared area and into the 
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
-    set(plugInfoContents "{\n    \"Includes\": [ \"*/${resourcesDir}/\" ]\n}\n")
 
+    # Add extra plugInfo.json include paths to the top-level plugInfo.json,
+    # relative to that top-level file.
+    set(extraIncludes "")
+    list(REMOVE_DUPLICATES PXR_EXTRA_PLUGINS)
+    foreach(dirName ${PXR_EXTRA_PLUGINS})
+        file(RELATIVE_PATH
+            relDirName
+            "${CMAKE_INSTALL_PREFIX}/lib/usd"
+            "${CMAKE_INSTALL_PREFIX}/${dirName}"
+        )
+        set(extraIncludes "${extraIncludes},\n        \"${relDirName}/\"")
+    endforeach()
+
+    set(plugInfoContents "{\n    \"Includes\": [\n        \"*/${resourcesDir}/\"${extraIncludes}\n    ]\n}\n")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
          "${plugInfoContents}")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
-        DESTINATION "${SHARE_INSTALL_PREFIX}/plugins"
+        DESTINATION lib/usd
         RENAME "plugInfo.json"
     )
 
+    set(plugInfoContents "{\n    \"Includes\": [ \"*/${resourcesDir}/\" ]\n}\n")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
          "${plugInfoContents}")
     install(
@@ -739,6 +768,27 @@ function(pxr_setup_plugins)
         RENAME "plugInfo.json"
     )
 endfunction() # pxr_setup_plugins
+
+function(pxr_add_extra_plugins PLUGIN_AREAS)
+    # Install a top-level plugInfo.json in the given plugin areas.
+    _get_resources_dir_name(resourcesDir)
+    set(plugInfoContents "{\n    \"Includes\": [ \"*/${resourcesDir}/\" ]\n}\n")
+
+    get_property(help CACHE PXR_EXTRA_PLUGINS PROPERTY HELPSTRING)
+
+    foreach(area ${PLUGIN_AREAS})
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${area}_plugInfo.json"
+            "${plugInfoContents}")
+        install(
+            FILES "${CMAKE_CURRENT_BINARY_DIR}/${area}_plugInfo.json"
+            DESTINATION "${PXR_INSTALL_SUBDIR}/${area}"
+            RENAME "plugInfo.json"
+        )
+        list(APPEND PXR_EXTRA_PLUGINS "${PXR_INSTALL_SUBDIR}/${area}")
+    endforeach()
+
+    set(PXR_EXTRA_PLUGINS "${PXR_EXTRA_PLUGINS}" CACHE INTERNAL "${help}")
+endfunction() # pxr_setup_third_plugins
 
 function(pxr_katana_nodetypes NODE_TYPES)
     set(installDir ${PXR_INSTALL_SUBDIR}/plugin/Plugins/NodeTypes)
@@ -922,6 +972,10 @@ function(pxr_toplevel_epilogue)
         _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
         _pxr_install_rpath(rpath usd_ms)
     endif()
+
+    # Setup the plugins in the top epilogue to ensure that everybody has had a
+    # chance to update PXR_EXTRA_PLUGINS with their plugin paths.
+    pxr_setup_plugins()
 endfunction() # pxr_toplevel_epilogue
 
 function(pxr_monolithic_epilogue)
@@ -1048,7 +1102,6 @@ function(pxr_core_epilogue)
         if(PXR_ENABLE_PYTHON_SUPPORT)
             pxr_setup_python()
         endif()
-        pxr_setup_plugins()
         set(_building_core FALSE PARENT_SCOPE)
     endif()
 endfunction() # pxr_core_epilogue

@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/renderPassState.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -62,6 +63,10 @@ public:
     void SyncParams(HdxRenderTaskParams const &params);
     HDX_API
     void SyncCamera();
+    HDX_API
+    void SyncAttachments();
+    HDX_API
+    void SyncRenderPassState();
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
@@ -86,6 +91,7 @@ private:
     GfVec4d _viewport;
     SdfPath _cameraId;
     TfTokenVector _renderTags;
+    HdRenderPassAttachmentVector _attachments;
 
     static HdStShaderCodeSharedPtr _overrideShader;
 
@@ -104,6 +110,8 @@ struct HdxRenderTaskParams : public HdTaskParams
     HdxRenderTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
+        , maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+        , indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
         , pointColor(GfVec4f(0,0,0,1))
         , pointSize(3.0)
         , pointSelectedSize(3.0)
@@ -130,13 +138,16 @@ struct HdxRenderTaskParams : public HdTaskParams
         , complexity(HdComplexityLow)
         , hullVisibility(false)
         , surfaceVisibility(true)
+        , attachments()
         , camera()
         , viewport(0.0)
         {}
 
-    // RasterState
+    // XXX: Several of the params below should move to global application state.
     GfVec4f overrideColor;
     GfVec4f wireframeColor;
+    GfVec4f maskColor;
+    GfVec4f indicatorColor;
     GfVec4f pointColor;
     float pointSize;
     float pointSelectedSize;
@@ -175,6 +186,11 @@ struct HdxRenderTaskParams : public HdTaskParams
     HdComplexity complexity;
     bool hullVisibility;
     bool surfaceVisibility;
+
+    // Attachments.
+    // XXX: As a transitional API, if this is empty it indicates the renderer
+    // should write color and depth to the GL framebuffer.
+    HdRenderPassAttachmentVector attachments;
 
     // RasterState index objects
     SdfPath camera;

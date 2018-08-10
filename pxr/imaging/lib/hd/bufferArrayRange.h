@@ -87,7 +87,7 @@ public:
     virtual int GetIndex() const = 0;
 
     /// Returns the number of elements
-    virtual int GetNumElements() const = 0;
+    virtual size_t GetNumElements() const = 0;
 
     /// Returns the version of the buffer array.
     virtual size_t GetVersion() const = 0;
@@ -112,7 +112,7 @@ public:
 
     /// Sets the bufferSpecs for all resources.
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const = 0;
+    virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const = 0;
 
 protected:
     /// Returns the aggregation container to be used in IsAggregatedWith()

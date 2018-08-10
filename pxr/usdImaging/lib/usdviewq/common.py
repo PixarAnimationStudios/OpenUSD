@@ -23,7 +23,7 @@
 #
 from qt import QtCore, QtGui, QtWidgets
 import os, time, sys, platform
-from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
+from pxr import Ar, Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
 
@@ -536,12 +536,8 @@ def GetFileOwner(path):
 def GetAssetCreationTime(primStack, assetIdentifier):
     """Finds the weakest layer in which assetInfo.identifier is set to
     'assetIdentifier', and considers that an "asset-defining layer".  We then
-    effectively consult the asset resolver plugin to tell us the creation
-    time for the asset, based on the layer.realPath and the
-    identifier. 'effectively' because Ar does not yet have such a query, so
-    we leverage usdview's plugin mechanism, consulting a function
-    GetAssetCreationTime(filePath, layerIdentifier) if it exists, falling
-    back to stat'ing the filePath if the plugin does not exist.
+    retrieve the creation time for the asset by stat'ing the layer's
+    real path.
 
     Returns a triple of strings: (fileDisplayName, creationTime, owner)"""
     definingLayer = None
@@ -558,10 +554,26 @@ def GetAssetCreationTime(primStack, assetIdentifier):
         print "Warning: Could not find expected asset-defining layer for %s" %\
             assetIdentifier
 
-    stat_info = os.stat(definingFile)
-    return (definingFile.split('/')[-1],
-            time.ctime(stat_info.st_ctime),
-            GetFileOwner(definingFile))
+    if Ar.IsPackageRelativePath(definingFile):
+        definingFile = Ar.SplitPackageRelativePathOuter(definingFile)[0]
+
+    if not definingFile:
+        displayName = (definingLayer.GetDisplayName()
+                       if definingLayer and definingLayer.anonymous else
+                       "<in-memory layer>")
+        creationTime = "<unknown>"
+        owner = "<unknown>"
+    else:
+        displayName = definingFile.split('/')[-1]
+
+        try:
+            creationTime = time.ctime(os.stat(definingFile).st_ctime)
+        except:
+            creationTime = "<unknown>"
+
+        owner = GetFileOwner(definingFile)
+
+    return (displayName, creationTime, owner)
 
 
 def DumpMallocTags(stage, contextStr):

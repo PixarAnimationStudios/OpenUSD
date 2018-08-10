@@ -55,6 +55,11 @@ UsdLuxLight::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdLuxLight::_GetSchemaType() const {
+    return UsdLuxLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxLight::_GetStaticTfType()
@@ -244,6 +249,8 @@ const TfTokenVector&
 UsdLuxLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->collectionLightLinkIncludeRoot,
+        UsdLuxTokens->collectionShadowLinkIncludeRoot,
         UsdLuxTokens->intensity,
         UsdLuxTokens->exposure,
         UsdLuxTokens->diffuse,
@@ -279,12 +286,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (lightLink)
-    (shadowLink)
-);
-
 GfVec3f
 UsdLuxLight::ComputeBaseEmission() const
 {
@@ -315,17 +316,17 @@ UsdLuxLight::ComputeBaseEmission() const
 }
 
 USDLUX_API
-UsdLuxLinkingAPI
-UsdLuxLight::GetLightLinkingAPI() const
+UsdCollectionAPI
+UsdLuxLight::GetLightLinkCollectionAPI() const
 {
-    return UsdLuxLinkingAPI(*this, _tokens->lightLink);
+    return UsdCollectionAPI(GetPrim(), UsdLuxTokens->lightLink);
 }
 
 USDLUX_API
-UsdLuxLinkingAPI
-UsdLuxLight::GetShadowLinkingAPI() const
+UsdCollectionAPI
+UsdLuxLight::GetShadowLinkCollectionAPI() const
 {
-    return UsdLuxLinkingAPI(*this, _tokens->shadowLink);
+    return UsdCollectionAPI(GetPrim(), UsdLuxTokens->shadowLink);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -217,7 +217,8 @@ UsdPrim::_MakeProperties(const TfTokenVector &names) const
     UsdStage *stage = _GetStage();
     props.reserve(names.size());
     for (auto const &propName : names) {
-        SdfSpecType specType = stage->_GetDefiningSpecType(*this, propName);
+        SdfSpecType specType =
+            stage->_GetDefiningSpecType(get_pointer(_Prim()), propName);
         if (specType == SdfSpecTypeAttribute) {
             props.push_back(GetAttribute(propName));
         } else if (TF_VERIFY(specType == SdfSpecTypeRelationship)) {
@@ -271,7 +272,8 @@ UsdPrim::RemoveProperty(const TfToken &propName)
 UsdProperty
 UsdPrim::GetProperty(const TfToken &propName) const
 {
-    SdfSpecType specType = _GetStage()->_GetDefiningSpecType(*this, propName);
+    SdfSpecType specType =
+        _GetStage()->_GetDefiningSpecType(get_pointer(_Prim()), propName);
     if (specType == SdfSpecTypeAttribute) {
         return GetAttribute(propName);
     }
@@ -973,7 +975,7 @@ UsdPrim::ComputeExpandedPrimIndex() const
     _GetStage()->_ReportPcpErrors(
         outputs.allErrors, 
         TfStringPrintf(
-            "Computing expanded prim index for <%s>", GetPath().GetText()));
+            "computing expanded prim index for <%s>", GetPath().GetText()));
     
     return outputs.primIndex;
 }

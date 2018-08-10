@@ -41,6 +41,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 GlfTextureHandleRefPtr
 GlfTextureHandle::New(GlfTextureRefPtr texture)
 {
+    if (texture == nullptr)
+    {
+        TF_CODING_ERROR("Texture handle created for a null texture");
+        return GlfTextureHandleRefPtr();
+    }
+
     return TfCreateRefPtr(new GlfTextureHandle(texture));
 }
 

@@ -35,6 +35,7 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tf/typeNotice.h"
 
@@ -191,6 +192,7 @@ struct TfType::_TypeInfo : boost::noncopyable
     _TypeInfo(const string &newTypeName) :
         canonicalTfType(this),
         typeName(newTypeName),
+        definitionCallback(nullptr),
         typeInfo(nullptr),
         sizeofType(0),
         isPodType(false),

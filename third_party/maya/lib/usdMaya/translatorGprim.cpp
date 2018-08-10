@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorGprim.h"
 
 #include "usdMaya/util.h"
@@ -32,41 +31,41 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 void
-PxrUsdMayaTranslatorGprim::Read(
+UsdMayaTranslatorGprim::Read(
         const UsdGeomGprim& gprim,
         MObject mayaNode,
-        PxrUsdMayaPrimReaderContext* )
+        UsdMayaPrimReaderContext* )
 {
     MFnDagNode fnGprim(mayaNode);
 
     TfToken orientation;
     if (gprim.GetOrientationAttr().Get(&orientation)){
-        PxrUsdMayaUtil::setPlugValue(fnGprim, "opposite", (orientation ==
+        UsdMayaUtil::setPlugValue(fnGprim, "opposite", (orientation ==
                                                  UsdGeomTokens->leftHanded));
     }
 
     bool doubleSided;
     if (gprim.GetDoubleSidedAttr().Get(&doubleSided)){
-        PxrUsdMayaUtil::setPlugValue(fnGprim, "doubleSided", doubleSided);
+        UsdMayaUtil::setPlugValue(fnGprim, "doubleSided", doubleSided);
     }
 }
 
 void
-PxrUsdMayaTranslatorGprim::Write(
+UsdMayaTranslatorGprim::Write(
         const MObject& mayaNode,
         const UsdGeomGprim& gprim, 
-        PxrUsdMayaPrimWriterContext*)
+        UsdMayaPrimWriterContext*)
 {
     MFnDependencyNode depFn(mayaNode);
 
     bool doubleSided = false;
-    if (PxrUsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)){
+    if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)){
         gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
     }
 
     bool opposite = false;
     // Gprim properties always authored on the shape
-    if (PxrUsdMayaUtil::getPlugValue(depFn, "opposite", &opposite)){
+    if (UsdMayaUtil::getPlugValue(depFn, "opposite", &opposite)){
         // If mesh is double sided in maya, opposite is disregarded
         TfToken orientation = (opposite && !doubleSided ? UsdGeomTokens->leftHanded :
                                                           UsdGeomTokens->rightHanded);

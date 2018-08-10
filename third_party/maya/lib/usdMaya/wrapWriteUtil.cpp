@@ -46,16 +46,16 @@ VtValue _GetVtValue(
     VtValue val;
 
     MPlug plug;
-    MStatus status = PxrUsdMayaUtil::GetPlugByName(attrPath, plug);
+    MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     CHECK_MSTATUS_AND_RETURN(status, val);
 
-    val = PxrUsdMayaWriteUtil::GetVtValue(plug, typeName);
+    val = UsdMayaWriteUtil::GetVtValue(plug, typeName);
     return val;
 }
 
 void wrapWriteUtil()
 {
-    typedef PxrUsdMayaWriteUtil This;
+    typedef UsdMayaWriteUtil This;
     class_<This>("WriteUtil", no_init)
         .def("WriteUVAsFloat2", This::WriteUVAsFloat2)
         .staticmethod("WriteUVAsFloat2")

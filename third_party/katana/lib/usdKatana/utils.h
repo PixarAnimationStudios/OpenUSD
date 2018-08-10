@@ -45,7 +45,7 @@ namespace FnKat = Foundry::Katana;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdLuxLinkingAPI;
+class UsdCollectionAPI;
 
 struct PxrUsdKatanaUtils {
 
@@ -60,20 +60,15 @@ struct PxrUsdKatanaUtils {
     static void ConvertArrayToVector(const VtVec3fArray &a, std::vector<float> *r);
 
     /// Convert a VtValue to a Katana attribute.
-    /// If asShaderParam is true, it will use the special encoding
-    /// Katana uses for shading arguments.
-    /// The pathsAsModel argument is used when trying to resolve asset paths.
+    /// If asShaderParam is false, convert arrays to type + array pairs
     static FnKat::Attribute ConvertVtValueToKatAttr( const VtValue & val,
-                                                     bool asShaderParam,
-                                                     bool pathsAsModel = false,
-                                                     bool resolvePaths = true);
+                                                     bool asShaderParam = true);
 
     /// Extract the targets of a relationship to a Katana attribute.
-    /// If asShaderParam is true, it will use the special encoding
-    /// Katana uses for shading arguments.
+    /// If asShaderParam is false, convert arrays to type + array pairs
     static FnKat::Attribute ConvertRelTargetsToKatAttr(
             const UsdRelationship &rel, 
-            bool asShaderParam);
+            bool asShaderParam = true);
 
     /// Convert a VtValue to a Katana custom geometry attribute (primvar).
     /// Katana uses a different encoding here from other attributes, which
@@ -106,7 +101,7 @@ struct PxrUsdKatanaUtils {
 
     /// Convert the given SdfPath in the UsdStage to the corresponding
     /// katana location, given a scenegraph generator configuration.
-    static std::string _ConvertUsdPathToKatLocation(
+    static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
             const std::string &isolatePathString,
             const std::string &rootPathString,
@@ -154,6 +149,16 @@ struct PxrUsdKatanaUtils {
     /// Creates the 'proxies' group attribute for consumption by the viewer.
     static FnKat::GroupAttribute GetViewerProxyAttr(
             const PxrUsdKatanaUsdInPrivateData& data);
+    
+    /// Creates the 'proxies' group attribute directly from fields
+    static FnKat::GroupAttribute GetViewerProxyAttr(
+            double currentTime,
+            const std::string & fileName,
+            const std::string & referencePath,
+            const std::string & rootLocation,
+            FnAttribute::GroupAttribute sessionAttr,
+            const std::string & ignoreLayerRegex);
+    
 
     /// Returns the asset name for the given prim.  It should be a model.  This
     /// will fallback to the name of the prim.
@@ -210,9 +215,8 @@ public:
         _Set(name, VtValue(value));
     }
 
-    /// Set linking for the light.  Returns true if linkAPI's map
-    /// links linkAPI's path.
-    bool SetLinks(const UsdLuxLinkingAPI &linkAPI,
+    /// Set linking for the light.
+    bool SetLinks(const UsdCollectionAPI &collectionAPI,
                   const std::string &linkName);
 
     /// Append the string \p value to a custom string list named \p tag.

@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/query.h"
 
 #include "usdMaya/usdPrimProvider.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/arch/systemInfo.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -35,8 +35,8 @@
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
-#include <maya/MPxNode.h>
 #include <maya/MObject.h>
+#include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 
 #include <string>
@@ -46,18 +46,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 UsdPrim
-PxrUsdMayaQuery::GetPrim(const std::string& shapeName)
+UsdMayaQuery::GetPrim(const std::string& shapeName)
 {
     UsdPrim usdPrim;
 
     MObject shapeObj;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName(shapeName, shapeObj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(shapeName, shapeObj);
     CHECK_MSTATUS_AND_RETURN(status, usdPrim);
     MFnDagNode dagNode(shapeObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, usdPrim);
 
-    if (const PxrUsdMayaUsdPrimProvider* usdPrimProvider =
-            dynamic_cast<const PxrUsdMayaUsdPrimProvider*>(dagNode.userNode())) {
+    if (const UsdMayaUsdPrimProvider* usdPrimProvider =
+            dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
         return usdPrimProvider->usdPrim();
     }
 
@@ -65,11 +65,11 @@ PxrUsdMayaQuery::GetPrim(const std::string& shapeName)
 }
 
 void
-PxrUsdMayaQuery::ReloadStage(const std::string& shapeName)
+UsdMayaQuery::ReloadStage(const std::string& shapeName)
 {
     MStatus status;
 
-    if (UsdPrim usdPrim = PxrUsdMayaQuery::GetPrim(shapeName)) {
+    if (UsdPrim usdPrim = UsdMayaQuery::GetPrim(shapeName)) {
         if (UsdStagePtr stage = usdPrim.GetStage()) {
             stage->Reload();
         }

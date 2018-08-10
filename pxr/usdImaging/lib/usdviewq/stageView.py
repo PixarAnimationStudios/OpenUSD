@@ -790,6 +790,10 @@ class StageView(QtOpenGL.QGLWidget):
         of source."""
         return self._lastComputedGfCamera.frustum
 
+    @property
+    def rendererPluginName(self):
+        return self._rendererPluginName
+
     def __init__(self, parent=None, dataModel=None, printTiming=False):
 
         glFormat = QtOpenGL.QGLFormat()
@@ -1191,34 +1195,45 @@ class StageView(QtOpenGL.QGLWidget):
         self.updateGL()
 
     def updateSelection(self):
-        renderer = self._getRenderer()
-        if not renderer:
-            # error has already been issued
-            return
+        try:
+            renderer = self._getRenderer()
+            if not renderer:
+                # error has already been issued
+                return
 
-        renderer.ClearSelected()
+            renderer.ClearSelected()
 
-        psuRoot = self._dataModel.stage.GetPseudoRoot()
-        allInstances = self._dataModel.selection.getPrimInstances()
-        for prim in self._dataModel.selection.getLCDPrims():
-            if prim == psuRoot:
-                continue
-            primInstances = allInstances[prim]
-            if primInstances != ALL_INSTANCES:
+            psuRoot = self._dataModel.stage.GetPseudoRoot()
+            allInstances = self._dataModel.selection.getPrimInstances()
+            for prim in self._dataModel.selection.getLCDPrims():
+                if prim == psuRoot:
+                    continue
+                primInstances = allInstances[prim]
+                if primInstances != ALL_INSTANCES:
 
-                # If the prim is a point instancer and has authored instance
-                # ids, the selection contains instance ids rather than instance
-                # indices. We need to convert these back to indices before
-                # feeding them to the renderer.
-                instanceIds = GetInstanceIndicesForIds(prim, primInstances,
-                    self._dataModel.currentFrame)
-                if instanceIds is not None:
-                    primInstances = instanceIds
+                    # If the prim is a point instancer and has authored instance
+                    # ids, the selection contains instance ids rather than 
+                    # instance indices. We need to convert these back to indices
+                    # before feeding them to the renderer.
+                    instanceIds = GetInstanceIndicesForIds(prim, primInstances,
+                        self._dataModel.currentFrame)
+                    if instanceIds is not None:
+                        primInstances = instanceIds
 
-                for instanceIndex in primInstances:
-                    renderer.AddSelected(prim.GetPath(), instanceIndex)
-            else:
-                renderer.AddSelected(prim.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
+                    for instanceIndex in primInstances:
+                        renderer.AddSelected(prim.GetPath(), instanceIndex)
+                else:
+                    renderer.AddSelected(
+                        prim.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
+        except Tf.ErrorException as e:
+            # If we encounter an error, we want to continue running. Just log 
+            # the error and continue.
+            sys.stderr.write(
+                "ERROR: Usdview encountered an error while updating selection."
+                "{}\n".format(e))
+        finally:
+            # Make sure not to leak a reference to the renderer
+            renderer = None
 
     def _getEmptyBBox(self):
         return Gf.BBox3d()
@@ -1276,6 +1291,9 @@ class StageView(QtOpenGL.QGLWidget):
             # running. Just log the error and continue.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while rendering.{}\n".format(e))
+        finally:
+            # Make sure not to leak a reference to the renderer
+            renderer = None
         self._forceRefresh = False
 
 
@@ -1460,214 +1478,226 @@ class StageView(QtOpenGL.QGLWidget):
             # error has already been issued
             return
 
-        from OpenGL import GL
+        try:
+            from OpenGL import GL
 
-        if self._dataModel.viewSettings.showHUD_GPUstats:
-            if self._glPrimitiveGeneratedQuery is None:
-                self._glPrimitiveGeneratedQuery = Glf.GLQueryObject()
-            if self._glTimeElapsedQuery is None:
-                self._glTimeElapsedQuery = Glf.GLQueryObject()
-            self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
-            self._glTimeElapsedQuery.BeginTimeElapsed()
+            if self._dataModel.viewSettings.showHUD_GPUstats:
+                if self._glPrimitiveGeneratedQuery is None:
+                    self._glPrimitiveGeneratedQuery = Glf.GLQueryObject()
+                if self._glTimeElapsedQuery is None:
+                    self._glTimeElapsedQuery = Glf.GLQueryObject()
+                self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
+                self._glTimeElapsedQuery.BeginTimeElapsed()
 
-        # Enable sRGB in order to apply a final gamma to this window, just like
-        # in Presto.
-        from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
-        GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
+            # Enable sRGB in order to apply a final gamma to this window, just like
+            # in Presto.
+            from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
+            GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
-        GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))))
+            GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))))
 
-        GL.glEnable(GL.GL_DEPTH_TEST)
-        GL.glDepthFunc(GL.GL_LESS)
+            GL.glEnable(GL.GL_DEPTH_TEST)
+            GL.glDepthFunc(GL.GL_LESS)
 
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-        GL.glEnable(GL.GL_BLEND)
+            GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+            GL.glEnable(GL.GL_BLEND)
 
-        (gfCamera, cameraAspect) = self.resolveCamera()
-        frustum = gfCamera.frustum
-        cameraViewport = self.computeCameraViewport(cameraAspect)
+            (gfCamera, cameraAspect) = self.resolveCamera()
+            frustum = gfCamera.frustum
+            cameraViewport = self.computeCameraViewport(cameraAspect)
 
-        viewport = self.computeWindowViewport()
-        windowViewport = viewport
-        if self._cropImageToCameraViewport:
-            viewport = cameraViewport
+            viewport = self.computeWindowViewport()
+            windowViewport = viewport
+            if self._cropImageToCameraViewport:
+                viewport = cameraViewport
 
-        cam_pos = frustum.position
-        cam_up = frustum.ComputeUpVector()
-        cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
+            cam_pos = frustum.position
+            cam_up = frustum.ComputeUpVector()
+            cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
 
-        # not using the actual camera dist ...
-        cam_light_dist = self._dist
+            # not using the actual camera dist ...
+            cam_light_dist = self._dist
 
-        renderer.SetCameraState(
-            frustum.ComputeViewMatrix(),
-            frustum.ComputeProjectionMatrix(),
-            Gf.Vec4d(*viewport))
+            renderer.SetCameraState(
+                frustum.ComputeViewMatrix(),
+                frustum.ComputeProjectionMatrix(),
+                Gf.Vec4d(*viewport))
 
-        viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
-                                           * frustum.ComputeProjectionMatrix())
+            viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
+                                            * frustum.ComputeProjectionMatrix())
 
 
-        GL.glViewport(*windowViewport)
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
+            GL.glViewport(*windowViewport)
+            GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
-        # ensure viewport is right for the camera framing
-        GL.glViewport(*viewport)
+            # ensure viewport is right for the camera framing
+            GL.glViewport(*viewport)
 
-        # Set the clipping planes.
-        self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
-                                         gfCamera.clippingPlanes]
+            # Set the clipping planes.
+            self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
+                                            gfCamera.clippingPlanes]
 
-        if len(self._dataModel.selection.getLCDPrims()) > 0:
-            sceneAmbient = (0.01, 0.01, 0.01, 1.0)
-            material = Glf.SimpleMaterial()
-            lights = []
-            # for renderModes that need lights
-            if self._dataModel.viewSettings.renderMode in ShadedRenderModes:
+            if len(self._dataModel.selection.getLCDPrims()) > 0:
+                sceneAmbient = (0.01, 0.01, 0.01, 1.0)
+                material = Glf.SimpleMaterial()
+                lights = []
+                # for renderModes that need lights
+                if self._dataModel.viewSettings.renderMode in ShadedRenderModes:
 
-                # ambient light located at the camera
-                if self._dataModel.viewSettings.ambientLightOnly:
-                    l = Glf.SimpleLight()
-                    l.ambient = (0, 0, 0, 0)
-                    l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
-                    lights.append(l)
-                # three-point lighting
+                    # ambient light located at the camera
+                    if self._dataModel.viewSettings.ambientLightOnly:
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
+                        lights.append(l)
+                    # three-point lighting
+                    else:
+                        if self._dataModel.viewSettings.keyLightEnabled:
+                            # 45 degree horizontal viewing angle, 20 degree vertical
+                            keyHorz = -1 / tan(rad(45)) * cam_right
+                            keyVert = 1 / tan(rad(70)) * cam_up
+                            keyPos = cam_pos + (keyVert + keyHorz) * cam_light_dist
+                            keyColor = (.8, .8, .8, 1.0)
+
+                            l = Glf.SimpleLight()
+                            l.ambient = (0, 0, 0, 0)
+                            l.diffuse = keyColor
+                            l.specular = keyColor
+                            l.position = (keyPos[0], keyPos[1], keyPos[2], 1)
+                            lights.append(l)
+
+                        if self._dataModel.viewSettings.fillLightEnabled:
+                            # 60 degree horizontal viewing angle, 45 degree vertical
+                            fillHorz = 1 / tan(rad(30)) * cam_right
+                            fillVert = 1 / tan(rad(45)) * cam_up
+                            fillPos = cam_pos + (fillVert + fillHorz) * cam_light_dist
+                            fillColor = (.6, .6, .6, 1.0)
+
+                            l = Glf.SimpleLight()
+                            l.ambient = (0, 0, 0, 0)
+                            l.diffuse = fillColor
+                            l.specular = fillColor
+                            l.position = (fillPos[0], fillPos[1], fillPos[2], 1)
+                            lights.append(l)
+
+                        if self._dataModel.viewSettings.backLightEnabled:
+                            # back light base is camera position reflected over origin
+                            # 30 degree horizontal viewing angle, 30 degree vertical
+                            origin = Gf.Vec3d(0.0)
+                            backPos = cam_pos + (origin - cam_pos) * 2
+                            backHorz = 1 / tan(rad(60)) * cam_right
+                            backVert = -1 / tan(rad(60)) * cam_up
+                            backPos += (backHorz + backVert) * cam_light_dist
+                            backColor = (.6, .6, .6, 1.0)
+
+                            l = Glf.SimpleLight()
+                            l.ambient = (0, 0, 0, 0)
+                            l.diffuse = backColor
+                            l.specular = backColor
+                            l.position = (backPos[0], backPos[1], backPos[2], 1)
+                            lights.append(l)
+
+                    kA = self._dataModel.viewSettings.defaultMaterialAmbient
+                    kS = self._dataModel.viewSettings.defaultMaterialSpecular
+                    material.ambient = (kA, kA, kA, 1.0)
+                    material.specular = (kS, kS, kS, 1.0)
+                    material.shininess = 32.0
+
+                # modes that want no lighting simply leave lights as an empty list
+                renderer.SetLightingState(lights, material, sceneAmbient)
+
+                if self._dataModel.viewSettings.renderMode == RenderModes.HIDDEN_SURFACE_WIREFRAME:
+                    GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
+                    GL.glPolygonOffset( 1.0, 1.0 )
+                    GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
+
+                    self.renderSinglePass( renderer.DrawMode.DRAW_GEOM_ONLY,
+                                        False)
+
+                    GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
+                    GL.glDepthFunc(GL.GL_LEQUAL)
+                    GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+                highlightMode = self._dataModel.viewSettings.selHighlightMode
+                if self._dataModel.playing:
+                    # Highlight mode must be ALWAYS to draw highlights during playback.
+                    drawSelHighlights = (
+                        highlightMode == SelectionHighlightModes.ALWAYS)
                 else:
-                    if self._dataModel.viewSettings.keyLightEnabled:
-                        # 45 degree horizontal viewing angle, 20 degree vertical
-                        keyHorz = -1 / tan(rad(45)) * cam_right
-                        keyVert = 1 / tan(rad(70)) * cam_up
-                        keyPos = cam_pos + (keyVert + keyHorz) * cam_light_dist
-                        keyColor = (.8, .8, .8, 1.0)
+                    # Highlight mode can be ONLY_WHEN_PAUSED or ALWAYS to draw
+                    # highlights when paused.
+                    drawSelHighlights = (
+                        highlightMode != SelectionHighlightModes.NEVER)
 
-                        l = Glf.SimpleLight()
-                        l.ambient = (0, 0, 0, 0)
-                        l.diffuse = keyColor
-                        l.specular = keyColor
-                        l.position = (keyPos[0], keyPos[1], keyPos[2], 1)
-                        lights.append(l)
+                self.renderSinglePass(
+                    self._renderModeDict[self._dataModel.viewSettings.renderMode],
+                    drawSelHighlights)
 
-                    if self._dataModel.viewSettings.fillLightEnabled:
-                        # 60 degree horizontal viewing angle, 45 degree vertical
-                        fillHorz = 1 / tan(rad(30)) * cam_right
-                        fillVert = 1 / tan(rad(45)) * cam_up
-                        fillPos = cam_pos + (fillVert + fillHorz) * cam_light_dist
-                        fillColor = (.6, .6, .6, 1.0)
+                self.DrawAxis(viewProjectionMatrix)
 
-                        l = Glf.SimpleLight()
-                        l.ambient = (0, 0, 0, 0)
-                        l.diffuse = fillColor
-                        l.specular = fillColor
-                        l.position = (fillPos[0], fillPos[1], fillPos[2], 1)
-                        lights.append(l)
+                # XXX:
+                # Draw camera guides-- no support for toggling guide visibility on
+                # individual cameras until we move this logic directly into
+                # usdImaging.
+                if self._dataModel.viewSettings.displayCameraOracles:
+                    self.DrawCameraGuides(viewProjectionMatrix)
 
-                    if self._dataModel.viewSettings.backLightEnabled:
-                        # back light base is camera position reflected over origin
-                        # 30 degree horizontal viewing angle, 30 degree vertical
-                        origin = Gf.Vec3d(0.0)
-                        backPos = cam_pos + (origin - cam_pos) * 2
-                        backHorz = 1 / tan(rad(60)) * cam_right
-                        backVert = -1 / tan(rad(60)) * cam_up
-                        backPos += (backHorz + backVert) * cam_light_dist
-                        backColor = (.6, .6, .6, 1.0)
-
-                        l = Glf.SimpleLight()
-                        l.ambient = (0, 0, 0, 0)
-                        l.diffuse = backColor
-                        l.specular = backColor
-                        l.position = (backPos[0], backPos[1], backPos[2], 1)
-                        lights.append(l)
-
-                kA = self._dataModel.viewSettings.defaultMaterialAmbient
-                kS = self._dataModel.viewSettings.defaultMaterialSpecular
-                material.ambient = (kA, kA, kA, 1.0)
-                material.specular = (kS, kS, kS, 1.0)
-                material.shininess = 32.0
-
-            # modes that want no lighting simply leave lights as an empty list
-            renderer.SetLightingState(lights, material, sceneAmbient)
-
-            if self._dataModel.viewSettings.renderMode == RenderModes.HIDDEN_SURFACE_WIREFRAME:
-                GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
-                GL.glPolygonOffset( 1.0, 1.0 )
-                GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
-
-                self.renderSinglePass( renderer.DrawMode.DRAW_GEOM_ONLY,
-                                       False)
-
-                GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
-                GL.glDepthFunc(GL.GL_LEQUAL)
+                if self._dataModel.viewSettings.showBBoxes and\
+                        (self._dataModel.viewSettings.showBBoxPlayback or not self._dataModel.playing):
+                    self.DrawBBox(viewProjectionMatrix)
+            else:
                 GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-            highlightMode = self._dataModel.viewSettings.selHighlightMode
-            if self._dataModel.playing:
-                # Highlight mode must be ALWAYS to draw highlights during playback.
-                drawSelHighlights = (
-                    highlightMode == SelectionHighlightModes.ALWAYS)
-            else:
-                # Highlight mode can be ONLY_WHEN_PAUSED or ALWAYS to draw
-                # highlights when paused.
-                drawSelHighlights = (
-                    highlightMode != SelectionHighlightModes.NEVER)
+            if self._dataModel.viewSettings.showHUD_GPUstats:
+                self._glPrimitiveGeneratedQuery.End()
+                self._glTimeElapsedQuery.End()
 
-            self.renderSinglePass(
-                self._renderModeDict[self._dataModel.viewSettings.renderMode],
-                drawSelHighlights)
+            # reset the viewport for 2D and HUD drawing
+            uiTasks = [ Prim2DSetupTask(self.computeWindowViewport()) ]
+            if self._dataModel.viewSettings.showMask:
+                color = self._dataModel.viewSettings.cameraMaskColor
+                if self._dataModel.viewSettings.showMask_Opaque:
+                    color = color[0:3] + (1.0,)
+                else:
+                    color = color[0:3] + (color[3] * 0.7,)
+                self._mask.updateColor(color)
+                self._mask.updatePrims(cameraViewport, self)
+                uiTasks.append(self._mask)
+            if self._dataModel.viewSettings.showMask_Outline:
+                self._maskOutline.updatePrims(cameraViewport, self)
+                uiTasks.append(self._maskOutline)
+            if self.showReticles:
+                color = self._dataModel.viewSettings.cameraReticlesColor
+                color = color[0:3] + (color[3] * 0.85,)
+                self._reticles.updateColor(color)
+                self._reticles.updatePrims(cameraViewport, self,
+                        self._dataModel.viewSettings.showReticles_Inside, self._dataModel.viewSettings.showReticles_Outside)
+                uiTasks.append(self._reticles)
 
-            self.DrawAxis(viewProjectionMatrix)
+            for task in uiTasks:
+                task.Sync(None)
+            for task in uiTasks:
+                task.Execute(None)
 
-            # XXX:
-            # Draw camera guides-- no support for toggling guide visibility on
-            # individual cameras until we move this logic directly into
-            # usdImaging.
-            if self._dataModel.viewSettings.displayCameraOracles:
-                self.DrawCameraGuides(viewProjectionMatrix)
+            # ### DRAW HUD ### #
+            if self._dataModel.viewSettings.showHUD:
+                self.drawHUD(renderer)
 
-            if self._dataModel.viewSettings.showBBoxes and\
-                    (self._dataModel.viewSettings.showBBoxPlayback or not self._dataModel.playing):
-                self.DrawBBox(viewProjectionMatrix)
-        else:
-            GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+            GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
-        if self._dataModel.viewSettings.showHUD_GPUstats:
-            self._glPrimitiveGeneratedQuery.End()
-            self._glTimeElapsedQuery.End()
+            if (not self._dataModel.playing) & (not renderer.IsConverged()):
+                QtCore.QTimer.singleShot(5, self.update)
+        
+        except Tf.ErrorException as e:
+            # If we encounter an error during a render, we want to continue 
+            # running. Just log the error and continue.
+            sys.stderr.write(
+                "ERROR: Usdview encountered an error while rendering."
+                "{}\n".format(e))
 
-        # reset the viewport for 2D and HUD drawing
-        uiTasks = [ Prim2DSetupTask(self.computeWindowViewport()) ]
-        if self._dataModel.viewSettings.showMask:
-            color = self._dataModel.viewSettings.cameraMaskColor
-            if self._dataModel.viewSettings.showMask_Opaque:
-                color = color[0:3] + (1.0,)
-            else:
-                color = color[0:3] + (color[3] * 0.7,)
-            self._mask.updateColor(color)
-            self._mask.updatePrims(cameraViewport, self)
-            uiTasks.append(self._mask)
-        if self._dataModel.viewSettings.showMask_Outline:
-            self._maskOutline.updatePrims(cameraViewport, self)
-            uiTasks.append(self._maskOutline)
-        if self.showReticles:
-            color = self._dataModel.viewSettings.cameraReticlesColor
-            color = color[0:3] + (color[3] * 0.85,)
-            self._reticles.updateColor(color)
-            self._reticles.updatePrims(cameraViewport, self,
-                    self._dataModel.viewSettings.showReticles_Inside, self._dataModel.viewSettings.showReticles_Outside)
-            uiTasks.append(self._reticles)
-
-        for task in uiTasks:
-            task.Sync(None)
-        for task in uiTasks:
-            task.Execute(None)
-
-        # ### DRAW HUD ### #
-        if self._dataModel.viewSettings.showHUD:
-            self.drawHUD(renderer)
-
-        GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
-
-        if (not self._dataModel.playing) & (not renderer.IsConverged()):
-            QtCore.QTimer.singleShot(5, self.update)
+        finally:
+            # Make sure not to leak a reference to the renderer
+            renderer = None
 
     def drawHUD(self, renderer):
         # compute the time it took to render this frame,
@@ -1989,38 +2019,51 @@ class StageView(QtOpenGL.QGLWidget):
         if not renderer:
             # error has already been issued
             return
+        try:
+            (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
-        (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
+            if inImageBounds:
+                selectedPoint, selectedPrimPath, selectedInstancerPath, \
+                selectedInstanceIndex, selectedElementIndex = self.pick(
+                                                                pickFrustum)
+            else:
+                # If we're picking outside the image viewport (maybe because
+                # camera guides are on), treat that as a de-select.
+                selectedPoint, selectedPrimPath, selectedInstancerPath, \
+                selectedInstanceIndex, selectedElementIndex = \
+                    None, Sdf.Path.emptyPath, None, None, None
 
-        if inImageBounds:
-            selectedPoint, selectedPrimPath, selectedInstancerPath, \
-            selectedInstanceIndex, selectedElementIndex = self.pick(pickFrustum)
-        else:
-            # If we're picking outside the image viewport (maybe because camera
-            # guides are on), treat that as a de-select.
-            selectedPoint, selectedPrimPath, selectedInstancerPath, \
-            selectedInstanceIndex, selectedElementIndex = None, Sdf.Path.emptyPath, None, None, None
+            # The call to TestIntersection will return the path to a master prim
+            # (selectedPrimPath) and its instancer (selectedInstancerPath) if 
+            # the prim is instanced.
+            # Figure out which instance was actually picked and use that as our 
+            # selection in this case.
+            if selectedInstancerPath:
+                instancePrimPath, absInstanceIndex = \
+                    renderer.GetPrimPathFromInstanceIndex(
+                        selectedPrimPath, selectedInstanceIndex)
+                if instancePrimPath:
+                    selectedPrimPath = instancePrimPath
+                    selectedInstanceIndex = absInstanceIndex
+            else:
+                selectedInstanceIndex = ALL_INSTANCES
 
-        # The call to TestIntersection will return the path to a master prim
-        # (selectedPrimPath) and its instancer (selectedInstancerPath) if the prim is
-        # instanced.
-        # Figure out which instance was actually picked and use that as our selection
-        # in this case.
-        if selectedInstancerPath:
-            instancePrimPath, absInstanceIndex = renderer.GetPrimPathFromInstanceIndex(
-                selectedPrimPath, selectedInstanceIndex)
-            if instancePrimPath:
-                selectedPrimPath = instancePrimPath
-                selectedInstanceIndex = absInstanceIndex
-        else:
-            selectedInstanceIndex = ALL_INSTANCES
-
-        if button:
-            self.signalPrimSelected.emit(
-                selectedPrimPath, selectedInstanceIndex, selectedPoint, button, modifiers)
-        else:
-            self.signalPrimRollover.emit(
-                selectedPrimPath, selectedInstanceIndex, selectedPoint, modifiers)
+            if button:
+                self.signalPrimSelected.emit(
+                    selectedPrimPath, selectedInstanceIndex, selectedPoint,
+                    button, modifiers)
+            else:
+                self.signalPrimRollover.emit(
+                    selectedPrimPath, selectedInstanceIndex, selectedPoint,
+                    modifiers)
+        except Tf.ErrorException as e:
+            # If we encounter an error, we want to continue running. Just log 
+            # the error and continue.
+            sys.stderr.write(
+                "ERROR: Usdview encountered an error while picking."
+                "{}\n".format(e))
+        finally:
+            renderer = None
 
     def glDraw(self):
         # override glDraw so we can time it.

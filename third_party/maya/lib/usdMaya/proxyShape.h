@@ -24,15 +24,19 @@
 #ifndef PXRUSDMAYA_PROXY_SHAPE_H
 #define PXRUSDMAYA_PROXY_SHAPE_H
 
-/// \file proxyShape.h
+/// \file usdMaya/proxyShape.h
+
+#include "usdMaya/api.h"
+#include "usdMaya/stageNoticeListener.h"
+#include "usdMaya/usdPrimProvider.h"
 
 #include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "usdMaya/usdPrimProvider.h"
 
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/staticTokens.h"
+
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -59,7 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_PROXY_SHAPE_TOKENS \
     ((MayaTypeName, "pxrUsdProxyShape"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
                          PXRUSDMAYA_API,
                          PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
@@ -70,52 +74,45 @@ bool UsdMayaIsBoundingBoxModeEnabled();
 
 
 class UsdMayaProxyShape : public MPxSurfaceShape,
-                          public PxrUsdMayaUsdPrimProvider
+                          public UsdMayaUsdPrimProvider
 {
     public:
-        /// \brief Helper struct to hold MObjects for this class.
-        ///
-        /// These would normally be static members but since we have this class
-        /// registered in multiple plugins, we have the actual data stored
-        /// statically in the plugin.cpp.
-        ///
-        /// A reference to this is setup by creator().
-        ///
-        /// \sa PxrUsdMayaPluginStaticData
-        struct PluginStaticData
-        {
-            // these get set in initialize()
-            MObject filePath;
-            MObject primPath;
-            MObject excludePrimPaths;
-            MObject time;
-            MObject variantKey;
-            MObject complexity;
-            MObject inStageData;
-            MObject inStageDataCached;
-            MObject fastPlayback;
-            MObject tint;
-            MObject tintColor;
-            MObject outStageData;
-            MObject displayGuides;
-            MObject displayRenderGuides;
+        PXRUSDMAYA_API
+        static const MTypeId typeId;
+        PXRUSDMAYA_API
+        static const MString typeName;
 
-            MObject softSelectable;
-
-            // this will not change once constructed.
-            const MTypeId typeId;
-            const MString typeName;
-            const MTypeId stageDataTypeId;
-
-            PluginStaticData(
-                    const MTypeId& typeId,
-                    const MString& typeName,
-                    const MTypeId& stageDataTypeId) :
-                typeId(typeId),
-                typeName(typeName),
-                stageDataTypeId(stageDataTypeId)
-            { }
-        };
+        // Attributes
+        PXRUSDMAYA_API
+        static MObject filePathAttr;
+        PXRUSDMAYA_API
+        static MObject primPathAttr;
+        PXRUSDMAYA_API
+        static MObject excludePrimPathsAttr;
+        PXRUSDMAYA_API
+        static MObject timeAttr;
+        PXRUSDMAYA_API
+        static MObject variantKeyAttr;
+        PXRUSDMAYA_API
+        static MObject complexityAttr;
+        PXRUSDMAYA_API
+        static MObject inStageDataAttr;
+        PXRUSDMAYA_API
+        static MObject inStageDataCachedAttr;
+        PXRUSDMAYA_API
+        static MObject fastPlaybackAttr;
+        PXRUSDMAYA_API
+        static MObject tintAttr;
+        PXRUSDMAYA_API
+        static MObject tintColorAttr;
+        PXRUSDMAYA_API
+        static MObject outStageDataAttr;
+        PXRUSDMAYA_API
+        static MObject displayGuidesAttr;
+        PXRUSDMAYA_API
+        static MObject displayRenderGuidesAttr;
+        PXRUSDMAYA_API
+        static MObject softSelectableAttr;
 
         /// Delegate function for computing the closest point on the proxy
         /// shape to a given ray.
@@ -127,11 +124,15 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         typedef std::function<bool(const UsdMayaProxyShape&, const GfRay&,
                 GfVec3d*)> ClosestPointDelegate;
 
-        PXRUSDMAYA_API
-        static void* creator(const PluginStaticData& psData);
+        /// Delegate function for returning whether object soft select mode is
+        /// currently on
+        typedef std::function<bool(void)> ObjectSoftSelectEnabledDelgate;
 
         PXRUSDMAYA_API
-        static MStatus initialize(PluginStaticData* psData);
+        static void* creator();
+
+        PXRUSDMAYA_API
+        static MStatus initialize();
 
         PXRUSDMAYA_API
         static UsdMayaProxyShape* GetShapeAtDagPath(const MDagPath& dagPath);
@@ -139,19 +140,26 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         PXRUSDMAYA_API
         static void SetClosestPointDelegate(ClosestPointDelegate delegate);
 
+        PXRUSDMAYA_API
+        static void SetObjectSoftSelectEnabledDelegate(
+                ObjectSoftSelectEnabledDelgate delegate);
+
+        PXRUSDMAYA_API
+        static bool GetObjectSoftSelectEnabled();
+
         // Virtual function overrides
         PXRUSDMAYA_API
-        virtual void postConstructor() override;
+        void postConstructor() override;
         PXRUSDMAYA_API
-        virtual MStatus compute(
+        MStatus compute(
                 const MPlug& plug,
                 MDataBlock& dataBlock) override;
         PXRUSDMAYA_API
-        virtual bool isBounded() const override;
+        bool isBounded() const override;
         PXRUSDMAYA_API
-        virtual MBoundingBox boundingBox() const override;
+        MBoundingBox boundingBox() const override;
         PXRUSDMAYA_API
-        virtual MSelectionMask getShapeSelectionMask() const override;
+        MSelectionMask getShapeSelectionMask() const override;
 
         PXRUSDMAYA_API
         bool closestPoint(
@@ -165,7 +173,7 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         PXRUSDMAYA_API
         bool canMakeLive() const override;
 
-        // PxrUsdMayaUsdPrimProvider overrides:
+        // UsdMayaUsdPrimProvider overrides:
         /**
          * accessor to get the usdprim
          *
@@ -205,18 +213,18 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
                 GfVec4f* tintColor);
 
         PXRUSDMAYA_API
-        virtual MStatus setDependentsDirty(
+        MStatus setDependentsDirty(
                 const MPlug& plug,
                 MPlugArray& plugArray) override;
 
         PXRUSDMAYA_API
-        virtual bool setInternalValueInContext(
+        bool setInternalValueInContext(
                 const MPlug& plug,
                 const MDataHandle& dataHandle,
                 MDGContext& ctx) override;
 
         PXRUSDMAYA_API
-        virtual bool getInternalValueInContext(
+        bool getInternalValueInContext(
                 const MPlug& plug,
                 MDataHandle& dataHandle,
                 MDGContext& ctx) override;
@@ -226,12 +234,10 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         bool isStageValid() const;
 
     private:
-        const PluginStaticData& _psData;
-
-        UsdMayaProxyShape(const PluginStaticData& psData);
+        UsdMayaProxyShape();
 
         UsdMayaProxyShape(const UsdMayaProxyShape&);
-        virtual ~UsdMayaProxyShape();
+        ~UsdMayaProxyShape() override;
         UsdMayaProxyShape& operator=(const UsdMayaProxyShape&);
 
         MStatus computeInStageDataCached(MDataBlock& dataBlock);
@@ -247,15 +253,22 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
 
         bool _CanBeSoftSelected() const;
 
+        void _OnStageContentsChanged(
+                const UsdNotice::StageContentsChanged& notice);
+
+        UsdMayaStageNoticeListener _stageNoticeListener;
+
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
 
         bool _useFastPlayback;
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
+        static ObjectSoftSelectEnabledDelgate
+            _sharedObjectSoftSelectEnabledDelgate;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYA_PROXY_SHAPE_H
+#endif

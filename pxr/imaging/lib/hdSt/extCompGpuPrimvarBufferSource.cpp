@@ -63,7 +63,7 @@ HdStExtCompGpuPrimvarBufferSource::_CheckValid() const
 }
 
 /* virtual */
-int
+size_t
 HdStExtCompGpuPrimvarBufferSource::GetNumElements() const
 {
     return _numElements;
@@ -78,7 +78,7 @@ HdStExtCompGpuPrimvarBufferSource::GetTupleType() const
 
 /* virtual */
 void
-HdStExtCompGpuPrimvarBufferSource::AddBufferSpecs(
+HdStExtCompGpuPrimvarBufferSource::GetBufferSpecs(
         HdBufferSpecVector *specs) const
 {
     specs->emplace_back(_name, _tupleType);

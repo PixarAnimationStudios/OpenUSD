@@ -95,6 +95,7 @@
 #include <boost/utility/in_place_factory.hpp>
 
 #include <tbb/spin_rw_mutex.h>
+#include <tbb/spin_mutex.h>
 
 #include <algorithm>
 #include <functional>
@@ -525,13 +526,6 @@ struct _NameChildrenPred
     bool operator()(const PcpPrimIndex &index, 
                     TfTokenVector* childNamesToCompose) const 
     {
-        // Compose only the child prims that are included in the population
-        // mask, if any.
-        if (_mask && !_mask->GetIncludedChildNames(
-                index.GetPath(), childNamesToCompose)) {
-            return false;
-        }
-
         // Use a resolver to walk the index and find the strongest active
         // opinion.
         Usd_Resolver res(&index);
@@ -546,15 +540,41 @@ struct _NameChildrenPred
             }
         }
 
-        // UsdStage doesn't expose any prims beneath instances, so we don't
-        // need to compute indexes for children of instances unless the
-        // index will be used as a source for a master prim.
+        // UsdStage doesn't expose any prims beneath instances, so we don't need
+        // to compute indexes for children of instances unless the index will be
+        // used as a source for a master prim.
         if (index.IsInstanceable()) {
             const bool indexUsedAsMasterSource = 
-                _instanceCache->RegisterInstancePrimIndex(index)
-                || !_instanceCache->GetMasterUsingPrimIndexPath(
-                    index.GetPath()).IsEmpty();
+                _instanceCache->RegisterInstancePrimIndex(index);
+            if (_mask && indexUsedAsMasterSource) {
+                // Add this to the _masterSrcIndexes mask.  We use this to know
+                // which master src indexes need to be populated fully, due to
+                // instancing.
+                tbb::spin_mutex::scoped_lock lock(_masterSrcIndexesMutex);
+                _masterSrcIndexes.Add(index.GetPath());
+            }
             return indexUsedAsMasterSource;
+        }
+
+        // Compose only the child prims that are included in the population
+        // mask, if any, unless we're composing an index that a master uses, in
+        // which case we do the whole thing.
+        if (_mask) {
+            SdfPath const &indexPath = index.GetPath();
+            bool masterUses = false;
+            {
+                // Check to see if this path is included by one of the master
+                // src indexes we registered for use by a master.  If so, we do
+                // the entire subtree.  Maybe someday in the future we'll do
+                // something fancier for masks beneath instances.
+                masterUses = _instanceCache->MasterUsesPrimIndexPath(indexPath);
+                if (!masterUses) {
+                    tbb::spin_mutex::scoped_lock lock(_masterSrcIndexesMutex);
+                    masterUses = _masterSrcIndexes.IncludesSubtree(indexPath);
+                }
+            }
+            return masterUses ||
+                _mask->GetIncludedChildNames(indexPath, childNamesToCompose);
         }
 
         return true;
@@ -563,6 +583,8 @@ struct _NameChildrenPred
 private:
     const UsdStagePopulationMask* _mask;
     Usd_InstanceCache* _instanceCache;
+    mutable UsdStagePopulationMask _masterSrcIndexes;
+    mutable tbb::spin_mutex _masterSrcIndexesMutex;
 };
 
 } // anon
@@ -610,7 +632,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
         SdfPathVector(1, SdfPath::AbsoluteRootPath()),
         load == LoadAll ?
         _IncludeAllDiscoveredPayloads : _IncludeNoDiscoveredPayloads,
-        "Instantiating stage");
+        "instantiating stage");
     stage->_pseudoRoot = stage->_InstantiatePrim(SdfPath::AbsoluteRootPath());
     stage->_ComposeSubtreeInParallel(stage->_pseudoRoot);
     stage->_RegisterPerLayerNotices();
@@ -1746,6 +1768,32 @@ UsdStage::GetPrimAtPath(const SdfPath &path) const
     return UsdPrim(primData, proxyPrimPath);
 }
 
+UsdObject
+UsdStage::GetObjectAtPath(const SdfPath &path) const
+{
+    // Maintain consistent behavior with GetPrimAtPath
+    if (!path.IsAbsolutePath()) {
+        return UsdObject();
+    }
+
+    const bool isPrimPath = path.IsPrimPath();
+    const bool isPropPath = !isPrimPath && path.IsPropertyPath();
+    if (!isPrimPath && !isPropPath) {
+        return UsdObject();
+    }
+
+    // A valid prim must be found to return either a prim or prop
+    if (isPrimPath) {
+        return GetPrimAtPath(path);
+    } else if (isPropPath) {
+        if (auto prim = GetPrimAtPath(path.GetPrimPath())) {
+            return prim.GetProperty(path.GetNameToken());
+        }
+    }
+
+    return UsdObject();
+}
+
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {
@@ -2454,82 +2502,127 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         }
     }
 
-    // Optimize for important special cases:
-    //
-    // 1) the prim has no children.
+    // If the prim has no children, simply destroy any existing child prims.
     if (nameOrder.empty()) {
         TF_DEBUG(USD_COMPOSITION).Msg("Children empty <%s>\n",
                                       prim->GetPath().GetText());
         _DestroyDescendents(prim);
         return;
     }
-    // 2) the prim had no children previously.
-    if (!prim->_firstChild) {
-        TF_DEBUG(USD_COMPOSITION).Msg("Children all new <%s>\n",
-                                      prim->GetPath().GetText());
-        SdfPath parentPath = prim->GetPath();
-        Usd_PrimDataPtr head = NULL, prev = NULL, cur = NULL;
-        for (const auto& child : nameOrder) {
-            cur = _InstantiatePrim(parentPath.AppendChild(child));
-            if (recurse) {
-                _ComposeChildSubtree(cur, prim, mask);
-            }
-            if (!prev) {
-                head = cur;
-            }
-            else {
-                prev->_SetSiblingLink(cur);
-            }
-            prev = cur;
-        }
-        prim->_firstChild = head;
-        cur->_SetParentLink(prim);
-        return;
+
+    // Find the first mismatch between the prim's current child prims and
+    // the new list of child prims specified in nameOrder.
+    Usd_PrimDataSiblingIterator
+        begin = prim->_ChildrenBegin(),
+        end = prim->_ChildrenEnd(),
+        cur = begin;
+    TfTokenVector::const_iterator
+        curName = nameOrder.begin(),
+        nameEnd = nameOrder.end();
+    for (; cur != end && curName != nameEnd; ++cur, ++curName) {
+        if ((*cur)->GetName() != *curName)
+            break;
     }
-    // 3) the prim's set of children and its order hasn't changed.
-    {
-        Usd_PrimDataSiblingIterator
-            begin = prim->_ChildrenBegin(),
-            end = prim->_ChildrenEnd(),
-            cur = begin;
-        TfTokenVector::const_iterator
-            curName = nameOrder.begin(),
-            nameEnd = nameOrder.end();
-        for (; cur != end && curName != nameEnd; ++cur, ++curName) {
-            if ((*cur)->GetName() != *curName)
-                break;
-        }
-        if (cur == end && curName == nameEnd) {
-            TF_DEBUG(USD_COMPOSITION).Msg("Children same in same order <%s>\n",
-                                          prim->GetPath().GetText());
-            if (recurse) {
-                for (cur = begin; cur != end; ++cur) {
-                    _ComposeChildSubtree(*cur, prim, mask);
-                }
-            }
-            return;
+
+    // The prims in [begin, cur) match the children specified in 
+    // [nameOrder.begin(), curName); recompose these child subtrees if needed.
+    if (recurse) {
+        for (Usd_PrimDataSiblingIterator it = begin; it != cur; ++it) {
+            _ComposeChildSubtree(*it, prim, mask);
         }
     }
 
+    // The prims in [cur, end) do not match the children specified in 
+    // [curName, nameEnd), so we need to process these trailing elements.
+
+    // No trailing elements means children are unchanged.
+    if (cur == end && curName == nameEnd) {
+        TF_DEBUG(USD_COMPOSITION).Msg("Children same in same order <%s>\n",
+                                      prim->GetPath().GetText());
+        return;
+    }
+        
+    // Trailing names only mean that children have been added to the end
+    // of the prim's existing children. Note this includes the case where
+    // the prim had no children previously.
+    if (cur == end && curName != nameEnd) {
+        const SdfPath& parentPath = prim->GetPath();
+        Usd_PrimDataPtr head = nullptr, prev = nullptr, tail = nullptr;
+        for (; curName != nameEnd; ++curName) {
+            tail = _InstantiatePrim(parentPath.AppendChild(*curName));
+            if (recurse) {
+                _ComposeChildSubtree(tail, prim, mask);
+            }
+            if (!prev) {
+                head = tail;
+            }
+            else {
+                prev->_SetSiblingLink(tail);
+            }
+            prev = tail;
+        }
+
+        if (cur == begin) {
+            TF_DEBUG(USD_COMPOSITION).Msg("Children all new <%s>\n",
+                                          prim->GetPath().GetText());
+            TF_VERIFY(!prim->_firstChild);
+            prim->_firstChild = head;
+            tail->_SetParentLink(prim);
+        }
+        else {
+            TF_DEBUG(USD_COMPOSITION).Msg("Children appended <%s>\n",
+                                          prim->GetPath().GetText());
+            Usd_PrimDataSiblingIterator lastChild = begin, next = begin;
+            for (++next; next != cur; lastChild = next, ++next) { }
+            
+            (*lastChild)->_SetSiblingLink(head);
+            tail->_SetParentLink(prim);
+        }
+        return;
+    }
+
+    // Trailing children only mean that children have been removed from
+    // the end of the prim's existing children.
+    if (cur != end && curName == nameEnd) {
+        TF_DEBUG(USD_COMPOSITION).Msg("Children removed from end <%s>\n",
+                                      prim->GetPath().GetText());
+        for (Usd_PrimDataSiblingIterator it = cur; it != end; ) {
+            // Make sure we advance to the next sibling before we destroy
+            // the current child so we don't read from a deleted prim.
+            _DestroyPrim(*it++);
+        }
+
+        if (cur == begin) {
+            prim->_firstChild = nullptr;
+        }
+        else {
+            Usd_PrimDataSiblingIterator lastChild = begin, next = begin;
+            for (++next; next != cur; lastChild = next, ++next) { }
+            (*lastChild)->_SetParentLink(prim);
+        }
+        return;
+    }
+
+    // Otherwise, both trailing children and names mean there was some 
+    // other change to the prim's list of children. Do the general form 
+    // of preserving preexisting children and ordering them according 
+    // to nameOrder.
     TF_DEBUG(USD_COMPOSITION).Msg(
         "Require general children recomposition <%s>\n",
         prim->GetPath().GetText());
 
-    // Otherwise we do the general form of preserving preexisting children and
-    // ordering them according to nameOrder.
-
-    // Make a vector of iterators into nameOrder.
+    // Make a vector of iterators into nameOrder from [curName, nameEnd).
     typedef vector<TfTokenVector::const_iterator> TokenVectorIterVec;
-    TokenVectorIterVec nameOrderIters(nameOrder.size());
-    for (size_t i = 0, sz = nameOrder.size(); i != sz; ++i)
-        nameOrderIters[i] = nameOrder.begin() + i;
+    TokenVectorIterVec nameOrderIters(std::distance(curName, nameEnd));
+    for (size_t i = 0, sz = nameOrderIters.size(); i != sz; ++i) {
+        nameOrderIters[i] = curName + i;
+    }
 
     // Sort the name order iterators *by name*.
     sort(nameOrderIters.begin(), nameOrderIters.end(), _DerefIterLess());
 
     // Make a vector of the existing prim children and sort them by name.
-    vector<Usd_PrimDataPtr> oldChildren(
-        prim->_ChildrenBegin(), prim->_ChildrenEnd());
+    vector<Usd_PrimDataPtr> oldChildren(cur, end);
     sort(oldChildren.begin(), oldChildren.end(), _PrimNameLess());
 
     vector<Usd_PrimDataPtr>::const_iterator
@@ -2544,7 +2637,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     // iterators.  This lets us re-sort by original order once we're finished.
     vector<pair<Usd_PrimDataPtr, TfTokenVector::const_iterator> >
         tempChildren;
-    tempChildren.reserve(nameOrder.size());
+    tempChildren.reserve(nameOrderIters.size());
 
     const SdfPath &parentPath = prim->GetPath();
 
@@ -2575,7 +2668,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
 
         // Walk newly-added names up to the next old name, adding them.
         for (; newNameItersIt != newNameItersEnd &&
-                 (oldChildIt == oldChildEnd      ||
+                 (oldChildIt == oldChildEnd ||
                   **newNameItersIt < (*oldChildIt)->GetName());
              ++newNameItersIt) {
             SdfPath newChildPath = parentPath.AppendChild(**newNameItersIt);
@@ -2590,15 +2683,33 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         }
     }
 
+    // tempChildren should never be empty at this point. If it were, it means
+    // that the above loop would have only deleted existing children, but that
+    // case is covered by optimization 4 above.
+    if (!TF_VERIFY(!tempChildren.empty())) {
+        return;
+    }
+
     // Now all the new children are in lexicographical order by name, paired
     // with their name's iterator in the original name order.  Recover the
     // original order by sorting by the iterators natural order.
     sort(tempChildren.begin(), tempChildren.end(), _SecondLess());
 
-    // Now copy the correctly ordered children into place.
-    prim->_firstChild = nullptr;
-    TF_REVERSE_FOR_ALL(i, tempChildren)
-        prim->_AddChild(i->first);
+    // Now all the new children are correctly ordered.  Set the 
+    // sibling and parent links to add them to the prim's children.
+    for (size_t i = 0, e = tempChildren.size() - 1; i < e; ++i) {
+        tempChildren[i].first->_SetSiblingLink(tempChildren[i+1].first);
+    }
+    tempChildren.back().first->_SetParentLink(prim);
+
+    if (cur == begin) {
+        prim->_firstChild = tempChildren.front().first;
+    }
+    else {
+        Usd_PrimDataSiblingIterator lastChild = begin, next = begin;
+        for (++next; next != cur; lastChild = next, ++next) { }
+        (*lastChild)->_SetSiblingLink(tempChildren.front().first);
+    }
 }
 
 void 
@@ -2626,22 +2737,49 @@ UsdStage::_ReportPcpErrors(const PcpErrorVector &errors,
     _ReportErrors(errors, std::vector<std::string>(), context);
 }
 
+// Report any errors.  It's important for error filtering that each
+// error be a single line. It's equally important that we provide
+// some clue to associating the errors to the originating stage
+// (it is caller's responsibility to ensure that any further required
+// context (e.g. prim path) be present in 'context' already).  We choose
+// a balance between total specificity (which would require identifying
+// both the session layer and ArResolverContext and be very long) 
+// and brevity.  We can modulate this behavior with TfDebug if needed.
+// Finally, we use a mutex to ensure there is no interleaving of errors
+// from multiple threads.
 void
 UsdStage::_ReportErrors(const PcpErrorVector &errors,
                         const std::vector<std::string> &otherErrors,
                         const std::string &context) const
 {
-    // Report any errors.
+    static std::mutex   errMutex;
+   
     if (!errors.empty() || !otherErrors.empty()) {
-        std::string message = context + ":\n";
+        std::string  fullContext = TfStringPrintf("(%s on stage @%s@ <%p>)", 
+                                      context.c_str(), 
+                                      GetRootLayer()->GetIdentifier().c_str(),
+                                      this);
+        std::vector<std::string>  allErrors;
+        allErrors.reserve(errors.size() + otherErrors.size());
+
         for (const auto& err : errors) {
-            message += "    " + TfStringReplace(err->ToString(), "\n", "\n    ") 
-                       + '\n';
+            allErrors.push_back(TfStringPrintf("%s %s", 
+                                               err->ToString().c_str(), 
+                                               fullContext.c_str()));
         }
         for (const auto& err : otherErrors) {
-            message += "    " + TfStringReplace(err, "\n", "\n    ") + '\n';
+            allErrors.push_back(TfStringPrintf("%s %s", 
+                                               err.c_str(), 
+                                               fullContext.c_str()));
         }
-        TF_WARN(message);
+
+        {
+            std::lock_guard<std::mutex>  lock(errMutex);
+
+            for (const auto &err : allErrors){
+                TF_WARN(err);
+            }
+        }
     }
 }
 
@@ -2723,7 +2861,7 @@ UsdStage::_ComposeSubtreeImpl(
     // Report any errors.
     if (!errors.empty()) {
         _ReportPcpErrors(
-            errors, TfStringPrintf("Computing prim index <%s>",
+            errors, TfStringPrintf("computing prim index <%s>",
                                    primIndexPath.GetText()));
     }
 
@@ -3850,7 +3988,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     Usd_InstanceChanges instanceChanges;
     _ComposePrimIndexesInParallel(
         primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
-        "Recomposing stage", &instanceChanges);
+        "recomposing stage", &instanceChanges);
     
     // Determine what instance master prims on this stage need to
     // be recomposed due to instance prim index changes.
@@ -4278,22 +4416,22 @@ UsdStage::_GetPrimSpec(const SdfPath& path)
 }
 
 SdfSpecType
-UsdStage::_GetDefiningSpecType(const UsdPrim& prim,
+UsdStage::_GetDefiningSpecType(Usd_PrimDataConstPtr primData,
                                const TfToken& propName) const
 {
-    if (!TF_VERIFY(prim) || !TF_VERIFY(!propName.IsEmpty()))
+    if (!TF_VERIFY(primData) || !TF_VERIFY(!propName.IsEmpty()))
         return SdfSpecTypeUnknown;
 
     // Check for a spec type in the definition registry, in case this is a
     // builtin property.
     SdfSpecType specType =
-        UsdSchemaRegistry::GetSpecType(prim.GetTypeName(), propName);
+        UsdSchemaRegistry::GetSpecType(primData->GetTypeName(), propName);
 
     if (specType != SdfSpecTypeUnknown)
         return specType;
 
     // Otherwise look for the strongest authored property spec.
-    Usd_Resolver res(&prim.GetPrimIndex(), /*skipEmptyNodes=*/true);
+    Usd_Resolver res(&primData->GetPrimIndex(), /*skipEmptyNodes=*/true);
     SdfPath curPath;
     bool curPathValid = false;
     while (res.IsValid()) {
@@ -5686,7 +5824,7 @@ UsdStage::_GetGeneralMetadataImpl(const UsdObject &obj,
                                   bool useFallbacks,
                                   Composer *composer) const
 {
-    Usd_Resolver resolver(&obj.GetPrim().GetPrimIndex());
+    Usd_Resolver resolver(&obj._Prim()->GetPrimIndex());
     if (!_ComposeGeneralMetadataImpl(
             obj, fieldName, keyPath, useFallbacks, &resolver, composer)) {
         return false;
@@ -6396,7 +6534,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                                 Resolver *resolver,
                                 const UsdTimeCode *time) const
 {
-    const UsdPrim prim = prop.GetPrim();
+    auto primHandle = prop._Prim();
     boost::optional<double> localTime;
     if (time && !time->IsDefault()) {
         localTime = time->GetValue();
@@ -6406,9 +6544,10 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
     // attribute at the given time. Clips never contribute default
     // values.
     const std::vector<Usd_ClipCache::Clips>* clipsAffectingPrim = nullptr;
-    if (prim._Prim()->MayHaveOpinionsInClips()
+    if (primHandle->MayHaveOpinionsInClips()
         && (!time || !time->IsDefault())) {
-        clipsAffectingPrim = &(_clipCache->GetClipsForPrim(prim.GetPath()));
+        clipsAffectingPrim =
+            &(_clipCache->GetClipsForPrim(primHandle->GetPath()));
     }
 
     // Clips may contribute opinions at nodes where no specs for the attribute
@@ -6416,7 +6555,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
     // Usd_Resolver that we want to iterate over 'empty' nodes as well.
     const bool skipEmptyNodes = (bool)(!clipsAffectingPrim);
 
-    for (Usd_Resolver res(&prim.GetPrimIndex(), skipEmptyNodes); 
+    for (Usd_Resolver res(&primHandle->GetPrimIndex(), skipEmptyNodes); 
          res.IsValid(); res.NextNode()) {
 
         const PcpNodeRef& node = res.GetNode();

@@ -63,7 +63,7 @@ protected:
         const VtValue &storageData);
 
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    virtual void _ReadTexture();
     GLF_API
     virtual bool _GenerateMipmap() const;
     

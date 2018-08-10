@@ -55,6 +55,11 @@ UsdGeomCurves::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdGeomCurves::_GetSchemaType() const {
+    return UsdGeomCurves::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomCurves::_GetStaticTfType()
@@ -171,7 +176,7 @@ UsdGeomCurves::GetWidthsInterpolation() const
         return interp;
     }
     
-    return UsdGeomTokens->varying;
+    return UsdGeomTokens->vertex;
 }
 
 bool

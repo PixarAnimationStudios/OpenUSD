@@ -36,6 +36,7 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
@@ -74,6 +75,16 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
             index->AddPrimInfo(subset.GetPath(),
                                subset.GetPrim().GetParent(),
                                shared_from_this());
+            // Ensure the bound material has been populated.
+            if (UsdPrim materialPrim =
+                prim.GetStage()->GetPrimAtPath(
+                GetMaterialId(subset.GetPrim()))) {
+                UsdImagingPrimAdapterSharedPtr materialAdapter =
+                    index->GetMaterialAdapter(materialPrim);
+                if (materialAdapter) {
+                    materialAdapter->Populate(materialPrim, index, nullptr);
+                }
+            }
         }
     }
     return _AddRprim(HdPrimTypeTokens->mesh,
@@ -107,6 +118,25 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
+
+    // Discover time-varying primvars:normals, and if that attribute
+    // doesn't exist also check for time-varying normals.
+    bool normalsExists = false;
+    _IsVarying(prim,
+               UsdImagingTokens->primvarsNormals,
+               HdChangeTracker::DirtyNormals,
+               UsdImagingTokens->usdVaryingNormals,
+               timeVaryingBits,
+               /*isInherited*/false,
+               &normalsExists);
+    if (!normalsExists) {
+        _IsVarying(prim,
+                UsdGeomTokens->normals,
+                HdChangeTracker::DirtyNormals,
+                UsdImagingTokens->usdVaryingNormals,
+                timeVaryingBits,
+                /*isInherited*/false);
+    }
 
     // Discover time-varying topology.
     if (!_IsVarying(prim,
@@ -170,6 +200,20 @@ UsdImagingMeshAdapter::MarkDirty(UsdPrim const& prim,
 }
 
 void
+UsdImagingMeshAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (cachePath.IsPrimPath() && cachePath.GetParentPath() == prim.GetPath()) {
+        return;
+    }
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyDisplayStyle);
+}
+
+
+void
 UsdImagingMeshAdapter::_RemovePrim(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index)
 {
@@ -182,6 +226,12 @@ UsdImagingMeshAdapter::_RemovePrim(SdfPath const& cachePath,
         index->MarkRprimDirty(cachePath.GetParentPath(),
                               HdChangeTracker::DirtyTopology);
     }
+}
+
+bool
+UsdImagingMeshAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
+{
+    return (primvarName == UsdImagingTokens->primvarsNormals);
 }
 
 void
@@ -219,6 +269,26 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
+    }
+
+    if (requestedBits & HdChangeTracker::DirtyNormals) {
+        // First check for "primvars:normals"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsNormals);
+        if (pv) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+        } else {
+            UsdGeomMesh mesh(prim);
+            VtVec3fArray normals;
+            if (mesh.GetNormalsAttr().Get(&normals, time)) {
+                _MergePrimvar(&primvars,
+                    UsdGeomTokens->normals,
+                    _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+                    HdPrimvarRoleTokens->normal);
+                valueCache->GetNormals(cachePath) = VtValue(normals);
+            }
+        }
     }
 
     // Subdiv tags are only needed if the mesh is refined.  So
@@ -325,42 +395,51 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     if(!prim.IsA<UsdGeomMesh>())
         return;
 
-    TfToken token; VtIntArray iarray; VtFloatArray farray;
+    TfToken interpolationRule =
+        _Get<TfToken>(prim, UsdGeomTokens->interpolateBoundary, time);
+    if (interpolationRule.IsEmpty()) {
+        interpolationRule = UsdGeomTokens->edgeAndCorner;
+    }
+    tags->SetVertexInterpolationRule(interpolationRule);
 
-    _GetPtr(prim, UsdGeomTokens->interpolateBoundary, time, &token);
-    tags->SetVertexInterpolationRule(token);
-
-    auto meshPrim = UsdGeomMesh(prim);
-    auto fvLinearInterpAttr = meshPrim.GetFaceVaryingLinearInterpolationAttr();
-    fvLinearInterpAttr.Get(&token, time); 
-
-    tags->SetFaceVaryingInterpolationRule(token);
+    TfToken faceVaryingRule = _Get<TfToken>(
+        prim, UsdGeomTokens->faceVaryingLinearInterpolation, time);
+    if (faceVaryingRule.IsEmpty()) {
+        faceVaryingRule = UsdGeomTokens->cornersPlus1;
+    }
+    tags->SetFaceVaryingInterpolationRule(faceVaryingRule);
 
     // XXX uncomment after fixing USD schema
+    // TfToken creaseMethod =
+    //     _Get<TfToken>(prim, UsdGeomTokens->creaseMethod, time);
+    // tags->SetCreaseMethod(creaseMethod);
 
-    //_GetPtr(prim, UsdGeomTokens->creaseMethod, time, &token);
-    //tags->SetCreaseMethod(token);
+    TfToken triangleRule =
+        _Get<TfToken>(prim, UsdGeomTokens->triangleSubdivisionRule, time);
+    if (triangleRule.IsEmpty()) {
+        triangleRule = UsdGeomTokens->catmullClark;
+    }
+    tags->SetTriangleSubdivision(triangleRule);
 
-    _GetPtr(prim, UsdGeomTokens->triangleSubdivisionRule, time, &token);
-    tags->SetTriangleSubdivision(token);
+    VtIntArray creaseIndices =
+        _Get<VtIntArray>(prim, UsdGeomTokens->creaseIndices, time);
+    tags->SetCreaseIndices(creaseIndices);
 
-    _GetPtr(prim, UsdGeomTokens->creaseIndices, time, &iarray);
-    tags->SetCreaseIndices(iarray);
+    VtIntArray creaseLengths =
+        _Get<VtIntArray>(prim, UsdGeomTokens->creaseLengths, time);
+    tags->SetCreaseLengths(creaseLengths);
 
-    _GetPtr(prim, UsdGeomTokens->creaseLengths, time, &iarray);
-    tags->SetCreaseLengths(iarray);
+    VtFloatArray creaseSharpnesses =
+        _Get<VtFloatArray>(prim, UsdGeomTokens->creaseSharpnesses, time);
+    tags->SetCreaseWeights(creaseSharpnesses);
 
-    _GetPtr(prim, UsdGeomTokens->creaseSharpnesses, time, &farray);
-    tags->SetCreaseWeights(farray);
+    VtIntArray cornerIndices =
+        _Get<VtIntArray>(prim, UsdGeomTokens->cornerIndices, time);
+    tags->SetCornerIndices(cornerIndices);
 
-    _GetPtr(prim, UsdGeomTokens->cornerIndices, time, &iarray);
-    tags->SetCornerIndices(iarray);
-
-    _GetPtr(prim, UsdGeomTokens->cornerSharpnesses, time, &farray);
-    tags->SetCornerWeights(farray);
-
-    _GetPtr(prim, UsdGeomTokens->holeIndices, time, &iarray);
-    tags->SetHoleIndices(iarray);
+    VtFloatArray cornerSharpnesses =
+        _Get<VtFloatArray>(prim, UsdGeomTokens->cornerSharpnesses, time);
+    tags->SetCornerWeights(cornerSharpnesses);
 }
 
 

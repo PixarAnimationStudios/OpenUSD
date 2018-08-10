@@ -24,28 +24,33 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_CURVES_H
 #define PXRUSDMAYA_TRANSLATOR_CURVES_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/translatorCurves.h
+
 #include "usdMaya/api.h"
-#include "pxr/usd/usdGeom/curves.h"
-#include "usdMaya/primReaderContext.h"
 #include "usdMaya/primReaderArgs.h"
+#include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usdGeom/curves.h"
+
 #include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for creating UsdCurves
-struct PxrUsdMayaTranslatorCurves
+struct UsdMayaTranslatorCurves
 {
     /// \brief Creates a NurbsCurve under \p parentNode.
     PXRUSDMAYA_API
     static bool Create(
             const UsdGeomCurves& curves,
             MObject parentNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_CURVES_H
+#endif

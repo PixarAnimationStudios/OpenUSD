@@ -39,7 +39,6 @@
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnTransform.h>
 #include <maya/MEulerRotation.h>
-#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MTransformationMatrix.h>
 #include <maya/MVector.h>
@@ -132,7 +131,7 @@ static bool _getXformOpAsVec3d(
 
 // Sets the animation curve (a knot per frame) for a given plug/attribute
 static void _setAnimPlugData(MPlug plg, std::vector<double> &value, MTimeArray &timeArray,
-        const PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderContext* context)
 {
     MStatus status;
     MFnAnimCurve animFn;
@@ -140,7 +139,7 @@ static void _setAnimPlugData(MPlug plg, std::vector<double> &value, MTimeArray &
     if (!plg.isKeyable()) {
         plg.setKeyable(true);
     }
-    MObject animObj = animFn.create(plg, NULL, &status);
+    MObject animObj = animFn.create(plg, nullptr, &status);
     if (status == MS::kSuccess ) {
         MDoubleArray valueArray( &value[0], value.size());
         animFn.addKeys(&timeArray, &valueArray);
@@ -149,7 +148,9 @@ static void _setAnimPlugData(MPlug plg, std::vector<double> &value, MTimeArray &
         }
     } else {
         MString mayaPlgName = plg.partialName(true, true, true, false, true, true, &status);
-        MGlobal::displayError("Failed to create animation object for attribute: " + mayaPlgName);
+        TF_RUNTIME_ERROR(
+                "Failed to create animation object for attribute: %s",
+                mayaPlgName.asChar());
     }
 }
 
@@ -158,7 +159,7 @@ static bool _isArrayVarying(std::vector<double> &value)
 {
     bool isVarying=false;
     for (unsigned int i=1;i<value.size();i++) {
-        if (GfIsClose(value[0], value[i], 1e-9)==false) { isVarying=true; break; }
+        if (!GfIsClose(value[0], value[i], 1e-9)) { isVarying=true; break; }
     }
     return isVarying;
 }
@@ -170,26 +171,26 @@ static void _setMayaAttribute(
         MFnDagNode &depFn, 
         std::vector<double> &xVal, std::vector<double> &yVal, std::vector<double> &zVal, 
         MTimeArray &timeArray, 
-        MString opName, 
-        MString x, MString y, MString z,
-        const PxrUsdMayaPrimReaderContext* context)
+        const MString& opName, 
+        const MString& x, const MString& y, const MString& z,
+        const UsdMayaPrimReaderContext* context)
 {
     MPlug plg;
-    if (x!="" && xVal.size()>0) {
+    if (x!="" && !xVal.empty()) {
         plg = depFn.findPlug(opName+x);
         if ( !plg.isNull() ) {
             plg.setDouble(xVal[0]);
             if (xVal.size()>1 && _isArrayVarying(xVal)) _setAnimPlugData(plg, xVal, timeArray, context);
         }
     }
-    if (y!="" && yVal.size()>0) {
+    if (y!="" && !yVal.empty()) {
         plg = depFn.findPlug(opName+y);
         if ( !plg.isNull() ) {
             plg.setDouble(yVal[0]);
             if (yVal.size()>1 && _isArrayVarying(yVal)) _setAnimPlugData(plg, yVal, timeArray, context);
         }
     }
-    if (z!="" && zVal.size()>0) {
+    if (z!="" && !zVal.empty()) {
         plg = depFn.findPlug(opName+z);
         if ( !plg.isNull() ) {
             plg.setDouble(zVal[0]);
@@ -204,16 +205,16 @@ static bool _pushUSDXformOpToMayaXform(
         const UsdGeomXformOp& xformop, 
         const TfToken& opName,
         MFnDagNode &MdagNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        const PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        const UsdMayaPrimReaderContext* context)
 {
     std::vector<double> xValue;
     std::vector<double> yValue;
     std::vector<double> zValue;
     GfVec3d value;
     std::vector<double> timeSamples;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(xformop, args, &timeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        xformop.GetTimeSamplesInInterval(args.GetTimeInterval(), &timeSamples);
     }
     MTimeArray timeArray;
     if (!timeSamples.empty()) {
@@ -228,7 +229,9 @@ static bool _pushUSDXformOpToMayaXform(
                 timeArray.set(MTime(timeSamples[ti]), ti);
             } 
             else {
-                MGlobal::displayError("Missing sampled data on xformOp:" + MString(xformop.GetName().GetText()));
+                TF_RUNTIME_ERROR(
+                        "Missing sampled data on xformOp: %s",
+                        xformop.GetName().GetText());
             }
         }
     } 
@@ -242,28 +245,30 @@ static bool _pushUSDXformOpToMayaXform(
             xValue[0]=value[0]; yValue[0]=value[1]; zValue[0]=value[2];
         } 
         else {
-            MGlobal::displayError("Missing default data on xformOp:" + MString(xformop.GetName().GetText()));
+            TF_RUNTIME_ERROR(
+                    "Missing default data on xformOp: %s",
+                    xformop.GetName().GetText());
         }
     }
-    if (xValue.size()) {
-        if (opName==PxrUsdMayaXformStackTokens->shear) {
+    if (!xValue.empty()) {
+        if (opName==UsdMayaXformStackTokens->shear) {
             _setMayaAttribute(MdagNode, xValue, yValue, zValue, timeArray, MString(opName.GetText()), "XY", "XZ", "YZ", context);
         } 
-        else if (opName==PxrUsdMayaXformStackTokens->pivot) {
+        else if (opName==UsdMayaXformStackTokens->pivot) {
             _setMayaAttribute(MdagNode, xValue, yValue, zValue, timeArray, MString("rotatePivot"), "X", "Y", "Z", context);
             _setMayaAttribute(MdagNode, xValue, yValue, zValue, timeArray, MString("scalePivot"), "X", "Y", "Z", context);
         }
-        else if (opName==PxrUsdMayaXformStackTokens->pivotTranslate) {
+        else if (opName==UsdMayaXformStackTokens->pivotTranslate) {
             _setMayaAttribute(MdagNode, xValue, yValue, zValue, timeArray, MString("rotatePivotTranslate"), "X", "Y", "Z", context);
             _setMayaAttribute(MdagNode, xValue, yValue, zValue, timeArray, MString("scalePivotTranslate"), "X", "Y", "Z", context);
         }
         else {
-            if (opName==PxrUsdMayaXformStackTokens->rotate) {
+            if (opName==UsdMayaXformStackTokens->rotate) {
                 MFnTransform trans;
                 if(trans.setObject(MdagNode.object()))
                 {
                     auto MrotOrder =
-                            PxrUsdMayaXformStack::RotateOrderFromOpType<MTransformationMatrix::RotationOrder>(
+                            UsdMayaXformStack::RotateOrderFromOpType<MTransformationMatrix::RotationOrder>(
                                     xformop.GetOpType());
                     MPlug plg = MdagNode.findPlug("rotateOrder");
                     if ( !plg.isNull() ) {
@@ -271,7 +276,7 @@ static bool _pushUSDXformOpToMayaXform(
                     }
                 }
             }
-            else if(opName==PxrUsdMayaXformStackTokens->rotateAxis)
+            else if(opName==UsdMayaXformStackTokens->rotateAxis)
             {
                 // Rotate axis only accepts input in XYZ form
                 // (though it's actually stored as a quaternion),
@@ -285,7 +290,7 @@ static bool _pushUSDXformOpToMayaXform(
                     for (size_t i = 0u; i < xValue.size(); ++i)
                     {
                         auto MrotOrder =
-                                PxrUsdMayaXformStack::RotateOrderFromOpType<MEulerRotation::RotationOrder>(
+                                UsdMayaXformStack::RotateOrderFromOpType<MEulerRotation::RotationOrder>(
                                         xformop.GetOpType());
                         MEulerRotation eulerRot(xValue[i], yValue[i], zValue[i], MrotOrder);
                         eulerRot.reorderIt(MEulerRotation::kXYZ);
@@ -310,8 +315,8 @@ static bool _isIdentityMatrix(GfMatrix4d m)
     bool isIdentity=true;
     for (unsigned int i=0; i<4; i++) {
         for (unsigned int j=0; j<4; j++) {
-            if ((i==j && GfIsClose(m[i][j], 1.0, 1e-9)==false) ||
-                (i!=j && GfIsClose(m[i][j], 0.0, 1e-9)==false)) {
+            if ((i==j && !GfIsClose(m[i][j], 1.0, 1e-9)) ||
+                (i!=j && !GfIsClose(m[i][j], 0.0, 1e-9))) {
                 isIdentity=false; break;
             }
         }
@@ -323,8 +328,8 @@ static bool _isIdentityMatrix(GfMatrix4d m)
 static bool _pushUSDXformToMayaXform(
         const UsdGeomXformable &xformSchema, 
         MFnDagNode &MdagNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        const PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        const UsdMayaPrimReaderContext* context)
 {
     std::vector<double> TxVal, TyVal, TzVal;
     std::vector<double> RxVal, RyVal, RzVal;
@@ -334,7 +339,7 @@ static bool _pushUSDXformToMayaXform(
     GfMatrix4d localXform(1.0);
 
     std::vector<double> tSamples;
-    PxrUsdMayaTranslatorUtil::GetTimeSamples(xformSchema, args, &tSamples);
+    xformSchema.GetTimeSamplesInInterval(args.GetTimeInterval(), &tSamples);
     MTimeArray timeArray;
     if (!tSamples.empty()) {
         timeArray.setLength(tSamples.size());
@@ -348,9 +353,7 @@ static bool _pushUSDXformToMayaXform(
                                                    time)) {
                 xlate=GfVec3d(0); rotate=GfVec3d(0); scale=GfVec3d(1);
                 if (!_isIdentityMatrix(localXform)) {
-                     MGlobal::displayWarning("Decomposing non identity 4X4 matrix at: " 
-                    + MString(xformSchema.GetPath().GetText()) + " At sample: " + tSamples[ti]);
-                     PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+                     UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
                              localXform, &xlate, &rotate, &scale);
                 }
                 TxVal[ti]=xlate [0]; TyVal[ti]=xlate [1]; TzVal[ti]=xlate [2];
@@ -359,7 +362,9 @@ static bool _pushUSDXformToMayaXform(
                 timeArray.set(MTime(tSamples[ti]), ti);
             } 
             else {
-                MGlobal::displayError("Missing sampled xform data on USDPrim:" + MString(xformSchema.GetPath().GetText()));
+                TF_RUNTIME_ERROR(
+                        "Missing sampled xform data on USD prim <%s>",
+                        xformSchema.GetPath().GetText());
             }
         }
     } 
@@ -367,11 +372,9 @@ static bool _pushUSDXformToMayaXform(
         if (xformSchema.GetLocalTransformation(&localXform, &resetsXformStack)) {
             xlate=GfVec3d(0); rotate=GfVec3d(0); scale=GfVec3d(1);
             if (!_isIdentityMatrix(localXform)) {
-                MGlobal::displayWarning("Decomposing non identity 4X4 matrix at: " 
-                    + MString(xformSchema.GetPath().GetText()));
                 // XXX if we want to support the old pivotPosition, we can pass
                 // it into this function..
-                PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+                UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
                         localXform, &xlate, &rotate, &scale);
             }
             TxVal.resize(1); TyVal.resize(1); TzVal.resize(1);
@@ -382,12 +385,14 @@ static bool _pushUSDXformToMayaXform(
             SxVal[0]=scale [0]; SyVal[0]=scale [1]; SzVal[0]=scale [2];
         } 
         else {
-            MGlobal::displayError("Missing default xform data on USDPrim:" + MString(xformSchema.GetPath().GetText()));
+            TF_RUNTIME_ERROR(
+                    "Missing default xform data on USD prim <%s>",
+                    xformSchema.GetPath().GetText());
         }
     }
 
     // All of these vectors should have the same size and greater than 0 to set their values
-    if (TxVal.size()==TyVal.size() && TxVal.size()==TzVal.size() && TxVal.size()>0) {
+    if (TxVal.size()==TyVal.size() && TxVal.size()==TzVal.size() && !TxVal.empty()) {
         _setMayaAttribute(MdagNode, TxVal, TyVal, TzVal, timeArray, MString("translate"), "X", "Y", "Z", context);
         _setMayaAttribute(MdagNode, RxVal, RyVal, RzVal, timeArray, MString("rotate"), "X", "Y", "Z", context);
         _setMayaAttribute(MdagNode, SxVal, SyVal, SzVal, timeArray, MString("scale"), "X", "Y", "Z", context);
@@ -398,17 +403,17 @@ static bool _pushUSDXformToMayaXform(
 }
 
 void
-PxrUsdMayaTranslatorXformable::Read(
+UsdMayaTranslatorXformable::Read(
         const UsdGeomXformable& xformSchema,
         MObject mayaNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     MStatus status;
 
     // == Read attrs ==
     // Read parent class attrs
-    PxrUsdMayaTranslatorPrim::Read(xformSchema.GetPrim(), mayaNode, args, context);
+    UsdMayaTranslatorPrim::Read(xformSchema.GetPrim(), mayaNode, args, context);
 
     // Scanning Xformops to see if we have a general Maya xform or an xform
     // that conform to the commonAPI
@@ -424,11 +429,11 @@ PxrUsdMayaTranslatorXformable::Read(
     // different name or out of order that will miss the match, we will rely on
     // matrix decomposition
 
-    PxrUsdMayaXformStack::OpClassList stackOps = \
-            PxrUsdMayaXformStack::FirstMatchingSubstack(
+    UsdMayaXformStack::OpClassList stackOps = \
+            UsdMayaXformStack::FirstMatchingSubstack(
                     {
-                        &PxrUsdMayaXformStack::MayaStack(),
-                        &PxrUsdMayaXformStack::CommonStack()
+                        &UsdMayaXformStack::MayaStack(),
+                        &UsdMayaXformStack::CommonStack()
                     },
                     xformops);
 
@@ -437,7 +442,7 @@ PxrUsdMayaTranslatorXformable::Read(
         // make sure stackIndices.size() == xformops.size()
         for (unsigned int i=0; i < stackOps.size(); i++) {
             const UsdGeomXformOp& xformop(xformops[i]);
-            const PxrUsdMayaXformOpClassification& opDef(stackOps[i]);
+            const UsdMayaXformOpClassification& opDef(stackOps[i]);
             // If we got a valid stack, we have both the members of the inverted twins..
             // ...so we can go ahead and skip the inverted twin
             if (opDef.IsInvertedTwin()) continue;
@@ -447,11 +452,10 @@ PxrUsdMayaTranslatorXformable::Read(
             _pushUSDXformOpToMayaXform(xformop, opName, MdagNode, args, context);
         }
     } else {
-        if (_pushUSDXformToMayaXform(xformSchema, MdagNode, args, context) == 
-                false) {
-            MGlobal::displayError(
-                    "Unable to successfully decompose matrix at USD Prim:" 
-                    + MString(xformSchema.GetPath().GetText()));
+        if (!_pushUSDXformToMayaXform(xformSchema, MdagNode, args, context)) {
+            TF_RUNTIME_ERROR(
+                    "Unable to successfully decompose matrix at USD prim <%s>",
+                    xformSchema.GetPath().GetText());
         }
     }
 

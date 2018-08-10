@@ -54,81 +54,49 @@ pxr_toplevel_prologue()
 add_subdirectory(pxr)
 add_subdirectory(extras)
 
-function(_addIfExists pkg pkgCmakeLists)
-    if (EXISTS ${pkgCmakeLists})
-        add_subdirectory(${pkg})
-    else()
-        message(WARNING "Specified third party package '${pkgName}' was not found. Please check that '${pkgCmakeLists}' exists")
-    endif()
-endfunction()
-
-function(_enableThirdPartyPlugin identifier)
-    set(pkg third_party/${identifier}) 
-    set(pkgCmakeLists ${CMAKE_CURRENT_SOURCE_DIR}/${pkg}/CMakeLists.txt)
-    _addIfExists(${pkg} ${pkgCmakeLists})
-endfunction()
-
 if (${PXR_BUILD_KATANA_PLUGIN})
-    if(NOT ${PXR_ENABLE_PYTHON_SUPPORT})
-        message(WARNING "Skipping third_party/katana because PXR_ENABLE_PYTHON_SUPPORT=OFF")
-    elseif(NOT ${PXR_BUILD_USD_IMAGING})
-        message(WARNING "Skipping third_party/katana because PXR_BUILD_USD_IMAGING=OFF")
-    else()
-        _enableThirdPartyPlugin("katana")
-    endif()
+    add_subdirectory(third_party/katana)
 endif()
 
 if (${PXR_BUILD_MAYA_PLUGIN})
-    if(NOT ${PXR_ENABLE_PYTHON_SUPPORT})
-        message(WARNING "Skipping third_party/maya because PXR_ENABLE_PYTHON_SUPPORT=OFF")
-    elseif (NOT ${PXR_BUILD_USD_IMAGING})
-        message(WARNING "Skipping third_party/maya because PXR_BUILD_USD_IMAGING=OFF")
-    else()
-        _enableThirdPartyPlugin("maya")
-    endif()
+    add_subdirectory(third_party/maya)
 endif()
 
 if (${PXR_BUILD_HOUDINI_PLUGIN})
-    if(NOT ${PXR_ENABLE_PYTHON_SUPPORT})
-        message(WARNING "Skipping third_party/houdini because PXR_ENABLE_PYTHON_SUPPORT=OFF")
-    else()
-        message(STATUS "Enable houdini plugin")
-        _enableThirdPartyPlugin("houdini")
-    endif()
+    add_subdirectory(third_party/houdini)
 endif()
 
-if (${PXR_BUILD_DOCUMENTATION})                                                  
-
+if (${PXR_BUILD_DOCUMENTATION})
     # Ensure we have doxygen+graphviz available
-    find_program(DOXYGEN_EXECUTABLE                                              
-        NAMES doxygen                                                            
-    )                                                                            
+    find_program(DOXYGEN_EXECUTABLE
+        NAMES doxygen
+    )
     if (NOT EXISTS ${DOXYGEN_EXECUTABLE})                                        
-        message(WARNING "Cannot run doc generation, doxygen not found.")           
-        return()                                                                 
-    endif()                                                                      
+        message(WARNING "Cannot run doc generation, doxygen not found.")
+        return()
+    endif()
 
     find_program(DOT_EXECUTABLE
-        NAMES dot 
-    )                                                                            
-    if (NOT EXISTS ${DOT_EXECUTABLE})                                        
-        message(WARNING "Cannot run doc generation, dot not found.")           
-        return()                                                                 
-    endif()                          
+        NAMES dot
+    )
+    if (NOT EXISTS ${DOT_EXECUTABLE})
+        message(WARNING "Cannot run doc generation, dot not found.")
+        return()
+    endif()
 
-    _pxrDoxyConfig_subst() 
+    _pxrDoxyConfig_subst()
     
-    set(DOCS_DIR "${CMAKE_BINARY_DIR}") 
-    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")         
+    set(DOCS_DIR "${CMAKE_BINARY_DIR}")
+    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")
     set(PXR_SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
     set(THIRD_PARTY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party")
-                                                                                 
-    add_custom_target(                                                           
-        documentation                                                            
-        ALL                                                                      
+
+    add_custom_target(
+        documentation
+        ALL
         COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${PXR_SOURCE_DIR} ${THIRD_PARTY_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
         DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
-    ) 
+    )
 
     set(BUILT_HTML_DOCS "${DOCS_DIR}/docs/doxy_html")
     set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")

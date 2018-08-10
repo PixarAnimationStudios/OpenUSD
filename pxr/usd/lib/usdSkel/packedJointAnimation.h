@@ -28,10 +28,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdSkel/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -52,32 +51,22 @@ class SdfAssetPath;
 
 /// \class UsdSkelPackedJointAnimation
 ///
-/// Describes a vectorized collection of joint animations.
-/// 
-/// See the extended \ref UsdSkel_PackedJointAnimation "Packed Joint Animation"
-/// documentation for more information.
-/// 
+/// Deprecated. Please use SkelAnimation instead.
 ///
-class UsdSkelPackedJointAnimation : public UsdGeomXformable
+class UsdSkelPackedJointAnimation : public UsdSkelAnimation
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdSkelPackedJointAnimation on UsdPrim \p prim .
     /// Equivalent to UsdSkelPackedJointAnimation::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSkelPackedJointAnimation(const UsdPrim& prim=UsdPrim())
-        : UsdGeomXformable(prim)
+        : UsdSkelAnimation(prim)
     {
     }
 
@@ -85,7 +74,7 @@ public:
     /// Should be preferred over UsdSkelPackedJointAnimation(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSkelPackedJointAnimation(const UsdSchemaBase& schemaObj)
-        : UsdGeomXformable(schemaObj)
+        : UsdSkelAnimation(schemaObj)
     {
     }
 
@@ -139,6 +128,13 @@ public:
     static UsdSkelPackedJointAnimation
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDSKEL_API
+    virtual UsdSchemaType _GetSchemaType() const;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -150,98 +146,6 @@ private:
     // override SchemaBase virtuals.
     USDSKEL_API
     virtual const TfType &_GetTfType() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// Array of tokens identifying which joints this animation's
-    /// data applies to. The tokens for joints correspond to the tokens of
-    /// Skeleton primitives. The order of the joints as listed here may
-    /// vary from the order of joints on the Skeleton itself.
-    ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
-    USDSKEL_API
-    UsdAttribute GetJointsAttr() const;
-
-    /// See GetJointsAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDSKEL_API
-    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // TRANSLATIONS 
-    // --------------------------------------------------------------------- //
-    /// Joint-local translations of all affected joints. Array length 
-    /// should match the size of the *joints* attribute.
-    ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    USDSKEL_API
-    UsdAttribute GetTranslationsAttr() const;
-
-    /// See GetTranslationsAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDSKEL_API
-    UsdAttribute CreateTranslationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // ROTATIONS 
-    // --------------------------------------------------------------------- //
-    /// Joint-local unit quaternion rotations of all affected joints, 
-    /// in 32-bit precision. Array length should match the size of the 
-    /// *joints* attribute.
-    ///
-    /// \n  C++ Type: VtArray<GfQuatf>
-    /// \n  Usd Type: SdfValueTypeNames->QuatfArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    USDSKEL_API
-    UsdAttribute GetRotationsAttr() const;
-
-    /// See GetRotationsAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDSKEL_API
-    UsdAttribute CreateRotationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // SCALES 
-    // --------------------------------------------------------------------- //
-    /// Joint-local scales of all affected joints, in
-    /// 16 bit precision. Array length should match the size of the *joints* 
-    /// attribute.
-    ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Half3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    USDSKEL_API
-    UsdAttribute GetScalesAttr() const;
-
-    /// See GetScalesAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDSKEL_API
-    UsdAttribute CreateScalesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

@@ -56,7 +56,9 @@ out CurveVertexData
 
 // We will either generate a camera facing normal or use the authored normal.
 vec3 getNormal(MAT4 transform);
-void ProcessPointId(); // pointId.glslfx
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+void ProcessPointId(int);
 
 void main(void)
 {
@@ -69,7 +71,7 @@ void main(void)
 
     ProcessPrimvars();
 
-    ProcessPointId();
+    ProcessPointId(GetPointId());
 }
 
 --- --------------------------------------------------------------------------
@@ -98,7 +100,9 @@ out CurveVertexData
     vec4 Peye;
 } outData;
 
-void ProcessPointId(); // pointId.glslfx
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+void ProcessPointId(int);
 
 void main(void)
 {
@@ -112,7 +116,7 @@ void main(void)
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessPointId();
+    ProcessPointId(GetPointId());
 }
 
 --- --------------------------------------------------------------------------
@@ -617,9 +621,6 @@ vec3 evaluateNormal(vec4 basis, float u)
     u = clamp(u, 1e-3, 1.0 - 1e-3);
     return mix(inData[1].Neye, inData[2].Neye, u);
 }
-
-#endif
-
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Cubic.Widths.Basis

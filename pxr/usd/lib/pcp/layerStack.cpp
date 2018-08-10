@@ -465,18 +465,36 @@ PcpLayerStack::GetLayerTree() const
     return _layerTree;
 }
 
-const SdfLayerOffset*
-PcpLayerStack::GetLayerOffsetForLayer(const SdfLayerHandle& layer) const
+// We have this version so that we can avoid weakptr/refptr conversions on the
+// \p layer arg.
+template <class LayerPtr>
+static inline const SdfLayerOffset *
+_GetLayerOffsetForLayer(
+    LayerPtr const &layer,
+    SdfLayerRefPtrVector const &layers,
+    std::vector<PcpMapFunction> const &mapFunctions)
 {
     // XXX: Optimization: store a flag if all offsets are identity
     //      and just return NULL if it's set.
-    for (size_t i = 0, n = _layers.size(); i != n; ++i) {
-        if (_layers[i] == layer) {
-            const SdfLayerOffset& layerOffset = _mapFunctions[i].GetTimeOffset();
+    for (size_t i = 0, n = layers.size(); i != n; ++i) {
+        if (layers[i] == layer) {
+            const SdfLayerOffset& layerOffset = mapFunctions[i].GetTimeOffset();
             return layerOffset.IsIdentity() ? NULL : &layerOffset;
         }
     }
     return NULL;
+}
+
+const SdfLayerOffset*
+PcpLayerStack::GetLayerOffsetForLayer(const SdfLayerHandle& layer) const
+{
+    return _GetLayerOffsetForLayer(layer, _layers, _mapFunctions);
+}
+
+const SdfLayerOffset*
+PcpLayerStack::GetLayerOffsetForLayer(const SdfLayerRefPtr& layer) const
+{
+    return _GetLayerOffsetForLayer(layer, _layers, _mapFunctions);
 }
 
 const SdfLayerOffset* 
@@ -765,7 +783,6 @@ PcpLayerStack::_BuildLayerStack(
             errors->push_back(err);
             continue;
         }
-        m.Clear();
 
         // Check for cycles.
         if (seenLayers->count(sublayer)) {

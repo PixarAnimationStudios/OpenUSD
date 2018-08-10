@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdxShaderInputs {
     VtDictionary         parameters;
     VtDictionary         textures;
+    VtDictionary         textureFallbackValues;
     std::vector<TfToken> attributes;
 };
 

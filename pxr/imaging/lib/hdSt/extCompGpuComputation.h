@@ -126,7 +126,7 @@ public:
     /// \param[out] specs the vector of HdBufferSpec to add this computation
     /// output buffer layout requirements to.
     HDST_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
     /// Executes the computation on the GPU.
     /// Called by HdResourceRegistry::Commit with the HdBufferArrayRange given

@@ -27,25 +27,67 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdSt/shaders/meshNormal.glslfx
 
---- --------------------------------------------------------------------------
--- glsl MeshNormal.Flat
 
-vec3 GetVertexNormal()
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Scene
+
+vec3 GetNormal(vec3 Neye, int index)
 {
-    return vec3(0);
+    // Sample the normal from a primvar and normalize it.
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_normals)
+    normal = vec3(HdGet_normals(index).xyz);
+#endif
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    return vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+            vec4(normal,0)).xyz;
 }
 
-vec3 GetTriGeometryNormal(vec3 vertexNormal,
-                          vec4 Peye0, vec4 Peye1, vec4 Peye2, bool isFlipped)
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Smooth
+
+vec3 GetNormal(vec3 Neye, int index)
+{
+    // XXX: Quadrangulated smooth normals for edge/center vertices that come in
+    // are _not_ normalized. Hence we forcibly normalize all incoming normals.
+    // We might want to fix this at the source instead.
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_smoothNormals)
+    normal = vec3(HdGet_smoothNormals(index).xyz);
+#elif defined(HD_HAS_packedSmoothNormals)
+    normal = vec3(HdGet_packedSmoothNormals(index).xyz);
+#endif
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    return vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+            vec4(normal,0)).xyz;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Pass
+
+vec3 GetNormal(vec3 Neye, int index)
+{
+    return Neye;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Geometry.Flat
+
+vec3 GetTriGeometryNormal(vec3 Neye, vec4 Peye0, vec4 Peye1, vec4 Peye2,
+                          bool isFlipped)
 {
     // ignore vertex normal and compute flat facing normal
     vec3 n = normalize(cross(Peye1.xyz - Peye0.xyz, Peye2.xyz - Peye0.xyz));
-
-    // flip if needed by negative-scaled transform
     return isFlipped ? -n : n;
 }
 
-vec3 GetQuadGeometryNormal(vec3 vertexNormal,
+vec3 GetQuadGeometryNormal(vec3 Neye,
                            vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
                            bool isFlipped)
 {
@@ -61,78 +103,23 @@ vec3 GetQuadGeometryNormal(vec3 vertexNormal,
     vec3 A1 = Peye0.xyz - Peye1.xyz;
     vec3 B1 = Peye2.xyz - Peye1.xyz;
     vec3 n = normalize(cross(B0, A0) + cross(B1, A1));
-
-    // flip if needed by negative-scaled transform
     return isFlipped ? -n : n;
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshNormal.Smooth
+-- glsl MeshNormal.Geometry.NoFlat
 
-vec3 GetVertexNormal()
-{
-    // get normal from vertex attribute and normalize it.
-    // XXX: Quadrangulated normals for edge/center vertices that come in are
-    // _not_ normalized. Hence, we forcibly normalize all incoming normals.
-    // We might want to fix this at the source instead.
-    vec3 normal = vec3(0);
-#if defined(HD_HAS_normals)
-    normal = vec3(HdGet_normals().xyz);
-#elif defined(HD_HAS_packedNormals)
-    normal = vec3(HdGet_packedNormals().xyz);
-#endif
-    if (length(normal) > 0.0)
-        return normalize(normal);
-
-    return normal;
-}
-
-vec3 GetTriGeometryNormal(vec3 vertexNormal,
-                          vec4 Peye0, vec4 Peye1, vec4 Peye2, bool isFlipped)
-{
-    // plumb through
-    // authored normals shouldn't be flipped by matrices nor handedness
-    // even though we transform normals in the vertex shader.
-    return vertexNormal;
-}
-
-vec3 GetQuadGeometryNormal(vec3 vertexNormal,
-                           vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
-                           bool isFlipped)
-{
-    // plumb through
-    // authored normals shouldn't be flipped by matrices nor handedness
-    // even though we transform normals in the vertex shader.
-    return vertexNormal;
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshNormal.Limit
-
-vec3 GetVertexNormal()
-{
-    return vec3(0);
-}
-
-vec3 GetTriGeometryNormal(vec3 vertexNormal,
-                          vec4 Peye0, vec4 Peye1, vec4 Peye2,
+vec3 GetTriGeometryNormal(vec3 Neye, vec4 Peye0, vec4 Peye1, vec4 Peye2,
                           bool isFlipped)
 {
-    // vertexNormal is computed in the tessellation shader.
-    // flip if needed by negative-scaled transform
-    return isFlipped ? -vertexNormal : vertexNormal;
+    return Neye;
 }
 
-vec3 GetQuadGeometryNormal(vec3 vertexNormal,
+vec3 GetQuadGeometryNormal(vec3 Neye,
                            vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
                            bool isFlipped)
 {
-    // note: this function shouldn't be taken in practice
-    // (tessellation always produces triangles)
-    //
-    // vertexNormal is computed in the tessellation shader.
-    // flip if needed by negative-scaled transform
-    return isFlipped ? -vertexNormal : vertexNormal;
+    return Neye;
 }
 
 --- --------------------------------------------------------------------------

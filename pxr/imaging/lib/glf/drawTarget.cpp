@@ -774,7 +774,7 @@ GlfDrawTarget::Attachment::ResizeTexture(const GfVec2i &size)
 /* virtual */
 GlfTexture::BindingVector
 GlfDrawTarget::Attachment::GetBindings(TfToken const & identifier,
-                                       GLuint samplerName) const
+                                       GLuint samplerName)
 {
     return BindingVector(1,
                 Binding(identifier, GlfTextureTokens->texels,
@@ -783,11 +783,11 @@ GlfDrawTarget::Attachment::GetBindings(TfToken const & identifier,
 
 /* virtual */
 VtDictionary
-GlfDrawTarget::Attachment::GetTextureInfo() const
+GlfDrawTarget::Attachment::GetTextureInfo(bool forceLoad)
 {
+    TF_UNUSED(forceLoad);
+
     VtDictionary info;
-
-
 
     info["width"] = (int)_size[0];
     info["height"] = (int)_size[1];

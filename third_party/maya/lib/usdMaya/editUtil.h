@@ -24,27 +24,31 @@
 #ifndef PXRUSDMAYA_EDITUTIL_H
 #define PXRUSDMAYA_EDITUTIL_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/editUtil.h
+
 #include "usdMaya/api.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/vt/value.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 
-#include <maya/MObject.h>
 #include <maya/MFnAssembly.h>
+#include <maya/MObject.h>
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Utility class for handling edits on Assemblies in Maya.
 ///
-class PxrUsdMayaEditUtil
+class UsdMayaEditUtil
 {
 public:
         
@@ -96,6 +100,7 @@ public:
     typedef std::map< SdfPath, AvarValueMap > PathAvarMap;
     
     /// \brief Translates an edit string into a RefEdit structure.
+    /// The output edit path is relative to the root of the assembly.
     /// \returns true if translation was successful.
     PXRUSDMAYA_API
     static bool GetEditFromString(
@@ -105,7 +110,9 @@ public:
             RefEdit *outEdit );
         
     /// \brief Inspects all edits on \p assemblyObj and returns a parsed
-    /// set of proper edits in \p refEdits and invlaid edits in \p invalidEdits.
+    /// set of proper edits in \p refEdits and invalid edits in \p invalidEdits.
+    /// The proper edits are keyed by relative path to the root of the
+    /// assembly.
     PXRUSDMAYA_API
     static void GetEditsForAssembly(
             const MObject &assemblyObj,
@@ -142,4 +149,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_EDITUTIL_H
+#endif

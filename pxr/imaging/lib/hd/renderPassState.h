@@ -29,6 +29,10 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4d.h"
@@ -40,6 +44,47 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+
+class HdRenderBuffer;
+
+/// \class HdRenderPassAttachment
+///
+/// The renderpass attachment represents a binding of some output of the
+/// rendering process to an output buffer.
+struct HdRenderPassAttachment {
+
+    HdRenderPassAttachment()
+        : renderBuffer(nullptr) {}
+
+    /// The name of the renderer output to be consumed. This should take a
+    /// value from HdAovTokens.
+    TfToken aovName;
+
+    /// The render buffer to be bound to the above terminal output.
+    ///
+    /// From the app or scene, this can be specified as either a pointer or
+    /// a path to a renderbuffer in the render index. If both are specified,
+    /// the pointer is used preferentially.
+    ///
+    /// The attachments in HdRenderPassState should be resolved, so that
+    /// downstream users only need to worry about the pointer.
+    ///
+    /// Note: hydra never takes ownership of the renderBuffer, but assumes it
+    /// will be alive until the end of the renderpass, or whenever the buffer
+    /// is marked converged, whichever is later.
+    HdRenderBuffer *renderBuffer;
+
+    /// The render buffer to be bound to the above terminal output.
+    SdfPath renderBufferId;
+
+    /// The clear value to apply to the bound render buffer, before rendering.
+    /// The type of "clearValue" should match the type of the bound buffer.
+    /// If clearValue is empty, it indicates no clear should be performed.
+    VtValue clearValue;
+};
+
+typedef std::vector<HdRenderPassAttachment>
+    HdRenderPassAttachmentVector;
 
 /// \class HdRenderPassState
 ///
@@ -87,6 +132,12 @@ public:
     HD_API
     ClipPlanesVector const & GetClipPlanes() const;
 
+    // Set the attachments for this renderpass to render into.
+    HD_API
+    void SetAttachments(HdRenderPassAttachmentVector const &attachments);
+    HD_API
+    HdRenderPassAttachmentVector const& GetAttachments() const;
+
     /// Set an override color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
     HD_API
@@ -98,6 +149,14 @@ public:
     HD_API
     void SetWireframeColor(GfVec4f const &color);
     const GfVec4f& GetWireframeColor() const { return _wireframeColor; }
+
+    HD_API
+    void SetMaskColor(GfVec4f const &color);
+    const GfVec4f& GetMaskColor() const { return _maskColor; }
+
+    HD_API
+    void SetIndicatorColor(GfVec4f const &color);
+    const GfVec4f& GetIndicatorColor() const { return _indicatorColor; }
 
     /// Set a point color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
@@ -211,6 +270,12 @@ protected:
 
     GfVec4f _overrideColor;
     GfVec4f _wireframeColor;
+
+    // XXX: This is used for post-shading/lighting overriding via vertex
+    // weights. Ideally, we move this to application state.
+    GfVec4f _maskColor;
+    GfVec4f _indicatorColor;
+
     GfVec4f _pointColor;
     float _pointSize;
     float _pointSelectedSize;
@@ -251,8 +316,20 @@ protected:
     ColorMask _colorMask;
 
     ClipPlanesVector _clipPlanes;
+
+    HdRenderPassAttachmentVector _attachments;
 };
 
+// VtValue requirements for HdRenderPassAttachment
+HD_API
+std::ostream& operator<<(std::ostream& out,
+    const HdRenderPassAttachment& desc);
+HD_API
+bool operator==(const HdRenderPassAttachment& lhs,
+    const HdRenderPassAttachment& rhs);
+HD_API
+bool operator!=(const HdRenderPassAttachment& lhs,
+    const HdRenderPassAttachment& rhs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

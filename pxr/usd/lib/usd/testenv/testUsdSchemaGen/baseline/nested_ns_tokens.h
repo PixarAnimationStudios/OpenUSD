@@ -70,6 +70,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedBase
     const TfToken assetArray;
+    /// \brief "attrWithoutGeneratedAccessorAPI"
+    /// 
+    /// UsdContrivedTestHairman
+    const TfToken attrWithoutGeneratedAccessorAPI;
     /// \brief "binding"
     /// 
     /// UsdContrivedDerived
@@ -446,6 +450,18 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedTestHairman
     const TfToken temp;
+    /// \brief "testAttrOne"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
+    const TfToken testAttrOne;
+    /// \brief "testAttrThree"
+    /// 
+    /// UsdContrivedDerivedMultipleApplyAPI
+    const TfToken testAttrThree;
+    /// \brief "testAttrTwo"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
+    const TfToken testAttrTwo;
     /// \brief "testingAsset"
     /// 
     /// UsdContrivedDerived

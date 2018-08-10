@@ -111,8 +111,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime())
     , _materialBindingImplData(parentIndex->GetRenderDelegate()->
-            CanComputeMaterialNetworks() ? UsdShadeTokens->full 
-                                         : UsdShadeTokens->preview)
+                               GetMaterialBindingPurpose())
     , _materialBindingCache(GetTime(), &_materialBindingImplData)
     , _visCache(GetTime())
     , _drawModeCache(GetTime())
@@ -121,6 +120,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
+    , _hardwareShadingEnabled(true)
 {
     // Default to 2 samples: this frame and the next frame.
     // XXX In the future this should be configurable via negotation
@@ -226,9 +226,10 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         // treated like Materials. When not using networks,
         // we want Shaders to be treated like HydraPbsSurface
         // for backwards compatibility.
-        bool useMaterialNetworks = GetRenderIndex().
-            GetRenderDelegate()->CanComputeMaterialNetworks();
-        if (!useMaterialNetworks && adapterKey == _tokens->Material) {
+        TfToken bindingPurpose = GetRenderIndex().
+            GetRenderDelegate()->GetMaterialBindingPurpose();
+        if (bindingPurpose == HdTokens->preview &&
+            adapterKey == _tokens->Material) {
             adapterKey = _tokens->HydraPbsSurface;
         }
     }
@@ -761,40 +762,121 @@ UsdImagingDelegate::Populate(std::vector<UsdImagingDelegate*> const& delegates,
 
 }
 
-bool
-UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
+void
+UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Begin update for time (%f)\n",
-                            time.GetValue());
+    worker->DisableValueCacheMutations();
+    {
+        // Release the GIL to ensure that threaded work won't deadlock if
+        // they also need the GIL.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        WorkParallelForN(
+            worker->GetTaskCount(), 
+            std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
+                      worker, std::placeholders::_1, std::placeholders::_2));
+    }
+    worker->EnableValueCacheMutations();
+}
 
-    //
-    // Process pending changes.
-    //
-    bool timeChanged = _time != time;
-    bool hadChanges = !_pathsToResync.empty()
-                      || !_pathsToUpdate.empty();
-    
+void
+UsdImagingDelegate::SetTime(UsdTimeCode time)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // XXX: Many clients rely on SetTime(currentTime) to apply pending
+    // scene edits. If we fix them to call ApplyPendingUpdates(), we can
+    // remove this.
+    ApplyPendingUpdates();
+
+    // Early out if the time code is the same.
+    if (_time == time) {
+        return;
+    }
+
+    TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Update for time (%f)",
+        time.GetValue());
+
     _time = time;
     _xformCache.SetTime(_time);
     _visCache.SetTime(_time);
     // No need to set time on the look binding cache here, since we know we're
     // only querying relationships.
 
+    UsdImagingIndexProxy indexProxy(this, nullptr);
+
+    // Mark varying attributes as dirty and build a work queue for threads to
+    // populate caches for the new time.
+    TF_FOR_ALL(it, _primInfoMap) {
+        const SdfPath &usdPath = it->first;
+        _PrimInfo &primInfo    = it->second;
+
+        if (primInfo.timeVaryingBits != HdChangeTracker::Clean) {
+            primInfo.adapter->MarkDirty(primInfo.usdPrim,
+                                        usdPath,
+                                        primInfo.timeVaryingBits,
+                                        &indexProxy);
+        }
+    }
+}
+
+void 
+UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
+                             const std::vector<UsdTimeCode>& times)
+{
+    if (delegates.size() != times.size()) {
+        TF_CODING_ERROR("Mismatched parameters");
+        return;
+    }
+
+    if (delegates.empty()) {
+        return;
+    }
+
+    // Collect work from the batch of delegates into a single worker.
+    // This has to be done single-threaded due to potential mutations
+    // to the render index that is shared among these delegates.
+    for (size_t i = 0; i < delegates.size(); ++i) {
+        delegates[i]->SetTime(times[i]);
+    }
+}
+
+UsdTimeCode
+UsdImagingDelegate::GetTimeWithOffset(float offset) const
+{
+    return _time.IsNumeric() ? UsdTimeCode(_time.GetValue() + offset) : _time;
+}
+
+// -------------------------------------------------------------------------- //
+// Change Processing 
+// -------------------------------------------------------------------------- //
+
+void
+UsdImagingDelegate::ApplyPendingUpdates()
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // Early out if there are no updates.
+    if (_pathsToResync.empty() && _pathsToUpdate.empty()) {
+        return;
+    }
+
+    TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Update for scene edits");
+
+    // Need to invalidate all caches if any stage objects have changed. This
+    // invalidation is overly conservative, but correct.
+    _xformCache.Clear();
+    _materialBindingImplData.ClearCaches();
+    _materialBindingCache.Clear();
+    _visCache.Clear();
+    _drawModeCache.Clear();
+
     UsdImagingDelegate::_Worker worker;
     UsdImagingIndexProxy indexProxy(this, &worker);
-
-    if (hadChanges) {
-        // Need to invalidate all caches if any stage objects have changed. This
-        // invalidation is overly conservative, but correct.
-        _xformCache.Clear();
-        _materialBindingImplData.ClearCaches();
-        _materialBindingCache.Clear();
-        _visCache.Clear();
-        _drawModeCache.Clear();
-    }
 
     if (!_pathsToResync.empty()) {
         // Make a copy of pathsToResync, but uniqued with a prefix-check, which
@@ -832,9 +914,6 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
     // doesn't apply changes to removed objects.
     indexProxy._ProcessRemovals();
 
-    // 
-    // Process Updates.
-    //
     if (!_pathsToUpdate.empty()) {
         _PathsToUpdateMap pathsToUpdate;
         std::swap(pathsToUpdate, _pathsToUpdate);
@@ -858,112 +937,13 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         }
     }
 
-    // Don't invalidate values if the current time didn't change and we didn't
-    // process any changes.
-    if (!timeChanged && !hadChanges) {
-        TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] canceled because time (%f) "
-                                "did not change and there were no updates\n",
-                                _time.GetValue());
-        return false;
-    }
-
     // If any changes called Repopulate() on the indexProxy, we need to
     // repopulate them before any updates. If the list is empty, _Populate is a
     // no-op.
     _Populate(&indexProxy);
     _ExecuteWorkForVariabilityUpdate(&worker);
-
-    return true;
 }
 
-void
-UsdImagingDelegate::_ApplyTimeVaryingState()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    UsdImagingIndexProxy indexProxy(this, nullptr);
-
-    // Mark varying attributes as dirty and build a work queue for threads to
-    // populate caches for the new time.
-    TF_FOR_ALL(it, _primInfoMap) {
-        const SdfPath &usdPath = it->first;
-        _PrimInfo &primInfo    = it->second;
-
-        if (primInfo.timeVaryingBits != HdChangeTracker::Clean) {
-            primInfo.adapter->MarkDirty(primInfo.usdPrim,
-                                        usdPath,
-                                        primInfo.timeVaryingBits,
-                                        &indexProxy);
-        }
-    }
-}
-
-void
-UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    worker->DisableValueCacheMutations();
-    {
-        // Release the GIL to ensure that threaded work won't deadlock if
-        // they also need the GIL.
-        TF_PY_ALLOW_THREADS_IN_SCOPE();
-        WorkParallelForN(
-            worker->GetTaskCount(), 
-            std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
-                      worker, std::placeholders::_1, std::placeholders::_2));
-    }
-    worker->EnableValueCacheMutations();
-}
-
-void
-UsdImagingDelegate::SetTime(UsdTimeCode time)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (_ProcessChangesForTimeUpdate(time)) {
-        _ApplyTimeVaryingState();
-    }
-}
-
-void 
-UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
-                             const std::vector<UsdTimeCode>& times)
-{
-    if (delegates.size() != times.size()) {
-        TF_CODING_ERROR("Mismatched parameters");
-        return;
-    }
-
-    if (delegates.empty()) {
-        return;
-    }
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // Collect work from the batch of delegates into a single worker.
-    // This has to be done single-threaded due to potential mutations
-    // to the render index that is shared among these delegates.
-    for (size_t i = 0; i < delegates.size(); ++i) {
-        if (delegates[i]->_ProcessChangesForTimeUpdate(times[i])) {
-            delegates[i]->_ApplyTimeVaryingState();
-        }
-    }
-}
-
-UsdTimeCode
-UsdImagingDelegate::GetTimeWithOffset(float offset) const
-{
-    return _time.IsNumeric() ? UsdTimeCode(_time.GetValue() + offset) : _time;
-}
-
-// -------------------------------------------------------------------------- //
-// Change Processing 
-// -------------------------------------------------------------------------- //
 void 
 UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                                       UsdStageWeakPtr const& sender)
@@ -1275,13 +1255,30 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
         // from plugins (such as the PointInstancer).
         if (attrName == UsdGeomTokens->visibility
             || attrName == UsdGeomTokens->purpose
-            || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName))
+            || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)
+            || TfStringStartsWith(attrName.GetString(),
+                                  UsdShadeTokens->materialBinding.GetString()))
         {
             // Because these are inherited attributes, we must update all
             // children.
             HdPrimGather gather;
-
             gather.Subtree(_usdIds.GetIds(), usdPrimPath, &affectedPrims);
+        } else if (TfStringStartsWith(attrName.GetString(),
+                                      UsdTokens->collection.GetString())) {
+            // XXX Performance: Collections used for material bindings
+            // can refer to prims at arbitrary locations in the scene.
+            // Accordingly, we conservatively invalidate everything.
+            // If we preserved _materialBindingCache rather than
+            // blowing it in _ProcessChangesForTimeUpdate(), we could
+            // potentially use it to analyze affected paths and
+            // perform more narrow invalidation.
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
+                "Collection property <%s> modified; conservatively "
+                "invalidating all prims to ensure that we discover "
+                "material binding changes.", usdPath.GetText());
+            HdPrimGather gather;
+            gather.Subtree(_usdIds.GetIds(), SdfPath::AbsoluteRootPath(),
+                           &affectedPrims);
         } else {
             // Only include non-inherited properties for prims that we are
             // explicitly tracking in the render index.
@@ -1344,14 +1341,6 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
     }
 }
 
-void 
-UsdImagingDelegate::_ProcessPendingUpdates()
-{
-    // Change processing logic is all implemented in SetTime, so just
-    // redirect to that using our current time.
-    SetTime(_time);
-}
-
 // -------------------------------------------------------------------------- //
 // Data Collection
 // -------------------------------------------------------------------------- //
@@ -1410,6 +1399,30 @@ UsdImagingDelegate::SetUsdDrawModesEnabled(bool enableUsdDrawModes)
         }
     }
 }
+
+
+void
+UsdImagingDelegate::SetHardwareShadingEnabled(bool enable)
+{
+    if (_hardwareShadingEnabled != enable)
+    {
+        _hardwareShadingEnabled = enable;
+
+        UsdImagingIndexProxy indexProxy(this, nullptr);
+
+        // Mark dirty.
+        TF_FOR_ALL(it, _primInfoMap) {
+            const SdfPath &usdPath = it->first;
+            _PrimInfo &primInfo = it->second;
+            if (TF_VERIFY(primInfo.adapter, "%s", usdPath.GetText())) {
+                primInfo.adapter->MarkMaterialDirty(primInfo.usdPrim,
+                                                    usdPath,
+                                                    &indexProxy);
+            }
+        }
+    }
+}
+
 
 /*virtual*/
 TfToken
@@ -1558,13 +1571,13 @@ UsdImagingDelegate::GetCullStyle(SdfPath const &id)
 }
 
 /*virtual*/ 
-int 
-UsdImagingDelegate::GetRefineLevel(SdfPath const& id) { 
+HdDisplayStyle 
+UsdImagingDelegate::GetDisplayStyle(SdfPath const& id) { 
     SdfPath usdPath = GetPathForUsd(id);
     int level = 0;
     if (TfMapLookup(_refineLevelMap, usdPath, &level))
-        return level;
-    return GetRefineLevelFallback();
+        return HdDisplayStyle(level);
+    return HdDisplayStyle(GetRefineLevelFallback());
 }
 
 void
@@ -1776,7 +1789,7 @@ UsdImagingDelegate::SetInvisedPrimPaths(SdfPathVector const &invisedPaths)
     // process instance visibility.
     // this call is needed because we use _RefreshObject to repopulate
     // vis-ed/invis-ed instanced prims (accumulated in _pathsToUpdate)
-    _ProcessChangesForTimeUpdate(_time);
+    ApplyPendingUpdates();
 }
 
 void
@@ -2057,23 +2070,21 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
 bool
 UsdImagingDelegate::PopulateSelection(
-              HdxSelectionHighlightMode const& highlightMode,
+              HdSelection::HighlightMode const& highlightMode,
               SdfPath const &path,
               int instanceIndex,
-              HdxSelectionSharedPtr const &result)
+              HdSelectionSharedPtr const &result)
 {
     HD_TRACE_FUNCTION();
 
     // Process any pending path resyncs/updates first to ensure all
-    // adapters are up-to-date. Note that this can't just be a call to
-    // _ProcessChangesForTimeUpdate, since that won't mark any rprims as
-    // dirty.
+    // adapters are up-to-date.
     //
-    // XXX: 
+    // XXX:
     // It feels a bit unsatisfying to have to do this here. UsdImagingDelegate
-    // should provide better guidance about when scene description changes are 
+    // should provide better guidance about when scene description changes are
     // handled.
-    _ProcessPendingUpdates();
+    ApplyPendingUpdates();
 
     // UsdImagingDelegate currently only supports hiliting an instance in its
     // entirety.  With the advent of UsdPrim "instance proxies", it will be
@@ -2178,8 +2189,19 @@ size_t
 UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
                                     float *times, GfMatrix4d *samples)
 {
+    if (maxNumSamples < 1) {
+        return 0;
+    }
+
     SdfPath usdPath = GetPathForUsd(id);
     UsdPrim prim = _stage->GetPrimAtPath(usdPath);
+    if (!prim) {
+        // If this is not a literal USD prim, it is an instance of
+        // other object synthesized by UsdImaging.  Just return
+        // the single transform sample from the ValueCache.
+        samples[0] = GetTransform(id);
+        return 1;
+    }
 
     // Provide the number of time samples configured in _timeSampleOffsets,
     // but limited to the caller's declared capacity.
@@ -2264,16 +2286,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     SdfPath usdPath = GetPathForUsd(id);
     VtValue value;
 
-    if (key == HdShaderTokens->material) {
-        SdfPath pathValue;
-        if (!_valueCache.ExtractMaterialId(usdPath, &pathValue)) {
-            _UpdateSingleValue(usdPath, HdChangeTracker::DirtyMaterialId);
-            TF_VERIFY(_valueCache.ExtractMaterialId(usdPath, &pathValue));
-        }
-        value = VtValue(GetPathForIndex(pathValue));
-    }
-
-    else if (!_valueCache.ExtractPrimvar(usdPath, key, &value)) {
+    if (!_valueCache.ExtractPrimvar(usdPath, key, &value)) {
         if (key == HdTokens->points) {
             _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPoints);
             if (!TF_VERIFY(_valueCache.ExtractPoints(usdPath, &value))) {
@@ -2356,6 +2369,14 @@ TfToken
 UsdImagingDelegate::GetReprName(SdfPath const &id)
 {
     return _reprFallback;
+}
+
+/*virtual*/
+VtArray<TfToken>
+UsdImagingDelegate::GetCategories(SdfPath const &id)
+{
+    SdfPath usdPath = GetPathForUsd(id);
+    return _collectionCache.ComputeCollectionsContainingPath(usdPath);
 }
 
 // -------------------------------------------------------------------------- //
@@ -2479,6 +2500,19 @@ UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
     return 0;
 }
 
+/*virtual*/ 
+SdfPath 
+UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
+{
+    SdfPath usdPath = GetPathForUsd(rprimId);
+    SdfPath pathValue;
+    if (!_valueCache.ExtractMaterialId(usdPath, &pathValue)) {
+        _UpdateSingleValue(usdPath, HdChangeTracker::DirtyMaterialId);
+        TF_VERIFY(_valueCache.ExtractMaterialId(usdPath, &pathValue));
+    }
+    return GetPathForIndex(pathValue);
+}
+
 /*virtual*/
 std::string
 UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
@@ -2486,7 +2520,11 @@ UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
     HD_TRACE_FUNCTION();
 
     if (materialId.IsEmpty()) {
-        // Handle fallback shader
+        return std::string();
+    }
+
+    // If custom shading is disabled, use fallback
+    if (!_hardwareShadingEnabled) {
         return std::string();
     }
 
@@ -2511,7 +2549,11 @@ UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
     HD_TRACE_FUNCTION();
 
     if (materialId.IsEmpty()) {
-        // Handle fallback shader
+        return std::string();
+    }
+
+    // If custom shading is disabled, use fallback
+    if (!_hardwareShadingEnabled) {
         return std::string();
     }
 
@@ -2567,9 +2609,14 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
     HD_TRACE_FUNCTION();
 
     if (materialId.IsEmpty()) {
-        // Handle fallback material
         return HdMaterialParamVector();
     }
+
+    // If custom shading is disabled, use fallback
+    if (!_hardwareShadingEnabled) {
+        return HdMaterialParamVector();
+    }
+
 
     SdfPath usdPath = GetPathForUsd(materialId);
     HdMaterialParamVector params;
@@ -2601,6 +2648,7 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
             // Unfortunately, HdMaterialParam is immutable;
             // fortunately, it has relatively lightweight members.
             *paramIt = HdMaterialParam(
+                HdMaterialParam::ParamTypeTexture,
                 paramIt->GetName(),
                 paramIt->GetFallbackValue(),
                 GetPathForIndex(paramIt->GetConnection()),
@@ -2657,34 +2705,45 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     SdfPath usdPath = GetPathForUsd(id);
-
     UsdPrim prim = _GetPrim(usdPath);
     if (!TF_VERIFY(prim)) {
         return VtValue();
     }
-
-    VtValue value;
-    UsdAttribute attr = prim.GetAttribute(paramName);
-    if (!attr) {
-        // Special handling of non-attribute parameters
-
-        // This can be moved to a separate function as we add support for 
-        // other light types that use textures in multiple ways
-        if (paramName == _tokens->texturePath) {
-            UsdLuxDomeLight domeLight(prim);
-            SdfAssetPath asset; 
-            if (!domeLight.GetTextureFileAttr().Get(&asset)) {
-                return VtValue();
-            }
-            return VtValue(asset.GetResolvedPath());
-        }
-
-        return Get(id, paramName);
+    UsdLuxLight light = UsdLuxLight(prim);
+    if (!light) {
+        // XXX Should it be a coding error to query light params
+        // on non-light prims?
+        return VtValue();
     }
 
-    // Reading the value may fail, should we warn here when it does?
-    attr.Get(&value, GetTime());
-    return value;
+    // Special handling of non-attribute parameters
+    if (paramName == _tokens->texturePath) {
+        // This can be moved to a separate function as we add support for 
+        // other light types that use textures in multiple ways
+        UsdLuxDomeLight domeLight(prim);
+        SdfAssetPath asset; 
+        if (!domeLight.GetTextureFileAttr().Get(&asset)) {
+            return VtValue();
+        }
+        return VtValue(asset.GetResolvedPath());
+    } else if (paramName == HdTokens->lightLink) {
+        UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
+        return VtValue(_collectionCache.GetIdForCollection(lightLink));
+    } else if (paramName == HdTokens->shadowLink) {
+        UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
+        return VtValue(_collectionCache.GetIdForCollection(shadowLink));
+    }
+
+    // Fallback to USD attributes.
+    if (prim.HasAttribute(paramName)) {
+        UsdAttribute attr = prim.GetAttribute(paramName);
+        VtValue value;
+        // Reading the value may fail, should we warn here when it does?
+        attr.Get(&value, GetTime());
+        return value;
+    }
+
+    return VtValue();
 }
 
 VtValue
@@ -2697,15 +2756,8 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
     }
 
     SdfPath usdPath = GetPathForUsd(materialId);
-
-    if (!_valueCache.ExtractMaterialResource(usdPath, &vtMatResource)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow material resource fetch for %s\n",
-            materialId.GetText());
-        _UpdateSingleValue(usdPath, HdMaterial::DirtyResource);
-        TF_VERIFY(_valueCache.ExtractMaterialResource(usdPath, &vtMatResource));
-    }
-
+    _UpdateSingleValue(usdPath, HdMaterial::DirtyResource);
+    TF_VERIFY(_valueCache.FindMaterialResource(usdPath, &vtMatResource));
     return vtMatResource;
 }
 

@@ -417,20 +417,48 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
 {
     // read from file
     ImageBuf * image = &_imagebuf;
+    std::unique_ptr<ImageInput> imageInput(ImageInput::open(_filename));
 
-    // Convert double precision images to float
-    if (image->spec().format == TypeDesc::DOUBLE) {
-        if (!image->read(_subimage, /*miplevel*/0, /*force*/false,
-                            TypeDesc::FLOAT)) {
-            TF_CODING_ERROR("unable to read image (as float)");
-            return false;
-        }
-    } else {
-        if (!image->read(_subimage)) {
-            TF_CODING_ERROR("unable to read image");
-            return false;
-        }
+    //// seek subimage
+    ImageSpec spec = imageInput->spec();
+    if (!imageInput->seek_subimage(_subimage, 0, spec)){
+        imageInput->close();
+        TF_CODING_ERROR("Unable to seek subimage");
+        return false;
     }
+   
+    int strideLength = imageInput->spec().width * GetBytesPerPixel();
+    int readStride = (storage.flipped)? 
+                     (-strideLength) : (strideLength);
+    int size = imageInput->spec().height * strideLength;
+
+    std::unique_ptr<uint8_t[]>pixelData(new uint8_t[size]);
+    unsigned char *pixels = pixelData.get();
+    void *start = (storage.flipped)? 
+                  (pixels + size - strideLength) : (pixels);
+
+    // Read Image into pixels, flipping upon load so that
+    // origin is at lower left corner
+    // If needed, convert double precision images to float
+    if (imageInput->spec().format == TypeDesc::DOUBLE) {
+        imageInput->read_image(TypeDesc::FLOAT,
+                               start,
+                               AutoStride,
+                               readStride,
+                               AutoStride);
+    } else{
+        imageInput->read_image(imageInput->spec().format,
+                         start,
+                         AutoStride,
+                         readStride,
+                         AutoStride);
+    }
+    
+    imageInput->close();
+    
+    // Construct ImageBuf that wraps around allocated pixels memory
+    ImageBuf imagebuf =ImageBuf(imageInput->spec(), pixels);
+    image = &imagebuf;
 
     // Convert color images to linear (unless they are sRGB)
     // (Currently unimplemented, requires OpenColorIO support from OpenImageIO)

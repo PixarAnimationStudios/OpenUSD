@@ -276,11 +276,11 @@ PcpMapExpression::_Node::_Node( const Key & key_ )
 {
     _refCount = 0;
     if (key.arg1) {
-        tbb::spin_mutex::scoped_lock lock(key.arg1->_mutex);
+        tbb::spin_rw_mutex::scoped_lock lock(key.arg1->_mutex);
         key.arg1->_dependentExpressions.insert(this);
     }
     if (key.arg2) {
-        tbb::spin_mutex::scoped_lock lock(key.arg2->_mutex);
+        tbb::spin_rw_mutex::scoped_lock lock(key.arg2->_mutex);
         key.arg2->_dependentExpressions.insert(this);
     }
 }
@@ -288,11 +288,11 @@ PcpMapExpression::_Node::_Node( const Key & key_ )
 PcpMapExpression::_Node::~_Node()
 {
     if (key.arg1) {
-        tbb::spin_mutex::scoped_lock lock(key.arg1->_mutex);
+        tbb::spin_rw_mutex::scoped_lock lock(key.arg1->_mutex);
         key.arg1->_dependentExpressions.erase(this);
     }
     if (key.arg2) {
-        tbb::spin_mutex::scoped_lock lock(key.arg2->_mutex);
+        tbb::spin_rw_mutex::scoped_lock lock(key.arg2->_mutex);
         key.arg2->_dependentExpressions.erase(this);
     }
 
@@ -309,10 +309,16 @@ PcpMapExpression::_Node::~_Node()
 const PcpMapExpression::Value &
 PcpMapExpression::_Node::EvaluateAndCache() const
 {
-    if (!_cachedValue) {
-        TRACE_SCOPE("PcpMapExpression::_Node::EvaluateAndCache - cache miss");
-        _cachedValue.reset(_EvaluateUncached());
+    tbb::spin_rw_mutex::scoped_lock lock(_mutex, /*write=*/false);
+    if (_cachedValue)
+        return _cachedValue.get();
+    TRACE_SCOPE("PcpMapExpression::_Node::EvaluateAndCache - cache miss");
+    Value val = _EvaluateUncached();
+    if (!lock.upgrade_to_writer()) {
+        if (_cachedValue)
+            return _cachedValue.get();
     }
+    _cachedValue.reset(val);
     return _cachedValue.get();
 }
 
@@ -340,10 +346,12 @@ PcpMapExpression::_Node::_EvaluateUncached() const
 void
 PcpMapExpression::_Node::_Invalidate()
 {
+    // Caller must hold a lock on _mutex.
     if (_cachedValue) {
         _cachedValue.reset();
-        TF_FOR_ALL(dep, _dependentExpressions) {
-            (*dep)->_Invalidate();
+        for (auto dep: _dependentExpressions) {
+            tbb::spin_rw_mutex::scoped_lock lock(dep->_mutex);
+            dep->_Invalidate();
         }
     } else {
         // This node is already invalid so dependent nodes are already invalid.
@@ -357,6 +365,7 @@ PcpMapExpression::_Node::SetValueForVariable(const Value & value)
         TF_CODING_ERROR("Cannot set value for non-variable");
         return;
     }
+    tbb::spin_rw_mutex::scoped_lock lock(_mutex);
     if (_valueForVariable != value) {
         _valueForVariable = value;
         _Invalidate();

@@ -57,7 +57,7 @@ _GetEditFromString(
         const std::string& editString)
 {
     MObject assemblyObj;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName(assemblyPath,
+    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyPath,
                                                       assemblyObj);
     if (status != MS::kSuccess) {
         TF_CODING_ERROR("EditUtil.GetEditFromString: "
@@ -73,8 +73,8 @@ _GetEditFromString(
     }
 
     SdfPath editPath;
-    PxrUsdMayaEditUtil::RefEdit refEdit;
-    if (!PxrUsdMayaEditUtil::GetEditFromString(assemblyFn,
+    UsdMayaEditUtil::RefEdit refEdit;
+    if (!UsdMayaEditUtil::GetEditFromString(assemblyFn,
                                                editString,
                                                &editPath,
                                                &refEdit)) {
@@ -90,11 +90,11 @@ boost::python::object
 _GetEditsForAssembly(
         const std::string& assemblyPath)
 {
-    PxrUsdMayaEditUtil::PathEditMap refEdits;
+    UsdMayaEditUtil::PathEditMap refEdits;
     std::vector< std::string > invalidEdits;
 
     MObject assemblyObj;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName(assemblyPath,
+    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyPath,
                                                       assemblyObj);
     if (status != MS::kSuccess) {
         TF_CODING_ERROR("EditUtil.GetEditsForAssembly: "
@@ -102,7 +102,7 @@ _GetEditsForAssembly(
         return BOOST_PYTHON_NONE;
     }
 
-    PxrUsdMayaEditUtil::GetEditsForAssembly(assemblyObj,
+    UsdMayaEditUtil::GetEditsForAssembly(assemblyObj,
                                             &refEdits,
                                             &invalidEdits);
 
@@ -124,7 +124,7 @@ _GetEditsForAssembly(
 static bool
 _GetRefEditsFromDict(
     boost::python::dict &refEditDict,
-    PxrUsdMayaEditUtil::PathEditMap *refEdits )
+    UsdMayaEditUtil::PathEditMap *refEdits )
 {
     boost::python::list keys = refEditDict.keys();  
     for( int i=0; i<len(keys); i++ )
@@ -140,7 +140,7 @@ _GetRefEditsFromDict(
         {
             SdfPath path = extractedKey;
             
-            PxrUsdMayaEditUtil::RefEditVec pathEdits;
+            UsdMayaEditUtil::RefEditVec pathEdits;
             
             boost::python::extract<boost::python::list>
                     extractedList( refEditDict[path] );
@@ -156,7 +156,7 @@ _GetRefEditsFromDict(
                 boost::python::list editList = extractedList;
                 for( int j=0; j<len(extractedList); j++ )
                 {
-                    boost::python::extract<PxrUsdMayaEditUtil::RefEdit>
+                    boost::python::extract<UsdMayaEditUtil::RefEdit>
                             extractedEdit(editList[j]);
                     
                     if( !extractedEdit.check() )
@@ -185,13 +185,13 @@ _ApplyEditsToProxy(
     const UsdStagePtr &stage,
     const UsdPrim &proxyRootPrim )
 {
-    PxrUsdMayaEditUtil::PathEditMap refEdits;
+    UsdMayaEditUtil::PathEditMap refEdits;
     if( !_GetRefEditsFromDict( refEditDict, &refEdits ) )
         return BOOST_PYTHON_NONE;
    
     std::vector< std::string > failedEdits;
     
-    PxrUsdMayaEditUtil::ApplyEditsToProxy(
+    UsdMayaEditUtil::ApplyEditsToProxy(
             refEdits,stage,proxyRootPrim,&failedEdits);
     
     return boost::python::make_tuple(failedEdits.empty(),failedEdits);
@@ -201,12 +201,12 @@ static boost::python::object
 _GetAvarEdits(
     boost::python::dict &refEditDict )
 {
-    PxrUsdMayaEditUtil::PathEditMap refEdits;
+    UsdMayaEditUtil::PathEditMap refEdits;
     if( !_GetRefEditsFromDict( refEditDict, &refEdits ) )
         return BOOST_PYTHON_NONE;
     
-    PxrUsdMayaEditUtil::PathAvarMap avarMap;
-    PxrUsdMayaEditUtil::GetAvarEdits( refEdits, &avarMap );
+    UsdMayaEditUtil::PathAvarMap avarMap;
+    UsdMayaEditUtil::GetAvarEdits( refEdits, &avarMap );
     
     boost::python::dict pathDict;
     TF_FOR_ALL( pathEdits, avarMap )
@@ -229,7 +229,7 @@ void wrapEditUtil()
 {
     {
         scope EditUtil =
-            class_< PxrUsdMayaEditUtil,
+            class_< UsdMayaEditUtil,
                     boost::noncopyable>("EditUtil", "UsdMaya edit utilities")
             .def("GetEditFromString",
                  &_GetEditFromString)
@@ -245,20 +245,20 @@ void wrapEditUtil()
             .staticmethod("GetAvarEdits")
         ;
         
-        enum_<PxrUsdMayaEditUtil::EditOp>("EditOp")
-            .value("OP_TRANSLATE", PxrUsdMayaEditUtil::OP_TRANSLATE)
-            .value("OP_ROTATE", PxrUsdMayaEditUtil::OP_ROTATE)
-            .value("OP_SCALE", PxrUsdMayaEditUtil::OP_SCALE)
+        enum_<UsdMayaEditUtil::EditOp>("EditOp")
+            .value("OP_TRANSLATE", UsdMayaEditUtil::OP_TRANSLATE)
+            .value("OP_ROTATE", UsdMayaEditUtil::OP_ROTATE)
+            .value("OP_SCALE", UsdMayaEditUtil::OP_SCALE)
         ;
         
-        enum_<PxrUsdMayaEditUtil::EditSet>("EditSet")
-            .value("SET_ALL", PxrUsdMayaEditUtil::SET_ALL)
-            .value("SET_X", PxrUsdMayaEditUtil::SET_X)
-            .value("SET_Y", PxrUsdMayaEditUtil::SET_Y)
-            .value("SET_Z", PxrUsdMayaEditUtil::SET_Z)
+        enum_<UsdMayaEditUtil::EditSet>("EditSet")
+            .value("SET_ALL", UsdMayaEditUtil::SET_ALL)
+            .value("SET_X", UsdMayaEditUtil::SET_X)
+            .value("SET_Y", UsdMayaEditUtil::SET_Y)
+            .value("SET_Z", UsdMayaEditUtil::SET_Z)
         ;
         
-        typedef PxrUsdMayaEditUtil::RefEdit RefEdit;
+        typedef UsdMayaEditUtil::RefEdit RefEdit;
         class_<RefEdit>("RefEdit", "Assembly edit")
             .def_readwrite("editString", &RefEdit::editString)
             .def_readwrite("op", &RefEdit::op)

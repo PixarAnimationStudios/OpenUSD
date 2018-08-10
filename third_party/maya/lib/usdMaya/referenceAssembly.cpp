@@ -21,40 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/referenceAssembly.h"
 
-#include "usdMaya/JobArgs.h"
 #include "usdMaya/editUtil.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
+#include "usdMaya/readJob.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
-#include "usdMaya/usdReadJob.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
-#include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MDGModifier.h>
 #include <maya/MEdit.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnAssembly.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnEnumAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MFnStringData.h>
@@ -67,7 +63,6 @@
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
-#include <maya/MTime.h>
 
 #include <map>
 #include <string>
@@ -77,9 +72,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens, PXRUSDMAYA_VARIANT_SET_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaReferenceAssemblyTokens,
+                        PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS);
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_ASSEM_NAMESPACE, true,
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaVariantSetTokens,
+                        PXRUSDMAYA_VARIANT_SET_TOKENS);
+
+TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_ASSEM_NAMESPACE,
+                      true,
                       "Prefixes unrolled USD assemblies with namespaces");
 
 
@@ -90,17 +90,38 @@ UsdMayaUseUsdAssemblyNamespace()
 }
 
 // == Statics ==
+const MTypeId UsdMayaReferenceAssembly::typeId(0x0010A251);
+const MString UsdMayaReferenceAssembly::typeName(
+    UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
 const MString UsdMayaReferenceAssembly::_classification("drawdb/geometry/transform");
 
-// == Static Member Functions ==
-void* UsdMayaReferenceAssembly::creator(
-        const PluginStaticData& psData)
+// Attributes
+MObject UsdMayaReferenceAssembly::filePathAttr;
+MObject UsdMayaReferenceAssembly::primPathAttr;
+MObject UsdMayaReferenceAssembly::excludePrimPathsAttr;
+MObject UsdMayaReferenceAssembly::timeAttr;
+MObject UsdMayaReferenceAssembly::complexityAttr;
+MObject UsdMayaReferenceAssembly::tintAttr;
+MObject UsdMayaReferenceAssembly::tintColorAttr;
+MObject UsdMayaReferenceAssembly::kindAttr;
+MObject UsdMayaReferenceAssembly::initialRepAttr;
+MObject UsdMayaReferenceAssembly::repNamespaceAttr;
+MObject UsdMayaReferenceAssembly::drawModeAttr;
+MObject UsdMayaReferenceAssembly::inStageDataAttr;
+MObject UsdMayaReferenceAssembly::inStageDataCachedAttr;
+MObject UsdMayaReferenceAssembly::outStageDataAttr;
+std::vector<MObject> UsdMayaReferenceAssembly::attrsAffectingRepresentation;
+
+/* static */
+void*
+UsdMayaReferenceAssembly::creator()
 {
-    return new UsdMayaReferenceAssembly(psData);
+    return new UsdMayaReferenceAssembly();
 }
 
-MStatus UsdMayaReferenceAssembly::initialize(
-        PluginStaticData* psData)
+/* static */
+MStatus
+UsdMayaReferenceAssembly::initialize()
 {
     MStatus status;
 
@@ -109,109 +130,84 @@ MStatus UsdMayaReferenceAssembly::initialize(
     MFnTypedAttribute typedAttrFn;
     MFnUnitAttribute unitAttrFn;
 
-    psData->filePath = typedAttrFn.create("filePath", "fp",MFnData::kString,MObject::kNullObj,&status);
+    filePathAttr = typedAttrFn.create("filePath", "fp",MFnData::kString,MObject::kNullObj,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setInternal(true); // trigger getInternalValueInContext() on change 
-    status = addAttribute(psData->filePath);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-
-    psData->primPath = typedAttrFn.create("primPath", "pp",MFnData::kString,MObject::kNullObj,&status);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setInternal(true); // trigger getInternalValueInContext() on change 
-    status = addAttribute(psData->primPath);
+    typedAttrFn.setInternal(true); // trigger getInternalValueInContext() on change
+    status = addAttribute(filePathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->excludePrimPaths =
+    primPathAttr = typedAttrFn.create("primPath", "pp",MFnData::kString,MObject::kNullObj,&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    typedAttrFn.setInternal(true); // trigger getInternalValueInContext() on change
+    status = addAttribute(primPathAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    excludePrimPathsAttr =
         typedAttrFn.create("excludePrimPaths","epp",MFnData::kString,MObject::kNullObj,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setConnectable(true);
-    typedAttrFn.setReadable(true);
-    typedAttrFn.setStorable(true);
-    typedAttrFn.setWritable(true);
-    status = addAttribute(psData->excludePrimPaths);
+    status = addAttribute(excludePrimPathsAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->time = unitAttrFn.create("time", "tm", MFnUnitAttribute::kTime, 0.0, &status);
+    timeAttr = unitAttrFn.create("time", "tm", MFnUnitAttribute::kTime, 0.0, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    unitAttrFn.setCached(true);
-    unitAttrFn.setConnectable(true);
-    unitAttrFn.setReadable(true);
-    unitAttrFn.setStorable(true);
-    unitAttrFn.setWritable(true);
-    status = addAttribute(psData->time);
+    status = addAttribute(timeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->complexity = numericAttrFn.create("complexity", "cplx", MFnNumericData::kInt,0,&status);
+    complexityAttr = numericAttrFn.create("complexity", "cplx", MFnNumericData::kInt,0,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    numericAttrFn.setWritable(true);
-    numericAttrFn.setKeyable(true);
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
     numericAttrFn.setStorable(false); // not written to the file
-    status = addAttribute(psData->complexity);
+    status = addAttribute(complexityAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->tint = numericAttrFn.create(
+    tintAttr = numericAttrFn.create(
         "tint",
         "tn",
         MFnNumericData::kBoolean,
         0,
         &status);
     numericAttrFn.setInternal(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    status = addAttribute(psData->tint);
+    status = addAttribute(tintAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->tintColor = numericAttrFn.createColor(
+    tintColorAttr = numericAttrFn.createColor(
         "tintColor",
         "tcol",
         &status);
-    numericAttrFn.setCached(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    status = addAttribute(psData->tintColor);
+    status = addAttribute(tintColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MFnStringData defaultKind;
-    psData->kind =
+    kindAttr =
         typedAttrFn.create("kind","knd",MFnData::kString,MObject::kNullObj,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
     typedAttrFn.setConnectable(false);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
-    status = addAttribute(psData->kind);
+    status = addAttribute(kindAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
 
-    psData->initialRep = typedAttrFn.create("initialRep", "irp", MFnData::kString,MObject::kNullObj,&status);
-    addAttribute(psData->initialRep);
+    initialRepAttr = typedAttrFn.create("initialRep", "irp", MFnData::kString,MObject::kNullObj,&status);
+    addAttribute(initialRepAttr);
 
-    psData->inStageData = typedAttrFn.create(
+    inStageDataAttr = typedAttrFn.create(
         "inStageData",
         "id",
-        psData->stageDataTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
     typedAttrFn.setReadable(false);
     typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setDisconnectBehavior(MFnNumericAttribute::kReset); // on disconnect, reset to Null
-    status = addAttribute(psData->inStageData);
+    status = addAttribute(inStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Having to store the representation namespace in an attribute on the
@@ -221,7 +217,7 @@ MStatus UsdMayaReferenceAssembly::initialize(
     // This pattern is adapted from Autodesk's sample assembly reference node:
     //
     // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
-    psData->repNamespace = typedAttrFn.create(
+    repNamespaceAttr = typedAttrFn.create(
         "repNamespace",
         "rns",
         MFnData::kString,
@@ -229,10 +225,10 @@ MStatus UsdMayaReferenceAssembly::initialize(
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     typedAttrFn.setInternal(true);
-    status = addAttribute(psData->repNamespace);
+    status = addAttribute(repNamespaceAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->drawMode = typedAttrFn.create(
+    drawModeAttr = typedAttrFn.create(
         "drawMode",
         "dm",
         MFnData::kString,
@@ -241,60 +237,55 @@ MStatus UsdMayaReferenceAssembly::initialize(
     CHECK_MSTATUS_AND_RETURN_IT(status);
     typedAttrFn.setReadable(false);
     typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(true);
-    status = addAttribute(psData->drawMode);
+    status = addAttribute(drawModeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // inStageData or filepath-> inStageDataCached -> outStageData
-    psData->inStageDataCached = typedAttrFn.create(
+    inStageDataCachedAttr = typedAttrFn.create(
         "inStageDataCached",
         "idc",
-        psData->stageDataTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
-    status = addAttribute(psData->inStageDataCached);
+    status = addAttribute(inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->outStageData = typedAttrFn.create(
+    outStageDataAttr = typedAttrFn.create(
         "outStageData",
         "od",
-        psData->stageDataTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
-    status = addAttribute(psData->outStageData);
+    status = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     //
     // add attribute dependencies
     //
-    status = attributeAffects(psData->inStageData, psData->inStageDataCached);
-    status = attributeAffects(psData->inStageData, psData->outStageData);
+    status = attributeAffects(inStageDataAttr, inStageDataCachedAttr);
+    status = attributeAffects(inStageDataAttr, outStageDataAttr);
 
-    status = attributeAffects(psData->filePath, psData->inStageDataCached);
-    status = attributeAffects(psData->filePath, psData->outStageData);
+    status = attributeAffects(filePathAttr, inStageDataCachedAttr);
+    status = attributeAffects(filePathAttr, outStageDataAttr);
 
-    status = attributeAffects(psData->inStageDataCached, psData->outStageData);
+    status = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
 
-    status = attributeAffects(psData->primPath, psData->outStageData);
+    status = attributeAffects(primPathAttr, outStageDataAttr);
 
-    status = attributeAffects(psData->drawMode, psData->inStageDataCached);
-    status = attributeAffects(psData->drawMode, psData->outStageData);
+    status = attributeAffects(drawModeAttr, inStageDataCachedAttr);
+    status = attributeAffects(drawModeAttr, outStageDataAttr);
 
 
     // Also see setDependentsDirty() for variantSets dynamically added
 
-    psData->attrsAffectingRepresentation.push_back(psData->filePath);
-    psData->attrsAffectingRepresentation.push_back(psData->primPath);
+    attrsAffectingRepresentation.push_back(filePathAttr);
+    attrsAffectingRepresentation.push_back(primPathAttr);
 
     return status;
 }
@@ -302,32 +293,30 @@ MStatus UsdMayaReferenceAssembly::initialize(
 // == Private Member Functions ==
 
 // CONSTRUCTORS/DESTRUCTORS
-UsdMayaReferenceAssembly::UsdMayaReferenceAssembly(
-        const PluginStaticData& psData) :
-    _psData(psData),
+UsdMayaReferenceAssembly::UsdMayaReferenceAssembly() :
     _updatingRepNamespace(false),
     _activateRepOnFileLoad(false),
     _inSetInternalValue(false),
     _hasEdits(false)
 {
     //
-    // REMINDER: Also update usdMaya.mel:usdMaya_UsdMayaReferenceAssembly_listRepTypes() 
+    // REMINDER: Also update usdMaya.mel:usdMaya_UsdMayaReferenceAssembly_listRepTypes()
     //           if adding a new Representation
     //
-    _representations[std::string(UsdMayaRepresentationCollapsed::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationCollapsed(this, UsdMayaRepresentationCollapsed::_assemblyType) );
+    _representations[std::string(UsdMayaRepresentationCollapsed::_assemblyType.asChar())] =
+        std::make_shared<UsdMayaRepresentationCollapsed>(this, UsdMayaRepresentationCollapsed::_assemblyType);
 
-    _representations[std::string(UsdMayaRepresentationCards::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationCards(this, UsdMayaRepresentationCards::_assemblyType) );
+    _representations[std::string(UsdMayaRepresentationCards::_assemblyType.asChar())] =
+        std::make_shared<UsdMayaRepresentationCards>(this, UsdMayaRepresentationCards::_assemblyType);
 
-    _representations[std::string(UsdMayaRepresentationPlayback::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationPlayback(this, UsdMayaRepresentationPlayback::_assemblyType) );
+    _representations[std::string(UsdMayaRepresentationPlayback::_assemblyType.asChar())] =
+        std::make_shared<UsdMayaRepresentationPlayback>(this, UsdMayaRepresentationPlayback::_assemblyType);
 
-    _representations[std::string(UsdMayaRepresentationExpanded::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationExpanded(this, UsdMayaRepresentationExpanded::_assemblyType) );
+    _representations[std::string(UsdMayaRepresentationExpanded::_assemblyType.asChar())] =
+        std::make_shared<UsdMayaRepresentationExpanded>(this, UsdMayaRepresentationExpanded::_assemblyType);
 
-    _representations[std::string(UsdMayaRepresentationFull::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationFull(this, UsdMayaRepresentationFull::_assemblyType) );
+    _representations[std::string(UsdMayaRepresentationFull::_assemblyType.asChar())] =
+        std::make_shared<UsdMayaRepresentationFull>(this, UsdMayaRepresentationFull::_assemblyType);
 }
 
 
@@ -345,11 +334,11 @@ UsdMayaReferenceAssembly::~UsdMayaReferenceAssembly()
 //
 
 MString UsdMayaReferenceAssembly::createRepresentation(
-    const MString& input,
-    const MString& type,
-    const MString& representation,
-    MDagModifier*  undoRedo,
-    MStatus*       status)
+    const MString&  /*input*/,
+    const MString&  /*type*/,
+    const MString&  /*representation*/,
+    MDagModifier*   /*undoRedo*/,
+    MStatus*        /*status*/)
 {
     // New representations cannot be created.
     return MString("");
@@ -360,10 +349,10 @@ MString UsdMayaReferenceAssembly::getActive() const
     return (_activeRep) ? _activeRep->getName() : MString("");
 }
 
-MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus* status) const
+MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus*  /*status*/) const
 {
     MStringArray repTypes;
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator it;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator it;
     for (it=_representations.begin(); it != _representations.end(); ++it) {
         repTypes.append(MString(it->first.c_str()));
     }
@@ -373,7 +362,7 @@ MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus* status) const
 MString UsdMayaReferenceAssembly::getRepType(const MString& rep) const
 {
     std::string tmpRep(rep.asChar());
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator repIt;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator repIt;
     repIt = _representations.find(tmpRep);
     if (repIt != _representations.end()) {
         return repIt->second->getType();
@@ -388,17 +377,17 @@ MString UsdMayaReferenceAssembly::getRepLabel(const MString& rep) const
     return getRepType(rep);
 }
 
-MStringArray UsdMayaReferenceAssembly::repTypes() const 
+MStringArray UsdMayaReferenceAssembly::repTypes() const
 {
     MStringArray repTypes;
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator it;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator it;
     for (it=_representations.begin(); it != _representations.end(); ++it) {
         repTypes.append(MString(it->first.c_str()));
     }
     return repTypes;
 }
 
-MStatus UsdMayaReferenceAssembly::deleteRepresentation(const MString& representation)
+MStatus UsdMayaReferenceAssembly::deleteRepresentation(const MString&  /*representation*/)
 {
     return MS::kFailure;
 }
@@ -409,15 +398,15 @@ MStatus UsdMayaReferenceAssembly::deleteAllRepresentations()
 }
 
 
-MString UsdMayaReferenceAssembly::setRepName(const MString& representation,
-                                const MString& newName,
-                                MStatus*       ReturnStatus)
+MString UsdMayaReferenceAssembly::setRepName(const MString&  /*representation*/,
+                                const MString&  /*newName*/,
+                                MStatus*        /*ReturnStatus*/)
 {
     return MString("");
 }
 
-MStatus UsdMayaReferenceAssembly::setRepLabel(const MString& representation,
-                                 const MString& label)
+MStatus UsdMayaReferenceAssembly::setRepLabel(const MString&  /*representation*/,
+                                 const MString&  /*label*/)
 {
     return MS::kFailure;
 }
@@ -429,7 +418,7 @@ bool UsdMayaReferenceAssembly::activateRep(const MString& repMStr)
     }
     std::string rep(std::string(repMStr.asChar()));
 
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator repIt;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator repIt;
     repIt = _representations.find(rep);
     if (repIt == _representations.end()) {
         return false;
@@ -438,7 +427,7 @@ bool UsdMayaReferenceAssembly::activateRep(const MString& repMStr)
     _activeRep = repIt->second;
     _activeRep->activate();
     // Set the initialRep plug from the active rep
-    MPlug initialRepPlg( thisMObject(), _psData.initialRep);
+    MPlug initialRepPlg(thisMObject(), initialRepAttr);
     if (!initialRepPlg.isNull()) {
         initialRepPlg.setString(repMStr);
     }
@@ -459,7 +448,7 @@ void UsdMayaReferenceAssembly::postLoad()
     //
     // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
     if (!assemblyFn.isTopLevel()) {
-        MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+        MPlug repNamespacePlug(thisMObject(), repNamespaceAttr);
         repNamespacePlug.setLocked(true);
     }
 
@@ -467,7 +456,7 @@ void UsdMayaReferenceAssembly::postLoad()
     if (_activateRepOnFileLoad) {
         //logging.debug("In postLoad activate: isTopLevel=%r canActivate=%r"%(assemblyFn.isTopLevel(), assemblyFn.canActivate()))
         if (assemblyFn.canActivate()) {  // Consider adding assemblyFn.isTopLevel() to the conditional
-            MPlug initialRepPlg(thisMObject(), _psData.initialRep);
+            MPlug initialRepPlg(thisMObject(), initialRepAttr);
             MString initialRep = initialRepPlg.asString();
             //logging.debug('Activating %s initialRep %r'%(assemblyFn.name(), initialRep))
             if (initialRep.length() > 0) {
@@ -483,7 +472,7 @@ bool UsdMayaReferenceAssembly::inactivateRep()
         _activeRep->inactivate();
         _activeRep.reset();
         // Clear the initialRep plug value
-        MPlug initialRepPlg(thisMObject(), _psData.initialRep);
+        MPlug initialRepPlg(thisMObject(), initialRepAttr);
         if ( !initialRepPlg.isNull() ) {
             initialRepPlg.setString("");
         }
@@ -513,7 +502,7 @@ UsdMayaReferenceAssembly::getRepNamespace() const
     // This was adapted from Autodesk's sample assembly reference node:
     //
     // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
-    MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+    MPlug repNamespacePlug(thisMObject(), repNamespaceAttr);
     repNamespacePlug.getValue(repNamespaceStr);
 
     if (repNamespaceStr.numChars() == 0) {
@@ -534,7 +523,7 @@ UsdMayaReferenceAssembly::updateRepNamespace(const MString& repNamespace)
     // This was adapted from Autodesk's sample assembly reference node:
     //
     // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
-    MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+    MPlug repNamespacePlug(thisMObject(), repNamespaceAttr);
     MString repCurrentNamespaceStr;
     repNamespacePlug.getValue(repCurrentNamespaceStr);
 
@@ -553,14 +542,16 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     // Hardcoded dynamic attr naming: usdVariantSet_*
     // If an attr starts with "usdVariantSet_", then dirty the stage
     MString dirtiedPlugName = dirtiedPlug.partialName();
-    const MString variantSetPrefix(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
-    if ((dirtiedPlugName.length() > variantSetPrefix.length()) && 
+    const MString variantSetPrefix(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+    if ((dirtiedPlugName.length() > variantSetPrefix.length()) &&
         (dirtiedPlugName.substring(0, variantSetPrefix.length()-1) == variantSetPrefix))
     {
-        MGlobal::displayInfo("UsdMayaReferenceAssembly::setDependentsDirty VariantSet value changed.  Dirtying stage: " + dirtiedPlugName);
+        TF_STATUS(
+                "Dirtying stage due to variant selection change: %s",
+                dirtiedPlugName.asChar());
         MObject thisNode = thisMObject();
-        affectedPlugs.append( MPlug(thisNode, _psData.inStageDataCached) );
-        affectedPlugs.append( MPlug(thisNode, _psData.outStageData) );
+        affectedPlugs.append( MPlug(thisNode, inStageDataCachedAttr) );
+        affectedPlugs.append( MPlug(thisNode, outStageDataAttr) );
     }
 
     return MS::kSuccess;
@@ -575,12 +566,12 @@ MStatus UsdMayaReferenceAssembly::compute(const MPlug& aPlug,
     // make sure the state of the model is normal
     //
 
-    if (aPlug == _psData.inStageDataCached)
+    if (aPlug == inStageDataCachedAttr)
     {
         retValue = computeInStageDataCached(dataBlock);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
     }
-    else if (aPlug == _psData.outStageData)
+    else if (aPlug == outStageDataAttr)
     {
         retValue = computeOutStageData(dataBlock);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -628,12 +619,12 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
         }
 
         std::string attrName(attrPlug.partialName().asChar());
-        if (!TfStringStartsWith(attrName, PxrUsdMayaVariantSetTokens->PlugNamePrefix)) {
+        if (!TfStringStartsWith(attrName, UsdMayaVariantSetTokens->PlugNamePrefix)) {
             continue;
         }
 
         std::string variantSet = attrName.substr(
-            PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
+            UsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
         varSetNames.insert(variantSet);
     }
     return varSetNames;
@@ -643,7 +634,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
 {
     MStatus retValue = MS::kSuccess;
 
-    MDataHandle inDataHandle = dataBlock.inputValue(_psData.inStageData, &retValue);
+    MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
@@ -651,7 +642,8 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         //
         // Propagate inData -> inDataCached
         //
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(_psData.inStageDataCached, &retValue);
+        MDataHandle inDataCachedHandle =
+            dataBlock.outputValue(inStageDataCachedAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         inDataCachedHandle.copy(inDataHandle);
@@ -664,7 +656,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         //
 
         // Get input attr values
-        const MString aFile = dataBlock.inputValue(_psData.filePath, &retValue).asString();
+        const MString aFile = dataBlock.inputValue(filePathAttr, &retValue).asString();
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         //
@@ -683,7 +675,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
             const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
             TF_FOR_ALL(variantSet, varSetNamesForCache) {
-                MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+                MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
                 variantSetPlugName += variantSet->c_str();
                 MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
                 if (!varSetPlg.isNull()) {
@@ -693,9 +685,9 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                     }
                 }
             }
-            
+
             TfToken drawMode;
-            MPlug drawModePlug = depNodeFn.findPlug(_psData.drawMode, true);
+            MPlug drawModePlug = depNodeFn.findPlug(drawModeAttr, true);
             if (!drawModePlug.isNull()) {
                 drawMode = TfToken(drawModePlug.asString().asChar());
             }
@@ -736,34 +728,40 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                 // more sense to bail in this case.
                 SdfPath::AbsoluteRootPath();
         }
-        else {
-            retValue = MS::kFailure;
-            CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+        // If fileString is non-empty but we couldn't create a stage from there,
+        // issue an error. (If fileString is empty, it just means that the
+        // reference assembly hasn't been set up yet.)
+        // We'll still return a success code from this function because we can
+        // provide Maya with a sane result (an empty UsdMayaStageData).
+        if (!fileString.empty() && !usdStage) {
+            TF_RUNTIME_ERROR(
+                    "Could not open stage with root layer '%s'",
+                    fileString.c_str());
         }
 
         // Create the output outData ========
-        MFnPluginData aPluginDataFactory;
-        MObject aUsdStageDataObject = aPluginDataFactory.create(
-                _psData.stageDataTypeId,
-            &retValue);
+        MFnPluginData pluginDataFn;
+        MObject stageDataObj =
+            pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        UsdMayaStageData* aUsdStageData = 
-            reinterpret_cast<UsdMayaStageData*>(
-                aPluginDataFactory.data(&retValue));
+        UsdMayaStageData* stageData =
+            reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         // Set the outUsdStageData
-        aUsdStageData->stage    = usdStage;
-        aUsdStageData->primPath = primPath;
+        stageData->stage = usdStage;
+        stageData->primPath = primPath;
 
         //
         // set the data on the output plug
         //
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(_psData.inStageDataCached, &retValue);
+        MDataHandle inDataCachedHandle =
+            dataBlock.outputValue(inStageDataCachedAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        inDataCachedHandle.set(aUsdStageData);
+        inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
     }
     return MS::kSuccess;
@@ -775,30 +773,33 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
-    MDataHandle inDataCachedHandle = dataBlock.inputValue(_psData.inStageDataCached, &retValue);
+    MDataHandle inDataCachedHandle =
+        dataBlock.inputValue(inStageDataCachedAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     UsdStageRefPtr usdStage;
 
-    UsdMayaStageData* inData = 
+    UsdMayaStageData* inData =
         dynamic_cast<UsdMayaStageData*>(inDataCachedHandle.asPluginData());
     if(inData)
     {
         usdStage = inData->stage;
     }
 
-    // If failed to get a valid stage, then 
+    // If failed to get a valid stage, then
     // Propagate inDataCached -> outData
     // and return
     if (!usdStage) {
-        MDataHandle outDataHandle = dataBlock.outputValue(_psData.outStageData, &retValue);
+        MDataHandle outDataHandle =
+            dataBlock.outputValue(outStageDataAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         outDataHandle.copy(inDataCachedHandle);
         return MS::kSuccess;
     }
 
     // Get the primPath
-    const MString aPrimPath = dataBlock.inputValue(_psData.primPath, &retValue).asString();
+    const MString aPrimPath =
+        dataBlock.inputValue(primPathAttr, &retValue).asString();
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Get the prim
@@ -818,12 +819,14 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
             usdPrim = usdStage->GetPrimAtPath( primPath );
         }
         else {
-            MGlobal::displayWarning("UsdMayaReferenceAssembly::computeOutStageData" + MPxNode::name() + ": Stage primPath '" + 
-                                    MString(inData->primPath.GetText()) + "'' not a parent of primPath '" +
-                                    MString(primPathStr.c_str()) + "'. Skipping variant assignment.");
+            TF_WARN("%s: Assembly primPath <%s> is not a descendant of input "
+                    "stage primPath <%s>. Skipping variant assignment.",
+                    MPxNode::name().asChar(),
+                    primPathStr.c_str(),
+                    inData->primPath.GetText());
         }
     } else {
-        MGlobal::displayWarning(MPxNode::name() + ": Stage primPath MISSING");
+        TF_WARN("%s: Stage primPath MISSING", MPxNode::name().asChar());
     }
 
     // Handle UsdPrim variant overrides and draw modes for subassemblies (i.e.,
@@ -838,7 +841,7 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
         std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
         std::map<std::string, std::string> varSets;
         TF_FOR_ALL(variantSet, variantSetNames) {
-            MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+            MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
             variantSetPlugName += variantSet->c_str();
             MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
             if (!varSetPlg.isNull()) {
@@ -854,7 +857,7 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
         }
 
         TfToken drawMode;
-        MPlug drawModePlug = depNodeFn.findPlug(_psData.drawMode, true);
+        MPlug drawModePlug = depNodeFn.findPlug(drawModeAttr, true);
         if (!drawModePlug.isNull()) {
             TfToken newDrawMode(drawModePlug.asString().asChar());
             TfToken existingDrawMode =
@@ -887,30 +890,29 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
     }
 
     // Create the output outData
-    MFnPluginData aPluginDataFactory;
-    MObject aUsdStageDataObject = aPluginDataFactory.create(
-            _psData.stageDataTypeId,
-        &retValue);
+    MFnPluginData pluginDataFn;
+    MObject stageDataObj =
+        pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    UsdMayaStageData* aUsdStageData = 
-        reinterpret_cast<UsdMayaStageData*>(
-            aPluginDataFactory.data(&retValue));
+    UsdMayaStageData* stageData =
+        reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Set the outUsdStageData
-    aUsdStageData->stage    = usdStage;
+    stageData->stage = usdStage;
     // If usdPrim is still invalid, then the stage has no default prim.
-    aUsdStageData->primPath = usdPrim ? usdPrim.GetPath() :
-        SdfPath::AbsoluteRootPath();
+    stageData->primPath = usdPrim ? usdPrim.GetPath() :
+                                    SdfPath::AbsoluteRootPath();
 
     //
     // set the data on the output plug
     //
-    MDataHandle outDataHandle = dataBlock.outputValue(_psData.outStageData, &retValue);
+    MDataHandle outDataHandle =
+        dataBlock.outputValue(outStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    outDataHandle.set(aUsdStageData);
+    outDataHandle.set(stageData);
     outDataHandle.setClean();
 
     return MS::kSuccess;
@@ -929,7 +931,7 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
     // This was adapted from Autodesk's sample assembly reference node:
     //
     // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
-    if (plug == _psData.repNamespace && !_updatingRepNamespace) {
+    if (plug == repNamespaceAttr && !_updatingRepNamespace) {
         // Rename the namespace associated with the assembly with the new
         // repNamespace. Correct the repNamespace if needed.
         // To rename the namespace, there are 2 cases to get the oldNS to
@@ -998,20 +1000,19 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
 
     bool setAttrSuccess = MPxAssembly::setInternalValueInContext(plug, dataHandle, ctx);
 
-    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), PxrUsdMayaVariantSetTokens->PlugNamePrefix);
+    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), UsdMayaVariantSetTokens->PlugNamePrefix);
 
-    if ( varSelChanged || 
-         (std::find(_psData.attrsAffectingRepresentation.begin(), 
-                    _psData.attrsAffectingRepresentation.end(), 
-                    plug.attribute())
-          != _psData.attrsAffectingRepresentation.end()) ) 
-    {
+    if (varSelChanged ||
+            (std::find(attrsAffectingRepresentation.begin(),
+                       attrsAffectingRepresentation.end(),
+                       plug.attribute())
+             != attrsAffectingRepresentation.end())) {
         // == Block off this code from being called recursively
         _inSetInternalValue = true;
 
         MString activeRep( getActive() );
-        // NOTE: 
-        //     Cannot activate and cause dg modifications while in this evaluation of 
+        // NOTE:
+        //     Cannot activate and cause dg modifications while in this evaluation of
         //     setInternalValueInContext().
         //     Using executeCommandOnIdle() to get around this limitation
         //
@@ -1038,17 +1039,16 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
 }
 
 
-UsdPrim UsdMayaReferenceAssembly::usdPrim() const 
+UsdPrim UsdMayaReferenceAssembly::usdPrim() const
 {
-    MStatus localStatus;
+    MStatus status;
     UsdPrim usdPrim;
 
     UsdMayaReferenceAssembly* nonConstThis = const_cast<UsdMayaReferenceAssembly*>(this);
     MDataBlock dataBlock = nonConstThis->forceCache();
 
-    MDataHandle outDataHandle = dataBlock.inputValue(
-            _psData.outStageData, &localStatus);
-    CHECK_MSTATUS_AND_RETURN(localStatus, usdPrim);
+    MDataHandle outDataHandle = dataBlock.inputValue(outStageDataAttr, &status);
+    CHECK_MSTATUS_AND_RETURN(status, usdPrim);
 
     UsdMayaStageData* outData = dynamic_cast<UsdMayaStageData*>(outDataHandle.asPluginData());
     if(!outData) {
@@ -1081,7 +1081,7 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
 
     std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
     for (std::string variantSetName : variantSetNames) {
-        MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+        MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
         variantSetPlugName += variantSetName.c_str();
         MPlug variantSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
         if (!variantSetPlg.isNull()) {
@@ -1099,13 +1099,13 @@ void
 UsdMayaReferenceAssembly::ConnectMayaTimeToAssemblyTime()
 {
     MFnAssembly assemblyFn(thisMObject());
-    MPlug assemblyTimePlug = assemblyFn.findPlug(_psData.time, true);
+    MPlug assemblyTimePlug = assemblyFn.findPlug(timeAttr, true);
     if (!assemblyTimePlug || assemblyTimePlug.isConnected()) {
         // Bail out if we couldn't find the plug, or if it is already connected.
         return;
     }
 
-    const MPlug mayaTimePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    const MPlug mayaTimePlug = UsdMayaUtil::GetMayaTimePlug();
     if (mayaTimePlug.isNull()) {
         return;
     }
@@ -1119,14 +1119,14 @@ void
 UsdMayaReferenceAssembly::DisconnectAssemblyTimeFromMayaTime()
 {
     MFnAssembly assemblyFn(thisMObject());
-    MPlug assemblyTimePlug = assemblyFn.findPlug(_psData.time, true);
+    MPlug assemblyTimePlug = assemblyFn.findPlug(timeAttr, true);
     if (!assemblyTimePlug || !assemblyTimePlug.isConnected()) {
         // Bail out if we couldn't find the plug, or if it is NOT already
         // connected.
         return;
     }
 
-    const MPlug mayaTimePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    const MPlug mayaTimePlug = UsdMayaUtil::GetMayaTimePlug();
     if (mayaTimePlug.isNull()) {
         return;
     }
@@ -1142,7 +1142,6 @@ UsdMayaRepresentationBase::UsdMayaRepresentationBase(
         MPxAssembly* assembly,
         const MString& name)
     : MPxRepresentation(assembly, name)
-    , _psData(dynamic_cast<UsdMayaReferenceAssembly*>(assembly)->_psData)
 {
 }
 
@@ -1192,13 +1191,13 @@ const MString UsdMayaRepresentationCards::_assemblyType("Cards");
 const MString UsdMayaRepresentationPlayback::_assemblyType("Playback");
 
 bool UsdMayaRepresentationProxyBase::activate()
-{   
+{
     // Get original selection list
     MSelectionList origSelList;
     MGlobal::getActiveSelectionList(origSelList, true);
 
     MDagModifier dagMod;
-    MObject shapeObj = dagMod.createNode(_psData.proxyShape.typeName, getAssembly()->thisMObject());
+    MObject shapeObj = dagMod.createNode(UsdMayaProxyShape::typeName, getAssembly()->thisMObject());
     dagMod.renameNode(shapeObj, "CollapsedProxy");
     dagMod.doIt();
 
@@ -1206,27 +1205,29 @@ bool UsdMayaRepresentationProxyBase::activate()
     MFnDependencyNode shapeFn(shapeObj);
     MFnAssembly assemblyFn(getAssembly()->thisMObject());
     dgMod.connect(
-        assemblyFn.findPlug(_psData.filePath, true),
-        shapeFn.findPlug(_psData.proxyShape.filePath, true));
+        assemblyFn.findPlug(UsdMayaReferenceAssembly::filePathAttr, true),
+        shapeFn.findPlug(UsdMayaProxyShape::filePathAttr, true));
     dgMod.connect(
-        assemblyFn.findPlug(_psData.primPath, true),
-        shapeFn.findPlug(_psData.proxyShape.primPath, true) );
+        assemblyFn.findPlug(UsdMayaReferenceAssembly::primPathAttr, true),
+        shapeFn.findPlug(UsdMayaProxyShape::primPathAttr, true) );
     dgMod.connect(
-        assemblyFn.findPlug(_psData.complexity, true),
-        shapeFn.findPlug(_psData.proxyShape.complexity, true));
+        assemblyFn.findPlug(UsdMayaReferenceAssembly::complexityAttr, true),
+        shapeFn.findPlug(UsdMayaProxyShape::complexityAttr, true));
     dgMod.connect(
-        assemblyFn.findPlug(_psData.tint, true),
-        shapeFn.findPlug(_psData.proxyShape.tint, true));
+        assemblyFn.findPlug(UsdMayaReferenceAssembly::tintAttr, true),
+        shapeFn.findPlug(UsdMayaProxyShape::tintAttr, true));
     dgMod.connect(
-        assemblyFn.findPlug(_psData.tintColor, true),
-        shapeFn.findPlug(_psData.proxyShape.tintColor, true));
+        assemblyFn.findPlug(UsdMayaReferenceAssembly::tintColorAttr, true),
+        shapeFn.findPlug(UsdMayaProxyShape::tintColorAttr, true));
     dgMod.connect(
-        assemblyFn.findPlug(_psData.outStageData, true),
-        shapeFn.findPlug(_psData.proxyShape.inStageData, true));
+        assemblyFn.findPlug(UsdMayaReferenceAssembly::outStageDataAttr, true),
+        shapeFn.findPlug(UsdMayaProxyShape::inStageDataAttr, true));
 
     _OverrideProxyPlugs(shapeFn, dgMod);
 
-    dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.softSelectable, true), _proxyIsSoftSelectable);
+    dgMod.newPlugValueBool(
+        shapeFn.findPlug(UsdMayaProxyShape::softSelectableAttr, true),
+        _proxyIsSoftSelectable);
 
     dgMod.doIt();
 
@@ -1268,11 +1269,11 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     }
     UsdStagePtr stage = proxyRootPrim.GetStage();
 
-    PxrUsdMayaEditUtil::PathEditMap refEdits;
+    UsdMayaEditUtil::PathEditMap refEdits;
     std::vector< std::string > invalidEdits, failedEdits;
-    
-    PxrUsdMayaEditUtil::GetEditsForAssembly( assemObj, &refEdits, &invalidEdits );
-    
+
+    UsdMayaEditUtil::GetEditsForAssembly( assemObj, &refEdits, &invalidEdits );
+
     if( !refEdits.empty() )
     {
         // Create an anonymous layer to hold the assembly edit opinions, and
@@ -1287,27 +1288,23 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
         // same layer(s).
         UsdEditContext editContext(stage, _sessionSublayer);
 
-        PxrUsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
+        UsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
     }
-    
+
     if( !invalidEdits.empty() )
     {
-        MString badEdits("The following edits could not be read from the proxy for '");
-        badEdits += assemblyPathStr;
-        badEdits += "':\n\t";
-        badEdits += TfStringJoin( invalidEdits, "\n\t" ).c_str();
-        
-        MGlobal::displayWarning( badEdits );
+        TF_WARN("The following edits could not be read from the proxy for '%s':"
+                "\n\t%s",
+                assemblyPathStr.asChar(),
+                TfStringJoin(invalidEdits, "\n\t").c_str());
     }
-    
+
     if( !failedEdits.empty() )
     {
-        MString badEdits("The following edits could not be pushed to the proxy for '");
-        badEdits += assemblyPathStr;
-        badEdits += "':\n\t";
-        badEdits += TfStringJoin( failedEdits, "\n\t" ).c_str();
-        
-        MGlobal::displayError( badEdits );
+        TF_WARN("The following edits could not be pushed to the proxy for '%s':"
+                "\n\t%s",
+                assemblyPathStr.asChar(),
+                TfStringJoin(failedEdits, "\n\t").c_str());
     }
 }
 
@@ -1329,20 +1326,22 @@ UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
                                                     MDGModifier &dgMod)
 {
     MFnAssembly assemblyFn(getAssembly()->thisMObject());
-    
-    dgMod.connect(assemblyFn.findPlug(_psData.time, true),
-                  shapeFn.findPlug(_psData.proxyShape.time, true));
-    
-    dgMod.connect(assemblyFn.findPlug(_psData.excludePrimPaths, true),
-                  shapeFn.findPlug(_psData.proxyShape.excludePrimPaths, true));
+
+    dgMod.connect(assemblyFn.findPlug(UsdMayaReferenceAssembly::timeAttr, true),
+                  shapeFn.findPlug(UsdMayaProxyShape::timeAttr, true));
+
+    dgMod.connect(assemblyFn.findPlug(UsdMayaReferenceAssembly::excludePrimPathsAttr, true),
+                  shapeFn.findPlug(UsdMayaProxyShape::excludePrimPathsAttr, true));
 }
 
 void
 UsdMayaRepresentationCollapsed::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
                                                     MDGModifier &dgMod)
 {
-    dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.fastPlayback, true), false);
-    
+    dgMod.newPlugValueBool(
+        shapeFn.findPlug(UsdMayaProxyShape::fastPlaybackAttr, true),
+        false);
+
     // Call parent for common proxy overrides
     UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(shapeFn, dgMod);
 }
@@ -1351,7 +1350,7 @@ bool
 UsdMayaRepresentationCards::activate()
 {
     MFnDagNode dagFn(getAssembly()->thisMObject());
-    MPlug drawMode = dagFn.findPlug(_psData.drawMode, true);
+    MPlug drawMode = dagFn.findPlug(UsdMayaReferenceAssembly::drawModeAttr, true);
     drawMode.setString("cards");
 
     return UsdMayaRepresentationProxyBase::activate();
@@ -1361,7 +1360,7 @@ bool
 UsdMayaRepresentationCards::inactivate()
 {
     MFnDagNode dagFn(getAssembly()->thisMObject());
-    MPlug drawMode = dagFn.findPlug(_psData.drawMode, true);
+    MPlug drawMode = dagFn.findPlug(UsdMayaReferenceAssembly::drawModeAttr, true);
     drawMode.setString("");
 
     return UsdMayaRepresentationProxyBase::inactivate();
@@ -1371,8 +1370,10 @@ void
 UsdMayaRepresentationCards::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
                                                     MDGModifier &dgMod)
 {
-    dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.fastPlayback, true), false);
-    
+    dgMod.newPlugValueBool(
+        shapeFn.findPlug(UsdMayaProxyShape::fastPlaybackAttr, true),
+        false);
+
     // Call parent for common proxy overrides
     UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(shapeFn, dgMod);
 }
@@ -1403,8 +1404,10 @@ void
 UsdMayaRepresentationPlayback::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
                                                    MDGModifier &dgMod)
 {
-    dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.fastPlayback, true), true);
-    
+    dgMod.newPlugValueBool(
+        shapeFn.findPlug(UsdMayaProxyShape::fastPlaybackAttr, true),
+        true);
+
     // Call parent for common proxy overrides
     UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(shapeFn, dgMod);
 }
@@ -1415,7 +1418,7 @@ UsdMayaRepresentationPlayback::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
 
 void
 UsdMayaRepresentationHierBase::_ConnectSubAssemblyPlugs()
-{   
+{
     MStatus status;
 
     MFnDagNode dagFn(getAssembly()->thisMObject());
@@ -1425,7 +1428,7 @@ UsdMayaRepresentationHierBase::_ConnectSubAssemblyPlugs()
 
     std::string cmdStr = TfStringPrintf(
             "select `listRelatives -allDescendents -type \"%s\" \"%s\"`",
-            _psData.typeName.asChar(),
+            UsdMayaReferenceAssembly::typeName.asChar(),
             assemblyPath.partialPathName().asChar());
 
     MGlobal::executeCommand(MString(cmdStr.c_str()));
@@ -1438,10 +1441,10 @@ UsdMayaRepresentationHierBase::_ConnectSubAssemblyPlugs()
         CHECK_MSTATUS(status);
         MFnAssembly childAssembly(childAssemblyNodeObj, &status);
         CHECK_MSTATUS(status);
-        dgMod.connect(dagFn.findPlug(_psData.complexity, true),
-                      childAssembly.findPlug(_psData.complexity, true));
-        dgMod.connect(dagFn.findPlug(_psData.outStageData, true),
-                      childAssembly.findPlug(_psData.inStageData, true));
+        dgMod.connect(dagFn.findPlug(UsdMayaReferenceAssembly::complexityAttr, true),
+                      childAssembly.findPlug(UsdMayaReferenceAssembly::complexityAttr, true));
+        dgMod.connect(dagFn.findPlug(UsdMayaReferenceAssembly::outStageDataAttr, true),
+                      childAssembly.findPlug(UsdMayaReferenceAssembly::inStageDataAttr, true));
     }
     dgMod.doIt();
 }
@@ -1458,7 +1461,7 @@ UsdMayaRepresentationHierBase::_ConnectProxyPlugs()
 
     std::string cmdStr = TfStringPrintf(
             "select `listRelatives -allDescendents -type \"%s\" \"%s\"`",
-            _psData.proxyShape.typeName.asChar(),
+            UsdMayaProxyShape::typeName.asChar(),
             assemblyPath.partialPathName().asChar());
 
     MGlobal::executeCommand(MString(cmdStr.c_str()));
@@ -1471,14 +1474,14 @@ UsdMayaRepresentationHierBase::_ConnectProxyPlugs()
         CHECK_MSTATUS(status);
         MFnDependencyNode proxyDepNodeFn(childUsdProxyNodeObj, &status);
         CHECK_MSTATUS(status);
-        dgMod.connect(dagFn.findPlug(_psData.time, true),
-                      proxyDepNodeFn.findPlug(_psData.proxyShape.time, true));
+        dgMod.connect(dagFn.findPlug(UsdMayaReferenceAssembly::timeAttr, true),
+                      proxyDepNodeFn.findPlug(UsdMayaProxyShape::timeAttr, true));
     }
     dgMod.doIt();
 }
 
 bool UsdMayaRepresentationHierBase::activate()
-{   
+{
     MStatus status;
 
     // Get original selection list
@@ -1487,8 +1490,8 @@ bool UsdMayaRepresentationHierBase::activate()
 
     // Get attr values
     MFnAssembly assemblyFn(getAssembly()->thisMObject());
-    MString usdFilePath(assemblyFn.findPlug(_psData.filePath, true).asString());
-    MString usdPrimPath(assemblyFn.findPlug(_psData.primPath, true).asString());
+    MString usdFilePath(assemblyFn.findPlug(UsdMayaReferenceAssembly::filePathAttr, true).asString());
+    MString usdPrimPath(assemblyFn.findPlug(UsdMayaReferenceAssembly::primPathAttr, true).asString());
 
     // Get the variant set selections from the Maya assembly node.
     UsdMayaReferenceAssembly* usdAssembly =
@@ -1496,30 +1499,31 @@ bool UsdMayaRepresentationHierBase::activate()
     std::map<std::string, std::string> variantSetSelections =
         usdAssembly->GetVariantSetSelections();
 
-    JobImportArgs importArgs;
-    importArgs.readAnimData = true;
-    if (_ShouldImportWithProxies()) {
-        importArgs.importWithProxyShapes = true;
-
+    VtDictionary userArgs;
+    bool shouldImportWithProxies = _ShouldImportWithProxies();
+    if (shouldImportWithProxies) {
         // In this mode, sub-assembly nodes we create should come in unloaded.
-        importArgs.assemblyRep = TfToken();
+        userArgs[PxrUsdImportJobArgsTokens->assemblyRep] =
+                PxrUsdImportJobArgsTokens->Unloaded.GetString();
     }
 
-    usdReadJob readJob(usdFilePath.asChar(),
+    UsdMayaJobImportArgs importArgs =
+            UsdMayaJobImportArgs::CreateFromDictionary(
+                userArgs, shouldImportWithProxies,
+                GfInterval::GetFullInterval());
+    UsdMaya_ReadJob readJob(usdFilePath.asChar(),
                        usdPrimPath.asChar(),
                        variantSetSelections,
-                       importArgs,
-                       _psData.typeName.asChar(),
-                       _psData.proxyShape.typeName.asChar());
+                       importArgs);
 
     // Set the assembly node as the root node of the read job.
     MDagPath assemblyDagPath;
     status = assemblyFn.getPath(assemblyDagPath);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    readJob.setMayaRootDagPath(assemblyDagPath);
+    readJob.SetMayaRootDagPath(assemblyDagPath);
 
     std::vector<MDagPath> addedDagPaths;
-    if (!readJob.doIt(&addedDagPaths)) {
+    if (!readJob.Read(&addedDagPaths)) {
         return false;
     }
 

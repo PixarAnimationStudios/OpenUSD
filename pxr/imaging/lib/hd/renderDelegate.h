@@ -271,11 +271,28 @@ public:
     /// Materials
     ///
     ////////////////////////////////////////////////////////////////////////////
+    
     ///
-    /// Returns true if this renderer can deal with full materials.
+    /// Returns a token that indicates material bindings should be used,
+    /// based on the indicated purpose.  The default purpose is
+    /// HdTokens->preview.
     ///
     HD_API
-    virtual bool CanComputeMaterialNetworks() const { return false; }
+    virtual TfToken GetMaterialBindingPurpose() const;
+
+    ///
+    /// Returns a token that can be used to select among multiple
+    /// material network implementations.  The default is empty.
+    ///
+    HD_API
+    virtual TfToken GetMaterialNetworkSelector() const;
+
+    ///
+    /// Returns the ordered list of shader source types that the render delegate 
+    /// supports.
+    /// 
+    HD_API
+    virtual TfTokenVector GetShaderSourceTypes() const;
 
 protected:
     /// This class must be derived from

@@ -63,11 +63,11 @@ public:
 
     /// Adds this Primvar's buffer description to the buffer spec vector.
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
     /// Computes and returns a hash value for the underlying data.
     HD_API
-    virtual size_t ComputeHash() const { return 0; }
+    virtual size_t ComputeHash() const override { return 0; }
 
     /// Extracts the primvar from the source computation.
     HD_API
@@ -83,7 +83,7 @@ public:
 
     /// Returns a count of the number of elements.
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
 protected:
     /// Returns true if the binding to the source computation was successful.

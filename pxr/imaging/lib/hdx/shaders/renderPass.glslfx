@@ -27,30 +27,6 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdx/shaders/renderPass.glslfx
 
--- glsl HdxRenderPass.ShouldCullFaceShadows
-
-bool ShouldCullFace(bool frontFacing, bool doubleSided)
-{
-    const uint HdCullStyleDontCare               = uint(0);
-    const uint HdCullStyleNothing                = uint(1);
-    const uint HdCullStyleBack                   = uint(2);
-    const uint HdCullStyleFront                  = uint(3);
-    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
-    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
-
-#if defined(HD_HAS_cullStyle)
-    uint cullStyle = HdGet_cullStyle();
-#else
-    uint cullStyle = HdCullStyleNothing;
-#endif
-
-    // Invert the cullstyle so we can render shadows correctly
-    return ((cullStyle == HdCullStyleBack                   && frontFacing) ||
-            (cullStyle == HdCullStyleFront                  && !frontFacing) ||
-            (cullStyle == HdCullStyleBackUnlessDoubleSided  && frontFacing && !doubleSided) ||
-            (cullStyle == HdCullStyleFrontUnlessDoubleSided && !frontFacing && !doubleSided));
-}
-
 -- glsl HdxRenderPass.RenderColorShadowsOutput
 
 layout (location = 0) out vec4 colorOut;
@@ -60,283 +36,54 @@ vec4 ApplyColorOverrides(vec4 color)
     return color;
 }
 
+vec4 ApplyColorOverridesPostLighting(vec4 color)
+{
+    return color;
+}
+
 void RenderColor(vec4 color)
 {
     colorOut = color;
 }
 
+--- --------------------------------------------------------------------------
 -- glsl HdxRenderPass.RenderColorOutputWithSelection
 
-#if defined(HD_HAS_hdxSelectionBuffer)
-// helper methods to decode hdxSelectionBuffer
-bool HighlightModeHasSelection(int offset)
-{
-    return (offset != 0);
-}
+// Forward declare method defined in selection.glslfx
+vec4 ApplySelectionColor(vec4 color);
 
-int GetIndexOffsetForHighlightMode(int mode)
-{
-    return hdxSelectionBuffer[mode + 1/*[0] holds #modes*/];
-}
-
-int GetNumSelectionHighlightModes()
-{
-    return hdxSelectionBuffer[0];
-}
-
-vec4 GetSelectionColor(int mode)
-{
-    vec4 s = vec4(0,0,0,0);
-    // XXX: Make selection colors an array so we can avoid the branching.
-    if (mode == 0)
-        s = HdGet_selColor();
-    else if (mode == 1)
-        s = HdGet_selLocateColor();
-    else if (mode == 2)
-        s = HdGet_selMaskColor();
-
-    return s;
-}
-
-// Note: These should match the enum in hdxSelectionTracker.cpp
-#define SUBPRIMITIVE_TYPE_ELEMENT 0
-#define SUBPRIMITIVE_TYPE_EDGE    1
-#define SUBPRIMITIVE_TYPE_POINT   2
-
-void GetSubprimitiveRangeInfo(int rangeStart,
-                              out int type, out int smin, out int smax)
-{
-    type = hdxSelectionBuffer[rangeStart];
-    smin = hdxSelectionBuffer[rangeStart + 1];
-    smax = hdxSelectionBuffer[rangeStart + 2];
-}
-
-struct SubprimSelection {
-    bool elementSelected;
-    bool edgeSelected;
-    bool pointSelected;
-};
-
-bool IsAnySubprimSelected(SubprimSelection s)
-{
-    return (s.elementSelected || s.edgeSelected || s.pointSelected);
-}
-
-
-// Need to forward declare this helper function, since it is defined in
-// pointId.glslfx
-int GetPointId();
-
-bool IsPointSelected(int ptMin, int ptMax, int ptRangeStart)
-{
-    int ptId = GetPointId();
-
-    if (ptId >= ptMin && ptId < ptMax) {
-        int v = hdxSelectionBuffer[3+ptRangeStart+ptId-ptMin];
-        if (v == 1) return true; // point is selected
-        if (v == 0) return false; // point isn't selected
-        // we shouldn't hit any other case
-    }
-    return false;
-}
-
-// Need to forward declare this helper function, since it is defined in
-// edgeId.glslfx or generated via codeGen
-int GetPrimitiveEdgeId();
-
-bool IsEdgeSelected(int edgeMin, int edgeMax, int edgeRangeStart,
-                    out int nextOffset)
-{
-    int edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
-
-    if (edgeId >= edgeMin && edgeId < edgeMax) {
-        int v = hdxSelectionBuffer[3+edgeRangeStart+edgeId-edgeMin];
-        if (v == 0) return false; // edge isn't selected
-        if (v == 1) return true; // edge alone is selected
-
-        // next subprim (point) is selected; update the offset
-        nextOffset = v>>1;
-
-        if (bool(v & 0x1)) return true; // edge is also selected
-
-        return false;
-    }
-    return false;
-}
-
-bool IsElementSelected(int eleMin, int eleMax, int eleRangeStart,
-                       out int nextOffset)
-{
-    int elementId = GetElementID();
-
-    if (elementId >= eleMin && elementId < eleMax) {
-        int v = hdxSelectionBuffer[3+eleRangeStart+elementId-eleMin];
-        if (v == 0) return false; // element isn't selected
-        if (v == 1) return true; // element alone is selected
-
-        // next subprim (edges and/or points) is selected; update the offset
-        nextOffset = v>>1;
-
-        if (bool(v & 0x1)) return true; // element is also selected
-
-        return false;
-    }
-
-    return false;
-}
-
-SubprimSelection GetSubprimSel(int rangeStart)
-{
-    int type, smin, smax;
-    GetSubprimitiveRangeInfo(rangeStart, /*out*/type, /*out*/smin, /*out*/smax);
-
-    SubprimSelection s = SubprimSelection(false, false, false);
-    int nextOffset = 0;
-
-    if (type == SUBPRIMITIVE_TYPE_ELEMENT) {
-        s.elementSelected =
-            IsElementSelected(smin, smax, rangeStart, /*out*/nextOffset);
-
-        if (nextOffset != 0) {
-            // fragment has additional subprim(s) selected. update range state
-            GetSubprimitiveRangeInfo(nextOffset,
-                                    /*out*/type, /*out*/smin, /*out*/smax);
-        }
-    }
-
-    if (type == SUBPRIMITIVE_TYPE_EDGE) {
-        s.edgeSelected =
-            IsEdgeSelected(smin, smax, rangeStart, /*out*/nextOffset);
-
-        if (nextOffset != 0) {
-            // fragment has points selected. update range state
-            GetSubprimitiveRangeInfo(nextOffset,
-                                    /*out*/type, /*out*/smin, /*out*/smax);
-        }
-    }
-
-    if (type == SUBPRIMITIVE_TYPE_POINT) {
-        s.pointSelected =
-            IsPointSelected(smin, smax, rangeStart);
-    }
-
-    return s;
-}
-
-#endif // HD_HAS_hdxSelectionBuffer
-
-vec4 ApplySelectionColor(vec4 color)
-{
-#if defined(HD_HAS_hdxSelectionBuffer)
-    const int primId = HdGet_primID();
-    const int numSelectionModes = GetNumSelectionHighlightModes();
-    // The hdxSelectionBuffer layout is:
-    // [# highlight modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
-    // [-------------  header --------------]
-    // See HdxSelectionTracker::GetSelectionOffsetBuffer for details on the
-    // encoding scheme.
-    for (int mode = 0; mode < numSelectionModes; mode++) {
-        int modeOffset = GetIndexOffsetForHighlightMode(mode);
-        if (!HighlightModeHasSelection(modeOffset)) {
-            // highlight mode has no objects (prims/instances/elements)
-            continue;
-        }
-
-        int smin = hdxSelectionBuffer[modeOffset];
-        int smax = hdxSelectionBuffer[modeOffset + 1];
-        bool sel = false;
-        SubprimSelection subprimSel = SubprimSelection(false, false, false);
-
-        if (primId >= smin && primId < smax) {
-            int v = hdxSelectionBuffer[modeOffset + 2 + primId - smin];
-            if (v == 0) {
-                sel = false;
-            } else if (v == 1) {
-                sel = true;
-            } else {
-                // current prim isn't fully selected. check if any of its
-                // instances (or) elements are.
-
-                #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
-                for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
-                    smin = hdxSelectionBuffer[v];
-                    smax = hdxSelectionBuffer[v+1];
-                    // allow to highlight in a top-down manner, by flipping level
-                    // during iteration.
-                    // note: instanceIndex[0] is instanceID.
-                    //       instanceIndex for level n is stored at instanceIndex[n+1]
-                    int instanceId = GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
-                    if (instanceId >= smin && instanceId < smax) {
-                        v = hdxSelectionBuffer[2+v+instanceId-smin];
-                        if (v == 0) {
-                           sel = false; // instance/element/edge isn't selected
-                           break;
-                        } else if (v == 1) {
-                           sel = true; // instance is selected
-                           break;
-                        } else {
-                            // instance isn't selected. check if a subprim is
-                            subprimSel = GetSubprimSel(v);
-                            if (IsAnySubprimSelected(subprimSel)) {
-                                sel = true;
-                                break;
-                            }
-                        }
-                    } else { // instanceId not in range
-                        sel = false;
-                        break;
-                    }
-                }
-                #else
-                    // We have no instances, but we may still have subprim(s)
-                    // selected.
-                    subprimSel = GetSubprimSel(v);
-                    if (IsAnySubprimSelected(subprimSel)) {
-                        sel = true;
-                    }
-                #endif
-            }
-
-            if (sel) {
-                vec4 s = GetSelectionColor(mode);
-
-                // Note: We blend mask (over) locate (over) select when an
-                // object is in all three highlight modes.
-                color.rgb = mix(color.rgb, s.rgb, s.a);
-            }
-        } // primId in range
-    } // for each highlight mode
-    
-#endif
-    return color;
-}
-
+// XXX: Make sure to update hdSt/shaders/renderPass.glslfx when editing these
+// color override methods, since they're currently duplicated. This is because
+// we don't have a mixin token for color overrides in a render pass yet.
 vec4 ApplyColorOverrides(vec4 color)
 {
-#if defined(HD_HAS_scalarOverride)
-    // Allow a scalar value to override the color from the surface
-    // for previewing heatmaps. This is useful for editing workflows.
-#if defined(HD_HAS_scalarOverrideColorRamp)
-    int rampCount = constantPrimvars[GetDrawingCoord().constantCoord].
-                scalarOverrideColorRamp.length();
-    float scalar = HdGet_scalarOverride() * float(rampCount - 1);
-    float baseIndex = floor(scalar);
-    float nextIndex = min(float(rampCount - 1), baseIndex + 1.0);
-    float interp = scalar - baseIndex;
-    color = mix(HdGet_scalarOverrideColorRamp(int(baseIndex)),
-                HdGet_scalarOverrideColorRamp(int(nextIndex)),
-                interp);
-#else
-    // If no ramp is given just gamma correct the scalar as greyscale.
-    color.rgb = vec3(pow(HdGet_scalarOverride(), 2.2));
-#endif // HD_HAS_scalarOverrideColorRamp
-
-#elif defined(HD_HAS_overrideColor)
+#if defined(HD_HAS_overrideColor)
     // Mix in override color
     vec4 overrideColor = HdGet_overrideColor();
     color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
 #endif
     return ApplySelectionColor(color);
+}
+
+vec3 ApplyMaskColor(vec4 color, float weight, vec4 maskColor)
+{
+    float strength = maskColor.a * clamp(weight, 0, 1);
+    return mix(color.rgb, maskColor.rgb, strength);
+}
+
+vec4 ApplyColorOverridesPostLighting(vec4 color)
+{
+    #if defined(HD_HAS_maskWeight)
+        float maskWeight = HdGet_maskWeight();
+        vec4 maskColor = GetMaskColor();
+        color.rgb = ApplyMaskColor(color, maskWeight, maskColor);
+    #endif
+    #if defined(HD_HAS_indicatorWeight)
+        float indicatorWeight = HdGet_indicatorWeight();
+        vec4 indicatorColor = GetIndicatorColor();
+        color.rgb = ApplyMaskColor(color, indicatorWeight, indicatorColor);
+    #endif
+    return color;
 }
 
 layout (location = 0) out vec4 colorOut;
@@ -346,6 +93,7 @@ void RenderColor(vec4 color)
     colorOut = color;
 }
 
+--- --------------------------------------------------------------------------
 -- glsl HdxRenderPass.RenderColorIdOutput
 
 layout (location = 0) out vec4 primIdOut;
@@ -354,14 +102,13 @@ layout (location = 2) out vec4 elementIdOut;
 layout (location = 3) out vec4 edgeIdOut;
 layout (location = 4) out vec4 pointIdOut;
 
-// Forward declare relevant helper functions that are defined in
-// hdSt/shaders/edgeId.glslfx (or) generated via code gen.
-int GetPrimitiveEdgeId();
-bool IsFragmentOnEdge();
-int GetPointId();
-bool IsFragmentOnPoint();
-
 vec4 ApplyColorOverrides(vec4 color)
+{
+    // Don't apply overrides during ID render pass.
+    return color;
+}
+
+vec4 ApplyColorOverridesPostLighting(vec4 color)
 {
     // Don't apply overrides during ID render pass.
     return color;
@@ -374,6 +121,14 @@ vec4 IntToVec4(int id)
                 ((id >> 16) & 0xff) / 255.0,
                 ((id >> 24) & 0xff) / 255.0);
 }
+
+// Fwd declare necessary methods to determine the subprim id of a fragment.
+int GetElementID(); // generated via codeGen
+int GetAuthoredEdgeId(int); // generated via codeGen
+int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
+bool IsFragmentOnEdge(); // defined in edgeId.glslfx, or generated via codeGen
+int GetPointId(); // defined in pointId.glslfx
+bool IsFragmentOnPoint(); // defined in pointId.glslfx
 
 void RenderColor(vec4 color)
 {

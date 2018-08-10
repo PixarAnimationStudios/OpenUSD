@@ -61,6 +61,11 @@ UsdClipsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdClipsAPI::_GetSchemaType() const {
+    return UsdClipsAPI::schemaType;
+}
+
 /* static */
 const TfType &
 UsdClipsAPI::_GetStaticTfType()

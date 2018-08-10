@@ -48,6 +48,9 @@ class TestArDefaultResolver(unittest.TestCase):
             os.path.abspath('test1/test2')
         ])
 
+        # Verify that the underlying resolver is an Ar.DefaultResolver.
+        assert(isinstance(Ar.GetUnderlyingResolver(), Ar.DefaultResolver))
+
     def test_AnchorRelativePath(self):
         r = Ar.GetResolver()
 
@@ -133,6 +136,32 @@ class TestArDefaultResolver(unittest.TestCase):
         self.assertPathsEqual(
             '', 
             resolver.Resolve('test4/test_ResolveWithContext.txt'))
+
+    def test_ResolveWithDefaultAssetContext(self):
+        assetFileName = 'test_Asset.txt'
+        assetFilePath = os.path.abspath(assetFileName)
+        with open(assetFilePath, 'w') as ofp:
+            print >>ofp, 'Garbage'
+
+        testFileName = 'test_SiblingOfAsset.txt'
+        testFilePath = os.path.abspath(testFileName)
+        with open(testFilePath, 'w') as ofp:
+            print >>ofp, 'Garbage'
+        
+        # We use the non-absolute assetFileName to test the
+        # cwd-anchoring behavior of CreateDefaultContextForAsset()
+        context = Ar.GetResolver().CreateDefaultContextForAsset(assetFileName)
+        with Ar.ResolverContextBinder(context):
+            resolvedPath = Ar.GetResolver().Resolve(testFileName)
+
+        self.assertPathsEqual(resolvedPath, testFilePath)
+
+        # Make sure we get the same behavior using ConfigureResolverForAsset()
+        Ar.GetResolver().ConfigureResolverForAsset(assetFileName)
+        with Ar.ResolverContextBinder(Ar.GetResolver().CreateDefaultContext()):
+            defaultResolvedPath = Ar.GetResolver().Resolve(testFileName)
+
+        self.assertPathsEqual(defaultResolvedPath, testFilePath)
 
     def test_ResolverContext(self):
         emptyContext = Ar.DefaultResolverContext()
