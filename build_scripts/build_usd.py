@@ -497,10 +497,12 @@ def InstallBoost(context, force, buildArgs):
             '--with-date_time',
             '--with-filesystem',
             '--with-program_options',
-            '--with-regex',
             '--with-system',
             '--with-thread'
         ]
+
+        if context.buildOIIO:
+            b2_settings.append("--with-regex")
 
         if context.buildPython:
             b2_settings.append("--with-python")
