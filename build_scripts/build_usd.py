@@ -494,7 +494,6 @@ def InstallBoost(context, force, buildArgs):
             'threading=multi', 
             'variant=release',
             '--with-atomic',
-            '--with-date_time',
             '--with-filesystem',
             '--with-program_options',
             '--with-system',
@@ -503,6 +502,7 @@ def InstallBoost(context, force, buildArgs):
 
         if context.buildOIIO:
             b2_settings.append("--with-regex")
+            b2_settings.append("--with-date_time")
 
         if context.buildPython:
             b2_settings.append("--with-python")
