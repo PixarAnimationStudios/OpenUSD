@@ -924,6 +924,13 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
 
     UsdZipFileWriter writer = UsdZipFileWriter::CreateNew(usdzFilePath);
 
+    auto &resolver = ArGetResolver();
+    // This returns true of src and dest have the same file extension.
+    const auto extensionsMatch = [&resolver](const std::string &src, 
+                                             const std::string &dest) {
+        return resolver.GetExtension(src) == resolver.GetExtension(dest);
+    };
+
     bool firstLayer = true;
     bool success = true;
     for (auto &layerAndDestPath : layerExportMap) {
@@ -949,19 +956,22 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
             ".. adding layer @%s@ to package at path '%s'.\n", 
             layer->GetIdentifier().c_str(), destPath.c_str());
 
-        // If the layer hasn't been modified from its persistent representation, 
-        // then simply copy it over from its real-path (i.e. location on disk).
-        // This preserves any existing comments in the file (Which are lost 
-        // when exporting).
-        if (!layer->IsDirty()) {
+        // If the layer hasn't been modified from its persistent representation
+        // and if its extension isn't changing in the package, then simply copy 
+        // it over from its real-path (i.e. location on disk). This preserves 
+        // any existing comments in the file (which will be lost if we were 
+        // to export all layers before adding them to to the package).
+        if (!layer->IsDirty() && 
+                extensionsMatch(layer->GetRealPath(), destPath)) {
             std::string inArchivePath = writer.AddFile(layer->GetRealPath(), 
                     destPath);
             if (inArchivePath.empty()) {
                 success = false;
             }
         } else {
-            // If the layer has been modified, then we need to export it to 
-            // a temporary file before adding it to the package.
+            // If the layer has been modified or needs to be modified, then we 
+            // need to export it to a temporary file before adding it to the 
+            // package.
             SdfFileFormat::FileFormatArguments args;
 
             const SdfFileFormatConstPtr fileFormat = 
