@@ -59,9 +59,11 @@ def main():
     parser.add_argument('inputFile', type=str, 
                         help='Name of the input file to inspect.')
     parser.add_argument('-s', '--skipVariants', dest='skipVariants',
-                        action='store_true', help='If specified, prims in all '
-                        'possible combinations of variant selections are '
-                        'validated.')
+                        action='store_true', help='If specified, only the prims'
+                        ' that are present in the default (i.e. selected) '
+                        'variants are checked. When this option is not '
+                        'specified, prims in all possible combinations of '
+                        'variant selections are checked.')
     parser.add_argument('-p', '--rootPackageOnly', dest='rootPackageOnly', 
                         action="store_true", help='Check only the specified'
                         'package. Nested packages, dependencies and their '
