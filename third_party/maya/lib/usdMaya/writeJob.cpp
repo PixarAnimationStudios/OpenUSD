@@ -156,7 +156,11 @@ UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
             progress++;
 
             // Process per frame data.
-            _WriteFrame(t);
+            if (!_WriteFrame(t)) {
+                MGlobal::viewFrame(oldCurTime);
+                computation.endComputation();
+                return false;
+            }
 
             // Allow user cancellation.
             if (computation.isInterruptRequested()) {
@@ -169,7 +173,11 @@ UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     }
 
     // Finalize the export, close the stage.
-    _FinishWriting();
+    if (!_FinishWriting()) {
+        computation.endComputation();
+        return false;
+    }
+
     computation.endComputation();
     return true;
 }
@@ -466,12 +474,13 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     return true;
 }
 
-void
+bool
 UsdMaya_WriteJob::_WriteFrame(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
-    for (const UsdMayaPrimWriterSharedPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
+    for (const UsdMayaPrimWriterSharedPtr& primWriter :
+            mJobCtx.mMayaPrimWriterList) {
         const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
             primWriter->Write(usdTime);
@@ -479,13 +488,17 @@ UsdMaya_WriteJob::_WriteFrame(double iFrame)
     }
 
     for (UsdMayaChaserRefPtr& chaser : mChasers) {
-        chaser->ExportFrame(iFrame);
+        if (!chaser->ExportFrame(iFrame)) {
+            return false;
+        }
     }
 
     _PerFrameCallback(iFrame);
+
+    return true;
 }
 
-void
+bool
 UsdMaya_WriteJob::_FinishWriting()
 {
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
@@ -519,8 +532,6 @@ UsdMaya_WriteJob::_FinishWriting()
                                         mCurrentRenderLayerName, false, false);
     }
 
-    _PostCallback();
-
     // Unfortunately, MGlobal::isZAxisUp() is merely session state that does
     // not get recorded in Maya files, so we cannot rely on it being set
     // properly.  Since "Y" is the more common upAxis, we'll just use
@@ -535,10 +546,20 @@ UsdMaya_WriteJob::_FinishWriting()
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
     }
+
     // Running post export function on all the prim writers.
     for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();
     }
+
+    // Run post export function on the chasers.
+    for (const UsdMayaChaserRefPtr& chaser : mChasers) {
+        if (!chaser->PostExport()) {
+            return false;
+        }
+    }
+
+    _PostCallback();
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
@@ -562,6 +583,8 @@ UsdMaya_WriteJob::_FinishWriting()
     if (!_packageName.empty()) {
         TfDeleteFile(_fileName);
     }
+
+    return true;
 }
 
 TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)

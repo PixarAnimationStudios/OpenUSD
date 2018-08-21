@@ -65,11 +65,11 @@ private:
     /// Warning: this function must be called with non-decreasing frame numbers.
     /// If you call WriteFrame() with a frame number lower than a previous
     /// WriteFrame() call, internal code may generate errors.
-    void _WriteFrame(double iFrame);
+    bool _WriteFrame(double iFrame);
 
     /// Runs any post-export processes, closes the USD stage, and writes it out
     /// to disk.
-    void _FinishWriting();
+    bool _FinishWriting();
 
     /// Writes the root prim variants based on the Maya render layers.
     TfToken _WriteVariants(const UsdPrim &usdRootPrim);

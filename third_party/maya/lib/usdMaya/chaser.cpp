@@ -25,6 +25,26 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+bool
+UsdMayaChaser::ExportDefault()
+{
+    // Do nothing by default.
+    return true;
+}
+
+bool
+UsdMayaChaser::ExportFrame(const UsdTimeCode& time)
+{
+    // Do nothing by default.
+    return true;
+}
+
+bool
+UsdMayaChaser::PostExport()
+{
+    // Do nothing by default.
+    return true;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

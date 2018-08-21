@@ -60,13 +60,25 @@ class UsdMayaChaser : public TfRefBase
 public:
     ~UsdMayaChaser() override { }
 
-    /// \brief Export the default data.
-    ///
+    /// Do custom processing after UsdMaya has exported data at the default
+    /// time.
+    /// The stage will be incomplete; any animated data will not have
+    /// been exported yet.
     /// Returning false will terminate the whole export.
-    virtual bool ExportDefault() = 0;
+    virtual bool ExportDefault();
 
-    /// \brief Export the data at \p time.
-    virtual bool ExportFrame(const UsdTimeCode& time) = 0;
+    /// Do custom processing after UsdMaya has exported data at \p time.
+    /// The stage will be incomplete; any future animated frames will not
+    /// have been exported yet.
+    /// Returning false will terminate the whole export.
+    virtual bool ExportFrame(const UsdTimeCode& time);
+
+    /// Do custom post-processing that needs to run after the main UsdMaya
+    /// export loop.
+    /// At this point, all data has been authored to the stage (except for
+    /// any custom data that you'll author in this step).
+    /// Returning false will terminate the whole export.
+    virtual bool PostExport();
 };
 
 
