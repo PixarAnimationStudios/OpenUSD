@@ -1890,8 +1890,13 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
             shaderName = string("/") + shaderName;
         }
 
+        // The shaderName string is expected to contain either a single name,
+        // like "/FxFire", or a longer path, like "/Chair/Looks/Plastic".
+        // Take the substring after the last '/' as the material name.
+        string materialName = shaderName.substr(shaderName.rfind("/") + 1);
+
         UsdShadeMaterial usdMaterial = UsdShadeMaterial::Define(m_usdStage,
-            looksPath.AppendChild(TfToken(shaderName.substr(1))));
+            looksPath.AppendChild(TfToken(materialName)));
         
         UsdReferences refs = usdMaterial.GetPrim().GetReferences();
         shaderFile = GusdComputeRelativeSearchPath(shaderFile);
@@ -1907,8 +1912,9 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
                         shaderName.c_str(), shaderFile.c_str());
             }
             else {
-                SdfPathVector prefixes = shaderPrim.GetPath().GetPrefixes();
-                refs.AddReference(shaderFile, prefixes[0]);
+                // Reference shaderPrim on the usdMaterial prim that
+                // was just defined on m_usdStage.
+                refs.AddReference(shaderFile, shaderPrim.GetPath());
             }
         }
         if (shaderPrim) {
