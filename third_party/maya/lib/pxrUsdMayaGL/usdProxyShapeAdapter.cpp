@@ -258,6 +258,20 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         reprSelector = HdReprSelector(HdTokens->refinedWire);
         _renderParams.enableLighting = false;
     }
+    else if (displayStyle == 128) 
+    {
+        // If you have the uv editor open,  it uses that frame context when
+        // doing prepareForDraw(), and there it has a displayStyle == 128.
+        //
+        // We shouldn't be using this during prepareForDraw() because if
+        // you have multiple viewports, each with different drawStyles,
+        // we'd only get one prepareForDraw.  This sort of state should be
+        // read in Render().
+        //
+        // For now, to prevent it from completely disappearing, we just
+        // treat it similarly to Gouraud shading.
+        reprSelector = HdReprSelector(HdTokens->refined);
+    }
     else
     {
         _drawShape = false;
