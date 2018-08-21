@@ -25,6 +25,7 @@
 /// \file usdUtils/dependencies.cpp
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/dependencies.h"
+#include "pxr/usd/usdUtils/debugCodes.h"
 
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
@@ -901,6 +902,10 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
                              const std::string &usdzFilePath,
                              const std::string &firstLayerName)
 {
+    TF_DEBUG(USDUTILS_CREATE_USDZ_PACKAGE).Msg("Creating USDZ package at '%s' "
+        "containing asset @%s@.\n", usdzFilePath.c_str(), 
+        assetPath.GetAssetPath().c_str());
+
     std::string destDir = TfGetPathName(usdzFilePath);
     destDir = destDir.empty() ? "./" : destDir;
     _AssetLocalizer localizer(assetPath, destDir);
@@ -939,6 +944,10 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
                 layer->GetIdentifier().c_str());
             continue;
         }
+
+        TF_DEBUG(USDUTILS_CREATE_USDZ_PACKAGE).Msg(
+            ".. adding layer @%s@ to package at path '%s'.\n", 
+            layer->GetIdentifier().c_str(), destPath.c_str());
 
         // If the layer hasn't been modified from its persistent representation, 
         // then simply copy it over from its real-path (i.e. location on disk).
@@ -990,6 +999,9 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
         const std::string &srcPath = fileSrcAndDestPath.first;
         const std::string destPath = _GetDestRelativePath(
                 fileSrcAndDestPath.second, destDir);
+        TF_DEBUG(USDUTILS_CREATE_USDZ_PACKAGE).Msg(
+            ".. adding file '%s' to package at path '%s'.\n", 
+            srcPath.c_str(), destPath.c_str());
 
         if (!packagedFiles.insert(destPath).second) {
             TF_WARN("A file already exists at path \"%s\" in the package. "
@@ -1055,6 +1067,11 @@ UsdUtilsCreateNewARKitUsdzPackage(
     const auto &usdStage = UsdStage::Open(resolvedPath);
     const std::string tmpFileName = 
             ArchMakeTmpFileName(targetBaseName, ".usdc");
+
+    TF_DEBUG(USDUTILS_CREATE_USDZ_PACKAGE).Msg(
+        "Flattening asset @%s@ located at '%s' to temporary layer at "
+        "path '%s'.\n", assetPath.GetAssetPath().c_str(), resolvedPath.c_str(), 
+        tmpFileName.c_str());
 
     if (!usdStage->Export(tmpFileName, /*addSourceFileComment*/ false)) {
         TF_WARN("Failed to flatten and export the USD stage '%s'.", 

@@ -17,6 +17,7 @@ pxr_library(usdUtils
     PUBLIC_CLASSES
         authoring
         coalescingDiagnosticDelegate
+        debugCodes
         dependencies
         flattenLayerStack
         introspection
