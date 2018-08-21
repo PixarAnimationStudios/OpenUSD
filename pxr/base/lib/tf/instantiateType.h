@@ -81,7 +81,7 @@ struct Tf_MakeTypeManufacturable<T, false> {
 #define TF_INSTANTIATE_TYPE(Type, flags, Bases) \
     TF_REGISTRY_DEFINE_WITH_TYPE(TfType, Type) { \
         TfType t1 = TfType::Define<Type, _TF_REMOVE_PARENS(Bases) >(); \
-        Tf_MakeTypeManufacturable<Type, flags&TfType::MANUFACTURABLE>::Doit(t1); \
+        Tf_MakeTypeManufacturable<Type, (flags&TfType::MANUFACTURABLE)!=0 >::Doit(t1); \
     }
 
 PXR_NAMESPACE_CLOSE_SCOPE

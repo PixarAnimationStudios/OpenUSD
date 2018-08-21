@@ -139,13 +139,14 @@ template <class Int>
 static Int
 _StringToPositive(const char *p, bool *outOfRange)
 {
+    const Int R = 10;
     const Int M = std::numeric_limits<Int>::max();
     Int result = 0;
     while (*p >= '0' && *p <= '9') {
         int digit = (*p++ - '0');
         // If the new digit would exceed the range, bail.  The expression below
         // is equivalent to 'result > (M - digit) / 10', but it avoids division.
-        if (ARCH_UNLIKELY(result > ((M / 10) - (digit > (M % 10))))) {
+        if (ARCH_UNLIKELY(result > ((M / R) - (digit > (M % R))))) {
             if (outOfRange)
                 *outOfRange = true;
             return M;

@@ -186,7 +186,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (info)
-    (outputs)
     ((infoSourceAsset, "info:sourceAsset"))
     ((infoSourceCode, "info:sourceCode"))
 );

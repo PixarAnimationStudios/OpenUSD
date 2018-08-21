@@ -73,8 +73,6 @@ protected:
 
 private:
     int _lastVersion;
-    int _offsetMin;
-    int _offsetMax;
     bool _hasSelection;
     HdxSelectionTaskParams _params;
     HdBufferArrayRangeSharedPtr _selOffsetBar;

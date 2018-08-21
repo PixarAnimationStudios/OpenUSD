@@ -68,6 +68,9 @@
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("clang diagnostic ignored \"-Wwrite-strings\"")
 
+    #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION \
+        _Pragma("clang diagnostic ignored \"-Winstantiation-after-specialization\"")
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -183,6 +186,10 @@
 
 #if !defined ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
     #define ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
+#endif
+
+#if !defined ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
+    #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 #endif
 
 #endif // ARCH_PRAGMAS_H
