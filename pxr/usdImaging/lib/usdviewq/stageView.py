@@ -910,7 +910,13 @@ class StageView(QtOpenGL.QGLWidget):
 
     def GetRendererPlugins(self):
         if self._renderer:
-            return self._renderer.GetRendererPlugins()
+            plugins = self._renderer.GetRendererPlugins()
+            supported_plugins = []
+            for plugin in plugins:
+                if self._renderer.GetRendererPluginIsSupported(plugin):
+                    supported_plugins.append(plugin)
+
+            return supported_plugins
         else:
             return []
 

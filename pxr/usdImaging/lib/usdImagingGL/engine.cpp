@@ -700,6 +700,13 @@ UsdImagingGLEngine::GetRendererPluginDesc(TfToken const &id) const
 
 /* virtual */
 bool
+UsdImagingGLEngine::GetRendererPluginIsSupported(TfToken const &id) const
+{
+    return false;
+}
+
+/* virtual */
+bool
 UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {
     return false;

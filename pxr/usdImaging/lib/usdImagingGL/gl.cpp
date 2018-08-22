@@ -298,6 +298,13 @@ UsdImagingGL::GetRendererPluginDesc(TfToken const &id) const
 
 /* virtual */
 bool
+UsdImagingGL::GetRendererPluginIsSupported(TfToken const &id) const
+{
+    return _engine->GetRendererPluginIsSupported(id);
+}
+
+/* virtual */
+bool
 UsdImagingGL::SetRendererPlugin(TfToken const &id)
 {
     return _engine->SetRendererPlugin(id);

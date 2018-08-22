@@ -371,6 +371,10 @@ public:
     USDIMAGINGGL_API
     virtual std::string GetRendererPluginDesc(TfToken const &id) const;
 
+    /// Checks if a renderer plugin is supported in this runtime environment.
+    USDIMAGINGGL_API
+    virtual bool GetRendererPluginIsSupported(TfToken const &id) const;
+
     /// Set the current render-graph delegate to \p id.
     /// the plugin will be loaded if it's not yet.
     USDIMAGINGGL_API

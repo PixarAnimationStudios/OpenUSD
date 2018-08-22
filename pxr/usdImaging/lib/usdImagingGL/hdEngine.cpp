@@ -895,6 +895,21 @@ UsdImagingGLHdEngine::GetRendererPluginDesc(TfToken const &id) const
     return pluginDescriptor.displayName;
 }
 
+/* virtual */
+bool
+UsdImagingGLHdEngine::GetRendererPluginIsSupported(TfToken const &id) const
+{
+    HdxRendererPlugin *plugin = nullptr;
+    bool supported = false;
+    plugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(id);
+    if (TF_VERIFY(plugin)) {
+        supported = plugin->IsSupported();
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+    }
+
+    return supported;
+}
+
 /* static */
 bool
 UsdImagingGLHdEngine::IsDefaultPluginAvailable()
