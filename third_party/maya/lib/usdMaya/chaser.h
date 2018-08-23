@@ -65,12 +65,14 @@ public:
     /// The stage will be incomplete; any animated data will not have
     /// been exported yet.
     /// Returning false will terminate the whole export.
+    PXRUSDMAYA_API
     virtual bool ExportDefault();
 
     /// Do custom processing after UsdMaya has exported data at \p time.
     /// The stage will be incomplete; any future animated frames will not
     /// have been exported yet.
     /// Returning false will terminate the whole export.
+    PXRUSDMAYA_API
     virtual bool ExportFrame(const UsdTimeCode& time);
 
     /// Do custom post-processing that needs to run after the main UsdMaya
@@ -78,6 +80,7 @@ public:
     /// At this point, all data has been authored to the stage (except for
     /// any custom data that you'll author in this step).
     /// Returning false will terminate the whole export.
+    PXRUSDMAYA_API
     virtual bool PostExport();
 };
 
