@@ -134,16 +134,12 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     UsdTimeCode timeCode;
     bool showGuides;
     bool showRenderGuides;
-    bool tint;
-    GfVec4f tintColor;
     if (!usdProxyShape->GetAllRenderAttributes(&usdPrim,
                                                &excludedPrimPaths,
                                                &refineLevel,
                                                &timeCode,
                                                &showGuides,
-                                               &showRenderGuides,
-                                               &tint,
-                                               &tintColor)) {
+                                               &showRenderGuides)) {
         TF_WARN("Failed to get render attributes for UsdMayaProxyShape.");
         return false;
     }
@@ -169,10 +165,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Reset _renderParams to the defaults.
     PxrMayaHdRenderParams renderParams;
     _renderParams = renderParams;
-
-    if (tint) {
-        _renderParams.overrideColor = tintColor;
-    }
 
     // XXX Not yet adding ability to turn off display of proxy geometry, but
     // we should at some point, as in usdview.

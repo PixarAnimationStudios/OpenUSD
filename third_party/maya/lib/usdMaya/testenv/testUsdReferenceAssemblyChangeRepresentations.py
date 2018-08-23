@@ -107,8 +107,6 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
             'filePath',
             'primPath',
             'complexity',
-            'tint',
-            'tintColor',
             'outStageData']
 
         for attr in connectedAttrNames:

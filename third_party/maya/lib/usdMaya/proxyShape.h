@@ -32,7 +32,8 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/ray.h"
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -101,10 +102,6 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         static MObject inStageDataCachedAttr;
         PXRUSDMAYA_API
         static MObject fastPlaybackAttr;
-        PXRUSDMAYA_API
-        static MObject tintAttr;
-        PXRUSDMAYA_API
-        static MObject tintColorAttr;
         PXRUSDMAYA_API
         static MObject outStageDataAttr;
         PXRUSDMAYA_API
@@ -199,18 +196,13 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         bool displayRenderGuides() const;
 
         PXRUSDMAYA_API
-        bool getTint(GfVec4f* outTintColor) const;
-
-        PXRUSDMAYA_API
         bool GetAllRenderAttributes(
                 UsdPrim* usdPrimOut,
                 SdfPathVector* excludePrimPathsOut,
                 int* complexityOut,
                 UsdTimeCode* timeOut,
                 bool* guidesOut,
-                bool* renderGuidesOut,
-                bool* tint,
-                GfVec4f* tintColor);
+                bool* renderGuidesOut);
 
         PXRUSDMAYA_API
         MStatus setDependentsDirty(
@@ -249,7 +241,6 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         UsdTimeCode _GetTime(MDataBlock dataBlock) const;
         bool _GetDisplayGuides(MDataBlock dataBlock) const;
         bool _GetDisplayRenderGuides(MDataBlock dataBlock) const;
-        bool _GetTint(MDataBlock dataBlock, GfVec4f* outTintColor) const;
 
         bool _CanBeSoftSelected() const;
 

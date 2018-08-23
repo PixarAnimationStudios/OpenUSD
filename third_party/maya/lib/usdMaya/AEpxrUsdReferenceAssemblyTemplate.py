@@ -222,8 +222,6 @@ def editorTemplate(nodeName):
             cmds.editorTemplate('excludePrimPaths', addControl=True)
             cmds.editorTemplate('time', addControl=True)
             cmds.editorTemplate('complexity', addControl=True)
-            cmds.editorTemplate('tint', addControl=True)
-            cmds.editorTemplate('tintColor', addControl=True)
             # Note: Specifying python functions directly here does not seem to work.  
             # It looks like callCustom expects MEL functions.
             cmds.editorTemplate(

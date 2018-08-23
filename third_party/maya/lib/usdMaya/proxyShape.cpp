@@ -30,7 +30,7 @@
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/gf/ray.h"
-#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/hash.h"
@@ -125,8 +125,6 @@ MObject UsdMayaProxyShape::complexityAttr;
 MObject UsdMayaProxyShape::inStageDataAttr;
 MObject UsdMayaProxyShape::inStageDataCachedAttr;
 MObject UsdMayaProxyShape::fastPlaybackAttr;
-MObject UsdMayaProxyShape::tintAttr;
-MObject UsdMayaProxyShape::tintColorAttr;
 MObject UsdMayaProxyShape::outStageDataAttr;
 MObject UsdMayaProxyShape::displayGuidesAttr;
 MObject UsdMayaProxyShape::displayRenderGuidesAttr;
@@ -265,27 +263,6 @@ UsdMayaProxyShape::initialize()
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(fastPlaybackAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    tintAttr = numericAttrFn.create(
-        "tint",
-        "tn",
-        MFnNumericData::kBoolean,
-        0,
-        &retValue);
-    numericAttrFn.setInternal(true);
-    numericAttrFn.setAffectsAppearance(true);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(tintAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    tintColorAttr = numericAttrFn.createColor(
-        "tintColor",
-        "tcol",
-        &retValue);
-    numericAttrFn.setAffectsAppearance(true);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(tintColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     outStageDataAttr = typedAttrFn.create(
@@ -428,8 +405,6 @@ UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     if (plug == excludePrimPathsAttr ||
             plug == timeAttr ||
             plug == complexityAttr ||
-            plug == tintAttr ||
-            plug == tintColorAttr ||
             plug == displayGuidesAttr ||
             plug == displayRenderGuidesAttr) {
         // If the attribute that needs to be computed is one of these, then it
@@ -940,45 +915,13 @@ UsdMayaProxyShape::_GetDisplayRenderGuides(MDataBlock dataBlock) const
 }
 
 bool
-UsdMayaProxyShape::getTint(GfVec4f* outTintColor) const
-{
-    return _GetTint( const_cast<UsdMayaProxyShape*>(this)->forceCache(), outTintColor );
-}
-
-bool
-UsdMayaProxyShape::_GetTint(MDataBlock dataBlock, GfVec4f* outTintColor) const
-{
-    // We're hardcoding this for now -- could add more support later if need be
-    static const float tintAlpha = 0.35f;
-
-    MStatus status;
-    bool retValue = true;
-
-    MDataHandle tintHandle = dataBlock.inputValue(tintAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    retValue = tintHandle.asBool();
-
-    MDataHandle tintColorHandle = dataBlock.inputValue(tintColorAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    float3 &tintColor = tintColorHandle.asFloat3();
-
-    *outTintColor = { tintColor[0], tintColor[1], tintColor[2], tintAlpha };
-
-    return retValue;
-}
-
-bool
 UsdMayaProxyShape::GetAllRenderAttributes(
         UsdPrim* usdPrimOut,
         SdfPathVector* excludePrimPathsOut,
         int* complexityOut,
         UsdTimeCode* timeOut,
         bool* guidesOut,
-        bool* renderGuidesOut,
-        bool* tint,
-        GfVec4f* tintColor)
+        bool* renderGuidesOut)
 {
     MDataBlock dataBlock = forceCache();
 
@@ -991,7 +934,6 @@ UsdMayaProxyShape::GetAllRenderAttributes(
     *timeOut = _GetTime( dataBlock );
     *guidesOut = _GetDisplayGuides( dataBlock );
     *renderGuidesOut = _GetDisplayRenderGuides( dataBlock );
-    *tint = _GetTint( dataBlock, tintColor );
 
     return true;
 }

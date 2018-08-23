@@ -514,13 +514,11 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     HdxRenderTaskParams renderSetupTaskParams =
         _GetValue<HdxRenderTaskParams>(renderSetupTaskId, HdTokens->params);
 
-    if (renderSetupTaskParams.overrideColor != renderParams.overrideColor ||
-            renderSetupTaskParams.wireframeColor != renderParams.wireframeColor ||
-            renderSetupTaskParams.enableLighting != renderParams.enableLighting) {
+    if (renderSetupTaskParams.enableLighting != renderParams.enableLighting ||
+            renderSetupTaskParams.wireframeColor != renderParams.wireframeColor) {
         // Update the render setup task params.
-        renderSetupTaskParams.overrideColor = renderParams.overrideColor;
-        renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
         renderSetupTaskParams.enableLighting = renderParams.enableLighting;
+        renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
 
         // Store the updated render setup task params back in the cache and
         // mark them dirty.
