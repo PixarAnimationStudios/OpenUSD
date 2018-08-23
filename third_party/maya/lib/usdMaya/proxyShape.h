@@ -111,15 +111,15 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         PXRUSDMAYA_API
         static MObject softSelectableAttr;
 
-        /// Delegate function for computing the closest point on the proxy
-        /// shape to a given ray.
-        /// Both the input ray and the output point should be in the proxy
-        /// shape's local space.
+        /// Delegate function for computing the closest point and surface normal
+        /// on the proxy shape to a given ray.
+        /// The input ray, output point, and output normal should be in the
+        /// proxy shape's local space.
         /// Should return true if a point was found, and false otherwise.
         /// (You could just treat this as a ray intersection and return true
         /// if intersected, false if missed.)
         typedef std::function<bool(const UsdMayaProxyShape&, const GfRay&,
-                GfVec3d*)> ClosestPointDelegate;
+                GfVec3d*, GfVec3d*)> ClosestPointDelegate;
 
         /// Delegate function for returning whether object soft select mode is
         /// currently on

@@ -215,14 +215,14 @@ public:
     /// context is available; this function is not appropriate for interesecting
     /// using the Maya viewport.
     ///
-    /// \p hitPoint yields the point of intersection if \c true is returned.
-    ///
+    /// If hit(s) are found, returns \c true and populates \p *outResult with
+    /// the intersection result.
     PXRUSDMAYAGL_API
     bool TestIntersectionCustomCollection(
             const HdRprimCollection& collection,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
-            GfVec3d* hitPoint);
+            HdxIntersector::Result* outResult);
 
     /// Utility function for finding the nearest hit (in terms of ndcDepth) in
     /// the given \p hitSet.
@@ -290,12 +290,11 @@ private:
     /// Private helper function for testing intersection on a single collection
     /// only.
     /// \returns True if there was at least one hit. All hits are returned in
-    /// the outHitSet.
+    /// the \p *result.
     bool _TestIntersection(
             const HdRprimCollection& rprimCollection,
             HdxIntersector::Params queryParams,
-            const bool singleSelection,
-            HdxIntersector::HitSet* outHitSet);
+            HdxIntersector::Result* result);
 
     /// Handler for Maya Viewport 2.0 end render notifications.
     ///

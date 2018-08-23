@@ -923,7 +923,7 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
         const HdRprimCollection& collection,
         const GfMatrix4d& viewMatrix,
         const GfMatrix4d& projectionMatrix,
-        GfVec3d* hitPoint)
+        HdxIntersector::Result* outResult)
 {
     // Custom collection implementation.
     // Differs from viewport implementations in that it doesn't rely on
@@ -937,15 +937,7 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
     params.projectionMatrix = projectionMatrix;
     params.alphaThreshold = 0.1f;
 
-    HdxIntersector::HitSet hits;
-    if (_TestIntersection(collection, params, true, &hits)) {
-        if (hitPoint) {
-            *hitPoint = hits.begin()->worldSpaceHitPoint;
-        }
-        return true;
-    }
-
-    return false;
+    return _TestIntersection(collection, params, outResult);
 }
 
 /* static */
@@ -1019,12 +1011,9 @@ bool
 UsdMayaGLBatchRenderer::_TestIntersection(
     const HdRprimCollection& rprimCollection,
     HdxIntersector::Params queryParams,
-    const bool singleSelection,
-    HdxIntersector::HitSet* outHitSet)
+    HdxIntersector::Result* result)
 {
     queryParams.renderTags = rprimCollection.GetRenderTags();
-
-    HdxIntersector::Result result;
 
     glPushAttrib(GL_VIEWPORT_BIT |
                  GL_ENABLE_BIT |
@@ -1036,25 +1025,9 @@ UsdMayaGLBatchRenderer::_TestIntersection(
     const bool r = _intersector->Query(queryParams,
                                        rprimCollection,
                                        &_hdEngine,
-                                       &result);
+                                       result);
     glPopAttrib();
-    if (!r) {
-        return false;
-    }
-
-    if (singleSelection) {
-        HdxIntersector::Hit hit;
-        if (!result.ResolveNearest(&hit)) {
-            return false;
-        }
-
-        outHitSet->insert(hit);
-    }
-    else if (!result.ResolveUnique(outHitSet)) {
-        return false;
-    }
-
-    return true;
+    return r;
 }
 
 void
@@ -1107,9 +1080,21 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
             "    --- Intersection Testing with collection: %s\n",
             rprimCollection.GetName().GetText());
 
+        HdxIntersector::Result result;
+        if (!_TestIntersection(rprimCollection, qparams, &result)) {
+            continue;
+        }
+
         HdxIntersector::HitSet hits;
-        if (!_TestIntersection(
-                rprimCollection, qparams, singleSelection, &hits)) {
+        if (singleSelection) {
+            HdxIntersector::Hit hit;
+            if (!result.ResolveNearest(&hit)) {
+                continue;
+            }
+
+            hits.insert(hit);
+        }
+        else if (!result.ResolveUnique(&hits)) {
             continue;
         }
 

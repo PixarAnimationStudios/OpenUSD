@@ -1019,12 +1019,10 @@ UsdMayaProxyShape::closestPoint(
             GfVec3d(raySource.x, raySource.y, raySource.z),
             GfVec3d(rayDirection.x, rayDirection.y, rayDirection.z));
         GfVec3d hitPoint;
-        if (_sharedClosestPointDelegate(*this, ray, &hitPoint)) {
+        GfVec3d hitNorm;
+        if (_sharedClosestPointDelegate(*this, ray, &hitPoint, &hitNorm)) {
             theClosestPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
-            // XXX: Need support in Hydra for sidecar information like surface
-            // normals in order to implement this. Right now, we're just
-            // returning a sane default of the up-axis.
-            theClosestNormal = MGlobal::upAxis();
+            theClosestNormal = MVector(hitNorm[0], hitNorm[1], hitNorm[2]);
             return true;
         }
     }
