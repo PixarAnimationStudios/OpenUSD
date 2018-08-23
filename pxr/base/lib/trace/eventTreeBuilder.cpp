@@ -45,6 +45,11 @@ void
 Trace_EventTreeBuilder::OnEndCollection()
 {
     _threadStacks.clear();
+
+    // for each key, sort the corresponding timestamps 
+    for (TraceEventTree::MarkerValuesMap::value_type& item : _markersMap) {
+        std::sort(item.second.begin(), item.second.end());
+    }
 }
 
 bool
@@ -107,6 +112,9 @@ Trace_EventTreeBuilder::OnEvent(
             break;
         case TraceEvent::EventType::Timespan:
             _OnTimespan(threadIndex, key, e);
+            break;
+        case TraceEvent::EventType::Marker:
+            _OnMarker(threadIndex, key, e);
             break;
         case TraceEvent::EventType::ScopeData:
             _OnData(threadIndex, key, e);
@@ -207,6 +215,13 @@ Trace_EventTreeBuilder::_OnTimespan(
 }
 
 void
+Trace_EventTreeBuilder::_OnMarker(
+    const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
+{
+    _markersMap[key].push_back(std::make_pair(e.GetTimeStamp(), threadId));
+}
+
+void
 Trace_EventTreeBuilder::_OnData(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
@@ -231,7 +246,8 @@ Trace_EventTreeBuilder::_PendingEventNode::Close(
     TimeStamp end, bool separateEvents) 
 {
     TraceEventNodeRefPtr node = 
-        TraceEventNode::New(key, category, start, end, std::move(children), separateEvents);
+        TraceEventNode::New(key, category, start, end, 
+            std::move(children), separateEvents);
     for (AttributeData& it : attributes) {
         node->AddAttribute(TfToken(it.key), std::move(it.data));
     }
@@ -243,7 +259,7 @@ Trace_EventTreeBuilder::CreateTree(const TraceCollection& collection)
 {
     collection.Iterate(*this);
     _counterAccum.Update(collection);
-    _tree = TraceEventTree::New(_root, _counterAccum.GetCounters());
+    _tree = TraceEventTree::New(_root, _counterAccum.GetCounters(), _markersMap);
 }
 
 bool

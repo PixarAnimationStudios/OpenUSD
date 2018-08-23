@@ -104,6 +104,24 @@ TraceEventTree::Merge(const TraceEventTreeRefPtr& tree)
                 it->second.end());
         }
     }
+
+    // Add the marker data.
+    for (MarkerValuesMap::value_type& p : tree->_markers) {
+        MarkerValuesMap::iterator it = _markers.find(p.first);
+        if (it == _markers.end()) {
+            // Add new markers values;
+            _markers.insert(p);
+        } else {
+            // Merge new marker values to existing marker values.
+            const size_t originalSize = it->second.size();
+            it->second.insert(
+                it->second.end(), p.second.begin(), p.second.end());
+            std::inplace_merge(
+                it->second.begin(), 
+                it->second.begin() + originalSize,
+                it->second.end());
+        }
+    }
 }
 
 static 
@@ -224,6 +242,31 @@ void TraceEventTree_AddCounters(
     }
 }
 
+// Adds Chrome instant events to the events array.
+static
+void TraceEventTree_AddMarkers(
+    const int pid,
+    const TraceEventTree::MarkerValuesMap& markers,
+    JsArray& events)
+{
+    for (const TraceEventTree::MarkerValuesMap::value_type& m : markers) {
+        for (const TraceEventTree::MarkerValues::value_type& v 
+            : m.second) {
+
+            JsObject dict;
+            dict["cat"] = JsValue("");
+            dict["tid"] = JsValue(v.second.ToString());
+            dict["pid"]  = JsValue(pid);
+            dict["name"] = JsValue(m.first.GetString());
+            dict["ph"]   = JsValue("I"); // Mark
+            dict["s"]   = JsValue("t"); // Scope
+            dict["ts"]   = _TimeStampToChromeTraceValue(v.first);
+            events.push_back(dict);
+        }
+    }
+}
+
+
 JsObject 
 TraceEventTree::CreateChromeTraceObject() const
 {
@@ -244,6 +287,7 @@ TraceEventTree::CreateChromeTraceObject() const
         }
     }
     TraceEventTree_AddCounters(pid, _counters, eventArray);
+    TraceEventTree_AddMarkers(pid, _markers, eventArray);
     JsObject traceObj;
 
     traceObj["traceEvents"] = eventArray;

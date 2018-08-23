@@ -156,6 +156,20 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
         0 + timeStampOffset,
         13*ms + timeStampOffset,
         TraceCategory::Default);
+
+    events->EmplaceBack(
+        TraceEvent::Marker,
+        events->CacheKey("Test Marker 1"),
+        4*ms + timeStampOffset,
+        TraceCategory::Default
+    );
+
+    events->EmplaceBack(
+        TraceEvent::Marker,
+        events->CacheKey("Test Marker 2"),
+        5*ms + timeStampOffset,
+        TraceCategory::Default
+    );
     return events;
 }
 

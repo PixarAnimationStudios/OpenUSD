@@ -246,5 +246,37 @@
             "pid": 0,
             "tid": 0,
             "ts": 14000.0
+        }, {
+            "cat": "",
+            "name": "Test Marker 1",
+            "ph": "I",
+            "pid": 0,
+            "s": "t",
+            "tid": "MainThread",
+            "ts": 5000.0
+        }, {
+            "cat": "",
+            "name": "Test Marker 1",
+            "ph": "I",
+            "pid": 0,
+            "s": "t",
+            "tid": "Thread 1",
+            "ts": 6000.0
+        }, {
+            "cat": "",
+            "name": "Test Marker 2",
+            "ph": "I",
+            "pid": 0,
+            "s": "t",
+            "tid": "MainThread",
+            "ts": 6000.0
+        }, {
+            "cat": "",
+            "name": "Test Marker 2",
+            "ph": "I",
+            "pid": 0,
+            "s": "t",
+            "tid": "Thread 1",
+            "ts": 7000.0
         }]
 }

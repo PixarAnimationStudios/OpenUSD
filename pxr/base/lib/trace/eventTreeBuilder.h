@@ -99,6 +99,7 @@ private:
     void _OnEnd(const TraceThreadId&, const TfToken&, const TraceEvent&);
     void _OnData(const TraceThreadId&, const TfToken&, const TraceEvent&);
     void _OnTimespan(const TraceThreadId&, const TfToken&, const TraceEvent&);
+    void _OnMarker(const TraceThreadId&, const TfToken&, const TraceEvent&);
 
     using _PendingNodeStack = std::vector<_PendingEventNode>;
     using _ThreadStackMap = std::map<TraceThreadId, _PendingNodeStack>;
@@ -112,6 +113,8 @@ private:
         bool _AcceptsCategory(TraceCategoryId) override;
     };
     _CounterAccumulator _counterAccum;
+
+    TraceEventTree::MarkerValuesMap _markersMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

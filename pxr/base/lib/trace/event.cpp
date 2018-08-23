@@ -99,6 +99,7 @@ TraceEvent::GetType() const {
         case _InternalEventType::Begin: return EventType::Begin;
         case _InternalEventType::End: return EventType::End;
         case _InternalEventType::Timespan: return EventType::Timespan;
+        case _InternalEventType::Marker: return EventType::Marker;
         case _InternalEventType::CounterDelta: return EventType::CounterDelta;
         case _InternalEventType::CounterValue: return EventType::CounterValue;
         case _InternalEventType::ScopeData: return EventType::ScopeData;

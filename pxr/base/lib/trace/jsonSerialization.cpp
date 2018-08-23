@@ -101,6 +101,7 @@ _EventTypeToString(TraceEvent::EventType t) {
         case TraceEvent::EventType::CounterValue: return "CounterValue";
         case TraceEvent::EventType::Timespan: return "Timespan";
         case TraceEvent::EventType::ScopeData: return "Data";
+        case TraceEvent::EventType::Marker: return "Marker";
         case TraceEvent::EventType::Unknown: return "Unknown";
     }
     return "Unknown";
@@ -120,6 +121,8 @@ _EventTypeFromString(const std::string& s) {
         return TraceEvent::EventType::Timespan;
     } else if (s == "Data") {
         return TraceEvent::EventType::ScopeData;
+    } else if (s == "Mark") {
+        return TraceEvent::EventType::Marker;
     }
     return TraceEvent::EventType::Unknown;
 }
@@ -163,6 +166,9 @@ _TraceEventToJSON(const TfToken& key, const TraceEvent& e)
             event["start"] = 
                 JsValue(_TicksToMicroSeconds(e.GetStartTimeStamp()));
             event["end"] = JsValue(_TicksToMicroSeconds(e.GetEndTimeStamp()));
+            break;
+        case TraceEvent::EventType::Marker:
+            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
             break;
         case TraceEvent::EventType::Unknown:
             break;
@@ -209,6 +215,15 @@ _TraceEventFromJSON(
                 if (ts) {
                     unorderedEvents.emplace_back(
                         TraceEvent::End,
+                        list.CacheKey(*keyStr),
+                        *ts,
+                        *category);
+                }
+                break;
+            case TraceEvent::EventType::Marker:
+                if (ts) {
+                    unorderedEvents.emplace_back(
+                        TraceEvent::Marker,
                         list.CacheKey(*keyStr),
                         *ts,
                         *category);
@@ -349,13 +364,14 @@ public:
             case TraceEvent::EventType::Begin:
             case TraceEvent::EventType::End:
             case TraceEvent::EventType::Timespan:
+            case TraceEvent::EventType::Marker:
             case TraceEvent::EventType::Unknown:
                 break;
         }
     }
 
     virtual void OnBeginCollection() override {}
-    virtual void OnEndCollection() override {}    
+    virtual void OnEndCollection() override {} 
     virtual void OnBeginThread(const TraceThreadId& threadId) override {}
     virtual void OnEndThread(const TraceThreadId& threadId) override {}
 
@@ -453,6 +469,13 @@ _ImportChromeEvents(
                     TraceKey key = output[*tid].eventList.CacheKey(*name);
                     output[*tid].unorderedEvents.emplace_back(
                         TraceEvent::End,
+                        key,
+                        _MicrosecondsToTicks(*ts),
+                        *catId);
+                } else if (*ph == "R"  || *ph == "I"  || *ph == "i") {
+                    TraceKey key = output[*tid].eventList.CacheKey(*name);
+                    output[*tid].unorderedEvents.emplace_back(
+                        TraceEvent::Marker,
                         key,
                         _MicrosecondsToTicks(*ts),
                         *catId);
