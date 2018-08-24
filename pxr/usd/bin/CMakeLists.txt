@@ -8,6 +8,7 @@ set(DIRS
     usdzip
     sdfdump
     sdffilter
+    usdresolve
 )
 
 foreach(d ${DIRS})
