@@ -412,6 +412,10 @@ HdMeshUtil::ComputeQuadInfo(HdQuadInfo* quadInfo)
     for (int i = 0; i < numFaces; ++i) {
         int nv = numVertsPtr[i];
 
+        if (nv < 3) {
+            vertIndex += nv;
+            continue; // skip degenerated face
+        }
         if (holeIndex < numHoleFaces &&
             holeFacesPtr[holeIndex] == i) {
             // skip hole faces.
