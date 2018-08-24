@@ -1233,12 +1233,7 @@ HdStMesh::_UseQuadIndices(
     const HdStMaterial *material = static_cast<const HdStMaterial *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->material,
                                                        GetMaterialId()));
-    if (material == nullptr) {
-        material = static_cast<const HdStMaterial *>(
-                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
-    }
-
-    if (material->HasPtex()) {
+    if (material && material->HasPtex()) {
         return true;
     }
 
@@ -1254,12 +1249,8 @@ HdStMesh::_UseLimitRefinement(const HdRenderIndex &renderIndex) const
         static_cast<const HdStMaterial *>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material,
                                      GetMaterialId()));
-    if (material == nullptr) {
-        material = static_cast<const HdStMaterial *>(
-                    renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
-    }
 
-    if (material->HasLimitSurfaceEvaluation()) {
+    if (material && material->HasLimitSurfaceEvaluation()) {
         return true;
     }
 
@@ -1519,26 +1510,26 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     bool blendWireframeColor = desc.blendWireframeColor;
 
+    // Check if the shader bound to this mesh has a custom displacement
+    // terminal, or uses ptex, so that we know whether to include the geometry
+    // shader.
     bool hasCustomDisplacementTerminal = false;
-    if (_displacementEnabled) {
-        // check if the shader bound to this mesh has a custom displacement shader, 
-        // if so, we want to make sure the geometric shader does not optimize the
-        // geometry shader out of the code.
-        const HdStMaterial *material = static_cast<const HdStMaterial *>(
+    bool hasPtex = false;
+    const HdStMaterial *material = static_cast<const HdStMaterial *>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-        if (material) {
-            HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
-            if (shaderCode) {
-                hasCustomDisplacementTerminal =
-                    !(shaderCode->GetSource(HdShaderTokens->geometryShader).empty());
-            }
+    if (material) {
+        HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
+        if (shaderCode) {
+            hasCustomDisplacementTerminal =
+                !(shaderCode->GetSource(HdShaderTokens->geometryShader).empty());
         }
+        hasPtex = material->HasPtex();
     }
 
     // Enable displacement shading only if the repr enables it, and the
     // entrypoint exists.
-    bool useCustomDisplacement =
-        hasCustomDisplacementTerminal && desc.useCustomDisplacement;
+    bool useCustomDisplacement = hasCustomDisplacementTerminal &&
+        desc.useCustomDisplacement && _displacementEnabled;
 
     // The edge geomstyles below are rasterized as lines.
     // See HdSt_GeometricShader::BindResources()
@@ -1557,7 +1548,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  normalsSource,
                                  normalsInterpolation,
                                  _doubleSided || desc.doubleSided,
-                                 hasFaceVaryingPrimvars,
+                                 hasFaceVaryingPrimvars || hasPtex,
                                  blendWireframeColor,
                                  cullStyle,
                                  geomStyle,

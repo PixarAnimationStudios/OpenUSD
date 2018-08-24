@@ -44,6 +44,7 @@ struct HdSt_CullingShaderKey
     TfToken const *GetTES() const { return NULL; }
     TfToken const *GetGS() const  { return NULL; }
     TfToken const *GetFS() const  { return NULL; }
+
     bool IsCullingPass() const { return true; }
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
         return HdSt_GeometricShader::PrimitiveType::PRIM_POINTS; 
@@ -51,7 +52,6 @@ struct HdSt_CullingShaderKey
     HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
     HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
     float GetLineWidth() const { return 0; }
-    bool IsFaceVarying() const { return false; }
 
     TfToken glslfx;
     TfToken VS[6];

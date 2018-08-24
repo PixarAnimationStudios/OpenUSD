@@ -56,11 +56,11 @@ struct HdStShaderKey {
                            key.GetTES(),
                            key.GetGS(),
                            key.GetFS(),
-                           static_cast<int16_t> (key.GetPrimitiveType()), // class enum type
+                           static_cast<int16_t> (key.GetPrimitiveType()), 
                            key.GetCullStyle(),
                            key.GetPolygonMode(),
                            key.IsCullingPass(),
-                           key.IsFaceVarying());
+                           key.GetLineWidth());
     }
 
     HDST_API
@@ -74,7 +74,7 @@ struct HdStShaderKey {
                           HdCullStyle cullStyle,
                           HdPolygonMode polygonMode,
                           bool isCullingPass,
-                          bool IsFaceVarying);
+                          float lineWidth);
 
     template <typename KEY>
     static std::string GetGLSLFXString(KEY const &key) {

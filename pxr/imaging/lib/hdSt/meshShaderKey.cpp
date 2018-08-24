@@ -118,7 +118,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     NormalSource normalsSource,
     HdInterpolation normalsInterpolation,
     bool doubleSided,
-    bool faceVarying,
+    bool forceGeometryShader,
     bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
@@ -130,7 +130,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
     , lineWidth(lineWidth)
-    , isFaceVarying(faceVarying)
     , glslfx(_tokens->baseGLSLFX)
 {
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
@@ -233,7 +232,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             && (normalsSource != NormalSourceFlat)
             && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
             && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
-            && (!isFaceVarying)) {
+            && (!forceGeometryShader)) {
             
         GS[0] = TfToken();
     }

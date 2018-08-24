@@ -49,7 +49,7 @@ struct HdSt_MeshShaderKey
                        NormalSource normalsSource,
                        HdInterpolation normalsInterpolation,
                        bool doubleSided,
-                       bool faceVarying,
+                       bool forceGeometryShader,
                        bool blendWireframeColor,
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
@@ -65,12 +65,6 @@ struct HdSt_MeshShaderKey
     // avoids the issue.
     ~HdSt_MeshShaderKey();
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return TCS; }
-    TfToken const *GetTES() const { return TES; }
-    TfToken const *GetGS() const  { return GS; }
-    TfToken const *GetFS() const  { return FS; }
     bool IsCullingPass() const { return false; }
     HdCullStyle GetCullStyle() const { return cullStyle; }
     HdPolygonMode GetPolygonMode() const { return polygonMode; }
@@ -78,13 +72,19 @@ struct HdSt_MeshShaderKey
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const {
         return primType; 
     }
-    bool IsFaceVarying() const {return isFaceVarying;}
 
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
     HdPolygonMode polygonMode;
     float lineWidth;
-    bool isFaceVarying;
+
+    TfToken const &GetGlslfxFile() const { return glslfx; }
+    TfToken const *GetVS() const  { return VS; }
+    TfToken const *GetTCS() const { return TCS; }
+    TfToken const *GetTES() const { return TES; }
+    TfToken const *GetGS() const  { return GS; }
+    TfToken const *GetFS() const  { return FS; }
+
     TfToken glslfx;
     TfToken VS[7];
     TfToken TCS[3];
