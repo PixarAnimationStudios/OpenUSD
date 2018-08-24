@@ -79,6 +79,16 @@ public:
     NDR_API
     void SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins);
 
+    /// Allows the client to set any additional discovery plugins that would
+    /// otherwise NOT be found through the plugin system. Runs the discovery
+    /// process for the specified plugins immediately.
+    ///
+    /// Note that this method cannot be called after any nodes in the registry
+    /// have been parsed (eg, through GetNode*()), otherwise an error will
+    /// result.
+    NDR_API
+    void SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes);
+
     /// Parses the given \p asset, constucts a NdrNode from it and adds it to 
     /// the registry. 
     /// 

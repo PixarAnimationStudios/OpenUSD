@@ -247,6 +247,35 @@ NdrRegistry::SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins)
     _RunDiscoveryPlugins(plugins);
 }
 
+void
+NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
+{
+    // Validate the types and remove duplicates.
+    std::set<TfType> discoveryPluginTypes;
+    auto& discoveryPluginType = TfType::Find<NdrDiscoveryPlugin>();
+    for (auto&& type: pluginTypes) {
+        if (!TF_VERIFY(type.IsA(discoveryPluginType),
+                       "Type %s is not a %s",
+                       type.GetTypeName().c_str(),
+                       discoveryPluginType.GetTypeName().c_str())) {
+            return;
+        }
+        discoveryPluginTypes.insert(type);
+    }
+
+    // Instantiate any discovery plugins that were found
+    DiscoveryPluginPtrVec discoveryPlugins;
+    for (const TfType& discoveryPluginType : discoveryPluginTypes) {
+        NdrDiscoveryPluginFactoryBase* pluginFactory =
+            discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
+
+        discoveryPlugins.emplace_back(pluginFactory->New());
+    }
+
+    // Add the discovery plugins.
+    SetExtraDiscoveryPlugins(std::move(discoveryPlugins));
+}
+
 NdrNodeConstPtr 
 NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
                               const NdrTokenMap &metadata)

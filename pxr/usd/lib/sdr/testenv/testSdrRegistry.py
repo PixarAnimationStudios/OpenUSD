@@ -44,18 +44,29 @@ class TestShaderNode(unittest.TestCase):
         pr = Plug.Registry()
         plugins = pr.RegisterPlugins(testPluginsDsoSearch)
 
+        # Verify the test plugins have been found.  When building monolithic
+        # we should find at least these derived types.
         self.assertEqual(len(plugins), 1)
-        self.assertEqual(set(pr.GetAllDerivedTypes('NdrDiscoveryPlugin')),
-                         set([Tf.Type.FindByName('_NdrFilesystemDiscoveryPlugin'),
-                              Tf.Type.FindByName('_NdrTestDiscoveryPlugin')]))
-        self.assertEqual(set(pr.GetAllDerivedTypes('NdrParserPlugin')),
-                         set([Tf.Type.FindByName('_NdrArgsTestParserPlugin'),
-                              Tf.Type.FindByName('_NdrOslTestParserPlugin')]))
+        fsdpType = Tf.Type.FindByName('_NdrFilesystemDiscoveryPlugin')
+        tdpType  = Tf.Type.FindByName('_NdrTestDiscoveryPlugin')
+        self.assertEqual(set([fsdpType, tdpType]) -
+                         set(pr.GetAllDerivedTypes('NdrDiscoveryPlugin')),
+                         set())
+        self.assertEqual(set([Tf.Type.FindByName('_NdrArgsTestParserPlugin'),
+                              Tf.Type.FindByName('_NdrOslTestParserPlugin')]) -
+                         set(pr.GetAllDerivedTypes('NdrParserPlugin')),
+                         set())
 
-        # Instantiating the registry will kick off the discovery process
+        # Instantiating the registry will kick off the discovery process.
+        # Don't do the usual discovery plugin search in case this is a
+        # monolithic build.  That will find any built-in plugins and
+        # this test isn't expecting that.  Instead we'll list the plugins
+        # we want explicitly.
+        os.environ["PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
         reg = Sdr.Registry()
-        nodes = reg.GetShaderNodesByFamily()
+        reg.SetExtraDiscoveryPlugins([fsdpType, tdpType])
 
+        nodes = reg.GetShaderNodesByFamily()
         assert len(nodes) == 4
         assert reg.GetSearchURIs() == ["/TestSearchPath"]
         assert set(reg.GetNodeNames()) == {
