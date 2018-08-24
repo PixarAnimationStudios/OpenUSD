@@ -204,11 +204,12 @@ HdStGLConversions::GetWrap(HdWrap wrap)
         case HdWrapRepeat : return GL_REPEAT;
         case HdWrapBlack : return GL_CLAMP_TO_BORDER;
         case HdWrapMirror : return GL_MIRRORED_REPEAT;
-        case HdWrapUseMetaDict : return GL_REPEAT;
+        case HdWrapUseMetadata : return GL_CLAMP_TO_BORDER;
+        case HdWrapLegacy : return GL_REPEAT;
     }
 
     TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);
-    return GL_REPEAT;
+    return GL_CLAMP_TO_BORDER;
 }
 
 void

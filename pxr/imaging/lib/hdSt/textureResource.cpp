@@ -140,12 +140,12 @@ GLuint HdStSimpleTextureResource::GetTexelsSamplerId()
         if (_texture) {
             VtDictionary txInfo = _texture->GetTextureInfo(true);
 
-            if (_wrapS == HdWrapUseMetaDict &&
+            if ((_wrapS == HdWrapUseMetadata || _wrapS == HdWrapLegacy) &&
                 VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeS")) {
                 fwrapS = VtDictionaryGet<GLuint>(txInfo, "wrapModeS");
             }
 
-            if (_wrapT == HdWrapUseMetaDict &&
+            if ((_wrapT == HdWrapUseMetadata || _wrapT == HdWrapLegacy) &&
                 VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeT")) {
                 fwrapT = VtDictionaryGet<GLuint>(txInfo, "wrapModeT");
             }
