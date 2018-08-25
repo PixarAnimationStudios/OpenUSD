@@ -25,6 +25,7 @@
 #include "context.h"
 
 #include "UT_Gf.h"
+#include "UT_Version.h"
 #include "GT_VtArray.h"
 #include "USD_XformCache.h"
 #include "GU_USD.h"
@@ -763,6 +764,20 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
 
         return new GT_Real64Array( usdVal.data(), 1, 3, GT_TYPE_COLOR );
     }
+    else if( typeName == SdfValueTypeNames->Color4f )
+    {
+        GfVec4f usdVal;
+        primvar.Get( &usdVal, time );
+
+        return new GT_Real32Array( usdVal.data(), 1, 4, GT_TYPE_COLOR );
+    }
+    else if( typeName == SdfValueTypeNames->Color4d )
+    {
+        GfVec4d usdVal;
+        primvar.Get( &usdVal, time );
+
+        return new GT_Real64Array( usdVal.data(), 1, 4, GT_TYPE_COLOR );
+    }
     else if( typeName == SdfValueTypeNames->Normal3f )
     {
         GfVec3f usdVal;
@@ -876,6 +891,12 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
         primvar.ComputeFlattened( &usdVal, time );
         return new GusdGT_VtArray<double>(usdVal);
     }
+    else if( typeName == SdfValueTypeNames->Half2Array )
+    {
+        VtArray<GfVec2h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec2h>(usdVal);
+    }
     else if( typeName == SdfValueTypeNames->Float2Array )
     {
         VtArray<GfVec2f> usdVal;
@@ -887,6 +908,22 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
         VtArray<GfVec2d> usdVal;
         primvar.ComputeFlattened( &usdVal, time );
         return new GusdGT_VtArray<GfVec2d>(usdVal);
+    }
+    else if( typeName == SdfValueTypeNames->TexCoord2fArray )
+    {
+        VtArray<GfVec2f> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+#if (GUSD_VER_CMP_2(>=, 16, 5))
+        return new GusdGT_VtArray<GfVec2f>(usdVal, GT_TYPE_TEXTURE);
+#else
+        return new GusdGT_VtArray<GfVec2f>(usdVal, GT_TYPE_NONE);
+#endif
+    }
+    else if( typeName == SdfValueTypeNames->Half3Array )
+    {
+        VtArray<GfVec3h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec3h>(usdVal);
     }
     else if( typeName == SdfValueTypeNames->Float3Array )
     {
@@ -900,17 +937,29 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
         primvar.ComputeFlattened( &usdVal, time );
         return new GusdGT_VtArray<GfVec3d>(usdVal);
     }
+    else if( typeName == SdfValueTypeNames->Color3hArray )
+    {
+        VtArray<GfVec3h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec3h>(usdVal, GT_TYPE_COLOR);
+    }
     else if( typeName == SdfValueTypeNames->Color3fArray )
     {
         VtArray<GfVec3f> usdVal;
         primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3f>(usdVal,GT_TYPE_COLOR);
+        return new GusdGT_VtArray<GfVec3f>(usdVal, GT_TYPE_COLOR);
     }
     else if( typeName == SdfValueTypeNames->Color3dArray )
     {
         VtArray<GfVec3d> usdVal;
         primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3d>(usdVal,GT_TYPE_COLOR);
+        return new GusdGT_VtArray<GfVec3d>(usdVal, GT_TYPE_COLOR);
+    }
+    else if( typeName == SdfValueTypeNames->Vector3hArray )
+    {
+        VtArray<GfVec3h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec3h>(usdVal, GT_TYPE_VECTOR);
     }
     else if( typeName == SdfValueTypeNames->Vector3fArray )
     {
@@ -948,6 +997,16 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
         primvar.ComputeFlattened( &usdVal, time );
         return new GusdGT_VtArray<GfVec3d>(usdVal, GT_TYPE_POINT);
     }
+    else if( typeName == SdfValueTypeNames->TexCoord3fArray )
+    {
+        VtArray<GfVec3f> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+#if (GUSD_VER_CMP_2(>=, 16, 5))
+        return new GusdGT_VtArray<GfVec3f>(usdVal, GT_TYPE_TEXTURE);
+#else
+        return new GusdGT_VtArray<GfVec3f>(usdVal, GT_TYPE_NONE);
+#endif
+    }
     else if( typeName == SdfValueTypeNames->Float4Array )
     {
         VtArray<GfVec4f> usdVal;
@@ -959,6 +1018,30 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
         VtArray<GfVec4d> usdVal;
         primvar.ComputeFlattened( &usdVal, time );
         return new GusdGT_VtArray<GfVec4d>(usdVal);
+    }
+    else if( typeName == SdfValueTypeNames->Half4Array )
+    {
+        VtArray<GfVec4h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec4h>(usdVal);
+    }
+    else if( typeName == SdfValueTypeNames->Color4hArray )
+    {
+        VtArray<GfVec4h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec4h>(usdVal, GT_TYPE_COLOR);
+    }
+    else if( typeName == SdfValueTypeNames->Color4fArray )
+    {
+        VtArray<GfVec4f> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec4f>(usdVal, GT_TYPE_COLOR);
+    }
+    else if( typeName == SdfValueTypeNames->QuathArray )
+    {
+        VtArray<GfVec4h> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<GfVec4h>(usdVal, GT_TYPE_QUATERNION);
     }
     else if( typeName == SdfValueTypeNames->QuatfArray )
     {

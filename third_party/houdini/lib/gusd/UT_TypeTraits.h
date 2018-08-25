@@ -85,8 +85,12 @@ public:
 
 
 /* Declare traits on core types.    
-   TODO: Do we care about fpreal16 and fpreal?
-   Wait until somebody needs them...*/
+   TODO: Do we care about fpreal?
+   Wait until somebody needs it...*/
+GUSDUT_DECLARE_POD_TUPLE(UT_Vector2H, fpreal16, 2);
+GUSDUT_DECLARE_POD_TUPLE(UT_Vector3H, fpreal16, 3);
+GUSDUT_DECLARE_POD_TUPLE(UT_Vector4H, fpreal16, 4);
+
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector2F, fpreal32, 2);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector3F, fpreal32, 3);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector4F, fpreal32, 4);
