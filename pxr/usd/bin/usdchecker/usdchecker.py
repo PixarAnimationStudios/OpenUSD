@@ -88,24 +88,26 @@ def main():
     inputFile = args.inputFile
     outFile = args.outFile
     
-    if args.dumpRules:
-        UsdUtils.ComplianceChecker.DumpRules(arkit=args.arkit)
-
-    checker = UsdUtils.ComplianceChecker(inputFile, arkit=args.arkit, 
+    checker = UsdUtils.ComplianceChecker(arkit=args.arkit, 
             skipARKitRootLayerCheck=False, rootPackageOnly=args.rootPackageOnly, 
             skipVariants=args.skipVariants, verbose=args.verbose)
+
+    if args.dumpRules:
+        checker.DumpRules()
+
+    checker.CheckCompliance(inputFile)
 
     errors = checker.GetErrors()
     failedChecks = checker.GetFailedChecks()
     
     if len(errors)> 0 or len(failedChecks) > 0:
-        print "Failed!"
         with _Stream(outFile, 'w') as ofp:
             for msg in errors + failedChecks:
                 # Add color if we're outputting to a terminal.
                 if outFile == '-':
                     msg = TermColors.FAIL + msg  + TermColors.END
                 _Print(ofp, msg)
+        print "Failed!"
         return 1
 
     print "Success!"

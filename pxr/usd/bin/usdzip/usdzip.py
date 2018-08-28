@@ -45,12 +45,12 @@ def _Err(msg):
     sys.stderr.write(msg + '\n')
 
 def _CheckCompliance(rootLayer, arkit=False):
-    checker = UsdUtils.ComplianceChecker(rootLayer, arkit=arkit, 
+    checker = UsdUtils.ComplianceChecker(arkit=arkit, 
         # We're going to flatten the USD stage and convert the root layer to 
         # crate file format before packaging, if necessary. Hence, skip these 
         # checks.
         skipARKitRootLayerCheck=True)
-    
+    checker.CheckCompliance(rootLayer)
     errors = checker.GetErrors()
     failedChecks = checker.GetFailedChecks()
     for msg in errors + failedChecks:

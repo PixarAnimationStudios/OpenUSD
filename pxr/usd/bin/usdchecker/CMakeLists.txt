@@ -140,7 +140,7 @@ pxr_register_test(testUsdChecker11
 
 pxr_register_test(testUsdChecker12
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/badShaderUnsupportedTexture.usd"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/badShaderUnsupportedTexture.usdc"
     EXPECTED_RETURN_CODE 1
 )
 

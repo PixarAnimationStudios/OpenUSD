@@ -44,6 +44,11 @@ if __name__ == '__main__':
                         dest='rename')
     parser.add_argument('--arkit', dest='arkit', action='store_true')
     parser.add_argument('--check', dest='check', action='store_true')
+    parser.add_argument('--numFailedChecks', dest='numFailedChecks', default=0,
+                        type=int, action='store')
+    parser.add_argument('--numErrors', dest='numErrors', default=0,
+                        type=int, action='store')
+
     args = parser.parse_args()
 
     context = Ar.GetResolver().CreateDefaultContextForAsset(args.assetPath)
@@ -65,11 +70,19 @@ if __name__ == '__main__':
 
     # Validate that the usdz file can be opened on a stage.
     stage = Usd.Stage.Open(args.usdzFile)
-    assert(stage)
+    assert stage
 
     if args.check:
         rootLayerPath = stage.GetRootLayer().realPath
         context = Ar.GetResolver().CreateDefaultContextForAsset(rootLayerPath)
         with Ar.ResolverContextBinder(context):
-            checker = UsdUtils.ComplianceChecker(args.usdzFile, 
-                    arkit=args.arkit)
+            checker = UsdUtils.ComplianceChecker(arkit=args.arkit, verbose=True)
+            checker.CheckCompliance(args.usdzFile)
+            failedChecks = checker.GetFailedChecks()
+            errors = checker.GetErrors()
+            for msg in failedChecks + errors:
+                print >>sys.stderr, msg
+            assert args.numFailedChecks == len(failedChecks)
+            assert args.numErrors == len(errors)
+
+    sys.exit(0)

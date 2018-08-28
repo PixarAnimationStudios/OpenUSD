@@ -1,6 +1,7 @@
 #usda 1.0
 (
     baseAsset = @base_a.usd@
+    upAxis = "Y"
 )
 
 def "foo" (

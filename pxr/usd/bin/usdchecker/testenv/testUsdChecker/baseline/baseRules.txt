@@ -1,0 +1,7 @@
+Checking rules: 
+[1] Files within a usdz package must be laid out properly, i.e. they should be aligned to 64 bytes.
+[2] Files withing a usdz package should not be compressed or encrypted.
+[3] The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver. 
+[4] Texture files should be .jpg or .png.
+------------------------------
+Success!
