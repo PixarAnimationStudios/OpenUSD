@@ -30,30 +30,33 @@
 # back to the original source location.
 import os, sys
 
-if len(sys.argv) != 3:
-    print ("Usage: {0} src dst".format(sys.argv[0]))
-    sys.exit(1)
+def main():
+    if len(sys.argv) != 3:
+        print ("Usage: {0} src dst".format(sys.argv[0]))
+        return 1
 
-srcFile = sys.argv[1]
-dstFile = sys.argv[2]
+    srcFile = sys.argv[1]
+    dstFile = sys.argv[2]
 
-# Create the destination directory if it doesn't already exist.
-# Ignore errors from os.makedirs, since multiple processes may
-# all be trying to create the same directory.
-dstDir = os.path.dirname(dstFile)
-try:
-    os.makedirs(dstDir)
-except os.error:
-    pass
+    # Create the destination directory if it doesn't already exist.
+    # Ignore errors from os.makedirs, since multiple processes may
+    # all be trying to create the same directory.
+    dstDir = os.path.dirname(dstFile)
+    try:
+        os.makedirs(dstDir)
+    except os.error:
+        pass
 
-if not os.path.isdir(dstDir):
-    print ("ERROR: Destination directory {0} was not created for {1}"
-           .format(dstDir, os.path.basename(dstFile)))
-    sys.exit(1)
+    if not os.path.isdir(dstDir):
+        print ("ERROR: Destination directory {0} was not created for {1}"
+               .format(dstDir, os.path.basename(dstFile)))
+        return 1
 
-# Copy source file to destination, prepending '#line' directive.
-with open(srcFile, 'r') as s:
-    with open(dstFile, 'w') as d:
-        d.write('#line 1 "{0}"\n'.format(srcFile))
-        for line in s:
-            d.write(line)
+    # Copy source file to destination, prepending '#line' directive.
+    with open(srcFile, 'r') as s:
+        with open(dstFile, 'w') as d:
+            d.write('#line 1 "{0}"\n'.format(srcFile))
+            d.write(s.read())
+
+if __name__ == '__main__':
+    sys.exit(main())
