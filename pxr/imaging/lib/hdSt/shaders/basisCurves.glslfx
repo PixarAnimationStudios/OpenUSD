@@ -514,9 +514,9 @@ void evaluate(float u, float v, out vec4 position, out vec4 tangent,
     float w0 = HdGet_widths(0);
     float w1 = HdGet_widths(1);
 
-    position = p0 * (1.0 - u) + p1 * u;
+    position = p0 * u +  p1 * (1.0 - u);
     tangent = normalize(p1 - p0);
-    width = w0 * (1.0 - u) + w1 * u;
+    width = w0 * u + w1 * (1.0 - u);
     normal = normalize(evaluateNormal(u));
 }
 
