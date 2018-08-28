@@ -101,11 +101,14 @@ protected:
 
     bool _UseSmoothNormals(HdSt_MeshTopologySharedPtr const& topology) const;
 
+    bool _UseFlatNormals(const HdMeshReprDesc &desc) const;
+
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
-                         HdMeshReprDesc desc,
-                         bool requireSmoothNormals);
+                         const HdMeshReprDesc &desc,
+                         bool requireSmoothNormals,
+                         bool requireFlatNormals);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdStDrawItem *drawItem,
@@ -115,30 +118,35 @@ protected:
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
-                           HdMeshReprDesc desc);
+                           const HdMeshReprDesc &desc);
 
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
-                                 bool requireSmoothNormals);
+                                 bool requireSmoothNormals,
+                                 HdBufferSourceSharedPtr *outPoints);
 
     void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                       HdStDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
-                                      HdMeshReprDesc desc);
+                                      const HdMeshReprDesc &desc);
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
-                                  HdDirtyBits *dirtyBits);
+                                  HdDirtyBits *dirtyBits,
+                                  bool requireFlatNormals,
+                                  HdBufferSourceSharedPtr const &points);
 
-    int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
+    int _GetRefineLevelForDesc(const HdMeshReprDesc &desc) const;
 
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     virtual void _InitRepr(HdReprSelector const &reprToken,
                            HdDirtyBits *dirtyBits) override;
+
+    HdType _GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const;
 
 private:
     enum DrawingCoord {
@@ -149,7 +157,8 @@ private:
 
     enum DirtyBits : HdDirtyBits {
         DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
-        DirtyIndices        = (DirtySmoothNormals << 1),
+        DirtyFlatNormals    = (DirtySmoothNormals << 1),
+        DirtyIndices        = (DirtyFlatNormals   << 1),
         DirtyHullIndices    = (DirtyIndices       << 1),
         DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
@@ -171,6 +180,7 @@ private:
     bool _packedSmoothNormals : 1;
     bool _limitNormals : 1;
     bool _sceneNormals : 1;
+    bool _flatNormals : 1;
     bool _pointsVisibilityAuthored : 1;
 };
 

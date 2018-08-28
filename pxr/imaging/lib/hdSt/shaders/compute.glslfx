@@ -32,34 +32,72 @@
     "techniques": {
         "default": {
             "smoothNormalsFloatToFloat": {
-                "source": [ "Compute.SmoothNormalsSrcFloat",
-                            "Compute.SmoothNormalsDstFloat",
-                            "Compute.SmoothNormals" ]
-            },
-            "smoothNormalsDoubleToFloat": {
-                "source": [ "Compute.SmoothNormalsSrcDouble",
-                            "Compute.SmoothNormalsDstFloat",
-                            "Compute.SmoothNormals" ]
-            },
-            "smoothNormalsFloatToDouble": {
-                "source": [ "Compute.SmoothNormalsSrcFloat",
-                            "Compute.SmoothNormalsDstDouble",
+                "source": [ "Compute.NormalsSrcFloat",
+                            "Compute.NormalsDstFloat",
                             "Compute.SmoothNormals" ]
             },
             "smoothNormalsDoubleToDouble": {
-                "source": [ "Compute.SmoothNormalsSrcDouble",
-                            "Compute.SmoothNormalsDstDouble",
+                "source": [ "Compute.NormalsSrcDouble",
+                            "Compute.NormalsDstDouble",
                             "Compute.SmoothNormals" ]
             },
             "smoothNormalsFloatToPacked": {
-                "source": [ "Compute.SmoothNormalsSrcFloat",
-                            "Compute.SmoothNormalsDstPacked",
+                "source": [ "Compute.NormalsSrcFloat",
+                            "Compute.NormalsDstPacked",
                             "Compute.SmoothNormals" ]
             },
             "smoothNormalsDoubleToPacked": {
-                "source": [ "Compute.SmoothNormalsSrcDouble",
-                            "Compute.SmoothNormalsDstPacked",
+                "source": [ "Compute.NormalsSrcDouble",
+                            "Compute.NormalsDstPacked",
                             "Compute.SmoothNormals" ]
+            },
+            "flatNormalsTriFloatToFloat": {
+                "source": [ "Compute.NormalsSrcFloat",
+                            "Compute.NormalsDstFloat",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsTri" ]
+            },
+            "flatNormalsTriDoubleToDouble": {
+                "source": [ "Compute.NormalsSrcDouble",
+                            "Compute.NormalsDstDouble",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsTri" ]
+            },
+            "flatNormalsTriFloatToPacked": {
+                "source": [ "Compute.NormalsSrcFloat",
+                            "Compute.NormalsDstPacked",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsTri" ]
+            },
+            "flatNormalsTriDoubleToPacked": {
+                "source": [ "Compute.NormalsSrcDouble",
+                            "Compute.NormalsDstPacked",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsTri" ]
+            },
+            "flatNormalsQuadFloatToFloat": {
+                "source": [ "Compute.NormalsSrcFloat",
+                            "Compute.NormalsDstFloat",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsQuad" ]
+            },
+            "flatNormalsQuadDoubleToDouble": {
+                "source": [ "Compute.NormalsSrcDouble",
+                            "Compute.NormalsDstDouble",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsQuad" ]
+            },
+            "flatNormalsQuadFloatToPacked": {
+                "source": [ "Compute.NormalsSrcFloat",
+                            "Compute.NormalsDstPacked",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsQuad" ]
+            },
+            "flatNormalsQuadDoubleToPacked": {
+                "source": [ "Compute.NormalsSrcDouble",
+                            "Compute.NormalsDstPacked",
+                            "Compute.FlatNormals",
+                            "Compute.FlatNormalsQuad" ]
             },
             "quadrangulateFloat": {
                 "source": [ "Compute.QuadrangulateFloat",
@@ -74,19 +112,27 @@
 }
 
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsSrcFloat
+-- glsl Compute.NormalsSrcFloat
 
 layout(std430, binding=0) buffer Points { float points[]; };
-layout(std430, binding=2) buffer Adjacency { int entry[]; };
-
+vec3 getPoint(int index)
+{
+    return vec3(points[index],
+                points[index + 1],
+                points[index + 2]);
+}
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsSrcDouble
+-- glsl Compute.NormalsSrcDouble
 
 layout(std430, binding=0) buffer Points { double points[]; };
-layout(std430, binding=2) buffer Adjacency { int entry[]; };
-
+vec3 getPoint(int index)
+{
+    return vec3(points[index],
+                points[index + 1],
+                points[index + 2]);
+}
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsDstFloat
+-- glsl Compute.NormalsDstFloat
 
 layout(std430, binding=1) buffer Normals { float normals[]; };
 void writeNormal(int nIndex, vec3 normal)
@@ -96,7 +142,7 @@ void writeNormal(int nIndex, vec3 normal)
     normals[nIndex+2] = normal.z;
 }
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsDstDouble
+-- glsl Compute.NormalsDstDouble
 
 layout(std430, binding=1) buffer Normals { double normals[]; };
 void writeNormal(int nIndex, vec3 normal)
@@ -106,7 +152,7 @@ void writeNormal(int nIndex, vec3 normal)
     normals[nIndex+2] = normal.z;
 }
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsDstPacked
+-- glsl Compute.NormalsDstPacked
 
 layout(std430, binding=1) buffer Normals { int normals[]; };
 void writeNormal(int nIndex, vec3 normal)
@@ -120,6 +166,8 @@ void writeNormal(int nIndex, vec3 normal)
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormals
 
+layout(std430, binding=2) buffer Adjacency { int entry[]; };
+
 layout(std140, binding=0) uniform Uniform {
    int vertexOffset;       // offset in aggregated buffer
    int adjacencyOffset;
@@ -130,14 +178,14 @@ layout(std140, binding=0) uniform Uniform {
 };
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
-vec3 getPoint(int index)
+int getPointsIndex(int idx)
 {
-    int offsetIdx = (index+vertexOffset);
-    int pointsIdx = offsetIdx * pointsStride + pointsOffset;
-    
-    return vec3(points[pointsIdx],
-                points[pointsIdx + 1],
-                points[pointsIdx + 2]);
+    return (idx+vertexOffset)*pointsStride + pointsOffset;
+}
+
+int getNormalsIndex(int idx)
+{
+    return (idx+vertexOffset)*normalsStride + normalsOffset;
 }
 
 void main()
@@ -151,22 +199,151 @@ void main()
 
     vec3 normal = vec3(0);
 
-    vec3 current = getPoint(index);
+    vec3 current = getPoint(getPointsIndex(index));
     for (int i = 0; i < valence; ++i) {
         int entryIdx = i * 2 + offset;
     
         int prevIdx = entry[entryIdx];
         int nextIdx = entry[entryIdx + 1];
     
-        vec3 next = getPoint(nextIdx);
-        vec3 prev = getPoint(prevIdx); 
+        vec3 next = getPoint(getPointsIndex(nextIdx));
+        vec3 prev = getPoint(getPointsIndex(prevIdx));
         normal += cross(next - current, prev - current);
         
     }
     float n = 1.0/max(length(normal), 0.000001);
     normal *= n;
-    int nIndex = (index+vertexOffset)*normalsStride + normalsOffset;
-    writeNormal(nIndex, normal);
+    writeNormal(getNormalsIndex(index), normal);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Compute.FlatNormals
+
+layout(std430, binding=2) buffer Indices { int indices[]; };
+layout(std430, binding=3) buffer PrimitiveParam { int primitiveParam[]; };
+
+layout(std140, binding=0) uniform Uniform {
+   int vertexOffset;       // offset in aggregated buffer
+   int elementOffset;      // offset in aggregated buffer
+   int topologyOffset;     // offset in aggregated buffer
+   int pointsOffset;       // interleave offset
+   int pointsStride;       // interleave stride
+   int normalsOffset;      // interleave offset
+   int normalsStride;      // interleave stride
+   int indexOffset;        // interleave offset
+   int indexStride;        // interleave stride
+   int pParamOffset;       // interleave offset
+   int pParamStride;       // interleave stride
+};
+layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
+
+int getPointsIndex(int idx)
+{
+    return (idx+vertexOffset)*pointsStride + pointsOffset;
+}
+
+int getNormalsIndex(int idx)
+{
+    return (idx+elementOffset)*normalsStride + normalsOffset;
+}
+
+int getIndicesIndex(int idx)
+{
+    return (idx+topologyOffset)*indexStride + indexOffset;
+}
+
+int getPrimitiveParamIndex(int idx)
+{
+    return (idx+topologyOffset)*pParamStride + pParamOffset;
+}
+
+int getEdgeFlag(int pParam)
+{
+    return pParam & 3;
+}
+
+int getFaceIndex(int pParam)
+{
+    return pParam >> 2;
+}
+
+vec3 computeNormalForPrimIndex(int primIndex);
+
+void main()
+{
+    int primIndex = int(gl_GlobalInvocationID.x);
+    int pParam = primitiveParam[getPrimitiveParamIndex(primIndex)];
+    int edgeFlag = getEdgeFlag(pParam);
+    int faceIndex = getFaceIndex(pParam);
+    vec3 normal = vec3(0);
+
+    if (getEdgeFlag(pParam) == 0) {
+        // 0 indicates an unsplit face (as authored)
+        normal += computeNormalForPrimIndex(primIndex);
+
+    } else if (getEdgeFlag(pParam) == 1) {
+        // A subdivided face will have a run of prims with
+        // edge flags like: 1, 3, 3, 3, 2; where "3" denotes an interior
+        // prim. Only compute normals for the first prim in a face.
+
+        int primCounter = 0;
+        do {
+            pParam = primitiveParam[getPrimitiveParamIndex(
+                                    primIndex+primCounter)];
+            normal += computeNormalForPrimIndex(primIndex+primCounter);
+            primCounter++;
+        } while(getEdgeFlag(pParam) != 2);
+
+    } else {
+        return;
+    }
+    float n = 1.0/max(length(normal), 0.000001);
+    normal *= n;
+    writeNormal(getNormalsIndex(faceIndex), normal);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Compute.FlatNormalsTri
+
+ivec3 getIndices(int idx)
+{
+    return ivec3(indices[idx],
+                 indices[idx+1],
+                 indices[idx+2]);
+}
+
+vec3 computeNormalForPrimIndex(int primIndex)
+{
+    ivec3 indices = getIndices(getIndicesIndex(primIndex));
+
+    vec3 p0 = getPoint(getPointsIndex(indices.x));
+    vec3 p1 = getPoint(getPointsIndex(indices.y));
+    vec3 p2 = getPoint(getPointsIndex(indices.z));
+
+    return cross(p1-p0, p2-p0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Compute.FlatNormalsQuad
+
+ivec4 getIndices(int idx)
+{
+    return ivec4(indices[idx],
+                 indices[idx+1],
+                 indices[idx+2],
+                 indices[idx+3]);
+}
+
+vec3 computeNormalForPrimIndex(int primIndex)
+{
+    ivec4 indices = getIndices(getIndicesIndex(primIndex));
+
+    vec3 p0 = getPoint(getPointsIndex(indices.x));
+    vec3 p1 = getPoint(getPointsIndex(indices.y));
+    vec3 p2 = getPoint(getPointsIndex(indices.z));
+    vec3 p3 = getPoint(getPointsIndex(indices.w));
+
+    return cross(p0-p3, p2-p3) + cross(p2-p1, p0-p1);
 }
 
 --- --------------------------------------------------------------------------

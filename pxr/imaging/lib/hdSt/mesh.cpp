@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/flatNormals.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/instancer.h"
@@ -48,6 +49,7 @@
 
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hd/flatNormals.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/selection.h"
@@ -90,6 +92,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _packedSmoothNormals(IsEnabledPackedNormals())
     , _limitNormals(false)
     , _sceneNormals(false)
+    , _flatNormals(false)
     , _pointsVisibilityAuthored(false)
 {
     /*NOTHING*/
@@ -142,7 +145,7 @@ HdStMesh::IsEnabledPackedNormals()
 }
 
 int
-HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc) const
+HdStMesh::_GetRefineLevelForDesc(const HdMeshReprDesc &desc) const
 {
     if (desc.geomStyle == HdMeshGeomStyleHull         ||
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly ||
@@ -157,7 +160,7 @@ void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits,
-                            HdMeshReprDesc desc)
+                            const HdMeshReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -192,9 +195,21 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
         _flatShadingEnabled = displayStyle.flatShadingEnabled;
         _displacementEnabled = displayStyle.displacementEnabled;
-              
+
         HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
 
+        // If flat shading is enabled for this prim, make sure we're computing
+        // flat normals. It's ok to set the dirty bit here because it's a
+        // custom (non-scene) dirty bit, and DirtyTopology will propagate to
+        // DirtyPoints if we're computing CPU normals (since flat normals
+        // computation requires points data).
+        if (_flatShadingEnabled) {
+            if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
+                _customDirtyBitsInUse |= DirtyFlatNormals;
+                *dirtyBits |= DirtyFlatNormals;
+            }
+        }
+              
         // If the topology requires none subdivision scheme then force
         // refinement level to be 0 since we do not want subdivision.
         if (meshTopology.GetScheme() == PxOsdOpenSubdivTokens->none) {
@@ -552,7 +567,8 @@ void
 HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
-                                  bool requireSmoothNormals)
+                                  bool requireSmoothNormals,
+                                  HdBufferSourceSharedPtr *outPoints)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -586,7 +602,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     int numPoints = _topology ? _topology->GetNumPoints() : 0;
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
 
-    bool cpuSmoothNormals = (!HdStGLUtils::IsGpuComputeEnabled());
+    bool cpuNormals = (!HdStGLUtils::IsGpuComputeEnabled());
 
     // Don't call _GetRefineLevelForDesc(desc) instead of GetRefineLevel(). Why?
     //
@@ -803,7 +819,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         
         // The smooth normals computation uses the points primvar as a source.
         //
-        if (cpuSmoothNormals) {
+        if (cpuNormals) {
             // CPU smooth normals require the points source data
             // So it is expected to be dirty.  So if the
             // points variable is not set it means the points primvar is
@@ -833,72 +849,41 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 sources.push_back(normal);
             }
         } else {
-            // GPU smooth normals doesn't need to have an explicit dependency.
-            // The adjacency table should be committed before execution.
-
-            // GPU smooth normals also uses the points primvar as input.
-            // However, it might have already been copied to a GPU buffer
-            // resource in a previous Sync.
-            //
-            // However, we do need to determine the type of the points buffer
-            // so we either use the new points source or the GPU resource
-            // to determine the type.
-            //
-            // One gotcha, is that the topology might have changed, such that
-            // the GPU resource no-longer matches the topology.  Typically,
-            // the points primvar would be updated at the same time, but
-            // the new source might be invalid, so the GPU buffer didn't
-            // get updated.
-            //
-            // Therefore, the code needs to check that the gpu buffer is
-            // valid for the current topology before using it.
-
+            // If we don't have the buffer source, we can get the points
+            // data type from the bufferspec in the vertex bar. We need it
+            // so we know what type normals should be.
             HdType pointsDataType = HdTypeInvalid;
             if (points) {
                 pointsDataType = points->GetTupleType().type;
             } else {
-                if (HdBufferArrayRangeSharedPtr const &bar =
-                    drawItem->GetVertexPrimvarRange()) {
-                    if (bar->IsValid()) {
-                        HdStBufferArrayRangeGLSharedPtr bar_ =
-                            boost::static_pointer_cast<HdStBufferArrayRangeGL>
-                                                                          (bar);
-                        HdStBufferResourceGLSharedPtr pointsResource =
-                                            bar_->GetResource(HdTokens->points);
-                        if (pointsResource) {
-                            pointsDataType = pointsResource->GetTupleType().type;
-                        }
-                    }
-                }
+                pointsDataType = _GetPointsDataTypeFromBar(drawItem);
             }
 
             if (pointsDataType != HdTypeInvalid) {
-                // determine datatype. if we're updating points too, ask the
-                // buffer source. Otherwise (if we're updating just normals)
-                // ask delegate.
-                // This is very unfortunate. Can we force normals to be always
-                // float? (e.g. when switching flat -> smooth first time).
-                HdType normalsDataType =
-                    usePackedSmoothNormals ? HdTypeInt32_2_10_10_10_REV
-                    : pointsDataType;
-
+                // Smooth normals will compute normals as the same datatype
+                // as points, unless we ask for packed normals.
+                // This is unfortunate; can we force them to be float?
                 HdComputationSharedPtr smoothNormalsComputation(
                     new HdSt_SmoothNormalsComputationGPU(
                         _vertexAdjacency.get(),
                         HdTokens->points,
                         normalsName,
                         pointsDataType,
-                        normalsDataType));
+                        usePackedSmoothNormals));
                 computations.push_back(smoothNormalsComputation);
 
                 // note: we haven't had explicit dependency for GPU
                 // computations just yet. Currently they are executed
                 // sequentially, so the dependency is expressed by
                 // registering order.
+                //
+                // note: we can use "pointsDataType" as the normals data type
+                // because, if we decided to refine/quadrangulate, we will have
+                // forced unpacked normals.
                 if (doRefine) {
                     HdComputationSharedPtr computation =
                         _topology->GetOsdRefineComputationGPU(
-                            HdStTokens->smoothNormals, normalsDataType);
+                            HdStTokens->smoothNormals, pointsDataType);
 
                     // computation can be null for empty mesh
                     if (computation) {
@@ -908,7 +893,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     HdComputationSharedPtr computation =
                         _topology->GetQuadrangulateComputationGPU(
                             HdStTokens->smoothNormals,
-                            normalsDataType, GetId());
+                            pointsDataType, GetId());
 
                     // computation can be null for all-quad mesh
                     if (computation) {
@@ -918,6 +903,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
         }
     }
+
+    *outPoints = points;
 
     // return before allocation if it's empty.
     if (sources.empty() && computations.empty()) {
@@ -1037,6 +1024,14 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     _smoothNormals = useSmoothNormals;
     _packedSmoothNormals = usePackedSmoothNormals;
 
+    // if we've identified a "points" buffer, but sources is empty, this means
+    // we're using primvar sharing and not computing our own points. flat
+    // normals still needs the point data, so add it as a dependent source (i.e.
+    // not scheduled for upload to a bar).
+    if (points && sources.empty()) {
+        resourceRegistry->AddSource(points);
+    }
+
     // schedule buffer sources
     if (!sources.empty()) {
         // add sources to update queue
@@ -1045,14 +1040,14 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
     if (!computations.empty()) {
         // add gpu computations to queue.
-        TF_FOR_ALL(it, computations) {
+        for (auto const& comp : computations) {
             resourceRegistry->AddComputation(
-                drawItem->GetVertexPrimvarRange(), *it);
+                drawItem->GetVertexPrimvarRange(), comp);
         }
     }
     if (!separateComputationSources.empty()) {
-        TF_FOR_ALL(it, separateComputationSources) {
-            resourceRegistry->AddSource(*it);
+        for (auto const& src : separateComputationSources) {
+            resourceRegistry->AddSource(src);
         }
     }
 }
@@ -1061,7 +1056,7 @@ void
 HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                        HdStDrawItem *drawItem,
                                        HdDirtyBits *dirtyBits,
-                                       HdMeshReprDesc desc)
+                                       const HdMeshReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1153,7 +1148,9 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                    HdStDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits)
+                                   HdDirtyBits *dirtyBits,
+                                   bool requireFlatNormals,
+                                   HdBufferSourceSharedPtr const& points)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1197,26 +1194,151 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    HdComputationVector computations;
+    bool cpuNormals = (!HdStGLUtils::IsGpuComputeEnabled());
+    bool useFlatNormals = _flatNormals;
+
+    if (requireFlatNormals && (*dirtyBits & DirtyFlatNormals))
+    {
+        *dirtyBits &= ~DirtyFlatNormals;
+        TF_VERIFY(_topology);
+
+        useFlatNormals = true;
+
+        bool usePackedNormals = IsEnabledPackedNormals();
+        TfToken normalsName = usePackedNormals ?
+            HdStTokens->packedFlatNormals : HdStTokens->flatNormals;
+
+        // the flat normals computation uses the points primvar as a source.
+        if (cpuNormals) {
+            if (points) {
+                HdBufferSourceSharedPtr normal(
+                    new Hd_FlatNormalsComputation(
+                        _topology.get(),
+                        points, normalsName, usePackedNormals));
+                sources.push_back(normal);
+            }
+        } else {
+            // If we don't have the buffer source, we can get the points
+            // data type from the bufferspec in the vertex bar. We need it
+            // so we know what type normals should be.
+            HdType pointsDataType = HdTypeInvalid;
+            if (points) {
+                pointsDataType = points->GetTupleType().type;
+            } else {
+                pointsDataType = _GetPointsDataTypeFromBar(drawItem);
+            }
+
+            if (pointsDataType != HdTypeInvalid) {
+                // Flat normals will compute normals as the same datatype
+                // as points, unless we ask for packed normals.
+                // This is unfortunate; can we force them to be float?
+                HdComputationSharedPtr flatNormalsComputation(
+                    new HdSt_FlatNormalsComputationGPU(
+                        drawItem->GetTopologyRange(),
+                        drawItem->GetVertexPrimvarRange(),
+                        numFaces,
+                        HdTokens->points,
+                        normalsName,
+                        pointsDataType,
+                        usePackedNormals));
+                computations.push_back(flatNormalsComputation);
+            }
+        }
+    }
+
     // return before allocation if it's empty.
-    if (sources.empty()) return;
+    if (sources.empty() && computations.empty()) return;
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
 
     // element primvars exist.
     // allocate new bar if not exists
-    if (!drawItem->GetElementPrimvarRange()) {
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
+    HdBufferArrayRangeSharedPtr const &bar = drawItem->GetElementPrimvarRange();
+    if ((!bar) || (!bar->IsValid())) {
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primvar, bufferSpecs);
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
+    } else {
+        // already have a valid range, but the new repr may have added
+        // additional items (flat normals).
+        bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
+            (useFlatNormals != _flatNormals);
+
+        if (isNew) {
+            HdBufferArrayRangeSharedPtr range =
+                resourceRegistry->MergeNonUniformBufferArrayRange(
+                    HdTokens->primvar, bufferSpecs, bar);
+
+            // If buffer migration actually happens, the old buffer will no
+            // longer be needed, and GC is required to reclaim the memory.
+            // But we don't trigger GC here for now, since it ends up
+            // making all collections dirty which can be expensive.
+            if (range != bar) {
+                _sharedData.barContainer.Set(
+                    drawItem->GetDrawingCoord()->GetElementPrimvarIndex(),
+                    range);
+
+                // _GetRenderIndex().GetChangeTracker().
+                //     SetGarbageCollectionNeeded();
+
+                // set deep invalidation to rebuild draw batch
+                sceneDelegate->GetRenderIndex().GetChangeTracker().
+                    MarkShaderBindingsDirty();
+            }
+        }
     }
+
+    _flatNormals = useFlatNormals;
 
     TF_VERIFY(drawItem->GetElementPrimvarRange()->IsValid());
 
-    resourceRegistry->AddSources(
-        drawItem->GetElementPrimvarRange(), sources);
+    if (!sources.empty()) {
+        resourceRegistry->AddSources(
+            drawItem->GetElementPrimvarRange(), sources);
+    }
+    if (!computations.empty()) {
+        // add gpu computations to queue.
+        for (auto const& comp : computations) {
+            resourceRegistry->AddComputation(
+                drawItem->GetElementPrimvarRange(), comp);
+        }
+    }
+}
+
+HdType
+HdStMesh::_GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const
+{
+    // GPU normal computations can read points data out of the vertex bar,
+    // but they need to know the type to generate buffer layouts and to
+    // properly type the normal output.
+    //
+    // We can read the type data from the GPU resource, but one gotcha is that
+    // the topology might have changed, such that the GPU resource no longer
+    // matches the topology. Therefore, the code needs to check that the gpu
+    // buffer is valid for the current topology before using it.
+
+    HdType pointsDataType = HdTypeInvalid;
+
+    if (HdBufferArrayRangeSharedPtr const &bar =
+            drawItem->GetVertexPrimvarRange()) {
+        if (bar->IsValid()) {
+            HdStBufferArrayRangeGLSharedPtr bar_ =
+                boost::static_pointer_cast<HdStBufferArrayRangeGL>
+                (bar);
+            HdStBufferResourceGLSharedPtr pointsResource =
+                bar_->GetResource(HdTokens->points);
+            if (pointsResource) {
+                pointsDataType = pointsResource->GetTupleType().type;
+            }
+        }
+    }
+
+    return pointsDataType;
 }
 
 bool
@@ -1263,6 +1385,16 @@ HdStMesh::_UseSmoothNormals(HdSt_MeshTopologySharedPtr const& topology) const
     if (_flatShadingEnabled || _limitNormals ||
         topology->GetScheme() == PxOsdOpenSubdivTokens->none ||
         topology->GetScheme() == PxOsdOpenSubdivTokens->bilinear) {
+        return false;
+    }
+    return true;
+}
+
+bool
+HdStMesh::_UseFlatNormals(const HdMeshReprDesc &desc) const
+{
+    if (_GetRefineLevelForDesc(desc) > 0 ||
+        desc.geomStyle == HdMeshGeomStylePoints) {
         return false;
     }
     return true;
@@ -1326,8 +1458,9 @@ void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdStDrawItem *drawItem,
                           HdDirtyBits *dirtyBits,
-                          HdMeshReprDesc desc,
-                          bool requireSmoothNormals)
+                          const HdMeshReprDesc &desc,
+                          bool requireSmoothNormals,
+                          bool requireFlatNormals)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1360,10 +1493,30 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _cullStyle = GetCullStyle(sceneDelegate);
     }
 
-    // normal dirtiness will be cleared without computing/populating normals.
+    // If it's impossible for this mesh to use smooth normals, we can clear
+    // the dirty bit without computing them.  This is ok because the
+    // conditions that are checked (topology, display style) will forward their
+    // invalidation to smooth normals in PropagateDirtyBits.
     if (!_UseSmoothNormals(_topology)) {
         requireSmoothNormals = false;
         *dirtyBits &= ~DirtySmoothNormals;
+    }
+
+    // If the subdivision scheme is "none", disable flat normal generation.
+    if (_topology->GetScheme() == PxOsdOpenSubdivTokens->none) {
+        requireFlatNormals = false;
+        *dirtyBits &= ~DirtyFlatNormals;
+    }
+    // Flat shading is based on whether the repr wants flat shading (captured
+    // in the passed-in requireFlatNormals), whether the prim wants flat
+    // shading, and whether the repr desc allows it.
+    requireFlatNormals |= _flatShadingEnabled;
+    if (!_UseFlatNormals(desc)) {
+        requireFlatNormals = false;
+    }
+
+    if (requireSmoothNormals && !_vertexAdjacency) {
+        _PopulateAdjacency(resourceRegistry);
     }
 
     /* CONSTANT PRIMVARS */
@@ -1395,8 +1548,13 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    if (requireSmoothNormals && !_vertexAdjacency) {
-        _PopulateAdjacency(resourceRegistry);
+    HdBufferSourceSharedPtr points;
+
+    /* VERTEX PRIMVARS */
+    if ((*dirtyBits & HdChangeTracker::NewRepr) ||
+        (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id))) {
+        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits,
+                                requireSmoothNormals, &points);
     }
 
     /* FACEVARYING PRIMVARS */
@@ -1405,15 +1563,10 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* ELEMENT PRIMVARS */
-    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits);
-    }
-
-    /* VERTEX PRIMVARS */
-    if ((*dirtyBits & HdChangeTracker::NewRepr) ||
-        (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id))) {
-        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits,
-                                requireSmoothNormals);
+    if ((requireFlatNormals && (*dirtyBits & DirtyFlatNormals)) ||
+        HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits,
+                                 requireFlatNormals, points);
     }
 
     // When we have multiple drawitems for the same mesh we need to clean the
@@ -1471,6 +1624,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         _topology->GetScheme() != PxOsdOpenSubdivTokens->none &&
         _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear;
 
+    // Should the geometric shader expect computed flat normals for this mesh?
+    bool hasGeneratedFlatNormals = _UseFlatNormals(desc) &&
+        _topology->GetScheme() != PxOsdOpenSubdivTokens->none;
+
     // Has the draw style been forced to flat-shading?
     bool forceFlatShading =
         _flatShadingEnabled || desc.flatShadingEnabled;
@@ -1484,7 +1641,11 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     // Resolve normals source.
     HdSt_MeshShaderKey::NormalSource normalsSource;
     if (forceFlatShading) {
-        normalsSource = HdSt_MeshShaderKey::NormalSourceFlat;
+        if (hasGeneratedFlatNormals) {
+            normalsSource = HdSt_MeshShaderKey::NormalSourceFlat;
+        } else {
+            normalsSource = HdSt_MeshShaderKey::NormalSourceGeometryShader;
+        }
     } else if (_limitNormals) {
         normalsSource = HdSt_MeshShaderKey::NormalSourceLimit;
     } else if (hasGeneratedSmoothNormals) {
@@ -1492,9 +1653,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     } else if (_sceneNormals) {
         normalsSource = HdSt_MeshShaderKey::NormalSourceScene;
     } else {
-        // Flat-shading is the default, if nothing else is explicitly
-        // specified.
-        normalsSource = HdSt_MeshShaderKey::NormalSourceFlat;
+        normalsSource = HdSt_MeshShaderKey::NormalSourceGeometryShader;
     }
 
     // if the repr doesn't have an opinion about cullstyle, use the
@@ -1601,12 +1760,12 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
                 HdChangeTracker::DirtyTopology);
     }
 
-    // If points or topology changed, recompute smooth normals.
-    // Note: we latch on DirtyTopology here, since subdiv scheme affects whether
-    // smooth normals are computed or not.
+    // If points, display style, or topology changed, recompute normals.
     if (bits & (HdChangeTracker::DirtyPoints |
+                HdChangeTracker::DirtyDisplayStyle |
                 HdChangeTracker::DirtyTopology)) {
-        bits |= _customDirtyBitsInUse & DirtySmoothNormals;
+        bits |= _customDirtyBitsInUse &
+            (DirtySmoothNormals | DirtyFlatNormals);
     }
 
     // If the topology is dirty, recompute custom indices resources.
@@ -1617,11 +1776,12 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
                     DirtyPointsIndices);
     }
 
-    // If smooth Normals are dirty and we are doing CPU smooth normals
-    // then the smooth normals computation needs the Points primvar
-    // so mark Points as dirty, so that the scene delegate will provide
+    // If normals are dirty and we are doing CPU normals
+    // then the normals computation needs the points primvar
+    // so mark points as dirty, so that the scene delegate will provide
     // the data.
-    if ((bits & DirtySmoothNormals) && !HdStGLUtils::IsGpuComputeEnabled()) {
+    if ((bits & (DirtySmoothNormals | DirtyFlatNormals)) &&
+        !HdStGLUtils::IsGpuComputeEnabled()) {
         bits |= HdChangeTracker::DirtyPoints;
     }
 
@@ -1629,7 +1789,7 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 static
-size_t _GetNumDrawItemsForDesc(HdMeshReprDesc const& reprDesc)
+size_t _GetNumDrawItemsForDesc(const HdMeshReprDesc& reprDesc)
 {
     // By default, each repr desc item maps to 1 draw item
     size_t numDrawItems = 1;
@@ -1724,14 +1884,19 @@ HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
                     }
                 }
                 }
-
-                if (!desc.flatShadingEnabled) {
-                    if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
-                        _customDirtyBitsInUse |= DirtySmoothNormals;
-                        *dirtyBits |= DirtySmoothNormals;
-                    }
-                }
             } // for each draw item
+
+            if (desc.flatShadingEnabled) {
+                if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
+                    _customDirtyBitsInUse |= DirtyFlatNormals;
+                    *dirtyBits |= DirtyFlatNormals;
+                }
+            } else {
+                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
+                    _customDirtyBitsInUse |= DirtySmoothNormals;
+                    *dirtyBits |= DirtySmoothNormals;
+                }
+            }
         } // for each repr desc for the repr
     } // if new repr
 }
@@ -1773,19 +1938,23 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
     _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprSelector);
 
-    // iterate through all reprdescs for the current repr to figure out if any 
-    // of them requires smoothnormals
-    // if so we will calculate the normals once (clean the bits) and reuse them.
-    // This is important for modes like FeyRay which requires 2 draw items
-    // and one requires smooth normals but the other doesn't.
+    // Iterate through all reprdescs for the current repr to figure out if any 
+    // of them requires smooth normals or flat normals. If either (or both)
+    // are required, we will calculate them once and clean the bits.
     bool requireSmoothNormals = false;
+    bool requireFlatNormals =  false;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
-        if (!desc.flatShadingEnabled) {
+        if (desc.flatShadingEnabled) {
+            requireFlatNormals = true;
+        } else {
             requireSmoothNormals = true;
-            break;
         }
     }
+
+    // Determine if we should calculate flat normals: iterate thorugh all
+    // reprdescs for the current repr to see if any are flat shaded.
+    // and also consider topology and display style.
 
     // For each relevant draw item, update dirty buffer sources.
     int drawItemIndex = 0;
@@ -1800,7 +1969,7 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
-                        requireSmoothNormals);
+                        requireSmoothNormals, requireFlatNormals);
             } 
         }
     }
@@ -1825,9 +1994,9 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
         HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-        TF_FOR_ALL (it, _reprs) {
-            _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
-            HdReprSharedPtr repr = it->second;
+        for (auto const& reprPair : _reprs) {
+            _MeshReprConfig::DescArray descs = _GetReprDesc(reprPair.first);
+            HdReprSharedPtr repr = reprPair.second;
 
             int drawItemIndex = 0;
             for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {

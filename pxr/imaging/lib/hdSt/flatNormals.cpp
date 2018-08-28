@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -28,11 +28,11 @@
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/smoothNormals.h"
+#include "pxr/imaging/hdSt/flatNormals.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -46,24 +46,32 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdSt_SmoothNormalsComputationGPU::HdSt_SmoothNormalsComputationGPU(
-    Hd_VertexAdjacency const *adjacency,
-    TfToken const &srcName, TfToken const &dstName,
+HdSt_FlatNormalsComputationGPU::HdSt_FlatNormalsComputationGPU(
+    HdBufferArrayRangeSharedPtr const &topologyRange,
+    HdBufferArrayRangeSharedPtr const &vertexRange,
+    int numFaces, TfToken const &srcName, TfToken const &dstName,
     HdType srcDataType, bool packed)
-    : _adjacency(adjacency), _srcName(srcName), _dstName(dstName)
+    : _topologyRange(topologyRange), _vertexRange(vertexRange)
+    , _numFaces(numFaces), _srcName(srcName), _dstName(dstName)
     , _srcDataType(srcDataType)
 {
     if (srcDataType != HdTypeFloatVec3 && srcDataType != HdTypeDoubleVec3) {
         TF_CODING_ERROR(
-            "Unsupported points type %s for computing smooth normals",
+            "Unsupported points type %s for computing flat normals",
             TfEnum::GetName(srcDataType).c_str());
         _srcDataType = HdTypeInvalid;
     }
     _dstDataType = packed ? HdTypeInt32_2_10_10_10_REV : _srcDataType;
 }
 
+int
+HdSt_FlatNormalsComputationGPU::GetNumOutputElements() const
+{
+    return _numFaces;
+}
+
 void
-HdSt_SmoothNormalsComputationGPU::Execute(
+HdSt_FlatNormalsComputationGPU::Execute(
     HdBufferArrayRangeSharedPtr const &range_,
     HdResourceRegistry *resourceRegistry)
 {
@@ -75,27 +83,51 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     if (_srcDataType == HdTypeInvalid)
         return;
 
-    TF_VERIFY(_adjacency);
-    HdBufferArrayRangeSharedPtr const &adjacencyRange_ = 
-        _adjacency->GetAdjacencyRange();
-    TF_VERIFY(adjacencyRange_);
+    HdStBufferArrayRangeGLSharedPtr range =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+    HdStBufferArrayRangeGLSharedPtr vertexRange =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
+    HdStBufferArrayRangeGLSharedPtr topologyRange =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
 
-    HdStBufferArrayRangeGLSharedPtr adjacencyRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (adjacencyRange_);
+    // buffer resources for GPU computation
+    HdStBufferResourceGLSharedPtr points = vertexRange->GetResource(_srcName);
+    HdStBufferResourceGLSharedPtr normals = range->GetResource(_dstName);
+    HdStBufferResourceGLSharedPtr indices = topologyRange->GetResource(
+        HdTokens->indices);
+    HdStBufferResourceGLSharedPtr primitiveParam = topologyRange->GetResource(
+        HdTokens->primitiveParam);
 
     // select shader by datatype
     TfToken shaderToken;
-    if (_srcDataType == HdTypeFloatVec3) {
-        if (_dstDataType == HdTypeFloatVec3) {
-            shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToFloat;
-        } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
-            shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToPacked;
+    int indexArity = HdGetComponentCount(indices->GetTupleType().type);
+    if (indexArity == 3) {
+        if (_srcDataType == HdTypeFloatVec3) {
+            if (_dstDataType == HdTypeFloatVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriFloatToFloat;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriFloatToPacked;
+            }
+        } else if (_srcDataType == HdTypeDoubleVec3) {
+            if (_dstDataType == HdTypeDoubleVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriDoubleToDouble;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriDoubleToPacked;
+            }
         }
-    } else if (_srcDataType == HdTypeDoubleVec3) {
-        if (_dstDataType == HdTypeDoubleVec3) {
-            shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToDouble;
-        } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
-            shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToPacked;
+    } else if (indexArity == 4) {
+        if (_srcDataType == HdTypeFloatVec3) {
+            if (_dstDataType == HdTypeFloatVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsQuadFloatToFloat;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsQuadFloatToPacked;
+            }
+        } else if (_srcDataType == HdTypeDoubleVec3) {
+            if (_dstDataType == HdTypeDoubleVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsQuadDoubleToDouble;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsQuadDoubleToPacked;
+            }
         }
     }
     if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
@@ -107,30 +139,29 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     GLuint program = computeProgram->GetProgram().GetId();
 
-    HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
-
-    // buffer resources for GPU computation
-    HdStBufferResourceGLSharedPtr points = range->GetResource(_srcName);
-    HdStBufferResourceGLSharedPtr normals = range->GetResource(_dstName);
-    HdStBufferResourceGLSharedPtr adjacency = adjacencyRange->GetResource();
-
     // prepare uniform buffer for GPU computation
     struct Uniform {
         int vertexOffset;
-        int adjacencyOffset;
+        int elementOffset;
+        int topologyOffset;
         int pointsOffset;
         int pointsStride;
         int normalsOffset;
         int normalsStride;
+        int indexOffset;
+        int indexStride;
+        int pParamOffset;
+        int pParamStride;
     } uniform;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = range->GetOffset();
-    // adjacency offset/stride in aggregated adjacency table
-    uniform.adjacencyOffset = adjacencyRange->GetOffset();
+    uniform.vertexOffset = vertexRange->GetOffset();
+    // coherent element offset in aggregated buffer array
+    uniform.elementOffset = range->GetOffset();
+    // coherent topology offset in aggregated buffer array
+    uniform.topologyOffset = topologyRange->GetOffset();
     // interleaved offset/stride to points
-    // note: this code (and the glsl smooth normal compute shader) assumes
+    // note: this code (and the glsl flat normal compute shader) assumes
     // components in interleaved vertex array are always same data type.
     // i.e. it can't handle an interleaved array which interleaves
     // float/double, float/int etc.
@@ -149,17 +180,15 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     uniform.normalsOffset = normals->GetOffset() / normalComponentSize;
     uniform.normalsStride = normals->GetStride() / normalComponentSize;
 
-    // The number of points is based off the size of the output,
-    // However, the number of points in the adjacency table
-    // is computed based off the largest vertex indexed from
-    // to topology (aka topology->ComputeNumPoints).
-    //
-    // Therefore, we need to clamp the number of points
-    // to the number of entries in the adjancency table.
-    int numDestPoints = range->GetNumElements();
-    int numSrcPoints = _adjacency->GetNumPoints();
+    const size_t indexComponentSize =
+        HdDataSizeOfType(HdGetComponentType(indices->GetTupleType().type));
+    uniform.indexOffset = indices->GetOffset() / indexComponentSize;
+    uniform.indexStride = indices->GetStride() / indexComponentSize;
 
-    int numPoints = std::min(numSrcPoints, numDestPoints);
+    const size_t pParamComponentSize =
+        HdDataSizeOfType(HdGetComponentType(primitiveParam->GetTupleType().type));
+    uniform.pParamOffset = primitiveParam->GetOffset() / pParamComponentSize;
+    uniform.pParamStride = primitiveParam->GetStride() / pParamComponentSize;
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
@@ -177,12 +206,14 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, points->GetId());
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, normals->GetId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, adjacency->GetId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, indices->GetId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, primitiveParam->GetId());
 
     // dispatch compute kernel
     glUseProgram(program);
 
-    glDispatchCompute(numPoints, 1, 1);
+    int numPrims = topologyRange->GetNumElements();
+    glDispatchCompute(numPrims, 1, 1);
 
     glUseProgram(0);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -191,14 +222,14 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, 0);
 }
 
 void
-HdSt_SmoothNormalsComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_FlatNormalsComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(_dstName, HdTupleType {_dstDataType, 1});
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

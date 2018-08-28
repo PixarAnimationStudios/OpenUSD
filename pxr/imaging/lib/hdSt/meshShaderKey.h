@@ -40,7 +40,8 @@ struct HdSt_MeshShaderKey
         NormalSourceScene,
         NormalSourceSmooth,
         NormalSourceLimit,
-        NormalSourceFlat
+        NormalSourceFlat,
+        NormalSourceGeometryShader
     };
 
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,

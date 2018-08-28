@@ -69,6 +69,27 @@ vec3 GetNormal(vec3 Neye, int index)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshNormal.Flat
+
+vec3 GetNormal(vec3 Neye, int index)
+{
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_flatNormals)
+    normal = vec3(HdGet_flatNormals(index).xyz);
+#elif defined(HD_HAS_packedFlatNormals)
+    normal = vec3(HdGet_packedFlatNormals(index).xyz);
+#endif
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshNormal.Pass
 
 vec3 GetNormal(vec3 Neye, int index)
