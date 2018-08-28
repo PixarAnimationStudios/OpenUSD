@@ -32,6 +32,10 @@
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
 #include "gusd/UT_StaticInit.h"
+#include "gusd/GT_PrimCache.h"
+#include "gusd/USD_XformCache.h"
+#include "gusd/USD_VisCache.h"
+
 
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/fileUtils.h>
@@ -372,9 +376,12 @@ GusdSOP_usdimport::Reload()
 
     UT_StringSet paths;
     paths.insert(file);
-    
+
     GusdStageCacheWriter cache;
     cache.ReloadStages(paths);
+    GusdGT_PrimCache::GetInstance().Clear(paths);
+    GusdUSD_XformCache::GetInstance().Clear(paths);
+    GusdUSD_VisCache::GetInstance().Clear(paths);
     forceRecook();
 }
 
