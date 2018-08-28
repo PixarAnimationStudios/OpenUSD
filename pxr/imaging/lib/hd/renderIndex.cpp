@@ -54,6 +54,8 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -462,6 +464,16 @@ HdBprim *
 HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
 {
     return _bprimIndex.GetFallbackPrim(typeId);
+}
+
+
+HdResourceRegistry::TextureKey
+HdRenderIndex::GetTextureKey(HdTextureResource::ID id) const
+{
+    HdResourceRegistry::TextureKey key = boost::hash_value(this);
+    boost::hash_combine(key, id);
+
+    return key;
 }
 
 // ---------------------------------------------------------------------- //

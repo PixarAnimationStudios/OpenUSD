@@ -318,13 +318,20 @@ HdStMaterial::_GetTextureResource(
             GetTextureResourceID(sceneDelegate, connection);
 
         if (texID != HdTextureResource::ID(-1)) {
-            HdInstance<HdTextureResource::ID,
+
+            // Use render index to convert local texture id into global
+            // texture key
+            HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+            HdResourceRegistry::TextureKey texKey =
+                                               renderIndex.GetTextureKey(texID);
+
+            HdInstance<HdResourceRegistry::TextureKey,
                         HdTextureResourceSharedPtr> texInstance;
 
             bool textureResourceFound = false;
             std::unique_lock<std::mutex> regLock =
                 resourceRegistry->FindTextureResource
-                (texID, &texInstance, &textureResourceFound);
+                                  (texKey, &texInstance, &textureResourceFound);
 
             // A bad asset can cause the texture resource to not
             // be found. Hence, issue a warning and continue onto the
