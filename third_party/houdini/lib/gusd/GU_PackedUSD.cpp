@@ -160,7 +160,7 @@ GusdGU_PackedUSD::Build(
         GT_DataArrayHandle buffer;
 
         for( const UsdGeomPrimvar &primvar : authoredPrimvars ) {
-            // This is temporary code, we need to factor the usd read code into GT_Utils.cpp
+            // XXX This is temporary code, we need to factor the usd read code into GT_Utils.cpp
             // to avoid duplicates and read for types GfHalf,double,int,string ...
             GT_DataArrayHandle gtData = GusdPrimWrapper::convertPrimvarData( primvar, frame );
             const UT_String  name(primvar.GetPrimvarName());
@@ -169,6 +169,12 @@ GusdGU_PackedUSD::Build(
 
             GA_Attribute *anAttr = detail.addTuple(GT_Util::getGAStorage(gtStorage), GA_ATTRIB_PRIMITIVE, name,
                                                    gtTupleSize);
+
+            if( !anAttr ) {
+                // addTuple could fail for various reasons, like if there's a
+                // non-alphanumeric character in the primvar name.
+                continue;
+            }
 
             if( const GA_AIFTuple *aIFTuple = anAttr->getAIFTuple()) {
 
