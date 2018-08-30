@@ -67,6 +67,10 @@ public:
     /// Return the name of the given type as represented in GLSL.
     HDST_API
     static TfToken GetGLSLTypename(HdType type);
+
+    /// Return a GLSL-safe, mangled name identifier.
+    HDST_API
+    static TfToken GetGLSLIdentifier(TfToken const& identifier);
 };
 
 

@@ -25,6 +25,9 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
+
+#include <cctype>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -357,6 +360,86 @@ HdStGLConversions::GetGLSLTypename(HdType type)
     case HdTypeDoubleMat4:
         return _glTypeNames->dmat4;
     };
+}
+
+// This isn't an exhaustive checker. It doesn't check for built-in/internal
+// variable names in GLSL, reserved keywords and such.
+static bool
+_IsIdentiferGLSLCompatible(std::string const& in)
+{
+    char const *p = in.c_str();
+
+    // Leading non-alpha characters are not allowed.
+    if (*p && !isalpha(*p)) {
+        return false;
+    }
+    // Characters must be in [_a-zA-Z0-9]
+    while (*p) {
+        if (isalnum(*p)) {
+            p++;
+        } else {
+            // _ is allowed, but __ isn't
+            if (*p == '_' && *(p-1) != '_') {
+                // checking the last character is safe here, because of the
+                // earlier check for leading non-alpha characters.
+                p++;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+TfToken
+HdStGLConversions::GetGLSLIdentifier(TfToken const& identifier)
+{
+    std::string const& in = identifier.GetString();
+    // Avoid allocating a string and constructing a token for the general case,
+    // wherein identifers conform to the naming rules.
+    if (_IsIdentiferGLSLCompatible(in)) {
+        return identifier;
+    }
+
+    // Name-mangling rules:
+    // https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
+    // We choose to specifically disallow:
+    // 1) Leading non-alpha characters: GLSL allows leading underscores, but we
+    //    choose to reserve them for internal use.
+    // 2) Consecutive underscores: To avoid unintended GLSL behaviors.
+    std::string result;
+    result.reserve(in.size());
+    char const *p = in.c_str();
+
+    // Skip leading non-alpha characters.
+    while (*p && !isalpha(*p)) {
+        ++p;
+    }
+    for (; *p; ++p) {
+        bool isValidChar = isalnum(*p) || (*p == '_');
+        if (!isValidChar) {
+            // Replace characters not in [_a-zA-Z0-9] with _, unless the last
+            // character  added was also _.
+            // Calling back() is safe here because the first character is either
+            // alpha-numeric or null, as guaranteed by the while loop above.
+            if (result.back() != '_') {
+                result.push_back('_');
+            }
+        } else if (*p == '_' && result.back() == '_') {
+            // no-op to skip consecutive _
+        } else {
+            result.push_back(*p);
+        }
+    }
+
+    if (result.empty()) {
+        TF_CODING_ERROR("Invalid identifier '%s' could not be name-mangled",
+                        identifier.GetText());
+        return identifier;
+    }
+
+    return TfToken(result);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
