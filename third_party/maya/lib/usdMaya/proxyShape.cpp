@@ -639,8 +639,8 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
 bool
 UsdMayaProxyShape::isBounded() const
 {
-    return !_useFastPlayback && isStageValid()
-                && TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE);
+    return !_useFastPlayback &&
+        TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE)&& isStageValid();
 }
 
 /* virtual */
