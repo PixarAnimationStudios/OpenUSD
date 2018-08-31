@@ -58,11 +58,12 @@ class TestShaderNode(unittest.TestCase):
                          set())
 
         # Instantiating the registry will kick off the discovery process.
-        # Don't do the usual discovery plugin search in case this is a
-        # monolithic build.  That will find any built-in plugins and
-        # this test isn't expecting that.  Instead we'll list the plugins
-        # we want explicitly.
-        os.environ["PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
+        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY has
+        # been set prior to being run to ensure built-in plugins are not
+        # found. Instead we'll list the plugins we want explicitly.
+
+        # Setting this from within the script does not work on Windows.
+        # os.environ["PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
         reg = Sdr.Registry()
         reg.SetExtraDiscoveryPlugins([fsdpType, tdpType])
 
