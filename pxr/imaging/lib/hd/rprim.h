@@ -75,7 +75,7 @@ public:
     /// Returns the identifier of this Rprim. This is both used in the
     /// RenderIndex and the SceneDelegate and acts as the associative key for
     /// the Rprim in both contexts.
-    SdfPath const& GetId() const { return _id; }
+    SdfPath const& GetId() const { return _sharedData.rprimID; }
 
     /// Update objects representation based on dirty bits.
     /// @param[in, out]  dirtyBits: On input specifies which state is
@@ -244,7 +244,6 @@ protected:
                         SdfPath const& materialId);
 
 private:
-    SdfPath _id;
     SdfPath _instancerId;
     SdfPath _materialId;
 

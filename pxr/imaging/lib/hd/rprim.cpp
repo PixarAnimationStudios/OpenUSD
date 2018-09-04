@@ -50,8 +50,7 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
 
 HdRprim::HdRprim(SdfPath const& id,
                  SdfPath const& instancerId)
-    : _id(id)
-    , _instancerId(instancerId)
+    : _instancerId(instancerId)
     , _materialId()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
                   /*hasInstancer=*/(!instancerId.IsEmpty()),
@@ -219,7 +218,7 @@ TfToken
 HdRprim::GetRenderTag(HdSceneDelegate* delegate,
                       HdReprSelector const& reprSelector) const
 {
-    return delegate->GetRenderTag(_id, reprSelector);
+    return delegate->GetRenderTag(GetId(), reprSelector);
 }
 
 void 
