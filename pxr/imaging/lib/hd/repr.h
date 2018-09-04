@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/imaging/hd/drawItem.h"
@@ -77,11 +78,17 @@ public:
     /// Returns true if the passed in reprToken is in the set of tokens
     /// for any topology index.
     HD_API
-    bool Contains(TfToken reprToken) const;
+    bool Contains(const TfToken &reprToken) const;
 
-    /// Returns true if all the tokens for all the topologies are empty.
+    /// Returns true if the topology token at an index is active, i.e., neither
+    /// empty nor disabled.
     HD_API
-    bool IsEmpty() const;
+    bool IsActiveRepr(int index) const;
+
+    /// Returns true if any of the topology tokens is valid, i.e., neither
+    /// empty nor disabled.
+    HD_API
+    bool AnyActiveRepr() const;
     
     /// Returns a selector that is the composite of this selector 'over'
     /// the passed in selector.
@@ -104,10 +111,10 @@ public:
     HD_API
     size_t Hash() const;
 
-    HD_API    
+    HD_API
     char const* GetText() const;
 
-    HD_API    
+    HD_API
     friend std::ostream &operator <<(std::ostream &stream,
                                      HdReprSelector const& t);
     

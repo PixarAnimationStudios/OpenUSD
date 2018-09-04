@@ -276,7 +276,7 @@ protected:
     // Repr configuration descriptors. All concrete types (HdMesh, HdPoints ..)
     // have this static map to lookup descriptors for the given reprname.
     //
-    // N : # of drawItems to be created for the reprname (# of descriptors)
+    // N : # of descriptors for the repr.
     //
     template<typename DESC_TYPE, int N=1>
     struct _ReprDescConfigs {

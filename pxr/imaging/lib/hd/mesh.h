@@ -49,7 +49,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdMeshReprDescTokens, HD_API,
 
 /// \class HdMeshReprDesc
 ///
-/// descriptor to configure a drawItem for a repr
+/// Descriptor to configure the drawItem(s) for a repr
 ///
 struct HdMeshReprDesc {
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
@@ -130,9 +130,10 @@ public:
     inline VtValue GetPoints(HdSceneDelegate* delegate)  const;
     inline VtValue GetNormals(HdSceneDelegate* delegate) const;
 
-    /// Configure geometric style of drawItems for \p reprName
-    /// HdMesh can have up to 2 descriptors for some complex styling
-    /// (FeyRay, Outline)
+    /// Configure the geometric style of the mesh for a given representation.
+    /// We currently allow up to 2 descriptors for a representation.
+    /// Example of when this may be useful:
+    ///     Drawing the outline in addition to the surface for a mesh.
     HD_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdMeshReprDesc desc1,
@@ -145,8 +146,11 @@ protected:
     HdMesh(SdfPath const& id,
            SdfPath const& instancerId = SdfPath());
 
-    // 2 refined draw items + 1 hull + 1 points
-    typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/4>
+    // We allow up to 2 repr descs per repr for meshes (see ConfigureRepr above)
+    // We can have up to 3 topology reprs for the rprim (see
+    //      HdRprim::_GetReprSelector)
+    // So, a repr selector can generate at most 2*3=6 mesh repr descs.
+    typedef _ReprDescConfigs<HdMeshReprDesc, /*max repr descs=*/6>
         _MeshReprConfig;
 
     HD_API

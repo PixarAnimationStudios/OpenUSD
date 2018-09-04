@@ -47,7 +47,7 @@ HdMesh::_MeshReprConfig HdMesh::_reprDescConfig;
 void
 HdMesh::ConfigureRepr(TfToken const &reprName,
                       HdMeshReprDesc desc1,
-                      HdMeshReprDesc desc2)
+                      HdMeshReprDesc desc2/*=HdMeshReprDesc()*/)
 {
     HD_TRACE_FUNCTION();
 
@@ -62,7 +62,7 @@ HdMesh::_GetReprDesc(HdReprSelector const &reprSelector)
     size_t index = 0;
     
     for (size_t i = 0; i < reprSelector.size(); ++i) {
-        if (!reprSelector[i].IsEmpty()) {
+        if (reprSelector.IsActiveRepr(i)) {
             _MeshReprConfig::DescArray descs = _reprDescConfig.Find(
                     reprSelector[i]);
             for (HdMeshReprDesc &desc : descs) {

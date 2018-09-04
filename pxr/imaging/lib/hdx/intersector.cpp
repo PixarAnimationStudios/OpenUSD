@@ -426,7 +426,10 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                 // Point picking support is limited to unrefined meshes currently,
                 // and so we can use 'hull' to do the depth-only pass w/ both
                 // pickables and unpickables.
-                occluderCol.SetReprSelector(HdReprSelector(HdTokens->hull));
+                occluderCol.SetReprSelector(
+                                HdReprSelector(HdTokens->hull,
+                                               HdReprTokens->disabled,
+                                               HdReprTokens->disabled));
                 if (!occluderCol.GetExcludePaths().empty()) {
                     // add the "unpickables" to the prims rendered to the depth
                     // buffer

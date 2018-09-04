@@ -75,7 +75,7 @@ HdBasisCurves::_GetReprDesc(HdReprSelector const &reprSelector)
     size_t index = 0;
     
     for (size_t i = 0; i < reprSelector.size(); ++i) {
-        if (!reprSelector[i].IsEmpty()) {
+        if (reprSelector.IsActiveRepr(i)) {
             _BasisCurvesReprConfig::DescArray descs = _reprDescConfig.Find(
                     reprSelector[i]);
             for (HdBasisCurvesReprDesc &desc : descs) {

@@ -26,8 +26,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// We use an empty token to indicate "no option" (i.e., a "don't care" opinion).
+// This is factored in when compositing repr selectors. See CompositeOver.
+static bool
+_ReprHasOpinion(const TfToken &reprToken) {
+    return !reprToken.IsEmpty();
+}
+
 bool
-HdReprSelector::Contains(TfToken reprToken) const
+HdReprSelector::Contains(const TfToken &reprToken) const
 {
     return (reprToken == refinedToken)
         || (reprToken == unrefinedToken)
@@ -35,20 +42,31 @@ HdReprSelector::Contains(TfToken reprToken) const
 }
 
 bool
-HdReprSelector::IsEmpty() const
+HdReprSelector::IsActiveRepr(int index) const
 {
-    return refinedToken.IsEmpty()
-        && unrefinedToken.IsEmpty()
-        && pointsToken.IsEmpty();
+    TF_VERIFY(index < 3);
+    TfToken const &reprToken = (*this)[index];
+    return !(reprToken.IsEmpty() || reprToken == HdReprTokens->disabled);
+}
+
+bool
+HdReprSelector::AnyActiveRepr() const
+{
+    for (size_t i = 0; i < size(); ++i) {
+        if (IsActiveRepr(i)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 HdReprSelector
 HdReprSelector::CompositeOver(const HdReprSelector &under) const
 {
     return HdReprSelector(
-        refinedToken.IsEmpty() ? under.refinedToken : refinedToken,
-        unrefinedToken.IsEmpty() ? under.unrefinedToken : unrefinedToken,
-        pointsToken.IsEmpty() ? under.pointsToken : pointsToken);
+        _ReprHasOpinion(refinedToken)  ? refinedToken   : under.refinedToken,
+        _ReprHasOpinion(unrefinedToken)? unrefinedToken : under.unrefinedToken,
+        _ReprHasOpinion(pointsToken)   ? pointsToken    : under.pointsToken);
 }
 
 bool
