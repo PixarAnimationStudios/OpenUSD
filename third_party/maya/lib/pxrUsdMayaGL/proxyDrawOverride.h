@@ -51,9 +51,7 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
     public:
         PXRUSDMAYAGL_API
-        static MString sm_drawDbClassification;
-        PXRUSDMAYAGL_API
-        static MString sm_drawRegistrantId;
+        static const MString drawDbClassification;
 
         PXRUSDMAYAGL_API
         static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
@@ -108,6 +106,9 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 
     private:
         UsdMayaProxyDrawOverride(const MObject& obj);
+
+        UsdMayaProxyDrawOverride(const UsdMayaProxyDrawOverride&) = delete;
+        UsdMayaProxyDrawOverride& operator=(const UsdMayaProxyDrawOverride&) = delete;
 
         PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
 

@@ -35,6 +35,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/hdx/intersector.h"
 
 #include <maya/M3dView.h>
@@ -57,8 +58,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-MString UsdMayaProxyDrawOverride::sm_drawDbClassification("drawdb/geometry/usdMaya");
-MString UsdMayaProxyDrawOverride::sm_drawRegistrantId("pxrUsdPlugin");
+const MString UsdMayaProxyDrawOverride::drawDbClassification(
+    TfStringPrintf("drawdb/geometry/pxrUsdMayaGL/%s",
+                   UsdMayaProxyShapeTokens->MayaTypeName.GetText()).c_str());
 
 /* static */
 MHWRender::MPxDrawOverride*
