@@ -69,11 +69,9 @@ UsdMayaProxyShapeUI::creator()
 void
 UsdMayaProxyShapeUI::getDrawRequests(
         const MDrawInfo& drawInfo,
-        bool /* isObjectAndActiveOnly */,
+        bool /* objectAndActiveOnly */,
         MDrawRequestQueue& requests)
 {
-    MDrawRequest request = drawInfo.getPrototype(*this);
-
     const MDagPath shapeDagPath = drawInfo.multiPath();
     UsdMayaProxyShape* shape =
         UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
@@ -105,6 +103,8 @@ UsdMayaProxyShapeUI::getDrawRequests(
         boundingBox = shape->boundingBox();
         boundingBoxPtr = &boundingBox;
     }
+
+    MDrawRequest request = drawInfo.getPrototype(*this);
 
     _shapeAdapter.GetMayaUserData(this, request, boundingBoxPtr);
 
