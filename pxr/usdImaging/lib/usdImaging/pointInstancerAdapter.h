@@ -343,7 +343,7 @@ private:
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
-        _InstancerData() : initialized(false) {}
+        _InstancerData() {}
         SdfPath parentInstancerPath;
         _ProtoRPrimMap protoRprimMap;
         _UsdToCacheMap usdToCacheMap;
@@ -351,7 +351,6 @@ private:
         std::mutex mutex;
         HdDirtyBits dirtyBits;
         bool visible;
-        bool initialized;
     };
 
     // A map of instancer data, one entry per instancer prim that has been

@@ -295,7 +295,8 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Ensure that the instance transforms are computed on the first
             // call to UpdateForTime.
             index->MarkInstancerDirty(instancerPath,
-                HdChangeTracker::DirtyPrimvar);
+                HdChangeTracker::DirtyPrimvar |
+                HdChangeTracker::DirtyTransform);
         } else if (nestedInstances.empty()) {
             // if this instance path ends up to have no prims in subtree
             // and not an instance itself , we don't need to track this path

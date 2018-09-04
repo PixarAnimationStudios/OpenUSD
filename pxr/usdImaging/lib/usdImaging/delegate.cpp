@@ -492,6 +492,10 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
             continue;
         }
 
+        if (primInfo->dirtyBits == HdChangeTracker::Clean) {
+            continue;
+        }
+
         _AdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(

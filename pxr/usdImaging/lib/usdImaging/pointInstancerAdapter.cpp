@@ -173,10 +173,20 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // Need to use GetAbsoluteRootOrPrimPath() on instancerPath to drop
     // {instancer=X} from the path, so usd can find the prim.
     index->InsertInstancer(instancerPath,
-            instancerContext ? instancerContext->instancerId : SdfPath(),
+            parentInstancerPath,
             _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
             instancerContext ? instancerContext->instancerAdapter
                              : UsdImagingPrimAdapterSharedPtr());
+
+    // Make sure we populate instancer data to the value cache the first time
+    // through UpdateForTime.
+    index->MarkInstancerDirty(instancerPath,
+        HdChangeTracker::DirtyTransform |
+        HdChangeTracker::DirtyPrimvar);
+    if (!parentInstancerPath.IsEmpty()) {
+        index->MarkInstancerDirty(instancerPath,
+            HdChangeTracker::DirtyInstanceIndex);
+    }
 
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.
@@ -470,12 +480,6 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                 timeVaryingBits,
                 true);
 
-        // Initializing to an empty value is OK here because either this
-        // prototype will be invisible or it will be visible and the indices
-        // will be updated.
-        VtIntArray a;
-        valueCache->GetInstanceIndices(cachePath) = a;
-
         // XXX: We should never pull purpose directly from the prototype's
         // adapter, since we must compute purpose relative to the model root,
         // however we have no way of communicating that currently.
@@ -715,15 +719,6 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                           cachePath,
                                           time, requestedBits);
     } else {
-        // Check if it is an instancer, if it is the first time then
-        // we want to initialize the bits.
-        _InstancerDataMap::iterator inst = _instancerData.find(cachePath);
-        if (inst != _instancerData.end()) {
-            if (inst->second.initialized == false) {
-                requestedBits |= HdChangeTracker::DirtyInstanceIndex;
-            }
-        }
-
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             // If this is a nested instancer, we need to prime the
             // InstanceIndices in the value cache and make sure the parent
@@ -857,22 +852,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                               cachePath, rproto.paths, time);
         }
     } else {
-        // Check if it is an instancer, if it is the first time then
-        // we want to initialize the bits.
-        _InstancerDataMap::iterator inst = _instancerData.find(cachePath);
-        if (inst != _instancerData.end()) {
-            if (inst->second.initialized == false) {
-                SdfPath parentInstancerPath = inst->second.parentInstancerPath;
-                if (!parentInstancerPath.IsEmpty()) {
-                    requestedBits |= HdChangeTracker::DirtyInstanceIndex;
-                }
-                requestedBits |= HdChangeTracker::DirtyTransform;
-                requestedBits |= HdChangeTracker::DirtyPrimvar;
-                
-                inst->second.initialized = true;
-            }
-        }
- 
         // Nested Instancer (instancer has instanceIndex)
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             // For nested instancers, we must update the instance index.
