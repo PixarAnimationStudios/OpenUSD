@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdRenderThread::HdRenderThread()
     : _renderCallback(_DefaultRenderCallback)
+    , _shutdownCallback(_DefaultShutdownCallback)
     , _requestedState(StateInitial)
     , _stopRequested(false)
     , _rendering(false)
@@ -43,6 +44,12 @@ void
 HdRenderThread::SetRenderCallback(std::function<void()> renderCallback)
 {
     _renderCallback = renderCallback;
+}
+
+void
+HdRenderThread::SetShutdownCallback(std::function<void()> shutdownCallback)
+{
+    _shutdownCallback = shutdownCallback;
 }
 
 void
@@ -143,6 +150,7 @@ HdRenderThread::_RenderLoop()
             break;
         }
     }
+    _shutdownCallback();
 }
 
 /*static*/
@@ -150,6 +158,12 @@ void
 HdRenderThread::_DefaultRenderCallback()
 {
     TF_CODING_ERROR("StartThread() called without a render callback set");
+}
+
+/*static*/
+void
+HdRenderThread::_DefaultShutdownCallback()
+{
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
