@@ -231,7 +231,6 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode);
         if (refineLevel > 0) {
             // add subdiv tags before compute hash
-            // XXX: calling GetSubdivTags on implicit prims raises an error.
             topology->SetSubdivTags(GetSubdivTags(sceneDelegate));
         }
 

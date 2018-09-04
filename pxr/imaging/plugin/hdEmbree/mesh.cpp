@@ -486,7 +486,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         _topology.SetSubdivTags(subdivTags);
         _adjacencyValid = false;
     }
-    if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id) &&
+        _topology.GetRefineLevel() > 0) {
         _topology.SetSubdivTags(sceneDelegate->GetSubdivTags(id));
     }
     if (HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {

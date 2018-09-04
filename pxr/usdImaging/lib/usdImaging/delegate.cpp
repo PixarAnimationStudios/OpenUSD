@@ -1517,10 +1517,14 @@ UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
     SdfPath usdPath = GetPathForUsd(id);
     SubdivTags tags;
 
-    // TODO: Support tag pre-fetch
+    if (_valueCache.ExtractSubdivTags(usdPath, &tags)) {
+        return tags;
+    }
     _UpdateSingleValue(usdPath, HdChangeTracker::DirtySubdivTags);
-    // No TF_VERIFY here because we don't always expect to have tags.
-    _valueCache.ExtractSubdivTags(usdPath, &tags);
+    if (TF_VERIFY(_valueCache.ExtractSubdivTags(usdPath, &tags))) {
+        return tags;
+    }
+
     return tags;
 }
 
