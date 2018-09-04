@@ -43,6 +43,7 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
@@ -72,6 +73,8 @@
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
+#include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MStatus.h>
@@ -1303,6 +1306,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // re-populate it.
     _softSelectHelper.Reset();
 
+    bool itemsVisible = false;
     std::vector<_RenderItem> items;
     for (const auto& iter : bucketsMap) {
         const PxrMayaHdRenderParams& params = iter.second.first;
@@ -1311,11 +1315,19 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         HdRprimCollectionVector rprimCollections;
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
             shapeAdapter->UpdateVisibility(isolatedObjects);
+            itemsVisible |= shapeAdapter->IsVisible();
 
             rprimCollections.push_back(shapeAdapter->GetRprimCollection());
         }
 
         items.push_back(std::make_pair(params, std::move(rprimCollections)));
+    }
+
+    if (!itemsVisible) {
+        TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
+            "    *** No objects visible.\n"
+            "    ^^^^^^^^^^^^ RENDER STAGE FINISH ^^^^^^^^^^^^^\n");
+        return;
     }
 
     // Update lighting depending on VP2/Legacy.

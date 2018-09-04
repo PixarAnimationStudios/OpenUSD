@@ -68,14 +68,20 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// Returns true if the visibility state was changed, or false
         /// otherwise.
         PXRUSDMAYAGL_API
-        virtual bool UpdateVisibility(
-                const MSelectionList& isolatedObjects) override;
+        bool UpdateVisibility(const MSelectionList& isolatedObjects) override;
+
+        /// Gets whether the shape adapter's shape is visible.
+        ///
+        /// This should be called after a call to UpdateVisibility() to ensure
+        /// that the returned value is correct. 
+        PXRUSDMAYAGL_API
+        bool IsVisible() const override;
 
         PXRUSDMAYAGL_API
-        virtual void SetRootXform(const GfMatrix4d& transform) override;
+        void SetRootXform(const GfMatrix4d& transform) override;
 
         PXRUSDMAYAGL_API
-        virtual const SdfPath& GetDelegateID() const override;
+        const SdfPath& GetDelegateID() const override;
 
     protected:
 
@@ -88,7 +94,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// "promotes" the display state parameters to their Viewport 2.0
         /// equivalents before calling this method.
         PXRUSDMAYAGL_API
-        virtual bool _Sync(
+        bool _Sync(
                 const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus) override;
@@ -101,7 +107,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         PxrMayaHdUsdProxyShapeAdapter();
 
         PXRUSDMAYAGL_API
-        virtual ~PxrMayaHdUsdProxyShapeAdapter();
+        ~PxrMayaHdUsdProxyShapeAdapter() override;
 
     private:
 
@@ -134,4 +140,4 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_USD_PROXY_SHAPE_ADAPTER_H
+#endif

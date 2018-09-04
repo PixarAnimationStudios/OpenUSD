@@ -92,6 +92,13 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(
 }
 
 /* virtual */
+bool
+PxrMayaHdUsdProxyShapeAdapter::IsVisible() const
+{
+    return (_delegate && _delegate->GetRootVisibility());
+}
+
+/* virtual */
 void
 PxrMayaHdUsdProxyShapeAdapter::SetRootXform(const GfMatrix4d& transform)
 {

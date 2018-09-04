@@ -187,6 +187,13 @@ PxrMayaHdShapeAdapter::UpdateVisibility(const MSelectionList&)
 }
 
 /* virtual */
+bool
+PxrMayaHdShapeAdapter::IsVisible() const
+{
+    return false;
+}
+
+/* virtual */
 void
 PxrMayaHdShapeAdapter::GetMayaUserData(
         MPxSurfaceShapeUI* shapeUI,
