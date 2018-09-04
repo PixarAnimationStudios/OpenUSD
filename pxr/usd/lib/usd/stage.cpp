@@ -4257,9 +4257,15 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
         }
 
         // If we hit the root, then consult the initial population state.
-        // Otherwise load the payload if the ancestor is loaded.
-        return prim != root ? prim.IsLoaded() :
-            _stage->_initialLoadSet == LoadAll;
+        if (prim == root) {
+            return _stage->_initialLoadSet == LoadAll;
+        }
+
+        // Otherwise load the payload if the ancestor is loaded, or if it
+        // was formerly active=false.  In that case we only populate indexes
+        // descendant to it because it has become active=true, so we should
+        // include the payload in that case too.
+        return prim.IsLoaded() || !prim.IsActive();
     }
 
     UsdStage const *_stage;

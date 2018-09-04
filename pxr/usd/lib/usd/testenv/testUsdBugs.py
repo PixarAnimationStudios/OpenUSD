@@ -319,6 +319,61 @@ class TestUsdBugs(unittest.TestCase):
                     l, Usd.StagePopulationMask(['/Loc%s/asset1/scope%s' %
                                                 (str(random.randint(1,20)),
                                                  str(random.randint(1,2)))]))
+    def test_USD_4712(self):
+        # Test that activating a prim auto-includes payloads of new descendants
+        # if the ancestors' payloads were already included.
+        from pxr import Usd, Sdf
+        l1 = Sdf.Layer.CreateAnonymous('.usd')
+        l1.ImportFromString('''#usda 1.0
+            (
+                defaultPrim = "shot"
+            )
+
+            def "shot" {
+                def "camera" {
+                    def "cache"(
+                        active = false
+                    ){
+                        def "cam" {
+                        }
+                    }
+                }
+            }
+
+            def "cam_extra" {
+                def "cache_payload" {}
+            }
+
+            def "cam" {
+                def "cam_payload" {}
+            }''')
+
+        l2 = Sdf.Layer.CreateAnonymous()
+        Sdf.CreatePrimInLayer(l2, '/cam_extra').specifier = Sdf.SpecifierDef
+        Sdf.CreatePrimInLayer(
+            l2, '/cam_extra/cache_payload').specifier = Sdf.SpecifierDef
+        Sdf.CreatePrimInLayer(l2, '/cam').specifier = Sdf.SpecifierDef
+        Sdf.CreatePrimInLayer(
+            l2, '/cam/cam_payload').specifier = Sdf.SpecifierDef
+
+        l1.GetPrimAtPath('/shot/camera/cache').payload = Sdf.Payload(
+            l2.identifier, '/cam_extra')
+        l1.GetPrimAtPath('/shot/camera/cache/cam').payload = Sdf.Payload(
+            l2.identifier, '/cam')
+        
+        stage = Usd.Stage.Open(l1)
+        stage.SetEditTarget(stage.GetSessionLayer())
+        cachePrim = stage.GetPrimAtPath('/shot/camera/cache')
+    
+        # Activating the cachePrim should auto-load the cam payload since its
+        # nearest loadable ancestor is loaded.
+        cachePrim.SetActive(True)
+        cachePayloadPrim = stage.GetPrimAtPath(
+            '/shot/camera/cache/cache_payload')
+        self.assertTrue(cachePayloadPrim.IsValid())
+        cameraPayloadPrim = stage.GetPrimAtPath(
+            '/shot/camera/cache/cam/cam_payload')
+        self.assertTrue(cameraPayloadPrim.IsValid())
 
 if __name__ == '__main__':
     unittest.main()
