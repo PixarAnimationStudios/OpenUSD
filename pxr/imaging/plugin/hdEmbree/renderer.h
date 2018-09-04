@@ -34,6 +34,8 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
+#include <random>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdEmbreeRenderer
@@ -114,11 +116,11 @@ private:
     // attachments.
     void _TraceRay(unsigned int x, unsigned int y,
                    GfVec3f const& origin, GfVec3f const& dir,
-                   std::function<float()> uniform_float);
+                   std::default_random_engine &random);
 
     // Compute the color at the given ray hit.
     GfVec4f _ComputeColor(RTCRay const& rayHit,
-                          std::function<float()> uniform_float,
+                          std::default_random_engine &random,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
     bool _ComputeDepth(RTCRay const& rayHit, float *depth);
@@ -127,13 +129,13 @@ private:
 
     // Compute the ambient occlusion term at a given point by firing rays
     // from "position" in the hemisphere centered on "normal"; the occlusion
-    // factor is the fraction of those rays that are occluded.
+    // factor is the fraction of those rays that are visible.
     //
-    // Modulating surface color by (1 - occlusionFactor) is similar to taking
+    // Modulating surface color by occlusionFactor is similar to taking
     // the light contribution of an infinitely far, pure white dome light.
     float _ComputeAmbientOcclusion(GfVec3f const& position,
                                    GfVec3f const& normal,
-                                   std::function<float()> uniform_float);
+                                   std::default_random_engine &random);
 
     // The bound attachments for this renderer.
     HdRenderPassAttachmentVector _attachments;

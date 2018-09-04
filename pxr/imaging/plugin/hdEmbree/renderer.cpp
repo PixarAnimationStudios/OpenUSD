@@ -30,11 +30,9 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
-
-#include <embree2/rtcore_ray.h>
-#include <random>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -369,12 +367,12 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    std::default_random_engine random(std::chrono::system_clock::now().
-                                      time_since_epoch().count());
+    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    boost::hash_combine(seed, tileStart);
+    std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-
     std::function<float()> uniform_float = std::bind(uniform_dist, random);
 
     // _RenderTiles gets a range of tiles; iterate through them.
@@ -433,7 +431,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                 dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
 
                 // Trace the ray.
-                _TraceRay(x, y, origin, dir, uniform_float);
+                _TraceRay(x, y, origin, dir, random);
             }
         }
     }
@@ -458,24 +456,29 @@ _PopulateRay(RTCRay *ray, GfVec3f const& origin,
     ray->time = 0.0f;
 }
 
-/// Generate a uniformly random direction ray.
+/// Generate a random cosine-weighted direction ray (in the hemisphere
+/// around <0,0,1>).  The input is a pair of uniformly distributed random
+/// numbers in the range [0,1].
+///
+/// The algorithm here is to generate a random point on the disk, and project
+/// that point to the unit hemisphere.
 static GfVec3f
-_RandomDirection(std::function<float()> uniform_float)
+_CosineWeightedDirection(GfVec2f const& uniform_float)
 {
     GfVec3f dir;
-    float theta = 2.0f * M_PI * uniform_float();
-    float phi = acosf(2.0f * uniform_float() - 1.0f);
-    float sinphi = sinf(phi);
-    dir[0] = cosf(theta) * sinphi;
-    dir[1] = sinf(theta) * sinphi;
-    dir[2] = cosf(phi);
+    float theta = 2.0f * M_PI * uniform_float[0];
+    float eta = uniform_float[1];
+    float sqrteta = sqrtf(eta);
+    dir[0] = cosf(theta) * sqrteta;
+    dir[1] = sinf(theta) * sqrteta;
+    dir[2] = sqrtf(1.0f-eta);
     return dir;
 }
 
 void
 HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
                             GfVec3f const &origin, GfVec3f const &dir,
-                            std::function<float()> uniform_float)
+                            std::default_random_engine &random)
 {
     // Intersect the camera ray.
     RTCRay ray;
@@ -493,7 +496,7 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
 
         if (_attachments[i].aovName == HdAovTokens->color) {
             GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
-            GfVec4f sample = _ComputeColor(ray, uniform_float, clearColor);
+            GfVec4f sample = _ComputeColor(ray, random, clearColor);
             renderBuffer->Write(GfVec3i(x,y,1), 4, sample.data());
         } else if (_attachments[i].aovName == HdAovTokens->linearDepth &&
                    renderBuffer->GetFormat() == HdFormatFloat32) {
@@ -546,7 +549,7 @@ HdEmbreeRenderer::_ComputeDepth(RTCRay const& rayHit,
 
 GfVec4f
 HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
-                                std::function<float()> uniform_float,
+                                std::default_random_engine &random,
                                 GfVec4f const& clearColor)
 {
     if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -601,7 +604,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
 
     // Lighting gets modulated by an ambient occlusion term.
     float aoLightIntensity =
-        (1.0f - _ComputeAmbientOcclusion(hitPos, normal, uniform_float));
+        _ComputeAmbientOcclusion(hitPos, normal, random);
 
     // Return color.xyz * diffuseLight * aoLightIntensity.
     // XXX: Transparency?
@@ -620,25 +623,61 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
 float
 HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
                                            GfVec3f const& normal,
-                                           std::function<float()> uniform_float)
+                                           std::default_random_engine &random)
 {
+    // Create a uniform random distribution for AO calculations.
+    std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
+    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     unsigned int ambientOcclusionSamples =
         HdEmbreeConfig::GetInstance().ambientOcclusionSamples;
     if (ambientOcclusionSamples < 1) {
-        return 0.0f;
+        return 1.0f;
     }
 
     float occlusionFactor = 0.0f;
 
+    // For hemisphere sampling we need to choose a coordinate frame at this
+    // point. For the purposes of _CosineWeightedDirection, the normal needs
+    // to map to (0,0,1), but since the distribution is radially symmetric
+    // we don't care about the other axes.
+    GfMatrix3f basis(1);
+    GfVec3f xAxis;
+    if (fabsf(GfDot(normal, GfVec3f(0,0,1))) < 0.9f) {
+        xAxis = GfCross(normal, GfVec3f(0,0,1));
+    } else {
+        xAxis = GfCross(normal, GfVec3f(0,1,0));
+    }
+    GfVec3f yAxis = GfCross(normal, xAxis);
+    basis.SetColumn(0, xAxis.GetNormalized());
+    basis.SetColumn(1, yAxis.GetNormalized());
+    basis.SetColumn(2, normal);
+
+    // Generate random samples, stratified with Latin Hypercube Sampling.
+    // https://en.wikipedia.org/wiki/Latin_hypercube_sampling
+    // Stratified sampling means we don't get all of our random samples
+    // bunched in the far corner of the hemisphere, but instead have some
+    // equal spacing guarantees.
+    std::vector<GfVec2f> samples;
+    samples.resize(ambientOcclusionSamples);
+    for (unsigned int i = 0; i < ambientOcclusionSamples; ++i) {
+        samples[i][0] = (float(i) + uniform_float()) / ambientOcclusionSamples;
+    }
+    std::shuffle(samples.begin(), samples.end(), random);
+    for (unsigned int i = 0; i < ambientOcclusionSamples; ++i) {
+        samples[i][1] = (float(i) + uniform_float()) / ambientOcclusionSamples;
+    }
+
     // Trace ambient occlusion rays. The occlusion factor is the fraction of
     // the hemisphere that's occluded when rays are traced to infinity,
-    // computed by uniform random sampling over the hemisphere.
+    // computed by random sampling over the hemisphere.
     for (unsigned int i = 0; i < ambientOcclusionSamples; i++)
     {
-        // We sample in the hemisphere centered on the face normal.
-        GfVec3f shadowDir = _RandomDirection(uniform_float);
-        if (GfDot(shadowDir, normal) < 0) shadowDir = -shadowDir;
+        // Sample in the hemisphere centered on the face normal. Use
+        // cosine-weighted hemisphere sampling to bias towards samples which
+        // will have a bigger effect on the occlusion term.
+        GfVec3f shadowDir = basis * _CosineWeightedDirection(samples[i]);
 
         // Trace shadow ray, using the fast interface (rtcOccluded) since
         // we only care about intersection status, not intersection id.
@@ -648,8 +687,8 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
 
         // Record this AO ray's contribution to the occlusion factor: a
         // boolean [In shadow/Not in shadow].
-        if (shadow.geomID != RTC_INVALID_GEOMETRY_ID)
-            occlusionFactor += 1.0f;
+        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+            occlusionFactor += GfDot(shadowDir, normal);
     }
     // Compute the average of the occlusion samples.
     occlusionFactor /= ambientOcclusionSamples;
