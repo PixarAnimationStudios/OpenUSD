@@ -42,6 +42,7 @@
 #include <OP/OP_OperatorTable.h>
 #include <PI/PI_EditScriptedParms.h>
 #include <PRM/PRM_AutoDeleter.h>
+#include <PRM/PRM_Conditional.h>
 #include <UT/UT_WorkArgs.h>
 #include <UT/UT_UniquePtr.h>
 #include <PY/PY_Python.h>
