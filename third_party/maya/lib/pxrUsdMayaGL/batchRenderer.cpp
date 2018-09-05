@@ -775,19 +775,6 @@ UsdMayaGLBatchRenderer::TestIntersection(
         return nullptr;
     }
 
-    GfMatrix4d viewMatrix;
-    GfMatrix4d projectionMatrix;
-    px_LegacyViewportUtils::GetViewSelectionMatrices(view,
-                                                     &viewMatrix,
-                                                     &projectionMatrix);
-
-    // In the legacy viewport, selection occurs in the local space of SOME
-    // object, but we need the view matrix in world space to correctly consider
-    // all nodes. Applying localToWorldSpace removes the local space we happen
-    // to be in.
-    const GfMatrix4d localToWorldSpace(shapeAdapter->GetRootXform().GetInverse());
-    viewMatrix = localToWorldSpace * viewMatrix;
-
     if (_UpdateLegacySelectionPending(false)) {
         if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
@@ -796,6 +783,20 @@ UsdMayaGLBatchRenderer::TestIntersection(
                     "Viewport 2.0 using legacy viewport selection" :
                     "legacy viewport");
         }
+
+        GfMatrix4d viewMatrix;
+        GfMatrix4d projectionMatrix;
+        px_LegacyViewportUtils::GetViewSelectionMatrices(view,
+                                                         &viewMatrix,
+                                                         &projectionMatrix);
+
+        // In the legacy viewport, selection occurs in the local space of SOME
+        // object, but we need the view matrix in world space to correctly
+        // consider all nodes. Applying localToWorldSpace removes the local
+        // space we happen to be in.
+        const GfMatrix4d localToWorldSpace(
+            shapeAdapter->GetRootXform().GetInverse());
+        viewMatrix = localToWorldSpace * viewMatrix;
 
         _ComputeSelection(bucketsMap,
                           &view,
@@ -860,18 +861,6 @@ UsdMayaGLBatchRenderer::TestIntersection(
         return nullptr;
     }
 
-    GfMatrix4d viewMatrix;
-    GfMatrix4d projectionMatrix;
-    if (!px_vp20Utils::GetSelectionMatrices(selectInfo,
-                                            context,
-                                            viewMatrix,
-                                            projectionMatrix)) {
-        return nullptr;
-    }
-
-    M3dView view;
-    const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
-
     const MUint64 frameStamp = context.getFrameStamp();
 
     if (_UpdateSelectionFrameStamp(frameStamp)) {
@@ -889,6 +878,19 @@ UsdMayaGLBatchRenderer::TestIntersection(
                 passId.asChar(),
                 TfStringify<MStringArray>(passSemantics).c_str());
         }
+
+        GfMatrix4d viewMatrix;
+        GfMatrix4d projectionMatrix;
+        if (!px_vp20Utils::GetSelectionMatrices(selectInfo,
+                                                context,
+                                                viewMatrix,
+                                                projectionMatrix)) {
+            return nullptr;
+        }
+
+        M3dView view;
+        const bool hasView = px_vp20Utils::GetViewFromDrawContext(context,
+                                                                  view);
 
         _ComputeSelection(_shapeAdapterBuckets,
                           hasView ? &view : nullptr,
