@@ -186,6 +186,26 @@ class GfPlane
     double              _distance;
 };
 
+/// Fits a plane to the given \p points. There must be at least three points in
+/// order to fit the plane; if the size of \p points is less than three, this
+/// issues a coding error.
+///
+/// If the \p points are all collinear, then no plane can be determined, and
+/// this function returns \c false. Otherwise, if the fitting is successful,
+/// it returns \c true and sets \p *fitPlane to the fitted plane. If \p points
+/// contains exactly three points, then the resulting plane is the exact plane
+/// defined by the three points. If \p points contains more than three points,
+/// then this function determines the best-fitting plane for the given points.
+/// The orientation of the plane normal is arbitrary with regards to the
+/// plane's positive and negative half-spaces; you can use GfPlane::Reorient()
+/// to flip the plane if necessary.
+///
+/// The current implementation uses linear least squares and thus defines
+/// "best-fitting" as minimizing the sum of the squares of the vertical
+/// distances between points and the plane surface.
+GF_API
+bool GfFitPlaneToPoints(const std::vector<GfVec3d>& points, GfPlane* fitPlane);
+
 /// Output a GfPlane using the format [(nx ny nz) distance].
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream&, const GfPlane&);

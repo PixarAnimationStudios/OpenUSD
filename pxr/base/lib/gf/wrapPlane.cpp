@@ -33,6 +33,7 @@
 
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/return_arg.hpp>
 
@@ -51,6 +52,11 @@ static string _Repr(GfPlane const &self) {
         TfPyRepr(self.GetDistanceFromOrigin()) + ")";
 }
 
+static object _FitPlaneToPoints(const std::vector<GfVec3d>& points) {
+    GfPlane plane;
+    return GfFitPlaneToPoints(points, &plane) ? object(plane) : object();
+}
+
 } // anonymous namespace 
 
 void wrapPlane()
@@ -59,6 +65,8 @@ void wrapPlane()
 
     object getNormal = make_function(&This::GetNormal,
                                      return_value_policy<return_by_value>());
+
+    def( "FitPlaneToPoints", _FitPlaneToPoints );
 
     class_<This>( "Plane", init<>() )
         .def(init< const GfVec3d &, double >())
