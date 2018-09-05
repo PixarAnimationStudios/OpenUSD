@@ -1,0 +1,77 @@
+#usda 1.0
+
+(
+    subLayers = [
+        @usdGeom/schema.usda@
+    ]
+)
+ 
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdVol"
+        string libraryPath = "pxr/usd/usdVol"
+	dictionary libraryTokens = {
+            dictionary field = {
+                string doc = """This is the namespace prefix used to 
+                specify the fields that make up a volume primitive."""
+            }
+	}
+    }
+)
+{
+}
+
+class Volume "Volume" (
+    inherits = </Gprim>
+    doc = """A renderable volume primitive. A volume is made up of any number
+             of FieldBase primitive bound together in this volume. Each
+             FieldBase primitive is specified as a relationship with a
+             namespace prefix of "field"."""
+)
+{
+}
+
+class "FieldBase" (
+    inherits = </Boundable>
+    doc = """Base class for field primitives."""
+)
+{
+}
+
+class "FieldAsset" (
+    inherits = </FieldBase>
+    doc = """Base class for field primitives defined by an external file."""
+)
+{
+    asset filePath (
+	doc = """An asset path attribute that points to a file on disk."""
+    )
+}
+
+class Field3DAsset "Field3DAsset" (
+    inherits = </FieldAsset>
+    doc = """Field3D field primitive."""
+)
+{
+    token fieldName (
+	doc = """Name of an individual field within the file specified by
+                 the filePath attribute."""
+    )
+
+    int fieldIndex (
+	doc = """Numeric index to disambiguate between multiple fields stored
+                 in the same Field3D file."""
+    )
+}
+
+class OpenVDBAsset "OpenVDBAsset" (
+    inherits = </FieldAsset>
+    doc = """OpenVDB field primitive."""
+)
+{
+    token fieldName (
+	doc = """Name of an individual grid within the file specified by
+                 the filePath attribute."""
+    )
+}
+
