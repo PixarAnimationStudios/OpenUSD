@@ -22,15 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usdGeom/pointInstancer.h"
-#include "pxr/usd/usdGeom/debugCodes.h"
-
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
-
-#include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -307,10 +303,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/gf/transform.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdGeom/debugCodes.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/motionAPI.h"
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/work/loops.h"
 #include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
