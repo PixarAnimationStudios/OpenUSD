@@ -104,6 +104,13 @@
                         "isInternal": true,
                         "primTypeName": "Sphere"
                     },
+                    "UsdImagingVolumeAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Volume"
+                    },
                     "UsdImagingDomeLightAdapter": {
                         "bases": [
                             "UsdImagingLightAdapter"

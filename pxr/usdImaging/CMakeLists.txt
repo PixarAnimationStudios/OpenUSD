@@ -1,6 +1,7 @@
 set(DIRS
     lib
     bin
+    plugin
 )
 
 foreach(d ${DIRS})

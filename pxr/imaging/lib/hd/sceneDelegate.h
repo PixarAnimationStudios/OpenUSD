@@ -251,6 +251,27 @@ struct HdRenderBufferDescriptor {
     bool multiSampled;
 };
 
+/// \struct HdVolumeFieldDescriptor
+///
+/// Description of a single field related to a volume primitive.
+///
+struct HdVolumeFieldDescriptor {
+    TfToken fieldName;
+    TfToken fieldPrimType;
+    SdfPath fieldId;
+
+    HdVolumeFieldDescriptor() {}
+    HdVolumeFieldDescriptor(
+        TfToken const & fieldName_,
+        TfToken const & fieldPrimType_,
+        SdfPath const & fieldId_)
+    : fieldName(fieldName_), fieldPrimType(fieldPrimType_), fieldId(fieldId_)
+    { }
+};
+
+typedef std::vector<HdVolumeFieldDescriptor>
+	HdVolumeFieldDescriptorVector;
+
 /// \class HdSceneDelegate
 ///
 /// Adapter class providing data exchange with the client scene graph.
@@ -557,6 +578,14 @@ public:
     /// orientation.
     HD_API
     virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+
+    // -----------------------------------------------------------------------//
+    /// \name Volume Aspects
+    // -----------------------------------------------------------------------//
+
+    HD_API
+    virtual HdVolumeFieldDescriptorVector
+    GetVolumeFieldDescriptors(SdfPath const &volumeId);
 
     // -----------------------------------------------------------------------//
     /// \name ExtComputation Aspects

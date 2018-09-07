@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-            
 #define HD_TOKENS                               \
     (adjacency)                                 \
     (bboxLocalMin)                              \
@@ -189,7 +188,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
 
-
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
 
@@ -198,6 +196,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \
+    (volume)                                    \
                                                 \
     /* Sprims */                                \
     (camera)                                    \

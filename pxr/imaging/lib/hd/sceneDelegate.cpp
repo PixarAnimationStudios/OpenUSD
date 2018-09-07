@@ -370,6 +370,17 @@ HdSceneDelegate::GetClipPlanes(SdfPath const& cameraId)
 }
 
 // -----------------------------------------------------------------------//
+/// \name Volume Aspects
+// -----------------------------------------------------------------------//
+
+/*virtual*/
+HdVolumeFieldDescriptorVector
+HdSceneDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
+{
+    return HdVolumeFieldDescriptorVector();
+}
+
+// -----------------------------------------------------------------------//
 /// \name ExtComputation Aspects
 // -----------------------------------------------------------------------//
 
