@@ -44,6 +44,10 @@
 // * We might want to explore using fractional_even_spacing to better preserve
 // the shape of cubic curves.
 //
+// * We've realized that u appears to be 'backwards' in many cases, and so we
+//   have updated many of the functions to use
+//   mix(endPointValue, startPointValue, u) when intuitively it should be
+//   the other way around.
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Patch
@@ -503,7 +507,7 @@ vec3 evaluateNormal(float u)
 {
     // XXX: This clamp is a hack to mask some odd orientation flipping issues 
     u = clamp(u, 1e-3, 1.0 - 1e-3);
-    return mix(inData[0].Neye, inData[1].Neye, u);
+    return mix(inData[1].Neye, inData[0].Neye, u);
 }
 
 void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
@@ -514,9 +518,9 @@ void evaluate(float u, float v, out vec4 position, out vec4 tangent,
     float w0 = HdGet_widths(0);
     float w1 = HdGet_widths(1);
 
-    position = p0 * u +  p1 * (1.0 - u);
+    position = mix(p1, p0, u);
     tangent = normalize(p1 - p0);
-    width = w0 * u + w1 * (1.0 - u);
+    width = mix(w1, w0, u);
     normal = normalize(evaluateNormal(u));
 }
 
@@ -619,7 +623,7 @@ vec3 evaluateNormal(vec4 basis, float u)
     // XXX: This clamp is a hack to mask some odd orientation flipping issues 
     // for oriented bezier curves.
     u = clamp(u, 1e-3, 1.0 - 1e-3);
-    return mix(inData[1].Neye, inData[2].Neye, u);
+    return mix(inData[2].Neye, inData[1].Neye, u);
 }
 
 --- --------------------------------------------------------------------------
@@ -649,7 +653,7 @@ float evaluateWidths(vec4 basis, float u)
 {
     float w0 = HdGet_widths(1);
     float w1 = HdGet_widths(2);
-    return mix(w0, w1, u);
+    return mix(w1, w0, u);
 }
 
 --- --------------------------------------------------------------------------
