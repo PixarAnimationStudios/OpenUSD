@@ -23,6 +23,8 @@
 //
 #include "SOP_usdimport.h"
 
+#include "OP_Utils.h"
+
 #include "gusd/error.h"
 #include "gusd/GU_USD.h"
 #include "gusd/PRM_Shared.h"
@@ -376,12 +378,7 @@ GusdSOP_usdimport::Reload()
 
     UT_StringSet paths;
     paths.insert(file);
-
-    GusdStageCacheWriter cache;
-    cache.ReloadStages(paths);
-    GusdGT_PrimCache::GetInstance().Clear(paths);
-    GusdUSD_XformCache::GetInstance().Clear(paths);
-    GusdUSD_VisCache::GetInstance().Clear(paths);
+    GusdOP_Utils::ReloadStagesAndClearCaches(paths);
     forceRecook();
 }
 

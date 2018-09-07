@@ -23,10 +23,13 @@
 //
 #include "ROP_usdoutput.h"
 
+#include "OP_Utils.h"
+
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -961,7 +964,7 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
     } else {
         
         // Find out if a layer with this fileName already exists.
-        if (SdfLayer::Find(fileName)) {
+        if (SdfLayer::Find(fileName) || SdfLayer::Find(TfRealPath(fileName))) {
             // Get the SdfFileFormat from fileName.
             SdfFileFormatConstPtr format =
                 SdfFileFormat::FindByExtension(fileName);
@@ -1100,10 +1103,10 @@ closeStage(fpreal tend)
 
             // Reload any stages on the cache matching this path.
             // Note that this is not thread-safe.
-            GusdStageCacheWriter cache;
             UT_StringSet paths;
             paths.insert(targetPath);
-            cache.ReloadStages(paths);
+            paths.insert(TfRealPath(targetPath));
+            GusdOP_Utils::ReloadStagesAndClearCaches(paths);
         }
     }
 
