@@ -168,7 +168,8 @@ TfPyEvaluate(
 /// Return a positive index in the range [0,size).  If \a throwError is true,
 /// this will throw an index error if the resulting index is out of range.
 TF_API 
-int TfPyNormalizeIndex(int index, unsigned int size, bool throwError = false);
+int64_t
+TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError = false);
 
 /// Return the name of the class of \a obj.
 TF_API std::string TfPyGetClassName(boost::python::object const &obj);

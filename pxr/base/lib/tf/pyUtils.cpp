@@ -199,16 +199,18 @@ TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
 }
 
 
-int
-TfPyNormalizeIndex(int index, unsigned int size, bool throwError)
+int64_t
+TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError)
 {
     if (index < 0) 
         index += size;
 
-    if (throwError && ( static_cast<unsigned int>(index) >= size || index < 0))
+    if (throwError && (index < 0 || static_cast<uint64_t>(index) >= size)) {
         TfPyThrowIndexError("Index out of range.");
+    }
 
-    return index < 0 ? 0 : static_cast<unsigned int>(index) >= size ? size - 1 : index;
+    return index < 0 ? 0 :
+                   static_cast<uint64_t>(index) >= size ? size - 1 : index;
 }
 
 
