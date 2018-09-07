@@ -1333,7 +1333,7 @@
     <addaction name="menuCameraGuides"/>
     <addaction name="menuDisplay"/>
     <addaction name="menuInterpolation"/>
-    <addaction name="actionEnable_Hardware_Shading"/>
+    <addaction name="actionEnable_Scene_Materials"/>
     <addaction name="actionDisplay_PrimId"/>
     <addaction name="actionCull_Backfaces"/>
    </widget>
@@ -2033,12 +2033,12 @@
     <string>Display Prim Id</string>
    </property>
   </action>
-  <action name="actionEnable_Hardware_Shading">
+  <action name="actionEnable_Scene_Materials">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Enable Hardware Shading</string>
+    <string>Enable Scene Materials</string>
    </property>
   </action>
   <action name="actionShow_Inactive_Prims">
