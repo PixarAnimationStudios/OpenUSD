@@ -537,7 +537,8 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
 // points when using the points repr.
 static HdBufferSourceSharedPtr
 _GetExpandedPointsVisibilityBuffer(VtValue input,
-                                   int numPoints)
+                                   int numPoints,
+                                   SdfPath const &id)
 {
     TF_VERIFY(input.IsArrayValued() &&
               input.GetArraySize() > 0);
@@ -546,7 +547,13 @@ _GetExpandedPointsVisibilityBuffer(VtValue input,
     const VtIntArray& invisiblePoints = input.UncheckedGet<VtIntArray>();
     for (VtIntArray::const_iterator i = invisiblePoints.begin(),
                                   end = invisiblePoints.end(); i != end; ++i) {
-        pointsVisibility[*i] = 0.0f;
+        if (*i < 0 || *i >= numPoints) {
+            HF_VALIDATION_WARN(id, "Invisible point index %d isn't in the range"
+                                   " [0, %d).", *i, numPoints);
+            continue;
+        } else {
+            pointsVisibility[*i] = 0.0f;
+        }
     }
 
     return HdBufferSourceSharedPtr(
@@ -708,13 +715,15 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 //       _pointsVisibilityAuthored to true
                 if (hasInvisiblePoints && _pointsVisibilityAuthored) {
                     source =
-                        _GetExpandedPointsVisibilityBuffer(value, numPoints);
+                        _GetExpandedPointsVisibilityBuffer(value, numPoints,
+                                                           GetId());
                 } else if (!hasInvisiblePoints && _pointsVisibilityAuthored) {
                     source = _GetAllVisiblePointsVisibilityBuffer(numPoints);
                 } else {
                     TF_VERIFY(hasInvisiblePoints && !_pointsVisibilityAuthored);
                     source =
-                        _GetExpandedPointsVisibilityBuffer(value, numPoints);
+                        _GetExpandedPointsVisibilityBuffer(value, numPoints,
+                                                           GetId());
                     _pointsVisibilityAuthored = true;
                     mergePointsVisibilityIntoBAR = true;
                 }
