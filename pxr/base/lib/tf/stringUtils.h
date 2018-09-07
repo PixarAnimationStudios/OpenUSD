@@ -35,15 +35,13 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
 
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/utility/enable_if.hpp>
-
 #include <cstdarg>
 #include <cstring>
 #include <list>
 #include <set>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -521,7 +519,7 @@ struct TfDictionaryLessThan {
 /// free to use the stream operators in ostreamMethods.h, but are not required
 /// to do so.
 template <typename T>
-typename boost::disable_if<boost::is_enum<T>, std::string>::type
+typename std::enable_if<!std::is_enum<T>::value, std::string>::type
 TfStringify(const T& v)
 {
     std::ostringstream stream;
@@ -531,7 +529,7 @@ TfStringify(const T& v)
 
 /// \overload
 template <typename T>
-typename boost::enable_if_c<boost::is_enum<T>::value, std::string>::type
+typename std::enable_if<std::is_enum<T>::value, std::string>::type
 TfStringify(const T& v)
 {
     return TfEnum::GetName(v);
