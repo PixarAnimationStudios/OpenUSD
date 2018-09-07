@@ -60,6 +60,8 @@ HdSt_ImmediateDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     HdSt_DrawBatch::_Init(drawItemInstance);
     drawItemInstance->SetBatchIndex(0);
     drawItemInstance->SetBatch(this);
+    _bufferArraysHash =
+        drawItemInstance->GetDrawItem()->GetBufferArraysHash();
 }
 
 HdSt_ImmediateDrawBatch::~HdSt_ImmediateDrawBatch()
@@ -72,6 +74,16 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
     if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
 
     HdStDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
+
+    // check the hash to see if anything's been reallocated/migrated.
+    // note that we just need to compare the hash of the first item,
+    // since draw items are aggregated and ensure that they are sharing
+    // the same buffer arrays.
+    size_t bufferArraysHash = batchItem->GetBufferArraysHash();
+    if (_bufferArraysHash != bufferArraysHash) {
+        _bufferArraysHash = bufferArraysHash;
+        return false;
+    }
 
     // immediate batch doesn't need to verify buffer array hash unlike indirect
     // batch.
