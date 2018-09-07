@@ -239,10 +239,13 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         int newRange = sources[pointsIndexInSourceArray]->GetNumElements();
 
         // Check if the range is different and if so force a garbage collection
-        // which will make sure the points are up to date
+        // which will make sure the points are up to date; also mark batches
+        // dirty.
         if(previousRange != newRange) {
-            sceneDelegate->GetRenderIndex().GetChangeTracker()
-                .SetGarbageCollectionNeeded();
+            sceneDelegate->GetRenderIndex().GetChangeTracker().
+                SetGarbageCollectionNeeded();
+            sceneDelegate->GetRenderIndex().GetChangeTracker().
+                MarkBatchesDirty();
         }
     }
 

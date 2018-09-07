@@ -120,6 +120,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _surfaceShader(new HdStSurfaceShader)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
+ , _hasDisplacement(false)
 {
 }
 
@@ -165,15 +166,20 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             _surfaceShader->SetGeometrySource(geometrySource);
         }
 
-        
-        // XXX Forcing collections to be dirty to reload everything
-        //     Something more efficient can be done here
-        HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkAllCollectionsDirty();
+
+        // Mark batches dirty to force batch validation/rebuild.
+        sceneDelegate->GetRenderIndex().GetChangeTracker().
+            MarkBatchesDirty();
+
+        bool hasDisplacement = !(geometrySource.empty());
+
+        if (_hasDisplacement != hasDisplacement) {
+            _hasDisplacement = hasDisplacement;
+            needsRprimMaterialStateUpdate = true;
+        }
 
         bool hasLimitSurfaceEvaluation =
-                                _GetHasLimitSurfaceEvaluation(materialMetadata);
+            _GetHasLimitSurfaceEvaluation(materialMetadata);
 
         if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
             _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;

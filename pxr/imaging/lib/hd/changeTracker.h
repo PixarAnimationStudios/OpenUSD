@@ -481,13 +481,14 @@ public:
         return _changeCount;
     }
 
-    /// Marks all shader bindings dirty (draw batches need to be validated).
+    /// Marks all batches dirty, meaning they need to be validated and
+    /// potentially rebuilt.
     HD_API
-    void MarkShaderBindingsDirty();
+    void MarkBatchesDirty();
 
-    /// Returns the current shader binding version.
+    /// Returns the current batch version.
     HD_API
-    unsigned GetShaderBindingsVersion() const;
+    unsigned GetBatchVersion() const;
 
     /// Returns the current version of the Render Index's RPrim set.
     HD_API
@@ -567,8 +568,8 @@ private:
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
 
-    // Used to validate shader bindings (to validate draw batches)
-    std::atomic_uint _shaderBindingsVersion;
+    // Used to validate draw batches.
+    std::atomic_uint _batchVersion;
 };
 
 

@@ -320,7 +320,6 @@ HdUnitTestDelegate::RebindMaterial(SdfPath const &rprimId,
     // the version of the global bindings so batches get rebuild (if needed)
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
-    tracker.MarkShaderBindingsDirty();
 }
 
 void

@@ -245,7 +245,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     drawItem->SetGeometricShader(geomShader);
 
     // The batches need to be validated and rebuilt if necessary.
-    renderIndex.GetChangeTracker().MarkShaderBindingsDirty();
+    renderIndex.GetChangeTracker().MarkBatchesDirty();
 }
 
 HdDirtyBits

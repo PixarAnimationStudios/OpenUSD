@@ -228,8 +228,9 @@ HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
     if (_materialId != materialId) {
         _materialId = materialId;
 
-        // The batches need to be verified and rebuilt if necessary.
-        changeTracker.MarkShaderBindingsDirty();
+        // The batches need to be verified and rebuilt, since a changed shader
+        // may change aggregation.
+        changeTracker.MarkBatchesDirty();
     }
 }
 

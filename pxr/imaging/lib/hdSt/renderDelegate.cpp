@@ -301,7 +301,6 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     if (tracker->IsGarbageCollectionNeeded()) {
         _resourceRegistry->GarbageCollect();
         tracker->ClearGarbageCollectionNeeded();
-        tracker->MarkAllCollectionsDirty();
     }
 
     // see bug126621. currently dispatch buffers need to be released
