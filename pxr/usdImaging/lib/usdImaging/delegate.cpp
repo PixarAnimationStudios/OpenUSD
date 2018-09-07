@@ -2219,7 +2219,6 @@ UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
     // XXX: We should add caching to the transform computation if this shows
     // up in profiling, but all of our current caches are cleared on time change
     // so we'd need to write a new structure.
-    UsdGeomXformCache xformCache(0.0);
     for (size_t i=0; i < numSamples; ++i) {
         UsdTimeCode offsetTime = GetTimeWithOffset(_timeSampleOffsets[i]);
         times[i] = _timeSampleOffsets[i];
@@ -2318,17 +2317,9 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 value = VtValue(vec);
             }
         } else if (key == HdTokens->transform) {
-            GfMatrix4d xform(1.);
-            bool resetsXformStack=false;
-            UsdGeomXformable xf(_GetPrim(usdPath));
-            if (xf && 
-                xf.GetLocalTransformation(&xform, &resetsXformStack, _time)) {
-                // resetsXformStack gets thrown away here since we're only 
-                // interested in the local transformation. The xformCache
-                // takes care of handling resetsXformStack appropriately when 
-                // computing CTMs.
-                value = VtValue(xform);
-            }
+            value = VtValue(
+                UsdImaging_XfStrategy::ComputeTransform(_GetPrim(usdPath), 
+                    _rootPrimPath, GetTime(), _rigidXformOverrides) * _rootXf);
         } else if (UsdGeomPrimvar pv = UsdGeomGprim(_GetPrim(usdPath))
                                                 .GetPrimvar(key)) {
             // Note here that Hydra requested "color" (e.g.) and we've converted
