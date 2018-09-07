@@ -25,7 +25,7 @@
 #define GARCH_GLPLATFORM_DEBUG_WINDOW_GLX_H
 
 #include "pxr/pxr.h"
-#include <boost/scoped_ptr.hpp>
+#include "pxr/base/tf/declarePtrs.h"
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 
@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class GarchGLDebugWindow;
-class GarchGLPlatformDebugContext;
+TF_DECLARE_WEAK_AND_REF_PTRS(GarchGLPlatformDebugContext);
 
 /// \class Garch_GLPlatformDebugWindow
 ///
@@ -52,7 +52,7 @@ private:
     Display *_display;
     Window _window;
     GLXContext _glContext;
-    boost::scoped_ptr<GarchGLPlatformDebugContext> _glDebugContext;
+    GarchGLPlatformDebugContextRefPtr _glDebugContext;
 };
 
 
