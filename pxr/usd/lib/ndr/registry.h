@@ -63,7 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class NdrRegistry : public TfWeakBase
 {
 public:
-    typedef std::vector<TfWeakPtr<NdrDiscoveryPlugin>> DiscoveryPluginPtrVec;
+    using DiscoveryPluginRefPtrVec = NdrDiscoveryPluginRefPtrVector;
 
     /// Get the single `NdrRegistry` instance.
     NDR_API
@@ -77,7 +77,7 @@ public:
     /// have been parsed (eg, through GetNode*()), otherwise an error will
     /// result.
     NDR_API
-    void SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins);
+    void SetExtraDiscoveryPlugins(DiscoveryPluginRefPtrVec plugins);
 
     /// Allows the client to set any additional discovery plugins that would
     /// otherwise NOT be found through the plugin system. Runs the discovery
@@ -301,7 +301,7 @@ private:
 
     // Runs each discovery plugin provided and appends the results to the
     // internal discovery results vector
-    void _RunDiscoveryPlugins(const DiscoveryPluginPtrVec& discoveryPlugins);
+    void _RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugins);
 
     // Finds and instantiates the discovery plugins via Tf
     void _FindAndInstantiateDiscoveryPlugins();
@@ -344,7 +344,7 @@ private:
 
     // The discovery plugins that were found through libplug and/or provided by
     // the client
-    DiscoveryPluginPtrVec _discoveryPlugins;
+    DiscoveryPluginRefPtrVec _discoveryPlugins;
 
     // The parser plugins that have been discovered via the plugin system. Maps
     // a discovery result's "discovery type" to a specific parser.

@@ -39,22 +39,20 @@ using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
 using namespace TfPyContainerConversions;
 
-TF_DECLARE_WEAK_PTRS(_NdrFilesystemDiscoveryPlugin);
-
 namespace {
 
-static _NdrFilesystemDiscoveryPluginPtr New()
+static _NdrFilesystemDiscoveryPluginRefPtr New()
 {
-    return TfCreateWeakPtr(
+    return TfCreateRefPtr(
         new _NdrFilesystemDiscoveryPlugin()
     );
 }
 
 static
-_NdrFilesystemDiscoveryPluginPtr
+_NdrFilesystemDiscoveryPluginRefPtr
 NewWithFilter(_NdrFilesystemDiscoveryPlugin::Filter filter)
 {
-    return TfCreateWeakPtr(
+    return TfCreateRefPtr(
         new _NdrFilesystemDiscoveryPlugin(std::move(filter))
     );
 }
@@ -71,9 +69,9 @@ public:
         return discoveryType;
     }
 
-    static TfWeakPtr<_Context> New()
+    static TfRefPtr<_Context> New()
     {
-        return TfCreateWeakPtr(new _Context);
+        return TfCreateRefPtr(new _Context);
     }
 };
 
@@ -84,7 +82,7 @@ void wrapFilesystemDiscoveryContext()
 
     class_<This, ThisPtr, bases<NdrDiscoveryPluginContext>, boost::noncopyable>(
         "Context", no_init)
-        .def(TfPyWeakPtr())
+        .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(This::New))
         ;
 }
@@ -104,7 +102,7 @@ void wrapFilesystemDiscovery()
     scope s =
     class_<This, ThisPtr, bases<NdrDiscoveryPlugin>, boost::noncopyable>(
         "_FilesystemDiscoveryPlugin", no_init)
-        .def(TfPyWeakPtr())
+        .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(New))
         .def(TfMakePyConstructor(NewWithFilter))
         .def("DiscoverNodes", &This::DiscoverNodes,

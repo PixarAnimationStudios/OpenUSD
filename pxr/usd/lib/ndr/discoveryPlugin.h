@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
+#include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/usd/ndr/declare.h"
@@ -46,10 +47,12 @@ TF_REGISTRY_FUNCTION(TfType)                                                  \
         .SetFactory<NdrDiscoveryPluginFactory<DiscoveryPluginClass>>();       \
 }
 
+TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPluginContext);
+
 /// A context for discovery.  Discovery plugins can use this to get
 /// a limited set of non-local information without direct coupling
 /// between plugins.
-class NdrDiscoveryPluginContext : public TfWeakBase
+class NdrDiscoveryPluginContext : public TfRefBase, public TfWeakBase
 {
 public:
     NDR_API
@@ -60,6 +63,8 @@ public:
     NDR_API
     virtual TfToken GetSourceType(const TfToken& discoveryType) const = 0;
 };
+
+TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPlugin);
 
 /// \class NdrDiscoveryPlugin
 ///
@@ -135,7 +140,7 @@ public:
 ///     </li>
 /// </ul>
 ///
-class NdrDiscoveryPlugin : public TfWeakBase
+class NdrDiscoveryPlugin : public TfRefBase, public TfWeakBase
 {
 public:
     using Context = NdrDiscoveryPluginContext;
@@ -163,16 +168,16 @@ class NdrDiscoveryPluginFactoryBase : public TfType::FactoryBase
 {
 public:
     NDR_API
-    virtual NdrDiscoveryPlugin* New() const = 0;
+    virtual NdrDiscoveryPluginRefPtr New() const = 0;
 };
 
 template <class T>
 class NdrDiscoveryPluginFactory : public NdrDiscoveryPluginFactoryBase
 {
 public:
-    virtual NdrDiscoveryPlugin* New() const
+    NdrDiscoveryPluginRefPtr New() const override
     {
-        return new T;
+        return TfCreateRefPtr(new T);
     }
 };
 

@@ -222,7 +222,7 @@ NdrRegistry::GetInstance()
 }
 
 void
-NdrRegistry::SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins)
+NdrRegistry::SetExtraDiscoveryPlugins(DiscoveryPluginRefPtrVec plugins)
 {
     {
         std::lock_guard<std::mutex> nmLock(_nodeMapMutex);
@@ -237,14 +237,11 @@ NdrRegistry::SetExtraDiscoveryPlugins(DiscoveryPluginPtrVec plugins)
         }
     }
 
-    // XXX -- Any plugin in plugins can be destroyed at any time but this
-    //        class doesn't guard against that.  This method should probably
-    //        take unique_ptrs, not weak pointers.
+    _RunDiscoveryPlugins(plugins);
+
     _discoveryPlugins.insert(_discoveryPlugins.end(),
                              std::make_move_iterator(plugins.begin()),
                              std::make_move_iterator(plugins.end()));
-
-    _RunDiscoveryPlugins(plugins);
 }
 
 void
@@ -264,7 +261,7 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
     }
 
     // Instantiate any discovery plugins that were found
-    DiscoveryPluginPtrVec discoveryPlugins;
+    DiscoveryPluginRefPtrVec discoveryPlugins;
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
@@ -420,7 +417,7 @@ NdrRegistry::GetSearchURIs() const
 {
     NdrStringVec searchURIs;
 
-    for (const TfWeakPtr<NdrDiscoveryPlugin>& dp : _discoveryPlugins) {
+    for (const NdrDiscoveryPluginRefPtr& dp : _discoveryPlugins) {
         NdrStringVec uris = dp->GetSearchURIs();
 
         searchURIs.insert(searchURIs.end(),
@@ -718,11 +715,11 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
 }
 
 void
-NdrRegistry::_RunDiscoveryPlugins(const DiscoveryPluginPtrVec& discoveryPlugins)
+NdrRegistry::_RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugins)
 {
     std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
 
-    for (const TfWeakPtr<NdrDiscoveryPlugin>& dp : discoveryPlugins) {
+    for (const NdrDiscoveryPluginRefPtr& dp : discoveryPlugins) {
         NdrNodeDiscoveryResultVec results =
             dp->DiscoverNodes(_DiscoveryContext(*this));
 
