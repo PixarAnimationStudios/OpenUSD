@@ -153,6 +153,30 @@ class TestUsdZipFile(unittest.TestCase):
         self._ValidateSourceAndZippedFile(
             "src/a.txt", zf, "src/a.txt", dontFixLineEndings)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
+
+    def test_WriterAlignment(self):
+        """Test that Usd.ZipFileWriter writes files so that they're aligned
+        according to the .usdz specification"""
+        with open("test_align_2.txt", "wb") as f:
+            f.write("This is a test file")
+
+        # Create .usdz files with two files, where the size of the first file 
+        # varies from 1 byte to 64 bytes, then verify that the second file's 
+        # data is aligned to 64 bytes.
+        for i in xrange(1, 65):
+            with open("test_align_1.txt", "wb") as f:
+                f.write("a" * i)
+
+            with Usd.ZipFileWriter.CreateNew("test_align.usdz") as zfw:
+                zfw.AddFile("test_align_1.txt")
+                zfw.AddFile("test_align_2.txt")
+            
+            zf = Usd.ZipFile.Open("test_align.usdz")
+            fi = zf.GetFileInfo("test_align_1.txt")
+            self.assertEqual(fi.dataOffset % 64, 0)
+
+            fi = zf.GetFileInfo("test_align_2.txt")
+            self.assertEqual(fi.dataOffset % 64, 0)
             
     def test_WriterDiscard(self):
         if os.path.isfile("test_discard.usdz"):
