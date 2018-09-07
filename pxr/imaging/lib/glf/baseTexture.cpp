@@ -162,13 +162,15 @@ GlfBaseTexture::GetTextureInfo(bool forceLoad)
         info["depth"] = 1;
         info["format"] = _format;
 
-        if (_hasWrapModeS)
+        if (_hasWrapModeS) {
             info["wrapModeS"] = _wrapModeS;
+        }
 
-        if (_hasWrapModeT)
+        if (_hasWrapModeT) {
             info["wrapModeT"] = _wrapModeT;
+        }
     } else {
-        info["memoryUsed"] = 0;
+        info["memoryUsed"] = (size_t)0;
         info["width"] = 0;
         info["height"] = 0;
         info["depth"] = 1;
