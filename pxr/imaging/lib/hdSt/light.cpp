@@ -70,10 +70,11 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     GfVec4f p = GfVec4f(hdp[0], hdp[1], hdp[2], 1.0f);
 
     // Create the Glf Simple Light object that will be used by the rest
-    // of the pipeline.
+    // of the pipeline. No support for shadows for this translated light.
     GlfSimpleLight l;
     l.SetPosition(p);
     l.SetDiffuse(c);
+    l.SetHasShadow(false);
     return l;
 }
 

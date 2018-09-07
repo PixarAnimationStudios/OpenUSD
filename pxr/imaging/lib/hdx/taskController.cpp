@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
+#include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
@@ -86,6 +87,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (renderTask)
     (selectionTask)
     (simpleLightTask)
+    (shadowTask)
     (camera)
 );
 
@@ -104,6 +106,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     _CreateRenderTasks();
     _CreateSelectionTask();
     _CreateLightingTask();
+    _CreateShadowTask();
 }
 
 void
@@ -115,7 +118,7 @@ HdxTaskController::_CreateCamera()
         &_delegate, _cameraId);
 
     _delegate.SetParameter(_cameraId, HdCameraTokens->windowPolicy,
-        VtValue());
+        VtValue(CameraUtilFit));
     _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
         VtValue(GfMatrix4d(1.0)));
     _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
@@ -196,6 +199,20 @@ HdxTaskController::_CreateLightingTask()
         SdfPathVector());
 }
 
+void
+HdxTaskController::_CreateShadowTask() 
+{
+    _shadowTaskId = GetControllerId().AppendChild(_tokens->shadowTask);
+
+    HdxShadowTaskParams shadowParams;
+    shadowParams.camera = _cameraId;
+
+    GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
+
+    _delegate.SetParameter(_shadowTaskId, HdTokens->params, shadowParams);
+    _delegate.SetParameter(_shadowTaskId, HdTokens->children, SdfPathVector());
+}
+
 HdxTaskController::~HdxTaskController()
 {
     GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
@@ -204,6 +221,7 @@ HdxTaskController::~HdxTaskController()
         _idRenderTaskId,
         _selectionTaskId,
         _simpleLightTaskId,
+        _shadowTaskId,
     };
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         GetRenderIndex()->RemoveTask(tasks[i]);
@@ -219,8 +237,17 @@ HdxTaskController::GetTasks(TfToken const& taskSet)
     _tasks.clear();
 
     // Light - Only run simpleLightTask if the backend supports simpleLight...
-    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
+        const HdxSimpleLightTaskParams& simpleLightParams =
+            _delegate.GetParameter<HdxSimpleLightTaskParams>(
+                _simpleLightTaskId, HdTokens->params);
         _tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
+
+        // If shadows are enabled then we add the task to generate the 
+        // shadow maps.
+        if (simpleLightParams.enableShadows) {
+            _tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
+        }
     }
 
     // Render
@@ -281,6 +308,46 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         _delegate.SetParameter(task, HdTokens->params, mergedParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
                 task, HdChangeTracker::DirtyParams);
+
+        // Update shadow task in case materials have been enabled/disabled
+        if (GetRenderIndex()->IsSprimTypeSupported(
+            HdPrimTypeTokens->simpleLight)) {
+
+            HdxShadowTaskParams oldShParams = 
+                _delegate.GetParameter<HdxShadowTaskParams>(
+                _shadowTaskId, HdTokens->params);
+
+            if (oldShParams.enableSceneMaterials != 
+                mergedParams.enableHardwareShading) {
+
+                oldShParams.enableSceneMaterials = 
+                    mergedParams.enableHardwareShading;
+                _delegate.SetParameter(_shadowTaskId, 
+                    HdTokens->params, oldShParams);
+
+                GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                    _shadowTaskId, HdChangeTracker::DirtyParams);
+            }
+        }
+    }
+}
+
+void
+HdxTaskController::SetEnableShadows(bool enable)
+{
+    if (!GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+        return;
+    }
+
+    HdxSimpleLightTaskParams params =
+        _delegate.GetParameter<HdxSimpleLightTaskParams>(
+            _simpleLightTaskId, HdTokens->params);
+
+    if (params.enableShadows != enable) {
+        params.enableShadows = enable;
+        _delegate.SetParameter(_simpleLightTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _simpleLightTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
@@ -409,6 +476,7 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(lightId,
             HdLight::AllDirty);
     }
+
     // If the light pool is too big for the light context, remove the extra
     // sprims.
     while (_lightIds.size() > lights.size()) {
@@ -438,17 +506,18 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
     // we need to update that field if the material parameters changed.
     //
     // It's unfortunate that the lighting context is split this way.
-    HdxSimpleLightTaskParams params =
+    HdxSimpleLightTaskParams lightParams =
         _delegate.GetParameter<HdxSimpleLightTaskParams>(_simpleLightTaskId,
             HdTokens->params);
 
-    if (params.sceneAmbient != src->GetSceneAmbient() ||
-        params.material != src->GetMaterial()) {
+    if (lightParams.sceneAmbient != src->GetSceneAmbient() ||
+        lightParams.material != src->GetMaterial()) {
 
-        params.sceneAmbient = src->GetSceneAmbient();
-        params.material = src->GetMaterial();
+        lightParams.sceneAmbient = src->GetSceneAmbient();
+        lightParams.material = src->GetMaterial();
 
-        _delegate.SetParameter(_simpleLightTaskId, HdTokens->params, params);
+        _delegate.SetParameter(
+            _simpleLightTaskId, HdTokens->params, lightParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId, HdChangeTracker::DirtyParams);
     }
@@ -508,11 +577,22 @@ HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             tasks[i], HdChangeTracker::DirtyParams);
     }
+
+    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
+        // The shadow and camera viewport should be the same
+        // so we don't have to double check what the shadow task has.
+        HdxShadowTaskParams params =
+            _delegate.GetParameter<HdxShadowTaskParams>(
+                _shadowTaskId, HdTokens->params);
+        params.viewport = viewport;
+        _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _shadowTaskId, HdChangeTracker::DirtyParams);
+    }
 }
 
 void
-HdxTaskController::SetCameraClipPlanes(
-    std::vector<GfVec4d> const& clipPlanes)
+HdxTaskController::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
 {
     // Cache the clip planes
     std::vector<GfVec4d> oldClipPlanes =
@@ -524,6 +604,23 @@ HdxTaskController::SetCameraClipPlanes(
             clipPlanes);
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
             HdCamera::DirtyClipPlanes);
+    }
+}
+
+void
+HdxTaskController::SetCameraWindowPolicy(
+    CameraUtilConformWindowPolicy windowPolicy)
+{
+    // Cache the window policy, if needed
+    const CameraUtilConformWindowPolicy oldPolicy =
+        _delegate.GetParameter<CameraUtilConformWindowPolicy>(
+            _cameraId, HdCameraTokens->windowPolicy);
+
+    if (oldPolicy != windowPolicy) {
+        _delegate.SetParameter(_cameraId, HdCameraTokens->windowPolicy,
+            windowPolicy);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
+            HdCamera::DirtyWindowPolicy);
     }
 }
 

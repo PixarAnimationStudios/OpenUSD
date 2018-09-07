@@ -40,12 +40,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class GlfSimpleLight;
 class HdRenderIndex;
 class HdSceneDelegate;
-class GlfSimpleLight;
+class HdStRenderPassState;
 
 typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef std::vector<HdRenderPassStateSharedPtr> HdRenderPassStateSharedPtrVector;
@@ -59,6 +60,7 @@ struct HdxShadowTaskParams : public HdTaskParams {
         , wireframeColor(0.0)
         , enableLighting(false)
         , enableIdRender(false)
+        , enableSceneMaterials(true)
         , alphaThreshold(0.0)
         , tessLevel(1.0)
         , drawingRange(0.0, -1.0)
@@ -79,6 +81,7 @@ struct HdxShadowTaskParams : public HdTaskParams {
     GfVec4f wireframeColor;
     bool enableLighting;
     bool enableIdRender;
+    bool enableSceneMaterials;
     float alphaThreshold;
     float tessLevel;
     GfVec2f drawingRange;
@@ -117,9 +120,17 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
+    void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
+        HdStRenderPassState *renderPassState);
+
+    void _UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState, 
+        HdxShadowTaskParams const &params);
+
+    static HdStShaderCodeSharedPtr _overrideShader;
+    static void _CreateOverrideShader();
+
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
-
     HdxShadowTaskParams _params;
 };
 
