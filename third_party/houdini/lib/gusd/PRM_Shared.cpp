@@ -183,9 +183,11 @@ void _AppendTypes(const TfType& type, UT_Array<PRM_Name>& names,
     // Add spacing at front, by depth, to indicate hierarchy.
     UT_String label;
     _MakePrefixedName(label, typeName.c_str(), depth, "|   ");
-    
+
+    // Only 16.5 (not 16.0 and not 17.0) needs to use hboost::function here.
+    // In 16.0 hboost doesn't exist yet. In 17.0 the argument is templated.
     names.append(PRM_Name(typeName.c_str(), deleter.appendCallback(
-#if SYS_VERSION_FULL_INT >= 0x10050000
+#if SYS_VERSION_FULL_INT >= 0x10050000 && SYS_VERSION_FULL_INT < 0x11000000
 	hboost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
@@ -219,8 +221,10 @@ void _AppendKinds(const GusdUSD_Utils::KindNode* kind,
     UT_String label;
     _MakePrefixedName(label, name.c_str(), depth, "|   ");
 
+    // Only 16.5 (not 16.0 and not 17.0) needs to use hboost::function here.
+    // In 16.0 hboost doesn't exist yet. In 17.0 the argument is templated.
     names.append(PRM_Name(name.c_str(), deleter.appendCallback(
-#if SYS_VERSION_FULL_INT >= 0x10050000
+#if SYS_VERSION_FULL_INT >= 0x10050000 && SYS_VERSION_FULL_INT < 0x11000000
 	hboost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
