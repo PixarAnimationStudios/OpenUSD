@@ -33,10 +33,10 @@
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/variant.hpp>
 
 #include <iostream>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -201,7 +201,7 @@ private:
         _Node* _parent;
 
         // This node's namespace children.  We own the children.
-        boost::scoped_ptr<_Children> _children;
+        std::unique_ptr<_Children> _children;
 
         // The original path for this node.
         const SdfPath _originalPath;

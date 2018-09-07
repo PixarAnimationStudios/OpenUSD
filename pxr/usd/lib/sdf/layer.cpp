@@ -1300,7 +1300,7 @@ SdfLayer::_InitializeFromIdentifier(
     SdfLayerHandle self(this);
 
     // Compute layer asset information from the identifier.
-    boost::scoped_ptr<Sdf_AssetInfo> newInfo(
+    std::unique_ptr<Sdf_AssetInfo> newInfo(
         Sdf_ComputeAssetInfoFromIdentifier(identifier, realPath, assetInfo,
             fileVersion));
     if (!newInfo)
@@ -2346,7 +2346,7 @@ SdfLayer::UpdateAssetInfo(const string &fileVersion)
         // original context found in the resolve info within this block so the
         // layer's search path identifier can be properly re-resolved within
         // _InitializeFromIdentifier.
-        boost::scoped_ptr<ArResolverContextBinder> binder;
+        std::unique_ptr<ArResolverContextBinder> binder;
         if (!GetAssetName().empty()) {
             binder.reset(new ArResolverContextBinder(
                     _assetInfo->resolverContext));

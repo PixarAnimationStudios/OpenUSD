@@ -43,8 +43,8 @@
 #include "pxr/base/vt/value.h"
 
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -1724,7 +1724,7 @@ private:
     mutable bool _lastDirtyState;
 
     // Asset information for this layer.
-    boost::scoped_ptr<Sdf_AssetInfo> _assetInfo;
+    std::unique_ptr<Sdf_AssetInfo> _assetInfo;
 
     // Modification timestamp of the backing file asset when last read.
     mutable VtValue _assetModificationTime;
