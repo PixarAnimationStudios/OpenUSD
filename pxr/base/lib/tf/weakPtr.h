@@ -204,11 +204,6 @@ public:
     
 private:
 
-    void _Assign(TfWeakPtr const &p) {
-        _rawPtr = p._rawPtr;
-        _remnant = p._remnant;
-    }
-
     T *_FetchPointer() const {
         if (ARCH_LIKELY(_remnant && _remnant->_IsAlive()))
             return _rawPtr;
