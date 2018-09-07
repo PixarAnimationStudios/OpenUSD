@@ -1299,6 +1299,12 @@
       <string>Hydra Renderer</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuRendererSettingsPlugin">
+     <property name="title">
+      <string>Hydra Renderer Settings</string>
+     </property>
+     <addaction name="actionCull_Backfaces"/>
+    </widget>
     <widget class="QMenu" name="menuComplexity">
      <property name="title">
       <string>Complexity</string>
@@ -1311,6 +1317,7 @@
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
     <addaction name="menuRendererPlugin"/>
+    <addaction name="menuRendererSettingsPlugin"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
@@ -1335,7 +1342,6 @@
     <addaction name="menuInterpolation"/>
     <addaction name="actionEnable_Scene_Materials"/>
     <addaction name="actionDisplay_PrimId"/>
-    <addaction name="actionCull_Backfaces"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="minimumSize">
@@ -2037,6 +2043,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Enable Scene Materials</string>
    </property>
@@ -2131,7 +2140,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Cull Backfaces</string>
+    <string>Cull Backfaces (GL)</string>
    </property>
   </action>
   <action name="actionSave_Overrides_To_Scene">
