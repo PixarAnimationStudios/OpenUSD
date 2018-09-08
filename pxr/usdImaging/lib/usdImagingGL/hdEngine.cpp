@@ -61,7 +61,8 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPath& rootPath,
         const SdfPathVector& excludedPrimPaths,
         const SdfPathVector& invisedPrimPaths,
-        const SdfPath& delegateID)
+        const SdfPath& delegateID,
+        UsdImagingDelegateCreatorFunc delegateCreatorFunc)
     : UsdImagingGLEngine()
     , _renderIndex(nullptr)
     , _selTracker(new HdxSelectionTracker)
@@ -75,6 +76,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _invisedPrimPaths(invisedPrimPaths)
     , _isPopulated(false)
     , _renderTags()
+    , _delegateCreatorFunc(delegateCreatorFunc)
 {
     // _renderIndex, _taskController, and _delegate are initialized
     // by the plugin system.
@@ -994,7 +996,7 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
     _renderIndex = HdRenderIndex::New(renderDelegate);
 
     // Create the new delegate & task controller.
-    _delegate = new UsdImagingDelegate(_renderIndex, _delegateID);
+    _delegate = _delegateCreatorFunc(_renderIndex, _delegateID);
     _isPopulated = false;
 
     _taskController = new HdxTaskController(_renderIndex,
@@ -1047,6 +1049,13 @@ VtDictionary
 UsdImagingGLHdEngine::GetResourceAllocation() const
 {
     return _renderIndex->GetResourceRegistry()->GetResourceAllocation();
+}
+
+
+UsdImagingDelegate* 
+UsdImagingGLHdEngine::defaultUsdImagingDelegateCreator(HdRenderIndex* const renderIndex, const SdfPath& delegateId)
+{
+    return new UsdImagingDelegate(renderIndex, delegateId);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
