@@ -136,6 +136,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
 
     bool overrideFound;
 
+    const double startTime = usdInArgs->GetStage()->GetStartTimeCode();
+    const double tcps = usdInArgs->GetStage()->GetTimeCodesPerSecond();
+    const double fps = usdInArgs->GetStage()->GetFramesPerSecond();
+    const double timeScaleRatio = tcps / fps;
+
     // Current time.
     //
     overrideFound = false;
@@ -160,6 +165,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         else
         {
             _currentTime = usdInArgs->GetCurrentTime();
+
+            // Apply time scaling.
+            //
+            _currentTime =
+                startTime + ((_currentTime - startTime) * timeScaleRatio);
         }
     }
 
@@ -214,6 +224,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         else
         {
             _shutterClose = usdInArgs->GetShutterClose();
+
+            // Apply time scaling.
+            //
+            _shutterClose =
+                _shutterOpen + ((_shutterClose - _shutterOpen) * timeScaleRatio);
         }
     }
 
@@ -265,6 +280,19 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     else
     {
         _motionSampleTimesFallback = usdInArgs->GetMotionSampleTimes();
+
+        // Apply time scaling.
+        //
+        if (_motionSampleTimesFallback.size() > 0)
+        {
+            const double firstSample = _motionSampleTimesFallback[0];
+            for (size_t i = 0; i < _motionSampleTimesFallback.size(); ++i)
+            {
+                _motionSampleTimesFallback[i] =
+                    firstSample + ((_motionSampleTimesFallback[i] - firstSample) *
+                                   timeScaleRatio);
+            }
+        }
     }
 }
 
