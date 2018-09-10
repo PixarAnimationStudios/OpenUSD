@@ -179,6 +179,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/work/reduce.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -219,10 +220,21 @@ UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
     extent->resize(2);
 
     // Calculate bounds
-    GfRange3d bbox;
-    TF_FOR_ALL(pointsItr, points) {
-        bbox.UnionWith(*pointsItr);
-    }
+    GfRange3d bbox = WorkParallelReduceN(
+        GfRange3d(),
+        points.size(),
+        [&points](size_t b, size_t e, GfRange3d init){
+            for (auto i = b; i != e; ++i) {
+                init.UnionWith(points[i]);
+            }
+
+            return init;
+        },
+        [](GfRange3d lhs, GfRange3d rhs){
+            return GfRange3d::GetUnion(lhs, rhs);
+        },
+        /*grainSize=*/ 500
+    );
 
     (*extent)[0] = GfVec3f(bbox.GetMin());
     (*extent)[1] = GfVec3f(bbox.GetMax());
