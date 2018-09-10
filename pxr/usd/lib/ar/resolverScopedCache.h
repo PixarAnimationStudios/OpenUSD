@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/vt/value.h"
-#include <boost/noncopyable.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,9 +44,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \see \ref ArResolver_scopedCache "Scoped Resolution Cache"
 class ArResolverScopedCache
-    : public boost::noncopyable
 {
 public:
+
+    // Disallow copies
+    ArResolverScopedCache(const ArResolverScopedCache&) = delete;
+    ArResolverScopedCache& operator=(const ArResolverScopedCache&) = delete;
+
     /// Begin an asset resolver cache scope. 
     ///
     /// Calls ArResolver::BeginCacheScope on the configured asset resolver

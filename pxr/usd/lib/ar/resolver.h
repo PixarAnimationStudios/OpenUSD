@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
-#include <boost/noncopyable.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -52,11 +51,14 @@ class VtValue;
 /// Clients may use #ArGetResolver to access the configured asset resolver.
 ///
 class ArResolver 
-    : public boost::noncopyable
 {
 public:
     AR_API
     virtual ~ArResolver();
+
+    // Disallow copies
+    ArResolver(const ArResolver&) = delete;
+    ArResolver& operator=(const ArResolver&) = delete;
 
     // --------------------------------------------------------------------- //
     /// \anchor ArResolver_resolution
