@@ -2,6 +2,7 @@ Advanced Build Configuration
 ============================
 
 ## Table of Contents
+- [Building With Build Script](#building-with-build-script)
 - [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
 - [Imaging Plugins](#imaging-plugins)
@@ -11,6 +12,14 @@ Advanced Build Configuration
 - [USD Developer Options](#usd-developer-options)
 - [Optimization Options](#optimization-options)
 - [Linker Options](#linker-options)
+
+## Building With Build Script
+
+The simplest way to build USD is to run the supplied ```build_usd.py``` 
+script. This script will download required dependencies and build 
+and install them along with USD in a given directory. 
+
+See instructions and examples in [README.md](README.md#getting-and-building-the-code).
 
 ## Building With CMake
 
