@@ -77,7 +77,7 @@ try:
     p = q.GetInstance()
     assert p == q, err("weak equality testing")
     assert not (p != q), err("weak non-equality testing")
-    q.KillInstance();
+    q.KillInstance()
     assert TestWeakObject.GetNumInstances() == 0, err("weak sharing")
     assert q.expired and p.expired, err("weak ptr expiry")
     try:

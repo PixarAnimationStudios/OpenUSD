@@ -243,10 +243,10 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
     def test_MatchDefault(self):
         s = Usd.Stage.CreateInMemory()
         from pxr import UsdGeom
-        sphere = UsdGeom.Sphere.Define(s, Sdf.Path("/Sphere"));
-        radius = sphere.CreateRadiusAttr();
+        sphere = UsdGeom.Sphere.Define(s, Sdf.Path("/Sphere"))
+        radius = sphere.CreateRadiusAttr()
         attrValueWriter = UsdUtils.SparseAttrValueWriter(radius, 
-            defaultValue=1.0);
+            defaultValue=1.0)
 
         # Default value isn't authored into scene description since it matches
         # the fallback value of radius.
@@ -262,14 +262,14 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
     def test_SparseValueWriter(self):
         s = Usd.Stage.CreateInMemory()
         from pxr import UsdGeom
-        cylinder = UsdGeom.Cylinder.Define(s, Sdf.Path("/Cylinder"));
-        radius = cylinder.CreateRadiusAttr();
-        height = cylinder.CreateHeightAttr();
+        cylinder = UsdGeom.Cylinder.Define(s, Sdf.Path("/Cylinder"))
+        radius = cylinder.CreateRadiusAttr()
+        height = cylinder.CreateHeightAttr()
 
         valueWriter = UsdUtils.SparseValueWriter()
 
-        valueWriter.SetAttribute(radius, 2.0, Usd.TimeCode.Default());
-        valueWriter.SetAttribute(height, 2.0, Usd.TimeCode.Default());
+        valueWriter.SetAttribute(radius, 2.0, Usd.TimeCode.Default())
+        valueWriter.SetAttribute(height, 2.0, Usd.TimeCode.Default())
 
         # Default value isn't authored for the height attribute into scene
         # description since it matches the fallback value of height.
@@ -283,18 +283,18 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
         self.assertEqual(radius.Get(), 2.0)
         # Calling SetAttribute again with time-Default will update the default
         # value.
-        valueWriter.SetAttribute(radius, 5.0, Usd.TimeCode.Default());
+        valueWriter.SetAttribute(radius, 5.0, Usd.TimeCode.Default())
         self.assertEqual(radius.Get(), 5.0)
 
-        valueWriter.SetAttribute(radius, 10.0, 1.0);
-        valueWriter.SetAttribute(radius, 20.0, 2.0);
-        valueWriter.SetAttribute(radius, 20.0, 3.0);
-        valueWriter.SetAttribute(radius, 20.0, 4.0);
-        
-        valueWriter.SetAttribute(height, 2.0, 1.0);
-        valueWriter.SetAttribute(height, 2.0, 2.0);
-        valueWriter.SetAttribute(height, 3.0, 3.0);
-        valueWriter.SetAttribute(height, 3.0, 4.0);
+        valueWriter.SetAttribute(radius, 10.0, 1.0)
+        valueWriter.SetAttribute(radius, 20.0, 2.0)
+        valueWriter.SetAttribute(radius, 20.0, 3.0)
+        valueWriter.SetAttribute(radius, 20.0, 4.0)
+
+        valueWriter.SetAttribute(height, 2.0, 1.0)
+        valueWriter.SetAttribute(height, 2.0, 2.0)
+        valueWriter.SetAttribute(height, 3.0, 3.0)
+        valueWriter.SetAttribute(height, 3.0, 4.0)
 
         self.assertEqual(radius.GetTimeSamples(), [1.0, 2.0])
         self.assertEqual(height.GetTimeSamples(), [2.0, 3.0])

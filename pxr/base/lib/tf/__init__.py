@@ -91,7 +91,8 @@ del sys
 class ErrorException(RuntimeError):
     def __init__(self, *args):
         RuntimeError.__init__(self, *args)
-        self.__TfException = True;
+        self.__TfException = True
+
     def __str__(self):
         return '\n\t' + '\n\t'.join([str(e) for e in self])
 __SetErrorExceptionClass(ErrorException)

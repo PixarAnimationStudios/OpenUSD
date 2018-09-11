@@ -127,7 +127,7 @@ class InstancedAndPayloadedScene(PayloadedScene):
 
         super(InstancedAndPayloadedScene, self).__init__(fmt)
 
-        sad = self.stage.GetPrimAtPath("/Sad");
+        sad = self.stage.GetPrimAtPath("/Sad")
 
         sad1 = self.stage.DefinePrim("/Sad_1", "Scope")
         sad1.SetPayload(Sdf.Payload(self.payload1.GetRootLayer().identifier, 

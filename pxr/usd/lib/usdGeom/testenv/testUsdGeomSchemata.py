@@ -594,7 +594,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
     def test_TypeUsage(self):
         # Perform Type-Ness Checking for ComputeExtent
         pointsAsList = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
-        pointsAsVec3fArr = Vt.Vec3fArray(pointsAsList);
+        pointsAsVec3fArr = Vt.Vec3fArray(pointsAsList)
 
         comp = UsdGeom.PointBased.ComputeExtent
         expectedExtent = comp(pointsAsVec3fArr)

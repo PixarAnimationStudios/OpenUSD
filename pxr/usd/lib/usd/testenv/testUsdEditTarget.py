@@ -189,7 +189,7 @@ class TestUsdEditTarget(unittest.TestCase):
 
         # Try authoring to sublayers using context object.
         with Usd.EditContext(stage, subLayer2):
-            prim.GetAttribute('sub2Color').Set(Gf.Vec3d(3,4,5));
+            prim.GetAttribute('sub2Color').Set(Gf.Vec3d(3,4,5))
             assert prim.GetAttribute('sub2Color').Get() == Gf.Vec3d(3,4,5)
             assert not rootLayer.GetAttributeAtPath('/Sarah.sub2Color')
             assert (subLayer2.GetAttributeAtPath('/Sarah.sub2Color').default ==
@@ -207,7 +207,7 @@ class TestUsdEditTarget(unittest.TestCase):
         with Usd.EditContext(stage, sessionLayer):
             assert stage.GetEditTarget() == sessionLayer
             assert not sessionLayer.GetAttributeAtPath('/Sarah.color')
-            prim.GetAttribute('color').Set(Gf.Vec3d(9,9,9));
+            prim.GetAttribute('color').Set(Gf.Vec3d(9,9,9))
             assert prim.GetAttribute('color').Get() == Gf.Vec3d(9,9,9)
             assert (sessionLayer.GetAttributeAtPath('/Sarah.color').default ==
                     Gf.Vec3d(9,9,9))
