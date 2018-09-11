@@ -110,6 +110,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_REPR_TOKENS                          \
     (disabled)                                  \
     (hull)                                      \
+    (points)                                    \
     (smoothHull)                                \
     (refined)                                   \
     (refinedWire)                               \
