@@ -83,7 +83,8 @@ HdxIntersector::_Init(GfVec2i const& size)
 {
     // The collection created below is purely for satisfying the HdRenderPass
     // constructor. The collections for the render passes are set in Query(..)
-    HdRprimCollection col(HdTokens->geometry, HdReprSelector(HdTokens->hull));
+    HdRprimCollection col(HdTokens->geometry, 
+        HdReprSelector(HdReprTokens->hull));
     _pickableRenderPass = 
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
     _occluderRenderPass = 
@@ -421,13 +422,13 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                 // Passes (i) and (ii) are combined into a single occlusion pass
                 HdRprimCollection occluderCol = pickablesCol;
 
-                // While we'd prefer not to override/use repr's configured by Hydra
-                // (in HdRenderIndex::_ConfigureReprs), we make an exception here.
-                // Point picking support is limited to unrefined meshes currently,
-                // and so we can use 'hull' to do the depth-only pass w/ both
-                // pickables and unpickables.
+                // While we'd prefer not to override/use repr's configured by 
+                // Hydra (in HdRenderIndex::_ConfigureReprs), we make an 
+                // exception here.  Point picking support is limited to 
+                // unrefined meshes currently, and so we can use 'hull' to do 
+                // the depth-only pass w/ both pickables and unpickables.
                 occluderCol.SetReprSelector(
-                                HdReprSelector(HdTokens->hull,
+                                HdReprSelector(HdReprTokens->hull,
                                                HdReprTokens->disabled,
                                                HdReprTokens->disabled));
                 if (!occluderCol.GetExcludePaths().empty()) {

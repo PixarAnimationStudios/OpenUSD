@@ -105,7 +105,7 @@ public:
         TfTokenVector renderTags;
         renderTags.push_back(HdTokens->geometry);
         _Init(UsdStage::Open(usdFilePath), HdTokens->geometry,
-              HdTokens->hull, renderTags);
+              HdReprTokens->hull, renderTags);
     }
 
     UsdImaging_TestDriver(std::string const& usdFilePath,
@@ -135,7 +135,7 @@ public:
     {
         TfTokenVector renderTags;
         renderTags.push_back(HdTokens->geometry);
-        _Init(usdStage, HdTokens->geometry, HdTokens->hull, renderTags);
+        _Init(usdStage, HdTokens->geometry, HdReprTokens->hull, renderTags);
     }
 
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,

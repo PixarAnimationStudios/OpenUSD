@@ -239,22 +239,22 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 
     if (flatShaded) {
         if (needsWire) {
-            reprSelector = HdReprSelector(HdTokens->wireOnSurf);
+            reprSelector = HdReprSelector(HdReprTokens->wireOnSurf);
         } else {
-            reprSelector = HdReprSelector(HdTokens->hull);
+            reprSelector = HdReprSelector(HdReprTokens->hull);
         }
     }
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
     {
         if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
-            reprSelector = HdReprSelector(HdTokens->refinedWireOnSurf);
+            reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
         } else {
-            reprSelector = HdReprSelector(HdTokens->refined);
+            reprSelector = HdReprSelector(HdReprTokens->refined);
         }
     }
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
     {
-        reprSelector = HdReprSelector(HdTokens->refinedWire);
+        reprSelector = HdReprSelector(HdReprTokens->refinedWire);
         _renderParams.enableLighting = false;
     }
     else if (displayStyle == 128) 
@@ -269,7 +269,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         //
         // For now, to prevent it from completely disappearing, we just
         // treat it similarly to Gouraud shading.
-        reprSelector = HdReprSelector(HdTokens->refined);
+        reprSelector = HdReprSelector(HdReprTokens->refined);
     }
     else
     {
@@ -391,7 +391,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
     }
 
-    _rprimCollection.SetReprSelector(HdReprSelector(HdTokens->refined));
+    _rprimCollection.SetReprSelector(HdReprSelector(HdReprTokens->refined));
     _rprimCollection.SetRootPath(delegateId);
 
     return true;

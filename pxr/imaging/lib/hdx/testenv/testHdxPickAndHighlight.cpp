@@ -96,7 +96,7 @@ public:
     My_TestGLDrawing() {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
-        _reprName = HdTokens->hull;
+        _reprName = HdReprTokens->hull;
         _refineLevel = 0;
     }
     ~My_TestGLDrawing();
@@ -188,7 +188,8 @@ My_TestGLDrawing::InitTest()
     SetCameraTranslate(GfVec3f(0, 0, -20));
 
     // picking related init
-    _pickablesCol = HdRprimCollection(_tokens->pickables, HdReprSelector(HdTokens->refined));
+    _pickablesCol = HdRprimCollection(_tokens->pickables, 
+        HdReprSelector(HdReprTokens->refined));
     _marquee.InitGLResources();
     _picker.InitIntersector(_renderIndex);
     _SetPickParams();

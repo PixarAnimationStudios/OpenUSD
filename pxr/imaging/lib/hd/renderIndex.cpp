@@ -513,43 +513,43 @@ void
 HdRenderIndex::_ConfigureReprs()
 {
     // pre-defined reprs (to be deprecated or minimalized)
-    HdMesh::ConfigureRepr(HdTokens->hull,
+    HdMesh::ConfigureRepr(HdReprTokens->hull,
                           HdMeshReprDesc(HdMeshGeomStyleHull,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/true,
                                          /*blendWireframeColor=*/false));
-    HdMesh::ConfigureRepr(HdTokens->smoothHull,
+    HdMesh::ConfigureRepr(HdReprTokens->smoothHull,
                           HdMeshReprDesc(HdMeshGeomStyleHull,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/false));
-    HdMesh::ConfigureRepr(HdTokens->wire,
+    HdMesh::ConfigureRepr(HdReprTokens->wire,
                           HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
-    HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
+    HdMesh::ConfigureRepr(HdReprTokens->wireOnSurf,
                           HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
-    HdMesh::ConfigureRepr(HdTokens->refined,
+    HdMesh::ConfigureRepr(HdReprTokens->refined,
                           HdMeshReprDesc(HdMeshGeomStyleSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/false));
-    HdMesh::ConfigureRepr(HdTokens->refinedWire,
+    HdMesh::ConfigureRepr(HdReprTokens->refinedWire,
                           HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
-    HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
+    HdMesh::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                           HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
@@ -558,34 +558,34 @@ HdRenderIndex::_ConfigureReprs()
 
     // TODO: Port over wire on surf geometry shader from internal code base
     // (internal pixar bug 129550)
-    HdBasisCurves::ConfigureRepr(HdTokens->hull,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->hull,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->smoothHull,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->wire,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->wire,
                                  HdBasisCurvesGeomStyleWire);
-    HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->wireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->refined,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refined,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWire,
                                  HdBasisCurvesGeomStyleWire);
-    HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
 
-    HdPoints::ConfigureRepr(HdTokens->hull,
+    HdPoints::ConfigureRepr(HdReprTokens->hull,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->smoothHull,
+    HdPoints::ConfigureRepr(HdReprTokens->smoothHull,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->wire,
+    HdPoints::ConfigureRepr(HdReprTokens->wire,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->wireOnSurf,
+    HdPoints::ConfigureRepr(HdReprTokens->wireOnSurf,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->refined,
+    HdPoints::ConfigureRepr(HdReprTokens->refined,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->refinedWire,
+    HdPoints::ConfigureRepr(HdReprTokens->refinedWire,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
+    HdPoints::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                             HdPointsGeomStylePoints);
 }
 // -------------------------------------------------------------------------- //

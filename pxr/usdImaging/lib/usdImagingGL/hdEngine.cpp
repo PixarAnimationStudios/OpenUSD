@@ -332,26 +332,26 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     }
 
     // choose repr
-    HdReprSelector reprSelector = HdReprSelector(HdTokens->smoothHull);
+    HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     bool refined = params.complexity > 1.0;
 
     if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT ||
         params.drawMode == UsdImagingGLEngine::DRAW_SHADED_FLAT) {
         // Flat shading
-        reprSelector = HdReprSelector(HdTokens->hull);
+        reprSelector = HdReprSelector(HdReprTokens->hull);
     } else if (
         params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE) {
         // Wireframe on surface
         reprSelector = HdReprSelector(refined ?
-            HdTokens->refinedWireOnSurf : HdTokens->wireOnSurf);
+            HdReprTokens->refinedWireOnSurf : HdReprTokens->wireOnSurf);
     } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME) {
         // Wireframe
         reprSelector = HdReprSelector(refined ?
-            HdTokens->refinedWire : HdTokens->wire);
+            HdReprTokens->refinedWire : HdReprTokens->wire);
     } else {
         // Smooth shading
         reprSelector = HdReprSelector(refined ?
-            HdTokens->refined : HdTokens->smoothHull);
+            HdReprTokens->refined : HdReprTokens->smoothHull);
     }
 
     // Calculate the rendertags needed based on the parameters passed by

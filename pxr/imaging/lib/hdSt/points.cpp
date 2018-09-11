@@ -138,12 +138,12 @@ HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
     // XXX: We only support smoothHull for now
     _PointsReprConfig::DescArray descs = _GetReprDesc(
-            HdReprSelector(HdTokens->smoothHull));
+            HdReprSelector(HdReprTokens->smoothHull));
     HdReprSharedPtr const &curRepr = _smoothHullRepr;
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStPoints::_UpdateRepr " << GetId()
-                  << " Repr = " << HdTokens->smoothHull << "\n";
+                  << " Repr = " << HdReprTokens->smoothHull << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 

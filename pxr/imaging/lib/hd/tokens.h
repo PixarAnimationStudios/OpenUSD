@@ -64,7 +64,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (guide)                                     \
     (hermite)                                   \
     (hidden)                                    \
-    (hull)                                      \
     (hullIndices)                               \
     (indices)                                   \
     (instancer)                                 \
@@ -94,14 +93,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primitiveParam)                            \
     (proxy)                                     \
     (quadInfo)                                  \
-    (refined)                                   \
-    (refinedWire)                               \
-    (refinedWireOnSurf)                         \
     (renderTags)                                \
     (rightHanded)                               \
     (segmented)                                 \
     (shadowLink)                                \
-    (smoothHull)                                \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
@@ -110,12 +105,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     (transform)                                 \
     (transformInverse)                          \
     (visibility)                                \
-    (widths)                                    \
-    (wire)                                      \
-    (wireOnSurf)
+    (widths)
 
 #define HD_REPR_TOKENS                          \
-    (disabled)
+    (disabled)                                  \
+    (hull)                                      \
+    (smoothHull)                                \
+    (refined)                                   \
+    (refinedWire)                               \
+    (refinedWireOnSurf)                         \
+    (wire)                                      \
+    (wireOnSurf)
 
 #define HD_PERF_TOKENS                          \
     (adjacencyBufSize)                          \

@@ -106,9 +106,9 @@ HdSt_TestDriver::HdSt_TestDriver()
 {
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        _Init(HdReprSelector(HdTokens->smoothHull));
+        _Init(HdReprSelector(HdReprTokens->smoothHull));
     } else {
-        _Init(HdReprSelector(HdTokens->hull));
+        _Init(HdReprSelector(HdReprTokens->hull));
     }
 }
 

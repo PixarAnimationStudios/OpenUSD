@@ -332,7 +332,7 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
         cache[HdLightTokens->shadowCollection] =
             VtValue(HdRprimCollection(
                 HdTokens->geometry,
-                HdReprSelector(HdTokens->refined)));
+                HdReprSelector(HdReprTokens->refined)));
 
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             _lightIds[i],
