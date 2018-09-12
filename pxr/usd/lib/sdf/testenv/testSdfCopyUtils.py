@@ -268,6 +268,176 @@ class TestSdfCopyUtils(unittest.TestCase):
         self.assertEqual(list(dstSpec.nameChildren), [])
         self.assertEqual(list(dstSpec.properties), [])
 
+    def test_CopyPrimsAndVariant(self):
+        """Tests that a prim spec can be copied to a variant and vice-versa."""
+        srcLayer = Sdf.Layer.CreateAnonymous()
+        srcLayerStr = '''\
+        #sdf 1.4.32
+
+        def SourceType "Source"
+        {
+            double attr = 1.0
+            def "Child"
+            {
+            }
+
+            variantSet "y" = {
+                "a" {
+                    double attr = 1.0
+                    def "Child"
+                    {
+                    }
+                }
+            }
+        }
+
+        over "OverSource"
+        {
+            variantSet "x" = {
+                "a" {
+                    def "Child"
+                    {
+                    }
+                }
+            }
+        }
+
+        def "Dest"
+        {
+            variantSet "x" = {
+                "a" {
+                }
+            }
+        }
+
+        def "Dest2"
+        {
+        }
+        '''
+
+        srcLayer.ImportFromString(textwrap.dedent(srcLayerStr))
+
+        # Copy the /Source prim over /Dest{x=a}
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source", srcLayer, "/Dest{x=a}"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest{x=a}" : {
+                    "specifier" : Sdf.SpecifierOver,
+                },
+                "/Dest{x=a}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=a}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                },
+                "/Dest{x=a}{y=a}" : {
+                    "specifier" : Sdf.SpecifierOver
+                },
+                "/Dest{x=a}{y=a}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=a}{y=a}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /Source prim into a new variant /Dest{x=b}
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source", srcLayer, "/Dest{x=b}"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest{x=b}" : {
+                    "specifier" : Sdf.SpecifierOver,
+                },
+                "/Dest{x=b}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=b}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                },
+                "/Dest{x=b}{y=a}" : {
+                    "specifier" : Sdf.SpecifierOver
+                },
+                "/Dest{x=b}{y=a}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=b}{y=a}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /Source{y=a} variant over /Dest2
+        # Note the specifier and typename from the source variant's owning
+        # prim are copied over to the destination prim.
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source{y=a}", srcLayer, "/Dest2"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest2" : {
+                    "specifier" : Sdf.SpecifierDef,
+                    "typeName" : "SourceType"
+                },
+                "/Dest2.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest2/Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /Source{y=a} variant into a new prim /Dest3
+        # Note the specifier and typename from the source variant's owning
+        # prim are copied over to the to the destination prim.
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source{y=a}", srcLayer, "/Dest3"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest3" : {
+                    "specifier" : Sdf.SpecifierDef,
+                    "typeName" : "SourceType"
+                },
+                "/Dest3.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest3/Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /OverSource variant into a new prim /Dest4. 
+        # Note the specifier and typename from the source variant's owning
+        # prim are copied over to the to the destination prim.
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/OverSource{x=a}", srcLayer, "/Dest4"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest4" : {
+                    "specifier" : Sdf.SpecifierOver,
+                },
+                "/Dest4/Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
     def test_AttributeConnectionRemapping(self):
         """Tests that attribute connections that point to a child of the 
         source path are remapped to the destination path."""
