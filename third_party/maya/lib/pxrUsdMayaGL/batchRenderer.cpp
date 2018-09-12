@@ -945,6 +945,20 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
     return _TestIntersection(collection, params, outResult);
 }
 
+int
+UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
+    const HdxIntersector::Hit& hit) const
+{
+    int ret = -1;
+    if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
+        delegate->GetPathForInstanceIndex(
+            hit.objectId, 
+            hit.instanceIndex, 
+            &ret);
+    }
+    return ret;
+}
+
 /* static */
 const HdxIntersector::Hit*
 UsdMayaGLBatchRenderer::GetNearestHit(

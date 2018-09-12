@@ -233,6 +233,12 @@ public:
     static const HdxIntersector::Hit* GetNearestHit(
             const HdxIntersector::HitSet* hitSet);
 
+    /// Returns the absoluteInstanceIndex (index within the point instancer) for \c hit.
+    ///
+    /// Returns -1 if unable to get the absoluteInstanceIndex.
+    PXRUSDMAYAGL_API
+    int GetAbsoluteInstanceIndexForHit(const HdxIntersector::Hit& hit) const;
+
     /// Returns whether soft selection for proxy shapes is currently enabled.
     PXRUSDMAYAGL_API
     inline bool GetObjectSoftSelectEnabled()
