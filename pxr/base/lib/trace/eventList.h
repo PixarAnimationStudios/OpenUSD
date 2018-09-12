@@ -62,6 +62,10 @@ public:
     using const_iterator = TraceEventContainer::const_iterator;
     const_iterator begin() const { return _events.begin();}
     const_iterator end() const { return _events.end();}
+
+    using const_reverse_iterator = TraceEventContainer::const_reverse_iterator;
+    const_reverse_iterator rbegin() const { return _events.rbegin();}
+    const_reverse_iterator rend() const { return _events.rend();}
     /// @}
 
     /// Returns whether there are any events in the list.
