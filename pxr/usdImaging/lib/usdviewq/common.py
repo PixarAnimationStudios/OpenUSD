@@ -544,7 +544,7 @@ def GetAssetCreationTime(primStack, assetIdentifier):
     for spec in reversed(primStack):
         if spec.HasInfo('assetInfo'):
             identifier = spec.GetInfo('assetInfo')['identifier']
-            if identifier  == assetIdentifier:
+            if identifier.path == assetIdentifier.path:
                 definingLayer = spec.layer
                 break
     if definingLayer:
