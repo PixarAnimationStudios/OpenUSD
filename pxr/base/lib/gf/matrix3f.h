@@ -229,6 +229,18 @@ public:
     GF_API
     float* Get(float m[3][3]) const;
 
+    /// Returns raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    float* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    const float* data() const {
+        return _mtx.GetData();
+    }
+
     /// Returns vector components as an array of \c float values.
     float* GetArray()  {
         return _mtx.GetData();

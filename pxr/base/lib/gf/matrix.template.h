@@ -184,6 +184,18 @@ public:
     GF_API
     {{ SCL }}* Get({{ SCL }} m[{{ DIM }}][{{ DIM }}]) const;
 
+    /// Returns raw access to components of matrix as an array of
+    /// \c {{ SCL }} values.  Components are in row-major order.
+    {{ SCL }}* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c {{ SCL }} values.  Components are in row-major order.
+    const {{ SCL }}* data() const {
+        return _mtx.GetData();
+    }
+
     /// Returns vector components as an array of \c {{ SCL }} values.
     {{ SCL }}* GetArray()  {
         return _mtx.GetData();
