@@ -445,7 +445,7 @@ GusdGU_USD::BindPrimsFromAttrs(
         UT_Array<GusdStageEditPtr> uniqueEdits;
         uniqueEdits.setSize(uniqueVariants.size());
         for(exint i = 0; i < uniqueVariants.size(); ++i) {
-            GusdStageBasicEdit* edit = new GusdStageBasicEdit;
+            GusdStageEdit* edit = new GusdStageEdit;
             edit->GetVariants().append(uniqueVariants(i));
             uniqueEdits(i).reset(edit);
         }

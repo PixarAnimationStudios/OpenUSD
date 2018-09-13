@@ -854,8 +854,8 @@ GusdGU_PackedUSD::getUsdPrim(UT_ErrorSeverity sev) const
     m_masterPathCacheValid = false;
 
     SdfPath primPathWithoutVariants;
-    GusdStageBasicEditPtr edit;
-    GusdStageBasicEdit::GetPrimPathAndEditFromVariantsPath(
+    GusdStageEditPtr edit;
+    GusdStageEdit::GetPrimPathAndEditFromVariantsPath(
         m_primPath, primPathWithoutVariants, edit);
 
     GusdStageCacheReader cache;

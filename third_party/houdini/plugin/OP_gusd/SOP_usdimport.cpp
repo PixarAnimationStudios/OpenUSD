@@ -413,11 +413,11 @@ GusdSOP_usdimport::_Cook(OP_Context& ctx)
 namespace {
 
 
-GusdStageBasicEdit*
+GusdStageEdit*
 _CreateEdit(const SdfPath& variantSelPath)
 {
     if(!variantSelPath.IsEmpty()) {
-        GusdStageBasicEdit* edit = new GusdStageBasicEdit();
+        GusdStageEdit* edit = new GusdStageEdit();
         edit->GetVariants().append(variantSelPath);
         return edit;
     }
