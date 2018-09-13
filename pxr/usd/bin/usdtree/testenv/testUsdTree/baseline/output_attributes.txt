@@ -1,0 +1,22 @@
+USD
+ `--root
+     | `--(specifier)
+     |--child1[Xform]
+     |   | :--(specifier)
+     |   | :--(upAxis)
+     |   | `--(typeName)
+     |   |--subchild1a
+     |   |     :--(specifier)
+     |   |     :--.foo
+     |   |     `--.hello
+     |   `--subchild1b
+     |         `--(specifier)
+     `--child2
+         | :--(specifier)
+         | `--.foo
+         |--subchild2a
+         |   | `--(specifier)
+         |   `--subgrandchild2a1
+         |         `--(specifier)
+         `--subchild2b
+               `--(specifier)

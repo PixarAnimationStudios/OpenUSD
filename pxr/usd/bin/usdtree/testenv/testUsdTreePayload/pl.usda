@@ -1,0 +1,8 @@
+#usda 1.0
+
+def "root"{
+    def "subchild1a"{
+    }
+    def "subchild1b"{
+    }
+}

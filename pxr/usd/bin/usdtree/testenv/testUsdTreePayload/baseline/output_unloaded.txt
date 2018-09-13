@@ -1,0 +1,6 @@
+USD
+ `--root
+     `--child2
+         |--subchild2a
+         |   `--subgrandchild2a1
+         `--subchild2b

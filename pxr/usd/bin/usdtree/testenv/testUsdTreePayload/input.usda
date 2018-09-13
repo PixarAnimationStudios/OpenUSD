@@ -1,0 +1,16 @@
+#usda 1.0
+
+def "root"{
+    def "child1"(
+        payload = @pl.usda@</root>
+    ){
+    }
+    def "child2"{
+        def "subchild2a"{
+            def "subgrandchild2a1"{
+            }
+        }
+        def "subchild2b"{
+        }
+    }
+}
