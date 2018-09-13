@@ -267,7 +267,9 @@ bool _FillSubprimSelOffsets(int type,
     size_t selOffsetsStart = startOutputSize + SUBPRIM_SELOFFSETS_HEADER_SIZE;
     for (VtIntArray const& indices : vecIndices ) {
         for (int const& id : indices ) {
-            (*output)[selOffsetsStart + (id - min)] |= SELECT_ALL;
+            if (id >= 0) {
+                (*output)[selOffsetsStart + (id - min)] |= SELECT_ALL;
+            }
         }
     }
 
