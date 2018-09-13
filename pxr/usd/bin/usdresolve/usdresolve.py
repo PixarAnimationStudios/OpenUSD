@@ -52,8 +52,7 @@ def _AnchorRelativePath(args, resolver):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Write usd file(s) either as text to stdout or to a '
-        'specified output file.')
+        description='Resolves an asset path using a fully configured USD Asset Resolver.')
 
     parser.add_argument('inputPath')
     parser.add_argument(
