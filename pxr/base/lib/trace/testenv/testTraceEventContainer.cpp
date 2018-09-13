@@ -87,7 +87,7 @@ _TestForwardIteration(
     std::cout << "    Forward" << std::endl;
     for(TraceEventList::const_iterator iter = eventList->begin(); 
         iter != eventList->end(); ++iter){
-        const TraceEvent e = *iter;
+        const TraceEvent& e = *iter;
         std::cout << "        Found event" << std::endl;
         std::cout << "            Begin: " << e.GetStartTimeStamp() << std::endl;
         std::cout << "            End: " << e.GetEndTimeStamp() << std::endl;
@@ -103,7 +103,7 @@ _TestReverseIteration(
 
     for(TraceEventList::const_reverse_iterator iter = eventList->rbegin(); 
         iter != eventList->rend(); ++iter){
-        const TraceEvent e = *iter;
+        const TraceEvent& e = *iter;
         std::cout << "        Found event" << std::endl;
         std::cout << "            Begin: " << e.GetStartTimeStamp() << std::endl;
         std::cout << "            End: " << e.GetEndTimeStamp() << std::endl;

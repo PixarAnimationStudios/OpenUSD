@@ -47,7 +47,7 @@ void TraceCollection::_IterateEvents(Visitor& visitor,
 
     for (I iter = begin; 
         iter != end; ++iter){
-        const TraceEvent e = *iter;
+        const TraceEvent& e = *iter;
         if (visitor.AcceptsCategory(e.GetCategory())) {
             // Create the token from the hash using a cache because there 
             // are likely to be many duplicate keys.
