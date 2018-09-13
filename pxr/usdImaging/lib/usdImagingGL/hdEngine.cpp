@@ -536,6 +536,7 @@ UsdImagingGLHdEngine::TestIntersection(
     qparams.alphaThreshold = params.alphaThreshold;
     qparams.renderTags = _renderTags;
     qparams.cullStyle = HdCullStyleNothing;
+    qparams.enableSceneMaterials = params.enableHardwareShading;
 
     if (!_taskController->TestIntersection(
             &_engine,
@@ -605,6 +606,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     qparams.alphaThreshold = params.alphaThreshold;
     qparams.cullStyle = USD_2_HD_CULL_STYLE[params.cullStyle];
     qparams.renderTags = _renderTags;
+    qparams.enableSceneMaterials = params.enableHardwareShading;
 
     _taskController->SetPickResolution(pickResolution);
     if (!_taskController->TestIntersection(

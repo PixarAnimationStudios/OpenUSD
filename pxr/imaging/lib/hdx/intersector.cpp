@@ -33,6 +33,9 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprim.h"
+
+#include "pxr/imaging/hdSt/glslfxShader.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -134,6 +137,22 @@ HdxIntersector::_Init(GfVec2i const& size)
             //"depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
 
         _drawTarget->Unbind();
+    }
+}
+
+void
+HdxIntersector::_ConfigureSceneMaterials(bool enableSceneMaterials,
+    HdStRenderPassState *renderPassState)
+{
+    if (enableSceneMaterials) {
+        renderPassState->SetOverrideShader(HdStShaderCodeSharedPtr());
+    } else {
+        if (!_overrideShader) {
+            _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
+                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                    HdStPackageFallbackSurfaceShader()))));
+        }
+        renderPassState->SetOverrideShader(_overrideShader);
     }
 }
 
@@ -366,7 +385,6 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
             _pickableRenderPassState->SetStencilEnabled(false);
             _occluderRenderPassState->SetStencilEnabled(false);
         }
-        
 
         // Update render pass states based on incoming params.
         HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
@@ -375,8 +393,16 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
             state->SetAlphaThreshold(params.alphaThreshold);
             state->SetClipPlanes(params.clipPlanes);
             state->SetCullStyle(params.cullStyle);
-            state->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
+            state->SetCamera(params.viewMatrix, 
+                params.projectionMatrix, viewport);
             state->SetLightingEnabled(false);
+
+            // If scene materials are disabled in this environment then 
+            // let's setup the override shader
+            if (HdStRenderPassState* extState =
+                    dynamic_cast<HdStRenderPassState*>(state.get())) {
+                _ConfigureSceneMaterials(params.enableSceneMaterials, extState);
+            }
         }
 
         //
