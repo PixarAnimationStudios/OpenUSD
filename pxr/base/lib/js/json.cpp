@@ -45,6 +45,7 @@
 #include "rapidjson/allocators.h"
 #include "rapidjson/document.h"
 #include "rapidjson/reader.h"
+#include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/error/error.h"
 #include "rapidjson/error/en.h"
@@ -113,7 +114,7 @@ struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
         values.emplace_back(std::move(object));
         return true;
     }
-    bool StartArray() {
+    bool BeginArray() {
         return true;
     }
     bool EndArray(rj::SizeType elementCount) {
@@ -269,7 +270,13 @@ JsWriteToStream(
         return;
     }
 
-    ostr << JsWriteToString(value);
+    rj::Document d;
+    const rj::Value ivalue = _JsValueToImplValue(value, d.GetAllocator());
+
+    rj::OStreamWrapper os(ostr);
+    rj::PrettyWriter<rj::OStreamWrapper> writer(os);
+    writer.SetFormatOptions(rj::kFormatSingleLineArray);
+    ivalue.Accept(writer);
 }
 
 std::string
@@ -286,5 +293,117 @@ JsWriteToString(
 
     return buffer.GetString();
 } 
+
+//
+// JsWriter
+//
+
+// JsWriter is just a wrapper around a rapidJSON stream writer.
+
+class JsWriter::_Impl : public rj::Writer<rj::OStreamWrapper>
+{
+    using Parent = rj::Writer<rj::OStreamWrapper>;
+public:
+    _Impl(std::ostream& s) 
+    : Parent()
+    , _strWrapper(s) {
+        Reset(_strWrapper);
+    }
+private:
+    rj::OStreamWrapper _strWrapper;
+};
+
+JsWriter::JsWriter(std::ostream& ostr)
+    : _impl(new _Impl(ostr))
+{
+    
+}
+
+JsWriter::~JsWriter() = default;
+
+bool JsWriter::WriteValue(std::nullptr_t)
+{
+    return _impl->Null();
+}
+
+bool JsWriter::WriteValue(bool b )
+{
+    return _impl->Bool(b);
+}
+
+bool JsWriter::WriteValue(int i )
+{
+    return _impl->Int(i);
+}
+
+bool JsWriter::WriteValue(unsigned u )
+{
+    return _impl->Uint(u);
+}
+
+bool JsWriter::WriteValue(int64_t i64 )
+{
+    return _impl->Int64(i64);
+}
+
+bool JsWriter::WriteValue(uint64_t u64 )
+{
+    return _impl->Uint64(u64);
+}
+
+bool JsWriter::WriteValue(double d )
+{
+    return _impl->Double(d);
+}
+
+bool JsWriter::WriteValue(const std::string& s)
+{
+    return _impl->String(s.c_str(), s.length());
+}
+
+bool JsWriter::WriteValue(const char* s)
+{
+    return _impl->String(s, strlen(s));
+}
+
+bool JsWriter::BeginObject( )
+{
+    return _impl->StartObject();
+}
+
+bool JsWriter::WriteKey(const std::string& k)
+{
+    return _impl->Key(k.c_str(), k.length());
+}
+
+bool JsWriter::WriteKey(const char* k)
+{
+    return _impl->Key(k, strlen(k));
+}
+
+bool JsWriter::_Key(const char* s, size_t len)
+{
+    return _impl->Key(s, len);
+}
+
+bool JsWriter::_String(const char* s, size_t len)
+{
+    return _impl->String(s, len);
+}
+
+bool JsWriter::EndObject( )
+{
+    return _impl->EndObject();
+}
+
+bool JsWriter::BeginArray( )
+{
+    return _impl->StartArray();
+}
+
+bool JsWriter::EndArray( )
+{
+    return _impl->EndArray();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
