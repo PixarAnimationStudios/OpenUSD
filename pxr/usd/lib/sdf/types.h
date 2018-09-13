@@ -67,7 +67,6 @@
 #include <boost/mpl/joint_view.hpp>
 #include <boost/mpl/transform_view.hpp>
 #include <boost/mpl/vector.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/list/fold_left.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
@@ -603,8 +602,12 @@ private:
 /// Writes the string representation of \c SdfUnregisteredValue to \a out.
 SDF_API std::ostream &operator << (std::ostream &out, const SdfUnregisteredValue &value);
 
-class Sdf_ValueTypeNamesType : boost::noncopyable {
+class Sdf_ValueTypeNamesType {
 public:
+    // Disallow copies
+    Sdf_ValueTypeNamesType(const Sdf_ValueTypeNamesType&) = delete;
+    Sdf_ValueTypeNamesType& operator=(const Sdf_ValueTypeNamesType&) = delete;
+
     SdfValueTypeName Bool;
     SdfValueTypeName UChar, Int, UInt, Int64, UInt64;
     SdfValueTypeName Half, Float, Double;
