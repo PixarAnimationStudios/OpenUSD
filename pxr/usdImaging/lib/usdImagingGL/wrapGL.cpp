@@ -134,12 +134,13 @@ void wrapGL()
         enum_<UsdImagingGL::DrawMode>("DrawMode")
             .value("DRAW_POINTS", UsdImagingGL::DRAW_POINTS)
             .value("DRAW_WIREFRAME", UsdImagingGL::DRAW_WIREFRAME)
-            .value("DRAW_WIREFRAME_ON_SURFACE", UsdImagingGL::DRAW_WIREFRAME_ON_SURFACE)
-	    .value("DRAW_SHADED_FLAT", UsdImagingGL::DRAW_SHADED_FLAT)
-	    .value("DRAW_SHADED_SMOOTH", UsdImagingGL::DRAW_SHADED_SMOOTH)
-	    .value("DRAW_GEOM_ONLY", UsdImagingGL::DRAW_GEOM_ONLY)
-	    .value("DRAW_GEOM_FLAT", UsdImagingGL::DRAW_GEOM_FLAT)
-	    .value("DRAW_GEOM_SMOOTH", UsdImagingGL::DRAW_GEOM_SMOOTH)
+            .value("DRAW_WIREFRAME_ON_SURFACE", 
+                UsdImagingGL::DRAW_WIREFRAME_ON_SURFACE)
+        .value("DRAW_SHADED_FLAT", UsdImagingGL::DRAW_SHADED_FLAT)
+        .value("DRAW_SHADED_SMOOTH", UsdImagingGL::DRAW_SHADED_SMOOTH)
+        .value("DRAW_GEOM_ONLY", UsdImagingGL::DRAW_GEOM_ONLY)
+        .value("DRAW_GEOM_FLAT", UsdImagingGL::DRAW_GEOM_FLAT)
+        .value("DRAW_GEOM_SMOOTH", UsdImagingGL::DRAW_GEOM_SMOOTH)
         ;
 
         // Wrap the CullStyle enum. Accessible as UsdImaging.GL.CullStyle
@@ -147,10 +148,12 @@ void wrapGL()
                 .value("CULL_STYLE_NOTHING", UsdImagingGL::CULL_STYLE_NOTHING)
                 .value("CULL_STYLE_BACK", UsdImagingGL::CULL_STYLE_BACK)
                 .value("CULL_STYLE_FRONT", UsdImagingGL::CULL_STYLE_FRONT)
-                .value("CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED", UsdImagingGL::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED)
+                .value("CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED", 
+                    UsdImagingGL::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED)
          ;
 
-        // Wrap the RenderParams struct. Accessible as UsdImaging.GL.RenderParams
+        // Wrap the RenderParams struct.
+        // Accessible as UsdImaging.GL.RenderParams
         typedef UsdImagingGL::RenderParams Params;
         class_<UsdImagingGL::RenderParams>("RenderParams",
                                         "GL Renderer parameters")
@@ -164,14 +167,16 @@ void wrapGL()
             .def_readwrite("cullStyle", &Params::cullStyle)
             .def_readwrite("enableIdRender", &Params::enableIdRender)
             .def_readwrite("enableLighting", &Params::enableLighting)
-            .def_readwrite("enableSampleAlphaToCoverage", &Params::enableSampleAlphaToCoverage)
+            .def_readwrite("enableSampleAlphaToCoverage", 
+                &Params::enableSampleAlphaToCoverage)
             .def_readwrite("applyRenderState", &Params::applyRenderState)
             .def_readwrite("gammaCorrectColors", &Params::gammaCorrectColors)
             .def_readwrite("overrideColor", &Params::overrideColor)
             .def_readwrite("wireframeColor", &Params::wireframeColor)
             .def_readwrite("clipPlanes", &Params::clipPlanes)
             .def_readwrite("highlight", &Params::highlight)
-            .def_readwrite("enableHardwareShading", &Params::enableHardwareShading)
+            .def_readwrite("enableSceneMaterials", 
+                &Params::enableSceneMaterials)
             .def_readwrite("enableUsdDrawModes", &Params::enableUsdDrawModes)
         ;
 

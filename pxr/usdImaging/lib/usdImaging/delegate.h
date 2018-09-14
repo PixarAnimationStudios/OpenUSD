@@ -260,7 +260,7 @@ public:
 
     /// Enables custom shading on prims.
     USDIMAGING_API
-    void SetHardwareShadingEnabled(bool enable);
+    void SetSceneMaterialsEnabled(bool enable);
 
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
@@ -667,7 +667,7 @@ private:
     const bool _hasDrawModeAdapter;
 
     /// Enable custom shading of prims
-    bool _hardwareShadingEnabled;
+    bool _sceneMaterialsEnabled;
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

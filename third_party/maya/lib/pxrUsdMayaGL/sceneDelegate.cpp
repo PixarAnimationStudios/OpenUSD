@@ -413,7 +413,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         renderSetupTaskParams.tessLevel = 32.0f;
         const float tinyThreshold = 0.9f;
         renderSetupTaskParams.drawingRange = GfVec2f(tinyThreshold, -1.0f);
-        renderSetupTaskParams.enableHardwareShading = true;
+        renderSetupTaskParams.enableSceneMaterials = true;
         renderSetupTaskParams.depthBiasUseDefault = true;
         renderSetupTaskParams.depthFunc = HdCmpFuncLess;
         renderSetupTaskParams.geomStyle = HdGeomStylePolygons;

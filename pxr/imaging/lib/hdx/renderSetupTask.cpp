@@ -108,7 +108,7 @@ void
 HdxRenderSetupTask::_SetHdStRenderPassState(HdxRenderTaskParams const &params,
                                         HdStRenderPassState *renderPassState)
 {
-    if (params.enableHardwareShading) {
+    if (params.enableSceneMaterials) {
         renderPassState->SetOverrideShader(HdStShaderCodeSharedPtr());
     } else {
         if (!_overrideShader) {
@@ -262,7 +262,7 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.alphaThreshold << " "
         << pv.tessLevel << " "
         << pv.drawingRange << " "
-        << pv.enableHardwareShading << " "
+        << pv.enableSceneMaterials << " "
         << pv.depthBiasEnable << " "
         << pv.depthBiasConstantFactor << " "
         << pv.depthBiasSlopeFactor << " "
@@ -297,7 +297,7 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.alphaThreshold          == rhs.alphaThreshold          &&
            lhs.tessLevel               == rhs.tessLevel               &&
            lhs.drawingRange            == rhs.drawingRange            &&
-           lhs.enableHardwareShading   == rhs.enableHardwareShading   &&
+           lhs.enableSceneMaterials    == rhs.enableSceneMaterials    &&
            lhs.depthBiasEnable         == rhs.depthBiasEnable         &&
            lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor &&
            lhs.depthBiasSlopeFactor    == rhs.depthBiasSlopeFactor    &&

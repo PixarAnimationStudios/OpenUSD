@@ -462,7 +462,7 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
             renderParams.alphaThreshold;
     }
 
-    params.enableHardwareShading = renderParams.enableHardwareShading;
+    params.enableSceneMaterials = renderParams.enableSceneMaterials;
 
     // Leave default values for:
     // - params.geomStyle
@@ -536,7 +536,7 @@ UsdImagingGLHdEngine::TestIntersection(
     qparams.alphaThreshold = params.alphaThreshold;
     qparams.renderTags = _renderTags;
     qparams.cullStyle = HdCullStyleNothing;
-    qparams.enableSceneMaterials = params.enableHardwareShading;
+    qparams.enableSceneMaterials = params.enableSceneMaterials;
 
     if (!_taskController->TestIntersection(
             &_engine,
@@ -606,7 +606,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     qparams.alphaThreshold = params.alphaThreshold;
     qparams.cullStyle = USD_2_HD_CULL_STYLE[params.cullStyle];
     qparams.renderTags = _renderTags;
-    qparams.enableSceneMaterials = params.enableHardwareShading;
+    qparams.enableSceneMaterials = params.enableSceneMaterials;
 
     _taskController->SetPickResolution(pickResolution);
     if (!_taskController->TestIntersection(
@@ -667,8 +667,8 @@ class _DebugGroupTaskWrapper : public HdTask {
 void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
-    // Forward hw shading enable to delegate
-    _delegate->SetHardwareShadingEnabled(params.enableHardwareShading);
+    // Forward scene materials enable option to delegate
+    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
 
 
     // User is responsible for initializing GL context and glew

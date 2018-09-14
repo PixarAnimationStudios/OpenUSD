@@ -318,10 +318,10 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
                 _shadowTaskId, HdTokens->params);
 
             if (oldShParams.enableSceneMaterials != 
-                mergedParams.enableHardwareShading) {
+                mergedParams.enableSceneMaterials) {
 
                 oldShParams.enableSceneMaterials = 
-                    mergedParams.enableHardwareShading;
+                    mergedParams.enableSceneMaterials;
                 _delegate.SetParameter(_shadowTaskId, 
                     HdTokens->params, oldShParams);
 

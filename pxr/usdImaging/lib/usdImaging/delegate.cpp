@@ -120,7 +120,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
-    , _hardwareShadingEnabled(true)
+    , _sceneMaterialsEnabled(true)
 {
     // Default to 2 samples: this frame and the next frame.
     // XXX In the future this should be configurable via negotation
@@ -1406,11 +1406,11 @@ UsdImagingDelegate::SetUsdDrawModesEnabled(bool enableUsdDrawModes)
 
 
 void
-UsdImagingDelegate::SetHardwareShadingEnabled(bool enable)
+UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 {
-    if (_hardwareShadingEnabled != enable)
+    if (_sceneMaterialsEnabled != enable)
     {
-        _hardwareShadingEnabled = enable;
+        _sceneMaterialsEnabled = enable;
 
         UsdImagingIndexProxy indexProxy(this, nullptr);
 
@@ -2524,7 +2524,7 @@ UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
     }
 
     // If custom shading is disabled, use fallback
-    if (!_hardwareShadingEnabled) {
+    if (!_sceneMaterialsEnabled) {
         return std::string();
     }
 
@@ -2553,7 +2553,7 @@ UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
     }
 
     // If custom shading is disabled, use fallback
-    if (!_hardwareShadingEnabled) {
+    if (!_sceneMaterialsEnabled) {
         return std::string();
     }
 
@@ -2613,7 +2613,7 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
     }
 
     // If custom shading is disabled, use fallback
-    if (!_hardwareShadingEnabled) {
+    if (!_sceneMaterialsEnabled) {
         return HdMaterialParamVector();
     }
 
