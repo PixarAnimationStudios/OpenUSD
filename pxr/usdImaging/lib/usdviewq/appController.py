@@ -3896,9 +3896,9 @@ class AppController(QtCore.QObject):
 
             pathNames = ", ".join(path.name for path in paths)
             if active:
-                self.editComplete("Deactivated {}.".format(pathNames))
-            else:
                 self.editComplete("Activated {}.".format(pathNames))
+            else:
+                self.editComplete("Deactivated {}.".format(pathNames))
 
     def activateSelectedPrims(self):
         self._setSelectedPrimsActivation(True)
