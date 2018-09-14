@@ -24,6 +24,7 @@
 #ifndef __GUSD_GT_PRIMCACHE_H__
 #define __GUSD_GT_PRIMCACHE_H__
 
+#include "gusd/api.h"
 
 #include "purpose.h"
 #include "USD_DataCache.h"
@@ -47,6 +48,7 @@ class GusdGT_PrimCache : public GusdUSD_DataCache {
 
 public:
 
+    GUSD_API
     static GusdGT_PrimCache&  GetInstance();
 
     GusdGT_PrimCache();

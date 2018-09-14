@@ -24,8 +24,6 @@
 #ifndef _GUSD_DEFAULTARRAY_H_
 #define _GUSD_DEFAULTARRAY_H_
 
-#include "gusd/api.h"
-
 #include <pxr/pxr.h>
 
 #include <UT/UT_Array.h>
@@ -37,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Simple array wrapper, providing an array that may either hold a
 /// single constant value, or an array of values.
 template <typename T>
-class GUSD_API GusdDefaultArray
+class GusdDefaultArray
 {
 public:
     using value_type = T;

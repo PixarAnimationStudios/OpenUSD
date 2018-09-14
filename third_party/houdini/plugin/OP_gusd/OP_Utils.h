@@ -24,8 +24,6 @@
 #ifndef _GUSD_OP_UTILS_H_
 #define _GUSD_OP_UTILS_H_
 
-#include "gusd/api.h"
-
 #include "gusd/stageCache.h"
 #include "gusd/GT_PrimCache.h"
 #include "gusd/USD_XformCache.h"
@@ -38,13 +36,11 @@ namespace GusdOP_Utils
 
 /// Clear all caches stored by the stage cache, prim cache, xform cache, and
 /// visibility cache.
-GUSD_API
 void      ClearAllCaches();
 
 /// Reload any prims on stages that match the passed in set of layer
 /// identifiers (stage paths). Clear the prim, xform, and visibility caches of
 /// those prims.
-GUSD_API
 void      ReloadStagesAndClearCaches(const UT_StringSet& paths);
 
 } /*namespace GusdOP_Utils*/
