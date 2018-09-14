@@ -609,7 +609,8 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 
     const PxrMayaHdUserData* hdUserData =
         static_cast<const PxrMayaHdUserData*>(drawData.geometry());
-    if (!hdUserData) {
+    if (!hdUserData || (!hdUserData->drawShape && !hdUserData->boundingBox)) {
+        // Bail out as soon as possible if there's nothing to be drawn.
         return;
     }
 
@@ -660,15 +661,16 @@ UsdMayaGLBatchRenderer::Draw(
 {
     // Viewport 2.0 implementation.
 
-    const MHWRender::MRenderer* theRenderer =
-        MHWRender::MRenderer::theRenderer();
-    if (!theRenderer || !theRenderer->drawAPIIsOpenGL()) {
+    const PxrMayaHdUserData* hdUserData =
+        dynamic_cast<const PxrMayaHdUserData*>(userData);
+    if (!hdUserData || (!hdUserData->drawShape && !hdUserData->boundingBox)) {
+        // Bail out as soon as possible if there's nothing to be drawn.
         return;
     }
 
-    const PxrMayaHdUserData* hdUserData =
-        dynamic_cast<const PxrMayaHdUserData*>(userData);
-    if (!hdUserData) {
+    const MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer();
+    if (!theRenderer || !theRenderer->drawAPIIsOpenGL()) {
         return;
     }
 

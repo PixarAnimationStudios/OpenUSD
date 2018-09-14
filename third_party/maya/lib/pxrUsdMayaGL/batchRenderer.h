@@ -247,6 +247,7 @@ public:
     /// Starts batching all diagnostics until the end of the current frame draw.
     /// The batch renderer will automatically release the diagnostics when Maya
     /// is done rendering the frame.
+    PXRUSDMAYAGL_API
     void StartBatchingFrameDiagnostics();
 
 private:
