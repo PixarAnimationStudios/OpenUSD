@@ -52,62 +52,81 @@ class SdfAssetPath;
 
 /// \class UsdGeomBasisCurves
 ///
-/// Basis curves are analagous to RiCurves.  A 'basis' matrix and 
-/// \em vstep are used to uniformly interpolate the curves.  These curves are 
-/// often used to render dense aggregate geometry like hair.
+/// BasisCurves are a batched curve representation analogous to the
+/// classic RIB definition via Basis and Curves statements. BasisCurves are
+/// often used to render dense aggregate geometry like hair or grass.
 /// 
-/// A curves prim may have many curves, determined implicitly by the length of
-/// the 'curveVertexCounts' vector.  An individual curve is composed of one 
-/// or more curve segments, the smoothly interpolated part between vertices.
+/// A 'matrix' and 'vstep' associated with the \em basis are used to
+/// interpolate the vertices of a cubic BasisCurves. (The basis attribute
+/// is unused for linear BasisCurves.)
 /// 
-/// Curves may have a m'type' of either linear or cubic.  Linear curve 
-/// segments are interpolated between two vertices, and cubic curve segments are 
-/// interpolated between 4 vertices.  The segment count of a cubic curve  
-/// is determined by the vertex count, the 'wrap' (periodicity), and 
-/// the vstep of the basis.
+/// A single prim may have many curves whose count is determined implicitly by
+/// the length of the \em curveVertexCounts vector.  Each individual curve is
+/// composed of one or more segments. Each segment is defined by four vertices
+/// for cubic curves and two vertices for linear curves. See the next section
+/// for more information on how to map curve vertex counts to segment counts.
+/// 
+/// \section UsdGeomBasisCurves_Segment Segment Indexing
+/// Interpolating a curve requires knowing how to decompose it into its 
+/// individual segments.
+/// 
+/// The segments of a cubic curve are determined by the vertex count,
+/// the \em wrap (periodicity), and the vstep of the basis. For linear
+/// curves, the basis token is ignored and only the vertex count and
+/// wrap are needed.
 /// 
 /// cubic basis   | vstep
-/// ------------- | -------------
+/// ------------- | ------
 /// bezier        | 3
 /// catmullRom    | 1
 /// bspline       | 1
 /// hermite       | 2
 /// power         | 4
 /// 
-/// The first segment of a cubic curve is always defined by its first 4 points. 
-/// The vstep is the increment used to determine what cv determines the 
-/// next segment.  For a two segment bspline basis curve (vstep = 1), the first 
-/// segment will be defined by interpolating vertices [0, 1, 2, 3] and the 
-/// second  segment will be defined by [1, 2, 3, 4].  For a two segment bezier 
-/// basis curve (vstep = 3), the first segment will be defined by interpolating 
-/// vertices [0, 1, 2, 3] and the second segment will be defined by 
-/// [3, 4, 5, 6].  If the vstep is not one, then you must take special care
-/// to make sure that the number of cvs properly divides by your vstep.  If 
-/// the type of a curve is linear, the basis matrix and vstep are unused.
+/// The first segment of a cubic (nonperiodic) curve is always defined by its
+/// first four points. The vstep is the increment used to determine what
+/// vertex indices define the next segment.  For a two segment (nonperiodic)
+/// bspline basis curve (vstep = 1), the first segment will be defined by
+/// interpolating vertices [0, 1, 2, 3] and the second segment will be defined
+/// by [1, 2, 3, 4].  For a two segment bezier basis curve (vstep = 3), the
+/// first segment will be defined by interpolating vertices [0, 1, 2, 3] and
+/// the second segment will be defined by [3, 4, 5, 6].  If the vstep is not
+/// one, then you must take special care to make sure that the number of cvs
+/// properly divides by your vstep. (The indices described are relative to
+/// the initial vertex index for a batched curve.)
 /// 
-/// When validating curve topology, each entry in the curveVertexCounts vector
-/// must pass this check.
+/// For periodic curves, at least one of the curves' initial vertices are
+/// repeated to close the curve.
+/// (TODO: Explain the rules for how to repeat vertices for periodic curves.)
 /// 
-/// wrap           | cubic vertex count validity
-/// -------------- | ---------------------------------------
-/// nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
-/// periodic       | (curveVertexCounts[i]) % vstep == 0
+/// Linear curve segments are defined by two vertices.
+/// A two segment linear curve's first segment would be defined by
+/// interpolating vertices [0, 1]. The second segment would be defined by 
+/// vertices [1, 2]. (Again, for a batched curve indices are relative to
+/// the initial vertex index.)
 /// 
+/// When validating curve topology, each renderable entry in the
+/// curveVertexCounts vector must pass this check.
 /// 
-/// To convert an entry in the curveVertexCounts vector into a segment count 
-/// for an individual curve, apply these rules.  Sum up all the results in
-/// order to compute how many total segments all curves have.
+/// type    | wrap           | validitity
+/// ------- | -------------- | ----------------
+/// linear  | nonperiodic    | curveVertexCounts[i] > 2
+/// linear  | periodic       | curveVertexCounts[i] > 3
+/// cubic   | nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
+/// cubic   | periodic       | (curveVertexCounts[i]) % vstep == 0
 /// 
-/// wrap          | segment count [linear curves]
-/// ------------- | ----------------------------------------
-/// nonperiodic   | curveVertexCounts[i] - 1
-/// periodic      | curveVertexCounts[i]
+/// \section UsdGeomBasisCurves_BasisMatrix Cubic Vertex Interpolation
 /// 
-/// wrap          | segment count [cubic curves]
-/// ------------- | ----------------------------------------
-/// nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1
-/// periodic      | curveVertexCounts[i] / vstep 
+/// \image html USDCurveBasisMatrix.png width=750
 /// 
+/// \section UsdGeomBasisCurves_Linear Linear Vertex Interpolation
+/// 
+/// Linear interpolation is always used on curves of type linear.
+/// 't' with domain [0, 1], the curve is defined by the equation 
+/// P0 * (1-t) + P1 * t. t at 0 describes the first point and t at 1 describes
+/// the end point.
+/// 
+/// \section UsdGeomBasisCurves_PrimvarInterpolation Primvar Interpolation
 /// 
 /// For cubic curves, primvar data can be either interpolated cubically between 
 /// vertices or linearly across segments.  The corresponding token
@@ -117,35 +136,60 @@ class SdfAssetPath;
 /// wrap (periodicity) and number of segments in your curve.  For linear curves,
 /// varying and vertex data would be interpolated the same way.  By convention 
 /// varying is the preferred interpolation because of the association of 
-/// varying with linear interpolation. 
+/// varying with linear interpolation.
 /// 
-/// wrap          | expected linear (varying) data size
-/// ------------- | ----------------------------------------
-/// nonperiodic   | segmentCount + 1
-/// periodic      | segmentCount
+/// \image html USDCurvePrimvars.png 
 /// 
-/// Both curve types additionally define 'constant'
-/// interpolation for the entire prim and 'uniform' interpolation as per curve 
-/// data.
+/// To convert an entry in the curveVertexCounts vector into a segment count 
+/// for an individual curve, apply these rules.  Sum up all the results in
+/// order to compute how many total segments all curves have.
 /// 
-/// \image html USDCurvePrimvars.png
+/// The following tables describe the expected segment count for the 'i'th
+/// curve in a curve batch as well as the entire batch. Python syntax
+/// like '[:]' (to describe all members of an array) and 'len(...)' 
+/// (to describe the length of an array) are used.
 /// 
-/// While not technically UsdGeomPrimvars, the widths and optional normals
-/// also have interpolation metadata.  It's common for authored widths to have
-/// constant, varying, or vertex interpolation
-/// (see UsdGeomCurves::GetWidthsInterpolation()).  It's common for
-/// authored normals to have varying interpolation
-/// (see UsdGeomPointBased::GetNormalsInterpolation()).
+/// type    | wrap          | curve segment count                    | batch segment count                                                       
+/// ------- | ------------- | -------------------------------------- | --------------------------
+/// linear  | nonperiodic   | curveVertexCounts[i] - 1               | sum(curveVertexCounts[:]) - len(curveVertexCounts)
+/// linear  | periodic      | curveVertexCounts[i]                   | sum(curveVertexCounts[:])
+/// cubic   | nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1 | sum(curveVertexCounts[:] - 4) / vstep + len(curveVertexCounts)
+/// cubic   | periodic      | curveVertexCounts[i] / vstep           | sum(curveVertexCounts[:]) / vstep
 /// 
-/// This prim represents two different entries in the RI spec:  RiBasis
-/// and RiCurves, hence the name "BasisCurves."  If we are interested in
-/// specifying a custom basis as RenderMan allows you to do, the basis
-/// enum could be extended with a new "custom" token and with additional 
-/// attributes vstep and matrix, but for compatability with AbcGeom and the
-/// rarity of this use case, it is omitted for now.
+/// The following table descrives the expected size of varying
+/// (linearly interpolated) data, derived from the segment counts computed
+/// above.
 /// 
-/// Example of deriving per curve segment and varying primvar data counts from
-/// the wrap, type, basis, and curveVertexCount.
+/// wrap          | curve varying count          | batch varying count
+/// ------------- | ---------------------------- | ------------------------------------------------
+/// nonperiodic   | segmentCounts[i] + 1         | sum(segmentCounts[:]) + len(curveVertexCounts)
+/// periodic      | segmentCounts[i]             | sum(segmentCounts[:])
+/// 
+/// Both curve types additionally define 'constant' interpolation for the
+/// entire prim and 'uniform' interpolation as per curve data.
+/// 
+/// 
+/// \note Take care when providing support for linearly interpolated data for
+/// cubic curves. Its shape doesn't provide a one to one mapping with either
+/// the number of curves (like 'uniform') or the number of vertices (like
+/// 'vertex') and so it is often overlooked. This is the only primitive in
+/// UsdGeom (as of this writing) where this is true. For meshes, while they
+/// use different interpolation methods, 'varying' and 'vertex' are both
+/// specified per point. It's common to assume that curves follow a similar
+/// pattern and build in structures and language for per primitive, per
+/// element, and per point data only to come upon these arrays that don't 
+/// quite fit into either of those categories. It is
+/// also common to conflate 'varying' with being per segment data and use the
+/// segmentCount rules table instead of its neighboring varying data table
+/// rules. We suspect that this is because for the common case of
+/// nonperiodic cubic curves, both the provided segment count and varying data
+/// size formula end with '+ 1'. While debugging, users may look at the double
+/// '+ 1' as a mistake and try to remove it.  We take this time to enumerate
+/// these issues because we've fallen into them before and hope that we save
+/// others time in their own implementations.
+/// 
+/// As an example of deriving per curve segment and varying primvar data counts from
+/// the wrap, type, basis, and curveVertexCount, the following table is provided.
 /// 
 /// wrap          | type    | basis   | curveVertexCount  | curveSegmentCount  | varyingDataCount
 /// ------------- | ------- | ------- | ----------------- | ------------------ | -------------------------
@@ -155,6 +199,38 @@ class SdfAssetPath;
 /// periodic      | cubic   | bezier  | [6 9 6]           | [2 3 2]            | [2 3 2]
 /// periodic      | linear  | N/A     | [3 7]             | [3 7]              | [3 7]
 /// 
+/// \section UsdGeomBasisCurves_TubesAndRibbons Tubes and Ribbons
+/// 
+/// The strictest definition of a curve as an infinitely thin wire is not 
+/// particularly useful for describing production scenes. The additional
+/// \em widths and \em normals attributes can be used to describe cylindrical
+/// tubes and or flat oriented ribbons.
+/// 
+/// Curves with only widths defined are imaged as tubes with radius
+/// 'width / 2'. Curves with both widths and normals are imaged as ribbons
+/// oriented in the direction of the interpolated normal vectors.
+/// 
+/// While not technically UsdGeomPrimvars, widths and normals
+/// also have interpolation metadata. It's common for authored widths to have
+/// constant, varying, or vertex interpolation 
+/// (see UsdGeomCurves::GetWidthsInterpolation()).  It's common for
+/// authored normals to have varying interpolation 
+/// (see UsdGeomPointBased::GetNormalsInterpolation()).
+/// 
+/// \image html USDCurveHydra.png
+/// 
+/// The file used to generate these curves can be found in
+/// pxr/extras/examples/usdGeomExamples/basisCurves.usda.  It's provided
+/// as a reference on how to properly image both tubes and ribbons. The first
+/// row of curves are linear; the second are cubic bezier. (We aim in future
+/// releases of HdSt to fix the discontinuity seen with broken tangents to
+/// better match offline renderers like RenderMan.) The yellow and violet
+/// cubic curves represent cubic vertex width interpolation for which there is
+/// no equivalent for linear curves.
+/// 
+/// \note How did this prim type get its name?  This prim is a portmanteau of
+/// two different statements in the original RenderMan specification:
+/// 'Basis' and 'Curves'.
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -260,8 +336,8 @@ public:
     // --------------------------------------------------------------------- //
     // TYPE 
     // --------------------------------------------------------------------- //
-    /// Linear curves interpolate linearly between cvs.  
-    /// Cubic curves use a basis matrix with 4 cvs to interpolate a segment.
+    /// Linear curves interpolate linearly between two vertices.  
+    /// Cubic curves use a basis matrix with four vertices to interpolate a segment.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
@@ -283,11 +359,7 @@ public:
     // --------------------------------------------------------------------- //
     // BASIS 
     // --------------------------------------------------------------------- //
-    /// the basis specifies the vstep and matrix used for interpolation.
-    /// a custom basis could be supported with the addition of a custom token
-    /// and an additional set of matrix/vstep parameters.  For simplicity and
-    /// consistency with AbcGeom, we have omitted this.  The order of basis
-    /// and default value is intentionally the same as AbcGeom.
+    /// The basis specifies the vstep and matrix used for cubic interpolation.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
@@ -309,9 +381,9 @@ public:
     // --------------------------------------------------------------------- //
     // WRAP 
     // --------------------------------------------------------------------- //
-    /// if wrap is set to periodic, the curve when rendered will 
-    /// repeat the initial vertices (dependent on the vstep) to connect the
-    /// end points.
+    /// If wrap is set to periodic, the curve when rendered will 
+    /// repeat the initial vertices (dependent on the vstep) to close the
+    /// curve.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token

@@ -70,8 +70,8 @@ class SdfAssetPath;
 /// In spite of these slight differences in the spec, curves generated in Maya
 /// should be preserved when roundtripping.
 /// 
-/// 'order' and 'range', when representing a batched NurbsCurve should be
-/// authored one value per curve.  'knots' should be the concatentation of
+/// \em order and \em range, when representing a batched NurbsCurve should be
+/// authored one value per curve.  \em knots should be the concatentation of
 /// all batched curves.
 ///
 class UsdGeomNurbsCurves : public UsdGeomCurves
@@ -174,8 +174,8 @@ public:
     // --------------------------------------------------------------------- //
     /// Order of the curve.  Order must be positive and is
     /// equal to the degree of the polynomial basis to be evaluated, plus 1.
-    /// Its value for the 'i'th curve must be less than or equal to the 
-    /// number of cvs in the curveVertexCount[i]
+    /// Its value for the 'i'th curve must be less than or equal to
+    /// curveVertexCount[i]
     ///
     /// \n  C++ Type: VtArray<int>
     /// \n  Usd Type: SdfValueTypeNames->IntArray
