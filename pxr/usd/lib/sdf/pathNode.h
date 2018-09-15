@@ -29,7 +29,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/atomic.h>
@@ -44,8 +43,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 // field, and we typically have lots (e.g. ~1e8) of these objects.  Dropping the
 // C++ polymorphism saves us the vtable pointer, and we can pack the '_nodeType'
 // field in a much smaller space with other flags.
-class Sdf_PathNode : boost::noncopyable {
+class Sdf_PathNode {
 public:
+    // Disallow copies
+    Sdf_PathNode(const Sdf_PathNode&) = delete;
+    Sdf_PathNode& operator=(const Sdf_PathNode&) = delete;
+
     // Node types identify what kind of path node a given instance is.
     // There are restrictions on what type of children each node type 
     // can have,
