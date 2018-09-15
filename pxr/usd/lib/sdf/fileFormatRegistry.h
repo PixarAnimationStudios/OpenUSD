@@ -33,7 +33,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <atomic>
 #include <mutex>
@@ -50,9 +49,13 @@ TF_DECLARE_WEAK_PTRS(PlugPlugin);
 /// providing methods for finding registered formats either by format
 /// identifier or file extension.
 ///
-class Sdf_FileFormatRegistry : boost::noncopyable
+class Sdf_FileFormatRegistry
 {
 public:
+    // Disallow copies
+    Sdf_FileFormatRegistry(const Sdf_FileFormatRegistry&) = delete;
+    Sdf_FileFormatRegistry& operator=(const Sdf_FileFormatRegistry&) = delete;
+
     /// Constructor.
     Sdf_FileFormatRegistry();
 
