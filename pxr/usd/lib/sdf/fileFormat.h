@@ -36,7 +36,6 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include <boost/noncopyable.hpp>
 #include <map>
 #include <string>
 #include <vector>
@@ -60,9 +59,13 @@ TF_DECLARE_PUBLIC_TOKENS(SdfFileFormatTokens, SDF_API, SDF_FILE_FORMAT_TOKENS);
 ///
 /// Base class for file format implementations.
 ///
-class SdfFileFormat : public TfRefBase, public TfWeakBase, boost::noncopyable
+class SdfFileFormat : public TfRefBase, public TfWeakBase
 {
 public:
+    // Disallow copies
+    SdfFileFormat(const SdfFileFormat&) = delete;
+    SdfFileFormat& operator=(const SdfFileFormat&) = delete;
+
     /// Returns the format identifier.
     SDF_API const TfToken& GetFormatId() const;
 
