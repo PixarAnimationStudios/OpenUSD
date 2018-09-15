@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/noncopyable.hpp>
 #include <tbb/spin_mutex.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,8 +44,12 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 /// This is simply the layer the spec belongs to and the path to the spec.
 ///
-class Sdf_Identity : public boost::noncopyable {
+class Sdf_Identity {
 public:
+    // Disallow copies
+    Sdf_Identity(const Sdf_Identity&) = delete;
+    Sdf_Identity& operator=(const Sdf_Identity&) = delete;
+
     /// Returns the layer that this identity refers to.
     SDF_API
     const SdfLayerHandle &GetLayer() const;
