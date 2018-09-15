@@ -31,7 +31,6 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
-#include <boost/noncopyable.hpp>
 
 #include <map>
 #include <string>
@@ -48,9 +47,13 @@ class SdfSchemaBase;
 /// Base class for all layer implementations. Holds a pointer to the file
 /// format for the layer.
 ///
-class SdfLayerBase : public TfRefBase, public TfWeakBase, boost::noncopyable
+class SdfLayerBase : public TfRefBase, public TfWeakBase
 {
 public:
+    // Disallow copies
+    SdfLayerBase(const SdfLayerBase&) = delete;
+    SdfLayerBase& operator=(const SdfLayerBase&) = delete;
+
     /// Returns the file format used by this layer.
     SDF_API SdfFileFormatConstPtr GetFileFormat() const;
 
