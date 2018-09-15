@@ -59,12 +59,16 @@ TF_DECLARE_WEAK_PTRS(PlugPlugin);
 /// Generic class that provides information about scene description fields
 /// but doesn't actually provide any fields.
 ///
-class SdfSchemaBase : public TfWeakBase, public boost::noncopyable {
+class SdfSchemaBase : public TfWeakBase {
 
 protected:
     class _SpecDefiner;
 
 public:
+    // Disallow copies
+    SdfSchemaBase(const SdfSchemaBase&) = delete;
+    SdfSchemaBase& operator=(const SdfSchemaBase&) = delete;
+
     /// \class FieldDefinition
     ///
     /// Class defining various attributes for a field.
