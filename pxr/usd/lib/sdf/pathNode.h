@@ -29,7 +29,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/atomic.h>
@@ -61,7 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Sdf_PathNode {
     Sdf_PathNode(Sdf_PathNode const &) = delete;
     Sdf_PathNode &operator=(Sdf_PathNode const &) = delete;
-public:
+
     // Node types identify what kind of path node a given instance is.
     // There are restrictions on what type of children each node type 
     // can have,
