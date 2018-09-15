@@ -198,9 +198,8 @@ private: // data
 
     class _Node {
     public:
-        // _Node needs to be noncopyable
+        // Disallow copies
         _Node(const _Node&) = delete;  
-
         _Node& operator=(const _Node&) = delete;
 
         // The Key holds all the state needed to uniquely identify
