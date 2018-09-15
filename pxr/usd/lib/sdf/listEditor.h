@@ -41,7 +41,6 @@
 // #include "pxr/base/trace/trace.h"
 
 #include <boost/function.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,8 +55,12 @@ SDF_DECLARE_HANDLES(SdfSpec);
 ///
 template <class TypePolicy>
 class Sdf_ListEditor
-    : public boost::noncopyable 
 {
+public:
+    // Disallow copies
+    Sdf_ListEditor(const Sdf_ListEditor&) = delete;
+    Sdf_ListEditor& operator=(const Sdf_ListEditor&) = delete;
+
 private:
     typedef Sdf_ListEditor<TypePolicy> This;
 
