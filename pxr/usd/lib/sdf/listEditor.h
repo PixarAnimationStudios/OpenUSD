@@ -33,7 +33,14 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 
-#include <boost/noncopyable.hpp>
+// XXX: Including this here may not be great, as this header leaks out
+//      of Sdf and causes downstream code to pick up the trace
+//      versions of TRACE_FUNCTION and TRACE_SCOPE instead of the
+//      versions in Common/Trace. Functionally, they should be equivalent,
+//      but could there be unwanted overhead involved?
+// #include "pxr/base/trace/trace.h"
+
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
 
 #include <functional>
@@ -50,8 +57,12 @@ SDF_DECLARE_HANDLES(SdfSpec);
 ///
 template <class TypePolicy>
 class Sdf_ListEditor
-    : public boost::noncopyable 
 {
+public:
+    // Disallow copies
+    Sdf_ListEditor(const Sdf_ListEditor&) = delete;
+    Sdf_ListEditor& operator=(const Sdf_ListEditor&) = delete;
+
 private:
     typedef Sdf_ListEditor<TypePolicy> This;
 
