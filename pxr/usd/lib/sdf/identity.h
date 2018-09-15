@@ -87,8 +87,12 @@ inline void intrusive_ptr_release(PXR_NS::Sdf_Identity* p) {
     }
 }
 
-class Sdf_IdentityRegistry : public boost::noncopyable {
+class Sdf_IdentityRegistry {
 public:
+    // Disallow copies
+    Sdf_IdentityRegistry(const Sdf_IdentityRegistry&) = delete;
+    Sdf_IdentityRegistry& operator=(const Sdf_IdentityRegistry&) = delete;
+
     Sdf_IdentityRegistry(const SdfLayerHandle &layer);
     ~Sdf_IdentityRegistry();
 
