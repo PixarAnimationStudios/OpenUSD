@@ -31,6 +31,7 @@
 #include "pxr/base/vt/value.h"
 #include <boost/noncopyable.hpp>
 #include <memory>
+#include <boost/scoped_ptr.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,8 +42,12 @@ class TfType;
 ///
 /// A registry of value type names used by a schema.
 ///
-class Sdf_ValueTypeRegistry : boost::noncopyable {
+class Sdf_ValueTypeRegistry {
 public:
+    // Disallow copies
+    Sdf_ValueTypeRegistry(const Sdf_ValueTypeRegistry&) = delete;
+    Sdf_ValueTypeRegistry& operator=(const Sdf_ValueTypeRegistry&) = delete;
+
     Sdf_ValueTypeRegistry();
     ~Sdf_ValueTypeRegistry();
 

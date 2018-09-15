@@ -88,9 +88,13 @@ namespace {
 // Registry -- The implementation of the value type name registry.
 //
 
-class Registry : boost::noncopyable {
+class Registry {
 public:
     typedef Sdf_ValueTypePrivate::CoreType CoreType;
+
+    // Disallow copies
+    Registry(const Registry&) = delete;
+    Registry& operator=(const Registry&) = delete;
 
     Registry();
     ~Registry();
