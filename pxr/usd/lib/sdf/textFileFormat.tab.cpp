@@ -131,7 +131,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
@@ -6495,9 +6494,13 @@ static void _ReportParseError(Sdf_TextParserContext *context,
 // blocks of 8KB, which leads to O(n^2) behavior when trying to match strings
 // that are over this size. Giving flex a pre-filled buffer avoids this
 // behavior.
-struct Sdf_MemoryFlexBuffer : public boost::noncopyable
+struct Sdf_MemoryFlexBuffer
 {
 public:
+    // Disallow copies
+    Sdf_MemoryFlexBuffer(const Sdf_MemoryFlexBuffer&) = delete;
+    Sdf_MemoryFlexBuffer& operator=(const Sdf_MemoryFlexBuffer&) = delete;
+
     Sdf_MemoryFlexBuffer(const std::shared_ptr<ArAsset>& asset,
                          const std::string& name, yyscan_t scanner);
     ~Sdf_MemoryFlexBuffer();
