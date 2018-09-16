@@ -30,7 +30,6 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/usd/collectionAPI.h"
 
-#include <boost/noncopyable.hpp>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_queue.h>
 #include <unordered_map>
@@ -55,8 +54,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// As an optimization, the query that includes everything is
 /// treated as a special case and given the empty id, TfToken().
 ///
-class UsdImaging_CollectionCache : boost::noncopyable {
+class UsdImaging_CollectionCache {
 public:
+    // Disallow copies
+    UsdImaging_CollectionCache(const UsdImaging_CollectionCache&) = delete;
+    UsdImaging_CollectionCache& operator=(const UsdImaging_CollectionCache&) = delete;
+
     /// Query is the MembershipQuery computed from a collection's state.
     typedef UsdCollectionAPI::MembershipQuery Query;
 
