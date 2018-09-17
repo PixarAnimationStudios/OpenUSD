@@ -128,7 +128,7 @@ public:
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
-    virtual ~{{ cls.cppClassName }}();
+    virtual ~{{ cls.cppClassName }}() {%- if cls.isAPISchemaBase %} = 0{% endif %};
 
 {% if cls.isMultipleApply %}
     /// Return a vector of names of all pre-declared attributes for this schema
@@ -158,6 +158,7 @@ public:
         return _GetInstanceName();
     }
 {% endif %}
+{% if not cls.isAPISchemaBase %}
 
     /// Return a {{ cls.cppClassName }} holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -195,6 +196,7 @@ public:
     {% endif -%}
     static {{ cls.cppClassName }}
     Get(const UsdPrim &prim, const TfToken &name);
+{% endif %}
 {% endif %}
 
 {% if cls.isConcrete %}

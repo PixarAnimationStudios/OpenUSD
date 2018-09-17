@@ -141,7 +141,7 @@ public:
 
     /// Destructor.
     USD_API
-    virtual ~UsdAPISchemaBase();
+    virtual ~UsdAPISchemaBase() = 0;
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -149,19 +149,6 @@ public:
     USD_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
-
-    /// Return a UsdAPISchemaBase holding the prim adhering to this
-    /// schema at \p path on \p stage.  If no prim exists at \p path on
-    /// \p stage, or if the prim at that path does not adhere to this schema,
-    /// return an invalid schema object.  This is shorthand for the following:
-    ///
-    /// \code
-    /// UsdAPISchemaBase(stage->GetPrimAtPath(path));
-    /// \endcode
-    ///
-    USD_API
-    static UsdAPISchemaBase
-    Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
 protected:

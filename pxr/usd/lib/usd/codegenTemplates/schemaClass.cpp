@@ -66,6 +66,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 {
 }
 
+{% if not cls.isAPISchemaBase %}
 /* static */
 {{ cls.cppClassName }}
 {{ cls.cppClassName }}::Get(const UsdStagePtr &stage, const SdfPath &path)
@@ -93,6 +94,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     return {{ cls.cppClassName }}(prim, name);
 }
 
+{% endif %}
 {% endif %}
 {% if cls.isConcrete %}
 /* static */
