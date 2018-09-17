@@ -193,7 +193,7 @@ class Tf_EnvSettingRegistry;
 /// \hideinitializer
 #define TF_DEFINE_ENV_SETTING(envVar, defValue, description)                  \
     std::atomic< decltype(Tf_ChooseEnvSettingType(defValue))*>                \
-        envVar##_value = {nullptr};                                           \
+        envVar##_value;                                                       \
     TfEnvSetting<decltype(Tf_ChooseEnvSettingType(defValue))> envVar = {      \
         &envVar##_value, defValue, #envVar, description };                    \
     TF_REGISTRY_FUNCTION_WITH_TAG(Tf_EnvSettingRegistry, envVar) {            \
