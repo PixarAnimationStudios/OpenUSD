@@ -414,9 +414,26 @@ public:
     }
 
 private:
+    struct _ValidAttributeTagType {};
 
+public:
+    // Allow clients that guarantee \p attr is valid avoid having
+    // UsdGeomXformOp's ctor check again.
+    USDGEOM_API
+    UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp,
+                   _ValidAttributeTagType);
+    USDGEOM_API
+    UsdGeomXformOp(UsdAttributeQuery &&query, bool isInverseOp,
+                   _ValidAttributeTagType);
+private:
     friend class UsdGeomXformable;
-    
+
+    // Shared initialization function.
+    void _Init();
+
+    // Return the op-type for the string value \p str.
+    static Type _GetOpTypeEnumFromCString(char const *str, size_t len);
+
     // Returns the attribute belonging to \p prim that corresponds to the  
     // given \p opName. It also populates the output parameter \p isInverseOp 
     // appropriately. 
