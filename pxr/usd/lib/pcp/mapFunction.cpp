@@ -30,6 +30,9 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/ostreamMethods.h"
+
+#include <boost/functional/hash.hpp>
 
 #include <limits>
 
@@ -41,52 +44,26 @@ namespace {
     {
         bool operator()(const PcpMapFunction::PathPair &lhs,
                         const PcpMapFunction::PathPair &rhs) {
-            if (SdfPath::FastLessThan()(lhs.first, rhs.first)) {
-                return true;
-            }
-            if (SdfPath::FastLessThan()(rhs.first, lhs.first)) {
-                return false;
-            }
-            if (SdfPath::FastLessThan()(lhs.second, rhs.second)) {
-                return true;
-            }
-            return false;
+            SdfPath::FastLessThan less;
+            return less(lhs.first, rhs.first) ||
+                (lhs.first == rhs.first && less(lhs.second, rhs.second));
         }
     };
 };
 
-PcpMapFunction::PcpMapFunction()
-{
-}
-
-PcpMapFunction::~PcpMapFunction()
-{
-}
-
 PcpMapFunction::PcpMapFunction(const PathPairVector &sourceToTarget,
-                               SdfLayerOffset offset)
-    : _data( _Data(sourceToTarget, offset) )
+                               SdfLayerOffset offset,
+                               bool hasRootIdentity)
+    : _data(sourceToTarget, hasRootIdentity)
+    , _offset(offset)
 {
-    // No malloc tags here; we've already provided tag coverage
-    // in the public API.
 }
 
-PcpMapFunction::PcpMapFunction(const _DataFlyweight &data)
-    : _data(data)
-{
-    // No malloc tags here; we're sharing the flyweight instance.
-}
-
-PcpMapFunction::PcpMapFunction(const PcpMapFunction &map)
-    : _data(map._data)
-{
-    // No malloc tags here; we're sharing the flyweight instance.
-}
-
-// Canonicalize a PathMap by removing all redundant entries.
-// Redundant entries are those which can be removed without
-// changing the semantics of the correspondence.
-static void
+// Canonicalize a PathMap by removing all redundant entries.  Redundant entries
+// are those which can be removed without changing the semantics of the
+// correspondence.  Return true if there's a root identity mapping ('/' -> '/').
+// It will not appear in the resulting \p vec.
+static bool
 _Canonicalize(PcpMapFunction::PathPairVector *vec)
 {
     TRACE_FUNCTION();
@@ -151,6 +128,16 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
 
     // Final sort to canonical order.
     std::sort(vec->begin(), vec->end(), _PathPairOrder());
+
+    bool hasRootIdentity = false;
+    if (!vec->empty()) {
+        auto const &absroot = SdfPath::AbsoluteRootPath();
+        if (vec->front().first == absroot && vec->front().second == absroot) {
+            vec->erase(vec->begin());
+            hasRootIdentity = true;
+        }
+    }
+    return hasRootIdentity;
 }
 
 PcpMapFunction
@@ -160,6 +147,15 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
     TfAutoMallocTag2 tag("Pcp", "PcpMapFunction");
     TRACE_FUNCTION();
 
+    // If we're creating the identity map function, just return it directly.
+    auto absoluteRoot = SdfPath::AbsoluteRootPath();
+    if (sourceToTarget.size() == 1 && offset.IsIdentity()) {
+        auto const &pathPair = *sourceToTarget.begin();
+        if (pathPair.first == absoluteRoot && pathPair.second == absoluteRoot) {
+            return Identity();
+        }
+    }
+    
     // Validate the arguments.
     {
         // Make sure we don't exhaust the representable range.
@@ -198,25 +194,27 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
     }
 
     PathPairVector vec(sourceToTarget.begin(), sourceToTarget.end());
-    _Canonicalize(&vec);
-    return PcpMapFunction(vec, offset);
+    bool hasRootIdentity = _Canonicalize(&vec);
+    return PcpMapFunction(vec, offset, hasRootIdentity);
 }    
 
 bool
 PcpMapFunction::IsNull() const
 {
-    return _GetData() == _Data();
+    return _data.IsNull();
 }
 
-TF_MAKE_STATIC_DATA(PcpMapFunction, _identityMapFunction)
+PcpMapFunction *Pcp_MakeIdentity()
 {
-    *_identityMapFunction = PcpMapFunction::Create(
-       PcpMapFunction::IdentityPathMap(), SdfLayerOffset());
+    PcpMapFunction *ret = new PcpMapFunction;
+    ret->_data.hasRootIdentity = true;
+    return ret;
 }
 
 const PcpMapFunction &
 PcpMapFunction::Identity()
 {
+    static PcpMapFunction *_identityMapFunction = Pcp_MakeIdentity();
     return *_identityMapFunction;
 }
 
@@ -239,23 +237,18 @@ PcpMapFunction::IsIdentity() const
     return *this == Identity();
 }
 
-PcpMapFunction&
-PcpMapFunction::operator=(const PcpMapFunction &map)
-{
-    PcpMapFunction(map).Swap(*this);
-    return *this;
-}
-
 void
 PcpMapFunction::Swap(PcpMapFunction& map)
 {
-    _data.Swap(map._data);
+    using std::swap;
+    swap(_data, map._data);
+    swap(_offset, map._offset);
 }
 
 bool
 PcpMapFunction::operator==(const PcpMapFunction &map) const
 {
-    return _data == map._data;
+    return _data == map._data && _offset == map._offset;
 }
 
 bool
@@ -267,7 +260,8 @@ PcpMapFunction::operator!=(const PcpMapFunction &map) const
 static SdfPath
 _Map(const SdfPath& path,
      const PcpMapFunction::PathPair *pairs,
-     const unsigned short numPairs,
+     const int numPairs,
+     bool hasRootIdentity,
      bool invert)
 {
     // Note that we explicitly do not fix target paths here. This
@@ -292,19 +286,27 @@ _Map(const SdfPath& path,
             bestIndex = i;
         }
     }
-    if (bestIndex == -1) {
+    if (bestIndex == -1 && !hasRootIdentity) {
         // No mapping found.
         return SdfPath();
     }
-    const SdfPath &source =
-        invert? pairs[bestIndex].second : pairs[bestIndex].first;
-    const SdfPath &target =
+
+    SdfPath result;
+    const SdfPath &target = bestIndex == -1 ? SdfPath::AbsoluteRootPath() :
         invert? pairs[bestIndex].first : pairs[bestIndex].second;
-    SdfPath result =
-        path.ReplacePrefix(source, target, /* fixTargetPaths = */ false);
-    if (result.IsEmpty()) {
-        return result;
+    if (bestIndex != -1) {
+        const SdfPath &source =
+            invert? pairs[bestIndex].second : pairs[bestIndex].first;
+        result =
+            path.ReplacePrefix(source, target, /* fixTargetPaths = */ false);
+        if (result.IsEmpty()) {
+            return result;
+        }
     }
+    else {
+        // Use the root identity.
+        result = path;
+    }        
 
     // To maintain the bijection, we need to check if the mapped path
     // would translate back to the original path. For instance, given
@@ -361,15 +363,15 @@ _Map(const SdfPath& path,
 SdfPath
 PcpMapFunction::MapSourceToTarget(const SdfPath & path) const
 {
-    const _Data& data = _GetData();
-    return _Map(path, data._pairs, data._numPairs, /* invert */ false);
+    return _Map(path, _data.begin(), _data.numPairs, _data.hasRootIdentity,
+                /* invert */ false);
 }
 
 SdfPath
 PcpMapFunction::MapTargetToSource(const SdfPath & path) const
 {
-    const _Data& data = _GetData();
-    return _Map(path, data._pairs, data._numPairs, /* invert */ true);
+    return _Map(path, _data.begin(), _data.numPairs, _data.hasRootIdentity,
+                /* invert */ true);
 }
 
 PcpMapFunction
@@ -396,32 +398,30 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     pairs.reserve(2);
 
     // Apply outer function to the output range of inner.
-    const _Data& data_inner = inner._GetData();
-    for (int i=0; i < data_inner._numPairs; ++i) {
-        PathPair pair = data_inner._pairs[i];
+    const _Data& data_inner = inner._data;
+    for (PathPair pair: data_inner) {
         pair.second = MapSourceToTarget(pair.second);
         if (!pair.second.IsEmpty()) {
             if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
-                pairs.push_back(pair);
+                pairs.push_back(std::move(pair));
             }
         }
     }
 
     // Apply the inverse of inner to the domain of this function.
-    const _Data& data_outer = _GetData();
-    for (int i=0; i < data_outer._numPairs; ++i) {
-        PathPair pair = data_outer._pairs[i];
+    const _Data& data_outer = _data;
+    for (PathPair pair: data_outer) {
         pair.first = inner.MapTargetToSource(pair.first);
         if (!pair.first.IsEmpty()) {
             if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
-                pairs.push_back(pair);
+                pairs.push_back(std::move(pair));
             }
         }
     }
 
-    _Canonicalize(&pairs);
-
-    return PcpMapFunction(pairs, data_outer._offset * data_inner._offset);
+    bool hasRootIdentity = HasRootIdentity() && inner.HasRootIdentity();
+    hasRootIdentity |= _Canonicalize(&pairs);
+    return PcpMapFunction(pairs, _offset * inner._offset, hasRootIdentity);
 }
 
 PcpMapFunction
@@ -430,19 +430,22 @@ PcpMapFunction::GetInverse() const
     TfAutoMallocTag2 tag("Pcp", "PcpMapFunction");
 
     PathPairVector targetToSource;
-    const _Data& data = _GetData();
-    for (int i=0; i < data._numPairs; ++i) {
-        targetToSource.push_back( PathPair(data._pairs[i].second,
-                                           data._pairs[i].first) );
+    targetToSource.reserve(_data.numPairs);
+    for (PathPair const &pair: _data) {
+        targetToSource.emplace_back(pair.second, pair.first);
     }
-    return PcpMapFunction(targetToSource, data._offset.GetInverse());
+    return PcpMapFunction(
+        targetToSource, _offset.GetInverse(), _data.hasRootIdentity);
 }
 
 PcpMapFunction::PathMap
 PcpMapFunction::GetSourceToTargetMap() const
 {
-    const _Data& d = _GetData();
-    return PathMap( &d._pairs[0], &d._pairs[d._numPairs] );
+    PathMap ret(_data.begin(), _data.end());
+    if (_data.hasRootIdentity) {
+        ret[SdfPath::AbsoluteRootPath()] = SdfPath::AbsoluteRootPath();
+    }
+    return ret;
 }
 
 std::string 
@@ -466,72 +469,16 @@ PcpMapFunction::GetString() const
     return TfStringJoin(lines.begin(), lines.end(), "\n");
 }
 
-PcpMapFunction::_Data::_Data(const PathPairVector &sourceToTarget,
-                             const SdfLayerOffset &offset)
-    : _offset(offset),
-    _pairs(new PathPair[sourceToTarget.size()]),
-    _numPairs(sourceToTarget.size())
-{
-    for (int i=0; i < _numPairs; ++i) {
-        _pairs[i] = sourceToTarget[i];
-    }
-}
-
-PcpMapFunction::_Data::_Data(const _Data &d)
-{
-    _offset = d._offset;
-    _numPairs = d._numPairs;
-    _pairs = new PathPair[_numPairs];
-    for (int i=0; i < _numPairs; ++i) {
-        _pairs[i] = d._pairs[i];
-    }
-}
-
-PcpMapFunction::_Data&
-PcpMapFunction::_Data::operator=(const _Data &d)
-{
-    if (this != &d) {
-        _offset = d._offset;
-        _numPairs = d._numPairs;
-        delete []_pairs;
-        _pairs = new PathPair[_numPairs];
-        for (int i=0; i < _numPairs; ++i) {
-            _pairs[i] = d._pairs[i];
-        }
-    }
-    return *this;
-}
-
-PcpMapFunction::_Data::~_Data()
-{
-    delete []_pairs;
-    _pairs = 0;
-    _numPairs = 0;
-}
-
-bool
-PcpMapFunction::_Data::operator==(const _Data &rhs) const {
-    if (_numPairs != rhs._numPairs || _offset != rhs._offset) {
-        return false;
-    }
-    for (int i=0; i < _numPairs; ++i) {
-        if (_pairs[i] != rhs._pairs[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 size_t
-PcpMapFunction::_Data::Hash::operator()(const _Data &data) const
+PcpMapFunction::Hash() const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, data._numPairs);
-    for (unsigned short i=0; i < data._numPairs; ++i) {
-        boost::hash_combine(hash, data._pairs[i].first.GetHash());
-        boost::hash_combine(hash, data._pairs[i].second.GetHash());
+    size_t hash = _data.hasRootIdentity;
+    boost::hash_combine(hash, _data.numPairs);
+    for (PathPair const &p: _data) {
+        boost::hash_combine(hash, p.first.GetHash());
+        boost::hash_combine(hash, p.second.GetHash());
     }
-    boost::hash_combine(hash, data._offset.GetHash());
+    boost::hash_combine(hash, _offset.GetHash());
     return hash;
 }
 
