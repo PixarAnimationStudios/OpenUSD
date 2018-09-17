@@ -37,7 +37,6 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/js/types.h"
 
 #include <vector>
 #include <unordered_map>
@@ -45,6 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class TraceCollection;
+class JsWriter;
 TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventTree);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,9 +97,11 @@ public:
     /// Return the final value of the counters in the report.
     CounterMap GetFinalCounterValues() const;
 
-    /// Returns a JSON object representing the data in the call tree that 
+    /// Writes a JSON object representing the data in the call tree that 
     /// conforms to the Chrome Trace format.
-    TRACE_API JsObject CreateChromeTraceObject() const;
+    using ExtraFieldFn = std::function<void(JsWriter&)>;
+    TRACE_API void WriteChromeTraceObject(
+        JsWriter& writer, ExtraFieldFn extraFields = ExtraFieldFn()) const;
 
     /// Adds the contexts of \p tree to this tree.
     TRACE_API void Merge(const TraceEventTreeRefPtr& tree);

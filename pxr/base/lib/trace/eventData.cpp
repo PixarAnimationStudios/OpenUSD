@@ -25,41 +25,46 @@
 #include "pxr/base/trace/eventData.h"
 
 #include "pxr/pxr.h"
-#include "pxr/base/js/value.h"
+#include "pxr/base/js/json.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
 // Boost variant visitor to convert TraceEventData to JsValue
-class JsValue_visitor : public boost::static_visitor<JsValue>
+class JsValue_visitor : public boost::static_visitor<void>
 {
 public:
-    JsValue operator()(int64_t i) const {
-        return JsValue(i);
+    JsValue_visitor(JsWriter& writer)
+        : _writer(writer) {}
+
+    void operator()(int64_t i) const {
+        _writer.WriteValue(i);
     }
 
-    JsValue operator()(uint64_t i) const {
-        return JsValue(i);
+    void operator()(uint64_t i) const {
+        _writer.WriteValue(i);
     }
 
-    JsValue operator()(bool i) const {
-        return JsValue(i);
+    void operator()(bool i) const {
+        _writer.WriteValue(i);
     }
 
-    JsValue operator()(double v) const {
-        return JsValue(v);
+    void operator()(double v) const {
+        _writer.WriteValue(v);
     }
 
-    JsValue operator()(const std::string& s) const {
-        return JsValue(s);
+    void operator()(const std::string& s) const {
+        _writer.WriteValue(s);
     }
     
     template<class T>
-    JsValue operator()(T) const {
-        return JsValue();
+    void operator()(T) const {
+        _writer.WriteValue(nullptr);
     }
 
+private:
+    JsWriter& _writer;
 };
 
 // Boost variant visitor to convert TraceEventData to TraceEvent::DataType
@@ -129,9 +134,9 @@ const std::string* TraceEventData::GetString() const
         &boost::get<std::string>(_data) : nullptr;
 }
 
-JsValue TraceEventData::ToJson() const
+void TraceEventData::WriteJson(JsWriter& writer) const
 {
-    return boost::apply_visitor(JsValue_visitor(), _data);
+    boost::apply_visitor(JsValue_visitor(writer), _data);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,7 +28,7 @@
 
 #include "pxr/base/trace/eventTreeBuilder.h"
 
-#include "pxr/base/js/value.h"
+#include "pxr/base/js/json.h"
 
 #include <boost/optional.hpp>
 
@@ -125,25 +125,22 @@ TraceEventTree::Merge(const TraceEventTreeRefPtr& tree)
 }
 
 static 
-JsValue
+double
 _TimeStampToChromeTraceValue(TraceEvent::TimeStamp t)
 {
     // Chrome trace format uses timestamps in microseconds.
-    return JsValue(ArchTicksToNanoseconds(t)/1000.0);
+    return ArchTicksToNanoseconds(t)/1000.0;
 }
 
-
-// Recursively adds JSON objects representing call tree nodes to the array.
+// Recursively writes JSON objects representing call tree nodes to the array.
 static 
-void TraceEventTree_AddToJsonArray(
+void TraceEventTree_WriteToJsonArray(
     const TraceEventNodeRefPtr &node,
     const int pid,
     const TraceThreadId& threadId,
-    JsArray *array)
+    JsWriter& js)
 {
     std::string categoryList("");
-
-    JsObject dict;
 
     // Add begin time
     std::vector<std::string> catList = 
@@ -154,123 +151,129 @@ void TraceEventTree_AddToJsonArray(
         }
         categoryList.append(catName);
     }
-    dict["cat"]  = JsValue(categoryList);
-    dict["libTraceCatId"] = JsValue(static_cast<uint64_t>(node->GetCategory()));
-    dict["pid"]  = JsValue(pid);
-    dict["tid"]  = JsValue(threadId.ToString()); 
-    dict["name"] = JsValue(node->GetKey().GetString());
-
-    dict["ts"]   = _TimeStampToChromeTraceValue(node->GetBeginTime());
+    auto writeCommonEventData = [&]() {
+        js.BeginObject();
+        js.WriteKeyValue("cat", categoryList);
+        js.WriteKeyValue("libTraceCatId",
+            static_cast<uint64_t>(node->GetCategory()));
+        js.WriteKeyValue("pid",pid);
+        js.WriteKeyValue("tid",threadId.ToString());
+        js.WriteKeyValue("name",node->GetKey().GetString());
+    };
+    writeCommonEventData();
+    js.WriteKeyValue("ts", _TimeStampToChromeTraceValue(node->GetBeginTime()));
 
     if (!node->GetAttributes().empty()) {
-        JsObject attrs;
+        js.WriteKey("args");
+        js.BeginObject();
+        
         using AttributeMap = TraceEventNode::AttributeMap;
+        std::unordered_set<TfToken, TfToken::HashFunctor> visitedKeys;
         for (const AttributeMap::value_type& it : node->GetAttributes()) {
-            if (attrs.find(it.first.GetString()) == attrs.end()) {
+            if (visitedKeys.find(it.first) == visitedKeys.end()) {
+                visitedKeys.insert(it.first);
                 using AttrItr = AttributeMap::const_iterator;
                 using Range = std::pair<AttrItr,AttrItr>;
-                Range range =node->GetAttributes().equal_range(it.first);
+                Range range = node->GetAttributes().equal_range(it.first);
                 if (std::distance(range.first, range.second) == 1) {
-                    attrs.emplace(range.first->first.GetString(), 
-                        range.first->second.ToJson());
+                    js.WriteKey(range.first->first.GetString());
+                    range.first->second.WriteJson(js);
                 } else {
-                    JsArray values;
-                    for (AttrItr i = range.first; i != range.second; ++i) {
-                        values.push_back(i->second.ToJson());
-                    }
-                    attrs.emplace(it.first.GetString(), std::move(values));
+                    js.WriteKey(it.first.GetString());
+                    js.WriteArray(range.first, range.second,
+                        [](JsWriter& js, AttrItr i) {
+                            i->second.WriteJson(js);
+                        }
+                    );
                 }
             }
         }
-        dict["args"] = attrs;
+        js.EndObject();
     }
 
     if (!node->IsFromSeparateEvents()) 
     {
-        dict["ph"] = JsValue("X"); // Complete event
-        dict["dur"] = _TimeStampToChromeTraceValue(
-            node->GetEndTime() - node->GetBeginTime());
-        array->push_back(dict);
+        js.WriteKeyValue("ph","X"); // Complete event
+        js.WriteKeyValue("dur",_TimeStampToChromeTraceValue(
+            node->GetEndTime() - node->GetBeginTime()));
+        js.EndObject();
     } else {
-        dict["ph"] = JsValue("B"); // begin time
-        array->push_back(dict);
+        js.WriteKeyValue("ph","B"); // begin event
+        js.EndObject();
         
-        // Remove the args attribute so it is not also written in the end event.
-        JsObject::iterator argIt = dict.find("args");
-        if (argIt != dict.end()) {
-            dict.erase(argIt);
-        }
-
-        // Add end time
-        dict["ph"]   = JsValue("E"); // end time
-        dict["ts"]   = _TimeStampToChromeTraceValue(node->GetEndTime());
-
-        array->push_back(dict);
+        writeCommonEventData();
+        js.WriteKeyValue("ph","E"); // end event
+        js.WriteKeyValue("ts",
+            _TimeStampToChromeTraceValue(node->GetEndTime()));
+        js.EndObject();
     }
 
     // Recurse on the children
     for (const TraceEventNodeRefPtr& c : node->GetChildrenRef()) {
-        TraceEventTree_AddToJsonArray(c, pid, threadId, array);
+        TraceEventTree_WriteToJsonArray(c, pid, threadId, js);
     }
 }
 
-// Adds Chrome counter events to the events array.
+// Writes Chrome counter events to the events array.
 static
-void TraceEventTree_AddCounters(
+void TraceEventTree_WriteCounters(
     const int pid,
     const TraceEventTree::CounterValuesMap& counters,
-    JsArray& events)
+    JsWriter& js)
 {
     for (const TraceEventTree::CounterValuesMap::value_type& c : counters) {
         for (const TraceEventTree::CounterValues::value_type& v 
             : c.second) {
-
-            JsObject dict;
-            dict["cat"] = JsValue("");
-            // Chrome counters are process scoped so the thread id does not seem
-            // to have an impact.
-            dict["tid"] = JsValue(0);
-            dict["pid"]  = JsValue(pid);
-            dict["name"] = JsValue(c.first.GetString());
-            dict["ph"]   = JsValue("C"); // Counter
-            dict["ts"]   = _TimeStampToChromeTraceValue(v.first);
-            JsObject values;
-            values["value"] = JsValue(v.second);
-            dict["args"] = values;
-            events.push_back(dict);
+            
+            js.WriteObject(
+                "cat", "",
+                // Chrome counters are process scoped so the thread id does not
+                // seem to have an impact.
+                "tid", 0,
+                "pid", pid,
+                "name", c.first.GetString(),
+                "ph", "C",
+                "ts", _TimeStampToChromeTraceValue(v.first),
+                "args", [&v](JsWriter& js) {
+                    js.WriteObject("value", v.second);
+                }
+            );
         }
     }
 }
 
-// Adds Chrome instant events to the events array.
+// Writes Chrome instant events to the events array.
 static
-void TraceEventTree_AddMarkers(
+void TraceEventTree_WriteMarkers(
     const int pid,
     const TraceEventTree::MarkerValuesMap& markers,
-    JsArray& events)
+    JsWriter& js)
 {
     for (const TraceEventTree::MarkerValuesMap::value_type& m : markers) {
         for (const TraceEventTree::MarkerValues::value_type& v 
             : m.second) {
 
-            JsObject dict;
-            dict["cat"] = JsValue("");
-            dict["tid"] = JsValue(v.second.ToString());
-            dict["pid"]  = JsValue(pid);
-            dict["name"] = JsValue(m.first.GetString());
-            dict["ph"]   = JsValue("I"); // Mark
-            dict["s"]   = JsValue("t"); // Scope
-            dict["ts"]   = _TimeStampToChromeTraceValue(v.first);
-            events.push_back(dict);
+            js.WriteObject(
+                "cat", "",
+                "tid", v.second.ToString(),
+                "pid", pid,
+                "name", m.first.GetString(),
+                "ph", "I", // Mark
+                "s", "t", // Scope
+                "ts", _TimeStampToChromeTraceValue(v.first)
+            );
         }
     }
 }
 
-
-JsObject 
-TraceEventTree::CreateChromeTraceObject() const
+void 
+TraceEventTree::WriteChromeTraceObject(
+    JsWriter& writer, ExtraFieldFn extraFields) const
 {
-    JsArray eventArray;
+    writer.BeginObject();
+    writer.WriteKey("traceEvents");
+    writer.BeginArray();
+
     // Chrome Trace format has a pid for each event.  We use a dummy pid.
     const int pid = 0;
 
@@ -279,20 +282,24 @@ TraceEventTree::CreateChromeTraceObject() const
         TraceThreadId threadId(c->GetKey().GetString());
 
         for (const TraceEventNodeRefPtr& gc :c->GetChildrenRef()) {
-            TraceEventTree_AddToJsonArray(
+            TraceEventTree_WriteToJsonArray(
                 gc,
                 pid,
                 threadId,
-                &eventArray);
+                writer);
         }
     }
-    TraceEventTree_AddCounters(pid, _counters, eventArray);
-    TraceEventTree_AddMarkers(pid, _markers, eventArray);
-    JsObject traceObj;
+    TraceEventTree_WriteCounters(pid, _counters, writer);
+    TraceEventTree_WriteMarkers(pid, _markers, writer);
 
-    traceObj["traceEvents"] = eventArray;
-    
-    return traceObj;
+    writer.EndArray();
+
+    // Write any extra fields into the object.
+    if (extraFields) {
+        extraFields(writer);
+    }
+
+    writer.EndObject();
 }
 
 TraceEventTree::CounterMap

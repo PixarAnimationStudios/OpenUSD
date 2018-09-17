@@ -139,41 +139,59 @@ using ChromeThreadId = std::string;
 using ChromeConstructionMap = 
     std::map<ChromeThreadId, EventListConstructionData>;
 
-// Returns a JSON representatoin of a Trace event. This format is a "raw" format
+// Writes a JSON representatoin of a Trace event. This format is a "raw" format
 // that does not match the Chrome format.
-JsValue
-_TraceEventToJSON(const TfToken& key, const TraceEvent& e)
+static void
+_WriteTraceEventToJSON(JsWriter& js, const TfToken& key, const TraceEvent& e)
 {
-    JsObject event;
-    event["key"] = JsValue(key.GetString());
-    event["category"] = JsValue(static_cast<uint64_t>(e.GetCategory()));
-    event["type"] = JsValue(_EventTypeToString(e.GetType()));
     switch (e.GetType()) {
         case TraceEvent::EventType::Begin:
         case TraceEvent::EventType::End:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp())
+            );
             break;
         case TraceEvent::EventType::CounterDelta:
         case TraceEvent::EventType::CounterValue:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
-            event["value"] = JsValue(e.GetCounterValue());
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp()),
+                "value", e.GetCounterValue());
             break;
         case TraceEvent::EventType::ScopeData:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
-            event["data"] = e.GetData().ToJson();
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp()),
+                "data", [&e](JsWriter& js) {
+                    e.GetData().WriteJson(js);
+                });
             break;
         case TraceEvent::EventType::Timespan:
-            event["start"] = 
-                JsValue(_TicksToMicroSeconds(e.GetStartTimeStamp()));
-            event["end"] = JsValue(_TicksToMicroSeconds(e.GetEndTimeStamp()));
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "start", _TicksToMicroSeconds(e.GetStartTimeStamp()),
+                "end", _TicksToMicroSeconds(e.GetEndTimeStamp()));
             break;
         case TraceEvent::EventType::Marker:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp())
+            );
             break;
         case TraceEvent::EventType::Unknown:
             break;
     }
-    return event;
 }
 
 // Reads a "raw" format JSON object and adds it to the eventListData if it can.
@@ -327,20 +345,26 @@ _TraceEventFromJSON(
 
 namespace {
 
-// This class created a JSON array that a JSON objects per thread in the
-// collection which has Counter events and Data events. This data is need in 
-// addition to the Chrome Format JSON to fully reconstruct a TraceCollection.
-class _CollectionEventsToJson : public TraceCollection::Visitor {
+// This class writes a JSON array of JSON objects per thread in the collection
+// which has Counter events and Data events. This data is need in addition to 
+// the Chrome Format JSON to fully reconstruct a TraceCollection.
+class _WriteCollectionEventsToJson : public TraceCollection::Visitor {
 public:
-    const JsArray CreateThreadsObject() const {
+    void CreateThreadsObject(JsWriter& js) const {
         JsArray threads;
-        for (const auto& p : _eventsPerThread) {
-            JsObject thread;
-            thread["thread"] = JsValue(p.first);
-            thread["events"] = p.second;
-            threads.emplace_back(std::move(thread));
-        }
-        return threads;
+        js.WriteArray(_eventsPerThread, 
+            [](JsWriter& js, ThreadToEventMap::const_reference p) {
+            js.WriteObject(
+                "thread", p.first,
+                "events", [&p] (JsWriter& js) {
+                    js.WriteArray(p.second,
+                        [](JsWriter& js, const EventPair& e) {
+                        _WriteTraceEventToJSON(js, e.first, *e.second);
+                    }
+                    );
+                }
+            );
+        });
     }
 
     virtual bool AcceptsCategory(TraceCategoryId categoryId) override {
@@ -358,8 +382,7 @@ public:
             case TraceEvent::EventType::ScopeData:
             case TraceEvent::EventType::CounterDelta:
             case TraceEvent::EventType::CounterValue:
-                _eventsPerThread[threadId.ToString()].emplace_back(
-                    _TraceEventToJSON(key, event));
+                _eventsPerThread[threadId.ToString()].emplace_back(key, &event);
                 break;
             case TraceEvent::EventType::Begin:
             case TraceEvent::EventType::End:
@@ -376,40 +399,54 @@ public:
     virtual void OnEndThread(const TraceThreadId& threadId) override {}
 
 private:
-    std::map<std::string, JsArray> _eventsPerThread;
+    using EventPair = std::pair<TfToken, const TraceEvent*>;
+    using ThreadToEventMap = std::map<std::string, std::vector<EventPair>>;
+    ThreadToEventMap _eventsPerThread;
 };
 
 }
 
-JsValue
-Trace_JSONSerialization::CollectionsToJSON(
+static void
+_WriteTraceEventsToJson(
+    JsWriter& js,
     const std::vector<std::shared_ptr<TraceCollection>>& collections)
 {
     using CollectionPtr = std::shared_ptr<TraceCollection>;
-    JsObject libtraceData;
-    JsArray extraTraceEvents;
     // Convert Counter and Data events to JSON.
-    {
-        _CollectionEventsToJson eventsToJson;
-        for (const CollectionPtr& collection : collections) {
-            if (collection) {
-                collection->Iterate(eventsToJson);
-            }
+    _WriteCollectionEventsToJson eventsToJson;
+    for (const CollectionPtr& collection : collections) {
+        if (collection) {
+            collection->Iterate(eventsToJson);
         }
-        libtraceData["threadEvents"] = eventsToJson.CreateThreadsObject();
     }
+    js.WriteObject(
+        "threadEvents", [&eventsToJson] (JsWriter& js) {
+            eventsToJson.CreateThreadsObject(js);
+        }
+    );
+}
 
+bool
+Trace_JSONSerialization::WriteCollectionsToJSON(
+    JsWriter& js,
+    const std::vector<std::shared_ptr<TraceCollection>>& collections)
+{
+    
+    auto extraDataWriter = [&collections](JsWriter& js) {
+        js.WriteKey("libTraceData");
+        _WriteTraceEventsToJson(js, collections);
+    };
+    
+    using CollectionPtr = std::shared_ptr<TraceCollection>;
     TraceEventTreeRefPtr graph = TraceEventTree::New();
     for (const CollectionPtr& collection : collections) {
         if (collection) {
             graph->Add(*collection);
         }
     }
-    JsObject traceObj = graph->CreateChromeTraceObject();
+    graph->WriteChromeTraceObject(js,extraDataWriter);
 
-    // Add the extra lib trace data to the Chrome trace object.
-    traceObj["libTraceData"] = libtraceData;
-    return traceObj;
+    return true;
 }
 
 // This function converts Chrome trace events into TraceEvents and adds them to 
