@@ -135,6 +135,13 @@ pxr_build_test(testTraceReportPerf
         testenv/testTraceReportPerf.cpp
 )
 
+pxr_build_test(testTraceEventContainer
+    LIBRARIES
+        trace
+    CPPFILES
+        testenv/testTraceEventContainer.cpp
+)
+
 pxr_test_scripts(
     testenv/testTrace.py
     testenv/testTraceRecursion.py
@@ -268,4 +275,8 @@ pxr_register_test(testTraceMarkers
 
 pxr_register_test(testTraceReportPerf
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
+)
+
+pxr_register_test(testTraceEventContainer
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceEventContainer"
 )
