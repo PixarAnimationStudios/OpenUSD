@@ -99,17 +99,16 @@ UsdGeomXformCache::IsAttributeIncludedInLocalTransform(const UsdPrim &prim,
 UsdGeomXformCache::_Entry *
 UsdGeomXformCache::_GetCacheEntryForPrim(const UsdPrim &prim)
 {
-    if (_Entry* entry = TfMapLookupPtr(_ctmCache, prim))
-        return entry;
-    
-    UsdGeomXformable::XformQuery query;
-    GfMatrix4d xform(1);
-    if (UsdGeomXformable xf = UsdGeomXformable(prim)) {
-        query = UsdGeomXformable::XformQuery(xf);
+    auto iresult = _ctmCache.insert({ prim, _Entry() });
+    _Entry *result = &iresult.first->second;
+    if (iresult.second) {
+        if (UsdGeomXformable xf = UsdGeomXformable(prim)) {
+            result->query = UsdGeomXformable::XformQuery(xf);
+        }
+        result->ctm.SetIdentity();
+        result->ctmIsValid = false;
     }
-    
-    return &(_ctmCache.insert(std::make_pair(prim, _Entry(query, xform, false)))
-                .first->second);
+    return result;
 }
 
 GfMatrix4d 
