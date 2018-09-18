@@ -60,26 +60,35 @@ class SdfLayerStateDelegateBase
     , public TfWeakBase
 {
 public:
+    SDF_API
     virtual ~SdfLayerStateDelegateBase();
 
+    SDF_API
     bool IsDirty();
 
+    SDF_API
     void SetField(
         const SdfAbstractDataSpecId& id,
         const TfToken& field,
         const VtValue& value,
         const VtValue *oldValue=NULL);
+
+    SDF_API
     void SetField(
         const SdfAbstractDataSpecId& id,
         const TfToken& field,
         const SdfAbstractDataConstValue& value,
         const VtValue *oldValue=NULL);
+
+    SDF_API
     void SetFieldDictValueByKey(
         const SdfAbstractDataSpecId& id,
         const TfToken& field,
         const TfToken& keyPath,
         const VtValue& value,
         const VtValue *oldValue=NULL);
+
+    SDF_API
     void SetFieldDictValueByKey(
         const SdfAbstractDataSpecId& id,
         const TfToken& field,
@@ -87,54 +96,70 @@ public:
         const SdfAbstractDataConstValue& value,
         const VtValue *oldValue=NULL);
 
+    SDF_API
     void SetTimeSample(
         const SdfAbstractDataSpecId& id,
         double time,
         const VtValue& value);
+
+    SDF_API
     void SetTimeSample(
         const SdfAbstractDataSpecId& id,
         double time,
         const SdfAbstractDataConstValue& value);
 
+    SDF_API
     void CreateSpec(
         const SdfPath& path,
         SdfSpecType specType,
         bool inert);
 
+    SDF_API
     void DeleteSpec(
         const SdfPath& path,
         bool inert);
 
+    SDF_API
     void MoveSpec(
         const SdfPath& oldPath,
         const SdfPath& newPath);
 
+    SDF_API
     void PushChild(
         const SdfPath& parentPath,
         const TfToken& field,
         const TfToken& value);
+
+    SDF_API
     void PushChild(
         const SdfPath& parentPath,
         const TfToken& field,
         const SdfPath& value);
+
+    SDF_API
     void PopChild(
         const SdfPath& parentPath,
         const TfToken& field,
         const TfToken& oldValue);
+
+    SDF_API
     void PopChild(
         const SdfPath& parentPath,
         const TfToken& field,
         const SdfPath& oldValue);
 
 protected:
+    SDF_API
     SdfLayerStateDelegateBase();
 
     /// Returns the layer associated with this state delegate.
     /// May be NULL if no layer is associated.
+    SDF_API
     SdfLayerHandle _GetLayer() const;
 
     /// Returns the underlying data object for the layer associated with
     /// this state delegate. May be NULL if no layer is associated.
+    SDF_API
     SdfAbstractDataPtr _GetLayerData() const;
 
     /// Returns true if the associated layer has been authored to since
@@ -192,7 +217,7 @@ protected:
         SdfSpecType specType,
         bool inert) = 0;
 
-    /// Invoked when a spec and its children are deleted from the associated 
+    /// Invoked when a spec and its children are deleted from the associated
     /// layer.
     virtual void _OnDeleteSpec(
         const SdfPath& path,
@@ -229,7 +254,7 @@ protected:
 
 private:
     friend class SdfLayer;
-    void _SetLayer(const SdfLayerHandle& layer);
+    SDF_API void _SetLayer(const SdfLayerHandle& layer);
 
 private:
     SdfLayerHandle _layer;
