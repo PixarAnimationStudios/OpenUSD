@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,23 +22,39 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "usdMaya/blockSceneModificationContext.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/base/tf/stringUtils.h"
 
-TF_WRAP_MODULE {
-    TF_WRAP(Adaptor);
-    TF_WRAP(Assembly);
-    TF_WRAP(BlockSceneModificationContext);
-    TF_WRAP(ColorSpace);
-    TF_WRAP(DiagnosticDelegate);
-    TF_WRAP(EditUtil);
-    TF_WRAP(MeshUtil);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
+#include <maya/MGlobal.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
+{
+    const MString fileModifiedCmd("file -query -modified");
+    int cmdResult = 0;
+    MStatus status = MGlobal::executeCommand(fileModifiedCmd, cmdResult);
+    CHECK_MSTATUS(status);
+
+    _sceneWasModified = (cmdResult != 0);
 }
+
+/* virtual */
+UsdMayaBlockSceneModificationContext::~UsdMayaBlockSceneModificationContext()
+{
+    const MString setFileModifiedCmd(
+        TfStringPrintf(
+            "file -modified %d",
+            _sceneWasModified ? 1 : 0).c_str());
+
+    MStatus status = MGlobal::executeCommand(setFileModifiedCmd);
+    CHECK_MSTATUS(status);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

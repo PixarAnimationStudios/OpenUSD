@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,24 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
+#define PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
+
+/// \file usdMaya/blockSceneModificationContext.h
+
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "usdMaya/api.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE {
-    TF_WRAP(Adaptor);
-    TF_WRAP(Assembly);
-    TF_WRAP(BlockSceneModificationContext);
-    TF_WRAP(ColorSpace);
-    TF_WRAP(DiagnosticDelegate);
-    TF_WRAP(EditUtil);
-    TF_WRAP(MeshUtil);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
-}
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+/// Utility class for wrapping a scope of Maya operations such that the
+/// modification status of the Maya scene is preserved.
+class UsdMayaBlockSceneModificationContext
+{
+    public:
+
+        PXRUSDMAYA_API
+        UsdMayaBlockSceneModificationContext();
+
+        PXRUSDMAYA_API
+        virtual ~UsdMayaBlockSceneModificationContext();
+
+    private:
+
+        /// Modification status of the scene when the context was created.
+        bool _sceneWasModified;
+
+        UsdMayaBlockSceneModificationContext(
+                const UsdMayaBlockSceneModificationContext&) = delete;
+        UsdMayaBlockSceneModificationContext& operator=(
+                const UsdMayaBlockSceneModificationContext&) = delete;
+};
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+
+#endif

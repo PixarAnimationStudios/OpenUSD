@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,23 +22,48 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "usdMaya/blockSceneModificationContext.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <boost/python.hpp>
 
-TF_WRAP_MODULE {
-    TF_WRAP(Adaptor);
-    TF_WRAP(Assembly);
-    TF_WRAP(BlockSceneModificationContext);
-    TF_WRAP(ColorSpace);
-    TF_WRAP(DiagnosticDelegate);
-    TF_WRAP(EditUtil);
-    TF_WRAP(MeshUtil);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
+#include <memory>
+
+using namespace boost::python;
+
+
+PXR_NAMESPACE_USING_DIRECTIVE;
+
+
+namespace {
+
+// This exposes UsdMayaBlockSceneModificationContext as a Python "context
+// manager" object that can be used with the "with" statement.
+class _PyBlockSceneModificationContext
+{
+    public:
+        void __enter__() {
+            _context.reset(new UsdMayaBlockSceneModificationContext());
+        }
+
+        void __exit__(object, object, object) {
+            _context.reset();
+        }
+
+    private:
+        std::shared_ptr<UsdMayaBlockSceneModificationContext> _context;
+};
+
+} // anonymous namespace
+
+
+void
+wrapBlockSceneModificationContext()
+{
+    typedef _PyBlockSceneModificationContext Context;
+    class_<Context>(
+            "BlockSceneModificationContext",
+            "Context manager for blocking scene modification status changes")
+        .def("__enter__", &Context::__enter__, return_self<>())
+        .def("__exit__", &Context::__exit__)
+    ;
 }

@@ -33,6 +33,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         adaptor
+        blockSceneModificationContext
         colorSpace
         diagnosticDelegate
         editUtil
@@ -117,6 +118,7 @@ pxr_shared_library(${PXR_PACKAGE}
     PYMODULE_CPPFILES
         module.cpp
         wrapAssembly.cpp
+        wrapBlockSceneModificationContext.cpp
         wrapColorSpace.cpp
         wrapDiagnosticDelegate.cpp
         wrapEditUtil.cpp
@@ -191,6 +193,7 @@ pxr_test_scripts(
         testenv/testUsdMayaAdaptorMetadata.py
         testenv/testUsdMayaAdaptorGeom.py
         testenv/testUsdMayaAppDir.py
+        testenv/testUsdMayaBlockSceneModificationContext.py
         testenv/testUsdMayaDiagnosticDelegate.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindProcessor.py
@@ -862,6 +865,16 @@ pxr_register_test(testUsdMayaAppDir
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAppDir"
     TESTENV testUsdMayaAppDir
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_register_test(testUsdMayaBlockSceneModificationContext
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaBlockSceneModificationContext"
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
