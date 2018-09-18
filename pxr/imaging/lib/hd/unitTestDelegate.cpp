@@ -524,8 +524,7 @@ HdUnitTestDelegate::UpdateTask(SdfPath const &id,
 
 /*virtual*/
 TfToken
-HdUnitTestDelegate::GetRenderTag(SdfPath const& id,
-        HdReprSelector const& reprSelector)
+HdUnitTestDelegate::GetRenderTag(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 

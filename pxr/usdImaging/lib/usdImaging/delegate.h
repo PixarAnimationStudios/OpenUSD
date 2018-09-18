@@ -266,8 +266,7 @@ public:
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual TfToken GetRenderTag(SdfPath const& id,
-                                 HdReprSelector const& reprSelector) override;
+    virtual TfToken GetRenderTag(SdfPath const& id) override;
     USDIMAGING_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     USDIMAGING_API

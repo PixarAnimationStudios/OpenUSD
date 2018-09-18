@@ -114,8 +114,7 @@ public:
 
     /// Returns the render tag associated to this rprim
     HD_API
-    TfToken GetRenderTag(HdSceneDelegate* delegate,
-                         HdReprSelector const& reprSelector) const;
+    TfToken GetRenderTag(HdSceneDelegate* delegate) const;
 
     /// Returns the identifier of the instancer (if any) for this Rprim. If this
     /// Rprim is not instanced, an empty SdfPath will be returned.

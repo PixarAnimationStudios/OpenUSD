@@ -52,9 +52,7 @@ _DirtyListFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     HdChangeTracker const &tracker = renderIndex.GetChangeTracker();
 
    if (mask == 0 || tracker.GetRprimDirtyBits(rprimID) & mask) {
-       HdReprSelector const &repr = collection.GetReprSelector();
-
-       if (collection.HasRenderTag(renderIndex.GetRenderTag(rprimID, repr))) {
+       if (collection.HasRenderTag(renderIndex.GetRenderTag(rprimID))) {
            return true;
        }
    }
@@ -199,7 +197,6 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     ITR oldI = _collection.GetRootPaths().cbegin();
     ITR oldEnd = _collection.GetRootPaths().cend();
     HdRenderIndex& index = _renderIndex;
-    HdReprSelector const & repr = col.GetReprSelector();
 
     TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): ApplyEdit\n", (void*)this);
 
@@ -244,7 +241,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
                       ++newPathNum) {
                 const SdfPath &newPath = newPaths[newPathNum];
 
-                if (col.HasRenderTag(index.GetRenderTag(newPath, repr))) {
+                if (col.HasRenderTag(index.GetRenderTag(newPath))) {
                     _dirtyIds.push_back(newPath);
                     changeTracker.MarkRprimDirty(newPath,
                                                  HdChangeTracker::InitRepr);

@@ -607,9 +607,7 @@ _DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const HdRprimCollection &collection = filterParam->collection;
     const HdRenderIndex *renderIndex    = filterParam->renderIndex;
 
-   HdReprSelector const & repr = collection.GetReprSelector();
-
-   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID, repr))) {
+   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID))) {
        return true;
    }
 
@@ -674,14 +672,14 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 }
 
 TfToken
-HdRenderIndex::GetRenderTag(SdfPath const& id, HdReprSelector const& reprSelector) const
+HdRenderIndex::GetRenderTag(SdfPath const& id) const
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
     if (info == nullptr) {
         return HdTokens->hidden;
     }
 
-    return info->rprim->GetRenderTag(info->sceneDelegate, reprSelector);
+    return info->rprim->GetRenderTag(info->sceneDelegate);
 }
 
 SdfPathVector
@@ -1419,8 +1417,7 @@ HdRenderIndex::_AppendDrawItems(
                                                         forcedRepr)) {
 
                 const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(
-                                                        rprimInfo.sceneDelegate,
-                                                        reprSelector);
+                                                       rprimInfo.sceneDelegate);
 
                 HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
 

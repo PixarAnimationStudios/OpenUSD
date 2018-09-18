@@ -306,8 +306,7 @@ public:
     HD_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
     HD_API
-    virtual TfToken GetRenderTag(SdfPath const& id,
-                                 HdReprSelector const& reprSelector) override;
+    virtual TfToken GetRenderTag(SdfPath const& id) override;
     HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
     HD_API

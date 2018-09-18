@@ -378,8 +378,7 @@ public:
     /// Returns the render tag that will be used to bucket prims during
     /// render pass bucketing.
     HD_API
-    virtual TfToken GetRenderTag(SdfPath const& id,
-                                 HdReprSelector const& reprSelector);
+    virtual TfToken GetRenderTag(SdfPath const& id);
 
     /// Returns the prim categories.
     HD_API

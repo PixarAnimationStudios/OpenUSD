@@ -215,10 +215,9 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
 
 
 TfToken
-HdRprim::GetRenderTag(HdSceneDelegate* delegate,
-                      HdReprSelector const& reprSelector) const
+HdRprim::GetRenderTag(HdSceneDelegate* delegate) const
 {
-    return delegate->GetRenderTag(GetId(), reprSelector);
+    return delegate->GetRenderTag(GetId());
 }
 
 void 
