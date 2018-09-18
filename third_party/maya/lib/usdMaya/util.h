@@ -184,13 +184,25 @@ bool isAnimated(MObject& object, const bool checkParent = false);
 PXRUSDMAYA_API
 bool isPlugAnimated(const MPlug& plug);
 
-// determine if a Maya Object is intermediate
+/// Determine if a Maya object is an intermediate object.
+///
+/// Only objects with the MFnDagNode function set can be intermediate objects.
+/// Objects whose intermediate object status cannot be determined are assumed
+/// not to be intermediate objects.
 PXRUSDMAYA_API
 bool isIntermediate(const MObject& object);
 
 // returns true for visible and lod invisible and not templated objects
 PXRUSDMAYA_API
 bool isRenderable(const MObject& object);
+
+/// Determine whether a Maya object can be saved to or exported from the Maya
+/// scene.
+///
+/// Objects whose "do not write" status cannot be determined using the
+/// MFnDependencyNode function set are assumed to be writable.
+PXRUSDMAYA_API
+bool isWritable(const MObject& object);
 
 // strip iDepth namespaces from the node name or string path, go from
 // taco:foo:bar to bar for iDepth > 1. If iDepth is -1, strips all namespaces.
