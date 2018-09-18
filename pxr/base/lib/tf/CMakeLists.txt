@@ -25,7 +25,6 @@ pxr_library(tf
         anyWeakPtr
         atomicOfstreamWrapper
         bitUtils
-        copyOnWritePtr
         debug
         debugNotice
         denseHashMap
