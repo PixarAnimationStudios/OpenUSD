@@ -74,7 +74,10 @@ public:
         }
 
         bool operator == (const const_iterator& other) const {
-            return _outer == other._outer && _inner == other._inner;
+            const bool innerCompare = (_innerExists && other._innerExists) ?
+                (_inner == other._inner) :
+                (_innerExists == other._innerExists);
+            return _outer == other._outer && innerCompare;
         }
 
         const_iterator& operator ++() {
@@ -106,6 +109,7 @@ public:
             , _outer(outer)
             , _outerBegin(outerBegin)
             , _outerEnd(outerEnd)
+            , _innerExists(true)
              {}
 
         const_iterator(Outer outer, Outer outerBegin, Outer outerEnd)
@@ -113,6 +117,7 @@ public:
             , _outer(outer)
             , _outerBegin(outerBegin)
             , _outerEnd(outerEnd)
+            , _innerExists(false)
              {}
 
         void Advance() {
@@ -123,6 +128,7 @@ public:
                     _inner = _outer->begin();
                 } else {
                     _inner = Inner();
+                    _innerExists = false;
                 }
             }
         }
@@ -131,6 +137,7 @@ public:
             if (IsEnd()) {
                 --_outer;
                 _inner = std::prev(_outer->end());
+                _innerExists = true;
             } else {
                 if (_inner != _outer->begin()) {
                     --_inner;
@@ -140,6 +147,7 @@ public:
                         _inner = std::prev(_outer->end());
                     } else {
                         _inner = Inner();
+                        _innerExists = false;
                     }
                 }
             }
@@ -153,6 +161,7 @@ public:
         Outer _outer;
         Outer _outerBegin;
         Outer _outerEnd;
+        bool _innerExists;
 
         friend class TraceEventContainer;
     };
@@ -187,10 +196,7 @@ public:
 
     const_iterator begin() const { 
         if (_outer.empty()) {
-            return const_iterator(_outer.begin(),
-            _outer.begin(),  
-            _outer.end(), 
-            InnerStorage::const_iterator()); 
+            return end();
         }
 
         return const_iterator(_outer.begin(), 
