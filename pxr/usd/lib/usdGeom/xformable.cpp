@@ -440,7 +440,15 @@ UsdGeomXformable::MakeMatrixXform() const
 }
 
 vector<UsdGeomXformOp>
-UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
+UsdGeomXformable::GetOrderedXformOps(bool *resetXformStack) const
+{
+    return _GetOrderedXformOps(
+        resetXformStack, /*withAttributeQueries=*/false);
+}
+
+vector<UsdGeomXformOp>
+UsdGeomXformable::_GetOrderedXformOps(bool *resetsXformStack,
+                                      bool withAttributeQueries) const
 {
     vector<UsdGeomXformOp> result;
 
@@ -450,14 +458,18 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
         TF_CODING_ERROR("resetsXformStack is NULL.");
     }
 
+    static bool READ_OLD_STYLE_TRANSFORM =
+        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM);
+
     bool xformOpOrderIsAuthored = false;
     VtTokenArray opOrderVec;
-    if (!_GetXformOpOrderValue(&opOrderVec, &xformOpOrderIsAuthored)) {
+    if (!_GetXformOpOrderValue(
+            &opOrderVec,
+            READ_OLD_STYLE_TRANSFORM ? &xformOpOrderIsAuthored : nullptr)) {
         return result;
     }
 
-    if (!xformOpOrderIsAuthored && 
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) 
+    if (!xformOpOrderIsAuthored && READ_OLD_STYLE_TRANSFORM)
     {
         // If a transform attribute exists, wrap it in a UsdGeomXformOp and 
         // return it.
@@ -478,6 +490,7 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
     // Reserve space for the xform ops.
     result.reserve(opOrderVec.size());
 
+    UsdPrim thisPrim = GetPrim();
     for (VtTokenArray::iterator it = opOrderVec.begin() ; 
          it != opOrderVec.end(); ++it) {
 
@@ -492,17 +505,43 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
             result.clear();
         } else {
             bool isInverseOp = false;
-            if (UsdAttribute attr = UsdGeomXformOp::_GetXformOpAttr(
-                    GetPrim(), opName, &isInverseOp)) {
-                // Only add valid xform ops.                
-                result.emplace_back(attr, isInverseOp);
-            } else {
-                // Skip invalid xform ops that appear in xformOpOrder, but issue
-                // a warning.
-                TF_WARN("Unable to get attribute associated with the xformOp "
-                    "'%s', on the prim at path <%s>. Skipping xformOp in the "
-                    "computation of the local transformation at prim.", 
-                    opName.GetText(), GetPrim().GetPath().GetText());
+            UsdAttribute attr = UsdGeomXformOp::_GetXformOpAttr(
+                thisPrim, opName, &isInverseOp);
+            if (withAttributeQueries) {
+                TfErrorMark m;
+                UsdAttributeQuery query(attr);
+                if (m.IsClean()) {
+                    result.emplace_back(
+                        std::move(query), isInverseOp,
+                        UsdGeomXformOp::_ValidAttributeTagType {});
+                }
+                else {
+                    // Skip invalid xform ops that appear in xformOpOrder, but
+                    // issue a warning.
+                    TF_WARN("Unable to get attribute associated with the "
+                            "xformOp '%s', on the prim at path <%s>. Skipping "
+                            "xformOp in the computation of the local "
+                            "transformation at prim.",
+                            opName.GetText(), GetPrim().GetPath().GetText());
+                }                    
+            }
+            else {
+                if (attr) {
+                    // Only add valid xform ops.  We pass _ValidAttributeTag here
+                    // since we've pre-checked the validity of attr above.
+                    result.emplace_back(
+                        attr, isInverseOp,
+                        UsdGeomXformOp::_ValidAttributeTagType {});
+                }
+                else {
+                    // Skip invalid xform ops that appear in xformOpOrder, but
+                    // issue a warning.
+                    TF_WARN("Unable to get attribute associated with the "
+                            "xformOp '%s', on the prim at path <%s>. Skipping "
+                            "xformOp in the computation of the local "
+                            "transformation at prim.",
+                            opName.GetText(), GetPrim().GetPath().GetText());
+                }
             }
         }
     }
@@ -513,17 +552,8 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
 UsdGeomXformable::XformQuery::XformQuery(const UsdGeomXformable &xformable):
     _resetsXformStack(false)
 {
-    vector<UsdGeomXformOp> orderedXformOps = 
-        xformable.GetOrderedXformOps(&_resetsXformStack);
-
-    if (!orderedXformOps.empty()) {
-        _xformOps = orderedXformOps;
-
-        // Create attribute queries for all the xform ops.
-        TF_FOR_ALL(it, _xformOps) {
-            it->_CreateAttributeQuery();
-        }
-    }
+    _xformOps = xformable._GetOrderedXformOps(
+        &_resetsXformStack, /*withAttributeQueries=*/true);
 }
 
 bool 
