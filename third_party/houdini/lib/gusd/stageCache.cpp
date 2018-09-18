@@ -741,8 +741,9 @@ GusdStageCache::_Impl::FindOrOpenLayer(const UT_StringRef& path,
         "[GusdStageCache::FindOrOpenLayer] Returning layer %s for @%s@\n",
         (layer ? layer->GetIdentifier().c_str() : "(null)"), path.c_str());
 
-    if(!layer)
+    if(!layer) {
         GUSD_GENERIC_ERR(sev).Msg("Failed opening layer @%s@", path.c_str());
+    }
 
     return layer;
 }
@@ -1014,7 +1015,7 @@ struct _PrimLoadKey
                 return path < o.path ||
                        (path == o.path &&
                         (edit < o.edit ||
-                         edit == o.edit && primIndex < o.primIndex));
+                         (edit == o.edit && primIndex < o.primIndex)));
             }
 
     UT_StringHolder     path;

@@ -24,6 +24,7 @@
 #ifndef __GUSD_GT_PACKEDUSD_H__
 #define __GUSD_GT_PACKEDUSD_H__
 
+#include "gusd/api.h"
 #include "gusd/purpose.h"
 
 #include <pxr/pxr.h>
@@ -81,6 +82,7 @@ public:
 
     virtual GT_PrimitiveHandle doSoftCopy() const override;
 
+    GUSD_API
     static int getStaticPrimitiveType();
 
     virtual int getPrimitiveType() const override;

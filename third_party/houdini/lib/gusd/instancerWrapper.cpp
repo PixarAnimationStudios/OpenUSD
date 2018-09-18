@@ -49,6 +49,7 @@
 #include <UT/UT_Matrix4.h>
 #include <UT/UT_Quaternion.h>
 #include <UT/UT_StringArray.h>
+#include <SYS/SYS_Version.h>
 
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/sdf/cleanupEnabler.h"
@@ -703,7 +704,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                 // Use the context's usdinstancepath as default if no attributes
                 std::tuple<string, bool> usdInstancePath(ctxt.usdInstancePath, generateProtoNames);
                 if (instancePathAttr.isValid()) {
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
                     string instancePathAttrVal = instancePathAttr.get(offsetIt.getOffset());
 #else
                     string instancePathAttrVal = instancePathAttr.get(offsetIt.getOffset()).toStdString();
@@ -1527,7 +1528,7 @@ GusdInstancerWrapper::unpack(
     }
 
 
-    GA_Offset start = -1;
+    GA_Offset start = GA_INVALID_OFFSET;
 
     for( size_t i = 0; i < indices.size(); ++i )
     {

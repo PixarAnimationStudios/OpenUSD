@@ -36,10 +36,12 @@
 #include "pxr/base/gf/quaternion.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/quath.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 
 #include <UT/UT_VectorTypes.h>
+#include <SYS/SYS_Version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -178,6 +180,10 @@ public:
     static inline void                  Convert(const GfQuatf& from,
                                                 UT_QuaternionT<T>& to);
 
+    template <class T>
+    static inline void                  Convert(const GfQuath& from,
+                                                UT_QuaternionT<T>& to);
+
     template <class T>             
     static inline void                  Convert(const GfVec4d& from,
                                                 UT_QuaternionT<T>& to);
@@ -197,6 +203,10 @@ public:
     template <class T>
     static inline void                  Convert(const UT_QuaternionT<T>& from,
                                                 GfQuatf& to);
+
+    template <class T>
+    static inline void                  Convert(const UT_QuaternionT<T>& from,
+                                                GfQuath& to);
 
     template <class T>
     static inline void                  Convert(const UT_QuaternionT<T>& from,
@@ -264,18 +274,25 @@ private:
         /**/
 
 /** Declare POD tuples for Gf types.*/
+GUSDUT_DECLARE_POD_TUPLE(class GfVec2h, fpreal16, 2);
+GUSDUT_DECLARE_POD_TUPLE(class GfVec3h, fpreal16, 3);
+GUSDUT_DECLARE_POD_TUPLE(class GfVec4h, fpreal16, 4);
+
 GUSDUT_DECLARE_POD_TUPLE(class GfVec2f, fpreal32, 2);
 GUSDUT_DECLARE_POD_TUPLE(class GfVec3f, fpreal32, 3);
 GUSDUT_DECLARE_POD_TUPLE(class GfVec4f, fpreal32, 4);
+
 GUSDUT_DECLARE_POD_TUPLE(class GfVec2d, fpreal64, 2);
 GUSDUT_DECLARE_POD_TUPLE(class GfVec3d, fpreal64, 3);
 GUSDUT_DECLARE_POD_TUPLE(class GfVec4d, fpreal64, 4);
+
 GUSDUT_DECLARE_POD_TUPLE(class GfVec2i, int32, 2);
 GUSDUT_DECLARE_POD_TUPLE(class GfVec3i, int32, 3);
 GUSDUT_DECLARE_POD_TUPLE(class GfVec4i, int32, 4);
 
 GUSDUT_DECLARE_POD_TUPLE(class GfQuaternion, fpreal64, 4);
 
+GUSDUT_DECLARE_POD_TUPLE(class GfQuath, fpreal16, 4);
 GUSDUT_DECLARE_POD_TUPLE(class GfQuatf, fpreal32, 4);
 GUSDUT_DECLARE_POD_TUPLE(class GfQuatd, fpreal64, 4);
 
@@ -299,6 +316,10 @@ GUSDUT_DECLARE_POD_TUPLE(class GfSize3, std::size_t, 3);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec2h);
+GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec3h);
+GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec4h);
+
 GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec2f);
 GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec3f);
 GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec4f);
@@ -313,6 +334,7 @@ GUSDUT_DECLARE_IS_POD(PXR_NS::GfVec4i);
 
 GUSDUT_DECLARE_IS_POD(PXR_NS::GfQuaternion);
 
+GUSDUT_DECLARE_IS_POD(PXR_NS::GfQuath);
 GUSDUT_DECLARE_IS_POD(PXR_NS::GfQuatf);
 GUSDUT_DECLARE_IS_POD(PXR_NS::GfQuatd);
 
@@ -343,9 +365,15 @@ _GUSDUT_DECLARE_UNCASTABLE(class GfQuatf);
 _GUSDUT_DECLARE_UNCASTABLE(class GfQuatd);
 _GUSDUT_DECLARE_UNCASTABLE(UT_QuaternionF);
 _GUSDUT_DECLARE_UNCASTABLE(UT_QuaternionD);
-// _GUSDUT_DECLARE_UNCASTABLE(UT_QuaternionR);
+#if SYS_VERSION_FULL_INT >= 0x11000000
+_GUSDUT_DECLARE_UNCASTABLE(UT_QuaternionH);
+#endif
 
 /** Declare equivalent between Gf and UT.*/
+_GUSDUT_DECLARE_EQUIVALENCE(class GfVec2h, UT_Vector2H);
+_GUSDUT_DECLARE_EQUIVALENCE(class GfVec3h, UT_Vector3H);
+_GUSDUT_DECLARE_EQUIVALENCE(class GfVec4h, UT_Vector4H);
+
 _GUSDUT_DECLARE_EQUIVALENCE(class GfVec2d, UT_Vector2D);
 _GUSDUT_DECLARE_EQUIVALENCE(class GfVec3d, UT_Vector3D);
 _GUSDUT_DECLARE_EQUIVALENCE(class GfVec4d, UT_Vector4D);
@@ -515,6 +543,14 @@ GusdUT_Gf::Convert(const GfQuatf& from, UT_QuaternionT<T>& to)
 
 template <class T>
 void
+GusdUT_Gf::Convert(const GfQuath& from, UT_QuaternionT<T>& to)
+{
+    return _ConvertQuat(from, to);
+}
+
+
+template <class T>
+void
 GusdUT_Gf::Convert(const GfVec4d& from, UT_QuaternionT<T>& to)
 {
     to = UT_QuaternionT<T>(from[1],from[2],from[3],from[0]);
@@ -533,7 +569,7 @@ template <class T>
 void
 GusdUT_Gf::Convert(const UT_QuaternionT<T>& from, GfQuaternion& to)
 {
-    to.SetReal(from.z());
+    to.SetReal(from.w());
     to.SetImaginary(GfVec3d(from.x(), from.y(), from.z()));
 }
 
@@ -542,7 +578,7 @@ template <class T>
 void
 GusdUT_Gf::Convert(const UT_QuaternionT<T>& from, GfQuatd& to)
 {
-    to.SetReal(from.z());
+    to.SetReal(from.w());
     to.SetImaginary(GfVec3d(from.x(), from.y(), from.z()));
 }
 
@@ -551,8 +587,18 @@ template <class T>
 void
 GusdUT_Gf::Convert(const UT_QuaternionT<T>& from, GfQuatf& to)
 {
-    to.SetReal(from.z());
+    to.SetReal(from.w());
     to.SetImaginary(GfVec3f(from.x(), from.y(), from.z()));
+}
+
+
+template <class T>
+void
+GusdUT_Gf::Convert(const UT_QuaternionT<T>& from, GfQuath& to)
+{
+    to.SetReal(GfHalf(from.w()));
+    to.SetImaginary(
+	GfVec3h(GfHalf(from.x()), GfHalf(from.y()), GfHalf(from.z())));
 }
 
 
@@ -560,7 +606,6 @@ template <class T>
 void
 GusdUT_Gf::Convert(const UT_QuaternionT<T>& from, GfVec4d& to)
 {
- 
     to = GfVec4d(from.w(), from.x(), from.y(), from.z());
 }
 

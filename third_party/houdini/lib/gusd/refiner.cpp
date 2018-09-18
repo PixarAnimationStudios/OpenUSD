@@ -40,6 +40,8 @@
 #include <GT/GT_PrimFragments.h>
 #include <GT/GT_PrimPackedDetail.h>
 
+#include <SYS/SYS_Types.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cout;
@@ -532,7 +534,7 @@ GusdRefinerCollector::add(
 
     // If addNumericSuffix is true, use the name directly unless there
     // is a conflict. Otherwise add a numeric suffix to keep names unique.
-    int64_t count = 0;
+    int64 count = 0;
     auto it = m_names.find( path );
     if( it == m_names.end() ) {
         // Name has not been used before
@@ -561,7 +563,7 @@ GusdRefinerCollector::add(
     }
 
     // Add a numeric suffix to get a unique name
-    SdfPath newPath( TfStringPrintf( "%s_%ld", path.GetText(), count ));
+    SdfPath newPath( TfStringPrintf("%s_%" SYS_PRId64, path.GetText(), count));
 
     m_gprims.push_back(GprimArrayEntry(newPath,prim,xform,purpose,writeCtrlFlags));
     return newPath;

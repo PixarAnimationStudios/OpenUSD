@@ -42,7 +42,13 @@
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_CatPolygonMesh.h>
 #include <SYS/SYS_Hash.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_HDKVersion.h>
+
+// 0x100501BE corresponds to 16.5.446.
+#if SYS_VERSION_FULL_INT >= 0x100501BE
+#include <GT/GT_PackedAlembic.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -123,7 +129,7 @@ namespace {
         GT_PrimitiveHandle prim;
     };
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
     static inline void intrusive_ptr_add_ref(const CacheEntry *o) { const_cast<CacheEntry *>(o)->incref(); }
     static inline void intrusive_ptr_release(const CacheEntry *o) { const_cast<CacheEntry *>(o)->decref(); }
 #endif
@@ -442,7 +448,7 @@ CreateEntryFn::operator()(
             return new CacheEntry( refiner.getPrimCollect()->getPrim( 0 ) );
         }
         else {
-#if HDK_API_VERSION >= 16050446
+#if SYS_VERSION_FULL_INT >= 0x100501BE
             return new CacheEntry( new GusdGT_PackedUSDMesh( 
                         refiner.coalescedMeshes(0).result(),
                         refiner.coalescedIds(0),
@@ -456,7 +462,7 @@ CreateEntryFn::operator()(
     for( size_t i = 0; i < refiner.coalescedMeshes.size(); ++i ) {
         auto& catMesh = refiner.coalescedMeshes(i);
         GT_PrimitiveHandle meshPrim = catMesh.result();
-#if HDK_API_VERSION >= 16050446
+#if SYS_VERSION_FULL_INT >= 0x100501BE
         collect->appendPrimitive(
                 new GusdGT_PackedUSDMesh(
                     meshPrim,
