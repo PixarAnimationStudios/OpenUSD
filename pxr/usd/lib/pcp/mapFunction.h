@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/layerOffset.h"
 
 #include <atomic>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
