@@ -187,9 +187,9 @@ TfDiagnosticMgr::AppendError(TfError const &e) {
     if (!HasActiveErrorMark()) {
         _ReportError(e);
     } else {
-        e._data->_serial = _nextSerial.fetch_and_increment();
         ErrorList &errorList = _errorList.local();
         errorList.push_back(e);
+        errorList.back()._serial = _nextSerial.fetch_and_increment();
         _AppendErrorsToLogText(std::prev(errorList.end())); 
     }
 }
@@ -206,7 +206,7 @@ TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
         // Reassign new serial numbers to the errors.
         size_t serial = _nextSerial.fetch_and_add(src.size());
         for (auto& error : src) {
-            error._data->_serial = serial++;
+            error._serial = serial++;
         }
         // Now splice them into the main list.
         ErrorList &errorList = _errorList.local();
@@ -253,7 +253,7 @@ TfDiagnosticMgr::PostError(const TfDiagnosticBase& diagnostic)
     PostError(diagnostic.GetDiagnosticCode(),
               diagnostic.GetDiagnosticCodeAsString().c_str(),
               diagnostic.GetContext(), diagnostic.GetCommentary(),
-              diagnostic._data->_info, diagnostic.GetQuiet());
+              diagnostic._info, diagnostic.GetQuiet());
 }
 
 void
@@ -280,7 +280,7 @@ TfDiagnosticMgr::_ReportError(const TfError &err)
                          err.GetDiagnosticCode(),
                          err.GetContext(),
                          err.GetCommentary(),
-                         err._data->_info);
+                         err._info);
     }
 }
 
@@ -325,7 +325,7 @@ TfDiagnosticMgr::PostWarning(const TfDiagnosticBase& diagnostic) const
     PostWarning(diagnostic.GetDiagnosticCode(),
                 diagnostic.GetDiagnosticCodeAsString().c_str(),
                 diagnostic.GetContext(), diagnostic.GetCommentary(),
-                diagnostic._data->_info, diagnostic.GetQuiet());
+                diagnostic._info, diagnostic.GetQuiet());
 }
 
 void TfDiagnosticMgr::PostStatus(
@@ -365,7 +365,7 @@ TfDiagnosticMgr::PostStatus(const TfDiagnosticBase& diagnostic) const
     PostStatus(diagnostic.GetDiagnosticCode(),
                diagnostic.GetDiagnosticCodeAsString().c_str(),
                diagnostic.GetContext(), diagnostic.GetCommentary(),
-               diagnostic._data->_info, diagnostic.GetQuiet());
+               diagnostic._info, diagnostic.GetQuiet());
 }
 
 void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
@@ -439,7 +439,7 @@ TfDiagnosticMgr::_GetErrorMarkBegin(size_t mark, size_t *nErrors)
     size_t count = 0;
 
     ErrorList::reverse_iterator i = errorList.rbegin(), end = errorList.rend();
-    while (i != end && i->_data->_serial >= mark) {
+    while (i != end && i->_serial >= mark) {
         ++i, ++count;
     }
 
@@ -607,7 +607,7 @@ TfDiagnosticMgr::_LogText::_AppendAndPublishImpl(
     if (clear)
         first->clear();
     for (ErrorIterator i = begin; i != end; ++i) {
-        first->push_back(_FormatDiagnostic(*i, i->_data->_info));
+        first->push_back(_FormatDiagnostic(*i, i->_info));
     }
 
     // Publish.
@@ -620,7 +620,7 @@ TfDiagnosticMgr::_LogText::_AppendAndPublishImpl(
     if (clear)
         second->clear();
     for (ErrorIterator i = begin; i != end; ++i) {
-        second->push_back(_FormatDiagnostic(*i, i->_data->_info));
+        second->push_back(_FormatDiagnostic(*i, i->_info));
     }
 
     // Switch parity.
