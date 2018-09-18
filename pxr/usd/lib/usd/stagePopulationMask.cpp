@@ -183,7 +183,7 @@ _IncludesSubtree(std::vector<SdfPath> const& paths, SdfPath const& path)
     SdfPath const *prev = iter == paths.begin() ? nullptr : &iter[-1];
     SdfPath const *cur = iter == paths.end() ? nullptr : &iter[0];
 
-    return { (prev && path.HasPrefix(*prev)) || (cur && *cur == path), iter };
+    return { (cur && *cur == path) || (prev && path.HasPrefix(*prev)), iter };
 }
 }
 
