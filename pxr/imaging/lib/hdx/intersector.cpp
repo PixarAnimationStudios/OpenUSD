@@ -711,7 +711,7 @@ HdxIntersector::Result::_IsPrimIdValid(int index) const
 }
 
 bool
-HdxIntersector::Result::ResolveNearest(HdxIntersector::Hit* hit) const
+HdxIntersector::Result::ResolveNearestToCamera(HdxIntersector::Hit* hit) const
 {
     TRACE_FUNCTION();
 
@@ -747,6 +747,49 @@ HdxIntersector::Result::ResolveNearest(HdxIntersector::Hit* hit) const
     }
 
     return _ResolveHit(zMinIndex, xMin, yMin, zMin, hit);
+}
+
+bool
+HdxIntersector::Result::ResolveNearestToCenter(HdxIntersector::Hit* hit) const
+{
+    TRACE_FUNCTION();
+
+    if (!IsValid()) {
+        return false;
+    }
+
+    int width = _viewport[2];
+    int height = _viewport[3];
+    float const* depths = _depths.get();
+
+    int midH = height/2;
+    int midW = width /2;
+    if (height%2 == 0) {
+        midH--;
+    }
+    if (width%2 == 0) {
+        midW--;
+    }
+    
+    // Return the first valid hit that's closest to the center of the draw
+    // target by walking from the center outwards.
+    for (int x = midW, y = midH; x >= 0 && y >= 0; x--, y--) {
+        for (int xx = x; xx < width-x; xx++) {
+            for (int yy = y; yy < height-y; yy++) {
+                int index = xx + yy*width;
+                if (_IsPrimIdValid(index)) {
+                    return _ResolveHit(index, index%width, index/width,
+                                       depths[index], hit);
+                }
+                // Skip pixels we've already visited and jump to the boundary
+                if (!(xx == x || xx == width-x-1) && yy == y) {
+                    yy = std::max(yy, height-y-2);
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 bool

@@ -407,7 +407,7 @@ HdxTaskController::TestIntersection(
 
     if (intersectionMode == HdxIntersectionModeTokens->nearest) {
         HdxIntersector::Hit hit;
-        if (!result.ResolveNearest(&hit)) {
+        if (!result.ResolveNearestToCenter(&hit)) {
             return false;
         }
         allHits->push_back(hit);

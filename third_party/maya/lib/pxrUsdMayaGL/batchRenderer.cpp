@@ -1109,7 +1109,7 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         HdxIntersector::HitSet hits;
         if (singleSelection) {
             HdxIntersector::Hit hit;
-            if (!result.ResolveNearest(&hit)) {
+            if (!result.ResolveNearestToCenter(&hit)) {
                 continue;
             }
 

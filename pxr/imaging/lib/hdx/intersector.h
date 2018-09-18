@@ -217,11 +217,17 @@ public:
             return _viewport[2] > 0 && _viewport[3] > 0;
         }
 
-        /// Return the nearest single hit point. Not that this method may be
+        /// Return the nearest single hit point. Note that this method may be
         /// considerably more efficient, as it only needs to construct a single
         /// Hit object.
         HDX_API
-        bool ResolveNearest(HdxIntersector::Hit* hit) const;
+        bool ResolveNearestToCamera(HdxIntersector::Hit* hit) const;
+
+        /// Return the nearest single hit point from the center of the viewport.
+        /// Note that this method may be considerably more efficient, as it only
+        /// needs to construct a single Hit object.
+        HDX_API
+        bool ResolveNearestToCenter(HdxIntersector::Hit* hit) const;
 
         /// Return all hit points. Note that this may contain redundant objects,
         /// however it allows access to all depth values for a given object.

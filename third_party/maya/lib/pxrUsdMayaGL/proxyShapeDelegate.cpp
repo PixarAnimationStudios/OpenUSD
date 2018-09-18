@@ -141,7 +141,7 @@ UsdMayaGL_ClosestPointOnProxyShape(
 
     // We use the nearest hit as our intersection point.
     HdxIntersector::Hit hit;
-    if (!isectResult.ResolveNearest(&hit)) {
+    if (!isectResult.ResolveNearestToCenter(&hit)) {
         return false;
     }
 
