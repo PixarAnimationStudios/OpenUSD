@@ -24,9 +24,15 @@
 #include "packedUsdWrapper.h"
 
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include "gusd/context.h"
+#include "gusd/stageCache.h"
+
+#include <UT/UT_String.h>
 
 #include "GT_PackedUSD.h"
 #include "GU_PackedUSD.h"
@@ -37,6 +43,13 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+
+namespace {
+
+const string kLooksScope("Looks");
+const TfToken kLooksScopeToken("Scope");
+
+} // anon namespace
 
 GusdPackedUsdWrapper::GusdPackedUsdWrapper(
         const UsdStagePtr& stage,
@@ -150,6 +163,95 @@ GusdPackedUsdWrapper::isValid() const
     return m_primRef;
 }
 
+// Recursively looks for ancestor path one below the root (ie "/<some prim>")
+SdfPath 
+_topPrimPath(const SdfPath primPath)
+{
+    if( primPath.IsEmpty() ||
+        primPath.GetParentPath().IsEmpty() ||
+        primPath.GetParentPath().GetParentPath().IsEmpty()) {
+        return primPath;
+    }
+
+    return _topPrimPath(primPath.GetParentPath());
+}
+
+void
+_rebindPrimAndChildren(UsdStageWeakPtr primStage, const SdfPath& primPath,
+                       const UsdPrim& refPrim, const string& refFileName,
+                       SdfPath looksPath=SdfPath()){
+    
+    // Get the binding from the referenced prim and make sure it has a valid
+    // binding.
+    UsdShadeMaterialBindingAPI refBindingAPI(refPrim);
+    UsdPrim refMaterialPrim = refBindingAPI.ComputeBoundMaterial().GetPrim();
+    if (!refMaterialPrim.IsValid())
+        return;
+
+    // If it doesn't exist, define a new looks scope to reference in the
+    // materials under.
+    if (looksPath.IsEmpty()) {
+
+        // Get the ancestor prim one below the root. We want this to be a 
+        // somewhat similar to a typical /default_prim
+        //                                  /geom
+        //                                  /looks 
+        // setup, but we don't have a guarantee our top prim ancestor is the
+        // default prim.
+        SdfPath topPrimPath = _topPrimPath(primPath); 
+        looksPath = topPrimPath.AppendPath(SdfPath(kLooksScope));
+        primStage->DefinePrim(looksPath, kLooksScopeToken);
+    }
+
+    // Get the path to the material on the original referenced prim.
+    SdfPath refMaterialPath = refMaterialPrim.GetPrimPath();
+
+    // Build a relative path to append to our looks scope that maps the
+    // original material path to one below our new looks scope.
+    SdfPath looksMaterialPath = refMaterialPath;
+    std::vector<string> split = TfStringSplit(
+                                    refMaterialPath.GetString(), kLooksScope);
+    if (split.size() > 1) {
+        looksMaterialPath = SdfPath(split[split.size()-1]);
+    }
+
+    // Append the relative path to the looks scope. At this point given an 
+    // original material path on the referenced prim of "/Model/Looks/material"
+    // We should have a new path "/TopPrim/Looks/material".
+    looksMaterialPath = looksPath.AppendPath(
+                            looksMaterialPath.MakeRelativePath(SdfPath("/")));
+
+    // Define a prim at constructed path where we want to reference the material
+    UsdPrim looksMaterialPrim = primStage->DefinePrim(looksMaterialPath);
+
+    // Add a reference to the referenced prim's material
+    looksMaterialPrim.GetReferences().AddReference(
+                                        refFileName, refMaterialPath);
+
+    // Unbind existing materials and bind the newly referenced material
+    UsdRelationship rel = refBindingAPI.GetDirectBindingRel();
+    UsdPrim prim = primStage->GetPrimAtPath(primPath);
+    UsdShadeMaterialBindingAPI bindingAPI(prim);
+    if (rel) {
+        bindingAPI.UnbindDirectBinding();
+    }
+
+    UsdPrim materialPrim = bindingAPI.ComputeBoundMaterial().GetPrim();
+    if (looksMaterialPrim != materialPrim) {
+        bindingAPI.Bind(UsdShadeMaterial(
+                                primStage->GetPrimAtPath(looksMaterialPath)));
+    }
+
+    // Recurse on all children of the referenced prim (same as children of the
+    // prim we are writing because it is a reference...).
+    UsdPrimSiblingRange refChidlren = refPrim.GetAllChildren();
+    for (UsdPrim refChild : refChidlren){
+        SdfPath childPrimPath = primPath.AppendPath(
+                                        SdfPath(refChild.GetPath().GetName()));
+        _rebindPrimAndChildren(primStage, childPrimPath, refChild,
+                                refFileName, looksPath);
+    }
+}
 
 bool 
 GusdPackedUsdWrapper::updateFromGTPrim(
@@ -225,6 +327,25 @@ GusdPackedUsdWrapper::updateFromGTPrim(
 
         if( ctxt.purpose != UsdGeomTokens->default_ ) {
             UsdGeomImageable( m_primRef ).GetPurposeAttr().Set( ctxt.purpose );
+        }
+
+        // Bind shading if sub root reference
+        if( !primPath.IsRootPrimPath() ) {
+
+            // Get the prim on its original stage
+            GusdStageCacheReader cache;
+            UT_StringRef stagePath(fileName.c_str());
+            UsdStageRefPtr refStage = cache.FindOrOpen( stagePath );
+            if (refStage) {
+                UsdPrim refPrim = refStage->GetPrimAtPath( primPath );
+                if (refPrim.IsValid()) {
+
+                    // Reference in needed materials and recursivley rebind
+                    _rebindPrimAndChildren(m_primRef.GetStage(),
+                                           m_primRef.GetPrimPath(),
+                                           refPrim, fileName);
+                }
+            }
         }
 
         // Make instanceable
