@@ -42,6 +42,17 @@ struct TfTokenPairToPythonConverter
     }
 };
 
+// Boost treats a const ptr differently than a non-const ptr, so a custom
+// converter is needed to deal with the const-ness
+struct SdrShaderPropertyConstPtrToPythonConverter
+{
+    static PyObject* convert(SdrShaderPropertyConstPtr shaderProperty) {
+        object shaderPropertyObject(ptr(shaderProperty));
+
+        return incref(shaderPropertyObject.ptr());
+    }
+};
+
 void wrapShaderProperty()
 {
     typedef SdrShaderProperty This;
@@ -53,6 +64,9 @@ void wrapShaderProperty()
 
     to_python_converter<NdrOption, TfTokenPairToPythonConverter>();
     return_value_policy<copy_const_reference> copyRefPolicy;
+
+    to_python_converter<SdrShaderPropertyConstPtr,
+                        SdrShaderPropertyConstPtrToPythonConverter>();
 
     class_<This, ThisPtr, bases<NdrProperty>,
            boost::noncopyable>("ShaderProperty", no_init)
@@ -73,5 +87,6 @@ void wrapShaderProperty()
         .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,
             copyRefPolicy)
         .def("IsAssetIdentifier", &This::IsAssetIdentifier)
+        .def("IsDefaultInput", &This::IsDefaultInput)
         ;
 }

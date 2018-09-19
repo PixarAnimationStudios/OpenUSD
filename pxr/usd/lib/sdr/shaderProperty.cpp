@@ -87,6 +87,11 @@ namespace {
     }
 
 
+    bool _IsDefaultInput(const NdrTokenMap &metadata)
+    {
+        return metadata.count(SdrPropertyMetadata->DefaultInput);
+    }
+
     // -------------------------------------------------------------------------
 
 
@@ -304,6 +309,12 @@ bool
 SdrShaderProperty::IsAssetIdentifier() const
 {
     return _IsAssetIdentifier(_metadata);
+}
+
+bool
+SdrShaderProperty::IsDefaultInput() const
+{
+    return _IsDefaultInput(_metadata);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

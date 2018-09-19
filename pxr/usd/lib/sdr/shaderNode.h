@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // shader.
 #define SDR_NODE_METADATA_TOKENS   \
     ((Category, "category"))       \
+    ((Role, "role"))               \
     ((Departments, "departments")) \
     ((Help, "help"))               \
     ((Label, "label"))             \
@@ -58,9 +59,15 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((SampleFilter, "sampleFilter")) \
     ((PixelFilter, "pixelFilter"))
 
+#define SDR_NODE_ROLE_TOKENS         \
+    ((Surface, "surface"))           \
+    ((Displacement, "displacement")) \
+    ((Primvar, "primvar"))           \
+    ((Texture, "texture"))
+
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_API, SDR_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeContext, SDR_API, SDR_NODE_CONTEXT_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(SdrNodeRole, SDR_API, SDR_NODE_ROLE_TOKENS);
 
 /// \class SdrShaderNode
 ///
@@ -96,6 +103,15 @@ public:
     SDR_API
     SdrShaderPropertyConstPtr GetShaderOutput(const TfToken& outputName) const;
 
+    /// Returns the list of all inputs that are tagged as asset identifier 
+    /// inputs.
+    SDR_API
+    std::vector<SdrShaderPropertyConstPtr> GetAssetIdentifierInputs() const;
+
+    /// Returns that first shader input that is tagged as the default input.
+    SDR_API
+    SdrShaderPropertyConstPtr GetDefaultInput() const;
+
     /// @}
 
 
@@ -116,6 +132,12 @@ public:
     /// returned from `GetFamily()`.
     SDR_API
     const TfToken& GetCategory() const { return _category; }
+
+    /// Returns the role of this node. This is used to annotate the role that 
+    /// the shader node plays inside a shader network. Example roles include 
+    /// 'surface', 'displacement', 'texture', 'primvarReader' etc.
+    SDR_API
+    const std::string &GetRole() const;
 
     /// The help message assigned to this node, if any.
     SDR_API
