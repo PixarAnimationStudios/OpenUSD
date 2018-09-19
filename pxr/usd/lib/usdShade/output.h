@@ -29,7 +29,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/relationship.h"
-
+#include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include <vector>
@@ -139,18 +139,75 @@ public:
 
     /// @}
 
+    /// \name API to author and query an Output's sdrMetadata
+    /// 
+    /// This section provides API for authoring and querying shader registry
+    /// metadata on an Output. When the owning shader prim is providing a shader 
+    /// definition, the authored "sdrMetadata" dictionary value provides 
+    /// metadata needed to populate the Output correctly in the shader registry. 
+    /// 
+    /// We expect the keys in sdrMetadata to correspond to the keys 
+    /// in \ref SdrPropertyMetadata. However, this is not strictly enforced by
+    /// the API. The only allowed value type in the "sdrMetadata" dictionary is 
+    /// a std::string since it needs to be converted into a NdrTokenMap, which 
+    /// Sdr will parse using the utilities available in \ref SdrMetadataHelpers.
+    /// 
+    /// @{
+
+    /// Returns this Output's composed "sdrMetadata" dictionary as a 
+    /// NdrTokenMap.
+    USDSHADE_API
+    NdrTokenMap GetSdrMetadata() const;
+    
+    /// Returns the value corresponding to \p key in the composed 
+    /// <b>sdrMetadata</b> dictionary.
+    USDSHADE_API
+    std::string GetSdrMetadataByKey(const TfToken &key) const;
+        
+    /// Authors the given \p sdrMetadata value on this Output at the current 
+    /// EditTarget.
+    USDSHADE_API
+    void SetSdrMetadata(const NdrTokenMap &sdrMetadata) const;
+
+    /// Sets the value corresponding to \p key to the given string \p value, in 
+    /// the Output's "sdrMetadata" dictionary at the current EditTarget.
+    USDSHADE_API
+    void SetSdrMetadataByKey(
+        const TfToken &key, 
+        const std::string &value) const;
+
+    /// Returns true if the Output has a non-empty composed "sdrMetadata" 
+    /// dictionary value.
+    USDSHADE_API
+    bool HasSdrMetadata() const;
+
+    /// Returns true if there is a value corresponding to the given \p key in 
+    /// the composed "sdrMetadata" dictionary.
+    USDSHADE_API
+    bool HasSdrMetadataByKey(const TfToken &key) const;
+
+    /// Clears any "sdrMetadata" value authored on the Output in the current 
+    /// EditTarget.
+    USDSHADE_API
+    void ClearSdrMetadata() const;
+
+    /// Clears the entry corresponding to the given \p key in the 
+    /// "sdrMetadata" dictionary authored in the current EditTarget.
+    USDSHADE_API
+    void ClearSdrMetadataByKey(const TfToken &key) const;
+
+    /// @}
+
     // ---------------------------------------------------------------
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
 
     /// @{
 
-    typedef const UsdProperty UsdShadeOutput::*_UnspecifiedBoolType;
-
     /// Speculative constructor that will produce a valid UsdShadeOutput when
     /// \p attr already represents a shade Output, and produces an \em invalid 
-    /// UsdShadeOutput otherwise (i.e. \ref UsdShadeOutput_bool_type 
-    /// "unspecified-bool-type()" will return false).
+    /// UsdShadeOutput otherwise (i.e. the explicit bool conversion operator 
+    /// will return false).
     USDSHADE_API
     explicit UsdShadeOutput(const UsdAttribute &attr);
 
@@ -183,7 +240,9 @@ public:
     /// Returns whether the Output represents a terminal relationship on a 
     /// material, which is a concept we'd like to retire in favor of outputs.
     /// This is temporary convenience API.
-    bool IsTerminal() const { return GetRel(); }
+    bool IsTerminal() const { 
+        return static_cast<bool>(GetRel()); 
+    }
 
     /// Return true if the wrapped UsdAttribute is defined, and in
     /// addition the attribute is identified as an output.

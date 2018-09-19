@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,22 +21,47 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#ifndef USDSHADE_SRDPARSERPLUGIN_H
+#define USDSHADE_SRDPARSERPLUGIN_H
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/usd/usdShade/api.h"
 
-TF_WRAP_MODULE
+#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/ndr/discoveryPlugin.h"
+#include "pxr/usd/ndr/parserPlugin.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdStageCache;
+
+/// \class UsdShadeShaderDefParserPlugin
+/// 
+/// Parses shader definitions represented using USD scene description using the 
+/// schemas provided by UsdShade.
+/// 
+class UsdShadeShaderDefParserPlugin : public NdrParserPlugin 
 {
-    TF_WRAP(UsdShadeUtils);
-    TF_WRAP(UsdShadeConnectableAPI);
-    TF_WRAP(UsdShadeInput);
-    TF_WRAP(UsdShadeOutput);
-    TF_WRAP(UsdShadeShader);
-    TF_WRAP(UsdShadeShaderDefParser);
-    TF_WRAP(UsdShadeShaderDefUtils);
-    TF_WRAP(UsdShadeNodeGraph);
-    TF_WRAP(UsdShadeMaterial); 
-    TF_WRAP(UsdShadeMaterialBindingAPI);
-    TF_WRAP(UsdShadeTokens);
-}
+public: 
+    USDSHADE_API
+    UsdShadeShaderDefParserPlugin() = default;
+
+    USDSHADE_API
+    ~UsdShadeShaderDefParserPlugin() override = default;
+
+    USDSHADE_API
+    NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult &discoveryResult) 
+        override;
+
+    USDSHADE_API
+    const NdrTokenVec &GetDiscoveryTypes() const override;
+
+    USDSHADE_API
+    const TfToken &GetSourceType() const override;    
+
+private:
+    static UsdStageCache _cache;
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDSHADE_SRDPARSERPLUGIN_H

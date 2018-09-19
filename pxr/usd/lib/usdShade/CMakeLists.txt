@@ -19,6 +19,8 @@ pxr_library(usdShade
         materialBindingAPI
         output
         shader
+        shaderDefParser
+        shaderDefUtils
         nodeGraph
         tokens
         utils
@@ -37,6 +39,8 @@ pxr_library(usdShade
         wrapMaterialBindingAPI.cpp
         wrapOutput.cpp
         wrapShader.cpp
+        wrapShaderDefParser.cpp
+        wrapShaderDefUtils.cpp
         wrapNodeGraph.cpp
         wrapTokens.cpp
         wrapUtils.cpp

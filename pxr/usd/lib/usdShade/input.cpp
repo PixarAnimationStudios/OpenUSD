@@ -163,6 +163,70 @@ UsdShadeInput::HasRenderType() const
     return _attr.HasMetadata(_tokens->renderType);
 }
 
+
+NdrTokenMap
+UsdShadeInput::GetSdrMetadata() const
+{
+    NdrTokenMap result;
+
+    VtDictionary sdrMetadata;
+    if (GetAttr().GetMetadata(UsdShadeTokens->sdrMetadata, &sdrMetadata)){
+        for (const auto &it : sdrMetadata) {
+            result[TfToken(it.first)] = TfStringify(it.second);
+        }
+    }
+
+    return result;
+}
+
+std::string 
+UsdShadeInput::GetSdrMetadataByKey(const TfToken &key) const
+{
+    VtValue val;
+    GetAttr().GetMetadataByDictKey(UsdShadeTokens->sdrMetadata, key, &val);
+    return TfStringify(val);
+}
+    
+void 
+UsdShadeInput::SetSdrMetadata(const NdrTokenMap &sdrMetadata) const
+{
+    for (auto &i: sdrMetadata) {
+        SetSdrMetadataByKey(i.first, i.second);
+    }
+}
+
+void 
+UsdShadeInput::SetSdrMetadataByKey(
+    const TfToken &key, 
+    const std::string &value) const
+{
+    GetAttr().SetMetadataByDictKey(UsdShadeTokens->sdrMetadata, key, value);
+}
+
+bool 
+UsdShadeInput::HasSdrMetadata() const
+{
+    return GetAttr().HasMetadata(UsdShadeTokens->sdrMetadata);
+}
+
+bool 
+UsdShadeInput::HasSdrMetadataByKey(const TfToken &key) const
+{
+    return GetAttr().HasMetadataDictKey(UsdShadeTokens->sdrMetadata, key);
+}
+
+void 
+UsdShadeInput::ClearSdrMetadata() const
+{
+    GetAttr().ClearMetadata(UsdShadeTokens->sdrMetadata);
+}
+
+void
+UsdShadeInput::ClearSdrMetadataByKey(const TfToken &key) const
+{
+    GetAttr().ClearMetadataByDictKey(UsdShadeTokens->sdrMetadata, key);
+}
+
 /* static */
 bool 
 UsdShadeInput::IsInput(const UsdAttribute &attr)

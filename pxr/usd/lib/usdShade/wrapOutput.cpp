@@ -111,6 +111,23 @@ void wrapUsdShadeOutput()
         .def("GetRenderType", &Output::GetRenderType)
         .def("HasRenderType", &Output::HasRenderType)
 
+        .def("GetSdrMetadata", &Output::GetSdrMetadata)
+        .def("GetSdrMetadataByKey", &Output::GetSdrMetadataByKey,
+             (arg("key")))
+
+        .def("SetSdrMetadata", &Output::SetSdrMetadata,
+             (arg("sdrMetadata")))
+        .def("SetSdrMetadataByKey", &Output::SetSdrMetadataByKey,
+             (arg("key"), arg("value")))
+
+        .def("HasSdrMetadata", &Output::HasSdrMetadata)
+        .def("HasSdrMetadataByKey", &Output::HasSdrMetadataByKey,
+             (arg("key")))
+
+        .def("ClearSdrMetadata", &Output::ClearSdrMetadata)
+        .def("ClearSdrMetadataByKey", 
+             &Output::ClearSdrMetadataByKey, (arg("key")))
+
         .def("GetAttr", &Output::GetAttr)
         .def("GetRel", &Output::GetRel)
         .def("GetProperty", &Output::GetProperty,

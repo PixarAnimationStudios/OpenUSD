@@ -22,21 +22,27 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/scope.hpp>
+
+#include "pxr/base/tf/pyResultConversions.h"
+
+#include "pxr/usd/usdShade/shaderDefUtils.h"
+#include "pxr/usd/usdShade/shader.h"
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapUsdShadeShaderDefUtils()
 {
-    TF_WRAP(UsdShadeUtils);
-    TF_WRAP(UsdShadeConnectableAPI);
-    TF_WRAP(UsdShadeInput);
-    TF_WRAP(UsdShadeOutput);
-    TF_WRAP(UsdShadeShader);
-    TF_WRAP(UsdShadeShaderDefParser);
-    TF_WRAP(UsdShadeShaderDefUtils);
-    TF_WRAP(UsdShadeNodeGraph);
-    TF_WRAP(UsdShadeMaterial); 
-    TF_WRAP(UsdShadeMaterialBindingAPI);
-    TF_WRAP(UsdShadeTokens);
+    scope thisScope = class_<UsdShadeShaderDefUtils>("ShaderDefUtils", no_init)
+        .def("GetNodeDiscoveryResults", 
+             &UsdShadeShaderDefUtils::GetNodeDiscoveryResults,
+             (arg("shaderDef"), arg("sourceUri")),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetNodeDiscoveryResults")
+    ;
 }

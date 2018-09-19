@@ -399,13 +399,13 @@ UsdShadeShader::GetShaderNodeForSourceType(const TfToken &sourceType) const
         SdfAssetPath sourceAsset;
         if (GetSourceAsset(&sourceAsset, sourceType)) {
             return SdrRegistry::GetInstance().GetShaderNodeFromAsset(
-                sourceAsset, GetShaderMetadata());
+                sourceAsset, GetSdrMetadata());
         }
     } else if (implSource == UsdShadeTokens->sourceCode) {
         std::string sourceCode;
         if (GetSourceCode(&sourceCode, sourceType)) {
             return SdrRegistry::GetInstance().GetShaderNodeFromSourceCode(
-                sourceCode, sourceType, GetShaderMetadata());
+                sourceCode, sourceType, GetSdrMetadata());
         }
     }
 
@@ -413,13 +413,13 @@ UsdShadeShader::GetShaderNodeForSourceType(const TfToken &sourceType) const
 }
 
 NdrTokenMap
-UsdShadeShader::GetShaderMetadata() const
+UsdShadeShader::GetSdrMetadata() const
 {
     NdrTokenMap result;
 
-    VtDictionary shaderMetadata;
-    if (GetPrim().GetMetadata(UsdShadeTokens->shaderMetadata, &shaderMetadata)){
-        for (const auto &it : shaderMetadata) {
+    VtDictionary sdrMetadata;
+    if (GetPrim().GetMetadata(UsdShadeTokens->sdrMetadata, &sdrMetadata)){
+        for (const auto &it : sdrMetadata) {
             result[TfToken(it.first)] = TfStringify(it.second);
         }
     }
@@ -428,51 +428,51 @@ UsdShadeShader::GetShaderMetadata() const
 }
 
 std::string 
-UsdShadeShader::GetShaderMetadataByKey(const TfToken &key) const
+UsdShadeShader::GetSdrMetadataByKey(const TfToken &key) const
 {
     VtValue val;
-    GetPrim().GetMetadataByDictKey(UsdShadeTokens->shaderMetadata, key, &val);
+    GetPrim().GetMetadataByDictKey(UsdShadeTokens->sdrMetadata, key, &val);
     return TfStringify(val);
 }
     
 void 
-UsdShadeShader::SetShaderMetadata(const NdrTokenMap &shaderMetadata) const
+UsdShadeShader::SetSdrMetadata(const NdrTokenMap &sdrMetadata) const
 {
-    for (auto &i: shaderMetadata) {
-        SetShaderMetadataByKey(i.first, i.second);
+    for (auto &i: sdrMetadata) {
+        SetSdrMetadataByKey(i.first, i.second);
     }
 }
 
 void 
-UsdShadeShader::SetShaderMetadataByKey(
+UsdShadeShader::SetSdrMetadataByKey(
     const TfToken &key, 
     const std::string &value) const
 {
-    GetPrim().SetMetadataByDictKey(UsdShadeTokens->shaderMetadata, key, value);
+    GetPrim().SetMetadataByDictKey(UsdShadeTokens->sdrMetadata, key, value);
 }
 
 bool 
-UsdShadeShader::HasShaderMetadata() const
+UsdShadeShader::HasSdrMetadata() const
 {
-    return GetPrim().HasMetadata(UsdShadeTokens->shaderMetadata);
+    return GetPrim().HasMetadata(UsdShadeTokens->sdrMetadata);
 }
 
 bool 
-UsdShadeShader::HasShaderMetadataByKey(const TfToken &key) const
+UsdShadeShader::HasSdrMetadataByKey(const TfToken &key) const
 {
-    return GetPrim().HasMetadataDictKey(UsdShadeTokens->shaderMetadata, key);
+    return GetPrim().HasMetadataDictKey(UsdShadeTokens->sdrMetadata, key);
 }
 
 void 
-UsdShadeShader::ClearShaderMetadata() const
+UsdShadeShader::ClearSdrMetadata() const
 {
-    GetPrim().ClearMetadata(UsdShadeTokens->shaderMetadata);
+    GetPrim().ClearMetadata(UsdShadeTokens->sdrMetadata);
 }
 
 void
-UsdShadeShader::ClearShaderMetadataByKey(const TfToken &key) const
+UsdShadeShader::ClearSdrMetadataByKey(const TfToken &key) const
 {
-    GetPrim().ClearMetadataByDictKey(UsdShadeTokens->shaderMetadata, key);
+    GetPrim().ClearMetadataByDictKey(UsdShadeTokens->sdrMetadata, key);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

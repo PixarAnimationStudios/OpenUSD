@@ -154,10 +154,10 @@ struct UsdShadeTokensType {
     /// 
     /// Possible value for the 'materialPurpose'  parameter in UsdShadeMaterialBindingAPI, to be used when the  render is in service of a goal other than a high fidelity "full" render (such as scene manipulation, modeling, or realtime  playback). Latency and speed are generally of greater concern  for preview renders, therefore preview materials are generally  designed to be "lighterweight" compared to full materials. 
     const TfToken preview;
-    /// \brief "shaderMetadata"
+    /// \brief "sdrMetadata"
     /// 
-    /// Dictionary valued metadata key authored on a  Shader prim with implementationSource value of sourceAsset or  sourceCode to pass along metadata to the shader parser or  compiler. 
-    const TfToken shaderMetadata;
+    /// Dictionary valued metadata key authored on Shader prims with implementationSource value of sourceAsset or  sourceCode to pass along metadata to the shader parser or  compiler. It is also used to author metadata on shader  properties in a UsdShade-based shader definition file. 
+    const TfToken sdrMetadata;
     /// \brief "sourceAsset"
     /// 
     /// Possible value for UsdShadeShader::GetInfoImplementationSourceAttr()

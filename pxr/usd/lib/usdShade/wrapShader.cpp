@@ -193,22 +193,22 @@ WRAP_CUSTOM {
         .def("GetSourceCode", _WrapGetSourceCode, 
              arg("sourceType")=UsdShadeTokens->universalSourceType)
 
-        .def("GetShaderMetadata", &UsdShadeShader::GetShaderMetadata)
-        .def("GetShaderMetadataByKey", &UsdShadeShader::GetShaderMetadataByKey,
+        .def("GetSdrMetadata", &UsdShadeShader::GetSdrMetadata)
+        .def("GetSdrMetadataByKey", &UsdShadeShader::GetSdrMetadataByKey,
              (arg("key")))
 
-        .def("SetShaderMetadata", &UsdShadeShader::SetShaderMetadata,
-             (arg("shaderMetadata")))
-        .def("SetShaderMetadataByKey", &UsdShadeShader::SetShaderMetadataByKey,
+        .def("SetSdrMetadata", &UsdShadeShader::SetSdrMetadata,
+             (arg("sdrMetadata")))
+        .def("SetSdrMetadataByKey", &UsdShadeShader::SetSdrMetadataByKey,
              (arg("key"), arg("value")))
 
-        .def("HasShaderMetadata", &UsdShadeShader::HasShaderMetadata)
-        .def("HasShaderMetadataByKey", &UsdShadeShader::HasShaderMetadataByKey,
+        .def("HasSdrMetadata", &UsdShadeShader::HasSdrMetadata)
+        .def("HasSdrMetadataByKey", &UsdShadeShader::HasSdrMetadataByKey,
              (arg("key")))
 
-        .def("ClearShaderMetadata", &UsdShadeShader::ClearShaderMetadata)
-        .def("ClearShaderMetadataByKey", 
-             &UsdShadeShader::ClearShaderMetadataByKey, (arg("key")))
+        .def("ClearSdrMetadata", &UsdShadeShader::ClearSdrMetadata)
+        .def("ClearSdrMetadataByKey", 
+             &UsdShadeShader::ClearSdrMetadataByKey, (arg("key")))
 
         .def("GetShaderNodeForSourceType", 
              &UsdShadeShader::GetShaderNodeForSourceType,

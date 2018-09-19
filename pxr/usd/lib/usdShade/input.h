@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
+
+#include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include <vector>
@@ -137,18 +139,75 @@ public:
 
     /// @}
 
+    /// \name API to author and query an Input's sdrMetadata
+    /// 
+    /// This section provides API for authoring and querying shader registry
+    /// metadata on an Input. When the owning shader prim is providing a shader 
+    /// definition, the authored "sdrMetadata" dictionary value provides 
+    /// metadata needed to populate the Input correctly in the shader registry. 
+    /// 
+    /// We expect the keys in sdrMetadata to correspond to the keys 
+    /// in \ref SdrPropertyMetadata. However, this is not strictly enforced by
+    /// the API. The only allowed value type in the "sdrMetadata" dictionary is 
+    /// a std::string since it needs to be converted into a NdrTokenMap, which 
+    /// Sdr will parse using the utilities available in \ref SdrMetadataHelpers.
+    /// 
+    /// @{
+
+    /// Returns this Input's composed "sdrMetadata" dictionary as a 
+    /// NdrTokenMap.
+    USDSHADE_API
+    NdrTokenMap GetSdrMetadata() const;
+    
+    /// Returns the value corresponding to \p key in the composed 
+    /// <b>sdrMetadata</b> dictionary.
+    USDSHADE_API
+    std::string GetSdrMetadataByKey(const TfToken &key) const;
+        
+    /// Authors the given \p sdrMetadata value on this Input at the current 
+    /// EditTarget.
+    USDSHADE_API
+    void SetSdrMetadata(const NdrTokenMap &sdrMetadata) const;
+
+    /// Sets the value corresponding to \p key to the given string \p value, in 
+    /// the Input's "sdrMetadata" dictionary at the current EditTarget.
+    USDSHADE_API
+    void SetSdrMetadataByKey(
+        const TfToken &key, 
+        const std::string &value) const;
+
+    /// Returns true if the Input has a non-empty composed "sdrMetadata" 
+    /// dictionary value.
+    USDSHADE_API
+    bool HasSdrMetadata() const;
+
+    /// Returns true if there is a value corresponding to the given \p key in 
+    /// the composed "sdrMetadata" dictionary.
+    USDSHADE_API
+    bool HasSdrMetadataByKey(const TfToken &key) const;
+
+    /// Clears any "sdrMetadata" value authored on the Input in the current 
+    /// EditTarget.
+    USDSHADE_API
+    void ClearSdrMetadata() const;
+
+    /// Clears the entry corresponding to the given \p key in the 
+    /// "sdrMetadata" dictionary authored in the current EditTarget.
+    USDSHADE_API
+    void ClearSdrMetadataByKey(const TfToken &key) const;
+
+    /// @}
+
     // ---------------------------------------------------------------
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
 
     /// @{
 
-    typedef const UsdAttribute UsdShadeInput::*_UnspecifiedBoolType;
-
     /// Speculative constructor that will produce a valid UsdShadeInput when
     /// \p attr already represents a shade Input, and produces an \em invalid 
-    /// UsdShadeInput otherwise (i.e. \ref UsdShadeInput_bool_type 
-    /// "unspecified-bool-type()" will return false).
+    /// UsdShadeInput otherwise (i.e. the explicit bool conversion operator will 
+    /// return false).
     USDSHADE_API
     explicit UsdShadeInput(const UsdAttribute &attr);
 
