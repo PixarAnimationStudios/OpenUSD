@@ -312,6 +312,10 @@ UsdMayaProxyDrawOverride::draw(
         const MHWRender::MDrawContext& context,
         const MUserData* data)
 {
+    // Note that this Draw() call is only necessary when we're drawing the
+    // bounding box, since that is not yet handled by Hydra and is instead done
+    // internally by the batch renderer on a per-shape basis. Otherwise, the
+    // pxrHdImagingShape is what will invoke Hydra to draw the shape.
     UsdMayaGLBatchRenderer::GetInstance().Draw(context, data);
 }
 

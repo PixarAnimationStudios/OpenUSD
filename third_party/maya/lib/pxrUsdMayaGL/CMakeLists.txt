@@ -36,6 +36,8 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_CLASSES
         batchRenderer
         debugCodes
+        hdImagingShapeDrawOverride
+        hdImagingShapeUI
         hdRenderer
         proxyDrawOverride
         proxyShapeUI

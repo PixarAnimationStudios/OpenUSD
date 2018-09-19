@@ -23,6 +23,7 @@
 //
 #include "usdMaya/proxyShape.h"
 
+#include "usdMaya/hdImagingShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
@@ -392,10 +393,11 @@ UsdMayaProxyShape::GetObjectSoftSelectEnabled()
 void
 UsdMayaProxyShape::postConstructor()
 {
-    //
-    // don't allow shading groups to be assigned
-    //
     setRenderable(true);
+
+    // This shape uses Hydra for imaging, so make sure that the
+    // pxrHdImagingShape is setup.
+    PxrMayaHdImagingShape::GetOrCreateInstance();
 }
 
 /* virtual */

@@ -59,11 +59,11 @@ class PxrMayaHdUserData : public MUserData
         PxrMayaHdUserData();
 
         PXRUSDMAYAGL_API
-        virtual ~PxrMayaHdUserData() override;
+        ~PxrMayaHdUserData() override;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_USER_DATA_H
+#endif
