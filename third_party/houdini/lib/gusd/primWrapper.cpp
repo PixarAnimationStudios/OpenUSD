@@ -825,17 +825,21 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
     }
     else if( typeName == SdfValueTypeNames->Quatf )
     {
-        GfVec4f usdVal;
+        GfQuatf usdVal;
+        UT_QuaternionF utVal;
         primvar.Get( &usdVal, time );
+        GusdUT_Gf::Convert(usdVal, utVal);
 
-        return new GT_Real32Array( usdVal.data(), 1, 4, GT_TYPE_QUATERNION );
+        return new GT_Real32Array( utVal.data(), 1, 4, GT_TYPE_QUATERNION );
     }
     else if( typeName == SdfValueTypeNames->Quatd )
     {
-        GfVec4d usdVal;
+        GfQuatd usdVal;
+        UT_QuaternionD utVal;
         primvar.Get( &usdVal, time );
+        GusdUT_Gf::Convert(usdVal, utVal);
 
-        return new GT_Real64Array( usdVal.data(), 1, 4, GT_TYPE_QUATERNION );
+        return new GT_Real64Array( utVal.data(), 1, 4, GT_TYPE_QUATERNION );
     }
     else if( typeName == SdfValueTypeNames->Matrix3d )
     {
@@ -986,15 +990,15 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
     }
     else if( typeName == SdfValueTypeNames->QuatfArray )
     {
-        VtArray<GfVec4f> usdVal;
+        VtArray<GfQuatf> usdVal;
         primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec4f>(usdVal, GT_TYPE_QUATERNION);
+        return new GusdGT_VtArray<GfQuatf>(usdVal, GT_TYPE_QUATERNION);
     }
     else if( typeName == SdfValueTypeNames->QuatdArray )
     {
-        VtArray<GfVec4d> usdVal;
+        VtArray<GfQuatd> usdVal;
         primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec4d>(usdVal, GT_TYPE_QUATERNION);
+        return new GusdGT_VtArray<GfQuatd>(usdVal, GT_TYPE_QUATERNION);
     }
     else if( typeName == SdfValueTypeNames->Matrix3dArray )
     {
