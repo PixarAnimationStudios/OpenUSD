@@ -693,7 +693,6 @@ px_vp20Utils::GetLightingContextFromDrawContext(
             }
         }
 
-        light.SetTransform(lightTransform);
         light.SetAmbient(lightAmbient);
         light.SetDiffuse(lightDiffuse);
         light.SetSpecular(lightSpecular);
