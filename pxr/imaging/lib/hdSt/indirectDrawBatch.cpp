@@ -222,7 +222,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
     // drawcommand is configured as one of followings:
     //
-    // DrawArrays + XFB culling  : 13 integers (+ numInstanceLevels)
+    // DrawArrays + XFB culling  : 14 integers (+ numInstanceLevels)
     struct _DrawArraysCommand {
         GLuint count;
         GLuint instanceCount;
@@ -242,9 +242,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint instanceIndexDC;
         GLuint shaderDC;
         GLuint vertexDC;
+        GLuint topologyVisibilityDC;
     };
 
-    // DrawArrays + Instance culling : 16 integers (+ numInstanceLevels)
+    // DrawArrays + Instance culling : 17 integers (+ numInstanceLevels)
     struct _DrawArraysInstanceCullCommand {
         GLuint count;
         GLuint instanceCount;
@@ -262,9 +263,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint instanceIndexDC;
         GLuint shaderDC;
         GLuint vertexDC;
+        GLuint topologyVisibilityDC;
     };
 
-    // DrawElements + XFB culling : 13 integers (+ numInstanceLevels)
+    // DrawElements + XFB culling : 14 integers (+ numInstanceLevels)
     struct _DrawElementsCommand {
         GLuint count;
         GLuint instanceCount;
@@ -279,9 +281,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint instanceIndexDC;
         GLuint shaderDC;
         GLuint vertexDC;
+        GLuint topologyVisibilityDC;
     };
 
-    // DrawElements + Instance culling : 17 integers (+ numInstanceLevels)
+    // DrawElements + Instance culling : 18 integers (+ numInstanceLevels)
     struct _DrawElementsInstanceCullCommand {
         GLuint count;
         GLuint instanceCount;
@@ -300,6 +303,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint instanceIndexDC;
         GLuint shaderDC;
         GLuint vertexDC;
+        GLuint topologyVisibilityDC;
     };
 
     // Count the number of visible items. We may actually draw fewer
@@ -351,6 +355,14 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             indexBar_ = drawItem->GetTopologyRange();
         HdStBufferArrayRangeGLSharedPtr indexBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
+
+        //
+        // topology visiibility buffer data
+        //
+        HdBufferArrayRangeSharedPtr const &
+            topVisBar_ = drawItem->GetTopologyVisibilityRange();
+        HdStBufferArrayRangeGLSharedPtr topVisBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(topVisBar_);
 
         //
         // element (per-face) buffer data
@@ -439,6 +451,8 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint modelDC         = 0; // reserved for future extension
         GLuint constantDC      = constantBar ? constantBar->GetIndex() : 0;
         GLuint vertexDC        = vertexOffset;
+        GLuint topologyVisibilityDC
+                               = topVisBar? topVisBar->GetIndex() : 0;
         GLuint elementDC       = elementBar ? elementBar->GetOffset() : 0;
         GLuint primitiveDC     = indexBar ? indexBar->GetOffset() : 0;
         GLuint fvarDC          = fvarBar ? fvarBar->GetOffset() : 0;
@@ -474,6 +488,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
                 *cmdIt++ = vertexDC;
+                *cmdIt++ = topologyVisibilityDC;
             } else {
                 *cmdIt++ = vertexCount;
                 *cmdIt++ = instanceCount;
@@ -488,6 +503,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
                 *cmdIt++ = vertexDC;
+                *cmdIt++ = topologyVisibilityDC;
             }
         } else {
             if (_useGpuInstanceCulling) {
@@ -508,6 +524,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
                 *cmdIt++ = vertexDC;
+                *cmdIt++ = topologyVisibilityDC;
             } else {
                 *cmdIt++ = indicesCount;
                 *cmdIt++ = instanceCount;
@@ -522,6 +539,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
                 *cmdIt++ = vertexDC;
+                *cmdIt++ = topologyVisibilityDC;
             }
         }
         for (size_t i = 0; i < instancerNumLevels; ++i) {
@@ -571,6 +589,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             _dispatchBuffer->AddBufferResourceView(
                 HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawArraysInstanceCullCommand, fvarDC));
+            // drawing coords 2
+            _dispatchBuffer->AddBufferResourceView(
+                HdTokens->drawingCoord2, {HdTypeInt32, 1},
+                offsetof(_DrawArraysInstanceCullCommand, topologyVisibilityDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
@@ -591,6 +613,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             _dispatchBuffer->AddBufferResourceView(
                 HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawArraysCommand, fvarDC));
+            // drawing coords 2
+            _dispatchBuffer->AddBufferResourceView(
+                HdTokens->drawingCoord2, {HdTypeInt32, 1},
+                offsetof(_DrawArraysCommand, topologyVisibilityDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
@@ -613,6 +639,11 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             _dispatchBuffer->AddBufferResourceView(
                 HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawElementsInstanceCullCommand, fvarDC));
+            // drawing coords 2
+            _dispatchBuffer->AddBufferResourceView(
+                HdTokens->drawingCoord2, {HdTypeInt32, 1},
+                offsetof(_DrawElementsInstanceCullCommand,
+                         topologyVisibilityDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
@@ -633,6 +664,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             _dispatchBuffer->AddBufferResourceView(
                 HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawElementsCommand, fvarDC));
+            // drawing coords 2
+            _dispatchBuffer->AddBufferResourceView(
+                HdTokens->drawingCoord2, {HdTypeInt32, 1},
+                offsetof(_DrawElementsCommand, topologyVisibilityDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
@@ -684,6 +719,9 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         //
         // XXX: Reorder members of drawingCoord0 and drawingCoord1 in CodeGen,
         // so we can minimize the vertex attributes fetched during culling.
+        // 
+        // Since drawingCoord2 contains only topological visibility, we skip it
+        // for the culling pass.
         // 
         if (_useDrawArrays) {
             if (_useGpuInstanceCulling) {
@@ -844,6 +882,7 @@ void
 HdSt_IndirectDrawBatch::_ValidateCompatibility(
             HdStBufferArrayRangeGLSharedPtr const& constantBar,
             HdStBufferArrayRangeGLSharedPtr const& indexBar,
+            HdStBufferArrayRangeGLSharedPtr const& topologyVisibilityBar,
             HdStBufferArrayRangeGLSharedPtr const& elementBar,
             HdStBufferArrayRangeGLSharedPtr const& fvarBar,
             HdStBufferArrayRangeGLSharedPtr const& vertexBar,
@@ -861,6 +900,9 @@ HdSt_IndirectDrawBatch::_ValidateCompatibility(
                         { failed = itm; break; }
         if (indexBar && !TF_VERIFY(indexBar
                         ->IsAggregatedWith(itm->GetTopologyRange())))
+                        { failed = itm; break; }
+        if (topologyVisibilityBar && !TF_VERIFY(topologyVisibilityBar
+                        ->IsAggregatedWith(itm->GetTopologyVisibilityRange())))
                         { failed = itm; break; }
         if (elementBar && !TF_VERIFY(elementBar
                         ->IsAggregatedWith(itm->GetElementPrimvarRange())))
@@ -1095,6 +1137,13 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
         boost::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
     binder.BindBufferArray(indexBar);
 
+    // topology visibility buffer bind
+    HdBufferArrayRangeSharedPtr topVisBar_ =
+        batchItem->GetTopologyVisibilityRange();
+    HdStBufferArrayRangeGLSharedPtr topVisBar =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL>(topVisBar_);
+    binder.BindInterleavedBuffer(topVisBar, HdTokens->topologyVisibility);
+
     // element buffer bind
     HdBufferArrayRangeSharedPtr elementBar_ = batchItem->GetElementPrimvarRange();
     HdStBufferArrayRangeGLSharedPtr elementBar =
@@ -1138,6 +1187,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     if (false && ARCH_UNLIKELY(TfDebug::IsEnabled(HD_SAFE_MODE))) {
         _ValidateCompatibility(constantBar,
                                indexBar,
+                               topVisBar,
                                elementBar,
                                fvarBar,
                                vertexBar,
@@ -1210,6 +1260,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     // cleanup
     //
     binder.UnbindConstantBuffer(constantBar);
+    binder.UnbindInterleavedBuffer(topVisBar, HdTokens->topologyVisibility);
     binder.UnbindBufferArray(elementBar);
     binder.UnbindBufferArray(fvarBar);
     binder.UnbindBufferArray(indexBar);
@@ -1654,14 +1705,14 @@ HdSt_IndirectDrawBatch::_CullingProgram::_Link(
             "gl_SkipComponents4",  // firstIndex - modelDC
                                    // (includes __reserved_0 to match drawElementsOutput)
             "gl_SkipComponents4",  // constantDC - fvarDC
-            "gl_SkipComponents3",  // instanceIndexDC - vertexDC
+            "gl_SkipComponents4",  // instanceIndexDC - topologyVisibilityDC
         };
         const char *drawElementsOutputs[] = {
             "gl_SkipComponents1",  // count
             "resultInstanceCount", // instanceCount
             "gl_SkipComponents4",  // firstIndex - modelDC
             "gl_SkipComponents4",  // constantDC - fvarDC
-            "gl_SkipComponents3",  // instanceIndexDC - vertexDC
+            "gl_SkipComponents4",  // instanceIndexDC - topologyVisibilityDC
         };
         const char **outputs = _useDrawArrays
             ? drawArraysOutputs

@@ -118,6 +118,7 @@ private:
     void _GenerateElementPrimvar();
     void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS);
     void _GenerateShaderParameters();
+    void _GenerateTopologyVisibilityParameters();
 
     HdSt_ResourceBinder::MetaData _metaData;
     HdSt_GeometricShaderPtr _geometricShader;

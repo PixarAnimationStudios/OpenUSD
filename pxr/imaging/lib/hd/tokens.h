@@ -54,9 +54,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawingShader)                             \
     (drawingCoord0)                             \
     (drawingCoord1)                             \
+    (drawingCoord2)                             \
     (drawingCoordI)                             \
     (edgeIndices)                               \
     (elementCount)                              \
+    (elementsVisibility)                        \
     (extent)                                    \
     (faceColors)                                \
     (full)                                      \
@@ -88,6 +90,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pointsIndices)                             \
     (power)                                     \
     (preview)                                   \
+    (pointsVisibility)                          \
     (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
@@ -101,6 +104,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (taskState)                                 \
     (taskParams)                                \
     (topology)                                  \
+    (topologyVisibility)                        \
     (totalItemCount)                            \
     (transform)                                 \
     (transformInverse)                          \
@@ -224,7 +228,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vector)                                    \
     (normal)                                    \
     (point)                                     \
-    (pointsVisibility)                          \
     (textureCoordinate)
 
 /* Schema for "Alternate Output Values" rendering,

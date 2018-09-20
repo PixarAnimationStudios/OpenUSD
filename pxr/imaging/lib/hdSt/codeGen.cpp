@@ -601,6 +601,12 @@ HdSt_CodeGen::Compile()
         }
     }
 
+    TF_FOR_ALL (it, _metaData.topologyVisibilityData) {
+        TF_FOR_ALL (pIt, it->second.entries) {
+            _genCommon << "#define HD_HAS_" << pIt->name  << " 1\n";
+        }
+    }
+
     // primvar existence macros
 
     // XXX: this is temporary, until we implement the fallback value definition
@@ -696,6 +702,8 @@ HdSt_CodeGen::Compile()
 
     //generate shader parameters
     _GenerateShaderParameters();
+
+    _GenerateTopologyVisibilityParameters();
 
     // finalize buckets
     _procVS  << "}\n";
@@ -1393,6 +1401,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
 {
     TF_VERIFY(_metaData.drawingCoord0Binding.binding.IsValid());
     TF_VERIFY(_metaData.drawingCoord1Binding.binding.IsValid());
+    TF_VERIFY(_metaData.drawingCoord2Binding.binding.IsValid());
 
     /*
        hd_drawingCoord is a struct of integer offsets to locate the primvars
@@ -1500,6 +1509,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
                << "  int primitiveCoord;                          \n"
                << "  int fvarCoord;                               \n"
                << "  int shaderCoord;                             \n"
+               << "  int topologyVisibilityCoord;                 \n"
                << "  int instanceIndex[HD_INSTANCE_INDEX_WIDTH];  \n"
                << "  int instanceCoords[HD_INSTANCE_INDEX_WIDTH]; \n"
                << "};\n";
@@ -1518,6 +1528,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
     //   layout (location=z) in int   drawingCoordI[N]
     _EmitDeclaration(_genVS, _metaData.drawingCoord0Binding);
     _EmitDeclaration(_genVS, _metaData.drawingCoord1Binding);
+    _EmitDeclaration(_genVS, _metaData.drawingCoord2Binding);
     if (_metaData.drawingCoordIBinding.binding.IsValid()) {
         _EmitDeclaration(_genVS, _metaData.drawingCoordIBinding,
                          /*arraySize=*/std::max(1, _metaData.instancerNumLevels));
@@ -1583,14 +1594,15 @@ HdSt_CodeGen::_GenerateDrawingCoord()
            << "flat out hd_drawingCoord gsDrawingCoord;\n";
 
     _genVS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc; \n"
-           << "  dc.modelCoord     = drawingCoord0.x; \n"
-           << "  dc.constantCoord  = drawingCoord0.y; \n"
-           << "  dc.elementCoord   = drawingCoord0.z; \n"
-           << "  dc.primitiveCoord = drawingCoord0.w; \n"
-           << "  dc.fvarCoord      = drawingCoord1.x; \n"
-           << "  dc.shaderCoord    = drawingCoord1.z; \n"
-           << "  dc.vertexCoord    = drawingCoord1.w; \n"
-           << "  dc.instanceIndex  = GetInstanceIndex().indices;\n";
+           << "  dc.modelCoord              = drawingCoord0.x; \n"
+           << "  dc.constantCoord           = drawingCoord0.y; \n"
+           << "  dc.elementCoord            = drawingCoord0.z; \n"
+           << "  dc.primitiveCoord          = drawingCoord0.w; \n"
+           << "  dc.fvarCoord               = drawingCoord1.x; \n"
+           << "  dc.shaderCoord             = drawingCoord1.z; \n"
+           << "  dc.vertexCoord             = drawingCoord1.w; \n"
+           << "  dc.topologyVisibilityCoord = drawingCoord2.x; \n"
+           << "  dc.instanceIndex           = GetInstanceIndex().indices;\n";
 
     if (_metaData.drawingCoordIBinding.binding.IsValid()) {
         _genVS << "  for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {\n"
@@ -2742,6 +2754,48 @@ HdSt_CodeGen::_GenerateShaderParameters()
 
     _genGS << declarations.str()
            << accessors.str();
+}
+
+void
+HdSt_CodeGen::_GenerateTopologyVisibilityParameters()
+{
+    std::stringstream declarations;
+    std::stringstream accessors;
+    TF_FOR_ALL (it, _metaData.topologyVisibilityData) {
+        // See note in _GenerateConstantPrimvar re: padding.
+        HdBinding binding = it->first;
+        TfToken typeName(TfStringPrintf("TopologyVisibilityData%d",
+                                        binding.GetValue()));
+        TfToken varName = it->second.blockName;
+
+        declarations << "struct " << typeName << " {\n";
+
+        TF_FOR_ALL (dbIt, it->second.entries) {
+            if (!TF_VERIFY(!dbIt->dataType.IsEmpty(),
+                              "Unknown dataType for %s",
+                              dbIt->name.GetText())) {
+                continue;
+            }
+
+            declarations << "  " << _GetPackedType(dbIt->dataType, false)
+                         << " " << dbIt->name;
+            if (dbIt->arraySize > 1) {
+                declarations << "[" << dbIt->arraySize << "]";
+            }
+
+            declarations << ";\n";
+
+            _EmitStructAccessor(accessors, varName, dbIt->name, dbIt->dataType,
+                                dbIt->arraySize,
+                                "GetDrawingCoord().topologyVisibilityCoord");
+        }
+        declarations << "};\n";
+
+        _EmitDeclaration(declarations, varName, typeName, binding,
+                         /*arraySize=*/1);
+    }
+    _genCommon << declarations.str()
+               << accessors.str();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

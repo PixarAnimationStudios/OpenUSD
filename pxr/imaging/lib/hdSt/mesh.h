@@ -120,6 +120,12 @@ protected:
                            HdDirtyBits *dirtyBits,
                            const HdMeshReprDesc &desc);
 
+    void _PopulateTopologyVisibility(
+            HdStDrawItem *drawItem,
+            HdStResourceRegistrySharedPtr const &resourceRegistry,
+            HdChangeTracker *changeTracker,
+            HdMeshTopology const& meshTopology);
+
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,

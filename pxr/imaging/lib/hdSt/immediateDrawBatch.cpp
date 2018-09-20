@@ -124,6 +124,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     GLF_GROUP_FUNCTION();
 
     HdStBufferArrayRangeGLSharedPtr indexBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr topVisBarCurrent;
     HdStBufferArrayRangeGLSharedPtr elementBarCurrent;
     HdStBufferArrayRangeGLSharedPtr vertexBarCurrent;
     HdStBufferArrayRangeGLSharedPtr constantBarCurrent;
@@ -194,6 +195,23 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             binder.UnbindBufferArray(indexBarCurrent);
             binder.BindBufferArray(indexBar);
             indexBarCurrent = indexBar;
+        }
+
+        //
+        // topology visibility buffer data
+        //
+        HdBufferArrayRangeSharedPtr const &
+            topVisBar_ = drawItem->GetTopologyVisibilityRange();
+
+        HdStBufferArrayRangeGLSharedPtr topVisBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(topVisBar_);
+
+        if (topVisBar && (!topVisBar->IsAggregatedWith(topVisBarCurrent))) {
+            binder.UnbindInterleavedBuffer(topVisBarCurrent,
+                                           HdTokens->topologyVisibility);
+            binder.BindInterleavedBuffer(topVisBar,
+                                         HdTokens->topologyVisibility);
+            topVisBarCurrent = topVisBar;
         }
 
         //
@@ -398,8 +416,10 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             shaderBar        ? shaderBar->GetIndex()         : 0,
             baseVertex
         };
+        int drawingCoord2 = topVisBar? topVisBar->GetIndex() : 0;
         binder.BindUniformi(HdTokens->drawingCoord0, 4, drawingCoord0);
         binder.BindUniformi(HdTokens->drawingCoord1, 4, drawingCoord1);
+        binder.BindUniformi(HdTokens->drawingCoord2, 1, &drawingCoord2);
 
         // instance coordinates
         std::vector<int> instanceDrawingCoords(instancerNumLevels);
@@ -458,6 +478,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         binder.UnbindBufferArray(instanceIndexBarCurrent);
     if (indexBarCurrent)
         binder.UnbindBufferArray(indexBarCurrent);
+    if (topVisBarCurrent)
+        binder.UnbindBufferArray(topVisBarCurrent);
     if (shaderBarCurrent) {
         binder.UnbindBuffer(HdTokens->materialParams,
                             shaderBarCurrent->GetResource());

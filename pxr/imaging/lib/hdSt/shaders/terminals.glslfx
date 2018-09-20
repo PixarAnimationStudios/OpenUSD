@@ -372,10 +372,6 @@ int GetPointId(); // pointId.glslfx
 
 ReprStyle GetReprStyle()
 {
-#if defined(HD_HAS_pointsVisibility)
-    float isVisible = HdGet_pointsVisibility();
-    if (isVisible < 0.001) discard;
-#endif
     vec4 pointColor = vec4(vec3(0.18), 1.0);
 #if defined(HD_HAS_pointColor)
     pointColor = HdGet_pointColor();

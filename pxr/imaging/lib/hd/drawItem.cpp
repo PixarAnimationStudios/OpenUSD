@@ -59,6 +59,9 @@ HdDrawItem::GetBufferArraysHash() const
     boost::hash_combine(hash,
                         GetElementPrimvarRange() ?
                         GetElementPrimvarRange()->GetVersion() : 0);
+    boost::hash_combine(hash,
+                        GetTopologyVisibilityRange() ?
+                        GetTopologyVisibilityRange()->GetVersion() : 0);
     int instancerNumLevels = GetInstancePrimvarNumLevels();
     for (int i = 0; i < instancerNumLevels; ++i) {
         boost::hash_combine(hash,
@@ -84,7 +87,7 @@ HdDrawItem::IntersectsViewVolume(GfMatrix4d const &viewProjMatrix) const
 
 HD_API
 std::ostream &operator <<(std::ostream &out, 
-                                 const HdDrawItem& self) {
+                          const HdDrawItem& self) {
     out << "Draw Item:\n";
     out << "    Bound: "    << self._sharedData->bounds << "\n";
     out << "    Visible: "  << self._sharedData->visible << "\n";
@@ -106,6 +109,15 @@ std::ostream &operator <<(std::ostream &out,
         out << "    Vertex Primvars:\n";
         out << "        numElements=" << self.GetVertexPrimvarRange()->GetNumElements() << "\n";
         out << *self.GetVertexPrimvarRange();
+    }
+    if (self.GetFaceVaryingPrimvarRange()) {
+        out << "    Fvar Primvars:\n";
+        out << "        numElements=" << self.GetFaceVaryingPrimvarRange()->GetNumElements() << "\n";
+        out << *self.GetFaceVaryingPrimvarRange();
+    }
+    if (self.GetTopologyVisibilityRange()) {
+        out << "    Topology visibility:\n";
+        out << *self.GetTopologyVisibilityRange();
     }
     return out;
 }

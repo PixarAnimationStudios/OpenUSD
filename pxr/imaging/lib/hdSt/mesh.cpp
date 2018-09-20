@@ -64,6 +64,8 @@
 
 #include "pxr/base/vt/value.h"
 
+#include <limits>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -178,8 +180,10 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     // allocate a new range for varying topology (= dirty topology)
     // for the time being. In other words, each range of index buffer is
     // immutable.
+    // 
+    bool dirtyTopology = HdChangeTracker::IsTopologyDirty(*dirtyBits, id);
 
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)    ||
+    if (dirtyTopology ||
         HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id) ||
         HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
         // make a shallow copy and the same time expand the topology to a
@@ -197,6 +201,16 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         _displacementEnabled = displayStyle.displacementEnabled;
 
         HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
+
+        // Topological visibility (of points, faces) comes in as DirtyTopology.
+        // We encode this information in a separate BAR.
+        if (dirtyTopology) {
+            _PopulateTopologyVisibility(
+                drawItem,
+                resourceRegistry,
+                &(sceneDelegate->GetRenderIndex().GetChangeTracker()),
+                meshTopology);
+        }
 
         // If flat shading is enabled for this prim, make sure we're computing
         // flat normals. It's ok to set the dirty bit here because it's a
@@ -385,6 +399,109 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     }
 }
 
+static HdBufferSourceSharedPtr
+_GetBitmaskEncodedVisibilityBuffer(VtIntArray input,
+                                   int numEntries,
+                                   TfToken const& name,
+                                   SdfPath const& id)
+{
+    size_t numBitsPerUInt = std::numeric_limits<uint32_t>::digits; // i.e, 32
+    size_t numUIntsNeeded = ceil(numEntries/(float) numBitsPerUInt);
+    // Initialize all bits to 1 (visible)
+    VtArray<uint32_t> visibility(numUIntsNeeded,
+                                 std::numeric_limits<uint32_t>::max());
+
+    for (VtIntArray::const_iterator i = input.begin(),
+                                  end = input.end(); i != end; ++i) {
+        if (*i >= numEntries || *i < 0) {
+            HF_VALIDATION_WARN(id,
+                "Topological invisibility data (%d) is not in the range [0, %d)"
+                ".", *i, numEntries);
+            continue;
+        }
+        size_t arrayIndex = *i/numBitsPerUInt;
+        size_t bitIndex   = *i % numBitsPerUInt;
+        visibility[arrayIndex] &= ~(1 << bitIndex); // set bit to 0
+    }
+
+    return HdBufferSourceSharedPtr(
+        new HdVtBufferSource(name, VtValue(visibility), numUIntsNeeded));
+}
+
+void
+HdStMesh::_PopulateTopologyVisibility(
+                      HdStDrawItem *drawItem,
+                      HdStResourceRegistrySharedPtr const &resourceRegistry,
+                      HdChangeTracker *changeTracker,
+                      HdMeshTopology const& meshTopology)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdBufferArrayRangeSharedPtr tvBAR = drawItem->GetTopologyVisibilityRange();
+    HdBufferSourceVector sources;
+
+    // For the general case wherein there is no topological invisibility, we
+    // don't create a BAR.
+    // If any topological invisibility is authored (points/faces), create the
+    // BAR with both sources. Once the BAR is created, we don't attempt to
+    // delete it when there's no topological invisibility authored; we simply
+    // reset the bits to make all faces/points visible.
+    bool hasInvisiblePoints = !meshTopology.GetInvisiblePoints().empty();
+    bool hasInvisibleFaces  = !meshTopology.GetInvisibleFaces().empty();
+    if (tvBAR || (hasInvisiblePoints || hasInvisibleFaces)) {
+        sources.push_back(_GetBitmaskEncodedVisibilityBuffer(
+                                meshTopology.GetInvisiblePoints(),
+                                meshTopology.GetNumPoints(),
+                                HdTokens->pointsVisibility,
+                                GetId()));
+        
+        sources.push_back(_GetBitmaskEncodedVisibilityBuffer(
+                                meshTopology.GetInvisibleFaces(),
+                                meshTopology.GetNumFaces(),
+                                HdTokens->elementsVisibility,
+                                GetId()));
+    }
+
+    // Exit early if the BAR doesn't need to be allocated.
+    if (!tvBAR && sources.empty()) return;
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    bool barNeedsReallocation = false;
+    if (tvBAR) {
+        HdBufferSpecVector oldBufferSpecs;
+        tvBAR->GetBufferSpecs(&oldBufferSpecs);
+        if (oldBufferSpecs != bufferSpecs) {
+            barNeedsReallocation = true;
+        }
+    }
+
+
+    if (!tvBAR || barNeedsReallocation) {
+        HdBufferArrayRangeSharedPtr range =
+            resourceRegistry->AllocateShaderStorageBufferArrayRange(
+                HdTokens->topologyVisibility, bufferSpecs);
+        _sharedData.barContainer.Set(
+            drawItem->GetDrawingCoord()->GetTopologyVisibilityIndex(), range);
+
+        changeTracker->MarkBatchesDirty();
+
+        if (barNeedsReallocation) {
+            #if 1
+            using namespace std;
+            cout << "Need to rellocate tv bar for " << GetId() << endl;
+            #endif
+            changeTracker->SetGarbageCollectionNeeded();
+        }
+    }
+
+    TF_VERIFY(drawItem->GetTopologyVisibilityRange()->IsValid());
+
+    resourceRegistry->AddSources(
+        drawItem->GetTopologyVisibilityRange(), sources);
+}
+
 void
 HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -532,44 +649,6 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
     return source;
 }
 
-// XXX: Temporary methods to expand a sparse input of invisible point indices
-// into the pointsVisibility vertex primvar thats used to discard invisible
-// points when using the points repr.
-static HdBufferSourceSharedPtr
-_GetExpandedPointsVisibilityBuffer(VtValue input,
-                                   int numPoints,
-                                   SdfPath const &id)
-{
-    TF_VERIFY(input.IsArrayValued() &&
-              input.GetArraySize() > 0);
-
-    VtArray<float> pointsVisibility(numPoints, 1.0f);
-    const VtIntArray& invisiblePoints = input.UncheckedGet<VtIntArray>();
-    for (VtIntArray::const_iterator i = invisiblePoints.begin(),
-                                  end = invisiblePoints.end(); i != end; ++i) {
-        if (*i < 0 || *i >= numPoints) {
-            HF_VALIDATION_WARN(id, "Invisible point index %d isn't in the range"
-                                   " [0, %d).", *i, numPoints);
-            continue;
-        } else {
-            pointsVisibility[*i] = 0.0f;
-        }
-    }
-
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(HdPrimvarRoleTokens->pointsVisibility,
-                             VtValue(pointsVisibility)) );
-}
-
-static HdBufferSourceSharedPtr
-_GetAllVisiblePointsVisibilityBuffer(int numPoints)
-{
-    VtArray<float> pointsVisibility(numPoints, 1.0f);
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(HdPrimvarRoleTokens->pointsVisibility,
-                             VtValue(pointsVisibility)) );
-}
-
 void
 HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
@@ -676,8 +755,6 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    bool mergePointsVisibilityIntoBAR = false;
-
     // Track index to identify varying primvars.
     int i = 0;
     for (HdPrimvarDescriptor const& primvar: primvars) {
@@ -697,38 +774,6 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             HdBufferSourceSharedPtr source(
                 new HdVtBufferSource(primvar.name, value));
 
-            // XXX: special temporary handling for 'pointsVisibility'
-            if (primvar.name == HdPrimvarRoleTokens->pointsVisibility) {
-                bool hasInvisiblePoints = (source->GetNumElements() > 0);
-                if (!_pointsVisibilityAuthored && !hasInvisiblePoints) {
-                    // nothing to do; it isn't part of the vertex BAR.
-                    continue;
-                }
-
-                // At this point, we have the following possibilities:
-                // 1) Have invisible points AND it is part of the vertex BAR
-                //    => Expand the sparse representation and add it as a source
-                // 2) Have NO invisible points BUT it is part of the BAR
-                //    => Create a redundant source filled with 1's
-                // 3) Have invisible points BUT it is not part of the vertex BAR
-                //    => Merge it into the BAR and set
-                //       _pointsVisibilityAuthored to true
-                if (hasInvisiblePoints && _pointsVisibilityAuthored) {
-                    source =
-                        _GetExpandedPointsVisibilityBuffer(value, numPoints,
-                                                           GetId());
-                } else if (!hasInvisiblePoints && _pointsVisibilityAuthored) {
-                    source = _GetAllVisiblePointsVisibilityBuffer(numPoints);
-                } else {
-                    TF_VERIFY(hasInvisiblePoints && !_pointsVisibilityAuthored);
-                    source =
-                        _GetExpandedPointsVisibilityBuffer(value, numPoints,
-                                                           GetId());
-                    _pointsVisibilityAuthored = true;
-                    mergePointsVisibilityIntoBAR = true;
-                }
-            } // special handling for pointsVisibility
-            
             // verify primvar length -- it is alright to have more data than we
             // index into; the inverse is when we issue a warning and skip
             // update.
@@ -965,8 +1010,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // to unpacked normals
         bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
                      (useSmoothNormals != _smoothNormals) ||
-                     (usePackedSmoothNormals != _packedSmoothNormals) ||
-                     mergePointsVisibilityIntoBAR;
+                     (usePackedSmoothNormals != _packedSmoothNormals);
 
         HdBufferArrayRangeSharedPtr range = bar;
 

@@ -85,6 +85,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pointIdFallbackFS,       "PointId.Fragment.Fallback"))
     ((pointIdFS,               "PointId.Fragment.PointParam"))
 
+    // visibility mixin (for face and point visibility)
+    ((topVisFS,                "Visibility.Fragment.Topology"))
+
     // main for all the shader stages
     ((mainVS,                  "Mesh.Vertex"))
     ((mainBSplineTCS,          "Mesh.TessControl.BSpline"))
@@ -363,7 +366,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // PointId mixin for point picking and selection
     FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
                                       _tokens->pointIdFallbackFS;
-
+    FS[fsIndex++] = _tokens->topVisFS; // Topology visibility
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }

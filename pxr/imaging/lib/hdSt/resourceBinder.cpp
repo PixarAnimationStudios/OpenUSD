@@ -57,6 +57,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ivec4)
     (constantPrimvars)
     (primitiveParam)
+    (topologyVisibility)
 );
 
 namespace {
@@ -326,6 +327,37 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         }
     }
 
+     // topology visibility
+    HdBinding topologyVisibilityBinding =
+                locator.GetBinding(structBufferBindingType,
+                                   /*debugName*/_tokens->topologyVisibility);
+
+    if (HdBufferArrayRangeSharedPtr topVisBar_ =
+        drawItem->GetTopologyVisibilityRange()) {
+
+        HdStBufferArrayRangeGLSharedPtr topVisBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(topVisBar_);
+
+        MetaData::StructBlock sblock(_tokens->topologyVisibility);
+        TF_FOR_ALL (it, topVisBar->GetResources()) {
+            HdTupleType valueType = it->second->GetTupleType();
+            TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
+            sblock.entries.emplace_back(
+                /*name=*/it->first,
+                /*type=*/glType,
+                /*offset=*/it->second->GetOffset(),
+                /*arraySize=*/valueType.count);
+        }
+        
+        std::sort(sblock.entries.begin(), sblock.entries.end());
+
+        metaDataOut->topologyVisibilityData.insert(
+            std::make_pair(topologyVisibilityBinding, sblock));
+    }
+
+     // topology visibility is interleaved into single struct.
+    _bindingMap[_tokens->topologyVisibility] = topologyVisibilityBinding;
+
     // element primvar (per-face, per-line)
     if (HdBufferArrayRangeSharedPtr elementBar_ =
         drawItem->GetElementPrimvarRange()) {
@@ -391,6 +423,14 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord1,
                                      /*type=*/_tokens->ivec4,
                                      /*binding=*/drawingCoord1Binding);
+
+    HdBinding drawingCoord2Binding = locator.GetBinding(
+        drawingCoordBindingType, HdTokens->drawingCoord2);
+    _bindingMap[HdTokens->drawingCoord2] = drawingCoord2Binding;
+    metaDataOut->drawingCoord2Binding =
+        MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord2,
+                                     /*type=*/_tokens->_int,
+                                     /*binding=*/drawingCoord2Binding);
 
     if (instancerNumLevels > 0) {
         HdBinding drawingCoordIBinding = indirect
@@ -908,6 +948,26 @@ HdSt_ResourceBinder::UnbindConstantBuffer(
 }
 
 void
+HdSt_ResourceBinder::BindInterleavedBuffer(
+    HdStBufferArrayRangeGLSharedPtr const &interleavedBar,
+    TfToken const &name) const
+{
+    if (!interleavedBar) return;
+
+    BindBuffer(name, interleavedBar->GetResource());
+}
+
+void
+HdSt_ResourceBinder::UnbindInterleavedBuffer(
+    HdStBufferArrayRangeGLSharedPtr const &interleavedBar,
+    TfToken const &name) const
+{
+    if (!interleavedBar) return;
+
+    UnbindBuffer(name, interleavedBar->GetResource());
+}
+
+void
 HdSt_ResourceBinder::BindInstanceBufferArray(
     HdStBufferArrayRangeGLSharedPtr const &bar, int level) const
 {
@@ -1205,6 +1265,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, drawingCoord0Binding.dataType);
     boost::hash_combine(hash, drawingCoord1Binding.binding.GetValue());
     boost::hash_combine(hash, drawingCoord1Binding.dataType);
+    boost::hash_combine(hash, drawingCoord2Binding.binding.GetValue());
+    boost::hash_combine(hash, drawingCoord2Binding.dataType);
     boost::hash_combine(hash, drawingCoordIBinding.binding.GetValue());
     boost::hash_combine(hash, drawingCoordIBinding.dataType);
     boost::hash_combine(hash, instanceIndexArrayBinding.binding.GetValue());
@@ -1240,6 +1302,18 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
 
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (blockIt, constantData) {
+        boost::hash_combine(hash, (int)blockIt->first.GetType()); // binding
+        TF_FOR_ALL (it, blockIt->second.entries) {
+            StructEntry const &entry = *it;
+            boost::hash_combine(hash, entry.name.Hash());
+            boost::hash_combine(hash, entry.dataType);
+            boost::hash_combine(hash, entry.offset);
+            boost::hash_combine(hash, entry.arraySize);
+        }
+    }
+
+    boost::hash_combine(hash, 0); // separator
+    TF_FOR_ALL (blockIt, topologyVisibilityData) {
         boost::hash_combine(hash, (int)blockIt->first.GetType()); // binding
         TF_FOR_ALL (it, blockIt->second.entries) {
             StructEntry const &entry = *it;

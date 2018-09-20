@@ -139,6 +139,12 @@ public:
             _drawingCoord.GetTopologyIndex());
     }
 
+    HD_API
+    HdBufferArrayRangeSharedPtr const &GetTopologyVisibilityRange() const {
+        return _sharedData->barContainer.Get(
+            _drawingCoord.GetTopologyVisibilityIndex());
+    }
+
     /// Returns a BufferArrayRange of vertex-primvars.
     HD_API
     HdBufferArrayRangeSharedPtr const &GetVertexPrimvarRange() const {

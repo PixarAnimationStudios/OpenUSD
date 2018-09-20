@@ -33,6 +33,7 @@
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/visibility.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -523,6 +524,10 @@ void main(void)
     bool isFlipped = IsFlipped();
 
     if (ShouldCullFaceAccordingToShading(gl_FrontFacing, isFlipped)) {
+        discard;
+    }
+
+    if (ShouldDiscardFragmentAccordingToTopology()) {
         discard;
     }
 
