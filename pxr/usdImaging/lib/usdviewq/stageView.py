@@ -1852,7 +1852,10 @@ class StageView(QtOpenGL.QGLWidget):
         # initiated by this mouse-press
         self._dragActive = True
 
-        if (event.modifiers() & QtCore.Qt.AltModifier):
+        # Allow for either meta or alt key, since meta maps to Windows and Apple
+        # keys on various hardware/os combos, and some windowing systems consume
+        # one or the other by default, but hopefully not both.
+        if (event.modifiers() & (QtCore.Qt.AltModifier | QtCore.Qt.MetaModifier)):
             if event.button() == QtCore.Qt.LeftButton:
                 self.switchToFreeCamera()
                 self._cameraMode = "tumble"
