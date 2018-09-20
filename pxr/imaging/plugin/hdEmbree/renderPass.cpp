@@ -116,8 +116,22 @@ HdEmbreeRenderPass::_Blit(unsigned int width, unsigned int height,
 {
     if (!TF_VERIFY(_owningContext->IsCurrent())) {
         // If we're rendering with a different context than the render pass
-        // was created with, we need to revisit some assumptions.
-        return;
+        // was created with, recreate the FBO.
+
+        if (_owningContext->IsValid()) {
+            GlfGLContextScopeHolder contextHolder(_owningContext);
+            glDeleteFramebuffers(1, &_framebuffer);
+        }
+        _owningContext = GlfGLContext::GetCurrentGLContext();
+        glGenFramebuffers(1, &_framebuffer);
+        GLint restoreReadFB, restoreDrawFB;
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFB);
+        glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                _texture, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
     }
 
     // We blit with glTexImage2D/glBlitFramebuffer... We can't use
