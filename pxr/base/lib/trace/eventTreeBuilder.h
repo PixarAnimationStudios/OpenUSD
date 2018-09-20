@@ -85,12 +85,25 @@ private:
 
         _PendingEventNode( const TfToken& key, 
                                  TraceCategoryId category,
-                                 TimeStamp start);
-        TraceEventNodeRefPtr Close(TimeStamp end, bool separateEvents);
+                                 TimeStamp start,
+                                 TimeStamp end,
+                                 bool separateEvents,
+                                 bool isComplete);
+        TraceEventNodeRefPtr Close();
+
+        // Can move this, but not copy it
+        _PendingEventNode(const _PendingEventNode&) = delete;
+        _PendingEventNode& operator= (const _PendingEventNode&) = delete;
+
+        _PendingEventNode(_PendingEventNode&&) = default;
+        _PendingEventNode& operator= (_PendingEventNode&&) = default;
 
         TfToken key;
         TraceCategoryId category;
         TimeStamp start;
+        TimeStamp end;
+        bool separateEvents;
+        bool isComplete;
         std::vector<TraceEventNodeRefPtr> children;
         std::vector<AttributeData> attributes;
     };
@@ -103,6 +116,8 @@ private:
 
     using _PendingNodeStack = std::vector<_PendingEventNode>;
     using _ThreadStackMap = std::map<TraceThreadId, _PendingNodeStack>;
+
+    void _PopAndClose(_PendingNodeStack& stack); 
 
     TraceEventNodeRefPtr _root;
     _ThreadStackMap _threadStacks;
