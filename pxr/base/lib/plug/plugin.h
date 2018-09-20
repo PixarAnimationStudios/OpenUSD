@@ -32,7 +32,6 @@
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/noncopyable.hpp>
 #include <atomic>
 #include <string>
 #include <utility>
