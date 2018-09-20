@@ -91,6 +91,9 @@ public:
     /// Clear the bound attachments (typically before rendering).
     void Clear();
 
+    /// Mark the attachments as unconverged.
+    void MarkAttachmentsUnconverged();
+
 private:
     // Validate the internal consistency of attachments provided to
     // SetAttachments. If the attachments are invalid, this will issue

@@ -285,6 +285,16 @@ HdEmbreeRenderer::Clear()
 }
 
 void
+HdEmbreeRenderer::MarkAttachmentsUnconverged()
+{
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        HdEmbreeRenderBuffer *rb =
+            static_cast<HdEmbreeRenderBuffer*>(_attachments[i].renderBuffer);
+        rb->SetConverged(false);
+    }
+}
+
+void
 HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 {
     // Commit any pending changes to the scene.
@@ -588,10 +598,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
     }
 
     // Transform the normal from object space to world space.
-    GfVec4f expandedNormal(normal[0], normal[1], normal[2], 0.0f);
-    expandedNormal = expandedNormal * instanceContext->objectToWorldMatrix;
-    normal = GfVec3f(expandedNormal[0], expandedNormal[1],
-            expandedNormal[2]);
+    normal = instanceContext->objectToWorldMatrix.TransformDir(normal);
 
     // Make sure the normal is unit-length.
     normal.Normalize();

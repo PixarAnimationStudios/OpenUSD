@@ -261,6 +261,7 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // Only start a new render if something in the scene has changed.
     if (needStartRender) {
         _colorBufferConverged = false;
+        _renderer->MarkAttachmentsUnconverged();
         _renderThread->StartRender();
     }
 }
