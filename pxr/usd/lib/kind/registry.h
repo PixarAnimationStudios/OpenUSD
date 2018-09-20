@@ -33,7 +33,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
 #include <unordered_map>
 #include <vector>
 
@@ -68,9 +67,13 @@ TF_DECLARE_PUBLIC_TOKENS(KindTokens, KIND_API, KIND_TOKENS);
 /// To make this robust, KindRegistry exposes no means to mutate the registry.
 /// All extensions must be accomplished via plugInfo.json files, which are
 /// consumed once during the registry initialization (See \ref kind_extensions )
-class KindRegistry : public TfWeakBase, boost::noncopyable
+class KindRegistry : public TfWeakBase
 {
 public:
+    // Disallow copies
+    KindRegistry(const KindRegistry&) = delete;
+    KindRegistry& operator=(const KindRegistry&) = delete;
+
     /// Return the single \c KindRegistry instance.
     KIND_API static KindRegistry& GetInstance();
 
