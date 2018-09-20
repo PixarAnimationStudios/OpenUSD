@@ -10,6 +10,7 @@ pxr_library(usdHydra
 
     PUBLIC_CLASSES
         tokens
+        discoveryPlugin
 
     PUBLIC_HEADERS
         api.h
@@ -26,5 +27,8 @@ pxr_library(usdHydra
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/shaderDefs.usda
+        shaders/empty.glslfx
+
 )
 
