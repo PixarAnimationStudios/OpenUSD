@@ -65,7 +65,10 @@ CreateTrace(int N, int R)
         Recursion(R);
     }
     TraceCollector::GetInstance().SetEnabled(false);
-    return dataSrc->ConsumeData()[0];
+    std::shared_ptr<TraceCollection> collection = 
+        dataSrc->ConsumeData()[0];
+    TraceReporter::GetGlobalReporter()->ClearTree();
+    return collection;
 }
 
 int main(int argc, char* argv[])
@@ -74,7 +77,7 @@ int main(int argc, char* argv[])
     TfStopwatch watch;
 
     int recrusionSizes[] = {1, 2, 10};//, 100};
-    int testSizes[] = {1000000};
+    int testSizes[] = {1000000, 10000000, 100000000};
     for (int R : recrusionSizes) {
         std::cout << "Recursion depth: " << R << std::endl;  
         for (int size : testSizes) {
