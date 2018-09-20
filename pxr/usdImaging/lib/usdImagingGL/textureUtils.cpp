@@ -37,7 +37,11 @@
 #include "pxr/imaging/hdSt/textureResource.h"
 
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/vt/value.h"
 
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/usdHydra/tokens.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -52,9 +56,27 @@ static HdWrap _GetWrap(UsdPrim const &usdPrim, const TfToken &wrapAttr)
     UsdShadeShader shader(usdPrim);
 
     if (shader) {
-        UsdAttribute attr = shader.GetInput(wrapAttr);
-        if (attr) {
-            attr.Get(&usdWrap);
+        if (auto wrapInput = shader.GetInput(wrapAttr)) {
+            wrapInput.Get(&usdWrap);
+        } else {
+            // Get the default value from the shader registry if the input is
+            // not authored on the shader prim.
+            TfToken shaderId;
+            shader.GetShaderId(&shaderId);
+            if (!shaderId.IsEmpty()) {
+                auto &shaderReg = SdrRegistry::GetInstance();
+                if (SdrShaderNodeConstPtr sdrNode = 
+                    shaderReg.GetShaderNodeByNameAndType(shaderId, 
+                                GlfGLSLFXTokens->glslfx)) {
+                    if (const auto &sdrInput = 
+                            sdrNode->GetShaderInput(wrapAttr)) {
+                        VtValue wrapVal = sdrInput->GetDefaultValue();
+                        if (wrapVal.IsHolding<TfToken>()) {
+                            usdWrap = wrapVal.UncheckedGet<TfToken>();
+                        }
+                    }
+                }
+            }
         }
     }
 
