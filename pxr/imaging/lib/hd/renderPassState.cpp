@@ -282,9 +282,15 @@ HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
 std::ostream& operator<<(std::ostream& out,
                          const HdRenderPassAttachment& desc)
 {
-    out << "RenderPassAttachment: {"
-        << desc.aovName << ", "
-        << desc.renderBuffer << ", "
+    out << "RenderPassAttachment: {";
+    if (desc.aovName.isPrimvar) {
+        out << HdAovTokensMakePrimvar(desc.aovName.name) << ", ";
+    } else if (desc.aovName.isLpe) {
+        out << HdAovTokensMakeLpe(desc.aovName.name) << ", ";
+    } else {
+        out << desc.aovName.name << ", ";
+    }
+    out << desc.renderBuffer << ", "
         << desc.renderBufferId << ", "
         << desc.clearValue << "}";
     return out;
@@ -293,9 +299,11 @@ std::ostream& operator<<(std::ostream& out,
 bool operator==(const HdRenderPassAttachment& lhs,
                 const HdRenderPassAttachment& rhs)
 {
-    return lhs.aovName           == rhs.aovName          &&
-           lhs.renderBuffer      == rhs.renderBuffer     &&
-           lhs.renderBufferId    == rhs.renderBufferId   &&
+    return lhs.aovName.name      == rhs.aovName.name      &&
+           lhs.aovName.isPrimvar == rhs.aovName.isPrimvar &&
+           lhs.aovName.isLpe     == rhs.aovName.isLpe     &&
+           lhs.renderBuffer      == rhs.renderBuffer      &&
+           lhs.renderBufferId    == rhs.renderBufferId    &&
            lhs.clearValue        == rhs.clearValue;
 }
 

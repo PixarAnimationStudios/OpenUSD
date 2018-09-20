@@ -124,6 +124,9 @@ void wrapGL()
                  return_value_policy< TfPySequenceToTuple >())
             .def("GetRendererPluginDesc", &UsdImagingGL::GetRendererPluginDesc)
             .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
+            .def("GetRendererAovs", &UsdImagingGL::GetRendererAovs,
+                 return_value_policy< TfPySequenceToTuple >())
+            .def ("SetRendererAov", &UsdImagingGL::SetRendererAov)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
         ;
 

@@ -303,6 +303,20 @@ UsdImagingGL::SetRendererPlugin(TfToken const &id)
     return _engine->SetRendererPlugin(id);
 }
 
+/* virtual */
+TfTokenVector
+UsdImagingGL::GetRendererAovs() const
+{
+    return _engine->GetRendererAovs();
+}
+
+/* virtual */
+bool
+UsdImagingGL::SetRendererAov(TfToken const &id)
+{
+    return _engine->SetRendererAov(id);
+}
+
 bool
 UsdImagingGL::TestIntersection(
     const GfMatrix4d &viewMatrix,

@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
@@ -72,6 +73,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTaskSetTokens, HDX_API, HDX_TASK_SET_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdxIntersectionModeTokens, HDX_API, \
     HDX_INTERSECTION_MODE_TOKENS);
+
+class HdRenderBuffer;
 
 class HdxTaskController {
 public:
@@ -114,6 +117,31 @@ public:
     /// correctly set GL_SAMPLE_ALPHA_TO_COVERAGE.
     HDX_API
     void SetRenderParams(HdxRenderTaskParams const& params);
+
+    /// -------------------------------------------------------
+    /// AOV API
+
+    /// Set the list of outputs to be rendered. If outputs.size() == 1,
+    /// this will send that output to the viewport via a colorizer task.
+    /// Note: names should come from HdAovTokens.
+    HDX_API
+    void SetRenderOutputs(TfTokenVector const& names);
+
+    /// Set which output should be rendered to the viewport. The empty token
+    /// disables viewport rendering.
+    HDX_API
+    void SetViewportRenderOutput(TfToken const& name);
+
+    /// Get the buffer for a rendered output. Note: the caller should call
+    /// Resolve(), as HdxTaskController doesn't guarantee the buffer will
+    /// be resolved.
+    HDX_API
+    HdRenderBuffer* GetRenderOutput(TfToken const& name);
+
+    /// Set custom parameters for an AOV.
+    HDX_API
+    void SetRenderOutputSettings(TfToken const& name,
+                                 HdAovDescriptor const& desc);
 
     /// -------------------------------------------------------
     /// Lighting API
@@ -207,6 +235,9 @@ private:
     void _CreateSelectionTask();
     void _CreateLightingTask();
     void _CreateShadowTask();
+    void _CreateColorizeTask();
+
+    SdfPath _GetAovPath(TfToken const& aov);
 
     // A private scene delegate member variable backs the tasks this
     // controller generates. To keep _Delegate simple, the containing class
@@ -232,11 +263,17 @@ private:
             TF_VERIFY(vParams.IsHolding<T>());
             return vParams.Get<T>();
         }
+        bool HasParameter(SdfPath const& id, TfToken const& key) {
+            return _valueCacheMap.count(id) > 0 &&
+                   _valueCacheMap[id].count(key) > 0;
+        }
 
         // HdSceneDelegate interface
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
         virtual bool IsEnabled(TfToken const& option) const;
         virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+        virtual HdRenderBufferDescriptor
+            GetRenderBufferDescriptor(SdfPath const& id);
 
     private:
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
@@ -256,12 +293,16 @@ private:
     SdfPath _selectionTaskId;
     SdfPath _simpleLightTaskId;
     SdfPath _shadowTaskId;
+    SdfPath _colorizeTaskId;
 
     // Generated cameras
     SdfPath _cameraId;
 
     // Generated lights
     SdfPathVector _lightIds;
+
+    // Generated renderbuffers
+    SdfPathVector _renderBufferIds;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

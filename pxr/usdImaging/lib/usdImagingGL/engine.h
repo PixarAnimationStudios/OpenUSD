@@ -381,6 +381,14 @@ public:
     USDIMAGINGGL_API
     virtual bool SetRendererPlugin(TfToken const &id);
 
+    /// Return the vector of available renderer AOV settings.
+    USDIMAGINGGL_API
+    virtual TfTokenVector GetRendererAovs() const;
+
+    /// Set the current renderer AOV to \p id.
+    USDIMAGINGGL_API
+    virtual bool SetRendererAov(TfToken const& id);
+
     /// Returns GPU resource allocation info
     USDIMAGINGGL_API
     virtual VtDictionary GetResourceAllocation() const;

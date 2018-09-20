@@ -198,6 +198,32 @@ HdEmbreeRenderDelegate::GetResourceRegistry() const
     return _resourceRegistry;
 }
 
+HdAovDescriptor
+HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
+{
+    if (name == HdAovTokens->color) {
+        return HdAovDescriptor(VtValue(GfVec4f(0.0f)),
+                               HdFormatUNorm8Vec4, true);
+    } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
+        return HdAovDescriptor(VtValue(GfVec3f(-1.0f)),
+                               HdFormatFloat32Vec3, false);
+    } else if (name == HdAovTokens->depth) {
+        return HdAovDescriptor(VtValue(1.0f), HdFormatFloat32, false);
+    } else if (name == HdAovTokens->linearDepth) {
+        return HdAovDescriptor(VtValue(0.0f), HdFormatFloat32, false);
+    } else if (name == HdAovTokens->primId) {
+        return HdAovDescriptor(VtValue(0), HdFormatInt32, false);
+    } else {
+        HdAovIdentifier aovId(name);
+        if (aovId.isPrimvar) {
+            return HdAovDescriptor(VtValue(GfVec3f(0.0f)),
+                                   HdFormatFloat32Vec3, false);
+        }
+    }
+
+    return HdAovDescriptor();
+}
+
 HdRenderPassSharedPtr
 HdEmbreeRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                             HdRprimCollection const& collection)

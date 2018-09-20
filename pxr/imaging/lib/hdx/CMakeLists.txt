@@ -27,6 +27,7 @@ pxr_library(hdx
         ${GLEW_INCLUDE_DIR}
 
     PUBLIC_CLASSES
+        colorizeTask
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask

@@ -263,23 +263,46 @@ PXR_NAMESPACE_OPEN_SCOPE
     (Neye)                                      \
     (patchCoord)                                \
     (primitiveParam)                            \
+    (normal)                                    \
+    /* Others we might want to add:
+     * https://rmanwiki.pixar.com/display/REN/Arbitrary+Output+Variables
+     * - curvature
+     * - tangent
+     * - velocity
+     */                                         \
     /* Primvars:
      *   The tokens don't try to enumerate primvars,
      *   but instead provide an identifying namespace.
-     *   The "color" primvar is addressable as "primvar:color".
+     *   The "color" primvar is addressable as "primvars:color".
      */                                         \
-    ((primvar, "primvar:"))                     \
+    ((primvars, "primvars:"))                   \
     /* Light path expressions:
      *   Applicable only to raytracers, these tell
      *   the renderer to output specific shading
      *   components for specific classes of lightpath.
+     *
+     *   Lightpath syntax is defined here:
+     *   https://rmanwiki.pixar.com/display/REN/Light+Path+Expressions
+     *   ... so for example, you could specify
+     *   "lpe:CD[<L.>O]"
      */                                         \
-    ((lpe, "lpe:"))
+    ((lpe, "lpe:"))                             \
+    /* Shader signals:
+     *   This tells the renderer to output a partial shading signal,
+     *   whether from the BXDF (e.g. bxdf.diffuse) or from an intermediate
+     *   shading node (e.g. fractal.rgb).
+     *   XXX: The exact format is TBD.
+     */                                         \
+    ((shader, "shader:"))
 
 HD_API
-TfToken HdAovTokensPrimvar(TfToken const& primvar);
+TfToken HdAovTokensMakePrimvar(TfToken const& primvar);
+
 HD_API
-TfToken HdAovTokensLpe(TfToken const& lpe);
+TfToken HdAovTokensMakeLpe(TfToken const& lpe);
+
+HD_API
+TfToken HdAovTokensMakeShader(TfToken const& shader);
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);

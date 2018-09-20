@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,46 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdReprTokens, HD_REPR_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdShaderTokens, HD_SHADER_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_PRIMTYPE_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_PRIMVAR_ROLE_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdAovTokens, HD_AOV_TOKENS);
-
-TfToken HdAovTokensMakePrimvar(TfToken const& primvar)
+HdAovIdentifier::HdAovIdentifier(TfToken const& aovName)
+    : isPrimvar(false)
+    , isLpe(false)
+    , isShader(false)
 {
-    return TfToken(
-        HdAovTokens->primvars.GetString() +
-        primvar.GetString());
-}
+    std::string const& aov = aovName.GetString();
+    std::string const& primvars = HdAovTokens->primvars.GetString();
+    std::string const& lpe = HdAovTokens->lpe.GetString();
+    std::string const& shader = HdAovTokens->shader.GetString();
 
-TfToken HdAovTokensMakeLpe(TfToken const& lpe)
-{
-    return TfToken(
-        HdAovTokens->lpe.GetString() +
-        lpe.GetString());
-}
-
-TfToken HdAovTokensMakeShader(TfToken const& shader)
-{
-    return TfToken(
-        HdAovTokens->shader.GetString() +
-        shader.GetString());
+    if (aov.size() > primvars.size() &&
+        aov.compare(0, primvars.size(), primvars) == 0) {
+        name = TfToken(aov.substr(primvars.size()));
+        isPrimvar = true;
+    } else if (aov.size() > lpe.size() &&
+               aov.compare(0, lpe.size(), lpe) == 0) {
+        name = TfToken(aov.substr(lpe.size()));
+        isLpe = true;
+    } else if (aov.size() > shader.size() &&
+               aov.compare(0, shader.size(), shader) == 0) {
+        name = TfToken(aov.substr(shader.size()));
+        isShader = true;
+    } else {
+        name = aovName;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -1045,6 +1045,39 @@ UsdImagingGLHdEngine::_DeleteHydraResources()
 }
 
 /* virtual */
+TfTokenVector
+UsdImagingGLHdEngine::GetRendererAovs() const
+{
+    if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
+        return TfTokenVector(
+            { HdAovTokens->color,
+              HdAovTokens->primId,
+              HdAovTokens->depth,
+              HdAovTokens->normal,
+              HdAovTokensMakePrimvar(TfToken("st")) }
+        );
+    }
+    return TfTokenVector();
+}
+
+/* virtual */
+bool
+UsdImagingGLHdEngine::SetRendererAov(TfToken const& id)
+{
+    if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
+        // For color, render straight to the viewport instead of rendering
+        // to an AOV and colorizing (which is the same, but more work).
+        if (id == HdAovTokens->color) {
+            _taskController->SetRenderOutputs(TfTokenVector());
+        } else {
+            _taskController->SetRenderOutputs({id});
+        }
+        return true;
+    }
+    return false;
+}
+
+/* virtual */
 VtDictionary
 UsdImagingGLHdEngine::GetResourceAllocation() const
 {

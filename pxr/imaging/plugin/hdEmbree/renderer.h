@@ -126,9 +126,14 @@ private:
                           std::default_random_engine &random,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
-    bool _ComputeDepth(RTCRay const& rayHit, float *depth);
+    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool ndc);
     // Compute the prim ID at the given ray hit.
     bool _ComputePrimId(RTCRay const& rayHit, int32_t *primId);
+    // Compute the normal at the given ray hit.
+    bool _ComputeNormal(RTCRay const& rayHit, GfVec3f *normal, bool eye);
+    // Compute a primvar at the given ray hit.
+    bool _ComputePrimvar(RTCRay const& rayHit, TfToken const& primvar,
+        GfVec3f *value);
 
     // Compute the ambient occlusion term at a given point by firing rays
     // from "position" in the hemisphere centered on "normal"; the occlusion
@@ -153,6 +158,10 @@ private:
     // The height of the viewport we're rendering into.
     unsigned int _height;
 
+    // View matrix: world space to camera space.
+    GfMatrix4d _viewMatrix;
+    // Projection matrix: camera space to NDC space.
+    GfMatrix4d _projMatrix;
     // The inverse view matrix: camera space to world space.
     GfMatrix4d _inverseViewMatrix;
     // The inverse projection matrix: NDC space to camera space.

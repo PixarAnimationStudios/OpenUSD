@@ -20,6 +20,7 @@ pxr_library(hd
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        aov
         basisCurves
         basisCurvesTopology
         binding
@@ -45,7 +46,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
-	field
+        field
         flatNormals
         geomSubset
         instancer

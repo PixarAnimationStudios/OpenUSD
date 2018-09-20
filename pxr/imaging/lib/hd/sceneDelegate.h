@@ -249,6 +249,14 @@ struct HdRenderBufferDescriptor {
     GfVec3i dimensions;
     HdFormat format;
     bool multiSampled;
+
+    bool operator==(HdRenderBufferDescriptor const& rhs) const {
+        return dimensions == rhs.dimensions &&
+               format == rhs.format && multiSampled == rhs.multiSampled;
+    }
+    bool operator!=(HdRenderBufferDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 /// \struct HdVolumeFieldDescriptor

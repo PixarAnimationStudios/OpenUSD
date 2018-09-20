@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/base/tf/token.h"
 
@@ -293,6 +294,19 @@ public:
     /// 
     HD_API
     virtual TfTokenVector GetShaderSourceTypes() const;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// AOVs
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Returns a default AOV descriptor for the given named AOV, specifying
+    /// things like preferred format.
+    ///
+    HD_API
+    virtual HdAovDescriptor GetDefaultAovDescriptor(TfToken const& name) const;
 
 protected:
     /// This class must be derived from

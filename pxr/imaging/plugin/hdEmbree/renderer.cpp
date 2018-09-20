@@ -42,6 +42,8 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _attachmentsValid(false)
     , _width(0)
     , _height(0)
+    , _viewMatrix(1.0f) // == identity
+    , _projMatrix(1.0f) // == identity
     , _inverseViewMatrix(1.0f) // == identity
     , _inverseProjMatrix(1.0f) // == identity
     , _scene(nullptr)
@@ -73,6 +75,8 @@ void
 HdEmbreeRenderer::SetCamera(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projMatrix)
 {
+    _viewMatrix = viewMatrix;
+    _projMatrix = projMatrix;
     _inverseViewMatrix = viewMatrix.GetInverse();
     _inverseProjMatrix = projMatrix.GetInverse();
 }
@@ -103,42 +107,66 @@ HdEmbreeRenderer::_ValidateAttachments()
         // output buffer.
         if (_attachments[i].renderBuffer == nullptr) {
             TF_WARN("Aov '%s' doesn't have any renderbuffer bound",
-                    _attachments[i].aovName.GetText());
+                    _attachments[i].aovName.name.GetText());
             _attachmentsValid = false;
             continue;
         }
 
         // Currently, HdEmbree only supports color, linearDepth, and primId
-        if (_attachments[i].aovName != HdAovTokens->color &&
-            _attachments[i].aovName != HdAovTokens->linearDepth &&
-            _attachments[i].aovName != HdAovTokens->primId) {
+        if (_attachments[i].aovName.name != HdAovTokens->color &&
+            _attachments[i].aovName.name != HdAovTokens->linearDepth &&
+            _attachments[i].aovName.name != HdAovTokens->depth &&
+            _attachments[i].aovName.name != HdAovTokens->primId &&
+            _attachments[i].aovName.name != HdAovTokens->Neye &&
+            _attachments[i].aovName.name != HdAovTokens->normal &&
+            !_attachments[i].aovName.isPrimvar) {
             TF_WARN("Unsupported attachment with Aov '%s' won't be rendered to",
-                    _attachments[i].aovName.GetText());
+                    _attachments[i].aovName.name.GetText());
         }
 
         HdFormat format = _attachments[i].renderBuffer->GetFormat();
 
-        // linearDepth is only supported for float32 attachments
-        if (_attachments[i].aovName == HdAovTokens->linearDepth &&
+        // depth is only supported for float32 attachments
+        if ((_attachments[i].aovName.name == HdAovTokens->linearDepth ||
+             _attachments[i].aovName.name == HdAovTokens->depth) &&
             format != HdFormatFloat32) {
             TF_WARN("Aov '%s' has unsupported format '%s'",
-                    _attachments[i].aovName.GetText(),
+                    _attachments[i].aovName.name.GetText(),
                     TfEnum::GetName(format).c_str());
             _attachmentsValid = false;
         }
 
         // primId is only supported for int32 attachments
-        if (_attachments[i].aovName == HdAovTokens->primId &&
+        if (_attachments[i].aovName.name == HdAovTokens->primId &&
             format != HdFormatInt32) {
             TF_WARN("Aov '%s' has unsupported format '%s'",
-                    _attachments[i].aovName.GetText(),
+                    _attachments[i].aovName.name.GetText(),
+                    TfEnum::GetName(format).c_str());
+            _attachmentsValid = false;
+        }
+
+        // Normal is only supported for vec3 attachments of float.
+        if ((_attachments[i].aovName.name == HdAovTokens->Neye ||
+             _attachments[i].aovName.name == HdAovTokens->normal) &&
+            format != HdFormatFloat32Vec3) {
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _attachments[i].aovName.name.GetText(),
+                    TfEnum::GetName(format).c_str());
+            _attachmentsValid = false;
+        }
+
+        // Primvars support vec3 output (though some channels may not be used).
+        if (_attachments[i].aovName.isPrimvar &&
+            format != HdFormatFloat32Vec3) {
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _attachments[i].aovName.name.GetText(),
                     TfEnum::GetName(format).c_str());
             _attachmentsValid = false;
         }
 
         // color is only supported for vec3/vec4 attachments of float,
         // unorm, or snorm.
-        if (_attachments[i].aovName == HdAovTokens->color) {
+        if (_attachments[i].aovName.name == HdAovTokens->color) {
             switch(format) {
                 case HdFormatUNorm8Vec4:
                 case HdFormatUNorm8Vec3:
@@ -149,7 +177,7 @@ HdEmbreeRenderer::_ValidateAttachments()
                     break;
                 default:
                     TF_WARN("Aov '%s' has unsupported format '%s'",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         TfEnum::GetName(format).c_str());
                     _attachmentsValid = false;
                     break;
@@ -165,29 +193,32 @@ HdEmbreeRenderer::_ValidateAttachments()
             // array-valued clear types aren't supported.
             if (clearType.count != 1) {
                 TF_WARN("Aov '%s' clear value type '%s' is an array",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         _attachments[i].clearValue.GetTypeName().c_str());
                 _attachmentsValid = false;
             }
 
             // color only supports float/double vec3/4
-            if (_attachments[i].aovName == HdAovTokens->color &&
+            if (_attachments[i].aovName.name == HdAovTokens->color &&
                 clearType.type != HdTypeFloatVec3 &&
                 clearType.type != HdTypeFloatVec4 &&
                 clearType.type != HdTypeDoubleVec3 &&
                 clearType.type != HdTypeDoubleVec4) {
                 TF_WARN("Aov '%s' clear value type '%s' isn't compatible",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         _attachments[i].clearValue.GetTypeName().c_str());
                 _attachmentsValid = false;
             }
 
-            // only clear float formats with float, and int with int.
+            // only clear float formats with float, int with int, float3 with
+            // float3.
             if ((format == HdFormatFloat32 && clearType.type != HdTypeFloat) ||
-                (format == HdFormatInt32 && clearType.type != HdTypeInt32)) {
+                (format == HdFormatInt32 && clearType.type != HdTypeInt32) ||
+                (format == HdFormatFloat32Vec3 &&
+                 clearType.type != HdTypeFloatVec3)) {
                 TF_WARN("Aov '%s' clear value type '%s' isn't compatible with"
                         " format %s",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         _attachments[i].clearValue.GetTypeName().c_str(),
                         TfEnum::GetName(format).c_str());
                 _attachmentsValid = false;
@@ -200,7 +231,7 @@ HdEmbreeRenderer::_ValidateAttachments()
             _attachments[i].renderBuffer->GetHeight() != _height) {
             TF_WARN("Aov '%s' viewport (%u, %u) doesn't match render viewport"
                     " (%u, %u)",
-                    _attachments[i].aovName.GetText(),
+                    _attachments[i].aovName.name.GetText(),
                     _attachments[i].renderBuffer->GetWidth(),
                     _attachments[i].renderBuffer->GetHeight(),
                     _width, _height);
@@ -268,7 +299,7 @@ HdEmbreeRenderer::Clear()
             static_cast<HdEmbreeRenderBuffer*>(_attachments[i].renderBuffer);
 
         rb->Map();
-        if (_attachments[i].aovName == HdAovTokens->color) {
+        if (_attachments[i].aovName.name == HdAovTokens->color) {
             GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
             rb->Clear(4, clearColor.data());
         } else if (rb->GetFormat() == HdFormatInt32) {
@@ -277,6 +308,9 @@ HdEmbreeRenderer::Clear()
         } else if (rb->GetFormat() == HdFormatFloat32) {
             float clearValue = _attachments[i].clearValue.Get<float>();
             rb->Clear(1, &clearValue);
+        } else if (rb->GetFormat() == HdFormatFloat32Vec3) {
+            GfVec3f clearValue = _attachments[i].clearValue.Get<GfVec3f>();
+            rb->Clear(3, clearValue.data());
         } // else, _ValidateAttachments would have already warned.
 
         rb->Unmap();
@@ -504,21 +538,37 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
             continue;
         }
 
-        if (_attachments[i].aovName == HdAovTokens->color) {
+        if (_attachments[i].aovName.name == HdAovTokens->color) {
             GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
             GfVec4f sample = _ComputeColor(ray, random, clearColor);
             renderBuffer->Write(GfVec3i(x,y,1), 4, sample.data());
-        } else if (_attachments[i].aovName == HdAovTokens->linearDepth &&
+        } else if ((_attachments[i].aovName.name == HdAovTokens->linearDepth ||
+                    _attachments[i].aovName.name == HdAovTokens->depth) &&
                    renderBuffer->GetFormat() == HdFormatFloat32) {
             float depth;
-            if(_ComputeDepth(ray, &depth)) {
+            bool ndc = (_attachments[i].aovName.name == HdAovTokens->depth);
+            if(_ComputeDepth(ray, &depth, ndc)) {
                 renderBuffer->Write(GfVec3i(x,y,1), 1, &depth);
             }
-        } else if (_attachments[i].aovName == HdAovTokens->primId &&
+        } else if (_attachments[i].aovName.name == HdAovTokens->primId &&
                    renderBuffer->GetFormat() == HdFormatInt32) {
             int32_t primId;
             if (_ComputePrimId(ray, &primId)) {
                 renderBuffer->Write(GfVec3i(x,y,1), 1, &primId);
+            }
+        } else if ((_attachments[i].aovName.name == HdAovTokens->Neye ||
+                    _attachments[i].aovName.name == HdAovTokens->normal) &&
+                   renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
+            GfVec3f normal;
+            bool eye = (_attachments[i].aovName.name == HdAovTokens->Neye);
+            if (_ComputeNormal(ray, &normal, eye)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 3, normal.data());
+            }
+        } else if (_attachments[i].aovName.isPrimvar &&
+                   renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
+            GfVec3f value;
+            if (_ComputePrimvar(ray, _attachments[i].aovName.name, &value)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 3, value.data());
             }
         }
     }
@@ -547,14 +597,98 @@ HdEmbreeRenderer::_ComputePrimId(RTCRay const& rayHit,
 
 bool
 HdEmbreeRenderer::_ComputeDepth(RTCRay const& rayHit,
-                                float *depth)
+                                float *depth,
+                                bool ndc)
 {
     if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
         return false;
     }
 
-    *depth = rayHit.tfar;
+    if (ndc) {
+        GfVec3f hitPos = GfVec3f(rayHit.org[0] + rayHit.tfar * rayHit.dir[0],
+            rayHit.org[1] + rayHit.tfar * rayHit.dir[1],
+            rayHit.org[2] + rayHit.tfar * rayHit.dir[2]);
+
+        hitPos = _viewMatrix.Transform(hitPos);
+        hitPos = _projMatrix.Transform(hitPos);
+
+        *depth = hitPos[2];
+    } else {
+        *depth = rayHit.tfar;
+    }
     return true;
+}
+
+bool
+HdEmbreeRenderer::_ComputeNormal(RTCRay const& rayHit,
+                                 GfVec3f *normal,
+                                 bool eye)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    HdEmbreeInstanceContext *instanceContext =
+        static_cast<HdEmbreeInstanceContext*>(
+                rtcGetUserData(_scene, rayHit.instID));
+
+    HdEmbreePrototypeContext *prototypeContext =
+        static_cast<HdEmbreePrototypeContext*>(
+                rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
+
+    GfVec3f n = -GfVec3f(rayHit.Ng[0], rayHit.Ng[1], rayHit.Ng[2]);
+    if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
+        prototypeContext->primvarMap[HdTokens->normals]->Sample(
+                rayHit.primID, rayHit.u, rayHit.v, &n);
+    }
+
+    n = instanceContext->objectToWorldMatrix.TransformDir(n);
+    if (eye) {
+        n = _viewMatrix.TransformDir(n);
+    }
+    n.Normalize();
+
+    *normal = n;
+    return true;
+}
+
+bool
+HdEmbreeRenderer::_ComputePrimvar(RTCRay const& rayHit,
+                                  TfToken const& primvar,
+                                  GfVec3f *value)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    HdEmbreeInstanceContext *instanceContext =
+        static_cast<HdEmbreeInstanceContext*>(
+                rtcGetUserData(_scene, rayHit.instID));
+
+    HdEmbreePrototypeContext *prototypeContext =
+        static_cast<HdEmbreePrototypeContext*>(
+                rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
+
+    // XXX: This is a little clunky, although sample will early out if the
+    // types don't match.
+    if (prototypeContext->primvarMap.count(primvar) > 0) {
+        HdEmbreePrimvarSampler *sampler = 
+            prototypeContext->primvarMap[primvar];
+        if (sampler->Sample(rayHit.primID, rayHit.u, rayHit.v, value)) {
+            return true;
+        }
+        GfVec2f v2;
+        if (sampler->Sample(rayHit.primID, rayHit.u, rayHit.v, &v2)) {
+            value->Set(v2[0], v2[1], 0.0f);
+            return true;
+        }
+        float v1;
+        if (sampler->Sample(rayHit.primID, rayHit.u, rayHit.v, &v1)) {
+            value->Set(v1, 0.0f, 0.0f);
+            return true;
+        }
+    }
+    return false;
 }
 
 GfVec4f
