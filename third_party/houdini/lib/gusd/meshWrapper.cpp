@@ -388,22 +388,6 @@ GusdMeshWrapper::refine(
                       &gtPointAttrs,
                       &gtUniformAttrs,
                       &gtDetailAttrs );
-
-        if( gtVertexAttrs->entries() > 0 ) {
-            if( reverseWindingOrder ) {
-                // Construct an index array which will be used to lookup vertex 
-                // attributes in the correct order.
-                GT_Int32Array* vertexIndirect
-                    = new GT_Int32Array(gtIndicesHandle->entries(), 1);
-                GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
-                for(int i=0; i<gtIndicesHandle->entries(); ++i) {
-                    vertexIndirect->set(i, i);     
-                }
-                _reverseWindingOrder(vertexIndirect, gtVertexCounts );
-
-                gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
-            }
-        }
     }
 
     else {
@@ -464,6 +448,22 @@ GusdMeshWrapper::refine(
                     &gtDetailAttrs );
             }
         }
+    }
+
+    if( gtVertexAttrs->entries() > 0 ) {
+	if( reverseWindingOrder ) {
+	    // Construct an index array which will be used to lookup vertex
+	    // attributes in the correct order.
+	    GT_Int32Array* vertexIndirect
+		= new GT_Int32Array(gtIndicesHandle->entries(), 1);
+	    GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
+	    for(int i=0; i<gtIndicesHandle->entries(); ++i) {
+		vertexIndirect->set(i, i);
+	    }
+	    _reverseWindingOrder(vertexIndirect, gtVertexCounts );
+
+	    gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
+	}
     }
 
     // build GT_Primitive
