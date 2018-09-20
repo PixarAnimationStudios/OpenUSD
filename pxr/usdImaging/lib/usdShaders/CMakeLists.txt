@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdShaders)
 
-pxr_plugin(usdShaders
+pxr_library(usdShaders
     LIBRARIES
         ar
         ndr

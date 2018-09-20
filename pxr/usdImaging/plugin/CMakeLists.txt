@@ -1,6 +1,5 @@
 set(DIRS 
-    usdVolImaging
-    usdShaders)
+    usdVolImaging)
 
 foreach(d ${DIRS})
     add_subdirectory(${d})
