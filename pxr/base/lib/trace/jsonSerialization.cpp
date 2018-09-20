@@ -273,7 +273,7 @@ _TraceEventFromJSON(
                             *value,
                             *category);
                         event.SetTimeStamp(*ts);
-                        unorderedEvents.emplace_back(event);
+                        unorderedEvents.emplace_back(std::move(event));;
                     }
                 }
                 break;
@@ -287,7 +287,7 @@ _TraceEventFromJSON(
                             *value,
                             *category);
                         event.SetTimeStamp(*ts);
-                        unorderedEvents.emplace_back(event);
+                        unorderedEvents.emplace_back(std::move(event));;
                     }
                 }
                 break;
@@ -302,7 +302,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<bool>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<double>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -310,7 +310,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<double>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<uint64_t>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -318,7 +318,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<uint64_t>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<int64_t>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -326,7 +326,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<int64_t>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<std::string>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -334,7 +334,7 @@ _TraceEventFromJSON(
                                 list.StoreData(dataValue->GetString().c_str()),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         }
                     }
                 }
@@ -568,8 +568,8 @@ _ConstructEventList(EventListConstructionData& data)
     // Add the events to the eventList.
     // TODO: make a constructor that takes an event vector so we don't have to 
     // make copies?
-    for (const TraceEvent& e : data.unorderedEvents) {
-        data.eventList.EmplaceBack(e);
+    for (TraceEvent& e : data.unorderedEvents) {
+        data.eventList.EmplaceBack(std::move(e));
     }
     data.unorderedEvents.clear();
     return std::unique_ptr<TraceEventList>(

@@ -275,6 +275,13 @@ public:
     }
     /// @}
 
+    // Can move this, but not copy it
+    TraceEvent(const TraceEvent&) = delete;
+    TraceEvent& operator= (const TraceEvent&) = delete;
+
+    TraceEvent(TraceEvent&&) = default;
+    TraceEvent& operator= (TraceEvent&&) = default;
+
     /// @}
 
     /// Sets the events timestamp to \p time.
