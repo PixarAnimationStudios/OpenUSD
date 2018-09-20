@@ -49,10 +49,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (surfaceShader)
     (displacementShader)
-
     (texture)
     (primvar)
-
     (isPtex)
 );
 
@@ -876,6 +874,10 @@ _ShaderNetworkWalker::_ShaderNetworkWalker(
                 _ProcessTextureNode(shader, sdrNode, textureIDs, primvars);
             } else if (sdrRole == SdrNodeRole->Primvar) {
                 _ProcessPrimvarNode(shader, sdrNode, primvars);
+            } else {
+                TF_DEBUG(USDIMAGING_SHADERS).Msg("Warning: found shader node "
+                    "<%s> with invalid role '%s'!\n", shader.GetPath().GetText(),
+                    sdrRole.GetText());
             }
         }
 
@@ -960,8 +962,9 @@ _ShaderNetworkWalker::_ProcessRootNode(
 
             // The current simplified shading system does not support
             // tokens as inputs, so we will drop them at this point.
-            if (!_IsSupportedShaderInputType(shaderInput.GetTypeName()))
+            if (!_IsSupportedShaderInputType(shaderInput.GetTypeName())) {
                 continue;
+            }
 
             // Extract the fallback value for this input
             VtValue fallbackValue;
