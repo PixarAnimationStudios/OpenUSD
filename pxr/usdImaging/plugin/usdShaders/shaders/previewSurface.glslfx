@@ -1,0 +1,235 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2018 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "displacementShader": {
+                "source": [ "Preview.Displacement" ]
+            },
+            "surfaceShader": {
+                "source": [ "Preview.Lighting",
+                            "Preview.Surface" ]
+            }
+        }
+    }
+}
+
+
+-- glsl Preview.Displacement
+
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
+{
+    // Calculate scalar displacement.
+    float texDisplacement = HdGet_displacement().x;
+    return Peye + vec4(Neye*texDisplacement, 0);
+}
+
+
+-- glsl Preview.Surface
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    vec4 diffColor          = vec4(HdGet_diffuseColor().xyz, HdGet_opacity().x);
+    float roughness         = HdGet_roughness().x;
+    float clearcoat         = HdGet_clearcoat().x;
+    float clearRoughness    = HdGet_clearcoatRoughness().x;
+    vec3 emissiveColor      = HdGet_emissiveColor().xyz;
+    int useSpecularWorkflow = HdGet_useSpecularWorkflow().x;
+    float occlusion         = HdGet_occlusion().x;
+    float ior               = HdGet_ior().x;
+    vec3 normal             = HdGet_normal().xyz;
+
+    // Deal with metallic/specular workflow
+    vec3 specInfo = vec3(0.0);
+    if (useSpecularWorkflow == 1) {
+        specInfo = HdGet_specularColor().xyz;
+    } else {
+        specInfo.x = HdGet_metallic().x;
+    }
+
+    // Selection highlighting.
+    diffColor.rgb = ApplyColorOverrides(diffColor).rgb;
+
+    // Evaluate all lights.
+    vec4 c = evaluateLights(
+        emissiveColor, occlusion, ior,
+        diffColor, useSpecularWorkflow, specInfo, roughness, 
+        vec3(1.0, 1.0, 1.0)/*clearColor*/, clearRoughness, 
+        1.0, clearcoat, Peye, Neye);
+
+    return c;
+}
+
+
+-- glsl Preview.Lighting
+
+#define PI              3.1415
+#define EPSILON         0.001
+
+float
+SchlickFresnel(float EdotH)
+{
+    return pow(max(0.0, 1.0 - EdotH), 5.0);
+}
+
+float
+NormalDistribution(float matSpecularRoughness, float NdotH)
+{
+    float alpha = matSpecularRoughness * matSpecularRoughness;
+    float alpha2 = alpha * alpha;
+    float NdotH2 = NdotH * NdotH;
+    float DDenom = ( NdotH2 * (alpha2 - 1.0) ) + 1.0;
+    DDenom *= DDenom;
+    DDenom *= PI;
+    float D = (alpha2 + EPSILON) / DDenom;
+    return D;
+}
+
+float
+Geometric(float matSpecularRoughness, float NdotH, float EdotH, 
+          float NdotE, float NdotL) 
+{
+    float alpha = matSpecularRoughness * matSpecularRoughness;
+    float k = alpha * 0.5;
+    float G  = NdotE / (NdotE * (1.0 - k) + k);
+    G *= NdotL / (NdotL * (1.0 - k) + k);
+    return G;
+}
+
+vec3
+evaluateDirectDiffuse() 
+{
+    return vec3(1.0 / PI);
+}
+
+vec3
+evaluateDirectSpecular(vec3 matSpecularColorF0, vec3 matSpecularColorF90,
+                       float matSpecularRoughness, float fresnel, float EdotH,
+                       float NdotL, float NdotE, float NdotH)
+{
+    vec3 F = mix(matSpecularColorF0, matSpecularColorF90, fresnel);
+    float D = NormalDistribution(matSpecularRoughness, NdotH);
+    float G = Geometric(matSpecularRoughness, NdotH, EdotH, NdotE, NdotL);
+    vec3 RNum = F * G * D;
+    float RDenom = 4.0f * NdotL * NdotE + EPSILON;
+    return RNum / RDenom;
+}
+
+vec4
+evaluateLights(vec3 emissive, float occlusion, float ior, 
+                vec4 matDiffuseColor, int  useSpecularWorkflow, 
+               vec3 matSpecularInfo,  float matSpecularRoughness,
+               vec3 matClearcoatColor, float matClearcoatRoughness,
+               float specularAmount, float clearcoatAmount,
+               vec4 Peye, vec3 Neye ) 
+{
+    matSpecularRoughness  = max(0.001, matSpecularRoughness);
+    matClearcoatRoughness = max(0.001, matClearcoatRoughness);
+    vec3 n = Neye;
+    vec3 e = normalize(-Peye.xyz);
+    float NdotE = max(0.0, dot(n, e));
+    vec3 directLight = vec3(0.0);
+    vec3 indirectLight = vec3(0.0);
+
+#if NUM_LIGHTS > 0
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+
+        // Calculate necessary vector information for lighting
+        vec4 Plight = lightSource[i].position;
+        vec3 l = (Plight.w == 0.0)
+                    ? normalize(Plight.xyz)
+                    : normalize(Plight - Peye).xyz;
+        vec3 h = normalize( e + l );
+        float NdotL = max(0.0, dot(n, l));
+        float EdotH = max(0.0, dot(e, h));
+        float NdotH = max(0.0, dot(n, h));
+        float fresnel = SchlickFresnel(EdotH);
+
+        // Calculate light intesity
+        float atten = lightDistanceAttenuation(Peye, i);
+        float spot = lightSpotAttenuation(l, i);
+
+        // Calculate the shadow factor
+        float shadow = 1.0;
+    #if USE_SHADOWS
+        shadow = (lightSource[i].hasShadow) ?
+            shadowing(lightSource[i].shadowIndex, Peye) : 1.0;
+    #endif
+        // Apply occlusion on top
+        shadow *= occlusion;
+
+        // Evaluate diffuse
+        vec3 d = matDiffuseColor.rgb * evaluateDirectDiffuse();
+
+        // Evaluate specular first lobe
+        vec3 s1 = vec3(0.0);
+        if (specularAmount > 0.0) {
+            vec3 F0  = matSpecularInfo;
+            vec3 F90 = vec3(1.0);
+
+            if (useSpecularWorkflow==0) {
+                float metallic = matSpecularInfo.x;
+                float R = (1.0 - ior) / (1.0 + ior);
+                vec3 specColor = mix(vec3(1.0), matDiffuseColor.xyz, metallic);
+                F0  = R * R * specColor;
+                F90 = specColor;
+
+                // For metallic workflows, pure metals have no diffuse
+                d *= 1.0 - metallic;
+            }
+
+            s1 = specularAmount * evaluateDirectSpecular(
+                 F0,                          // Specular color 0
+                 F90,                         // Specular color 90
+                 matSpecularRoughness,        // Roughness
+                 fresnel,                     // Fresnel
+                 EdotH, NdotL, NdotE, NdotH); // Dot products needed for lights
+
+            // Adjust the diffuse so glazing angles have less diffuse
+            d *= (1.0 - mix(F0, F90, fresnel));
+        }
+
+        // Evaluate clearcoat
+        vec3 s2 = vec3(0.0);
+        if (clearcoatAmount > 0.0) {
+            s2 = clearcoatAmount * evaluateDirectSpecular(
+                 matClearcoatColor,           // Clearcoat color 0
+                 matClearcoatColor,           // Clearcoat color 90
+                 matClearcoatRoughness,       // Roughness
+                 fresnel,                     // Fresnel
+                 EdotH, NdotL, NdotE, NdotH); // Dot products needed for lights
+        }
+
+        directLight += atten * spot * ( shadow * NdotL * (
+            d  * lightSource[i].diffuse.rgb  +
+            (s1 + s2) * lightSource[i].specular.rgb ));
+    }
+#endif
+
+    return vec4(emissive + directLight + indirectLight, matDiffuseColor.a);
+}
