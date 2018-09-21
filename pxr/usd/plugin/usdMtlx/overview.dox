@@ -56,20 +56,20 @@ composition.
 is that this prim will be referenced by various prims that will also set a
 variant selection to choose the desired look.  XXX -- How collection paths
 get mapped is still undecided.
+7. Materialx _bindtoken_ statements result in USD primvars added to the 
+Material being defined, as we expect future USD support for image filename
+token substitutions to be primvar-based.
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 
-+ _materialx_ **require** attribute.  The file format plugin simply does its
-best with the input without checking the require attribute.
 + _materialx_ **namespace** attribute.  This attribute is ignored.
-+ **geomexpr** requirement.  USD cannot yet represent path expressions.
-Paths that require glob-like pattern matching are discarded with a
++ Geometry Name Expressions are not supported.  USD cannot yet represent path
+expressions. Paths that require glob-like pattern matching are discarded with a
 warning.
 + light context shader types.  USD doesn't have support for light types
-on materials.
+on materials; instead, USD encodes lights as object schemas, in UsdLux.
 + Custom type members.  The file format plugin currently doesn't handle
 structures except as blind data.  Consequently it ignores **member** attributes.
-+ Swizzle.  Swizzle is currently ignored with a warning.
 + _geominfo_, _geomattr_, _geomattrvalue_, _geomattrdefault_ and
 _geomtokendefault_ elements.  These elements are ignored.  The file
 format plugin currently doesn't attempt to bind looks to geometry.
@@ -80,14 +80,17 @@ are never used.  The file format plugin currently doesn't attempt
 to bind looks to geometry.
 + _property_, _propertyset_, _propertyassign_ and _propertysetassign_
 elements.  These elements are ignored.  The file format plugin currently
-doesn't attempt to bind looks to geometry.
+doesn't attempt to bind looks to geometry, and in USD, properties like
+_twosided_ are expressed directly on gprims in the geometry schemas.
 + _visibility_ elements.  These elements are ignored.  The file format
-plugin currently doesn't attempt to bind looks to geometry.
+plugin currently doesn't attempt to bind looks to geometry.  "Inheriting
+visibility" is part of the geometry schema in USD, and more 
+specialized/contextualized visibility is expressed through lighting and 
+rendering schemas using USD Collections, e.g. light illumination and shadowing.
 + **fileprefix**.  This attribute is ignored.
-+ Image filename substitutions.  USD has no support for these kind of
-substitutions.
-+ _token_ and _bindtoken_ elements.  These elements are ignored.  Without
-image filename substitutions they have no purpose.
++ Image filename substitutions.  USD as yet has no support for these kind of
+substitutions beyond the <UDIM> token, though we do plan to add more 
+generalized token substitutions.
 + **width**, **height**, **bitdepth** output attributes.  These attributes are
 ignored.
 + **disable** parameter.  If this exists it will be converted as expected
