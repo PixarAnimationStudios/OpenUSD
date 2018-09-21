@@ -26,8 +26,6 @@ import argparse
 import os
 import sys
 
-from pxr import Ar, Usd
-
 
 def _Msg(msg):
     sys.stdout.write(msg + '\n')
@@ -126,9 +124,37 @@ def PrintLayer(args, layer):
     PrintChildren(args, layer.pseudoRoot, 'SdfPrimSpec', '')
 
 
+def PrintTree(args, path):
+    if args.flatten:
+        from pxr import Usd
+        popMask = (None if args.populationMask is None else Usd.StagePopulationMask())
+        if popMask:
+            for mask in args.populationMask:
+                popMask.Add(mask)
+        if popMask:
+            if args.unloaded:
+                stage = Usd.Stage.OpenMasked(path, popMask, Usd.Stage.LoadNone)
+            else:
+                stage = Usd.Stage.OpenMasked(path, popMask)
+        else:
+            if args.unloaded:
+                stage = Usd.Stage.Open(path, Usd.Stage.LoadNone)
+            else:
+                stage = Usd.Stage.Open(path)
+        if args.flattenLayerStack:
+            from pxr import UsdUtils
+            stage = UsdUtils.FlattenLayerStack(stage)
+        PrintStage(args, stage)
+    else:
+        from pxr import Sdf
+        layer = Sdf.Layer.FindOrOpen(path)
+        PrintLayer(args, layer)
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Writes the tree structure of a USD file and all its references and payloads composed')
+        description='Writes the tree structure of a USD file. The default is to inspect a single USD file. '
+        'Use the --flatten argument to see the flattened (or composed) Stage tree.')
 
     parser.add_argument('inputPath')
     parser.add_argument(
@@ -173,14 +199,8 @@ def main():
             return 1
         args.populationMask = args.populationMask.replace(',', ' ').split()
 
-    exitCode = 0
-
+    from pxr import Ar
     resolver = Ar.GetResolver()
-
-    popMask = (None if args.populationMask is None else Usd.StagePopulationMask())
-    if popMask:
-        for path in args.populationMask:
-            popMask.Add(path)
 
     try:
         resolver.ConfigureResolverForAsset(args.inputPath)
@@ -189,33 +209,14 @@ def main():
             resolved = resolver.Resolve(args.inputPath)
             if not resolved or not os.path.exists(resolved):
                 _Err('Cannot resolve inputPath %r'%resolved)
-                exitCode = 1
-                return exitCode
-            if args.flatten:
-                if popMask:
-                    if args.unloaded:
-                        stage = Usd.Stage.OpenMasked(resolved, popMask, Usd.Stage.LoadNone)
-                    else:
-                        stage = Usd.Stage.OpenMasked(resolved, popMask)
-                else:
-                    if args.unloaded:
-                        stage = Usd.Stage.Open(resolved, Usd.Stage.LoadNone)
-                    else:
-                        stage = Usd.Stage.Open(resolved)
-                if args.flattenLayerStack:
-                    from pxr import UsdUtils
-                    stage = UsdUtils.FlattenLayerStack(stage)
-                PrintStage(args, stage)
-            else:
-                from pxr import Sdf
-                layer = Sdf.Layer.FindOrOpen(resolved)
-                PrintLayer(args, layer)
+                return 1
+            PrintTree(args, resolved)
     except Exception as e:
         _Err("Failed to process '%s' - %s" % (args.inputPath, e))
-        exitCode = 1
-        raise
+        return 1
 
-    return exitCode
+    return 0
+
 
 if __name__ == "__main__":
     # Restore signal handling defaults to allow output redirection and the like.
