@@ -165,6 +165,14 @@ def main():
 
     args = parser.parse_args()
     
+    # split args.populationMask into paths.
+    if args.populationMask:
+        if not args.flatten:
+            # You can only mask a stage, not a layer.
+            _Err("%s: error: --mask requires --flatten" % parser.prog)
+            return 1
+        args.populationMask = args.populationMask.replace(',', ' ').split()
+
     exitCode = 0
 
     resolver = Ar.GetResolver()

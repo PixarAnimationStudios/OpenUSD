@@ -76,3 +76,17 @@ pxr_register_test(testUsdTreeNotFlattened
 )
 
 
+pxr_install_test_dir(
+    SRC testenv/testUsdTreePayload
+    DEST testUsdTreeMasked
+)
+
+pxr_register_test(testUsdTreeMasked
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdtree --flatten --attributes --metadata --mask /root/child1 input.usda"
+    STDOUT_REDIRECT output_masked.txt
+    DIFF_COMPARE output_masked.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+

@@ -1,0 +1,9 @@
+USD
+ `--root
+     | `--(specifier)
+     `--child1
+         | `--(specifier)
+         |--subchild1a
+         |     `--(specifier)
+         `--subchild1b
+               `--(specifier)
