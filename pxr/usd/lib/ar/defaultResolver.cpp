@@ -110,7 +110,7 @@ ArDefaultResolver::AnchorRelativePath(
     const std::string& path)
 {
     if (TfIsRelativePath(anchorPath) ||
-        !ArDefaultResolver::IsRelativePath(path)) {
+        !IsRelativePath(path)) {
         return path;
     }
 
