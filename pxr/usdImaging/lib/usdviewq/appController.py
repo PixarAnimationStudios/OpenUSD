@@ -1222,6 +1222,16 @@ class AppController(QtCore.QObject):
                     if action.text() == self._stageView.rendererPluginName:
                         action.setChecked(True)
                         break
+                # Then display an error message to let the user know something
+                # went wrong, and disable the menu item so it can't be selected
+                # again.
+                for action in self._ui.rendererPluginActionGroup.actions():
+                    if action.pluginType == plugin:
+                        self.statusMessage(
+                            'Renderer not supported: %s' % action.text())
+                        action.setText(action.text() + " (unsupported)")
+                        action.setDisabled(True)
+                        break
 
     def _configureRendererPlugins(self):
         if self._stageView:
