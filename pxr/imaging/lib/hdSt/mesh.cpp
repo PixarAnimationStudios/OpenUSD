@@ -488,10 +488,6 @@ HdStMesh::_PopulateTopologyVisibility(
         changeTracker->MarkBatchesDirty();
 
         if (barNeedsReallocation) {
-            #if 1
-            using namespace std;
-            cout << "Need to rellocate tv bar for " << GetId() << endl;
-            #endif
             changeTracker->SetGarbageCollectionNeeded();
         }
     }
