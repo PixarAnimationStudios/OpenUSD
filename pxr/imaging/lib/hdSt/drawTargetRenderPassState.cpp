@@ -30,6 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStDrawTargetRenderPassState::HdStDrawTargetRenderPassState()
  : _colorClearValues()
  , _depthClearValue(1.0f)
+ , _depthPriority(HdDepthPriorityNearest)
  , _cameraId()
  , _rprimCollection()
  , _rprimCollectionVersion(1) // Clients start at 0
@@ -60,6 +61,12 @@ void
 HdStDrawTargetRenderPassState::SetDepthClearValue(float clearValue)
 {
     _depthClearValue = clearValue;
+}
+
+void
+HdStDrawTargetRenderPassState::SetDepthPriority(HdDepthPriority priority)
+{
+    _depthPriority = priority;
 }
 
 void

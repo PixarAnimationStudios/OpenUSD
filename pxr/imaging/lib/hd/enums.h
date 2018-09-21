@@ -277,6 +277,23 @@ enum HdInterpolation
     HdInterpolationCount
 };
 
+///
+/// \enum HdDepthPriority
+/// Sets the priorities for a depth based operation
+///
+/// <ul>
+///     <li>HdDepthPriorityNearest     Prioritize objects nearest to the camera</li>
+///     <li>HdDepthPriorityFarthest    Prioritize objects farthest from the camera</li>
+/// </ul>
+///
+enum HdDepthPriority
+{
+    HdDepthPriorityNearest = 0,
+    HdDepthPriorityFarthest,
+
+    HdDepthPriorityCount
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_ENUMS_H

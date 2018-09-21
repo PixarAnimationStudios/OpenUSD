@@ -89,6 +89,12 @@ public:
     HdMinFilter GetDepthMinFilter() const { return _depthMinFilter; }
     HdMagFilter GetDepthMagFilter() const { return _depthMagFilter; }
 
+    // Depth display properties
+    HDST_API
+    void SetDepthPriority(HdDepthPriority depthPriority);
+
+    HdDepthPriority GetDepthPriority() const { return _depthPriority; }
+
 
     // VtValue requirements
     HDST_API
@@ -110,6 +116,9 @@ private:
     HdWrap      _depthWrapT;
     HdMinFilter _depthMinFilter;
     HdMagFilter _depthMagFilter;
+
+    // Depth display properties
+    HdDepthPriority _depthPriority;
 };
 
 HDST_API

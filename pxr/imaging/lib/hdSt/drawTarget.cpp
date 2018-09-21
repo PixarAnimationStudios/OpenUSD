@@ -330,6 +330,8 @@ HdStDrawTarget::_SetAttachments(
                               attachments.GetDepthMagFilter());
    _drawTarget->Unbind();
 
+   _renderPassState.SetDepthPriority(attachments.GetDepthPriority());
+
    GlfGLContext::MakeCurrent(oldContext);
 
    // The texture bindings have changed so increment the version
