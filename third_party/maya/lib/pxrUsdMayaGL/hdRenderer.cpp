@@ -34,17 +34,18 @@
 #include "px_vp20/utils.h"
 #include "px_vp20/utils_legacy.h"
 
+#include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
-#include <maya/M3dView.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MMaterial.h>
 #include <maya/MMatrix.h>
 #include <maya/MPxSurfaceShape.h>
+#include <maya/MSelectInfo.h>
 #include <maya/MStateManager.h>
 #include <maya/MViewport2Renderer.h>
-#include <maya/MHWGeometryUtilities.h>
 
 #include <memory>
 
@@ -115,7 +116,7 @@ void UsdMayaGLHdRenderer::GenerateDefaultVp2DrawRequests(
             shadedRequest.drawRequest.setToken( UsdMayaGLHdRenderer::DRAW_SHADED_SMOOTH );
             shadedRequest.drawRequest.setDisplayStyle(M3dView::kGouraudShaded);
         }
-        
+
         requestArray->push_back( shadedRequest );
     }
 
@@ -136,7 +137,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
     UsdImagingGL::RenderParams params) const
 {
     using namespace MHWRender;
-    
+
     MStatus status;
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) return;
@@ -179,7 +180,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
 
     GfVec4d viewport(viewX, viewY, viewWidth, viewHeight);
 
-    M3dView::DisplayStyle viewDisplayStyle = displayStyle & MDrawContext::kWireFrame ? 
+    M3dView::DisplayStyle viewDisplayStyle = displayStyle & MDrawContext::kWireFrame ?
         M3dView::kWireFrame : M3dView::kGouraudShaded;
 
     if(viewDisplayStyle == M3dView::kGouraudShaded)
@@ -191,8 +192,8 @@ void UsdMayaGLHdRenderer::RenderVp2(
     _renderer->SetCameraState(modelViewMatrix, projectionMatrix, viewport);
 
     _renderer->SetLightingStateFromOpenGL();
-    
-    
+
+
     TF_FOR_ALL(it, requests) {
         RequestData request = *it;
         if(viewDisplayStyle == M3dView::kWireFrame && request.drawRequest.displayStyle() == M3dView::kGouraudShaded) {
@@ -215,7 +216,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
 
             break;
         }
-        case UsdMayaGLHdRenderer::DRAW_SHADED_FLAT: 
+        case UsdMayaGLHdRenderer::DRAW_SHADED_FLAT:
         case UsdMayaGLHdRenderer::DRAW_SHADED_SMOOTH: {
 
 
@@ -247,9 +248,9 @@ void UsdMayaGLHdRenderer::RenderVp2(
     glPopAttrib(); // GL_CURRENT_BIT | GL_LIGHTING_BIT
 }
 
-void 
+void
 UsdMayaGLHdRenderer::Render(
-        const MDrawRequest& request, 
+        const MDrawRequest& request,
         M3dView& view,
         UsdImagingGL::RenderParams params) const
 {
@@ -272,7 +273,7 @@ UsdMayaGLHdRenderer::Render(
     GfMatrix4d modelViewMatrix(mayaViewMatrix.matrix);
     GfMatrix4d projectionMatrix(mayaProjMatrix.matrix);
     GfVec4d viewport(viewX, viewY, viewWidth, viewHeight);
-    
+
     _renderer->SetCameraState(modelViewMatrix, projectionMatrix, viewport);
     _renderer->SetLightingStateFromOpenGL();
 
@@ -298,7 +299,7 @@ UsdMayaGLHdRenderer::Render(
 
             break;
         }
-        case DRAW_SHADED_FLAT: 
+        case DRAW_SHADED_FLAT:
         case DRAW_SHADED_SMOOTH: {
 
             //
@@ -341,15 +342,15 @@ UsdMayaGLHdRenderer::Render(
             break;
         }
     }
-    
+
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
     view.endGL();
 }
 
-bool 
+bool
 UsdMayaGLHdRenderer::TestIntersection(
-        M3dView& view,
+        MSelectInfo& selectInfo,
         UsdImagingGL::RenderParams params,
         GfVec3d* hitPoint) const
 {
@@ -364,15 +365,16 @@ UsdMayaGLHdRenderer::TestIntersection(
 
     GfMatrix4d viewMatrix;
     GfMatrix4d projectionMatrix;
-    px_LegacyViewportUtils::GetViewSelectionMatrices(view,
-                                                     &viewMatrix,
-                                                     &projectionMatrix);
+    px_LegacyViewportUtils::GetSelectionMatrices(
+        selectInfo,
+        viewMatrix,
+        projectionMatrix);
 
     params.drawMode = UsdImagingGL::DRAW_GEOM_ONLY;
 
     return _renderer->TestIntersection(viewMatrix,
                                        projectionMatrix,
-                                       GfMatrix4d().SetIdentity(), 
+                                       GfMatrix4d().SetIdentity(),
                                        _renderedPrim,
                                        params,
                                        hitPoint);
@@ -387,7 +389,7 @@ UsdMayaGLHdRenderer::SubdLevelToComplexity(int subdLevel)
     //
     // For complexity->subdLevel:
     //   (int)(TfMax(0.0f,TfMin(1.0f,complexity-1.0f))*5.0f+0.1f);
-    // 
+    //
     // complexity usd
     //    1.0      0
     //    1.1      1

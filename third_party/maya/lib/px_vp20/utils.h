@@ -86,10 +86,8 @@ class px_vp20Utils
                 GfMatrix4d& projectionMatrix);
 
     private:
-        // This class is all static methods.. You should never
-        // instantiate an actual object
-        px_vp20Utils();
-        ~px_vp20Utils();
+        px_vp20Utils() = delete;
+        ~px_vp20Utils() = delete;
 };
 
 

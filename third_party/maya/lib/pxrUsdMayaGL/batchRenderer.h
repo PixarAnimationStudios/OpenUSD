@@ -51,6 +51,7 @@
 #include <maya/MDrawRequest.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MMessage.h>
+#include <maya/MSelectInfo.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
@@ -178,7 +179,7 @@ public:
             const PxrMayaHdRenderParams& params = PxrMayaHdRenderParams());
 
     /// Tests the object from the given shape adapter for intersection with
-    /// a given view using the legacy viewport.
+    /// a given selection context in the legacy viewport.
     ///
     /// Returns a pointer to a hit set if there was an intersection, or nullptr
     /// otherwise.
@@ -189,8 +190,7 @@ public:
     PXRUSDMAYAGL_API
     const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
-            M3dView& view,
-            const bool singleSelection);
+            MSelectInfo& selectInfo);
 
     /// Tests the object from the given shape adapter for intersection with
     /// a given draw context in Viewport 2.0.
@@ -204,9 +204,8 @@ public:
     PXRUSDMAYAGL_API
     const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
-            const MHWRender::MSelectionInfo& selectInfo,
-            const MHWRender::MDrawContext& context,
-            const bool singleSelection);
+            const MHWRender::MSelectionInfo& selectionInfo,
+            const MHWRender::MDrawContext& context);
 
     /// Tests the contents of the given custom collection (previously obtained
     /// via PopulateCustomCollection) for intersection with the current OpenGL

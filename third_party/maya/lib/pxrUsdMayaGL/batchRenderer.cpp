@@ -76,6 +76,7 @@
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MSelectInfo.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -748,8 +749,7 @@ void UsdMayaGLBatchRenderer::DrawCustomCollection(
 const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
-        M3dView& view,
-        const bool singleSelection)
+        MSelectInfo& selectInfo)
 {
     // Legacy viewport implementation.
     //
@@ -759,6 +759,8 @@ UsdMayaGLBatchRenderer::TestIntersection(
     // viewport-based selection method, we compute the selection against the
     // Viewport 2.0 shape adapter buckets rather than the legacy buckets, since
     // we want to compute selection against what's actually being rendered.
+
+    M3dView view = selectInfo.view();
 
     bool useViewport2Buckets = false;
     SdfPath shapeAdapterDelegateId = shapeAdapter->GetDelegateID();
@@ -802,23 +804,16 @@ UsdMayaGLBatchRenderer::TestIntersection(
 
         GfMatrix4d viewMatrix;
         GfMatrix4d projectionMatrix;
-        px_LegacyViewportUtils::GetViewSelectionMatrices(view,
-                                                         &viewMatrix,
-                                                         &projectionMatrix);
-
-        // In the legacy viewport, selection occurs in the local space of SOME
-        // object, but we need the view matrix in world space to correctly
-        // consider all nodes. Applying localToWorldSpace removes the local
-        // space we happen to be in.
-        const GfMatrix4d localToWorldSpace(
-            shapeAdapter->GetRootXform().GetInverse());
-        viewMatrix = localToWorldSpace * viewMatrix;
+        px_LegacyViewportUtils::GetSelectionMatrices(
+            selectInfo,
+            viewMatrix,
+            projectionMatrix);
 
         _ComputeSelection(bucketsMap,
                           &view,
                           viewMatrix,
                           projectionMatrix,
-                          singleSelection);
+                          selectInfo.singleSelection());
     }
 
     const HdxIntersector::HitSet* const hitSet =
@@ -861,9 +856,8 @@ UsdMayaGLBatchRenderer::TestIntersection(
 const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
-        const MHWRender::MSelectionInfo& selectInfo,
-        const MHWRender::MDrawContext& context,
-        const bool singleSelection)
+        const MHWRender::MSelectionInfo& selectionInfo,
+        const MHWRender::MDrawContext& context)
 {
     // Viewport 2.0 implementation.
 
@@ -893,7 +887,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
 
         GfMatrix4d viewMatrix;
         GfMatrix4d projectionMatrix;
-        if (!px_vp20Utils::GetSelectionMatrices(selectInfo,
+        if (!px_vp20Utils::GetSelectionMatrices(selectionInfo,
                                                 context,
                                                 viewMatrix,
                                                 projectionMatrix)) {
@@ -908,7 +902,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
                           hasView ? &view : nullptr,
                           viewMatrix,
                           projectionMatrix,
-                          singleSelection);
+                          selectionInfo.singleSelection());
     }
 
     const HdxIntersector::HitSet* const hitSet =
@@ -959,13 +953,13 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
 
 int
 UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
-    const HdxIntersector::Hit& hit) const
+        const HdxIntersector::Hit& hit) const
 {
     int ret = -1;
     if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
         delegate->GetPathForInstanceIndex(
-            hit.objectId, 
-            hit.instanceIndex, 
+            hit.objectId,
+            hit.instanceIndex,
             &ret);
     }
     return ret;
@@ -1040,9 +1034,9 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
 
 bool
 UsdMayaGLBatchRenderer::_TestIntersection(
-    const HdRprimCollection& rprimCollection,
-    HdxIntersector::Params queryParams,
-    HdxIntersector::Result* result)
+        const HdRprimCollection& rprimCollection,
+        HdxIntersector::Params queryParams,
+        HdxIntersector::Result* result)
 {
     queryParams.renderTags = rprimCollection.GetRenderTags();
 

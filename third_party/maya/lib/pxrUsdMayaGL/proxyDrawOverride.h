@@ -93,7 +93,7 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 
         PXRUSDMAYAGL_API
         bool userSelect(
-                MHWRender::MSelectionInfo& selectInfo,
+                MHWRender::MSelectionInfo& selectionInfo,
                 const MHWRender::MDrawContext& context,
                 MPoint& hitPoint,
                 const MUserData* data) override;

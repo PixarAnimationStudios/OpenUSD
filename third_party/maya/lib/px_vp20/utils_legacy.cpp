@@ -27,48 +27,75 @@
 #include "pxr/base/gf/matrix4d.h"
 
 #include <maya/M3dView.h>
+#include <maya/MDagPath.h>
+#include <maya/MMatrix.h>
+#include <maya/MSelectInfo.h>
+#include <maya/MStatus.h>
 
-#include "pxr/imaging/garch/gl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
 /* static */
-void px_LegacyViewportUtils::GetViewSelectionMatrices(
-        M3dView& view,
-        GfMatrix4d* viewMatrix,
-        GfMatrix4d* projectionMatrix)
+bool
+px_LegacyViewportUtils::GetSelectionMatrices(
+        MSelectInfo& selectInfo,
+        GfMatrix4d& viewMatrix,
+        GfMatrix4d& projectionMatrix)
 {
-    if (!viewMatrix && !projectionMatrix) {
-        return;
-    }
+    MStatus status;
 
-    // We need to get the view and projection matrices for the
-    // area of the view that the user has clicked or dragged.
-    // Unfortunately the M3dView does not give us that in an easy way.
-    // If we extract the view and projection matrices from the M3dView object,
-    // it is just for the regular camera. MSelectInfo also gives us the
-    // selection box, so we could use that to construct the correct view
-    // and projection matrixes, but if we call beginSelect on the view as
-    // if we were going to use the selection buffer, Maya will do all the
-    // work for us and we can just extract the matrices from OpenGL.
+    M3dView view = selectInfo.view();
 
-    // Hit record can just be one because we are not going to draw
-    // anything anyway. We only want the matrices.
-    GLuint glHitRecord;
-    view.beginSelect(&glHitRecord, 1);
+    MDagPath cameraDagPath;
+    status = view.getCamera(cameraDagPath);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-    if (viewMatrix) {
-        glGetDoublev(GL_MODELVIEW_MATRIX, viewMatrix->GetArray());
-    }
-    if (projectionMatrix) {
-        glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix->GetArray());
-    }
+    const MMatrix transformMat = cameraDagPath.inclusiveMatrix(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-    view.endSelect();
+    MMatrix projectionMat;
+    status = view.projectionMatrix(projectionMat);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    unsigned int viewportOriginX;
+    unsigned int viewportOriginY;
+    unsigned int viewportWidth;
+    unsigned int viewportHeight;
+    status = view.viewport(
+        viewportOriginX,
+        viewportOriginY,
+        viewportWidth,
+        viewportHeight);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    unsigned int selectRectX;
+    unsigned int selectRectY;
+    unsigned int selectRectWidth;
+    unsigned int selectRectHeight;
+    selectInfo.selectRect(
+        selectRectX,
+        selectRectY,
+        selectRectWidth,
+        selectRectHeight);
+
+    MMatrix selectionMatrix;
+    selectionMatrix[0][0] = (double)viewportWidth / (double)selectRectWidth;
+    selectionMatrix[1][1] = (double)viewportHeight / (double)selectRectHeight;
+    selectionMatrix[3][0] =
+        ((double)viewportWidth - (double)(selectRectX * 2 + selectRectWidth)) /
+            (double)selectRectWidth;
+    selectionMatrix[3][1] =
+        ((double)viewportHeight - (double)(selectRectY * 2 + selectRectHeight)) /
+            (double)selectRectHeight;
+
+    projectionMat *= selectionMatrix;
+
+    viewMatrix = GfMatrix4d(transformMat.matrix).GetInverse();
+    projectionMatrix = GfMatrix4d(projectionMat.matrix);
+
+    return true;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

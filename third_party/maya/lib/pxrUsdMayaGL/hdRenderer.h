@@ -43,6 +43,7 @@
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
+#include <maya/MSelectInfo.h>
 
 #include <memory>
 #include <vector>
@@ -104,15 +105,15 @@ public:
     /// \brief Enum for various drawing styles.  Should be used in \c
     /// getDrawRequests on the call to \c request.setToken.
     enum DRAWING_STYLES {
-	DRAW_POINTS,
+        DRAW_POINTS,
         DRAW_WIREFRAME,
         DRAW_SHADED_FLAT,
         DRAW_SHADED_SMOOTH,
-    	DRAW_BOUNDING_BOX
+        DRAW_BOUNDING_BOX
     };
 
-    /// \brief struct to hold all the information needed for a 
-    /// viewport 2.0 draw request. 
+    /// \brief struct to hold all the information needed for a
+    /// viewport 2.0 draw request.
     struct RequestData {
         GfVec4f fWireframeColor;
         MBoundingBox bounds;
@@ -124,7 +125,7 @@ public:
     /// excludePaths change
     PXRUSDMAYAGL_API
     void CheckRendererSetup(
-            const UsdPrim& usdPrim, 
+            const UsdPrim& usdPrim,
             const SdfPathVector& excludePaths);
 
     /// \brief Generate an array of draw requests based on the selection status
@@ -141,15 +142,15 @@ public:
     /// the \c drawMode.
     PXRUSDMAYAGL_API
     void Render(
-            const MDrawRequest& aRequest, 
-            M3dView& aView, 
-            UsdImagingGL::RenderParams params) const; 
+            const MDrawRequest& aRequest,
+            M3dView& aView,
+            UsdImagingGL::RenderParams params) const;
 
     /// \brief Render the array of draw requests in viewport 2.0
     ///
     /// This function assumes that you have already set your desired values for
     /// \c complexity \c shotGuides and \c showRenderGuides members of
-    /// \p params 
+    /// \p params
     PXRUSDMAYAGL_API
     void RenderVp2(
         const RequestDataArray &requests,
@@ -159,9 +160,9 @@ public:
     /// \brief Test for intersection, for use in \c select().
     PXRUSDMAYAGL_API
     bool TestIntersection(
-            M3dView& aView, 
+            MSelectInfo& selectInfo,
             UsdImagingGL::RenderParams params,
-            GfVec3d* hitPoint) const; 
+            GfVec3d* hitPoint) const;
 
     /// \brief Helper function to convert from \p subdLevel (int) into Hydra's
     /// \p complexity parameter (\p float)
@@ -177,4 +178,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYAGL_HD_RENDERER_H
+
+#endif

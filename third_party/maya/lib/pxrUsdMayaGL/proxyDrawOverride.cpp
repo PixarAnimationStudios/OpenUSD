@@ -252,7 +252,7 @@ UsdMayaProxyDrawOverride::wantUserSelection() const
 /* virtual */
 bool
 UsdMayaProxyDrawOverride::userSelect(
-        MHWRender::MSelectionInfo& selectInfo,
+        MHWRender::MSelectionInfo& selectionInfo,
         const MHWRender::MDrawContext& context,
         MPoint& hitPoint,
         const MUserData* data)
@@ -265,7 +265,7 @@ UsdMayaProxyDrawOverride::userSelect(
     }
 
     MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
-    if (!selectInfo.selectable(objectsMask)) {
+    if (!selectionInfo.selectable(objectsMask)) {
         return false;
     }
 
@@ -287,9 +287,8 @@ UsdMayaProxyDrawOverride::userSelect(
     const HdxIntersector::HitSet* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
-            selectInfo,
-            context,
-            selectInfo.singleSelection());
+            selectionInfo,
+            context);
 
     const HdxIntersector::Hit* nearestHit =
         UsdMayaGLBatchRenderer::GetNearestHit(hitSet);

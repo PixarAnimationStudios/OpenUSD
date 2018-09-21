@@ -173,8 +173,7 @@ UsdMayaProxyShapeUI::select(
     const HdxIntersector::HitSet* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
-            view,
-            selectInfo.singleSelection());
+            selectInfo);
 
     const HdxIntersector::Hit* nearestHit =
         UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
