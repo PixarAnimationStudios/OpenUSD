@@ -38,6 +38,7 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/declarePtrs.h"
 
+#include <functional>
 #include <vector>
 #include <unordered_map>
 
