@@ -5,7 +5,10 @@ def "root"{
         payload = @pl.usda@</root>
     ){
     }
-    def "child2"{
+    def "child2"(
+        customData = {string "foo" = "bar"}
+    ){
+        
         def "subchild2a"{
             def "subgrandchild2a1"{
             }

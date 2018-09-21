@@ -22,8 +22,12 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import argparse, sys, os
+import argparse
+import os
+import sys
+
 from pxr import Ar, Usd
+
 
 def _Msg(msg):
     sys.stdout.write(msg + '\n')
@@ -31,36 +35,66 @@ def _Msg(msg):
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
+def _GetChildren(prim, iterType):
+    if iterType == 'UsdPrim':
+        return prim.GetChildren()
+    else:
+        return prim.nameChildren
 
-def PrintPrim(args, prim, prefix, isLast):
+def _GetProperties(prim, iterType):
+    if iterType == 'UsdPrim':
+        return prim.GetAuthoredProperties()
+    else:
+        return prim.properties
+
+def _GetMetadata(prim, iterType):
+    if iterType == 'UsdPrim':
+        return prim.GetAllAuthoredMetadata().keys()
+    else:
+        return sorted(prim.ListInfoKeys())
+
+def _GetName(prim, iterType):
+    if iterType == 'UsdPrim':
+        return prim.GetName()
+    else:
+        return prim.name
+
+def _GetTypeName(prim, iterType):
+    if iterType == 'UsdPrim':
+        return prim.GetTypeName()
+    else:
+        return prim.typeName
+
+
+def PrintPrim(args, prim, iterType, prefix, isLast):
     if not isLast:
         lastStep = ' |--'
-        if prim.GetChildren():
+        if _GetChildren(prim, iterType):
             attrStep = ' |   |'
         else:
             attrStep = ' |    '
     else:
         lastStep = ' `--'
-        if prim.GetChildren():
+        if _GetChildren(prim, iterType):
             attrStep = '     |'
         else:
             attrStep = '      '
     if args.types:
-        typeName = prim.GetTypeName()
+        typeName = _GetTypeName(prim, iterType)
         if typeName:
-            label = '{}[{}]'.format(prim.GetName(), typeName)
+            label = '{}[{}]'.format( _GetName(prim, iterType), typeName)
         else:
-            label = prim.GetName()
+            label =  _GetName(prim, iterType)
     else:
-        label = prim.GetName()
+        label =  _GetName(prim, iterType)
     _Msg('{}{}{}'.format(prefix, lastStep, label))
 
     attrs = []
     if args.metadata:
-        attrs.extend('({})'.format(md) for md in prim.GetAllAuthoredMetadata().keys())
+        attrs.extend('({})'.format(md) for md in _GetMetadata(prim, iterType))
     
     if args.attributes:
-        attrs.extend('.{}'.format(prop.GetName()) for prop in prim.GetAuthoredProperties())
+        attrs.extend('.{}'.format(prop.GetName()) for prop in _GetProperties(prim, iterType))
     
     numAttrs = len(attrs)
     for i, attr in enumerate(attrs):
@@ -70,21 +104,26 @@ def PrintPrim(args, prim, prefix, isLast):
             _Msg('{}{} `--{}'.format(prefix, attrStep, attr))
 
 
-def PrintChildren(args, prim, prefix):
-    children = prim.GetChildren()
+def PrintChildren(args, prim, iterType, prefix):
+    children = _GetChildren(prim, iterType)
     numChildren = len(children)
     for i, child in enumerate(children):
         if i < numChildren - 1:
-            PrintPrim(args, child, prefix, isLast=False)
-            PrintChildren(args, child, prefix + ' |  ')
+            PrintPrim(args, child, iterType, prefix, isLast=False)
+            PrintChildren(args, child, iterType, prefix + ' |  ')
         else:
-            PrintPrim(args, child, prefix, isLast=True)
-            PrintChildren(args, child, prefix + '    ')
+            PrintPrim(args, child, iterType, prefix, isLast=True)
+            PrintChildren(args, child, iterType, prefix + '    ')
 
 
-def PrintTree(args, stage):
+def PrintStage(args, stage):
     _Msg('USD')
-    PrintChildren(args, stage.GetPseudoRoot(), '')
+    PrintChildren(args, stage.GetPseudoRoot(), 'UsdPrim', '')
+
+
+def PrintLayer(args, layer):
+    _Msg('USD')
+    PrintChildren(args, layer.pseudoRoot, 'SdfPrimSpec', '')
 
 
 def main():
@@ -92,18 +131,37 @@ def main():
         description='Writes the tree structure of a USD file and all its references and payloads composed')
 
     parser.add_argument('inputPath')
-    parser.add_argument('--unloaded', action='store_true',
-                        dest='unloaded',
-                        help='Do not load payloads')
-    parser.add_argument('--attributes', '-a', action='store_true',
-                        dest='attributes',
-                        help='Display authored attributes')
-    parser.add_argument('--metadata', '-m', action='store_true',
-                        dest='metadata',
-                        help='Display authored metadata')
-    parser.add_argument('--types', '-t', action='store_true',
-                        dest='types',
-                        help='Display prim types')
+    parser.add_argument(
+        '--unloaded', action='store_true',
+        dest='unloaded',
+        help='Do not load payloads')
+    parser.add_argument(
+        '--attributes', '-a', action='store_true',
+        dest='attributes',
+        help='Display authored attributes')
+    parser.add_argument(
+        '--metadata', '-m', action='store_true',
+        dest='metadata',
+        help='Display authored metadata')
+    parser.add_argument(
+        '--types', '-t', action='store_true',
+        dest='types',
+        help='Display prim types')
+    parser.add_argument(
+        '-f', '--flatten', action='store_true', help='Compose stages with the '
+        'input files as root layers and write their flattened content.')
+    parser.add_argument(
+        '--flattenLayerStack', action='store_true',
+        help='Flatten the layer stack with the given root layer. '
+        'Unlike --flatten, this does not flatten composition arcs (such as references).')
+    parser.add_argument('--mask', action='store',
+                        dest='populationMask',
+                        metavar='PRIMPATH[,PRIMPATH...]',
+                        help='Limit stage population to these prims, '
+                        'their descendants and ancestors.  To specify '
+                        'multiple paths, either use commas with no spaces '
+                        'or quote the argument and separate paths by '
+                        'commas and/or spaces.  Requires --flatten.')
 
     args = parser.parse_args()
     
@@ -111,19 +169,43 @@ def main():
 
     resolver = Ar.GetResolver()
 
+    popMask = (None if args.populationMask is None else Usd.StagePopulationMask())
+    if popMask:
+        for path in args.populationMask:
+            popMask.Add(path)
+
     try:
         resolver.ConfigureResolverForAsset(args.inputPath)
         resolverContext = resolver.CreateDefaultContextForAsset(args.inputPath)
         with Ar.ResolverContextBinder(resolverContext):
             resolved = resolver.Resolve(args.inputPath)
-            if args.unloaded:
-                stage = Usd.Stage.Open(resolved, Usd.Stage.LoadNone)
+            if not resolved or not os.path.exists(resolved):
+                _Err('Cannot resolve inputPath %r'%resolved)
+                exitCode = 1
+                return exitCode
+            if args.flatten:
+                if popMask:
+                    if args.unloaded:
+                        stage = Usd.Stage.OpenMasked(resolved, popMask, Usd.Stage.LoadNone)
+                    else:
+                        stage = Usd.Stage.OpenMasked(resolved, popMask)
+                else:
+                    if args.unloaded:
+                        stage = Usd.Stage.Open(resolved, Usd.Stage.LoadNone)
+                    else:
+                        stage = Usd.Stage.Open(resolved)
+                if args.flattenLayerStack:
+                    from pxr import UsdUtils
+                    stage = UsdUtils.FlattenLayerStack(stage)
+                PrintStage(args, stage)
             else:
-                stage = Usd.Stage.Open(resolved)
-            PrintTree(args, stage)
+                from pxr import Sdf
+                layer = Sdf.Layer.FindOrOpen(resolved)
+                PrintLayer(args, layer)
     except Exception as e:
         _Err("Failed to process '%s' - %s" % (args.inputPath, e))
         exitCode = 1
+        raise
 
     return exitCode
 
