@@ -1727,7 +1727,7 @@ UsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
         return std::vector<std::string>();
     }
 
-#if MAYA_API_VERSION < 201800
+#if MAYA_API_VERSION < 20180000
     // In older versions of Maya, the MEL command
     // "nodeType -isTypeName -inherited" returns an empty array (but does not
     // fail) for some built-in types.

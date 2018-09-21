@@ -235,7 +235,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     return _shapeAdapter.GetMayaUserData(oldData, boundingBoxPtr);
 }
 
-#if MAYA_API_VERSION >= 201800
+#if MAYA_API_VERSION >= 20180000
 
 /* virtual */
 bool
@@ -303,7 +303,7 @@ UsdMayaProxyDrawOverride::userSelect(
     return true;
 }
 
-#endif // MAYA_API_VERSION >= 201800
+#endif // MAYA_API_VERSION >= 20180000
 
 /* static */
 void

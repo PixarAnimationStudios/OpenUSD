@@ -87,7 +87,7 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 const MHWRender::MFrameContext& frameContext,
                 MUserData* oldData) override;
 
-#if MAYA_API_VERSION >= 201800
+#if MAYA_API_VERSION >= 20180000
         PXRUSDMAYAGL_API
         bool wantUserSelection() const override;
 
