@@ -42,6 +42,12 @@
 #define RAPIDJSON_NAMESPACE_BEGIN namespace PXRJS { namespace rapidjson {
 #define RAPIDJSON_NAMESPACE_END } }
 
+// USD requires a C++11 compliant compiler, so we can enable these.
+#define RAPIDJSON_HAS_CXX11_RVALUE_REFS 1
+#define RAPIDJSON_HAS_CXX11_NOEXCEPT 1
+#define RAPIDJSON_HAS_CXX11_TYPETRAITS 1
+#define RAPIDJSON_HAS_CXX11_RANGE_FOR 1
+
 #include "rapidjson/allocators.h"
 #include "rapidjson/document.h"
 #include "rapidjson/reader.h"
