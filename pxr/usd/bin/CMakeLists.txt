@@ -3,12 +3,12 @@ set(DIRS
     usdchecker
     usddiff
     usdedit
+    usdresolve
     usdstitch
     usdstitchclips
     usdzip
     sdfdump
     sdffilter
-    usdresolve
 )
 
 foreach(d ${DIRS})

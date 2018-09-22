@@ -1,6 +1,6 @@
 #!/pxrpythonsubst
 #
-# Copyright 2016 Pixar
+# Copyright 2018 Pixar
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -31,30 +31,22 @@ def _Err(msg):
     sys.stderr.write(msg + '\n')
 
 def _ConfigureAssetResolver(args, resolver):
-    if args.configureAssetPath:
-        resolver.ConfigureResolverForAsset(args.configureAssetPath)
-        resolverContext = resolver.CreateDefaultContextForAsset(args.configureAssetPath)
-    else:
-        resolver.ConfigureResolverForAsset(args.inputPath)
-        resolverContext = resolver.CreateDefaultContextForAsset(args.inputPath)
-    return resolverContext
+    configurePath = args.configureAssetPath or args.inputPath
+    resolver.ConfigureResolverForAsset(configurePath)
+    return resolver.CreateDefaultContextForAsset(configurePath)
 
 def _AnchorRelativePath(args, resolver):
-    if resolver.IsRelativePath(args.inputPath):
-        if args.anchorPath:
-            anchorPath = resolver.Resolve(args.anchorPath)
-        else:
-            anchorPath = resolver.Resolve(os.getcwd() + os.path.sep)
-        return resolver.AnchorRelativePath(anchorPath, args.inputPath)
-    else:
-        return args.inputPath
+    if args.anchorPath and resolver.IsRelativePath(args.inputPath):
+       return resolver.AnchorRelativePath(args.anchorPath, args.inputPath)
+    return args.inputPath
 
 
 def main():
     parser = argparse.ArgumentParser(
         description='Resolves an asset path using a fully configured USD Asset Resolver.')
 
-    parser.add_argument('inputPath')
+    parser.add_argument('inputPath',
+        help="An asset path to be resolved by the USD Asset Resolver.")
     parser.add_argument(
         '--configureAssetPath',
         help="Run ConfigureResolverForAsset on the given asset path.")
@@ -72,10 +64,9 @@ def main():
 
     try:
         resolverContext = _ConfigureAssetResolver(args, resolver)
-        resolverContextBinder = Ar.ResolverContextBinder(resolverContext)
-        inputPath = _AnchorRelativePath(args, resolver)
-        resolved = resolver.Resolve(inputPath)
-        del resolverContextBinder
+        with Ar.ResolverContextBinder(resolverContext):
+            inputPath = _AnchorRelativePath(args, resolver)
+            resolved = resolver.Resolve(inputPath)
     except Exception as e:
         _Err("Failed to resolve '%s' - %s" % (args.inputPath, e))
         exitCode = 1
