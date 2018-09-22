@@ -1,6 +1,6 @@
 #!/pxrpythonsubst
 #
-# Copyright 2016 Pixar
+# Copyright 2018 Pixar
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -156,7 +156,8 @@ def main():
         description='Writes the tree structure of a USD file. The default is to inspect a single USD file. '
         'Use the --flatten argument to see the flattened (or composed) Stage tree.')
 
-    parser.add_argument('inputPath')
+    parser.add_argument('inputPath',
+        help='The input file path to usdtree')
     parser.add_argument(
         '--unloaded', action='store_true',
         dest='unloaded',
@@ -175,7 +176,7 @@ def main():
         help='Display prim types')
     parser.add_argument(
         '-f', '--flatten', action='store_true', help='Compose stages with the '
-        'input files as root layers and write their flattened content.')
+        'input files as root layers and write their flattened content')
     parser.add_argument(
         '--flattenLayerStack', action='store_true',
         help='Flatten the layer stack with the given root layer. '
