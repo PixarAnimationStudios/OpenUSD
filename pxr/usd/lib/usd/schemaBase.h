@@ -54,8 +54,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// otherwise by non-const pointer.
 ///
 class UsdSchemaBase {
-    typedef const Usd_PrimDataHandle UsdSchemaBase::*_UnspecifiedBoolType;
-
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
