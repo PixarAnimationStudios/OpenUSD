@@ -309,6 +309,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/reduce.h"
 #include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -1461,13 +1462,22 @@ UsdGeomPointInstancer::_ComputeExtentFromTransforms(
 
     WorkParallelForN(protoIndices.size(), computeInstanceAlignedRange);
 
-    GfRange3d extentRange;
-    for (const GfRange3d &instanceRange : instanceAlignedRanges) {
-        extentRange.UnionWith(instanceRange);
-    }
+    GfRange3d extentRange = WorkParallelReduceN(
+            GfRange3d(),
+            instanceAlignedRanges.size(), 
+            [&instanceAlignedRanges](size_t b, size_t e, GfRange3d init){
+                for (auto i = b; i < e ; ++i) {
+                    init.UnionWith(instanceAlignedRanges[i]);
+                }
+                return init;
+            },
+            [](GfRange3d lhs, GfRange3d rhs) {
+                return GfRange3d::GetUnion(lhs, rhs);
+            },
+            /* grainSize */ 500);
 
-    const GfVec3d extentMin = extentRange.GetMin();
-    const GfVec3d extentMax = extentRange.GetMax();
+    const GfVec3d &extentMin = extentRange.GetMin();
+    const GfVec3d &extentMax = extentRange.GetMax();
 
     *extent = VtVec3fArray(2);
     (*extent)[0] = GfVec3f(extentMin[0], extentMin[1], extentMin[2]);
