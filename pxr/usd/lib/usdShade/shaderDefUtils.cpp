@@ -156,8 +156,7 @@ UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
                 continue;
             }
 
-            std::string resolvedUri = ArGetResolver().Resolve(
-                    sourceAssetPath.GetAssetPath());
+            const std::string &resolvedUri = sourceAssetPath.GetResolvedPath();
 
             // Create a discoveryResult only if the referenced sourceAsset
             // can be resolved. 
