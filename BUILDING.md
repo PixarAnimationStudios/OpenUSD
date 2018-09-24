@@ -236,6 +236,8 @@ when invoking cmake. This plugin is compatible with Houdini 16.0. The additional
 | --------------        | -----------------------------------    | -------   |
 | HOUDINI_ROOT          | The root path to a Houdini SDK install.| 16.0      |
 
+Note that the Houdini plugin is only tested on Linux.
+
 For further information see our additional documentation on the Houdini plugins [here](http://openusd.org/docs/Houdini-USD-Plugins.html).
 
 ##### MaterialX Plugin
