@@ -3,6 +3,7 @@ set(DIRS
     usdImagingGL
     usdShaders
     usdSkelImaging
+    usdVolImaging
     usdviewq
 )
 
