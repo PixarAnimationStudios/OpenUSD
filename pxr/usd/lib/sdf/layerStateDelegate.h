@@ -25,6 +25,7 @@
 #define SDF_LAYER_STATE_DELEGATE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/declarePtrs.h"
