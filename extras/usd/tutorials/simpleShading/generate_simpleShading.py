@@ -83,17 +83,6 @@ diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSour
 diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
 pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler, 'rgb')
 
-# Provide fallback values for other PBR inputs in release 18.09
-pbrShader.CreateInput("clearcoat", Sdf.ValueTypeNames.Float).Set(0.0)
-pbrShader.CreateInput("clearcoatRoughness", Sdf.ValueTypeNames.Float).Set(0.01)
-pbrShader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(1.0)
-pbrShader.CreateInput("useSpecularWorkflow", Sdf.ValueTypeNames.Int).Set(0)
-pbrShader.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0, 0, 0))
-pbrShader.CreateInput("specularColor", Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0, 0, 0))
-pbrShader.CreateInput("normal", Sdf.ValueTypeNames.Normal3f).Set(Gf.Vec3f(0, 0, 1))
-pbrShader.CreateInput("occlusion", Sdf.ValueTypeNames.Float).Set(1.0)
-pbrShader.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(1.5)
-
 # Now bind the Material to the card
 UsdShade.MaterialBindingAPI(billboard).Bind(material)
 
