@@ -158,9 +158,21 @@ _GetShaderProperties(const UsdShadeShader &shaderDef)
         NdrOptionVec options;
     
         // Convert SdfAssetPath values to strings.
-        if (defaultValue.IsHolding<SdfAssetPath>()) {
-            defaultValue = VtValue(
-                defaultValue.UncheckedGet<SdfAssetPath>().GetAssetPath());
+        if (shaderInput.GetTypeName() == SdfValueTypeNames->Asset ||
+            shaderInput.GetTypeName() == SdfValueTypeNames->AssetArray) {               
+            if (!defaultValue.IsEmpty()) {
+                if (defaultValue.IsHolding<SdfAssetPath>()) {
+                    defaultValue = VtValue(defaultValue.UncheckedGet
+                            <SdfAssetPath>().GetAssetPath());
+                } else if (defaultValue.IsHolding<VtArray<SdfAssetPath>>()) {
+                    VtStringArray defValueArray;
+                    for (auto &assetVal : defaultValue.UncheckedGet
+                            <VtArray<SdfAssetPath>>()) {
+                        defValueArray.push_back(assetVal.GetAssetPath());
+                    }
+                    defaultValue = VtValue(defValueArray);
+                }
+            }
             metadata[SdrPropertyMetadata->IsAssetIdentifier] = "1";
         }
 

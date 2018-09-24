@@ -26,6 +26,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/scope.hpp>
+#include <boost/python/tuple.hpp>
 
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -36,9 +37,29 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+static object 
+_WrapSplitShaderIdentifier(const TfToken &identifier)
+{
+    TfToken familyName, shaderName;
+    NdrVersion version;
+    if (UsdShadeShaderDefUtils::SplitShaderIdentifier(identifier, 
+            &familyName, &shaderName, &version)) {
+        return boost::python::make_tuple(familyName, shaderName, version);
+    } else {
+        return object();
+    }
+}
+
+}
+
 void wrapUsdShadeShaderDefUtils()
 {
     scope thisScope = class_<UsdShadeShaderDefUtils>("ShaderDefUtils", no_init)
+        .def("SplitShaderIdentifier", _WrapSplitShaderIdentifier,
+            arg("identifier"))
+        .staticmethod("SplitShaderIdentifier")
         .def("GetNodeDiscoveryResults", 
              &UsdShadeShaderDefUtils::GetNodeDiscoveryResults,
              (arg("shaderDef"), arg("sourceUri")),

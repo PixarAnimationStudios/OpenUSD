@@ -66,7 +66,7 @@ static HdWrap _GetWrap(UsdPrim const &usdPrim, const TfToken &wrapAttr)
             if (!shaderId.IsEmpty()) {
                 auto &shaderReg = SdrRegistry::GetInstance();
                 if (SdrShaderNodeConstPtr sdrNode = 
-                    shaderReg.GetShaderNodeByNameAndType(shaderId, 
+                    shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
                                 GlfGLSLFXTokens->glslfx)) {
                     if (const auto &sdrInput = 
                             sdrNode->GetShaderInput(wrapAttr)) {

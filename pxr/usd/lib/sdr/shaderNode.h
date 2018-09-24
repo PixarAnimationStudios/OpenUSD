@@ -106,7 +106,7 @@ public:
     /// Returns the list of all inputs that are tagged as asset identifier 
     /// inputs.
     SDR_API
-    std::vector<SdrShaderPropertyConstPtr> GetAssetIdentifierInputs() const;
+    NdrTokenVec GetAssetIdentifierInputNames() const;
 
     /// Returns that first shader input that is tagged as the default input.
     SDR_API

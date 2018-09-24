@@ -126,14 +126,14 @@ SdrShaderNode::GetShaderOutput(const TfToken& outputName) const
     );
 }
 
-std::vector<SdrShaderPropertyConstPtr> 
-SdrShaderNode::GetAssetIdentifierInputs() const
+NdrTokenVec
+SdrShaderNode::GetAssetIdentifierInputNames() const
 {
-    std::vector<SdrShaderPropertyConstPtr> result;
+    NdrTokenVec result;
     for (const auto &inputName : GetInputNames()) {
         if (auto input = GetShaderInput(inputName)) {
             if (input->IsAssetIdentifier()) {
-                result.push_back(input);
+                result.push_back(input->GetName());
             }
         }
     }

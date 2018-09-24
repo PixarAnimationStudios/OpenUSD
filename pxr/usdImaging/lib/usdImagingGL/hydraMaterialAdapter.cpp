@@ -469,7 +469,7 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
                 if (shaderId == UsdImagingTokens->UsdPreviewSurface) {
                     auto &shaderReg = SdrRegistry::GetInstance();
                     if (SdrShaderNodeConstPtr sdrNode = 
-                            shaderReg.GetShaderNodeByNameAndType(shaderId, 
+                            shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
                                 GlfGLSLFXTokens->glslfx)) {
                         const std::string &glslfxPath = sdrNode->GetSourceURI();
                         TF_DEBUG(USDIMAGING_SHADERS).Msg(
@@ -574,7 +574,7 @@ UsdImagingGLHydraMaterialAdapter::_GetMaterialParamValue(
             TfToken shaderId; 
             if (shader.GetShaderId(&shaderId) && !shaderId.IsEmpty()) {
                 if (SdrShaderNodeConstPtr sdrNode = 
-                    shaderReg.GetShaderNodeByNameAndType(shaderId, 
+                    shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
                         GlfGLSLFXTokens->glslfx)) {
                     if (const auto &sdrInput = 
                                 sdrNode->GetShaderInput(paramName)) {
@@ -842,7 +842,7 @@ _ShaderNetworkWalker::_ShaderNetworkWalker(
         shader.GetShaderId(&id);
 
         SdrShaderNodeConstPtr sdrNode = 
-                shaderReg.GetShaderNodeByNameAndType(id, 
+                shaderReg.GetShaderNodeByIdentifierAndType(id, 
                     GlfGLSLFXTokens->glslfx);
 
         TfToken sdrFamily(sdrNode ? sdrNode->GetFamily() : TfToken());
@@ -1005,21 +1005,20 @@ _ShaderNetworkWalker::_ProcessTextureNode(
     // Extract the filename property from the shader node and store 
     // the path in the textureIDs array.
     SdfPath connection;
-    const auto assetIdentifierProperties = 
-            sdrNode->GetAssetIdentifierInputs();
-    if (assetIdentifierProperties.size() > 0) {
-        if (assetIdentifierProperties.size() > 1) {
+    const auto assetIdentifierPropertyNames = 
+            sdrNode->GetAssetIdentifierInputNames();
+    if (assetIdentifierPropertyNames.size() > 0) {
+        if (assetIdentifierPropertyNames.size() > 1) {
             TF_WARN("Found texture node <%s> with more than "
                 "one (%zu) asset-identifier properties. "
                 "Considering only the first one.", 
                 shader.GetPath().GetText(), 
-                assetIdentifierProperties.size());
+                assetIdentifierPropertyNames.size());
         }
-        const auto &input = shader.GetInput(
-            assetIdentifierProperties[0]->GetName());
+        const auto &input = shader.GetInput(assetIdentifierPropertyNames[0]);
         connection = input.GetAttr().GetPath();
     } else {
-        if (assetIdentifierProperties.size() > 1) {
+        if (assetIdentifierPropertyNames.size() > 1) {
             TF_WARN("Found texture node <%s> with no "
                 "asset-identifier properties.", 
                 shader.GetPath().GetText());

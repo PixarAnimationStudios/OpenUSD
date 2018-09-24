@@ -74,7 +74,7 @@ void wrapShaderNode()
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,
             return_internal_reference<>())
-        .def("GetAssetIdentifierInputs", &This::GetAssetIdentifierInputs,
+        .def("GetAssetIdentifierInputNames", &This::GetAssetIdentifierInputNames,
             return_value_policy<TfPySequenceToList>())
         .def("GetDefaultInput", &This::GetDefaultInput,
             return_internal_reference<>())

@@ -42,6 +42,28 @@ class UsdShadeShader;
 ///
 class UsdShadeShaderDefUtils {
 public:
+    /// Given a shader's \p identifier token, computes the corresponding 
+    /// SdrShaderNode's family name, implementation name and shader version 
+    /// (as NdrVersion).
+    /// 
+    /// * \p familyName is the prefix of \p identifier up to and not 
+    /// including the first underscore. 
+    /// * \p version is the suffix of \p identifier comprised of one or 
+    /// two integers representing the major and minor version numbers.
+    /// * \p implementationName is the string we get by joining 
+    /// <i>familyName</i> with everything that's in between <i>familyName</i> 
+    /// and <i>version</i> with an underscore.
+    /// 
+    /// Returns true if \p identifier is valid and was successfully split 
+    /// into the different components. 
+    /// 
+    /// \note The python version of this function returns a tuple containing
+    /// (famiyName, implementationName, version).
+    USDSHADE_API
+    static bool SplitShaderIdentifier(const TfToken &identifier, 
+                TfToken *familyName,
+                TfToken *implementationName,
+                NdrVersion *version);
 
     /// Returns the list of NdrNodeDiscoveryResult objects that must be added 
     /// to the shader registry for the given shader \p shaderDef, assuming it 

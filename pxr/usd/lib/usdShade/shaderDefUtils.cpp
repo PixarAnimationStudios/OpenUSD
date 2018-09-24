@@ -22,21 +22,82 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
+#include "pxr/base/tf/stringUtils.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/shader.h"
 
+#include <cctype>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+static bool _IsNumber(const std::string& s)
+{
+    return !s.empty() && 
+        std::find_if(s.begin(), s.end(), 
+                     [](unsigned char c) { return !std::isdigit(c); })
+        == s.end();
+}
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
+/* static */ 
+bool
+UsdShadeShaderDefUtils::SplitShaderIdentifier(
+    const TfToken &identifier, 
+    TfToken *familyName,
+    TfToken *implementationName,
+    NdrVersion *version)
+{
+   std::vector<std::string> tokens = TfStringTokenize(identifier.GetString(), 
+        "_");
 
-    // sdrMetadata keys used in UsdShade-based shader definitions that are 
-    // added to SdrRegistry.
-    (family)
-    (version)
-);
+    if (tokens.empty()) {
+        return false;
+    }
+
+    *familyName = TfToken(tokens[0]);
+
+    if (tokens.size() == 1) {
+        *familyName = identifier;
+        *implementationName = identifier;
+        *version = NdrVersion();
+    } else if (tokens.size() == 2) {
+        if (_IsNumber(tokens[tokens.size()-1])) {
+            int major = std::stoi(*tokens.rbegin());
+            *version = NdrVersion(major);
+            *implementationName = *familyName;
+        } else {
+            *version = NdrVersion();
+            *implementationName = identifier;
+        }
+    } else if (tokens.size() > 2) {
+        bool lastTokenIsNumber = _IsNumber(tokens[tokens.size()-1]);
+        bool penultimateTokenIsNumber = _IsNumber(tokens[tokens.size()-2]);
+
+        if (penultimateTokenIsNumber && !lastTokenIsNumber) {
+            TF_WARN("Invalid shader identifier '%s'.", identifier.GetText()); 
+            return false;
+        }
+
+        if (lastTokenIsNumber && penultimateTokenIsNumber) {
+            *version = NdrVersion(std::stoi(tokens[tokens.size()-2]), 
+                                  std::stoi(tokens[tokens.size()-1]));
+            *implementationName = TfToken(TfStringJoin(tokens.begin(), 
+                tokens.begin() + (tokens.size() - 2), "_"));
+        } else if (lastTokenIsNumber) {
+            *version = NdrVersion(std::stoi(tokens[tokens.size()-1]));
+            *implementationName  = TfToken(TfStringJoin(tokens.begin(), 
+                tokens.begin() + (tokens.size() - 1), "_"));
+        } else {
+            // No version information is available. 
+            *implementationName = identifier;
+            *version = NdrVersion();
+        }
+    }
+
+    return true;
+}
 
 /* static */
 NdrNodeDiscoveryResultVec 
@@ -51,26 +112,20 @@ UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
     if (shaderDef.GetImplementationSource() != UsdShadeTokens->sourceAsset)
         return result;
 
-    // We can't use GetShaderId() here since the implmentationSource of the 
-    // shader is sourceAsset.
-    TfToken shaderId; 
-    shaderDef.GetIdAttr().Get(&shaderId);
-
     const UsdPrim shaderDefPrim = shaderDef.GetPrim();
+    const TfToken &identifier = shaderDefPrim.GetName();
 
-    // Get shader family from sdrMetadata.
-    TfToken family(shaderDef.GetSdrMetadataByKey(_tokens->family));
-    // Use the prim name if family info isn't available in sdrMetadata.
-    if (family.IsEmpty()) {
-        family = shaderDefPrim.GetName();
+    // Get the family name, shader name and version information from the 
+    // identifier.
+    TfToken family;
+    TfToken name; 
+    NdrVersion version; 
+    if (!SplitShaderIdentifier(shaderDefPrim.GetName(), 
+                &family, &name, &version)) {
+        // A warning has already been issued by SplitShaderIdentifier.
+        return result;
     }
-
-    // Get shader version from sdrMetadata.
-    // XXX: We could also get this info from the name of the prim, 
-    // if we enforce the restriction that the version should be a part of the 
-    // prim's name.
-    std::string version = shaderDef.GetSdrMetadataByKey(_tokens->version);
-
+    
     static const std::string infoNamespace("info:");
     static const std::string baseSourceAsset(":sourceAsset");
 
@@ -115,10 +170,9 @@ UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
                 // guaranteed to be unique in the file. 
                 // Use the shader id as the name of the shader.
                 result.emplace_back(
-                    /* identifier */ shaderDefPrim.GetName(), 
-                    version.empty() ? NdrVersion().GetAsDefault() 
-                                    : NdrVersion(version),  
-                    /* name */ shaderId.GetString(),
+                    identifier,
+                    version.GetAsDefault(),
+                    name,
                     family, 
                     discoveryType,
                     sourceType,
