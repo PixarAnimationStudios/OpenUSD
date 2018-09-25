@@ -29,10 +29,6 @@
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/resolverContext.h"
-#include "pxr/usd/ar/resolverContextBinder.h"
-
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -266,12 +262,7 @@ UsdShadeShaderDefParserPlugin::Parse(
         return NdrParserPlugin::GetInvalidNode(discoveryResult);
     }
 
-    auto resolverContext = ArGetResolver().CreateDefaultContextForAsset(
-            rootLayerPath);
-    ArResolverContextBinder binder(resolverContext);
-    std::string nodeUri = ArGetResolver().Resolve(
-            nodeUriAssetPath.GetAssetPath());
-
+    const std::string &nodeUri = nodeUriAssetPath.GetResolvedPath();
     if (nodeUri.empty()) {
         TF_RUNTIME_ERROR("Unable to resolve path @%s@ in shader "
             "definition file '%s'", nodeUriAssetPath.GetAssetPath().c_str(), 
