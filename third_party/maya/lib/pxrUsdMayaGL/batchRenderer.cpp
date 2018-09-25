@@ -410,7 +410,8 @@ UsdMayaGLBatchRenderer::_OnSoftSelectOptionsChangedCallback(void* clientData)
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _isSelectionPending(false),
         _objectSoftSelectEnabled(false),
-        _softSelectOptionsCallbackId(0)
+        _softSelectOptionsCallbackId(0),
+        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false)
 {
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
@@ -868,7 +869,32 @@ UsdMayaGLBatchRenderer::TestIntersection(
         return nullptr;
     }
 
-    if (_UpdateIsSelectionPending(false)) {
+    GfMatrix4d viewMatrix;
+    GfMatrix4d projectionMatrix;
+    if (!px_vp20Utils::GetSelectionMatrices(selectionInfo,
+                                            context,
+                                            viewMatrix,
+                                            projectionMatrix)) {
+        return nullptr;
+    }
+
+    const bool wasSelectionPending = _UpdateIsSelectionPending(false);
+
+    const bool singleSelection = selectionInfo.singleSelection();
+
+    // Typically, we rely on the _isSelectionPending state to determine if we can
+    // re-use the previously computed select results.  However, there are cases
+    // (e.g. Pre-selection hilighting) where we call userSelect without a new
+    // draw call (which typically resets the _isSelectionPending).
+    //
+    // In these cases, we look at the projectionMatrix for the selection as well
+    // to see if the selection needs to be re-computed.
+    const _SelectResultsKey key = std::make_tuple(
+            viewMatrix, projectionMatrix, singleSelection);
+    const bool newSelKey = key != _selectResultsKey;
+
+    const bool needToRecomputeSelection = wasSelectionPending || newSelKey;
+    if (needToRecomputeSelection) {
         if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "Computing batched selection for Viewport 2.0\n");
@@ -885,15 +911,6 @@ UsdMayaGLBatchRenderer::TestIntersection(
                 TfStringify<MStringArray>(passSemantics).c_str());
         }
 
-        GfMatrix4d viewMatrix;
-        GfMatrix4d projectionMatrix;
-        if (!px_vp20Utils::GetSelectionMatrices(selectionInfo,
-                                                context,
-                                                viewMatrix,
-                                                projectionMatrix)) {
-            return nullptr;
-        }
-
         M3dView view;
         const bool hasView = px_vp20Utils::GetViewFromDrawContext(context,
                                                                   view);
@@ -902,7 +919,8 @@ UsdMayaGLBatchRenderer::TestIntersection(
                           hasView ? &view : nullptr,
                           viewMatrix,
                           projectionMatrix,
-                          selectionInfo.singleSelection());
+                          singleSelection);
+        _selectResultsKey = key;
     }
 
     const HdxIntersector::HitSet* const hitSet =

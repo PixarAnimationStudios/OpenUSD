@@ -421,6 +421,12 @@ private:
     /// hits for that delegate ID.
     std::unordered_map<SdfPath, HdxIntersector::HitSet, SdfPath::Hash> _selectResults;
 
+    /// We keep track of a "key" that's associated with the select results.
+    /// This is used to determine if the results can be shared among multiple
+    /// shapes calling TestIntersection.
+    typedef std::tuple<GfMatrix4d, GfMatrix4d, bool> _SelectResultsKey;
+    _SelectResultsKey _selectResultsKey;
+
     /// Hydra engine objects used to render batches.
     ///
     /// Note that the Hydra render index is constructed with and is dependent
