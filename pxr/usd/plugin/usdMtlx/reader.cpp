@@ -86,6 +86,8 @@ namespace {
 struct _AttributeNames {
     using Name = const std::string;
 
+    _AttributeNames() { }
+
     Name bindtoken        {"bindtoken"};
     Name channels         {"channels"};
     Name cms              {"cms"};
