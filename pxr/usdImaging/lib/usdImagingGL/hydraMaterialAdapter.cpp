@@ -261,7 +261,7 @@ UsdImagingGLHydraMaterialAdapter::TrackVariability(UsdPrim const& prim,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     UsdShadeConnectableAPI connectableAPI(surfaceShaderPrim);
-    for (UsdShadeInput const& input: connectableAPI.GetInputs()) {
+    for (const UsdShadeInput & input: connectableAPI.GetInputs()) {
         if (input.GetConnectedSource(&source, &sourceName, &sourceType)) {
             if (_MightBeTimeVarying(source.GetPrim())) {
                 *timeVaryingBits |= HdMaterial::DirtyParams;
@@ -551,8 +551,6 @@ UsdImagingGLHydraMaterialAdapter::_GetMaterialParamValue(
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
 
-    auto &shaderReg = SdrRegistry::GetInstance();
-
     if (UsdShadeShader shader = UsdShadeShader(shaderPrim)) {
         if(UsdShadeInput shaderInput = shader.GetInput(paramName)) {
             // Check if it is connected to an input on the public interface.
@@ -573,6 +571,7 @@ UsdImagingGLHydraMaterialAdapter::_GetMaterialParamValue(
         if (value.IsEmpty()) {
             TfToken shaderId; 
             if (shader.GetShaderId(&shaderId) && !shaderId.IsEmpty()) {
+                auto &shaderReg = SdrRegistry::GetInstance();
                 if (SdrShaderNodeConstPtr sdrNode = 
                     shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
                         GlfGLSLFXTokens->glslfx)) {
@@ -786,7 +785,6 @@ private:
     bool _processedRootNode=false;
 
     // Helper methods.
-
     void _ProcessRootNode(const UsdShadeShader &shader,
                           const SdrShaderNodeConstPtr &sdrNode);
 
@@ -798,6 +796,8 @@ private:
     void _ProcessPrimvarNode(const UsdShadeShader &shader,
                              const SdrShaderNodeConstPtr &sdrNode,
                              TfTokenVector *primvars);
+
+    std::string _GetShaderRole(const UsdShadeShader &shader);
 
     std::pair<VtValue, SdfPath> _GetFallbackValueAndConnection(
                               const UsdShadeInput &shaderInput);
@@ -954,7 +954,7 @@ _ShaderNetworkWalker::_ProcessRootNode(
                 " from UsdShadeInput");
         }
     } else {
-        for (UsdShadeInput shaderInput: shader.GetInputs()) {
+        for (const UsdShadeInput &shaderInput: shader.GetInputs()) {
             // Early out for any legacy texture/primvar inputs.
             if (_IsLegacyTextureOrPrimvarInput(shaderInput)) {
                 continue;
@@ -1047,17 +1047,18 @@ _ShaderNetworkWalker::_ProcessTextureNode(
                                 sdrNode, primvars);
         }
     } else {
-        TfTokenVector primvarNames = sdrNode->GetPrimvars();
-
         // For regular textures we need to resolve what node
         // will be providing the texture coordinates.
-        for (auto const & primvarName : primvarNames) {
-            if (UsdShadeInput usdPrimvarInput = 
-                    shader.GetInput(primvarName)) {
-                if (usdPrimvarInput.GetConnectedSource(
-                        &_source, &_sourceName, &_sourceType)) {
-                    connectionPrimvar = _source.GetPath();
-                }
+        for (const UsdShadeInput &primvarInput : shader.GetInputs()) {
+            // If the input is connected to a primvar node's output, then record
+            // the path to the shader in connectionPrimvar.
+            // XXX: In the future, we want to allow for connections for 
+            // "texcoord" to any node that can produce a surface-varying output.
+            if (primvarInput.GetConnectedSource(&_source, &_sourceName, 
+                        &_sourceType) && 
+                    _GetShaderRole(_source) == SdrNodeRole->Primvar &&
+                    _sourceType == UsdShadeAttributeType::Output) {
+                connectionPrimvar = _source.GetPath();
             }
         }
     }
@@ -1131,6 +1132,20 @@ _ShaderNetworkWalker::_ProcessPrimvarNode(
             }
         }
     }
+}
+
+std::string
+_ShaderNetworkWalker::_GetShaderRole(const UsdShadeShader &shader)
+{
+    TfToken id;
+    if (shader.GetShaderId(&id) && !id.IsEmpty()) {
+        auto &shaderReg = SdrRegistry::GetInstance();
+        SdrShaderNodeConstPtr sdrNode = 
+                shaderReg.GetShaderNodeByIdentifierAndType(id, 
+                    GlfGLSLFXTokens->glslfx);
+        return sdrNode ? sdrNode->GetRole() : std::string();
+    }
+    return std::string();
 }
 
 std::pair<VtValue, SdfPath>

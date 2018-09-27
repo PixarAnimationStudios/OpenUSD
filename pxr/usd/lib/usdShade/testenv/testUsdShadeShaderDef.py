@@ -78,10 +78,6 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                 Sdf.ValueTypeNames.Float)
         fallbackInput.SetSdrMetadataByKey('defaultInput', "1")
 
-        fallbackPVInput = shaderDef.CreateInput('fallbackPV', 
-                Sdf.ValueTypeNames.Float)
-        fallbackPVInput.SetSdrMetadataByKey('primvar', "1")
-
         # Create dummy inputs of other types for testing.
         float2Input = shaderDef.CreateInput('float2Val', 
                 Sdf.ValueTypeNames.Float2)
@@ -129,10 +125,10 @@ class TestUsdShadeShaderDef(unittest.TestCase):
 
             self.assertEqual(assetIdentifierInputNames[0], 'primvarFile')
             self.assertEqual(n.GetMetadata(), 
-                    {'primvars': 'fallbackPV|$primvarName',
+                    {'primvars': '$primvarName',
                      'role': 'primvar'})
             self.assertEqual(n.GetInputNames(), 
-                ['fallback', 'fallbackPV', 'float2Val', 'float3Val', 
+                ['fallback', 'float2Val', 'float3Val', 
                  'float4Val', 'normalVector', 'primvarFile', 'primvarName', 
                  'someColor', 'someVector'])
             self.assertEqual(n.GetOutputNames(), ['result', 'result2'])

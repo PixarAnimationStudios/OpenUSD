@@ -232,14 +232,11 @@ registry:
     more obscure key value of <b>__SDR__defaultInput</b> (which is the value of 
     SdrPropertyMetadata->DefaultInput) in the metadata dictionary recorded by 
     SdrRegistry.
-    - Setting <b>sdrMetadata[primvar]="1"</b> on a shader input causes the 
-    input's name to be included in the <i>SdrShaderNode->Primvars</i> metadata 
-    value on the <b>SdrShaderNode</b>. Note that it's not translated to metadata 
-    on the property itself.
-    - Similarly, setting <b>sdrMetadata["primvarProperty"]="1"</b> on a shader 
+    - Setting <b>sdrMetadata["primvarProperty"]="1"</b> on a shader 
     input implies that the input names a primvar to be consumed by the shader. 
     This causes '$' + inputName to be included in the 
     <i>SdrShaderNode->Primvars</i> metadata on the <b>SdrShaderNode</b>. 
+    Note that it's not translated to metadata on the property itself.
   - <b>connectability</b> metadata authored on UsdShadeInputs gets translated 
   to SdrPropertyMetadata->Connectable. Connectability value of "interfaceOnly"
   is converted to <i>connectable="0"</i>. Connectability value of "full" is 
@@ -261,10 +258,10 @@ bits.
             # a primvar reader.
             token role = "primvar"
 
-            # The following metadatum could be authored on the node directly 
-            # <b>in lieu of</b> authoring primvarProperty="1" and primvar="1" 
-            # on the relevant properties below.
-            # string primvars = "$primvarName|fallbackPV"
+            # The following sdr-metadatum could be authored on the node directly 
+            # <b>in lieu of</b> authoring primvarProperty="1" on 
+            # inputs:primvarName.
+            # string primvars = "$primvarName"
         }
     )
     {
@@ -304,16 +301,6 @@ bits.
                 # on the "fallback" SdrShaderProperty.
                 token defaultInput = "1"
             }
-        )
-
-        float inputs:fallbackPV (
-            sdrMetadata = {
-                # This causes 'fallbackPV' to be appended to the 
-                # SdrNodeMetadata->Primvars metadata on the SdrShaderNode.
-                string primvar = "1"
-            }
-            doc = """Another hypothetical fallback input that is consumed by 
-                     the shader as a primvar."""
         )
         
         float outputs:result

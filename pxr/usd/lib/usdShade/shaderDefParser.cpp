@@ -43,7 +43,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (usd)
 
     /* property metadata */
-    (primvar)
     (primvarProperty)
     (defaultInput)
 );
@@ -129,8 +128,6 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
             }
 
             primvarNames.push_back("$" + shdInput.GetBaseName().GetString());
-        } else if (shdInput.HasSdrMetadataByKey(_tokens->primvar)) {
-            primvarNames.push_back(shdInput.GetBaseName().GetString());
         }
     }
 

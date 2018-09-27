@@ -122,7 +122,6 @@ def Shader "UsdUVTexture" (
 """
     sdrMetadata = {
         token role = "texture"
-        token primvars = "st"
     }
 )
 {
@@ -201,6 +200,9 @@ class "UsdPrimvarReader" (
     token inputs:varname  (
         connectability = "interfaceOnly"
         doc = """Name of the primvar to be fetched from the geometry."""
+        sdrMetadata = {
+            token primvarProperty = "1"
+        }
     )    
 }
 
