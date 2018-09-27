@@ -258,14 +258,22 @@ private:
             _valueCacheMap[id][key] = value;
         }
         template <typename T>
-        T const& GetParameter(SdfPath const& id, TfToken const& key) {
-            VtValue vParams = _valueCacheMap[id][key];
-            TF_VERIFY(vParams.IsHolding<T>());
+        T const& GetParameter(SdfPath const& id, TfToken const& key) const {
+            VtValue vParams;
+            _ValueCache vCache;
+            TF_VERIFY(
+                TfMapLookup(_valueCacheMap, id, &vCache) &&
+                TfMapLookup(vCache, key, &vParams) &&
+                vParams.IsHolding<T>());
             return vParams.Get<T>();
         }
-        bool HasParameter(SdfPath const& id, TfToken const& key) {
-            return _valueCacheMap.count(id) > 0 &&
-                   _valueCacheMap[id].count(key) > 0;
+        bool HasParameter(SdfPath const& id, TfToken const& key) const {
+            _ValueCache vCache;
+            if (TfMapLookup(_valueCacheMap, id, &vCache) &&
+                vCache.count(key) > 0) {
+                return true;
+            }
+            return false;
         }
 
         // HdSceneDelegate interface

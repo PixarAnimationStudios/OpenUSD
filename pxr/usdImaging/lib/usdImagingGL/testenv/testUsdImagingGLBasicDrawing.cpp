@@ -260,14 +260,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
         glViewport(0, 0, width, height);
 
-        GfVec4f const &clearColor = GetClearColor();
-        glClearBufferfv(GL_COLOR, 0, clearColor.data());
-
-        GLfloat clearDepth[1] = { 1.0f };
-        glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
         glEnable(GL_DEPTH_TEST);
-
 
         if(IsEnabledTestLighting()) {
             if(UsdImagingGL::IsEnabledHydra()) {
@@ -284,9 +277,14 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             }
         }
 
+        GfVec4f const &clearColor = GetClearColor();
+        GLfloat clearDepth[1] = { 1.0f };
+
         // Make sure we render to convergence.
         TfErrorMark mark;
         do {
+            glClearBufferfv(GL_COLOR, 0, clearColor.data());
+            glClearBufferfv(GL_DEPTH, 0, clearDepth);
             _engine->Render(_stage->GetPseudoRoot(), params);
         } while (!_engine->IsConverged());
         TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");

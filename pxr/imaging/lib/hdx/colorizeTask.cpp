@@ -21,17 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdx/colorizeTask.h"
-#include "pxr/imaging/hdx/package.h"
 
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderBuffer.h"
-#include "pxr/imaging/hd/renderPassState.h"
-
-#include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,110 +36,16 @@ HdxColorizeTask::HdxColorizeTask(HdSceneDelegate* delegate, SdfPath const& id)
     , _outputBufferSize(0)
     , _converged(false)
 {
-    _CreateBlitResources();
 }
 
 HdxColorizeTask::~HdxColorizeTask()
 {
-    _DestroyBlitResources();
 }
 
 bool
 HdxColorizeTask::IsConverged() const
 {
     return _converged;
-}
-
-void
-HdxColorizeTask::_CreateBlitResources()
-{
-    // Store the context we created the FBO on, for sanity checking.
-    _owningContext = GlfGLContext::GetCurrentGLContext();
-
-    glGenFramebuffers(1, &_outputFramebuffer);
-    GLint restoreReadFB, restoreDrawFB;
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFB);
-    glBindFramebuffer(GL_FRAMEBUFFER, _outputFramebuffer);
-
-    glGenTextures(1, &_outputTexture);
-    GLint restoreTexture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &restoreTexture);
-    glBindTexture(GL_TEXTURE_2D, _outputTexture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           _outputTexture, 0);
-
-    glBindTexture(GL_TEXTURE_2D, restoreTexture);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
-
-    GLF_POST_PENDING_GL_ERRORS();
-}
-
-void
-HdxColorizeTask::_DestroyBlitResources()
-{
-    // If the owning context is gone, we don't need to do anything. Otherwise,
-    // make sure the owning context is active before deleting the FBO.
-    if (!_owningContext->IsValid()) {
-        return;
-    }
-    GlfGLContextScopeHolder contextHolder(_owningContext);
-
-    glDeleteTextures(1, &_outputTexture);
-    glDeleteFramebuffers(1, &_outputFramebuffer);
-
-    GLF_POST_PENDING_GL_ERRORS();
-}
-
-void
-HdxColorizeTask::_Blit()
-{
-    if (!TF_VERIFY(_owningContext->IsCurrent())) {
-        // If we're rendering with a different context than the render pass
-        // was created with, recreate the FBO.
-
-        if (_owningContext->IsValid()) {
-            GlfGLContextScopeHolder contextHolder(_owningContext);
-            glDeleteFramebuffers(1, &_outputFramebuffer);
-        }
-        _owningContext = GlfGLContext::GetCurrentGLContext();
-        glGenFramebuffers(1, &_outputFramebuffer);
-        GLint restoreReadFB, restoreDrawFB;
-        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
-        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFB);
-        glBindFramebuffer(GL_FRAMEBUFFER, _outputFramebuffer);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                _outputTexture, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
-    }
-
-    GLuint width = _renderBuffer->GetWidth();
-    GLuint height = _renderBuffer->GetHeight();
-
-    GLint restoreTexture, restoreReadFB;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &restoreTexture);
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
-    glBindTexture(GL_TEXTURE_2D, _outputTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-        0, GL_RGBA, GL_UNSIGNED_BYTE, _outputBuffer);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _outputFramebuffer);
-    glBlitFramebuffer(0, 0, width, height,
-                      0, 0, width, height,
-                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
-    glBindTexture(GL_TEXTURE_2D, restoreTexture);
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 struct _Colorizer {
@@ -168,6 +68,10 @@ static void _colorizeNdcDepth(uint8_t* dest, uint8_t* src, size_t nPixels)
         float valuef =
             std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
         uint8_t value = (uint8_t)(255.0f * valuef);
+        // special case 1.0 (far plane) as all black.
+        if (depthBuffer[i] == 1.0f) {
+            value = 0;
+        }
         dest[i*4+0] = value;
         dest[i*4+1] = value;
         dest[i*4+2] = value;
@@ -215,7 +119,14 @@ static void _colorizeId(uint8_t* dest, uint8_t* src, size_t nPixels)
     // XXX: this is legacy ID-display behavior, but an alternative is to
     // hash the ID to 3 bytes and use those as color. Even fancier,
     // hash to hue and stratified (saturation, value) levels, etc.
-    memcpy(dest, src, nPixels*4);
+    int32_t *idBuffer = reinterpret_cast<int32_t*>(src);
+    for (size_t i = 0; i < nPixels; ++i) {
+        int32_t id = idBuffer[i];
+        dest[i*4+0] = (uint8_t)(id & 0xff);
+        dest[i*4+1] = (uint8_t)((id >> 8) & 0xff);
+        dest[i*4+2] = (uint8_t)((id >> 16) & 0xff);
+        dest[i*4+3] = 255;
+    }
 }
 static void _colorizePrimvar(uint8_t* dest, uint8_t* src, size_t nPixels)
 {
@@ -268,6 +179,11 @@ HdxColorizeTask::_Execute(HdTaskContext* ctx)
 
     _converged = _renderBuffer->IsConverged();
 
+    // XXX: Right now, we colorize on the CPU, before uploading data to the
+    // fullscreen pass.  It would be much better if the colorizer callbacks
+    // were pluggable fragment shaders. This is particularly important for
+    // backends that keep renderbuffers on the GPU.
+
     // Colorize!
     for (auto& colorizer : _colorizerTable) {
         if (_aovName == colorizer.aovName &&
@@ -287,7 +203,10 @@ HdxColorizeTask::_Execute(HdTaskContext* ctx)
     }
 
     // Blit!
-    _Blit();
+    _compositor.UpdateColor(_renderBuffer->GetWidth(),
+                            _renderBuffer->GetHeight(),
+                            _outputBuffer);
+    _compositor.Draw();
 }
 
 void

@@ -45,6 +45,13 @@ _GetShaderPath(char const * shader)
 }
 
 TfToken
+HdxPackageFullscreenShader()
+{
+    static TfToken shader = _GetShaderPath("fullscreen.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageRenderPassShader()
 {
     static TfToken shader = _GetShaderPath("renderPassShader.glslfx");

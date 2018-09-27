@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hdEmbree/renderer.h"
 #include "pxr/imaging/hdEmbree/renderBuffer.h"
+#include "pxr/imaging/hdx/compositor.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
@@ -86,15 +87,6 @@ protected:
     virtual void _MarkCollectionDirty() override {}
 
 private:
-    // Create GL resources needed for blitting.
-    void _CreateBlitResources();
-
-    // Destroy GL resources needed for blitting.
-    void _DestroyBlitResources();
-
-    // Blit to the current OpenGL framebuffer.
-    void _Blit(unsigned int width, unsigned int height, const uint8_t *data);
-
     // A handle to the render thread.
     HdRenderThread *_renderThread;
 
@@ -121,18 +113,16 @@ private:
     HdRenderPassAttachmentVector _attachments;
 
     // If no attachments are provided, provide an anonymous renderbuffer for
-    // color output.
+    // color and depth output.
     HdEmbreeRenderBuffer _colorBuffer;
+    HdEmbreeRenderBuffer _depthBuffer;
 
-    // Was the color buffer converged the last time we blitted it?
-    bool _colorBufferConverged;
+    // Were the color/depth buffer converged the last time we blitted them?
+    bool _converged;
 
-    // For rendering the final result, a GL texture handle...
-    GLuint _texture;
-    // ... and a GL framebuffer handle.
-    GLuint _framebuffer;
-    // For correctness, keep track of the context the FBO was allocated on.
-    GlfGLContextSharedPtr _owningContext;
+    // A compositor utility class, for rendering the final result to the
+    // viewport.
+    HdxCompositor _compositor;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

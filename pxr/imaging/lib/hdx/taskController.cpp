@@ -899,14 +899,18 @@ HdxTaskController::IsConverged() const
 {
     // Pass this call through to HdxRenderTask's IsConverged().
     if (_renderBufferIds.size() > 0) {
-        return static_cast<HdxColorizeTask*>(
-            GetRenderIndex()->GetTask(_colorizeTaskId).get())
-            ->IsConverged();
-    } else {
-        return static_cast<HdxRenderTask*>(
-            GetRenderIndex()->GetTask(_renderTaskId).get())
-            ->IsConverged();
+        HdxColorizeTaskParams colorizeParams =
+            _delegate.GetParameter<HdxColorizeTaskParams>(
+                _colorizeTaskId, HdTokens->params);
+        if (!colorizeParams.aovName.IsEmpty()) {
+            return static_cast<HdxColorizeTask*>(
+                    GetRenderIndex()->GetTask(_colorizeTaskId).get())
+                ->IsConverged();
+        }
     }
+    return static_cast<HdxRenderTask*>(
+        GetRenderIndex()->GetTask(_renderTaskId).get())
+        ->IsConverged();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

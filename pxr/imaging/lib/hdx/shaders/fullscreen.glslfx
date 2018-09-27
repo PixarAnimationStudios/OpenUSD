@@ -1,0 +1,96 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2018 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "FullscreenVertex": {
+                "source": [ "Fullscreen.Vertex" ]
+            },
+            "CompositeFragmentNoDepth": {
+                "source": [ "Composite.FragmentNoDepth" ]
+            },
+            "CompositeFragmentWithDepth": {
+                "source": [ "Composite.FragmentWithDepth" ]
+            }
+        }
+    }
+}
+
+-- glsl Fullscreen.Vertex
+
+out vec2 uv;
+
+void main(void)
+{
+    // There's no vertex or index buffer bound, so based on the invocation ID
+    // generate a fullscreen triangle. Use a triangle instead of a quad to
+    // optimize processing of the diagonal; and use a large one to cover all
+    // four corners (the ends of the triangle will be clipped).
+    if (gl_VertexID == 0) {
+        gl_Position = vec4(-1, 3, -1, 1);
+        uv = vec2(0, 2);
+    } else if (gl_VertexID == 1) {
+        gl_Position = vec4(-1, -1, -1, 1);
+        uv = vec2(0, 0);
+    } else { // if (gl_VertexID == 2)
+        gl_Position = vec4(3, -1, -1, 1);
+        uv = vec2(2, 0);
+    }
+}
+
+-- glsl Composite.FragmentNoDepth
+
+in vec2 uv;
+
+layout(location = 0) uniform sampler2D colorIn;
+
+layout (location = 0) out vec4 colorOut;
+
+void main(void)
+{
+    colorOut = texture(colorIn, uv);
+}
+
+-- glsl Composite.FragmentWithDepth
+
+in vec2 uv;
+
+layout(location = 0) uniform sampler2D colorIn;
+layout(location = 1) uniform sampler2D depthIn;
+
+layout (location = 0) out vec4 colorOut;
+out float gl_FragDepth;
+
+void main(void)
+{
+    colorOut = texture(colorIn, uv);
+    float depth = texture(depthIn, uv).r;
+    // Remap -1->1 to near->far (typically 0->1).
+    gl_FragDepth = (0.5 * depth + 0.5) * gl_DepthRange.diff
+        + gl_DepthRange.near;
+}

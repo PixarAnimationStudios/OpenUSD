@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hd/task.h"
 
 #include <boost/shared_ptr.hpp>
@@ -65,14 +66,6 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
-    // XXX: Right now, we colorize on the CPU and do a framebuffer blit
-    // (the slightly fancier version of glDrawPixels). It would be much better
-    // to do this on the GPU with a full-screen pass, particularly for
-    // backends that keep renderbuffers on the GPU.
-    void _CreateBlitResources();
-    void _DestroyBlitResources();
-    void _Blit();
-
     // Incoming data
     TfToken _aovName;
     SdfPath _renderBufferId;
@@ -81,11 +74,9 @@ private:
     // Ouptut data
     uint8_t *_outputBuffer;
     size_t _outputBufferSize;
-    GLuint _outputTexture;
-    GLuint _outputFramebuffer;
-    GlfGLContextSharedPtr _owningContext;
-
     bool _converged;
+
+    HdxCompositor _compositor;
 };
 
 /// \class HdxColorizeTaskParams
