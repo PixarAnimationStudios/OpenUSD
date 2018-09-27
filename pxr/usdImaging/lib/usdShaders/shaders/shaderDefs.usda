@@ -191,7 +191,6 @@ def Shader "UsdUVTexture" (
 class "UsdPrimvarReader" (
     sdrMetadata = {
         token role = "primvar"
-        token primvars = "$varname"
     }
 )
 {
