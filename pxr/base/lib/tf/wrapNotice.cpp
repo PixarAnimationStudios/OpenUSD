@@ -215,7 +215,7 @@ class Tf_PyNoticeInternal
 
 } // anonymous namespace 
 
-void wrapNotice()
+void wrapTfNotice()
 {
     // Make sure we can pass callbacks from python.
     TfPyFunctionFromPython<Tf_PyNoticeInternal::Listener::CallbackSig>();

@@ -42,7 +42,7 @@ TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::DidRegisterPlugins, PlugNotice::Base);
 } // anonymous namespace 
 
 void
-wrapNotice()
+wrapPlugNotice()
 {
     scope noticeScope = class_<PlugNotice>("Notice", no_init);
 

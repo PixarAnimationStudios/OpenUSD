@@ -35,7 +35,7 @@ using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapStageCache()
+void wrapUsdUtilsStageCache()
 {
     class_<UsdUtilsStageCache>("StageCache")
 

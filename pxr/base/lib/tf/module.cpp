@@ -33,14 +33,14 @@ TF_WRAP_MODULE {
     TF_WRAP( Debug );
     TF_WRAP( Enum );
     // Diagnostic depends on Enum so must come after it.
-    TF_WRAP( Diagnostic );
+    TF_WRAP( TfDiagnostic );
     TF_WRAP( DiagnosticBase );
     TF_WRAP( EnvSetting );
     TF_WRAP( Error );
     TF_WRAP( FileUtils );
     TF_WRAP( Function );
     TF_WRAP( MallocTag );
-    TF_WRAP( Notice );
+    TF_WRAP( TfNotice );
     TF_WRAP( PathUtils );
     TF_WRAP( PyContainerConversions );
     TF_WRAP( PyModuleNotice );

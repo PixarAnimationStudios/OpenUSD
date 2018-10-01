@@ -58,7 +58,7 @@ _GetChildren(const PcpNodeRef& node)
 } // anonymous namespace 
 
 void
-wrapNode()
+wrapPcpNode()
 {
     typedef PcpNodeRef This;
 

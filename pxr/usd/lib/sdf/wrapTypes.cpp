@@ -305,7 +305,7 @@ _FindType(const std::string& typeName)
 
 } // anonymous namespace 
 
-void wrapTypes()
+void wrapSdfTypes()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("ValueRoleNames",
                              SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);

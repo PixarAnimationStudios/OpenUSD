@@ -28,7 +28,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Diagnostic );
+    TF_WRAP( GlfDiagnostic );
     TF_WRAP( DrawTarget );
     TF_WRAP( Texture );
     TF_WRAP( TextureRegistry );

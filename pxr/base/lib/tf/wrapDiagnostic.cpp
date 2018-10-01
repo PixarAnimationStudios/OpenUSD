@@ -49,7 +49,7 @@ void wrapped_TF_DIAGNOSTIC_WARNING(const string& msg)
 
 } // anonymous namespace 
 
-void wrapDiagnostic()
+void wrapTfDiagnostic()
 {
     TfPyWrapEnum<TfDiagnosticType>();
 

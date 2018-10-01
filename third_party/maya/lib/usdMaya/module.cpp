@@ -36,7 +36,7 @@ TF_WRAP_MODULE {
     TF_WRAP(Query);
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
+    TF_WRAP(UsdMayaStageCache);
     TF_WRAP(UserTaggedAttribute);
     TF_WRAP(WriteUtil);
     TF_WRAP(XformStack);

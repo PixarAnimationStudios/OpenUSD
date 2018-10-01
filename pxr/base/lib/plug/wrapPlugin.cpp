@@ -68,7 +68,7 @@ _GetMetadataForType(PlugPluginPtr plugin, const TfType &type)
 
 } // anonymous namespace 
 
-void wrapPlugin()
+void wrapPlugPlugin()
 {
     typedef PlugPlugin This;
     typedef PlugPluginPtr ThisPtr;

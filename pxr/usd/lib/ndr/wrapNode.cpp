@@ -35,7 +35,7 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapNode()
+void wrapNdrNode()
 {
     typedef NdrNode This;
     typedef NdrNodePtr ThisPtr;

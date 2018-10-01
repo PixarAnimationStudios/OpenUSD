@@ -38,7 +38,7 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapRegistry()
+void wrapSdrRegistry()
 {
     typedef SdrRegistry This;
     typedef TfWeakPtr<SdrRegistry> ThisPtr;

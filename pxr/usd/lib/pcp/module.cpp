@@ -38,12 +38,12 @@ TF_WRAP_MODULE
     TF_WRAP( LayerStack );
     TF_WRAP( MapExpression );
     TF_WRAP( MapFunction );
-    TF_WRAP( Node );
+    TF_WRAP( PcpNode );
     TF_WRAP( PathTranslation );
     TF_WRAP( PrimIndex );
     TF_WRAP( PropertyIndex );
     TF_WRAP( PayloadContext );
     TF_WRAP( Site );
     TF_WRAP( TestChangeProcessor );
-    TF_WRAP( Types );
+    TF_WRAP( PcpTypes );
 }

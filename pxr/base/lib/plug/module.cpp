@@ -29,9 +29,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Notice );
-    TF_WRAP( Plugin );    
-    TF_WRAP( Registry );    
+    TF_WRAP( PlugNotice );
+    TF_WRAP( PlugPlugin );    
+    TF_WRAP( PlugRegistry );    
 
     TF_WRAP( _TestPlugBase );    
 }

@@ -196,7 +196,7 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
 
 } // anonymous namespace 
 
-void wrapRegistry()
+void wrapPlugRegistry()
 {
 
     typedef PlugRegistry This;

@@ -31,5 +31,5 @@ TF_WRAP_MODULE
 {
     TF_WRAP( ShaderProperty );
     TF_WRAP( ShaderNode );
-    TF_WRAP( Registry );
+    TF_WRAP( SdrRegistry );
 }

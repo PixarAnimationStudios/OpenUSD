@@ -54,7 +54,7 @@ struct ConstNodePtrToPython {
     } 
 };
 
-void wrapRegistry()
+void wrapNdrRegistry()
 {
     typedef NdrRegistry This;
     typedef TfWeakPtr<NdrRegistry> ThisPtr;

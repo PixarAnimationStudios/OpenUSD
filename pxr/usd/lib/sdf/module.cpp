@@ -40,11 +40,11 @@ TF_WRAP_MODULE
     TF_WRAP( LayerOffset );
     TF_WRAP( LayerTree );
     TF_WRAP( NamespaceEdit );
-    TF_WRAP( Notice );
+    TF_WRAP( SdfNotice );
     TF_WRAP( Path );
     TF_WRAP( Payload );
     TF_WRAP( Reference );
-    TF_WRAP( Types );
+    TF_WRAP( SdfTypes );
     TF_WRAP( ValueType );
 
     TF_WRAP( Spec );
