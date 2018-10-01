@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/ptexTexture.h"
+#include "pxr/imaging/glf/udimTexture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,7 +41,7 @@ HdStTextureResource::~HdStTextureResource()
 
 HdStSimpleTextureResource::HdStSimpleTextureResource(
                                     GlfTextureHandleRefPtr const &textureHandle,
-                                    bool isPtex,
+                                    HdTextureType textureType,
                                     HdWrap wrapS,
                                     HdWrap wrapT,
                                     HdMinFilter minFilter,
@@ -52,7 +53,7 @@ HdStSimpleTextureResource::HdStSimpleTextureResource(
  , _borderColor(0.0,0.0,0.0,0.0)
  , _maxAnisotropy(16.0)
  , _sampler(0)
- , _isPtex(isPtex)
+ , _textureType(textureType)
  , _memoryRequest(memoryRequest)
  , _wrapS(wrapS)
  , _wrapT(wrapT)
@@ -76,7 +77,7 @@ HdStSimpleTextureResource::~HdStSimpleTextureResource()
         _textureHandle->DeleteMemoryRequest(_memoryRequest);
     }
 
-    if (!_isPtex) {
+    if (_textureType != HdTextureType::Ptex) {
         if (!glDeleteSamplers) { // GL initialization guard for headless unit test
             return;
         }
@@ -84,14 +85,14 @@ HdStSimpleTextureResource::~HdStSimpleTextureResource()
     }
 }
 
-bool HdStSimpleTextureResource::IsPtex() const 
-{ 
-    return _isPtex; 
+HdTextureType HdStSimpleTextureResource::GetTextureType() const
+{
+    return _textureType;
 }
 
 GLuint HdStSimpleTextureResource::GetTexelsTextureId() 
 {
-    if (_isPtex) {
+    if (_textureType == HdTextureType::Ptex) {
 #ifdef PXR_PTEX_SUPPORT_ENABLED
         GlfPtexTextureRefPtr ptexTexture =
                                  TfDynamic_cast<GlfPtexTextureRefPtr>(_texture);
@@ -107,6 +108,16 @@ GLuint HdStSimpleTextureResource::GetTexelsTextureId()
 #endif
     }
 
+    if (_textureType == HdTextureType::Udim) {
+        GlfUdimTextureRefPtr udimTexture =
+            TfDynamic_cast<GlfUdimTextureRefPtr>(_texture);
+        if (udimTexture) {
+            return udimTexture->GetGlTextureName();
+        }
+
+        return 0;
+    }
+
     GlfBaseTextureRefPtr baseTexture =
                              TfDynamic_cast<GlfBaseTextureRefPtr>(_texture);
 
@@ -118,7 +129,7 @@ GLuint HdStSimpleTextureResource::GetTexelsTextureId()
 
 GLuint HdStSimpleTextureResource::GetTexelsSamplerId() 
 {
-    if (!TF_VERIFY(!_isPtex)) {
+    if (!TF_VERIFY(_textureType != HdTextureType::Ptex)) {
         return 0;
     }
 
@@ -188,7 +199,7 @@ GLuint64EXT HdStSimpleTextureResource::GetTexelsTextureHandle()
     }
 
     GLuint64EXT handle = 0;
-    if (_isPtex) {
+    if (_textureType != HdTextureType::Uv) {
         handle = glGetTextureHandleARB(textureId);
     } else {
         GLuint samplerId = GetTexelsSamplerId();
@@ -212,6 +223,14 @@ GLuint64EXT HdStSimpleTextureResource::GetTexelsTextureHandle()
 
 GLuint HdStSimpleTextureResource::GetLayoutTextureId() 
 {
+    if (_textureType == HdTextureType::Udim) {
+        GlfUdimTextureRefPtr udimTexture =
+            TfDynamic_cast<GlfUdimTextureRefPtr>(_texture);
+        if (udimTexture) {
+            return udimTexture->GetGlLayoutName();
+        }
+        return 0;
+    }
 #ifdef PXR_PTEX_SUPPORT_ENABLED
     GlfPtexTextureRefPtr ptexTexture =
                                  TfDynamic_cast<GlfPtexTextureRefPtr>(_texture);
@@ -229,7 +248,7 @@ GLuint HdStSimpleTextureResource::GetLayoutTextureId()
 
 GLuint64EXT HdStSimpleTextureResource::GetLayoutTextureHandle() 
 {
-    if (!TF_VERIFY(_isPtex)) {
+    if (!TF_VERIFY(_textureType != HdTextureType::Uv)) {
         return 0;
     }
     

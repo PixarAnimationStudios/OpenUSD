@@ -230,7 +230,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 HdStShaderCode::TextureDescriptor tex;
                 tex.name = param.GetName();
 
-                if (texResource->IsPtex()) {
+                const HdTextureType textureType = texResource->GetTextureType();
+                if (textureType == HdTextureType::Ptex) {
                     hasPtex = true;
                     tex.type =
                         HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
@@ -267,7 +268,42 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                                                           tex.handle));
                         sources.push_back(source);
                     }
-                } else {
+                } else if (textureType == HdTextureType::Udim) {
+                    tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_ARRAY;
+                    tex.handle =
+                        bindless ? texResource->GetTexelsTextureHandle()
+                                 : texResource->GetTexelsTextureId();
+                    tex.sampler =  texResource->GetTexelsSamplerId();
+                    textures.push_back(tex);
+
+                    if (bindless) {
+                        HdBufferSourceSharedPtr source(
+                            new HdSt_BindlessSamplerBufferSource(
+                                tex.name,
+                                GL_SAMPLER_2D_ARRAY,
+                                tex.handle));
+                        sources.push_back(source);
+                    }
+
+                    tex.name =
+                        TfToken(param.GetName().GetString() + "_layout");
+                    tex.type =
+                        HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_LAYOUT;
+                    tex.handle =
+                        bindless ? texResource->GetLayoutTextureHandle()
+                                 : texResource->GetLayoutTextureId();
+                    tex.sampler = 0;
+                    textures.push_back(tex);
+
+                    if (bindless) {
+                        HdBufferSourceSharedPtr source(
+                            new HdSt_BindlessSamplerBufferSource(
+                                tex.name,
+                                GL_SAMPLER_1D,
+                                tex.handle));
+                        sources.push_back(source);
+                    }
+                } else if (textureType == HdTextureType::Uv) {
                     tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_2D;
                     tex.handle =
                                 bindless ? texResource->GetTexelsTextureHandle()
@@ -363,13 +399,17 @@ HdStMaterial::_GetTextureResource(
     //
     // XXX todo handle fallback Ptex textures
     if (!texResource) {
-        GlfUVTextureStorageRefPtr texPtr = 
+        // Fallback texture are only supported for UV textures.
+        if (param.GetTextureType() != HdTextureType::Uv) {
+            return {};
+        }
+        GlfUVTextureStorageRefPtr texPtr =
             GlfUVTextureStorage::New(1,1, param.GetFallbackValue());
         GlfTextureHandleRefPtr texture =
             GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
         texResource.reset(
             new HdStSimpleTextureResource(texture,
-                                          false,
+                                          HdTextureType::Uv,
                                           HdWrapClamp,
                                           HdWrapClamp,
                                           HdMinFilterNearest,

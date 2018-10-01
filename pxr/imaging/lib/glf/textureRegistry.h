@@ -38,6 +38,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <functional>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,8 +65,15 @@ public:
     GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures,
                                   GlfImage::ImageOriginLocation originLocation = 
                                                      GlfImage::OriginUpperLeft);
+
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(GlfTextureRefPtr texture);
+
+    GLF_API
+    GlfTextureHandleRefPtr GetTextureHandle(
+        const TfToken& texture,
+        GlfImage::ImageOriginLocation originLocation,
+        const GlfTextureFactoryBase* textureFactory);
 
     // garbage collection methods
     GLF_API

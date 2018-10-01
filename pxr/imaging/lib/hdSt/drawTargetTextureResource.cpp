@@ -79,10 +79,10 @@ HdSt_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
                          _borderColor.GetArray());
 }
 
-bool
-HdSt_DrawTargetTextureResource::IsPtex() const
+HdTextureType
+HdSt_DrawTargetTextureResource::GetTextureType() const
 {
-    return false;
+    return HdTextureType::Uv;
 }
 
 GLuint

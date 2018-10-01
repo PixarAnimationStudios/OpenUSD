@@ -116,8 +116,8 @@ public:
     virtual ~DrawTargetTextureResource() {
     };
 
-    virtual bool IsPtex() const {
-        return false;
+    virtual HdTextureType GetTextureType() const override {
+        return HdTextureType::Uv;
     }
 
     virtual GLuint GetTexelsTextureId() {
