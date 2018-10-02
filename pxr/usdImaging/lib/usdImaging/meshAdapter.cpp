@@ -121,21 +121,29 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
 
     // Discover time-varying primvars:normals, and if that attribute
     // doesn't exist also check for time-varying normals.
-    bool normalsExists = false;
-    _IsVarying(prim,
-               UsdImagingTokens->primvarsNormals,
-               HdChangeTracker::DirtyNormals,
-               UsdImagingTokens->usdVaryingNormals,
-               timeVaryingBits,
-               /*isInherited*/false,
-               &normalsExists);
-    if (!normalsExists) {
+    // Only do this for polygonal meshes.
+
+    TfToken schemeToken;
+    _GetPtr(prim, UsdGeomTokens->subdivisionScheme,
+            UsdTimeCode::EarliestTime(), &schemeToken);
+
+    if (schemeToken == PxOsdOpenSubdivTokens->none) {
+        bool normalsExists = false;
         _IsVarying(prim,
-                UsdGeomTokens->normals,
+                UsdImagingTokens->primvarsNormals,
                 HdChangeTracker::DirtyNormals,
                 UsdImagingTokens->usdVaryingNormals,
                 timeVaryingBits,
-                /*isInherited*/false);
+                /*isInherited*/false,
+                &normalsExists);
+        if (!normalsExists) {
+            _IsVarying(prim,
+                    UsdGeomTokens->normals,
+                    HdChangeTracker::DirtyNormals,
+                    UsdImagingTokens->usdVaryingNormals,
+                    timeVaryingBits,
+                    /*isInherited*/false);
+        }
     }
 
     // Discover time-varying topology.
@@ -272,21 +280,26 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyNormals) {
-        // First check for "primvars:normals"
-        UsdGeomPrimvarsAPI primvarsApi(prim);
-        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
-            UsdImagingTokens->primvarsNormals);
-        if (pv) {
-            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
-        } else {
-            UsdGeomMesh mesh(prim);
-            VtVec3fArray normals;
-            if (mesh.GetNormalsAttr().Get(&normals, time)) {
-                _MergePrimvar(&primvars,
-                    UsdGeomTokens->normals,
-                    _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
-                    HdPrimvarRoleTokens->normal);
-                valueCache->GetNormals(cachePath) = VtValue(normals);
+        TfToken schemeToken;
+        _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
+        // Only populate normals for polygonal meshes.
+        if (schemeToken == PxOsdOpenSubdivTokens->none) {
+            // First check for "primvars:normals"
+            UsdGeomPrimvarsAPI primvarsApi(prim);
+            UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+                    UsdImagingTokens->primvarsNormals);
+            if (pv) {
+                _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            } else {
+                UsdGeomMesh mesh(prim);
+                VtVec3fArray normals;
+                if (mesh.GetNormalsAttr().Get(&normals, time)) {
+                    _MergePrimvar(&primvars,
+                        UsdGeomTokens->normals,
+                        _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+                        HdPrimvarRoleTokens->normal);
+                    valueCache->GetNormals(cachePath) = VtValue(normals);
+                }
             }
         }
     }
@@ -318,6 +331,8 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
     }
 
     // TODO: support sparse topology and subdiv tag changes
+    // (Note that a change in subdivision scheme means we need to re-track
+    // the variability of the normals...)
 
     // Allow base class to handle change processing.
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
