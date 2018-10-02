@@ -40,6 +40,7 @@ pxr_shared_library(${PXR_PACKAGE}
         hdImagingShape
         jobArgs
         meshUtil
+        notice
         pointBasedDeformerNode
         primReader
         primReaderArgs

@@ -365,14 +365,10 @@ UsdMayaGLBatchRenderer::PopulateCustomCollection(
 // Since we're using a static singleton UsdMayaGLBatchRenderer object, we need
 // to make sure that we reset its state when switching to a new Maya scene or
 // when opening a different scene.
-static
 void
-_OnMayaNewOrOpenSceneCallback(void* clientData)
+UsdMayaGLBatchRenderer::_OnMayaSceneReset(
+        const UsdMayaSceneResetNotice& notice)
 {
-    if (MFileIO::isImportingFile() || MFileIO::isReferencingFile()) {
-        return;
-    }
-
     UsdMayaGLBatchRenderer::Reset();
 }
 
@@ -456,28 +452,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
     _selectionTracker.reset(new HdxSelectionTracker());
 
-    // The batch renderer needs to be reset when changing scenes (either by
-    // switching to a new empty scene or by opening a different scene). We
-    // listen for these two messages and *not* for kSceneUpdate messages since
-    // those are also emitted after a SaveAs operation, in which case we
-    // actually do not want to reset the batch renderer. We listen for
-    // kBeforeFileRead messages because those fire at the right time (after any
-    // existing scene has been closed but before the new scene has been opened),
-    // but they are also emitted when a file is imported or referenced, so we
-    // must be sure *not* to reset the batch renderer in those cases.
-    static MCallbackId afterNewCallbackId = 0;
-    if (afterNewCallbackId == 0) {
-        afterNewCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kAfterNew,
-                                       _OnMayaNewOrOpenSceneCallback);
-    }
-
-    static MCallbackId beforeFileReadCallbackId = 0;
-    if (beforeFileReadCallbackId == 0) {
-        beforeFileReadCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead,
-                                       _OnMayaNewOrOpenSceneCallback);
-    }
+    TfWeakPtr<UsdMayaGLBatchRenderer> me(this);
+    TfNotice::Register(me, &UsdMayaGLBatchRenderer::_OnMayaSceneReset);
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
     if (!renderer) {

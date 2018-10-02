@@ -33,11 +33,13 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 #include "usdMaya/diagnosticDelegate.h"
+#include "usdMaya/notice.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/weakBase.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -88,7 +90,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// RemoveShapeAdapter() (usually in the destructor) when they no longer wish
 /// for their shape to participate in batched drawing and selection.
 ///
-class UsdMayaGLBatchRenderer : public TfSingleton<UsdMayaGLBatchRenderer>
+class UsdMayaGLBatchRenderer
+        : public TfSingleton<UsdMayaGLBatchRenderer>, public TfWeakBase
 {
 public:
 
@@ -300,6 +303,9 @@ private:
             const HdRprimCollection& rprimCollection,
             HdxIntersector::Params queryParams,
             HdxIntersector::Result* result);
+
+    // Handler for Maya scene resets (e.g. new scene or switch scenes).
+    void _OnMayaSceneReset(const UsdMayaSceneResetNotice& notice);
 
     /// Handler for Maya Viewport 2.0 end render notifications.
     ///

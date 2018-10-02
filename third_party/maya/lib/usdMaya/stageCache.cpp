@@ -23,6 +23,8 @@
 //
 #include "usdMaya/stageCache.h"
 
+#include "usdMaya/notice.h"
+
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -43,23 +45,29 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-std::map<std::string, SdfLayerRefPtr> _sharedSessionLayers;
-std::mutex _sharedSessionLayersMutex;
+namespace {
 
-static
-void
-_OnMayaNewOrOpenSceneCallback(void*  /*clientData*/)
-{
-    if (MFileIO::isImportingFile() || MFileIO::isReferencingFile()) {
-        return;
+static std::map<std::string, SdfLayerRefPtr> _sharedSessionLayers;
+static std::mutex _sharedSessionLayersMutex;
+
+struct _OnSceneResetListener : public TfWeakBase {
+    _OnSceneResetListener()
+    {
+        TfWeakPtr<_OnSceneResetListener> me(this);
+        TfNotice::Register(me, &_OnSceneResetListener::OnSceneReset);
     }
 
-    TF_STATUS("Clearing USD Stage Cache");
-    UsdMayaStageCache::Clear();
+    void OnSceneReset(const UsdMayaSceneResetNotice& notice)
+    {
+        TF_STATUS("Clearing USD Stage Cache");
+        UsdMayaStageCache::Clear();
 
-    std::lock_guard<std::mutex> lock(_sharedSessionLayersMutex);
-    _sharedSessionLayers.clear();
-}
+        std::lock_guard<std::mutex> lock(_sharedSessionLayersMutex);
+        _sharedSessionLayers.clear();
+    }
+};
+
+} // anonymous namespace
 
 /* static */
 UsdStageCache&
@@ -67,30 +75,7 @@ UsdMayaStageCache::Get(const bool forcePopulate)
 {
     static UsdStageCache theCacheForcePopulate;
     static UsdStageCache theCache;
-
-    // We clear the USD stage cache when changing scenes (either by switching
-    // to a new empty scene or by opening a different scene). We do not listen
-    // for kSceneUpdate messages since those are also emitted after a SaveAs
-    // operation, in which case we do not want to clear the stage cache.
-    // Note also that we listen for kBeforeFileRead messages because those fire
-    // at the right time (after any existing scene has been closed but before
-    // the new scene has been opened). However, they are also emitted when a
-    // file is imported or referenced, so we check for that and do *not* clear
-    // the stage cache in those cases. The Maya/Hydra batch renderer follows a
-    // similar listener/reset pattern.
-    static MCallbackId afterNewCallbackId = 0;
-    if (afterNewCallbackId == 0) {
-        afterNewCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kAfterNew,
-                                       _OnMayaNewOrOpenSceneCallback);
-    }
-
-    static MCallbackId beforeFileReadCallbackId = 0;
-    if (beforeFileReadCallbackId == 0) {
-        beforeFileReadCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead,
-                                       _OnMayaNewOrOpenSceneCallback);
-    }
+    static _OnSceneResetListener onSceneResetListener;
 
     return forcePopulate ? theCacheForcePopulate : theCache;
 }
