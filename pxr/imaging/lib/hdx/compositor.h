@@ -81,6 +81,8 @@ private:
     void _CreateTextureResources(GLuint *texture);
     // Utility function to create a GL program using the compositor source.
     void _CreateShaderResources(bool useDepthProgram);
+    // Utility function to create buffer resources.
+    void _CreateBufferResources();
 
     GLuint _colorTexture;
     GfVec2i _colorSize;
@@ -89,6 +91,8 @@ private:
     GfVec2i _depthSize;
 
     HdStGLSLProgramSharedPtr _compositorProgram;
+    GLint _locations[4];
+    GLuint _vertexBuffer;
     bool _useDepthProgram;
 };
 
