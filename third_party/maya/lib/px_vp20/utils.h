@@ -30,6 +30,7 @@
 #include "px_vp20/api.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
@@ -75,6 +76,17 @@ class px_vp20Utils
                 const GfVec4f& color,
                 const MMatrix& worldViewMat,
                 const MMatrix& projectionMat);
+
+        /// Helper to draw multiple wireframe boxes, where \p cubeXforms is a
+        /// list of transforms to apply to the unit cube centered around the
+        /// origin.  Those transforms will all be concatenated with the 
+        /// \p worldViewMat and \p projectionMat.
+        PX_VP20_API
+        static bool RenderWireCubes(
+                const std::vector<GfMatrix4f>& cubeXforms,
+                const GfVec4f& color,
+                const GfMatrix4d& worldViewMat,
+                const GfMatrix4d& projectionMat);
 
         /// Gets the view and projection matrices based on a particular
         /// selection in the given draw context.
