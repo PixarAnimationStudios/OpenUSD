@@ -22,8 +22,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Tf, Sdr
 import os
+os.environ['PXR_USDMTLX_PLUGIN_SEARCH_PATHS'] = os.getcwd()
+
+from pxr import Tf, Sdr
 import unittest
 
 class TestParser(unittest.TestCase):
@@ -31,10 +33,6 @@ class TestParser(unittest.TestCase):
         """
         Test MaterialX node parser.
         """
-        # Let the plugin discover our nodes.
-        searchPath = os.getcwd()
-        os.environ['PXR_USDMTLX_PLUGIN_SEARCH_PATHS'] = searchPath
-
         # Find our nodes.
         nodes = Sdr.Registry().GetShaderNodesByFamily('UsdMtlxTestNode')
         self.assertEqual(sorted([node.GetName() for node in nodes]), [
