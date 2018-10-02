@@ -206,7 +206,7 @@ bool
 SdfPath::IsNamespacedPropertyPath() const {
     Sdf_PathNode const *node = boost::get_pointer(_pathNode);
     return node && node->IsNamespaced() && 
-        // Currently this subexpression is always true is IsNamespaced() is.
+        // Currently this subexpression is always true if IsNamespaced() is.
         ((node->GetNodeType() == Sdf_PathNode::PrimPropertyNode) || 
          (node->GetNodeType() == Sdf_PathNode::RelationalAttributeNode));
 }
@@ -421,7 +421,7 @@ SdfPath::HasPrefix(const SdfPath &prefix) const
         --curDepth;
     }
 
-    return *curNode == prefixNode;
+    return _NodesEqual(*curNode, prefixNode);
 }
 
 SdfPath
@@ -613,18 +613,28 @@ SdfPath::AppendChild(TfToken const &childName) const {
 
 SdfPath
 SdfPath::AppendProperty(TfToken const &propName) const {
+    SdfPath ret;
     if (!IsValidNamespacedIdentifier(propName.GetString())) {
         //TF_WARN("Invalid property name.");
-        return EmptyPath();
+        return ret;
     }
-    if (!IsPrimVariantSelectionPath() && 
-        !IsPrimPath() && 
-                (_pathNode != Sdf_PathNode::GetRelativeRootNode())) {
+    if (Sdf_PathNode const *node = boost::get_pointer(_pathNode)) {
+        Sdf_PathNode::NodeType type = node->GetNodeType();
+        if (type == Sdf_PathNode::PrimNode ||
+            type == Sdf_PathNode::PrimVariantSelectionNode ||
+            node == Sdf_PathNode::GetRelativeRootNode()) {
+            // Create a "floating" non-interned path node, so that creating prim
+            // property nodes is as fast as possible.
+            ret = SdfPath(
+                Sdf_PrimPropertyPathNode::NewFloatingNode(
+                    _pathNode, propName));
+        }
+    }
+    if (ret.IsEmpty()) {
         TF_WARN("Can only append a property '%s' to a prim path (%s)",
                 propName.GetText(), GetText());
-        return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::FindOrCreatePrimProperty(_pathNode, propName));
+    return ret;
 }
 
 SdfPath
@@ -641,9 +651,9 @@ SdfPath::AppendVariantSelection(const string &variantSet,
         return EmptyPath();
     }
     return SdfPath(Sdf_PathNode::
-                  FindOrCreatePrimVariantSelection(_pathNode,
-                                                   TfToken(variantSet),
-                                                   TfToken(variant)));
+                   FindOrCreatePrimVariantSelection(_pathNode,
+                                                    TfToken(variantSet),
+                                                    TfToken(variant)));
 }
 
 SdfPath
@@ -657,7 +667,7 @@ SdfPath::AppendTarget(const SdfPath &targetPath) const {
         return EmptyPath();
     }
     return SdfPath(Sdf_PathNode::FindOrCreateTarget(_pathNode,
-                                                  targetPath._pathNode));
+                                                    targetPath._pathNode));
 }
 
 SdfPath
@@ -1102,7 +1112,7 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
     TF_AXIOM(thisCount == anchorCount);
 
     // walk to a common prefix
-    while (curThisNode != curAnchorNode) {
+    while (!_NodesEqual(curThisNode, curAnchorNode)) {
         ++dotdotCount;
         relNodes.push_back(curThisNode);
         curThisNode   = curThisNode->GetParentNode();
@@ -1346,7 +1356,7 @@ SdfPath::IsBuiltInMarker(const std::string &marker)
 
 bool
 SdfPath::_LessThanInternal(Sdf_PathNodeConstRefPtr const &lhsRefPtr,
-                          Sdf_PathNodeConstRefPtr const &rhsRefPtr)
+                           Sdf_PathNodeConstRefPtr const &rhsRefPtr)
 {
     // Note that it's the caller's responsibility to make sure lhsRefPtr and
     // rhsRefPtr are not NULL, so we don't check here.
@@ -1392,20 +1402,48 @@ SdfPath::_LessThanInternal(Sdf_PathNodeConstRefPtr const &lhsRefPtr,
     }
 
     // Now the cur nodes are at the same depth in the node tree
-    if (curThisNode == curRhsNode) {
+    if (_NodesEqual(curThisNode, curRhsNode)) {
         // They differ only in the tail.  If there's no tail, they are equal.
         // If rhs has the tail, then this is less, otherwise rhs is less.
         return thisCount < rhsCount;
     }
 
-    // Crawl up both chains till we find an equal parent
-    while ( curThisNode->GetParentNode() != curRhsNode->GetParentNode() ) {
+    // Crawl up both chains till we find an equal parent.
+    //
+    // Note that this is not doing a _NodesEqual call as above and is instead
+    // checking pointer equality.  This is okay, since _NodesEqual is only
+    // required for "floating" non-interned prim property paths, and we never
+    // compare those here.  The reason is that prim property sub-paths (like
+    // /foo.bar[/target]) *always* have interned prim property path nodes, so
+    // the only possible way to get a floating node here is to have a path like
+    // /foo.bar.  The code above will walk up to matching depth, so you could
+    // either get /foo.bar vs /foo.bar (with either or both or neither
+    // floating), but then the _NodesEqual check above will handle that case.
+    // The other case is getting something like /foo.bar and /foo.baz here, but
+    // in that case the while-loop immediately moves to the parent node (a prim,
+    // prim variant selection, or relative root node) and does a pointer
+    // comparison, which is safe, and then the final check on the property nodes
+    // is done with the Compare() call below, which does the right thing.
+    while (curThisNode->GetParentNode() != curRhsNode->GetParentNode()) {
         curThisNode = boost::get_pointer(curThisNode->GetParentNode());
         curRhsNode = boost::get_pointer(curRhsNode->GetParentNode());
     }
 
     // Now parents are equal, compare the current child nodes.
     return curThisNode->Compare<Sdf_PathNode::LessThan>(*curRhsNode);
+}
+
+size_t
+SdfPath::_HashInternal(Sdf_PathNodeConstRefPtr const &ptr)
+{
+    return Sdf_PathNode::Hash(ptr.get());
+}
+
+bool
+SdfPath::_EqualsInternal(Sdf_PathNode const *lhs,
+                         Sdf_PathNode const *rhs)
+{
+    return Sdf_PathNode::Equals(lhs, rhs);
 }
 
 std::ostream & operator<<( std::ostream &out, const SdfPath &path ) {
