@@ -208,9 +208,14 @@ public:
     HDX_API
     void SetEnableShadows(bool enable);
 
+    /// Set the shadow params. Note: params.camera will
+    /// be overwritten, since it comes from SetCameraState.
+    HDX_API
+    void SetShadowParams(HdxShadowTaskParams const& params);
+
     /// -------------------------------------------------------
     /// Progressive Image Generation
-    
+
     /// Return whether the image has converged.
     HDX_API
     bool IsConverged() const;
