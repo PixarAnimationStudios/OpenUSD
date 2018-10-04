@@ -35,7 +35,7 @@
 #include "pxr/base/tf/type.h"
 
 #include <cfloat>
-#include <iostream>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

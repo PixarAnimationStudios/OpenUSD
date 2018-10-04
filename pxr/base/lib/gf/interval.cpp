@@ -27,7 +27,7 @@
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
 
-#include <iostream>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

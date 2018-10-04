@@ -37,7 +37,7 @@
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/rotation.h"
 #include <float.h>
-#include <iostream>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

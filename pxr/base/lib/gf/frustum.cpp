@@ -35,7 +35,7 @@
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
-#include <iostream>
+#include <ostream>
 
 using namespace std;
 
