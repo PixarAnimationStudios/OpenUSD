@@ -73,7 +73,7 @@ public:
     /// Use this method to ensure the read back is done in an endian
     /// correct fashion.
     ///
-    /// As packing of IDs may change in the future we encapuslate the
+    /// As packing of IDs may change in the future we encapsulate the
     /// correct behavior here.
     /// \param idColor a byte buffer of length 4.
     static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
@@ -96,7 +96,7 @@ public:
                HdxIntersector::Result*);
 
     /// Set the resolution of the intersector in pixels. Note that setting this
-    /// resolution frequently may result in poor preformance.
+    /// resolution frequently may result in poor performance.
     HDX_API
     void SetResolution(GfVec2i const& widthHeight);
 
@@ -242,7 +242,11 @@ public:
     private:
         bool _ResolveHit(int index, int x, int y, float z, Hit* hit) const;
         size_t _GetHash(int index) const;
+        bool _IsIdValid(unsigned char const* ids, int index) const;
         bool _IsPrimIdValid(int index) const;
+        bool _IsPointIdValid(int index) const;
+        bool _IsEdgeIdValid(int index) const;
+        bool _IsValidHit(int index) const;
         
         std::unique_ptr<unsigned char[]> _primIds;
         std::unique_ptr<unsigned char[]> _instanceIds;
