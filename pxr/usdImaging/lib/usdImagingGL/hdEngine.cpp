@@ -737,15 +737,12 @@ UsdImagingGLHdEngine::Render(RenderParams params)
     VtValue renderTags(_renderTags);
     _engine.SetTaskContextData(HdxTokens->renderTags, renderTags);
 
-    TfToken const& renderMode = params.enableIdRender ?
-        HdxTaskSetTokens->idRender : HdxTaskSetTokens->colorRender;
-
     HdTaskSharedPtrVector tasks;
     
     if (false) {
-        tasks = _taskController->GetTasks(renderMode);
+        tasks = _taskController->GetTasks();
     } else {
-        TF_FOR_ALL(it, _taskController->GetTasks(renderMode)) {
+        TF_FOR_ALL(it, _taskController->GetTasks()) {
             tasks.push_back(boost::make_shared<_DebugGroupTaskWrapper>(*it));
         }
     }

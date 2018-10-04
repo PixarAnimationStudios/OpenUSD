@@ -41,13 +41,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdxTaskSetTokens, HDX_TASK_SET_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdxIntersectionModeTokens, \
     HDX_INTERSECTION_MODE_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (idRenderTask)
     (renderTask)
     (selectionTask)
     (simpleLightTask)
@@ -117,7 +115,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     // parameter of most tasks.
 
     _CreateCamera();
-    _CreateRenderTasks();
+    _CreateRenderTask();
     _CreateSelectionTask();
     _CreateLightingTask();
     _CreateShadowTask();
@@ -143,12 +141,9 @@ HdxTaskController::_CreateCamera()
 }
 
 void
-HdxTaskController::_CreateRenderTasks()
+HdxTaskController::_CreateRenderTask()
 {
-    // Create two render tasks, one to create a color render, the other
-    // to create an id render (so we don't need to thrash params).
     _renderTaskId = GetControllerId().AppendChild(_tokens->renderTask);
-    _idRenderTaskId = GetControllerId().AppendChild(_tokens->idRenderTask);
 
     HdxRenderTaskParams renderParams;
     renderParams.camera = _cameraId;
@@ -158,21 +153,15 @@ HdxTaskController::_CreateRenderTasks()
                                  HdReprSelector(HdReprTokens->smoothHull));
     collection.SetRootPath(SdfPath::AbsoluteRootPath());
 
-    SdfPath const renderTasks[] = {
-        _renderTaskId,
-        _idRenderTaskId,
-    };
-    for (size_t i = 0; i < sizeof(renderTasks)/sizeof(renderTasks[0]); ++i) {
-        GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate,
-            renderTasks[i]);
+    GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate,
+        _renderTaskId);
 
-        _delegate.SetParameter(renderTasks[i], HdTokens->params,
-            renderParams);
-        _delegate.SetParameter(renderTasks[i], HdTokens->children,
-            SdfPathVector());
-        _delegate.SetParameter(renderTasks[i], HdTokens->collection,
-            collection);
-    }
+    _delegate.SetParameter(_renderTaskId, HdTokens->params,
+        renderParams);
+    _delegate.SetParameter(_renderTaskId, HdTokens->children,
+        SdfPathVector());
+    _delegate.SetParameter(_renderTaskId, HdTokens->collection,
+        collection);
 }
 
 void
@@ -251,7 +240,6 @@ HdxTaskController::~HdxTaskController()
     GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
     SdfPath const tasks[] = {
         _renderTaskId,
-        _idRenderTaskId,
         _selectionTaskId,
         _simpleLightTaskId,
         _shadowTaskId,
@@ -269,33 +257,34 @@ HdxTaskController::~HdxTaskController()
 }
 
 HdTaskSharedPtrVector const& 
-HdxTaskController::GetTasks(TfToken const& taskSet)
+HdxTaskController::GetTasks()
 {
     _tasks.clear();
 
     // Light - Only run simpleLightTask if the backend supports simpleLight...
     if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        const HdxSimpleLightTaskParams& simpleLightParams =
-            _delegate.GetParameter<HdxSimpleLightTaskParams>(
-                _simpleLightTaskId, HdTokens->params);
         _tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
 
         // If shadows are enabled then we add the task to generate the 
         // shadow maps.
+        const HdxSimpleLightTaskParams& simpleLightParams =
+            _delegate.GetParameter<HdxSimpleLightTaskParams>(
+                _simpleLightTaskId, HdTokens->params);
+
         if (simpleLightParams.enableShadows) {
             _tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
         }
     }
 
     // Render
-    if (taskSet == HdxTaskSetTokens->idRender) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_idRenderTaskId));
-    } else if (taskSet == HdxTaskSetTokens->colorRender) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_renderTaskId));
-    }
+    _tasks.push_back(GetRenderIndex()->GetTask(_renderTaskId));
 
-    // Selection highlighting (overlay on color render).
-    if (taskSet == HdxTaskSetTokens->colorRender) {
+    // Selection highlighting (overlay as long as this isn't an id render).
+    const HdxRenderTaskParams& renderTaskParams =
+        _delegate.GetParameter<HdxRenderTaskParams>(
+            _renderTaskId, HdTokens->params);
+
+    if (!renderTaskParams.enableIdRender) {
         _tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
     }
 
@@ -520,37 +509,24 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
 void
 HdxTaskController::SetCollection(HdRprimCollection const& collection)
 {
-    SdfPath const tasks[] = {
-        _renderTaskId,
-        _idRenderTaskId,
-    };
-    // Update the collection for each task. Check only the first task
-    // to see if the value changed; if so, update all tasks.
     HdRprimCollection oldCollection =
         _delegate.GetParameter<HdRprimCollection>(
-            tasks[0], HdTokens->collection);
+            _renderTaskId, HdTokens->collection);
+
     if (oldCollection == collection) {
         return;
     }
 
-    for(size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
-        _delegate.SetParameter(tasks[i], HdTokens->collection,
-            collection);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            tasks[i], HdChangeTracker::DirtyCollection);
-    }
+    _delegate.SetParameter(_renderTaskId, HdTokens->collection, collection);
+    GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+        _renderTaskId, HdChangeTracker::DirtyCollection);
 }
 
 void
 HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
 {
-    // Update the render params. If params.enableIdRender is set, we update
-    // the id render task params; otherwise, we update the color render task
-    // params.
-    SdfPath& task = params.enableIdRender ? _idRenderTaskId : _renderTaskId;
-
     HdxRenderTaskParams oldParams = _delegate.GetParameter<HdxRenderTaskParams>(
-        task, HdTokens->params);
+        _renderTaskId, HdTokens->params);
     // We explicitly ignore params.viewport and params.camera
     HdxRenderTaskParams mergedParams = params;
     mergedParams.camera = oldParams.camera;
@@ -558,9 +534,9 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
     mergedParams.attachments = oldParams.attachments;
 
     if (mergedParams != oldParams) {
-        _delegate.SetParameter(task, HdTokens->params, mergedParams);
+        _delegate.SetParameter(_renderTaskId, HdTokens->params, mergedParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                task, HdChangeTracker::DirtyParams);
+                _renderTaskId, HdChangeTracker::DirtyParams);
 
         // Update shadow task in case materials have been enabled/disabled
         if (GetRenderIndex()->IsSprimTypeSupported(
@@ -829,28 +805,18 @@ HdxTaskController::SetCameraMatrices(GfMatrix4d const& viewMatrix,
 void
 HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
 {
-    SdfPath const tasks[] = {
-        _renderTaskId,
-        _idRenderTaskId,
-    };
-    // Update the viewport in the task params for each task.
-    // Check only the first task to see if the value changed;
-    // if so, update all tasks.
-    GfVec4d oldViewport = _delegate.GetParameter<HdxRenderTaskParams>(
-            tasks[0], HdTokens->params).viewport;
-    if (oldViewport == viewport) {
+    HdxRenderTaskParams params =
+        _delegate.GetParameter<HdxRenderTaskParams>(
+            _renderTaskId, HdTokens->params);
+
+    if (params.viewport == viewport) {
         return;
     }
 
-    for(size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
-        HdxRenderTaskParams params =
-            _delegate.GetParameter<HdxRenderTaskParams>(
-                tasks[i], HdTokens->params);
-        params.viewport = viewport;
-        _delegate.SetParameter(tasks[i], HdTokens->params, params);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            tasks[i], HdChangeTracker::DirtyParams);
-    }
+    params.viewport = viewport;
+    _delegate.SetParameter(_renderTaskId, HdTokens->params, params);
+    GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+        _renderTaskId, HdChangeTracker::DirtyParams);
 
     if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
         // The shadow and camera viewport should be the same
