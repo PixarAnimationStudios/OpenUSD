@@ -33,12 +33,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<NdrParserPlugin>();
 }
 
-// Static member initialization
-const NdrTokenVec& NdrParserPlugin::DiscoveryTypes =
-    {TfToken("unknown discovery type")};
-const TfToken& NdrParserPlugin::SourceType =
-    TfToken("unknown source type");
-
 NdrParserPlugin::NdrParserPlugin()
 {
     // nothing yet
@@ -61,8 +55,8 @@ NdrParserPlugin::GetInvalidNode(const NdrNodeDiscoveryResult& dr)
             dr.version,
             dr.name,
             dr.family,
-            NdrParserPlugin::DiscoveryTypes.front(),
-            NdrParserPlugin::SourceType,
+            TfToken("unknown discovery type"),
+            TfToken("unknown source type"),
             dr.uri,
             /* properties = */ NdrPropertyUniquePtrVec()
         )

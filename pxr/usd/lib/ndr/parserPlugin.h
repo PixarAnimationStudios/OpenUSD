@@ -137,30 +137,22 @@ public:
     virtual NdrNodeUniquePtr Parse(
         const NdrNodeDiscoveryResult& discoveryResult) = 0;
 
-    /// The types of nodes that this plugin can parse.
+    /// Returns the types of nodes that this plugin can parse.
     ///
     /// "Type" here is the discovery type (in the case of files, this will
     /// probably be the file extension, but in other systems will be data that
     /// can be determined during discovery). This type should only be used to
     /// match up a `NdrNodeDiscoveryResult` to its parser plugin; this value is
     /// not exposed in the node's API.
-    static const NdrTokenVec& DiscoveryTypes;
+    NDR_API
+    virtual const NdrTokenVec& GetDiscoveryTypes() const = 0;
 
-    /// The source type that this parser operates on.
+    /// Returns the source type that this parser operates on.
     ///
     /// A source type is the most general type for a node. The parser plugin is
     /// responsible for parsing all discovery results that have the types
     /// declared under `GetDiscoveryTypes()`, and those types are collectively
     /// identified as one "source type".
-    static const TfToken& SourceType;
-
-    /// Gets the static member `DiscoveryTypes`. Useful if you have a pointer
-    /// to a parser plugin and need the derived parser's discovery types.
-    NDR_API
-    virtual const NdrTokenVec& GetDiscoveryTypes() const = 0;
-
-    /// Gets the static member `SourceType`. Useful if you have a pointer
-    /// to a parser plugin and need the derived parser's source type.
     NDR_API
     virtual const TfToken& GetSourceType() const = 0;
 
