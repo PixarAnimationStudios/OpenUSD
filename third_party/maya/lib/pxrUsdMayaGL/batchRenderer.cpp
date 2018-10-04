@@ -310,7 +310,7 @@ UsdMayaGLBatchRenderer::RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
     _ShapeAdapterHandleMap& handleMap = isViewport2 ?
         _shapeAdapterHandleMap :
         _legacyShapeAdapterHandleMap;
-    handleMap.erase(MObject(shapeAdapter->GetDagPath().node()));
+    handleMap.erase(MObjectHandle(shapeAdapter->GetDagPath().node()));
 
     return (numErased > 0u);
 }

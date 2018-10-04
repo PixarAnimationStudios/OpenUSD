@@ -51,6 +51,7 @@
 #include <maya/MFnNumericData.h>
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -58,6 +59,8 @@
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 
@@ -76,11 +79,37 @@ struct _CmpDag
     }
 };
 
+/// Set of DAG paths.
+/// Warning: MDagPaths refer to specific objects, so the internal fullPathName
+/// may change over time. Only use this class if you can guarantee that DAG
+/// nodes won't be renamed or reparented while class instances are alive.
+/// Otherwise, you may see inconsistent results.
 using MDagPathSet = std::set<MDagPath, _CmpDag>;
 
+/// Mapping of DAG paths to an arbitrary type.
+/// Warning: MDagPaths refer to specific objects, so the internal fullPathName
+/// may change over time. Only use this class if you can guarantee that DAG
+/// nodes won't be renamed or reparented while class instances are alive.
+/// Otherwise, you may see inconsistent results.
 template <typename V>
 using MDagPathMap = std::map<MDagPath, V, _CmpDag>;
 
+struct _HashObjectHandle
+{
+    unsigned long operator()(const MObjectHandle& handle) const
+    {
+        return handle.hashCode();
+    }
+};
+
+/// Unordered set of Maya object handles.
+using MObjectHandleUnorderedSet =
+        std::unordered_set<MObjectHandle, _HashObjectHandle>;
+
+/// Unordered mapping of Maya object handles to an arbitrary type.
+template <typename V>
+using MObjectHandleUnorderedMap =
+        std::unordered_map<MObjectHandle, V, _HashObjectHandle>;
 
 /// RAII-style helper for destructing an MDataHandle obtained from a plug
 /// once it goes out of scope.
@@ -90,7 +119,9 @@ class MDataHandleHolder : public TfRefBase
     MDataHandle _dataHandle;
 
 public:
+    PXRUSDMAYA_API
     static TfRefPtr<MDataHandleHolder> New(const MPlug& plug);
+    PXRUSDMAYA_API
     MDataHandle GetDataHandle() { return _dataHandle; }
 
 private:

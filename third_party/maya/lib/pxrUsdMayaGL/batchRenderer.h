@@ -34,6 +34,7 @@
 #include "pxrUsdMayaGL/softSelectHelper.h"
 #include "usdMaya/diagnosticDelegate.h"
 #include "usdMaya/notice.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -369,13 +370,8 @@ private:
 
     /// Mapping of Maya object handles to their shape adapters.
     /// This is a "secondary" container for storing shape adapters.
-    struct _MObjectHandleHash {
-        unsigned long operator()(const MObjectHandle& handle) const {
-            return handle.hashCode();
-        }
-    };
-    typedef std::unordered_map<MObjectHandle, PxrMayaHdShapeAdapter*,
-            _MObjectHandleHash> _ShapeAdapterHandleMap;
+    typedef UsdMayaUtil::MObjectHandleUnorderedMap<PxrMayaHdShapeAdapter*>
+            _ShapeAdapterHandleMap;
 
     /// We maintain separate object handle path maps for Viewport 2.0 and the
     /// legacy viewport.
