@@ -822,12 +822,12 @@ px_vp20Utils::RenderWireCubes(
 
     static const std::string vertexShaderSource(R"(#version 140
 in vec3 position;
-uniform mat4 cubeXform;
+in mat4 cubeXformT;
 uniform mat4 vpMatrix;
 
 void main()
 {
-    gl_Position = vec4(position, 1.0) * cubeXform * vpMatrix;
+    gl_Position = vec4(position, 1.0) * transpose(cubeXformT) * vpMatrix;
 })");
 
     static const std::string fragmentShaderSource(R"(#version 140
@@ -867,6 +867,10 @@ void main()
 
     glUseProgram(renderBoundsProgramId);
 
+    GLuint cubesVAO;
+    glGenVertexArrays(1, &cubesVAO);
+    glBindVertexArray(cubesVAO);
+
     // Populate the shader variables.
     GfMatrix4f vpMatrix(worldViewMat * projectionMat);
     GLuint vpMatrixLoc = glGetUniformLocation(renderBoundsProgramId, "vpMatrix");
@@ -874,11 +878,29 @@ void main()
             GL_TRUE, // transpose
             vpMatrix.data());
 
+    // Populate the color
     GLuint colorLocation = glGetUniformLocation(renderBoundsProgramId, "color");
     glUniform4fv(colorLocation, 1, color.data());
 
-    // Populate an array buffer with the cube line vertices and bind it to
-    // GL_ARRAY_BUFFER.
+    // Setup and populate matrix buffers
+    GLuint matricesVBO;
+    glGenBuffers(1, &matricesVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, matricesVBO);
+    const size_t numCubes = cubeXforms.size();
+    // since we're copying these directly from GfMatrix4f, we need to
+    // transpose() them in the shader.
+    const GLuint cubeXformLoc = glGetAttribLocation(renderBoundsProgramId, "cubeXformT");
+    glBufferData(GL_ARRAY_BUFFER, 
+            sizeof(GfMatrix4f) * numCubes, cubeXforms.data(), GL_DYNAMIC_DRAW);
+    for (size_t r = 0; r < 4; r++) {
+        GLuint loc = cubeXformLoc + r;
+        glEnableVertexAttribArray(loc);
+        glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, sizeof(GfMatrix4f), 
+                (char*)(sizeof(float)*4*r));
+        glVertexAttribDivisor(loc, 1);
+    }
+
+    // Populate an array buffer with the cube line vertices.
     GLuint cubeLinesVBO;
     glGenBuffers(1, &cubeLinesVBO);
     glBindBuffer(GL_ARRAY_BUFFER, cubeLinesVBO);
@@ -886,24 +908,24 @@ void main()
                  sizeof(cubeLineVertices),
                  cubeLineVertices,
                  GL_STATIC_DRAW);
+    const GLuint positionLocation = glGetAttribLocation(renderBoundsProgramId, "position");
+    glEnableVertexAttribArray(positionLocation);
+    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    for (const auto& cubeXform: cubeXforms) {
-        GLuint cubeXformLoc = glGetUniformLocation(renderBoundsProgramId, "cubeXform");
-        glUniformMatrix4fv(cubeXformLoc, 1, 
-                GL_TRUE, // transpose
-                cubeXform.data());
+    // draw all cubes
+    glDrawArraysInstanced(GL_LINES, 0, sizeof(cubeLineVertices), numCubes);
 
-        // Enable the position attribute and draw.
-        GLuint positionLoc = glGetAttribLocation(renderBoundsProgramId, "position");
-        glEnableVertexAttribArray(positionLoc);
-        glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glDrawArrays(GL_LINES, 0, sizeof(cubeLineVertices));
-        glDisableVertexAttribArray(positionLoc);
-    }
-
+    // cleanup
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDisableVertexAttribArray(positionLocation);
     glDeleteBuffers(1, &cubeLinesVBO);
-
+    for (size_t r = 0; r < 4; r++) {
+        GLuint loc = cubeXformLoc + r;
+        glDisableVertexAttribArray(loc);
+    }
+    glDeleteBuffers(1, &matricesVBO);
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &cubesVAO);
     glUseProgram(0);
 
     return true;
