@@ -37,7 +37,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/site.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <iosfwd>
@@ -55,11 +54,15 @@ TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 /// Tracks the dependencies of PcpPrimIndex entries in a PcpCache.
 /// This is an internal class only meant for use by PcpCache.
 ///
-class Pcp_Dependencies : boost::noncopyable {
+class Pcp_Dependencies {
 public:
     /// Construct with no dependencies.
     Pcp_Dependencies();
     ~Pcp_Dependencies();
+
+    // Pcp_Dependencies needs to be noncopyable
+    Pcp_Dependencies(const Pcp_Dependencies&) = delete;
+    Pcp_Dependencies& operator=(const Pcp_Dependencies&) = delete;
 
     /// \name Registration
     /// @{

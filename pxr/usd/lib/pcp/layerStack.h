@@ -34,7 +34,6 @@
 #include "pxr/usd/sdf/layerTree.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/noncopyable.hpp>
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -62,11 +61,18 @@ class PcpLifeboat;
 ///
 /// PcpLayerStacks are constructed and managed by a Pcp_LayerStackRegistry.
 ///
-class PcpLayerStack : public TfRefBase, public TfWeakBase, boost::noncopyable {
+class PcpLayerStack : public TfRefBase, public TfWeakBase {
 public:
     // See Pcp_LayerStackRegistry for creating layer stacks.
     PCP_API
     virtual ~PcpLayerStack();
+
+    // PcpLayerStack needs to be noncopyable
+    PCP_API
+    PcpLayerStack(const PcpLayerStack&) = delete;
+
+    PCP_API
+    PcpLayerStack& operator=(const PcpLayerStack&) = delete;
 
     /// Returns the identifier for this layer stack.
     PCP_API
