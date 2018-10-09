@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/tf/token.h"
-#include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <stdint.h>
 #include <string>
@@ -45,12 +44,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// An alembic reader suitable for an SdfAbstractData.
 ///
-class UsdAbc_AlembicDataReader : boost::noncopyable {
+class UsdAbc_AlembicDataReader {
 public:
     typedef int64_t Index;
 
     UsdAbc_AlembicDataReader();
     ~UsdAbc_AlembicDataReader();
+
+    // Disallow copies
+    UsdAbc_AlembicDataReader(const UsdAbc_AlembicDataReader&) = delete;
+    UsdAbc_AlembicDataReader& operator=(const UsdAbc_AlembicDataReader&) = delete;
 
     /// Open a file.  Returns \c true on success;  errors are reported by
     /// \c GetErrors().

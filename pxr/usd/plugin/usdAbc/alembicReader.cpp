@@ -826,8 +826,12 @@ private:
                    const UsdAbc_AlembicDataAny& value) const;
 
     // Custom auto-lock that safely ignores a NULL pointer.
-    class _Lock : boost::noncopyable {
+    class _Lock {
     public:
+        // Disallow copies
+        _Lock(const _Lock&) = delete;
+        _Lock& operator=(const _Lock&) = delete;
+
         _Lock(std::recursive_mutex* mutex) : _mutex(mutex) {
             if (_mutex) _mutex->lock();
         }
