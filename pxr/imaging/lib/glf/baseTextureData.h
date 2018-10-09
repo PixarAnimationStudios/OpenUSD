@@ -33,20 +33,24 @@
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/noncopyable.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 
 class GlfBaseTextureData : public TfRefBase,
-                           public TfWeakBase,
-                           boost::noncopyable
+                           public TfWeakBase
 {
 public:
     GLF_API
     virtual ~GlfBaseTextureData();
+
+    GLF_API
+    GlfBaseTextureData() = default;
+
+    // Disallow copies
+    GlfBaseTextureData(const GlfBaseTextureData&) = delete;
+    GlfBaseTextureData& operator=(const GlfBaseTextureData&) = delete;
 
     struct WrapInfo {
         WrapInfo() :

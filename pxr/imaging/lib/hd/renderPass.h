@@ -68,8 +68,11 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 /// Rendering backends are expected to specialize this abstract class, and
 /// return the specialized object via HdRenderDelegate::CreateRenderPass
 ///
-class HdRenderPass : boost::noncopyable {
+class HdRenderPass {
 public:
+    HdRenderPass(const HdRenderPass&) = delete;
+    HdRenderPass& operator=(const HdRenderPass&) = delete;
+    
     HD_API
     HdRenderPass(HdRenderIndex *index, HdRprimCollection const& collection);
     HD_API

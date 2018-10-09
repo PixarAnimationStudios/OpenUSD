@@ -112,7 +112,6 @@
 #include <boost/mpl/remove.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/vector/vector40.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/preprocessor.hpp>

@@ -40,7 +40,6 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <boost/noncopyable.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,7 +59,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 /// A texture is typically defined by reading texture image data from an image
 /// file but a texture might also represent an attachment of a draw target.
 ///
-class GlfTexture : public TfRefBase, public TfWeakBase, boost::noncopyable {
+class GlfTexture : public TfRefBase, public TfWeakBase {
 public:
     /// \class Binding
     ///
@@ -89,6 +88,10 @@ public:
 
     GLF_API
     virtual ~GlfTexture() = 0;
+
+    // Disallow copies
+    GlfTexture(const GlfTexture&) = delete;
+    GlfTexture& operator=(const GlfTexture&) = delete;
 
     /// Returns the bindings to use this texture for the shader resource
     /// named \a identifier. If \a samplerId is specified, the bindings

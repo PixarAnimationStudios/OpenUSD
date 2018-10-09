@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
 #include "pxr/base/arch/threads.h"
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,10 +48,14 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 /// This mechanism depends on the application code registering callbacks to
 /// provide access to its GL contexts.
 ///
-class GlfGLContext : public boost::noncopyable {
+class GlfGLContext {
 public:
     GLF_API
     virtual ~GlfGLContext();
+
+    // Disallow copies
+    GlfGLContext(const GlfGLContext&) = delete;
+    GlfGLContext& operator=(const GlfGLContext&) = delete;
 
     /// Returns an instance for the current GL context.
     GLF_API
@@ -162,12 +165,16 @@ protected:
 /// The underlying calls to make GL contexts current can be moderately
 /// expensive.  So, this mechanism should be used carefully.
 ///
-class GlfGLContextScopeHolder : boost::noncopyable {
+class GlfGLContextScopeHolder {
 public:
     /// Make the given context current and restore the current context
     /// when this object is destroyed.
     GLF_API
     explicit GlfGLContextScopeHolder(const GlfGLContextSharedPtr& newContext);
+
+    // Disallow copies
+    GlfGLContextScopeHolder(const GlfGLContextScopeHolder&) = delete;
+    GlfGLContextScopeHolder& operator=(const GlfGLContextScopeHolder&) = delete;
 
     GLF_API
     ~GlfGLContextScopeHolder();
@@ -249,10 +256,16 @@ private:
 /// If you subclass GlfGLContext you should subclass this type and
 /// instantiate an instance on the heap.  It will be cleaned up
 /// automatically.
-class GlfGLContextRegistrationInterface : boost::noncopyable {
+class GlfGLContextRegistrationInterface {
 public:
     GLF_API
     virtual ~GlfGLContextRegistrationInterface();
+
+    // Disallow copies
+    GlfGLContextRegistrationInterface(
+        const GlfGLContextRegistrationInterface&) = delete;
+    GlfGLContextRegistrationInterface& operator=(
+        const GlfGLContextRegistrationInterface&) = delete;
 
     /// If this GLContext system supports a shared context this should
     /// return it.  This will be called at most once.
