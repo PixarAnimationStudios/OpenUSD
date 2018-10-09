@@ -242,6 +242,18 @@ class VtArray : public Vt_ArrayBase {
     /// Create an empty array.
     VtArray() : _data(nullptr) {}
 
+    /// Create an array from a pair of iterators
+    ///
+    /// Equivalent to:
+    /// \code
+    /// VtArray<T> v;
+    /// v.assign(first, last);
+    /// \endcode
+    template <typename ForwardIterator>
+    VtArray(ForwardIterator first, ForwardIterator last) : VtArray() {
+        assign(first, last); 
+    }
+
     /// Create an array with foreign source.
     VtArray(Vt_ArrayForeignDataSource *foreignSrc,
             ElementType *data, size_t size, bool addRef = true)
