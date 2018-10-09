@@ -71,8 +71,8 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
     std::sort(variantSelectionsSorted.begin(), variantSelectionsSorted.end());
 
     std::string sessionKey = modelName;
-    TF_FOR_ALL(itr, variantSelectionsSorted) {
-        sessionKey += ":" + itr->first + "=" + itr->second;
+    for (const auto& p : variantSelectionsSorted) {
+        sessionKey += ":" + p.first + "=" + p.second;
     }
 
     SdfLayerRefPtr ret;
@@ -89,10 +89,9 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
                     layer,
                     modelName,
                     SdfSpecifierOver);
-                TF_FOR_ALL(varSelItr, variantSelections) {
+                for (const auto& p : variantSelections) {
                     // Construct the variant opinion for the session layer.
-                    over->GetVariantSelections()[varSelItr->first] =
-                        varSelItr->second;
+                    over->GetVariantSelections()[p.first] = p.second;
                 }
             }
             sessionLayerMap[sessionKey] = layer;
