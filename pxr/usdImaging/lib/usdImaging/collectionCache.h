@@ -56,6 +56,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class UsdImaging_CollectionCache {
 public:
+    UsdImaging_CollectionCache() = default;
+
     // Disallow copies
     UsdImaging_CollectionCache(const UsdImaging_CollectionCache&) = delete;
     UsdImaging_CollectionCache& operator=(const UsdImaging_CollectionCache&) = delete;
