@@ -670,6 +670,28 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 3)), 
                          [1.0, 2.0, 3.0])
 
+    @unittest.skipIf(Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'),
+                     "skipping test when using legacy clips")
+    def test_MultipleClipsWithTimesSpanningClips2(self):
+        """Another test similar to test_MultipleClipsWithTimesSpanningClips"""
+        stage = Usd.Stage.Open('multiclip/root.usda')
+        stage.SetInterpolationType(Usd.InterpolationTypeHeld)
+
+        model = stage.GetPrimAtPath('/ModelWithTimesSpanningClips_2')
+        attr = model.GetAttribute('size')
+
+        _Check(self.assertEqual, attr, time=100.5, expected=100.5)
+        _Check(self.assertEqual, attr, time=100.75, expected=100.75)
+        _Check(self.assertEqual, attr, time=101.0, expected=101.0)
+        _Check(self.assertEqual, attr, time=101.5, expected=201.5)
+        _Check(self.assertEqual, attr, time=101.75, expected=201.75)
+        _Check(self.assertEqual, attr, time=102, expected=202)
+
+        self.assertEqual(attr.GetTimeSamples(), 
+                         [100.5, 100.75, 101.0, 101.5, 101.75, 102.0])
+        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(101, 102)), 
+                         [101.0, 101.5, 101.75, 102.0])
+
     def test_OverrideOfAncestralClips(self):
         """Tests that clips specified on a descendant model will override
         clips specified on an ancestral model"""

@@ -24,6 +24,8 @@
 #ifndef _GUSD_USD_VISCACHE_
 #define _GUSD_USD_VISCACHE_
 
+#include "gusd/api.h"
+
 #include "gusd/USD_DataCache.h"
 #include "gusd/UT_CappedCache.h"
 
@@ -42,6 +44,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GusdUSD_VisCache final : public GusdUSD_DataCache
 {
 public:
+
+    GUSD_API
     static GusdUSD_VisCache&    GetInstance();
 
     GusdUSD_VisCache(GusdStageCache& cache);
@@ -50,12 +54,17 @@ public:
     virtual ~GusdUSD_VisCache() {}
 
     // Not cached.
+    GUSD_API
     bool    GetVisibility(const UsdPrim& prim, UsdTimeCode time);
     
     // Cached.
+    GUSD_API
     bool    GetResolvedVisibility(const UsdPrim& prim, UsdTimeCode time);
 
+    GUSD_API
     virtual void    Clear() override;
+
+    GUSD_API
     virtual int64   Clear(const UT_StringSet& paths) override;
 
 private:

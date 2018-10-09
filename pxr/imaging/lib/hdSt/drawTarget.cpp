@@ -330,6 +330,8 @@ HdStDrawTarget::_SetAttachments(
                               attachments.GetDepthMagFilter());
    _drawTarget->Unbind();
 
+   _renderPassState.SetDepthPriority(attachments.GetDepthPriority());
+
    GlfGLContext::MakeCurrent(oldContext);
 
    // The texture bindings have changed so increment the version
@@ -383,10 +385,23 @@ HdStDrawTarget::_RegisterTextureResource(
     HdTextureResource::ID texID =
                               sceneDelegate->GetTextureResourceID(resourcePath);
 
+    // Use render index to convert local texture id into global
+    // texture key.  This is because the instance registry is shared by
+    // multiple render indexes, but the scene delegate generated
+    // texture id's are only unique to the scene.  (i.e. two draw
+    // targets at the same path in the scene are likely to produce the
+    // same texture id, even though they refer to textures on different
+    // render indexes).
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdResourceRegistry::TextureKey texKey = renderIndex.GetTextureKey(texID);
+
+
     // Add to resource registry
-    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> texInstance;
+    HdInstance<HdResourceRegistry::TextureKey,
+               HdTextureResourceSharedPtr> texInstance;
     std::unique_lock<std::mutex> regLock =
-                  resourceRegistry->RegisterTextureResource(texID, &texInstance);
+                  resourceRegistry->RegisterTextureResource(texKey,
+                                                            &texInstance);
 
     if (texInstance.IsFirstInstance()) {
         texInstance.SetValue(HdTextureResourceSharedPtr(

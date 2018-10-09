@@ -213,18 +213,19 @@ void HdEmbree_TestGLDrawing::InitTest()
     // include/exclude paths, so all geometry is included.
 
     // There are several pre-defined repr tokens. Some that we make use of:
-    // - HdTokens->hull is the flat-shaded, unrefined mesh.
-    // - HdTokens->smoothHull is the smooth-shaded, unrefined mesh.
-    // - HdTokens->refined is the smooth-shaded, refined mesh.
+    // - HdReprTokens->hull is the flat-shaded, unrefined mesh.
+    // - HdReprTokens->smoothHull is the smooth-shaded, unrefined mesh.
+    // - HdReprTokens->refined is the smooth-shaded, refined mesh.
 
     if (_refined) {
         _sceneDelegate->UpdateTask(renderTask, HdTokens->collection,
                 VtValue(HdRprimCollection(HdTokens->geometry, 
-                HdTokens->refined)));
+                HdReprSelector(HdReprTokens->refined))));
     } else {
         _sceneDelegate->UpdateTask(renderTask, HdTokens->collection,
                 VtValue(HdRprimCollection(HdTokens->geometry, 
-                _smooth ? HdTokens->smoothHull : HdTokens->hull)));
+                HdReprSelector(_smooth ? HdReprTokens->smoothHull 
+                                       : HdReprTokens->hull))));
     }
 
     // Tasks can have child tasks that get scheduled together.

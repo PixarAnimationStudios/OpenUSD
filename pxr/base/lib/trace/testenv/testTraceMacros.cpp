@@ -25,6 +25,8 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/eventNode.h"
+#include "pxr/base/trace/eventTree.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <iostream>
 
@@ -38,8 +40,10 @@ TestMacros() {
         {
             TRACE_FUNCTION_SCOPE("Inner Scope");
             TRACE_COUNTER_DELTA("Counter A", 1);
+            TRACE_MARKER("Marker A");
         }
         TRACE_COUNTER_VALUE("Counter B", 2);
+        TRACE_MARKER_DYNAMIC(TfStringPrintf("Dynamic Marker %d", 1));
     }
 }
 
@@ -74,6 +78,19 @@ int main(int argc, char* argv[]) {
     it = counters.find(TfToken("Counter B"));
     TF_AXIOM(it != counters.end());
     TF_AXIOM(it->second == 2.0);
+
+    // Test Markers
+    TraceEventTreeRefPtr timeline = reporter->GetEventTree();
+    TF_AXIOM(timeline);
+
+    const TraceEventTree::MarkerValuesMap& markers =
+        timeline->GetMarkers();
+    TraceEventTree::MarkerValuesMap::const_iterator it2 =
+        markers.find(TfToken("Marker A"));
+    TF_AXIOM(it2 != markers.end());
+    TraceEventTree::MarkerValuesMap::const_iterator it3 =
+        markers.find(TfToken("Dynamic Marker 1"));
+    TF_AXIOM(it3 != markers.end());
 
     return 0;
 }

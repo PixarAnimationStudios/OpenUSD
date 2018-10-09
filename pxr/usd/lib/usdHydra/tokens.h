@@ -147,6 +147,16 @@ struct UsdHydraTokensType {
     /// coordinate of -0.2 becomes the equivalent of 0.8.
     const TfToken repeat;
 
+    /// \brief "useMetadata"
+    ///
+    /// Possible value for "wrapT" and "wrapS" inputs on a "UvTexture"
+    /// shader prim.
+    /// Causes the wrap value to be loaded from the texture file instead
+    /// of being specified in the prim.  If the texture file doesn't support
+    /// metadata or the metadata doesn't contain a wrap mode, the "black"
+    /// wrap mode is used.
+    const TfToken useMetadata;
+
     /// \brief "magFilter"
     /// 
     /// An input on a UvTexture shader.

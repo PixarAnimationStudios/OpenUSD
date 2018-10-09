@@ -69,11 +69,9 @@ UsdMayaProxyShapeUI::creator()
 void
 UsdMayaProxyShapeUI::getDrawRequests(
         const MDrawInfo& drawInfo,
-        bool /* isObjectAndActiveOnly */,
+        bool /* objectAndActiveOnly */,
         MDrawRequestQueue& requests)
 {
-    MDrawRequest request = drawInfo.getPrototype(*this);
-
     const MDagPath shapeDagPath = drawInfo.multiPath();
     UsdMayaProxyShape* shape =
         UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
@@ -106,6 +104,8 @@ UsdMayaProxyShapeUI::getDrawRequests(
         boundingBoxPtr = &boundingBox;
     }
 
+    MDrawRequest request = drawInfo.getPrototype(*this);
+
     _shapeAdapter.GetMayaUserData(this, request, boundingBoxPtr);
 
     // Add the request to the queue.
@@ -116,6 +116,14 @@ UsdMayaProxyShapeUI::getDrawRequests(
 void
 UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
+    if (!view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        return;
+    }
+
+    // Note that this Draw() call is only necessary when we're drawing the
+    // bounding box, since that is not yet handled by Hydra and is instead done
+    // internally by the batch renderer on a per-shape basis. Otherwise, the
+    // pxrHdImagingShape is what will invoke Hydra to draw the shape.
     view.beginGL();
 
     UsdMayaGLBatchRenderer::GetInstance().Draw(request, view);
@@ -130,14 +138,18 @@ UsdMayaProxyShapeUI::select(
         MSelectionList& selectionList,
         MPointArray& worldSpaceSelectedPoints) const
 {
+    M3dView view = selectInfo.view();
+
+    if (!view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        return false;
+    }
+
     MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
 
     // selectable() takes MSelectionMask&, not const MSelectionMask.  :(.
     if (!selectInfo.selectable(objectsMask)) {
         return false;
     }
-
-    M3dView view = selectInfo.view();
 
     // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
     // selectInfo.selectPath() returns the dag path to the assembly node, not
@@ -161,8 +173,7 @@ UsdMayaProxyShapeUI::select(
     const HdxIntersector::HitSet* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
-            view,
-            selectInfo.singleSelection());
+            selectInfo);
 
     const HdxIntersector::Hit* nearestHit =
         UsdMayaGLBatchRenderer::GetNearestHit(hitSet);

@@ -59,4 +59,5 @@ pxr_register_test(testSdrRegistry
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry"
     ENV
         PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH=1
+        PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
 )

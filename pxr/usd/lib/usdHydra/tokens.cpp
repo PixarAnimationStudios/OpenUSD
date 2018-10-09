@@ -41,6 +41,7 @@ UsdHydraTokensType::UsdHydraTokensType() :
     clamp("clamp", TfToken::Immortal),
     mirror("mirror", TfToken::Immortal),
     repeat("repeat", TfToken::Immortal),
+    useMetadata("useMetadata", TfToken::Immortal),
     magFilter("magFilter", TfToken::Immortal),
     minFilter("minFilter", TfToken::Immortal),
     linearMipmapLinear("linearMipmapLinear", TfToken::Immortal),
@@ -74,6 +75,7 @@ UsdHydraTokensType::UsdHydraTokensType() :
         nearestMipmapNearest,
         repeat,
         textureMemory,
+        useMetadata,
         uv,
         wrapS,
         wrapT

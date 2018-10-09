@@ -24,8 +24,9 @@
 
 #include "GT_PrimCache.h"
 
-#include "USD_StdTraverse.h"
 #include "primWrapper.h"
+#include "GT_PackedUSD.h"
+#include "USD_StdTraverse.h"
 #include "UT_Gf.h"
 #include "USD_PropertyMap.h"
 #include "USD_XformCache.h"
@@ -41,9 +42,11 @@
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_CatPolygonMesh.h>
 #include <SYS/SYS_Hash.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_HDKVersion.h>
 
-#if HDK_API_VERSION >= 16050446
+// 0x100501BE corresponds to 16.5.446.
+#if SYS_VERSION_FULL_INT >= 0x100501BE
 #include <GT/GT_PackedAlembic.h>
 #endif
 
@@ -58,7 +61,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 using std::vector;
 using std::cerr;
 using std::endl;
-
 
 typedef UT_IntrusivePtr<GT_PrimPolygonMesh> GT_PrimPolygonMeshHandle;
 
@@ -127,7 +129,7 @@ namespace {
         GT_PrimitiveHandle prim;
     };
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
     static inline void intrusive_ptr_add_ref(const CacheEntry *o) { const_cast<CacheEntry *>(o)->incref(); }
     static inline void intrusive_ptr_release(const CacheEntry *o) { const_cast<CacheEntry *>(o)->decref(); }
 #endif
@@ -148,17 +150,22 @@ namespace {
     // Override the refiner to recurse on subdivs and collections
     struct Refiner : public GT_RefineCollect {
 
-        vector<GT_CatPolygonMesh> coalescedMeshes;
-        vector<SYS_HashType> coalescedIds;
+        UT_Array<GT_CatPolygonMesh> coalescedMeshes;
+        UT_Array<SYS_HashType>      coalescedIds;
+        UT_Array<UT_Array<GT_PrimitiveHandle> > sourceMeshes;
         
         virtual void addPrimitive( const GT_PrimitiveHandle &prim )
         {
-            if( prim->getPrimitiveType() == GT_PRIM_SUBDIVISION_MESH ||
-                prim->getPrimitiveType() == GT_PRIM_COLLECT) {
+            const int primTypeId = prim->getPrimitiveType();
+
+            if( primTypeId == GT_PRIM_SUBDIVISION_MESH ||
+                primTypeId == GT_PRIM_COLLECT ||
+                primTypeId == GusdGT_PackedUSDMesh::getStaticPrimitiveType() ) {
+
                 prim->refine( *this );
             }
 
-            else if( prim->getPrimitiveType() == GT_PRIM_POLYGON_MESH ) {  
+            else if( primTypeId == GT_PRIM_POLYGON_MESH ) {  
 
 
                 // There are significant performace advantages to combining as 
@@ -189,16 +196,19 @@ namespace {
                 // concatenated meshs, just create a new one. 
                 bool appended = false;
                 for( size_t i = 0; i < coalescedMeshes.size(); ++i ) {
-                    if( coalescedMeshes[i].append( mesh )) {
-                        SYShashCombine<int64>( coalescedIds[i], meshId );
+                    if( coalescedMeshes(i).append( mesh )) {
+                        SYShashCombine<int64>( coalescedIds(i), meshId );
+                        sourceMeshes(i).append( mesh );
                         appended = true;
                         break;
                     }
                 }
                 if( !appended ) {
-                    coalescedMeshes.push_back( GT_CatPolygonMesh() );
-                    coalescedMeshes.back().append( mesh );
-                    coalescedIds.push_back( meshId );
+                    coalescedMeshes.append( GT_CatPolygonMesh() );
+                    coalescedMeshes.last().append( mesh );
+                    coalescedIds.append( meshId );
+                    sourceMeshes.append();
+                    sourceMeshes.last().append( mesh );
                 }
             }
             else {
@@ -438,26 +448,26 @@ CreateEntryFn::operator()(
             return new CacheEntry( refiner.getPrimCollect()->getPrim( 0 ) );
         }
         else {
-#if HDK_API_VERSION >= 16050446
-            auto meshHndl = refiner.coalescedMeshes[0].result();
-            // XXX In houdini 16.5 we'll crash if we don't wrap the output
-            // of GT_CatPolygonMesh in a GT_PackedAlembicMesh, similar to 
-            // SideFX's alembic code.
-            return new CacheEntry( new GT_PackedAlembicMesh( 
-                        refiner.coalescedMeshes[0].result(),
-                        refiner.coalescedIds[0]) );
+#if SYS_VERSION_FULL_INT >= 0x100501BE
+            return new CacheEntry( new GusdGT_PackedUSDMesh( 
+                        refiner.coalescedMeshes(0).result(),
+                        refiner.coalescedIds(0),
+                        refiner.sourceMeshes(0)));
 #else
-            return new CacheEntry( refiner.coalescedMeshes[0].result() );
+            return new CacheEntry( refiner.coalescedMeshes(0).result() );
 #endif
         }
     }
     GT_PrimCollect* collect = new GT_PrimCollect( *refiner.getPrimCollect() );
     for( size_t i = 0; i < refiner.coalescedMeshes.size(); ++i ) {
-        auto& catMesh = refiner.coalescedMeshes[i];
+        auto& catMesh = refiner.coalescedMeshes(i);
         GT_PrimitiveHandle meshPrim = catMesh.result();
-#if HDK_API_VERSION >= 16050446
+#if SYS_VERSION_FULL_INT >= 0x100501BE
         collect->appendPrimitive(
-                new GT_PackedAlembicMesh( meshPrim, refiner.coalescedIds[i] ) );
+                new GusdGT_PackedUSDMesh(
+                    meshPrim,
+                    refiner.coalescedIds(i),
+                    refiner.sourceMeshes(i)) );
 #else
         collect->appendPrimitive( meshPrim );
 #endif

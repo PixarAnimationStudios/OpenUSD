@@ -45,12 +45,12 @@ def _Err(msg):
     sys.stderr.write(msg + '\n')
 
 def _CheckCompliance(rootLayer, arkit=False):
-    checker = UsdUtils.ComplianceChecker(rootLayer, arkit=arkit, 
+    checker = UsdUtils.ComplianceChecker(arkit=arkit, 
         # We're going to flatten the USD stage and convert the root layer to 
         # crate file format before packaging, if necessary. Hence, skip these 
         # checks.
         skipARKitRootLayerCheck=True)
-    
+    checker.CheckCompliance(rootLayer)
     errors = checker.GetErrors()
     failedChecks = checker.GetFailedChecks()
     for msg in errors + failedChecks:
@@ -122,8 +122,9 @@ def main():
     parser = argparse.ArgumentParser(description='Utility for creating a .usdz '
         'file containging USD assets and for inspecting existing .usdz files.')
 
-    parser.add_argument('usdzFile', type=str, 
-                        help='Name of the .usdz file to create.')
+    parser.add_argument('usdzFile', type=str, nargs='?',
+                        help='Name of the .usdz file to create or to inspect '
+                        'the contents of.')
 
     parser.add_argument('inputFiles', type=str, nargs='*',
                         help='Files to include in the .usdz file.')
@@ -152,18 +153,20 @@ def main():
                         'layer fails any of the compliance checks, the package '
                         'is not created and the program fails.')
 
-    parser.add_argument('-l', '--list', dest='listContents', type=str, 
+    parser.add_argument('-l', '--list', dest='listTarget', type=str, 
                         nargs='?', default=None, const='-',
                         help='List contents of the specified usdz file. If '
                         'a file-path argument is provided, the list is output '
-                        'to a file at the given path. If not, it is output to '
-                        'stdout.')
-    parser.add_argument('-d', '--dump', dest='dumpContents', type=str, 
+                        'to a file at the given path. If no argument is '
+                        'provided or if \'-\' is specified as the argument, the'
+                        ' list is output to stdout.')
+    parser.add_argument('-d', '--dump', dest='dumpTarget', type=str, 
                         nargs='?', default=None, const='-',
                         help='Dump contents of the specified usdz file. If '
                         'a file-path argument is provided, the contents are '
-                        'output to a file at the given path. If not, it is '
-                        'output to stdout.')
+                        'output to a file at the given path. If no argument is '
+                        'provided or if \'-\' is specified as the argument, the'
+                        ' contents are output to stdout.')
 
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='Enable verbose mode, which causes messages '
@@ -172,29 +175,51 @@ def main():
 
     args = parser.parse_args()
     usdzFile = args.usdzFile
-    filesToAdd = args.inputFiles
+    inputFiles = args.inputFiles
 
     if args.asset and args.arkitAsset:
         parser.error("Specify either --asset or --arkitAsset, not both.")
 
-    if args.asset and len(filesToAdd)>0:
-        parser.error("Specify either inputFiles or an asset via --asset, "
-                     "not both.")
+    elif (args.arkitAsset or args.asset) and len(inputFiles)>0:
+        parser.error("Specify either inputFiles or an asset (via --asset or "
+                     "--arkitAsset, not both.")
 
-    # Ensure that the usdz file has the right extension.
-    if not usdzFile.endswith('.usdz'):
-        usdzFile += '.usdz'
+    # If usdzFile is not specified directly as an argument, check if it has been
+    # specified as an argument to the --list or --dump options. In these cases,
+    # output the list or the contents to stdout.
+    if not usdzFile:
+        if args.listTarget and args.listTarget != '-' and \
+           args.listTarget.endswith('.usdz') and \
+           os.path.exists(args.listTarget):
+            usdzFile = args.listTarget
+            args.listTarget = '-'
+        elif args.dumpTarget and args.dumpTarget != '-' and \
+           args.dumpTarget.endswith('.usdz') and \
+           os.path.exists(args.dumpTarget):
+            usdzFile = args.dumpTarget
+            args.dumpTarget = '-'
+        else:
+            parser.error("No usdz file specified!")
 
     # Check if we're in package creation mode and verbose mode is enabled, 
     # print some useful information.
-    if (args.asset or args.arkitAsset or len(filesToAdd)>0):
+    if (args.asset or args.arkitAsset or len(inputFiles)>0):
+        # Ensure that the usdz file has the right extension.
+        if not usdzFile.endswith('.usdz'):
+            usdzFile += '.usdz'
+
         if args.verbose:
             if os.path.exists(usdzFile):
                 print("File at path '%s' already exists. Overwriting file." % 
                         usdzFile)
+            
+            if args.inputFiles:
+                print('Creating package \'%s\' with files %s.' % 
+                      (usdzFile, inputFiles))
 
-            print('Creating package \'%s\' with files [%s].' % 
-                    (usdzFile, filesToAdd))
+            if args.asset or args.arkitAsset:
+                Tf.Debug.SetDebugSymbolsByName("USDUTILS_CREATE_USDZ_PACKAGE", 1)
+
             if not args.recurse:
                 print('Not recursing into sub-directories.')
     else:
@@ -203,9 +228,10 @@ def main():
                 "creatinga usdz package. Please use 'usdchecker' to check "
                 "compliance of an existing .usdz file.")
 
+
     success = True
-    if len(filesToAdd) > 0:
-        success = _CreateUsdzPackage(usdzFile, filesToAdd, args.recurse, 
+    if len(inputFiles) > 0:
+        success = _CreateUsdzPackage(usdzFile, inputFiles, args.recurse, 
                 args.checkCompliance, args.verbose) and success
 
     elif args.asset:
@@ -219,6 +245,7 @@ def main():
             # Create the package only if the compliance check was passed.
             success = success and UsdUtils.CreateNewUsdzPackage(
                 Sdf.AssetPath(args.asset), usdzFile)
+
     elif args.arkitAsset:
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.arkitAsset)
@@ -231,14 +258,24 @@ def main():
             success = success and UsdUtils.CreateNewARKitUsdzPackage(
                     Sdf.AssetPath(args.arkitAsset), usdzFile)
 
-    if args.listContents or args.dumpContents:
+    if args.listTarget or args.dumpTarget:
         if os.path.exists(usdzFile):
             zipFile = Usd.ZipFile.Open(usdzFile)
             if zipFile:
-                if args.dumpContents:
-                    _DumpContents(args.dumpContents, zipFile)
-                if args.listContents:
-                    _ListContents(args.listContents, zipFile)
+                if args.dumpTarget:
+                    if args.dumpTarget == usdzFile:
+                        _Err("The file into which to dump the contents of the "
+                             "usdz file '%s' must be different from the file "
+                             "itself." % usdzFile)
+                        return 1
+                    _DumpContents(args.dumpTarget, zipFile)
+                if args.listTarget:
+                    if args.listTarget == usdzFile:
+                        _Err("The file into which to list the contents of the "
+                             "usdz file '%s' must be different from the file "
+                             "itself." % usdzFile)
+                        return 1
+                    _ListContents(args.listTarget, zipFile)
             else:
                 _Err("Failed to open usdz file at path '%s'." % usdzFile)
         else:

@@ -424,6 +424,55 @@ class TestPcpChanges(unittest.TestCase):
             self.assertEqual(cp.GetSpecChanges(), [])
             self.assertEqual(cp.GetPrimChanges(), [])
 
-    
+    def test_InertPrimRemovalChanges(self):
+        subLayer = Sdf.Layer.CreateAnonymous()
+        subParentSpec = Sdf.PrimSpec(subLayer, 'Parent', Sdf.SpecifierDef)
+        subChildSpec = Sdf.PrimSpec(subParentSpec, 'Child', Sdf.SpecifierDef)
+        subAttrSpec = Sdf.AttributeSpec(subChildSpec, 'attr', Sdf.ValueTypeNames.Double)
+        subAttrSpec.default = 1.0
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootParentSpec = Sdf.PrimSpec(rootLayer, 'Parent', Sdf.SpecifierOver)
+        rootChildSpec = Sdf.PrimSpec(rootParentSpec, 'Child', Sdf.SpecifierOver)
+        rootAttrSpec = Sdf.AttributeSpec(rootChildSpec, 'attr', Sdf.ValueTypeNames.Double)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [rootParentSpec, subParentSpec])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent/Child')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [rootChildSpec, subChildSpec])
+
+        (pi, err) = pcp.ComputePropertyIndex('/Parent/Child.attr')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.propertyStack, [rootAttrSpec, subAttrSpec])
+
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            del rootLayer.pseudoRoot.nameChildren['Parent']
+            self.assertFalse(rootParentSpec)
+            self.assertFalse(rootChildSpec)
+            self.assertFalse(rootAttrSpec)
+
+            self.assertEqual(cp.GetSignificantChanges(), [])
+            self.assertEqual(cp.GetSpecChanges(), 
+                             ['/Parent', '/Parent/Child', '/Parent/Child.attr'])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [subParentSpec])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent/Child')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [subChildSpec])
+        
+        (pi, err) = pcp.ComputePropertyIndex('/Parent/Child.attr')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.propertyStack, [subAttrSpec])
+
 if __name__ == "__main__":
     unittest.main()

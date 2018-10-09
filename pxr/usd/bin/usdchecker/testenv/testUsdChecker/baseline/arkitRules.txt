@@ -1,0 +1,15 @@
+Checking rules: 
+[1] Files within a usdz package must be laid out properly, i.e. they should be aligned to 64 bytes.
+[2] Files withing a usdz package should not be compressed or encrypted.
+[3] The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver. 
+[4] Texture files should be .jpg or .png.
+[5] All included layers that participate in composition should have one of the core supported file formats.
+[6] UsdGeomPointInstancers and custom schemas not provided by core USD are not allowed.
+[7] ('The stage and all fo the assets referenced within it should be Y-up.',)
+[8] Shader nodes must have "id" as the implementationSource, with id values that begin with "Usd*". Also, shader inputs with connections must each have a single, valid connection source.
+[9] All material binding relationships must have valid targets.
+[10] Only layer files and textures are allowed in a package.
+[11] If the root layer is a package, then the composed stage should not contain references to files outside the package. In other words, the package should be entirely self-contained.
+[12] The root layer of the package must be a usdc file and must not include any external dependencies that participate in stage composition.
+------------------------------
+Success!

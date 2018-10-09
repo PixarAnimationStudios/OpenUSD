@@ -54,6 +54,7 @@
 #include <boost/python/raw_function.hpp>
 #include <boost/python/scope.hpp>
 
+#include <boost/function.hpp>
 #include <boost/mpl/vector.hpp>
 
 #include <string>

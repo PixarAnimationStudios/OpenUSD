@@ -75,7 +75,7 @@ HdSceneDelegate::IsEnabled(TfToken const& option) const
 
 /*virtual*/
 TfToken
-HdSceneDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
+HdSceneDelegate::GetRenderTag(SdfPath const& id)
 {
     return HdTokens->geometry;
 }
@@ -192,10 +192,10 @@ HdSceneDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
 }
 
 /*virtual*/
-TfToken
-HdSceneDelegate::GetReprName(SdfPath const &id)
+HdReprSelector
+HdSceneDelegate::GetReprSelector(SdfPath const &id)
 {
-    return TfToken();
+    return HdReprSelector();
 }
 
 /*virtual*/
@@ -366,6 +366,17 @@ std::vector<GfVec4d>
 HdSceneDelegate::GetClipPlanes(SdfPath const& cameraId)
 {
     return std::vector<GfVec4d>();
+}
+
+// -----------------------------------------------------------------------//
+/// \name Volume Aspects
+// -----------------------------------------------------------------------//
+
+/*virtual*/
+HdVolumeFieldDescriptorVector
+HdSceneDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
+{
+    return HdVolumeFieldDescriptorVector();
 }
 
 // -----------------------------------------------------------------------//

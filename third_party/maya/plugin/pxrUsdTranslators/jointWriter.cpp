@@ -125,8 +125,8 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(const MDagPath& iDa
     : UsdMayaPrimWriter(iDag, uPath, jobCtx), _valid(false)
 {
     const TfToken& exportSkels = _GetExportArgs().exportSkels;
-    if (exportSkels != PxrUsdExportJobArgsTokens->auto_ &&
-        exportSkels != PxrUsdExportJobArgsTokens->explicit_) {
+    if (exportSkels != UsdMayaJobExportArgsTokens->auto_ &&
+        exportSkels != UsdMayaJobExportArgsTokens->explicit_) {
         return;
     }
 
@@ -598,11 +598,11 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
     _GetAnimatedJoints(_topology, skelJointNames, GetDagPath(),
                        _joints, restXforms,
                        &animJointNames, &_animatedJoints,
-                       !_GetExportArgs().timeInterval.IsEmpty());
+                       !_GetExportArgs().timeSamples.empty());
 
     if (haveUsdSkelXform) {
         _skelXformAttr = _skel.MakeMatrixXform();
-        if (!_GetExportArgs().timeInterval.IsEmpty()) {
+        if (!_GetExportArgs().timeSamples.empty()) {
             MObject node = _skelXformPath.node();
             _skelXformIsAnimated = UsdMayaUtil::isAnimated(node);
         } else {

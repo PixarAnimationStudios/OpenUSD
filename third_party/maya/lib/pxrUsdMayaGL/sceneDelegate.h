@@ -63,7 +63,7 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         // HdSceneDelegate interface
         PXRUSDMAYAGL_API
-        virtual VtValue Get(const SdfPath& id, const TfToken& key) override;
+        VtValue Get(const SdfPath& id, const TfToken& key) override;
 
         PXRUSDMAYAGL_API
         void SetCameraState(
@@ -117,6 +117,8 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         SdfPathVector _lightIds;
         GlfSimpleLightingContextRefPtr _lightingContext;
 
+        SdfPath _shadowTaskId;
+
         typedef std::unordered_map<size_t, SdfPath> _RenderTaskIdMap;
         _RenderTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap _renderTaskIdMap;
@@ -133,4 +135,4 @@ typedef std::shared_ptr<PxrMayaHdSceneDelegate> PxrMayaHdSceneDelegateSharedPtr;
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_SCENE_DELEGATE_H
+#endif

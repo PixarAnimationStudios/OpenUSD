@@ -64,6 +64,9 @@ public:
 protected:
     HDST_API
     virtual void _Init(HdStDrawItemInstance * drawItemInstance) override;
+
+private:
+    size_t _bufferArraysHash;
 };
 
 

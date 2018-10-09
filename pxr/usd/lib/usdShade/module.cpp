@@ -33,6 +33,8 @@ TF_WRAP_MODULE
     TF_WRAP(UsdShadeInput);
     TF_WRAP(UsdShadeOutput);
     TF_WRAP(UsdShadeShader);
+    TF_WRAP(UsdShadeShaderDefParser);
+    TF_WRAP(UsdShadeShaderDefUtils);
     TF_WRAP(UsdShadeNodeGraph);
     TF_WRAP(UsdShadeMaterial); 
     TF_WRAP(UsdShadeMaterialBindingAPI);

@@ -42,7 +42,12 @@ if __name__ == '__main__':
                         dest='outfile')
     parser.add_argument('-n', '--firstLayerName', type=str, default='', 
                         dest='rename')
-    parser.add_argument('--arkit', dest="arkit", action="store_true")
+    parser.add_argument('--arkit', dest='arkit', action='store_true')
+    parser.add_argument('--check', dest='check', action='store_true')
+    parser.add_argument('--numFailedChecks', dest='numFailedChecks', default=0,
+                        type=int, action='store')
+    parser.add_argument('--numErrors', dest='numErrors', default=0,
+                        type=int, action='store')
 
     args = parser.parse_args()
 
@@ -50,10 +55,11 @@ if __name__ == '__main__':
     with Ar.ResolverContextBinder(context):
         if not args.arkit:
             assert UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(args.assetPath), 
-                    args.usdzFile, args.rename if args.rename else "")
+                    args.usdzFile, args.rename if args.rename else '')
         else:
             assert UsdUtils.CreateNewARKitUsdzPackage(
-                    Sdf.AssetPath(args.assetPath), args.usdzFile)
+                    Sdf.AssetPath(args.assetPath), args.usdzFile,
+                    args.rename if args.rename else '')
 
     zipFile = Usd.ZipFile.Open(args.usdzFile)
     assert zipFile
@@ -61,3 +67,22 @@ if __name__ == '__main__':
     with stream(args.outfile, 'w') as ofp:
         for fileName in zipFile.GetFileNames():
             print >>ofp, fileName
+
+    # Validate that the usdz file can be opened on a stage.
+    stage = Usd.Stage.Open(args.usdzFile)
+    assert stage
+
+    if args.check:
+        rootLayerPath = stage.GetRootLayer().realPath
+        context = Ar.GetResolver().CreateDefaultContextForAsset(rootLayerPath)
+        with Ar.ResolverContextBinder(context):
+            checker = UsdUtils.ComplianceChecker(arkit=args.arkit, verbose=True)
+            checker.CheckCompliance(args.usdzFile)
+            failedChecks = checker.GetFailedChecks()
+            errors = checker.GetErrors()
+            for msg in failedChecks + errors:
+                print >>sys.stderr, msg
+            assert args.numFailedChecks == len(failedChecks)
+            assert args.numErrors == len(errors)
+
+    sys.exit(0)

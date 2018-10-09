@@ -33,17 +33,18 @@
 
 vec3 GetNormal(vec3 Neye, int index)
 {
-    // Sample the normal from a primvar and normalize it.
     vec3 normal = vec3(0);
 #if defined(HD_HAS_normals)
     normal = vec3(HdGet_normals(index).xyz);
 #endif
-    if (length(normal) > 0.0)
-        normal = normalize(normal);
 
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-    return vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
-            vec4(normal,0)).xyz;
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
 }
 
 --- --------------------------------------------------------------------------
@@ -51,21 +52,41 @@ vec3 GetNormal(vec3 Neye, int index)
 
 vec3 GetNormal(vec3 Neye, int index)
 {
-    // XXX: Quadrangulated smooth normals for edge/center vertices that come in
-    // are _not_ normalized. Hence we forcibly normalize all incoming normals.
-    // We might want to fix this at the source instead.
     vec3 normal = vec3(0);
 #if defined(HD_HAS_smoothNormals)
     normal = vec3(HdGet_smoothNormals(index).xyz);
 #elif defined(HD_HAS_packedSmoothNormals)
     normal = vec3(HdGet_packedSmoothNormals(index).xyz);
 #endif
-    if (length(normal) > 0.0)
-        normal = normalize(normal);
 
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-    return vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
-            vec4(normal,0)).xyz;
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Flat
+
+vec3 GetNormal(vec3 Neye, int index)
+{
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_flatNormals)
+    normal = vec3(HdGet_flatNormals(index).xyz);
+#elif defined(HD_HAS_packedFlatNormals)
+    normal = vec3(HdGet_packedFlatNormals(index).xyz);
+#endif
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
 }
 
 --- --------------------------------------------------------------------------

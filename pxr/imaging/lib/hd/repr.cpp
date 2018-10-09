@@ -22,9 +22,120 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/repr.h"
+#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// We use an empty token to indicate "no option" (i.e., a "don't care" opinion).
+// This is factored in when compositing repr selectors. See CompositeOver.
+static bool
+_ReprHasOpinion(const TfToken &reprToken) {
+    return !reprToken.IsEmpty();
+}
+
+bool
+HdReprSelector::Contains(const TfToken &reprToken) const
+{
+    return (reprToken == refinedToken)
+        || (reprToken == unrefinedToken)
+        || (reprToken == pointsToken);
+}
+
+bool
+HdReprSelector::IsActiveRepr(int index) const
+{
+    TF_VERIFY(index < 3);
+    TfToken const &reprToken = (*this)[index];
+    return !(reprToken.IsEmpty() || reprToken == HdReprTokens->disabled);
+}
+
+bool
+HdReprSelector::AnyActiveRepr() const
+{
+    for (size_t i = 0; i < size(); ++i) {
+        if (IsActiveRepr(i)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+HdReprSelector
+HdReprSelector::CompositeOver(const HdReprSelector &under) const
+{
+    return HdReprSelector(
+        _ReprHasOpinion(refinedToken)  ? refinedToken   : under.refinedToken,
+        _ReprHasOpinion(unrefinedToken)? unrefinedToken : under.unrefinedToken,
+        _ReprHasOpinion(pointsToken)   ? pointsToken    : under.pointsToken);
+}
+
+bool
+HdReprSelector::operator==(const HdReprSelector &rhs) const
+{
+    return (refinedToken == rhs.refinedToken)
+        && (unrefinedToken == rhs.unrefinedToken)
+        && (pointsToken == rhs.pointsToken);
+}
+
+bool
+HdReprSelector::operator!=(const HdReprSelector &rhs) const
+{
+    return (refinedToken != rhs.refinedToken)
+        || (unrefinedToken != rhs.unrefinedToken)
+        || (pointsToken != rhs.pointsToken);
+}
+
+bool
+HdReprSelector::operator<(const HdReprSelector &rhs) const
+{
+    return (refinedToken < rhs.refinedToken)
+        && (unrefinedToken < rhs.unrefinedToken)
+        && (pointsToken < rhs.pointsToken);
+}
+
+size_t
+HdReprSelector::Hash() const
+{ 
+    size_t hash = 0;
+    boost::hash_combine(hash,
+                        refinedToken);
+    boost::hash_combine(hash,
+                        unrefinedToken);
+    boost::hash_combine(hash,
+                        pointsToken);
+    return hash;
+}
+
+char const*
+HdReprSelector::GetText() const
+{
+    return refinedToken.GetText();
+}
+
+std::ostream &
+operator <<(std::ostream &stream, HdReprSelector const& t)
+{
+    return stream << t.refinedToken
+          << ", " << t.unrefinedToken
+          << ", " << t.pointsToken;
+}
+
+size_t
+HdReprSelector::size() const
+{
+    return 3;
+}
+
+TfToken const &
+HdReprSelector::operator[](int index) const
+{
+    switch (index) {
+        case 0: return refinedToken;
+        case 1: return unrefinedToken;
+        case 2: return pointsToken;
+        default: return refinedToken;
+    }
+}
 
 HdRepr::HdRepr()
 {

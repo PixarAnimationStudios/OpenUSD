@@ -90,7 +90,7 @@ class TestGusdStageCache(unittest.TestCase):
 
         # Likewise, stage edits also form a unique part of the
         # cache key, and should return different stages.
-        edit = Gusd.StageBasicEdit.New()
+        edit = Gusd.StageEdit.New()
         edit.SetVariants([Sdf.Path("/foo{a=b}")])
 
         assert not cache.Find(path, edit=edit)

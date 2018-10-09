@@ -74,7 +74,7 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
         for (auto i : col.GetExcludePaths()) {
             s << "    - " << i << "\n";
         }
-        s << "  Repr: " << col.GetReprName() << "\n";
+        s << "  Repr: " << col.GetReprSelector() << "\n";
         s << "  Render Tags: \n";
         for (auto i : col.GetRenderTags()) {
             s << "    - " << i << "\n";

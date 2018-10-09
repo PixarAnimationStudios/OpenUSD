@@ -81,14 +81,22 @@ find_path(HOUDINI_INCLUDE_DIRS
         "Houdini Development Kit Header Path"
 )
 
+if (UNIX)
+    set(HOUDINI_LIB_NAME "libHoudiniGEO.so")
+    set(HOUDINI_LIB_PATH_SUFFIX "dsolib/")
+elseif(WIN32)
+    set(HOUDINI_LIB_NAME "libGEO.lib")
+    set(HOUDINI_LIB_PATH_SUFFIX "custom/houdini/dsolib/")
+endif()
+
 find_path(HOUDINI_LIB_DIRS 
-    libHoudiniGEO.so
+    ${HOUDINI_LIB_NAME}
     HINTS
         "${HOUDINI_ROOT}"
         "$ENV{HOUDINI_ROOT}"        
         "${HOUDINI_BASE_DIR}"
     PATH_SUFFIXES
-        dsolib/
+        ${HOUDINI_LIB_PATH_SUFFIX}
     DOC
         "Houdini Development Kit Library Path"
 )

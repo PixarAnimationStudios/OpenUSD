@@ -260,16 +260,6 @@ public:
     USDSKEL_API
     std::vector<UsdSkelInbetweenShape> GetAuthoredInbetweens() const;
 
-    /// Compute keys for querying inbetween shapes.
-    /// Keys are defined as (weight,time) vectors, where the weight determines
-    /// at what channel weight a shape is to be used, and the time provides
-    /// the time sample at which the *points* attribute should be queried to
-    /// to return the corresponding points fro the inbetween.
-    /// Returns false only on error. If no inbetweens are defined, returns
-    /// true, but *samples* will be empty.
-    USDSKEL_API
-    bool ComputeInbetweenKeys(VtVec2fArray* samples) const;
-
 private:
     std::vector<UsdSkelInbetweenShape>
     _MakeInbetweens(const std::vector<UsdProperty>& props) const;

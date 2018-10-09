@@ -30,7 +30,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -99,7 +99,7 @@ public:
 
 private:
     class _Impl;
-    boost::scoped_ptr<_Impl> _impl;
+    std::unique_ptr<_Impl> _impl;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

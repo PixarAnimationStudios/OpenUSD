@@ -163,6 +163,10 @@ public:
 
 
 template <>
+struct GusdGT_Utils::StorageByType<bool>
+{ static const GT_Storage value = GT_STORE_UINT8; };
+
+template <>
 struct GusdGT_Utils::StorageByType<uint8>
 { static const GT_Storage value = GT_STORE_UINT8; };
 

@@ -31,6 +31,7 @@
 #include <pxr/pxr.h>
 #include <SYS/SYS_Types.h>
 #include <SYS/SYS_TypeTraits.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_VectorTypes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -84,9 +85,11 @@ public:
                 typename GusdUT_TypeTraits::PODTuple<B>::ValueType>::value)
 
 
-/* Declare traits on core types.    
-   TODO: Do we care about fpreal16 and fpreal?
-   Wait until somebody needs them...*/
+/* Declare traits on core types. */   
+GUSDUT_DECLARE_POD_TUPLE(UT_Vector2H, fpreal16, 2);
+GUSDUT_DECLARE_POD_TUPLE(UT_Vector3H, fpreal16, 3);
+GUSDUT_DECLARE_POD_TUPLE(UT_Vector4H, fpreal16, 4);
+
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector2F, fpreal32, 2);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector3F, fpreal32, 3);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector4F, fpreal32, 4);
@@ -94,6 +97,7 @@ GUSDUT_DECLARE_POD_TUPLE(UT_Vector4F, fpreal32, 4);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector2D, fpreal64, 2);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector3D, fpreal64, 3);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector4D, fpreal64, 4);
+
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector2I, int64, 2);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector3I, int64, 3);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector4I, int64, 4);
@@ -102,6 +106,9 @@ GUSDUT_DECLARE_POD_TUPLE(UT_Vector2i, int32, 2);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector3i, int32, 3);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector4i, int32, 4);
  
+#if SYS_VERSION_FULL_INT >= 0x11000000
+GUSDUT_DECLARE_POD_TUPLE(UT_QuaternionH, fpreal16, 4);
+#endif
 GUSDUT_DECLARE_POD_TUPLE(UT_QuaternionF, fpreal32, 4);
 GUSDUT_DECLARE_POD_TUPLE(UT_QuaternionD, fpreal64, 4);
 
@@ -114,6 +121,7 @@ GUSDUT_DECLARE_POD_TUPLE(UT_Matrix3D, fpreal64, 9);
 GUSDUT_DECLARE_POD_TUPLE(UT_Matrix4D, fpreal64, 16);
 
 /* Declare PODs as POD tuples of tupleSize=1.*/
+GUSDUT_DECLARE_POD_TUPLE(bool,      bool, 1);
 GUSDUT_DECLARE_POD_TUPLE(uint8,     uint8, 1);
 GUSDUT_DECLARE_POD_TUPLE(uint16,    uint16, 1);
 GUSDUT_DECLARE_POD_TUPLE(uint32,    uint32, 1);

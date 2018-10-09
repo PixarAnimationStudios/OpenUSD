@@ -36,13 +36,6 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtrFacade.h"
 
-#include <boost/mpl/assert.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/type_traits/is_class.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/utility/enable_if.hpp>
-
 #include <cstddef>
 #include <type_traits>
 
@@ -176,8 +169,8 @@ public:
     /// pointer type).
     template <class U>
     TfWeakPtr(TfRefPtr<U> const &p,
-              typename boost::enable_if<
-                  boost::is_convertible<U*, T*>
+              typename std::enable_if<
+                  std::is_convertible<U*, T*>::value
               >::type *dummy = 0) : _rawPtr(get_pointer(p))
     {
         TF_UNUSED(dummy);
@@ -199,8 +192,8 @@ public:
 
     template <class U>
     TfWeakPtr(TfWeakPtr<U> const &p,
-              typename boost::enable_if<
-                  boost::is_convertible<U*, T*>
+              typename std::enable_if<
+                  std::is_convertible<U*, T*>::value
               >::type *dummy = 0) : _rawPtr(p._rawPtr), _remnant(p._remnant)
     {
     }
@@ -210,11 +203,6 @@ public:
     }
     
 private:
-
-    void _Assign(TfWeakPtr const &p) {
-        _rawPtr = p._rawPtr;
-        _remnant = p._remnant;
-    }
 
     T *_FetchPointer() const {
         if (ARCH_LIKELY(_remnant && _remnant->_IsAlive()))
@@ -429,13 +417,13 @@ public:
 
 template <class T>
 struct Tf_SupportsWeakPtr
-    : boost::mpl::or_<boost::is_base_of<TfWeakBase, T >,
-                      Tf_HasGetWeakBase<T> >
 {
+    static const bool value =
+        std::is_base_of<TfWeakBase, T>::value || Tf_HasGetWeakBase<T>::value;
 };
 
 #define TF_SUPPORTS_WEAKPTR(T) (Tf_SupportsWeakPtr<T>::value)
-#define TF_TRULY_SUPPORTS_WEAKPTR(T)   boost::is_base_of<TfWeakBase, T >::value
+#define TF_TRULY_SUPPORTS_WEAKPTR(T)   std::is_base_of<TfWeakBase, T >::value
 
 #define TF_DECLARE_WEAK_POINTABLE_INTERFACE                     \
     virtual TfWeakBase const &__GetTfWeakBase__() const = 0

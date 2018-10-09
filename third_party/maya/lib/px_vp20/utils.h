@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PX_VP20_UTILS_H
-#define PX_VP20_UTILS_H
+#ifndef PXVP20_UTILS_H
+#define PXVP20_UTILS_H
 
-/// \file utils.h
+/// \file px_vp20/utils.h
 
 #include "pxr/pxr.h"
 #include "px_vp20/api.h"
@@ -33,6 +33,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+#include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDrawContext.h>
 #include <maya/MMatrix.h>
@@ -56,6 +57,17 @@ class px_vp20Utils
         static GlfSimpleLightingContextRefPtr GetLightingContextFromDrawContext(
                 const MHWRender::MDrawContext& context);
 
+        /// Tries to get the viewport for the given draw context.
+        ///
+        /// Returns true if the viewport was found, in which case it is
+        /// returned in the \p view parameter.
+        /// Returns false if there's not a 3D viewport (e.g. we're drawing into
+        /// a render view).
+        PX_VP20_API
+        static bool GetViewFromDrawContext(
+                const MHWRender::MDrawContext& context,
+                M3dView& view);
+
         /// Renders the given bounding box in the given \p color via OpenGL.
         PX_VP20_API
         static bool RenderBoundingBox(
@@ -74,14 +86,12 @@ class px_vp20Utils
                 GfMatrix4d& projectionMatrix);
 
     private:
-        // This class is all static methods.. You should never
-        // instantiate an actual object
-        px_vp20Utils();
-        ~px_vp20Utils();
+        px_vp20Utils() = delete;
+        ~px_vp20Utils() = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PX_VP20_UTILS_H
+#endif

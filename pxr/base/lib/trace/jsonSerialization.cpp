@@ -101,6 +101,7 @@ _EventTypeToString(TraceEvent::EventType t) {
         case TraceEvent::EventType::CounterValue: return "CounterValue";
         case TraceEvent::EventType::Timespan: return "Timespan";
         case TraceEvent::EventType::ScopeData: return "Data";
+        case TraceEvent::EventType::Marker: return "Marker";
         case TraceEvent::EventType::Unknown: return "Unknown";
     }
     return "Unknown";
@@ -120,6 +121,8 @@ _EventTypeFromString(const std::string& s) {
         return TraceEvent::EventType::Timespan;
     } else if (s == "Data") {
         return TraceEvent::EventType::ScopeData;
+    } else if (s == "Mark") {
+        return TraceEvent::EventType::Marker;
     }
     return TraceEvent::EventType::Unknown;
 }
@@ -136,38 +139,59 @@ using ChromeThreadId = std::string;
 using ChromeConstructionMap = 
     std::map<ChromeThreadId, EventListConstructionData>;
 
-// Returns a JSON representatoin of a Trace event. This format is a "raw" format
+// Writes a JSON representatoin of a Trace event. This format is a "raw" format
 // that does not match the Chrome format.
-JsValue
-_TraceEventToJSON(const TfToken& key, const TraceEvent& e)
+static void
+_WriteTraceEventToJSON(JsWriter& js, const TfToken& key, const TraceEvent& e)
 {
-    JsObject event;
-    event["key"] = JsValue(key.GetString());
-    event["category"] = JsValue(static_cast<uint64_t>(e.GetCategory()));
-    event["type"] = JsValue(_EventTypeToString(e.GetType()));
     switch (e.GetType()) {
         case TraceEvent::EventType::Begin:
         case TraceEvent::EventType::End:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp())
+            );
             break;
         case TraceEvent::EventType::CounterDelta:
         case TraceEvent::EventType::CounterValue:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
-            event["value"] = JsValue(e.GetCounterValue());
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp()),
+                "value", e.GetCounterValue());
             break;
         case TraceEvent::EventType::ScopeData:
-            event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
-            event["data"] = e.GetData().ToJson();
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp()),
+                "data", [&e](JsWriter& js) {
+                    e.GetData().WriteJson(js);
+                });
             break;
         case TraceEvent::EventType::Timespan:
-            event["start"] = 
-                JsValue(_TicksToMicroSeconds(e.GetStartTimeStamp()));
-            event["end"] = JsValue(_TicksToMicroSeconds(e.GetEndTimeStamp()));
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "start", _TicksToMicroSeconds(e.GetStartTimeStamp()),
+                "end", _TicksToMicroSeconds(e.GetEndTimeStamp()));
+            break;
+        case TraceEvent::EventType::Marker:
+            js.WriteObject(
+                "key", key.GetString(),
+                "category", static_cast<uint64_t>(e.GetCategory()),
+                "type", _EventTypeToString(e.GetType()),
+                "ts", _TicksToMicroSeconds(e.GetTimeStamp())
+            );
             break;
         case TraceEvent::EventType::Unknown:
             break;
     }
-    return event;
 }
 
 // Reads a "raw" format JSON object and adds it to the eventListData if it can.
@@ -214,6 +238,15 @@ _TraceEventFromJSON(
                         *category);
                 }
                 break;
+            case TraceEvent::EventType::Marker:
+                if (ts) {
+                    unorderedEvents.emplace_back(
+                        TraceEvent::Marker,
+                        list.CacheKey(*keyStr),
+                        *ts,
+                        *category);
+                }
+                break;
             case TraceEvent::EventType::Timespan:
                 {
                     boost::optional<TraceEvent::TimeStamp> start = 
@@ -240,7 +273,7 @@ _TraceEventFromJSON(
                             *value,
                             *category);
                         event.SetTimeStamp(*ts);
-                        unorderedEvents.emplace_back(event);
+                        unorderedEvents.emplace_back(std::move(event));;
                     }
                 }
                 break;
@@ -254,7 +287,7 @@ _TraceEventFromJSON(
                             *value,
                             *category);
                         event.SetTimeStamp(*ts);
-                        unorderedEvents.emplace_back(event);
+                        unorderedEvents.emplace_back(std::move(event));;
                     }
                 }
                 break;
@@ -269,7 +302,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<bool>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<double>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -277,7 +310,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<double>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<uint64_t>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -285,7 +318,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<uint64_t>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<int64_t>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -293,7 +326,7 @@ _TraceEventFromJSON(
                                 dataValue->Get<int64_t>(),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         } else if (dataValue->Is<std::string>()) {
                             TraceEvent event(
                                 TraceEvent::Data,
@@ -301,7 +334,7 @@ _TraceEventFromJSON(
                                 list.StoreData(dataValue->GetString().c_str()),
                                 *category);
                             event.SetTimeStamp(*ts);
-                            unorderedEvents.emplace_back(event);
+                            unorderedEvents.emplace_back(std::move(event));;
                         }
                     }
                 }
@@ -312,20 +345,26 @@ _TraceEventFromJSON(
 
 namespace {
 
-// This class created a JSON array that a JSON objects per thread in the
-// collection which has Counter events and Data events. This data is need in 
-// addition to the Chrome Format JSON to fully reconstruct a TraceCollection.
-class _CollectionEventsToJson : public TraceCollection::Visitor {
+// This class writes a JSON array of JSON objects per thread in the collection
+// which has Counter events and Data events. This data is need in addition to 
+// the Chrome Format JSON to fully reconstruct a TraceCollection.
+class _WriteCollectionEventsToJson : public TraceCollection::Visitor {
 public:
-    const JsArray CreateThreadsObject() const {
+    void CreateThreadsObject(JsWriter& js) const {
         JsArray threads;
-        for (const auto& p : _eventsPerThread) {
-            JsObject thread;
-            thread["thread"] = JsValue(p.first);
-            thread["events"] = p.second;
-            threads.emplace_back(std::move(thread));
-        }
-        return threads;
+        js.WriteArray(_eventsPerThread, 
+            [](JsWriter& js, ThreadToEventMap::const_reference p) {
+            js.WriteObject(
+                "thread", p.first,
+                "events", [&p] (JsWriter& js) {
+                    js.WriteArray(p.second,
+                        [](JsWriter& js, const EventPair& e) {
+                        _WriteTraceEventToJSON(js, e.first, *e.second);
+                    }
+                    );
+                }
+            );
+        });
     }
 
     virtual bool AcceptsCategory(TraceCategoryId categoryId) override {
@@ -343,57 +382,71 @@ public:
             case TraceEvent::EventType::ScopeData:
             case TraceEvent::EventType::CounterDelta:
             case TraceEvent::EventType::CounterValue:
-                _eventsPerThread[threadId.ToString()].emplace_back(
-                    _TraceEventToJSON(key, event));
+                _eventsPerThread[threadId.ToString()].emplace_back(key, &event);
                 break;
             case TraceEvent::EventType::Begin:
             case TraceEvent::EventType::End:
             case TraceEvent::EventType::Timespan:
+            case TraceEvent::EventType::Marker:
             case TraceEvent::EventType::Unknown:
                 break;
         }
     }
 
     virtual void OnBeginCollection() override {}
-    virtual void OnEndCollection() override {}    
+    virtual void OnEndCollection() override {} 
     virtual void OnBeginThread(const TraceThreadId& threadId) override {}
     virtual void OnEndThread(const TraceThreadId& threadId) override {}
 
 private:
-    std::map<std::string, JsArray> _eventsPerThread;
+    using EventPair = std::pair<TfToken, const TraceEvent*>;
+    using ThreadToEventMap = std::map<std::string, std::vector<EventPair>>;
+    ThreadToEventMap _eventsPerThread;
 };
 
 }
 
-JsValue
-Trace_JSONSerialization::CollectionsToJSON(
+static void
+_WriteTraceEventsToJson(
+    JsWriter& js,
     const std::vector<std::shared_ptr<TraceCollection>>& collections)
 {
     using CollectionPtr = std::shared_ptr<TraceCollection>;
-    JsObject libtraceData;
-    JsArray extraTraceEvents;
     // Convert Counter and Data events to JSON.
-    {
-        _CollectionEventsToJson eventsToJson;
-        for (const CollectionPtr& collection : collections) {
-            if (collection) {
-                collection->Iterate(eventsToJson);
-            }
+    _WriteCollectionEventsToJson eventsToJson;
+    for (const CollectionPtr& collection : collections) {
+        if (collection) {
+            collection->Iterate(eventsToJson);
         }
-        libtraceData["threadEvents"] = eventsToJson.CreateThreadsObject();
     }
+    js.WriteObject(
+        "threadEvents", [&eventsToJson] (JsWriter& js) {
+            eventsToJson.CreateThreadsObject(js);
+        }
+    );
+}
 
+bool
+Trace_JSONSerialization::WriteCollectionsToJSON(
+    JsWriter& js,
+    const std::vector<std::shared_ptr<TraceCollection>>& collections)
+{
+    
+    auto extraDataWriter = [&collections](JsWriter& js) {
+        js.WriteKey("libTraceData");
+        _WriteTraceEventsToJson(js, collections);
+    };
+    
+    using CollectionPtr = std::shared_ptr<TraceCollection>;
     TraceEventTreeRefPtr graph = TraceEventTree::New();
     for (const CollectionPtr& collection : collections) {
         if (collection) {
             graph->Add(*collection);
         }
     }
-    JsObject traceObj = graph->CreateChromeTraceObject();
+    graph->WriteChromeTraceObject(js,extraDataWriter);
 
-    // Add the extra lib trace data to the Chrome trace object.
-    traceObj["libTraceData"] = libtraceData;
-    return traceObj;
+    return true;
 }
 
 // This function converts Chrome trace events into TraceEvents and adds them to 
@@ -456,6 +509,13 @@ _ImportChromeEvents(
                         key,
                         _MicrosecondsToTicks(*ts),
                         *catId);
+                } else if (*ph == "R"  || *ph == "I"  || *ph == "i") {
+                    TraceKey key = output[*tid].eventList.CacheKey(*name);
+                    output[*tid].unorderedEvents.emplace_back(
+                        TraceEvent::Marker,
+                        key,
+                        _MicrosecondsToTicks(*ts),
+                        *catId);
                 } else if (*ph == "X") {
                     // dur field might be a double or an int.
                     boost::optional<double> dur = 
@@ -508,8 +568,8 @@ _ConstructEventList(EventListConstructionData& data)
     // Add the events to the eventList.
     // TODO: make a constructor that takes an event vector so we don't have to 
     // make copies?
-    for (const TraceEvent& e : data.unorderedEvents) {
-        data.eventList.EmplaceBack(e);
+    for (TraceEvent& e : data.unorderedEvents) {
+        data.eventList.EmplaceBack(std::move(e));
     }
     data.unorderedEvents.clear();
     return std::unique_ptr<TraceEventList>(

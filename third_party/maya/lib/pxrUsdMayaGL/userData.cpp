@@ -35,9 +35,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Note that we set deleteAfterUse=false when calling the MUserData
 /// constructor. This ensures that the draw data survives across multiple draw
 /// passes in Viewport 2.0 (e.g. a shadow pass and a color pass).
+///
+/// drawShape is initialized to false, since we expect that the
+/// pxrHdImagingShape will be the only one to set it to true.
 PxrMayaHdUserData::PxrMayaHdUserData() :
     MUserData(/* deleteAfterUse = */ false),
-    drawShape(true)
+    drawShape(false)
 {
 }
 

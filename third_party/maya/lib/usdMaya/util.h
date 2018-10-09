@@ -184,13 +184,25 @@ bool isAnimated(MObject& object, const bool checkParent = false);
 PXRUSDMAYA_API
 bool isPlugAnimated(const MPlug& plug);
 
-// determine if a Maya Object is intermediate
+/// Determine if a Maya object is an intermediate object.
+///
+/// Only objects with the MFnDagNode function set can be intermediate objects.
+/// Objects whose intermediate object status cannot be determined are assumed
+/// not to be intermediate objects.
 PXRUSDMAYA_API
 bool isIntermediate(const MObject& object);
 
 // returns true for visible and lod invisible and not templated objects
 PXRUSDMAYA_API
 bool isRenderable(const MObject& object);
+
+/// Determine whether a Maya object can be saved to or exported from the Maya
+/// scene.
+///
+/// Objects whose "do not write" status cannot be determined using the
+/// MFnDependencyNode function set are assumed to be writable.
+PXRUSDMAYA_API
+bool isWritable(const MObject& object);
 
 // strip iDepth namespaces from the node name or string path, go from
 // taco:foo:bar to bar for iDepth > 1. If iDepth is -1, strips all namespaces.
@@ -276,16 +288,6 @@ void CompressFaceVaryingPrimvarIndices(
         const MFnMesh& mesh,
         PXR_NS::TfToken* interpolation,
         PXR_NS::VtIntArray* assignmentIndices);
-
-/// If any of the components in \p assignmentIndices are unassigned (<0), the
-/// \p unassignedValueIndex will be set to zero and all those indices will be
-/// set to -1. Otherwise \p unassignedValueIndices is set to -1.
-/// Returns true if there were any unassigned values and indices were updated,
-/// or false otherwise.
-PXRUSDMAYA_API
-bool SetUnassignedValueIndex(
-        PXR_NS::VtIntArray* assignmentIndices,
-        int* unassignedValueIndex);
 
 /// Get whether \p plug is authored in the Maya scene.
 ///
@@ -454,6 +456,14 @@ VtValue ParseArgumentValue(
 /// Note that this calls out to MEL.
 PXRUSDMAYA_API
 std::vector<std::string> GetAllAncestorMayaNodeTypes(const std::string& ty);
+
+/// If dagPath is a scene assembly node or is the descendant of one, populates
+/// the \p *assemblyPath with the assembly path and returns \c true.
+/// Otherwise, returns \c false.
+PXRUSDMAYA_API
+bool FindAncestorSceneAssembly(
+        const MDagPath& dagPath,
+        MDagPath* assemblyPath = nullptr);
 
 } // namespace UsdMayaUtil
 

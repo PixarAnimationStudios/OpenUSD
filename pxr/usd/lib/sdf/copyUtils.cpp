@@ -581,7 +581,65 @@ SdfCopySpec(
                     dstLayer, toCopy.dstPath, fieldInDst,
                     shouldCopyValueFn, &copyEntry.dataToCopy);
             });
-    
+
+        // Since prims and variants hold the same information, a prim can be
+        // copied to a variant and vice-versa. If this is the case, we need
+        // to update the copy entry since the code below expects the source
+        // and destination spec types to be the same.
+        const bool copyingPrimToVariant = 
+            specType == SdfSpecTypePrim && 
+            toCopy.dstPath.IsPrimVariantSelectionPath();
+        const bool copyingVariantToPrim =
+            specType == SdfSpecTypeVariant && toCopy.dstPath.IsPrimPath();
+
+        if (copyingPrimToVariant || copyingVariantToPrim) {
+            // Clear out any specifier or typename fields in the data to copy,
+            // since we'll want to set those specially.
+            copyEntry.dataToCopy.erase(
+                std::remove_if(
+                    copyEntry.dataToCopy.begin(), copyEntry.dataToCopy.end(),
+                    [](const _FieldValuePair& fv) {
+                        return fv.first == SdfFieldKeys->Specifier ||
+                            fv.first == SdfFieldKeys->TypeName;
+                    }),
+                copyEntry.dataToCopy.end());
+
+            if (copyingPrimToVariant) {
+                // Set the specifier for the destination variant to over, since
+                // that's the value used in SdfVariantSpec's c'tor.
+                copyEntry.dataToCopy.push_back({
+                    SdfFieldKeys->Specifier, VtValue(SdfSpecifierOver)});
+                copyEntry.specType = SdfSpecTypeVariant;
+            }
+            else if (copyingVariantToPrim) {
+                // Variants don't have a specifier or typename, but for
+                // convenience we copy those values from the owning prim.
+                const SdfPath srcPrimPath = toCopy.srcPath.GetPrimPath();
+                std::vector<TfToken> srcFields, dstFields;
+                for (const TfToken& field : 
+                    { SdfFieldKeys->Specifier, SdfFieldKeys->TypeName } ) {
+
+                    if (srcLayer->HasField(srcPrimPath, field)) {
+                        srcFields.push_back(field);
+                    }
+                    if (dstLayer->HasField(toCopy.dstPath, field)) {
+                        dstFields.push_back(field);
+                    }
+                }
+
+                _ForEachField(
+                    srcFields, dstFields,
+                    [&](const TfToken& field, bool fieldInSrc, bool fieldInDst) {
+                        _AddFieldValueToCopy(
+                            specType, field, 
+                            srcLayer, srcPrimPath, fieldInSrc,
+                            dstLayer, toCopy.dstPath, fieldInDst,
+                            shouldCopyValueFn, &copyEntry.dataToCopy);
+                    });
+
+                copyEntry.specType = SdfSpecTypePrim;
+            }
+        }
 
         // Create the new spec and copy all of the specified fields over.
         _AddNewSpecToLayer(dstLayer, copyEntry);

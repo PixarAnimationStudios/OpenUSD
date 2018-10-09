@@ -265,7 +265,7 @@ public:
 
     // set per-prim repr
     HD_API
-    void SetReprName(SdfPath const &id, TfToken const &reprName);
+    void SetReprSelector(SdfPath const &id, HdReprSelector const &reprSelector);
 
     // set per-prim refine level
     HD_API
@@ -306,7 +306,7 @@ public:
     HD_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
     HD_API
-    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
+    virtual TfToken GetRenderTag(SdfPath const& id) override;
     HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
     HD_API
@@ -322,7 +322,7 @@ public:
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
     HD_API
-    virtual TfToken GetReprName(SdfPath const &id);
+    virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
     HD_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(SdfPath const& id,
@@ -390,7 +390,7 @@ private:
         HdInterpolation colorInterpolation;
         bool guide;
         bool doubleSided;
-        TfToken reprName;
+        HdReprSelector reprSelector;
     };
     struct _Curves {
         _Curves() { }

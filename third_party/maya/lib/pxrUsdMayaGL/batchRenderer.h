@@ -51,13 +51,13 @@
 #include <maya/MDrawRequest.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MMessage.h>
+#include <maya/MSelectInfo.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
 
 #include <memory>
 #include <utility>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -179,7 +179,7 @@ public:
             const PxrMayaHdRenderParams& params = PxrMayaHdRenderParams());
 
     /// Tests the object from the given shape adapter for intersection with
-    /// a given view using the legacy viewport.
+    /// a given selection context in the legacy viewport.
     ///
     /// Returns a pointer to a hit set if there was an intersection, or nullptr
     /// otherwise.
@@ -190,8 +190,7 @@ public:
     PXRUSDMAYAGL_API
     const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
-            M3dView& view,
-            const bool singleSelection);
+            MSelectInfo& selectInfo);
 
     /// Tests the object from the given shape adapter for intersection with
     /// a given draw context in Viewport 2.0.
@@ -205,9 +204,8 @@ public:
     PXRUSDMAYAGL_API
     const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
-            const MHWRender::MSelectionInfo& selectInfo,
-            const MHWRender::MDrawContext& context,
-            const bool singleSelection);
+            const MHWRender::MSelectionInfo& selectionInfo,
+            const MHWRender::MDrawContext& context);
 
     /// Tests the contents of the given custom collection (previously obtained
     /// via PopulateCustomCollection) for intersection with the current OpenGL
@@ -216,14 +214,14 @@ public:
     /// context is available; this function is not appropriate for interesecting
     /// using the Maya viewport.
     ///
-    /// \p hitPoint yields the point of intersection if \c true is returned.
-    ///
+    /// If hit(s) are found, returns \c true and populates \p *outResult with
+    /// the intersection result.
     PXRUSDMAYAGL_API
     bool TestIntersectionCustomCollection(
             const HdRprimCollection& collection,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
-            GfVec3d* hitPoint);
+            HdxIntersector::Result* outResult);
 
     /// Utility function for finding the nearest hit (in terms of ndcDepth) in
     /// the given \p hitSet.
@@ -234,6 +232,12 @@ public:
     static const HdxIntersector::Hit* GetNearestHit(
             const HdxIntersector::HitSet* hitSet);
 
+    /// Returns the absoluteInstanceIndex (index within the point instancer) for \c hit.
+    ///
+    /// Returns -1 if unable to get the absoluteInstanceIndex.
+    PXRUSDMAYAGL_API
+    int GetAbsoluteInstanceIndexForHit(const HdxIntersector::Hit& hit) const;
+
     /// Returns whether soft selection for proxy shapes is currently enabled.
     PXRUSDMAYAGL_API
     inline bool GetObjectSoftSelectEnabled()
@@ -242,6 +246,7 @@ public:
     /// Starts batching all diagnostics until the end of the current frame draw.
     /// The batch renderer will automatically release the diagnostics when Maya
     /// is done rendering the frame.
+    PXRUSDMAYAGL_API
     void StartBatchingFrameDiagnostics();
 
 private:
@@ -260,8 +265,7 @@ private:
     PXRUSDMAYAGL_API
     const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
 
-    /// Allow shape adapters access to the soft selection helper, and to the
-    /// _UpdateLegacyRenderPending() method.
+    /// Allow shape adapters access to the soft selection helper.
     friend PxrMayaHdShapeAdapter;
 
     typedef std::pair<PxrMayaHdRenderParams, HdRprimCollectionVector>
@@ -291,12 +295,11 @@ private:
     /// Private helper function for testing intersection on a single collection
     /// only.
     /// \returns True if there was at least one hit. All hits are returned in
-    /// the outHitSet.
+    /// the \p *result.
     bool _TestIntersection(
             const HdRprimCollection& rprimCollection,
             HdxIntersector::Params queryParams,
-            const bool singleSelection,
-            HdxIntersector::HitSet* outHitSet);
+            HdxIntersector::Result* result);
 
     /// Handler for Maya Viewport 2.0 end render notifications.
     ///
@@ -316,15 +319,6 @@ private:
     /// options through mel every time we have a selection event.
     static void _OnSoftSelectOptionsChangedCallback(void* clientData);
 
-    /// Tries to get the viewport for the given draw context.
-    /// Returns true if the viewport was found, in which case it is returned in
-    /// the \p view parameter.
-    /// Returns false if there's not a 3D viewport (e.g. we're drawing into a
-    /// render view).
-    static bool _GetViewFromDrawContext(
-            const MHWRender::MDrawContext& context,
-            M3dView* view);
-
     /// Perform post-render state cleanup.
     ///
     /// For Viewport 2.0, this method gets invoked by
@@ -334,54 +328,16 @@ private:
     /// legacy viewport. In that case, vp2Context will be nullptr.
     void _MayaRenderDidEnd(const MHWRender::MDrawContext* vp2Context);
 
-    /// Update the last render frame stamp using the given \p frameStamp.
-    ///
-    /// Note that frame stamps are only available from the MDrawContext when
-    /// using Viewport 2.0.
-    ///
-    /// Returns true if the last frame stamp was updated, or false if the given
-    /// frame stamp is the same as the last frame stamp.
-    bool _UpdateRenderFrameStamp(const MUint64 frameStamp);
-
-    /// Update the last selection frame stamp using the given \p frameStamp.
-    ///
-    /// Note that frame stamps are only available from the MDrawContext when
-    /// using Viewport 2.0.
-    ///
-    /// Returns true if the last frame stamp was updated, or false if the given
-    /// frame stamp is the same as the last frame stamp.
-    bool _UpdateSelectionFrameStamp(const MUint64 frameStamp);
-
-    /// Update the internal marker of whether a legacy viewport render is
-    /// pending.
+    /// Update the internal marker of whether a selection is pending.
     ///
     /// Returns true if the internal marker's value was changed, or false if
     /// the given value is the same as the current value.
-    bool _UpdateLegacyRenderPending(const bool isPending);
+    bool _UpdateIsSelectionPending(const bool isPending);
 
-    /// Update the internal marker of whether a legacy viewport selection is
-    /// pending.
-    ///
-    /// Returns true if the internal marker's value was changed, or false if
-    /// the given value is the same as the current value.
-    bool _UpdateLegacySelectionPending(const bool isPending);
-
-    /// With Viewport 2.0, we can query the draw context for its frameStamp,
-    /// a pseudo-unique identifier for each draw/select operation. We use that
-    /// to determine when to do a batched draw or batched selection versus when
-    /// to simply pass through or re-use cached data.
-    ///
-    /// The legacy viewport however does not provide a context we can query for
-    /// the frameStamp, so we simulate it with bools instead. Shape adapters
-    /// should call _UpdateLegacyRenderPending(true) during the legacy viewport
-    /// draw prep phase (sometime during MPxSurfaceShapeUI::getDrawRequests())
-    /// to indicate that we are prepping for a legacy viewport render.
     /// Rendering invalidates selection, so when a render completes, we mark
     /// selection as pending.
-    MUint64 _lastRenderFrameStamp;
-    MUint64 _lastSelectionFrameStamp;
-    bool _legacyRenderPending;
-    bool _legacySelectionPending;
+    bool _isSelectionPending;
+
     bool _objectSoftSelectEnabled;
     MCallbackId _softSelectOptionsCallbackId;
 
@@ -460,20 +416,16 @@ private:
             const GfMatrix4d& projectionMatrix,
             const bool singleSelection);
 
-    /// Container of Maya render pass identifiers of passes drawn so far during
-    /// a Viewport 2.0 render.
-    ///
-    /// Since all Hydra geometry is drawn at once, we only ever want to execute
-    /// the Hydra draw once per Maya render pass (shadow, color, etc.). This
-    /// container keeps track of which passes have been drawn by Hydra, and it
-    /// is reset when the batch renderer is notified that a Maya render has
-    /// ended.
-    std::unordered_set<std::string> _drawnMayaRenderPasses;
-
     /// A cache of all selection results gathered since the last selection was
     /// computed. It maps delegate IDs to a HitSet of all of the intersection
     /// hits for that delegate ID.
     std::unordered_map<SdfPath, HdxIntersector::HitSet, SdfPath::Hash> _selectResults;
+
+    /// We keep track of a "key" that's associated with the select results.
+    /// This is used to determine if the results can be shared among multiple
+    /// shapes calling TestIntersection.
+    typedef std::tuple<GfMatrix4d, GfMatrix4d, bool> _SelectResultsKey;
+    _SelectResultsKey _selectResultsKey;
 
     /// Hydra engine objects used to render batches.
     ///
@@ -519,4 +471,4 @@ PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_BATCH_RENDERER_H
+#endif

@@ -30,6 +30,7 @@
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_Matrix4.h>
 #include <UT/UT_ParallelUtil.h>
+#include <SYS/SYS_Version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,14 +58,14 @@ struct _CappedXformItem : public UT_CappedItem
 
 typedef UT_IntrusivePtr<const _CappedXformItem> _CappedXformItemHandle;
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
 static inline void intrusive_ptr_add_ref(const _CappedXformItem *o) { const_cast<_CappedXformItem *>(o)->incref(); }
 static inline void intrusive_ptr_release(const _CappedXformItem *o) { const_cast<_CappedXformItem *>(o)->decref(); }
 #endif
 
 } /*namespace*/
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
 static inline void intrusive_ptr_add_ref(const GusdUSD_XformCache::XformInfo *o) { const_cast<GusdUSD_XformCache::XformInfo *>(o)->incref(); }
 static inline void intrusive_ptr_release(const GusdUSD_XformCache::XformInfo *o) { const_cast<GusdUSD_XformCache::XformInfo *>(o)->decref(); }
 #endif

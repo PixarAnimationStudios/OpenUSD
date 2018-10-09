@@ -87,7 +87,7 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "outputsSurface", UsdShadeTokens->outputsSurface);
     _AddToken(cls, "outputsVolume", UsdShadeTokens->outputsVolume);
     _AddToken(cls, "preview", UsdShadeTokens->preview);
-    _AddToken(cls, "shaderMetadata", UsdShadeTokens->shaderMetadata);
+    _AddToken(cls, "sdrMetadata", UsdShadeTokens->sdrMetadata);
     _AddToken(cls, "sourceAsset", UsdShadeTokens->sourceAsset);
     _AddToken(cls, "sourceCode", UsdShadeTokens->sourceCode);
     _AddToken(cls, "strongerThanDescendants", UsdShadeTokens->strongerThanDescendants);

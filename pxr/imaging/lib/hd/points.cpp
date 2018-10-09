@@ -54,9 +54,24 @@ HdPoints::ConfigureRepr(TfToken const &reprName,
 
 /* static */
 HdPoints::_PointsReprConfig::DescArray
-HdPoints::_GetReprDesc(TfToken const &reprName)
+HdPoints::_GetReprDesc(HdReprSelector const &reprSelector)
 {
-    return _reprDescConfig.Find(reprName);
+    _PointsReprConfig::DescArray result;
+    size_t index = 0;
+    
+    for (size_t i = 0; i < reprSelector.size(); ++i) {
+        if (reprSelector.IsActiveRepr(i)) {
+            _PointsReprConfig::DescArray descs = _reprDescConfig.Find(
+                    reprSelector[i]);
+            for (HdPointsReprDesc &desc : descs) {
+                if (!desc.IsEmpty() && index < result.size()) {
+                    result[index++] = desc;
+                }
+            }
+        }
+    }
+    
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

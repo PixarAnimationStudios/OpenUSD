@@ -31,7 +31,7 @@
 #include "GT_PackedUSD.h"
 #include "GT_Utils.h"
 #include "GU_PackedUSD.h"
-#include "gusd/GT_PointInstancer.h"
+#include "GT_PointInstancer.h"
 #include "curvesWrapper.h"
 #include "NURBSCurvesWrapper.h"
 
@@ -41,6 +41,7 @@
 #include "scopeWrapper.h"
 #include "xformWrapper.h"
 #include "instancerWrapper.h"
+#include "USD_CustomTraverse.h"
 #include "USD_Traverse.h"
 
 #include "pxr/usd/usdGeom/curves.h"
@@ -108,6 +109,7 @@ GusdInit()
             TfToken("PointInstancer"), &GusdInstancerWrapper::defineForRead);
 
     GusdUSD_TraverseTable::GetInstance().SetDefault("std:components");
+    GusdUSD_CustomTraverse::Initialize();
     libInitialized = true;
 }
 
@@ -131,6 +133,10 @@ GusdNewGeometryIO()
     geoextension = UTgetGeoExtensions();
     if (!geoextension->findExtension("usd"))
        geoextension->addExtension("usd");
+    if (!geoextension->findExtension("usda"))
+       geoextension->addExtension("usda");
+    if (!geoextension->findExtension("usdc"))
+       geoextension->addExtension("usdc");
    geomIOInitialized = true;
 }
 

@@ -56,7 +56,7 @@ static bool
 _IsAnimated(const UsdMayaJobExportArgs& args, const MDagPath& dagPath)
 {
     MObject obj = dagPath.node();
-    if (!args.timeInterval.IsEmpty()) {
+    if (!args.timeSamples.empty()) {
         return UsdMayaUtil::isAnimated(obj);
     }
     return false;
@@ -72,15 +72,6 @@ UsdMayaPrimWriter::UsdMayaPrimWriter(const MDagPath& iDag,
     _exportVisibility(jobCtx.GetArgs().exportVisibility),
     _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), iDag))
 {
-    // Determine if shape is animated
-    // note that we can't use hasTransform, because we need to test the original
-    // dag, not the transform (if mergeTransformAndShape is on)!
-    if (!GetDagPath().hasFn(MFn::kTransform)) { // if is a shape
-        MObject obj = GetDagPath().node();
-        if (!_GetExportArgs().timeInterval.IsEmpty()) {
-            _isShapeAnimated = UsdMayaUtil::isAnimated(obj);
-        }
-    }
 }
 
 UsdMayaPrimWriter::~UsdMayaPrimWriter()

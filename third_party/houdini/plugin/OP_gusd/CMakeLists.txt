@@ -22,6 +22,7 @@ pxr_plugin(${PXR_PACKAGE}
 
     PRIVATE_CLASSES
         OBJ_usdcamera
+        OP_Utils
         ROP_usdoutput
         SOP_usdimport
         SOP_usdunpack

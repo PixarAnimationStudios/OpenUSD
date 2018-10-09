@@ -34,9 +34,13 @@
 #include "pxr/base/gf/range1d.h"
 #include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/vec3d.h"
+
 #include "pxr/base/tf/registryManager.h"
+
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
+
+#include "pxr/imaging/hdx/intersector.h"
 
 #include <maya/MFnDagNode.h>
 
@@ -46,7 +50,7 @@ static constexpr size_t ISECT_RESOLUTION = 256;
 static GlfDrawTargetRefPtr _sharedDrawTarget = nullptr;
 static HdRprimCollection _sharedRprimCollection(
         TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
-        HdTokens->refined);
+        HdReprSelector(HdReprTokens->refined));
 
 /// Delegate for computing a ray intersection against a UsdMayaProxyShape by
 /// rendering using Hydra via the UsdMayaGLBatchRenderer.
@@ -54,7 +58,8 @@ bool
 UsdMayaGL_ClosestPointOnProxyShape(
     const UsdMayaProxyShape& shape,
     const GfRay& ray,
-    GfVec3d* outClosestPoint)
+    GfVec3d* outClosestPoint,
+    GfVec3d* outClosestNormal)
 {
     MStatus status;
     const MFnDagNode dagNodeFn(shape.thisMObject(), &status);
@@ -121,19 +126,74 @@ UsdMayaGL_ClosestPointOnProxyShape(
             viewMatrix,
             projectionMatrix,
             /*viewport*/ GfVec4d(0, 0, ISECT_RESOLUTION, ISECT_RESOLUTION));
-    GfVec3d worldPoint;
+
+    HdxIntersector::Result isectResult;
     bool didIsect = renderer.TestIntersectionCustomCollection(
             _sharedRprimCollection,
             viewMatrix,
             projectionMatrix,
-            &worldPoint);
+            &isectResult);
     drawTarget->Unbind();
 
-    if (didIsect) {
-        GfMatrix4d worldToLocal = localToWorld.GetInverse();
-        *outClosestPoint = worldToLocal.Transform(worldPoint);
+    if (!didIsect) {
+        return false;
     }
-    return didIsect;
+
+    // We use the nearest hit as our intersection point.
+    HdxIntersector::Hit hit;
+    if (!isectResult.ResolveNearestToCenter(&hit)) {
+        return false;
+    }
+
+    // We use the set of all hit points to estimate the surface normal.
+    HdxIntersector::HitVector hits;
+    if (!isectResult.ResolveAll(&hits)) {
+        return false;
+    }
+
+    // Cull the set of hit points to only those points on the same object as
+    // the intersection point, in case the hit points span multiple objects.
+    std::vector<GfVec3d> sameObjectHits;
+    for (const HdxIntersector::Hit& h : hits) {
+        if (h.objectId == hit.objectId &&
+                h.instanceIndex == hit.instanceIndex &&
+                h.elementIndex == hit.elementIndex) {
+            sameObjectHits.push_back(h.worldSpaceHitPoint);
+        }
+    }
+
+    // Fit a plane to the hit "point cloud" in order to find the normal.
+    GfPlane worldPlane;
+    if (!GfFitPlaneToPoints(sameObjectHits, &worldPlane)) {
+        return false;
+    }
+
+    // Make the plane face in the opposite direction of the incoming ray.
+    // Note that this isn't the same as GfPlane::Reorient().
+    if (GfDot(worldRay.GetDirection(), worldPlane.GetNormal()) > 0.0) {
+        worldPlane.Set(
+                -worldPlane.GetNormal(),
+                worldPlane.GetDistanceFromOrigin());
+    }
+
+    // Our hit point and plane normal are both in world space, so convert back
+    // to local space.
+    const GfMatrix4d worldToLocal = localToWorld.GetInverse();
+    const GfVec3d point = worldToLocal.Transform(hit.worldSpaceHitPoint);
+    const GfVec3d normal = worldPlane.Transform(worldToLocal).GetNormal();
+
+    if (!std::isfinite(point.GetLengthSq()) ||
+                !std::isfinite(normal.GetLengthSq())) {
+        TF_CODING_ERROR(
+                "point (%f, %f, %f) or normal (%f, %f, %f) is non-finite",
+                point[0], point[1], point[2],
+                normal[0], normal[1], normal[2]);
+        return false;
+    }
+
+    *outClosestPoint = point;
+    *outClosestNormal = normal;
+    return true;
 }
 
 /// Delegate for returning whether object soft-select mode is currently on

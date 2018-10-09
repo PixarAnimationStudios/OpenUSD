@@ -289,8 +289,8 @@ TraceReporter::ReportChromeTracing(std::ostream &s)
 {
     UpdateEventTree();
 
-    JsWriteToStream(JsValue(_eventTree->CreateChromeTraceObject()), s);
-
+    JsWriter w(s);
+    _eventTree->WriteChromeTraceObject(w);
 }
 
 

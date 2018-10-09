@@ -28,7 +28,6 @@
 #include "usdMaya/writeJob.h"
 #include "usdMaya/writeUtil.h"
 
-#include <maya/MAnimControl.h>
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
@@ -132,35 +131,22 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
         }
     }
     
-    if (!dagPaths.empty()) {
-        UsdMayaJobExportArgs jobArgs =
-                UsdMayaJobExportArgs::CreateFromDictionary(
-                    userArgs, dagPaths, timeInterval);
-        for (unsigned int i=0; i < filteredTypes.length(); ++i) {
-            jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
-        }
-        UsdMaya_WriteJob writeJob(jobArgs);
-        if (writeJob.BeginWriting(fileName, append)) {
-            std::vector<double> timeSamples =
-                    UsdMayaWriteUtil::GetTimeSamples(
-                    jobArgs.timeInterval, std::set<double>(), frameStride);
-            if (!timeSamples.empty()) {
-                const MTime oldCurTime = MAnimControl::currentTime();
-                for (double t : timeSamples) {
-                    MGlobal::viewFrame(t);
-                    writeJob.WriteFrame(t);
-                }
-
-                // Set the time back.
-                MGlobal::viewFrame(oldCurTime);
-            }
-
-            writeJob.FinishWriting();
-        } else {
-            return MS::kFailure;
-        }
-    } else {
+    if (dagPaths.empty()) {
         TF_WARN("No DAG nodes to export. Skipping.");
+        return MS::kSuccess;
+    }
+
+    const std::vector<double> timeSamples = UsdMayaWriteUtil::GetTimeSamples(
+            timeInterval, std::set<double>(), frameStride);
+    UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
+            userArgs, dagPaths, timeSamples);
+    for (unsigned int i=0; i < filteredTypes.length(); ++i) {
+        jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
+    }
+
+    UsdMaya_WriteJob writeJob(jobArgs);
+    if (!writeJob.Write(fileName, append)) {
+        return MS::kFailure;
     }
     
     return MS::kSuccess;

@@ -30,11 +30,9 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
-
-#include <embree2/rtcore_ray.h>
-#include <random>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,6 +42,8 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _attachmentsValid(false)
     , _width(0)
     , _height(0)
+    , _viewMatrix(1.0f) // == identity
+    , _projMatrix(1.0f) // == identity
     , _inverseViewMatrix(1.0f) // == identity
     , _inverseProjMatrix(1.0f) // == identity
     , _scene(nullptr)
@@ -75,6 +75,8 @@ void
 HdEmbreeRenderer::SetCamera(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projMatrix)
 {
+    _viewMatrix = viewMatrix;
+    _projMatrix = projMatrix;
     _inverseViewMatrix = viewMatrix.GetInverse();
     _inverseProjMatrix = projMatrix.GetInverse();
 }
@@ -105,42 +107,66 @@ HdEmbreeRenderer::_ValidateAttachments()
         // output buffer.
         if (_attachments[i].renderBuffer == nullptr) {
             TF_WARN("Aov '%s' doesn't have any renderbuffer bound",
-                    _attachments[i].aovName.GetText());
+                    _attachments[i].aovName.name.GetText());
             _attachmentsValid = false;
             continue;
         }
 
         // Currently, HdEmbree only supports color, linearDepth, and primId
-        if (_attachments[i].aovName != HdAovTokens->color &&
-            _attachments[i].aovName != HdAovTokens->linearDepth &&
-            _attachments[i].aovName != HdAovTokens->primId) {
+        if (_attachments[i].aovName.name != HdAovTokens->color &&
+            _attachments[i].aovName.name != HdAovTokens->linearDepth &&
+            _attachments[i].aovName.name != HdAovTokens->depth &&
+            _attachments[i].aovName.name != HdAovTokens->primId &&
+            _attachments[i].aovName.name != HdAovTokens->Neye &&
+            _attachments[i].aovName.name != HdAovTokens->normal &&
+            !_attachments[i].aovName.isPrimvar) {
             TF_WARN("Unsupported attachment with Aov '%s' won't be rendered to",
-                    _attachments[i].aovName.GetText());
+                    _attachments[i].aovName.name.GetText());
         }
 
         HdFormat format = _attachments[i].renderBuffer->GetFormat();
 
-        // linearDepth is only supported for float32 attachments
-        if (_attachments[i].aovName == HdAovTokens->linearDepth &&
+        // depth is only supported for float32 attachments
+        if ((_attachments[i].aovName.name == HdAovTokens->linearDepth ||
+             _attachments[i].aovName.name == HdAovTokens->depth) &&
             format != HdFormatFloat32) {
             TF_WARN("Aov '%s' has unsupported format '%s'",
-                    _attachments[i].aovName.GetText(),
+                    _attachments[i].aovName.name.GetText(),
                     TfEnum::GetName(format).c_str());
             _attachmentsValid = false;
         }
 
         // primId is only supported for int32 attachments
-        if (_attachments[i].aovName == HdAovTokens->primId &&
+        if (_attachments[i].aovName.name == HdAovTokens->primId &&
             format != HdFormatInt32) {
             TF_WARN("Aov '%s' has unsupported format '%s'",
-                    _attachments[i].aovName.GetText(),
+                    _attachments[i].aovName.name.GetText(),
+                    TfEnum::GetName(format).c_str());
+            _attachmentsValid = false;
+        }
+
+        // Normal is only supported for vec3 attachments of float.
+        if ((_attachments[i].aovName.name == HdAovTokens->Neye ||
+             _attachments[i].aovName.name == HdAovTokens->normal) &&
+            format != HdFormatFloat32Vec3) {
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _attachments[i].aovName.name.GetText(),
+                    TfEnum::GetName(format).c_str());
+            _attachmentsValid = false;
+        }
+
+        // Primvars support vec3 output (though some channels may not be used).
+        if (_attachments[i].aovName.isPrimvar &&
+            format != HdFormatFloat32Vec3) {
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _attachments[i].aovName.name.GetText(),
                     TfEnum::GetName(format).c_str());
             _attachmentsValid = false;
         }
 
         // color is only supported for vec3/vec4 attachments of float,
         // unorm, or snorm.
-        if (_attachments[i].aovName == HdAovTokens->color) {
+        if (_attachments[i].aovName.name == HdAovTokens->color) {
             switch(format) {
                 case HdFormatUNorm8Vec4:
                 case HdFormatUNorm8Vec3:
@@ -151,7 +177,7 @@ HdEmbreeRenderer::_ValidateAttachments()
                     break;
                 default:
                     TF_WARN("Aov '%s' has unsupported format '%s'",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         TfEnum::GetName(format).c_str());
                     _attachmentsValid = false;
                     break;
@@ -167,29 +193,32 @@ HdEmbreeRenderer::_ValidateAttachments()
             // array-valued clear types aren't supported.
             if (clearType.count != 1) {
                 TF_WARN("Aov '%s' clear value type '%s' is an array",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         _attachments[i].clearValue.GetTypeName().c_str());
                 _attachmentsValid = false;
             }
 
             // color only supports float/double vec3/4
-            if (_attachments[i].aovName == HdAovTokens->color &&
+            if (_attachments[i].aovName.name == HdAovTokens->color &&
                 clearType.type != HdTypeFloatVec3 &&
                 clearType.type != HdTypeFloatVec4 &&
                 clearType.type != HdTypeDoubleVec3 &&
                 clearType.type != HdTypeDoubleVec4) {
                 TF_WARN("Aov '%s' clear value type '%s' isn't compatible",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         _attachments[i].clearValue.GetTypeName().c_str());
                 _attachmentsValid = false;
             }
 
-            // only clear float formats with float, and int with int.
+            // only clear float formats with float, int with int, float3 with
+            // float3.
             if ((format == HdFormatFloat32 && clearType.type != HdTypeFloat) ||
-                (format == HdFormatInt32 && clearType.type != HdTypeInt32)) {
+                (format == HdFormatInt32 && clearType.type != HdTypeInt32) ||
+                (format == HdFormatFloat32Vec3 &&
+                 clearType.type != HdTypeFloatVec3)) {
                 TF_WARN("Aov '%s' clear value type '%s' isn't compatible with"
                         " format %s",
-                        _attachments[i].aovName.GetText(),
+                        _attachments[i].aovName.name.GetText(),
                         _attachments[i].clearValue.GetTypeName().c_str(),
                         TfEnum::GetName(format).c_str());
                 _attachmentsValid = false;
@@ -202,7 +231,7 @@ HdEmbreeRenderer::_ValidateAttachments()
             _attachments[i].renderBuffer->GetHeight() != _height) {
             TF_WARN("Aov '%s' viewport (%u, %u) doesn't match render viewport"
                     " (%u, %u)",
-                    _attachments[i].aovName.GetText(),
+                    _attachments[i].aovName.name.GetText(),
                     _attachments[i].renderBuffer->GetWidth(),
                     _attachments[i].renderBuffer->GetHeight(),
                     _width, _height);
@@ -270,7 +299,7 @@ HdEmbreeRenderer::Clear()
             static_cast<HdEmbreeRenderBuffer*>(_attachments[i].renderBuffer);
 
         rb->Map();
-        if (_attachments[i].aovName == HdAovTokens->color) {
+        if (_attachments[i].aovName.name == HdAovTokens->color) {
             GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
             rb->Clear(4, clearColor.data());
         } else if (rb->GetFormat() == HdFormatInt32) {
@@ -279,9 +308,22 @@ HdEmbreeRenderer::Clear()
         } else if (rb->GetFormat() == HdFormatFloat32) {
             float clearValue = _attachments[i].clearValue.Get<float>();
             rb->Clear(1, &clearValue);
+        } else if (rb->GetFormat() == HdFormatFloat32Vec3) {
+            GfVec3f clearValue = _attachments[i].clearValue.Get<GfVec3f>();
+            rb->Clear(3, clearValue.data());
         } // else, _ValidateAttachments would have already warned.
 
         rb->Unmap();
+        rb->SetConverged(false);
+    }
+}
+
+void
+HdEmbreeRenderer::MarkAttachmentsUnconverged()
+{
+    for (size_t i = 0; i < _attachments.size(); ++i) {
+        HdEmbreeRenderBuffer *rb =
+            static_cast<HdEmbreeRenderBuffer*>(_attachments[i].renderBuffer);
         rb->SetConverged(false);
     }
 }
@@ -369,12 +411,12 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    std::default_random_engine random(std::chrono::system_clock::now().
-                                      time_since_epoch().count());
+    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    boost::hash_combine(seed, tileStart);
+    std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-
     std::function<float()> uniform_float = std::bind(uniform_dist, random);
 
     // _RenderTiles gets a range of tiles; iterate through them.
@@ -433,7 +475,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                 dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
 
                 // Trace the ray.
-                _TraceRay(x, y, origin, dir, uniform_float);
+                _TraceRay(x, y, origin, dir, random);
             }
         }
     }
@@ -458,24 +500,29 @@ _PopulateRay(RTCRay *ray, GfVec3f const& origin,
     ray->time = 0.0f;
 }
 
-/// Generate a uniformly random direction ray.
+/// Generate a random cosine-weighted direction ray (in the hemisphere
+/// around <0,0,1>).  The input is a pair of uniformly distributed random
+/// numbers in the range [0,1].
+///
+/// The algorithm here is to generate a random point on the disk, and project
+/// that point to the unit hemisphere.
 static GfVec3f
-_RandomDirection(std::function<float()> uniform_float)
+_CosineWeightedDirection(GfVec2f const& uniform_float)
 {
     GfVec3f dir;
-    float theta = 2.0f * M_PI * uniform_float();
-    float phi = acosf(2.0f * uniform_float() - 1.0f);
-    float sinphi = sinf(phi);
-    dir[0] = cosf(theta) * sinphi;
-    dir[1] = sinf(theta) * sinphi;
-    dir[2] = cosf(phi);
+    float theta = 2.0f * M_PI * uniform_float[0];
+    float eta = uniform_float[1];
+    float sqrteta = sqrtf(eta);
+    dir[0] = cosf(theta) * sqrteta;
+    dir[1] = sinf(theta) * sqrteta;
+    dir[2] = sqrtf(1.0f-eta);
     return dir;
 }
 
 void
 HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
                             GfVec3f const &origin, GfVec3f const &dir,
-                            std::function<float()> uniform_float)
+                            std::default_random_engine &random)
 {
     // Intersect the camera ray.
     RTCRay ray;
@@ -491,21 +538,37 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
             continue;
         }
 
-        if (_attachments[i].aovName == HdAovTokens->color) {
+        if (_attachments[i].aovName.name == HdAovTokens->color) {
             GfVec4f clearColor = _GetClearColor(_attachments[i].clearValue);
-            GfVec4f sample = _ComputeColor(ray, uniform_float, clearColor);
+            GfVec4f sample = _ComputeColor(ray, random, clearColor);
             renderBuffer->Write(GfVec3i(x,y,1), 4, sample.data());
-        } else if (_attachments[i].aovName == HdAovTokens->linearDepth &&
+        } else if ((_attachments[i].aovName.name == HdAovTokens->linearDepth ||
+                    _attachments[i].aovName.name == HdAovTokens->depth) &&
                    renderBuffer->GetFormat() == HdFormatFloat32) {
             float depth;
-            if(_ComputeDepth(ray, &depth)) {
+            bool ndc = (_attachments[i].aovName.name == HdAovTokens->depth);
+            if(_ComputeDepth(ray, &depth, ndc)) {
                 renderBuffer->Write(GfVec3i(x,y,1), 1, &depth);
             }
-        } else if (_attachments[i].aovName == HdAovTokens->primId &&
+        } else if (_attachments[i].aovName.name == HdAovTokens->primId &&
                    renderBuffer->GetFormat() == HdFormatInt32) {
             int32_t primId;
             if (_ComputePrimId(ray, &primId)) {
                 renderBuffer->Write(GfVec3i(x,y,1), 1, &primId);
+            }
+        } else if ((_attachments[i].aovName.name == HdAovTokens->Neye ||
+                    _attachments[i].aovName.name == HdAovTokens->normal) &&
+                   renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
+            GfVec3f normal;
+            bool eye = (_attachments[i].aovName.name == HdAovTokens->Neye);
+            if (_ComputeNormal(ray, &normal, eye)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 3, normal.data());
+            }
+        } else if (_attachments[i].aovName.isPrimvar &&
+                   renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
+            GfVec3f value;
+            if (_ComputePrimvar(ray, _attachments[i].aovName.name, &value)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 3, value.data());
             }
         }
     }
@@ -534,19 +597,103 @@ HdEmbreeRenderer::_ComputePrimId(RTCRay const& rayHit,
 
 bool
 HdEmbreeRenderer::_ComputeDepth(RTCRay const& rayHit,
-                                float *depth)
+                                float *depth,
+                                bool ndc)
 {
     if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
         return false;
     }
 
-    *depth = rayHit.tfar;
+    if (ndc) {
+        GfVec3f hitPos = GfVec3f(rayHit.org[0] + rayHit.tfar * rayHit.dir[0],
+            rayHit.org[1] + rayHit.tfar * rayHit.dir[1],
+            rayHit.org[2] + rayHit.tfar * rayHit.dir[2]);
+
+        hitPos = _viewMatrix.Transform(hitPos);
+        hitPos = _projMatrix.Transform(hitPos);
+
+        *depth = hitPos[2];
+    } else {
+        *depth = rayHit.tfar;
+    }
     return true;
+}
+
+bool
+HdEmbreeRenderer::_ComputeNormal(RTCRay const& rayHit,
+                                 GfVec3f *normal,
+                                 bool eye)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    HdEmbreeInstanceContext *instanceContext =
+        static_cast<HdEmbreeInstanceContext*>(
+                rtcGetUserData(_scene, rayHit.instID));
+
+    HdEmbreePrototypeContext *prototypeContext =
+        static_cast<HdEmbreePrototypeContext*>(
+                rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
+
+    GfVec3f n = -GfVec3f(rayHit.Ng[0], rayHit.Ng[1], rayHit.Ng[2]);
+    if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
+        prototypeContext->primvarMap[HdTokens->normals]->Sample(
+                rayHit.primID, rayHit.u, rayHit.v, &n);
+    }
+
+    n = instanceContext->objectToWorldMatrix.TransformDir(n);
+    if (eye) {
+        n = _viewMatrix.TransformDir(n);
+    }
+    n.Normalize();
+
+    *normal = n;
+    return true;
+}
+
+bool
+HdEmbreeRenderer::_ComputePrimvar(RTCRay const& rayHit,
+                                  TfToken const& primvar,
+                                  GfVec3f *value)
+{
+    if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        return false;
+    }
+
+    HdEmbreeInstanceContext *instanceContext =
+        static_cast<HdEmbreeInstanceContext*>(
+                rtcGetUserData(_scene, rayHit.instID));
+
+    HdEmbreePrototypeContext *prototypeContext =
+        static_cast<HdEmbreePrototypeContext*>(
+                rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
+
+    // XXX: This is a little clunky, although sample will early out if the
+    // types don't match.
+    if (prototypeContext->primvarMap.count(primvar) > 0) {
+        HdEmbreePrimvarSampler *sampler = 
+            prototypeContext->primvarMap[primvar];
+        if (sampler->Sample(rayHit.primID, rayHit.u, rayHit.v, value)) {
+            return true;
+        }
+        GfVec2f v2;
+        if (sampler->Sample(rayHit.primID, rayHit.u, rayHit.v, &v2)) {
+            value->Set(v2[0], v2[1], 0.0f);
+            return true;
+        }
+        float v1;
+        if (sampler->Sample(rayHit.primID, rayHit.u, rayHit.v, &v1)) {
+            value->Set(v1, 0.0f, 0.0f);
+            return true;
+        }
+    }
+    return false;
 }
 
 GfVec4f
 HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
-                                std::function<float()> uniform_float,
+                                std::default_random_engine &random,
                                 GfVec4f const& clearColor)
 {
     if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
@@ -585,10 +732,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
     }
 
     // Transform the normal from object space to world space.
-    GfVec4f expandedNormal(normal[0], normal[1], normal[2], 0.0f);
-    expandedNormal = expandedNormal * instanceContext->objectToWorldMatrix;
-    normal = GfVec3f(expandedNormal[0], expandedNormal[1],
-            expandedNormal[2]);
+    normal = instanceContext->objectToWorldMatrix.TransformDir(normal);
 
     // Make sure the normal is unit-length.
     normal.Normalize();
@@ -601,7 +745,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
 
     // Lighting gets modulated by an ambient occlusion term.
     float aoLightIntensity =
-        (1.0f - _ComputeAmbientOcclusion(hitPos, normal, uniform_float));
+        _ComputeAmbientOcclusion(hitPos, normal, random);
 
     // Return color.xyz * diffuseLight * aoLightIntensity.
     // XXX: Transparency?
@@ -620,25 +764,61 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
 float
 HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
                                            GfVec3f const& normal,
-                                           std::function<float()> uniform_float)
+                                           std::default_random_engine &random)
 {
+    // Create a uniform random distribution for AO calculations.
+    std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
+    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     unsigned int ambientOcclusionSamples =
         HdEmbreeConfig::GetInstance().ambientOcclusionSamples;
     if (ambientOcclusionSamples < 1) {
-        return 0.0f;
+        return 1.0f;
     }
 
     float occlusionFactor = 0.0f;
 
+    // For hemisphere sampling we need to choose a coordinate frame at this
+    // point. For the purposes of _CosineWeightedDirection, the normal needs
+    // to map to (0,0,1), but since the distribution is radially symmetric
+    // we don't care about the other axes.
+    GfMatrix3f basis(1);
+    GfVec3f xAxis;
+    if (fabsf(GfDot(normal, GfVec3f(0,0,1))) < 0.9f) {
+        xAxis = GfCross(normal, GfVec3f(0,0,1));
+    } else {
+        xAxis = GfCross(normal, GfVec3f(0,1,0));
+    }
+    GfVec3f yAxis = GfCross(normal, xAxis);
+    basis.SetColumn(0, xAxis.GetNormalized());
+    basis.SetColumn(1, yAxis.GetNormalized());
+    basis.SetColumn(2, normal);
+
+    // Generate random samples, stratified with Latin Hypercube Sampling.
+    // https://en.wikipedia.org/wiki/Latin_hypercube_sampling
+    // Stratified sampling means we don't get all of our random samples
+    // bunched in the far corner of the hemisphere, but instead have some
+    // equal spacing guarantees.
+    std::vector<GfVec2f> samples;
+    samples.resize(ambientOcclusionSamples);
+    for (unsigned int i = 0; i < ambientOcclusionSamples; ++i) {
+        samples[i][0] = (float(i) + uniform_float()) / ambientOcclusionSamples;
+    }
+    std::shuffle(samples.begin(), samples.end(), random);
+    for (unsigned int i = 0; i < ambientOcclusionSamples; ++i) {
+        samples[i][1] = (float(i) + uniform_float()) / ambientOcclusionSamples;
+    }
+
     // Trace ambient occlusion rays. The occlusion factor is the fraction of
     // the hemisphere that's occluded when rays are traced to infinity,
-    // computed by uniform random sampling over the hemisphere.
+    // computed by random sampling over the hemisphere.
     for (unsigned int i = 0; i < ambientOcclusionSamples; i++)
     {
-        // We sample in the hemisphere centered on the face normal.
-        GfVec3f shadowDir = _RandomDirection(uniform_float);
-        if (GfDot(shadowDir, normal) < 0) shadowDir = -shadowDir;
+        // Sample in the hemisphere centered on the face normal. Use
+        // cosine-weighted hemisphere sampling to bias towards samples which
+        // will have a bigger effect on the occlusion term.
+        GfVec3f shadowDir = basis * _CosineWeightedDirection(samples[i]);
 
         // Trace shadow ray, using the fast interface (rtcOccluded) since
         // we only care about intersection status, not intersection id.
@@ -648,8 +828,8 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
 
         // Record this AO ray's contribution to the occlusion factor: a
         // boolean [In shadow/Not in shadow].
-        if (shadow.geomID != RTC_INVALID_GEOMETRY_ID)
-            occlusionFactor += 1.0f;
+        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+            occlusionFactor += GfDot(shadowDir, normal);
     }
     // Compute the average of the occlusion samples.
     occlusionFactor /= ambientOcclusionSamples;

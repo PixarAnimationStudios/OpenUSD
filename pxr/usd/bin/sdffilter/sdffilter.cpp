@@ -560,7 +560,7 @@ Validate(SdfLayerHandle const &layer, ReportParams const &p,
                       layer->GetIdentifier().c_str());
     vector<SdfPath> paths;
     layer->Traverse(SdfPath::AbsoluteRootPath(),
-                    [&paths, &p, layer](SdfPath const &path) {
+                    [&paths, layer](SdfPath const &path) {
                         TF_DESCRIBE_SCOPE(
                             "Collecting path <%s> in @%s@",
                             path.GetText(), layer->GetIdentifier().c_str());

@@ -35,7 +35,7 @@ def AssertBBoxesClose(cachedBox, directBox, msg):
     assert Gf.IsClose(cachedRange.max, directRange.max, 1e-5), msg
 
 def TestAtCurTime(stage, bboxCache):
-    p = stage.GetPrimAtPath("/parent/primWithLocalXform");
+    p = stage.GetPrimAtPath("/parent/primWithLocalXform")
     assert bboxCache.ComputeWorldBound(p) == bboxCache.ComputeWorldBound(p)
     bboxCache.SetIncludedPurposes([UsdGeom.Tokens.default_])
     print

@@ -187,9 +187,10 @@ enum HdComplexity
 /// <ul>
 ///     <li>\b HdWrapClamp               Clamp coordinate to range [1/(2N),1-1/(2N)] where N is the size of the texture in the direction of clamping</li>
 ///     <li>\b HdWrapRepeat              Creates a repeating pattern</li>
-///     <li>\b HdWrapBlack</c></b>       Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
-///     <li>\b HdWrapMirror</c></b>      Creates a mirrored repeating pattern.</li>
-///     <li>\b HdWrapUseMetaDict</c></b> Texture can define its own wrap mode, if not defined by the texture it will use HdWrapRepeat</li>
+///     <li>\b HdWrapBlack               Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
+///     <li>\b HdWrapMirror              Creates a mirrored repeating pattern.</li>
+///     <li>\b HdWrapUseMetadata         Data Texture can define its own wrap mode, if not defined by the texture it will use HdWrapBlack</li>
+///     <li>\b HdWrapLegacy              (deprecated) Texture can define its own wrap mode, if not defined by the texture it will use HdWrapRepeat</li>
 /// </ul>
 ///
 enum HdWrap 
@@ -198,7 +199,8 @@ enum HdWrap
     HdWrapRepeat,
     HdWrapBlack,
     HdWrapMirror,
-    HdWrapUseMetaDict,
+    HdWrapUseMetadata,
+    HdWrapLegacy,
 };
 
 /// \enum HdMinFilter
@@ -273,6 +275,23 @@ enum HdInterpolation
     HdInterpolationInstance,
 
     HdInterpolationCount
+};
+
+///
+/// \enum HdDepthPriority
+/// Sets the priorities for a depth based operation
+///
+/// <ul>
+///     <li>HdDepthPriorityNearest     Prioritize objects nearest to the camera</li>
+///     <li>HdDepthPriorityFarthest    Prioritize objects farthest from the camera</li>
+/// </ul>
+///
+enum HdDepthPriority
+{
+    HdDepthPriorityNearest = 0,
+    HdDepthPriorityFarthest,
+
+    HdDepthPriorityCount
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

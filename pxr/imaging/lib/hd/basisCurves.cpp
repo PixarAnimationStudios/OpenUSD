@@ -69,9 +69,24 @@ HdBasisCurves::ConfigureRepr(TfToken const &reprName,
 
 /* static */
 HdBasisCurves::_BasisCurvesReprConfig::DescArray
-HdBasisCurves::_GetReprDesc(TfToken const &reprName)
+HdBasisCurves::_GetReprDesc(HdReprSelector const &reprSelector)
 {
-    return _reprDescConfig.Find(reprName);
+    _BasisCurvesReprConfig::DescArray result;
+    size_t index = 0;
+    
+    for (size_t i = 0; i < reprSelector.size(); ++i) {
+        if (reprSelector.IsActiveRepr(i)) {
+            _BasisCurvesReprConfig::DescArray descs = _reprDescConfig.Find(
+                    reprSelector[i]);
+            for (HdBasisCurvesReprDesc &desc : descs) {
+                if (!desc.IsEmpty() && index < result.size()) {
+                    result[index++] = desc;
+                }
+            }
+        }
+    }
+    
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

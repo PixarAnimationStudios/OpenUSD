@@ -2,6 +2,7 @@ Advanced Build Configuration
 ============================
 
 ## Table of Contents
+- [Building With Build Script](#building-with-build-script)
 - [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
 - [Imaging Plugins](#imaging-plugins)
@@ -11,6 +12,14 @@ Advanced Build Configuration
 - [USD Developer Options](#usd-developer-options)
 - [Optimization Options](#optimization-options)
 - [Linker Options](#linker-options)
+
+## Building With Build Script
+
+The simplest way to build USD is to run the supplied ```build_usd.py``` 
+script. This script will download required dependencies and build 
+and install them along with USD in a given directory. 
+
+See instructions and examples in [README.md](README.md#getting-and-building-the-code).
 
 ## Building With CMake
 
@@ -226,6 +235,8 @@ when invoking cmake. This plugin is compatible with Houdini 16.0. The additional
 | Dependency Name       | Description                            | Version   |
 | --------------        | -----------------------------------    | -------   |
 | HOUDINI_ROOT          | The root path to a Houdini SDK install.| 16.0      |
+
+Note that the Houdini plugin is only tested on Linux.
 
 For further information see our additional documentation on the Houdini plugins [here](http://openusd.org/docs/Houdini-USD-Plugins.html).
 

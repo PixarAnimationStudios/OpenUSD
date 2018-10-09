@@ -345,8 +345,8 @@ MObject
 PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 {
     const TfToken& exportSkin = _GetExportArgs().exportSkin;
-    if (exportSkin != PxrUsdExportJobArgsTokens->auto_ &&
-        exportSkin != PxrUsdExportJobArgsTokens->explicit_) {
+    if (exportSkin != UsdMayaJobExportArgsTokens->auto_ &&
+        exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
         return MObject();
     }
 
@@ -366,7 +366,7 @@ PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     // At this point, we know we have a skin cluster.
     // If exportSkin=explicit and we're not under a SkelRoot, then silently skip
     // (it's what the user asked for, after all).
-    if (exportSkin == PxrUsdExportJobArgsTokens->explicit_ &&
+    if (exportSkin == UsdMayaJobExportArgsTokens->explicit_ &&
             !UsdSkelRoot::Find(primSchema.GetPrim())) {
         return MObject();
     }

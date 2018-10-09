@@ -34,6 +34,8 @@
 #include <GT/GT_DAIndexedString.h>
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_DAIndirect.h>
+#include <GT/GT_DABool.h>
+#include <SYS/SYS_Version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -644,14 +646,20 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
     for(GT_AttributeMap::const_names_iterator mapIt=attrMapHandle->begin();
             !mapIt.atEnd(); ++mapIt) {
 
-        if(!primvarFilter.matches(mapIt.name())) 
+#if SYS_VERSION_FULL_INT < 0x11000000
+        string attrname = mapIt.name();
+#else
+        string attrname = mapIt->first.toStdString();
+#endif
+
+        if(!primvarFilter.matches(attrname)) 
             continue;
 
-        const int attrIndex = attrMapHandle->get(mapIt.name());
+        const int attrIndex = attrMapHandle->get(attrname);
         const GT_Owner owner = attrMapHandle->getOriginalOwner(attrIndex);
         GT_DataArrayHandle attrData = gtAttrs->get(attrIndex);
 
-        TfToken name( mapIt.name() );
+        TfToken name( attrname );
 
         updatePrimvarFromGTPrim( 
                     TfToken( name ),
@@ -707,7 +715,17 @@ GT_DataArrayHandle
 GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode time ) {
 
     SdfValueTypeName typeName = primvar.GetTypeName();
-    if( typeName == SdfValueTypeNames->Int )
+    if( typeName == SdfValueTypeNames->Bool )
+    {
+        bool usdVal;
+        primvar.Get( &usdVal, time );
+
+        auto gtData = new GT_DABool( 1, 1 );
+	gtData->setBit(0, usdVal);
+
+	return gtData;
+    }
+    else if( typeName == SdfValueTypeNames->Int )
     {
         int usdVal;
         primvar.Get( &usdVal, time );
@@ -851,6 +869,12 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
         for( size_t i = 0; i < usdVal.size(); ++i )
             gtString->setString( i, 0, usdVal[i].c_str() );
         return gtString;
+    }
+    else if( typeName == SdfValueTypeNames->BoolArray )
+    {
+        VtArray<bool> usdVal;
+        primvar.ComputeFlattened( &usdVal, time );
+        return new GusdGT_VtArray<bool>(usdVal);
     }
     else if( typeName == SdfValueTypeNames->IntArray )
     {

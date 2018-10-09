@@ -267,7 +267,9 @@ bool _FillSubprimSelOffsets(int type,
     size_t selOffsetsStart = startOutputSize + SUBPRIM_SELOFFSETS_HEADER_SIZE;
     for (VtIntArray const& indices : vecIndices ) {
         for (int const& id : indices ) {
-            (*output)[selOffsetsStart + (id - min)] |= SELECT_ALL;
+            if (id >= 0) {
+                (*output)[selOffsetsStart + (id - min)] |= SELECT_ALL;
+            }
         }
     }
 
@@ -339,7 +341,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     size_t const N = 1000;
     int const INVALID = -1;
     WorkParallelForN(numPrims/N + 1,
-       [&ids, &index, INVALID, &N, &selectedPrims, this](size_t begin, size_t end) mutable {
+       [&ids, &index, INVALID, &N, &selectedPrims](size_t begin, size_t end) mutable {
         end = std::min(end*N, ids.size());
         begin = begin*N;
         for (size_t i = begin; i < end; i++) {

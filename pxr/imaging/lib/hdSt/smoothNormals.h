@@ -31,13 +31,8 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <vector>
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 class Hd_VertexAdjacency;
 
@@ -47,13 +42,12 @@ class Hd_VertexAdjacency;
 class HdSt_SmoothNormalsComputationGPU : public HdComputation {
 public:
     /// Constructor
-    /// @param topology 
     HDST_API
     HdSt_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
                                  TfToken const &srcName,
                                  TfToken const &dstName,
                                  HdType srcDataType,
-                                 HdType dstDataType);
+                                 bool packed);
 
     HDST_API
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;

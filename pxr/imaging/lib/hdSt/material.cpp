@@ -120,6 +120,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _surfaceShader(new HdStSurfaceShader)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
+ , _hasDisplacement(false)
 {
 }
 
@@ -165,15 +166,20 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             _surfaceShader->SetGeometrySource(geometrySource);
         }
 
-        
-        // XXX Forcing collections to be dirty to reload everything
-        //     Something more efficient can be done here
-        HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkAllCollectionsDirty();
+
+        // Mark batches dirty to force batch validation/rebuild.
+        sceneDelegate->GetRenderIndex().GetChangeTracker().
+            MarkBatchesDirty();
+
+        bool hasDisplacement = !(geometrySource.empty());
+
+        if (_hasDisplacement != hasDisplacement) {
+            _hasDisplacement = hasDisplacement;
+            needsRprimMaterialStateUpdate = true;
+        }
 
         bool hasLimitSurfaceEvaluation =
-                                _GetHasLimitSurfaceEvaluation(materialMetadata);
+            _GetHasLimitSurfaceEvaluation(materialMetadata);
 
         if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
             _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
@@ -318,13 +324,20 @@ HdStMaterial::_GetTextureResource(
             GetTextureResourceID(sceneDelegate, connection);
 
         if (texID != HdTextureResource::ID(-1)) {
-            HdInstance<HdTextureResource::ID,
+
+            // Use render index to convert local texture id into global
+            // texture key
+            HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+            HdResourceRegistry::TextureKey texKey =
+                                               renderIndex.GetTextureKey(texID);
+
+            HdInstance<HdResourceRegistry::TextureKey,
                         HdTextureResourceSharedPtr> texInstance;
 
             bool textureResourceFound = false;
             std::unique_lock<std::mutex> regLock =
                 resourceRegistry->FindTextureResource
-                (texID, &texInstance, &textureResourceFound);
+                                  (texKey, &texInstance, &textureResourceFound);
 
             // A bad asset can cause the texture resource to not
             // be found. Hence, issue a warning and continue onto the

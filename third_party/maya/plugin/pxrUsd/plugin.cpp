@@ -24,12 +24,15 @@
 #include "pxr/pxr.h"
 #include "pxrUsd/api.h"
 
+#include "pxrUsdMayaGL/hdImagingShapeDrawOverride.h"
+#include "pxrUsdMayaGL/hdImagingShapeUI.h"
 #include "pxrUsdMayaGL/proxyDrawOverride.h"
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
 #include "usdMaya/diagnosticDelegate.h"
 #include "usdMaya/exportCommand.h"
 #include "usdMaya/exportTranslator.h"
+#include "usdMaya/hdImagingShape.h"
 #include "usdMaya/importCommand.h"
 #include "usdMaya/importTranslator.h"
 #include "usdMaya/listShadingModesCommand.h"
@@ -45,9 +48,13 @@
 #include <maya/MGlobal.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
+#include <maya/MString.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+
+static const MString _RegistrantId("pxrUsdPlugin");
 
 
 PXRUSD_API
@@ -84,7 +91,7 @@ initializePlugin(MObject obj)
         UsdMayaProxyShape::creator,
         UsdMayaProxyShape::initialize,
         UsdMayaProxyShapeUI::creator,
-        &UsdMayaProxyDrawOverride::sm_drawDbClassification);
+        &UsdMayaProxyDrawOverride::drawDbClassification);
     CHECK_MSTATUS(status);
 
     status = plugin.registerNode(
@@ -96,10 +103,31 @@ initializePlugin(MObject obj)
         &UsdMayaReferenceAssembly::_classification);
     CHECK_MSTATUS(status);
 
+    status = plugin.registerShape(
+        PxrMayaHdImagingShape::typeName,
+        PxrMayaHdImagingShape::typeId,
+        PxrMayaHdImagingShape::creator,
+        PxrMayaHdImagingShape::initialize,
+        PxrMayaHdImagingShapeUI::creator,
+        &PxrMayaHdImagingShapeDrawOverride::drawDbClassification);
+    CHECK_MSTATUS(status);
+
     status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-        UsdMayaProxyDrawOverride::sm_drawDbClassification,
-        UsdMayaProxyDrawOverride::sm_drawRegistrantId,
+        PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+        _RegistrantId,
+        PxrMayaHdImagingShapeDrawOverride::creator);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+        UsdMayaProxyDrawOverride::drawDbClassification,
+        _RegistrantId,
         UsdMayaProxyDrawOverride::Creator);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerDisplayFilter(
+        UsdMayaProxyShape::displayFilterName,
+        UsdMayaProxyShape::displayFilterLabel,
+        UsdMayaProxyDrawOverride::drawDbClassification);
     CHECK_MSTATUS(status);
 
     status = MGlobal::sourceFile("usdMaya.mel");
@@ -234,9 +262,21 @@ uninitializePlugin(MObject obj)
     status = MGlobal::executeCommand("assembly -e -deregister " + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS(status);
 
+    status = plugin.deregisterDisplayFilter(
+        UsdMayaProxyShape::displayFilterName);
+    CHECK_MSTATUS(status);
+
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-        UsdMayaProxyDrawOverride::sm_drawDbClassification,
-        UsdMayaProxyDrawOverride::sm_drawRegistrantId);
+        UsdMayaProxyDrawOverride::drawDbClassification,
+        _RegistrantId);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
+        PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+        _RegistrantId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(UsdMayaReferenceAssembly::typeId);

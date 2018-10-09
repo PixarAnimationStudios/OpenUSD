@@ -1299,8 +1299,10 @@ UsdMayaTranslatorSkel::CreateSkinCluster(
         MPlug objectGroups =
             UsdMayaUtil::FindChildPlugByName(instObjGroups0,
                                                 _MayaTokens->objectGroups);
+        //number of objectGroups
+        unsigned int count = objectGroups.numElements();
         MPlug objectGroups0 =
-            objectGroups.elementByLogicalIndex(0, &status);
+            objectGroups.elementByLogicalIndex(count, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         MPlug objectGroupId =

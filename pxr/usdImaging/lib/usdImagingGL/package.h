@@ -34,9 +34,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 USDIMAGINGGL_API
 TfToken UsdImagingGLPackageDrawModeShader();
 
-USDIMAGINGGL_API
-TfToken UsdImagingGLPackagePreviewSurfaceShader();
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGINGGL_PACKAGE_H

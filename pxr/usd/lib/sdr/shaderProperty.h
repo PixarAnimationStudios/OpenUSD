@@ -224,6 +224,11 @@ public:
     SDR_API
     bool IsAssetIdentifier() const;
 
+    /// Determines if the value held by this property is the default input 
+    /// for this node.
+    SDR_API
+    bool IsDefaultInput() const;
+
     /// @}
 
 protected:

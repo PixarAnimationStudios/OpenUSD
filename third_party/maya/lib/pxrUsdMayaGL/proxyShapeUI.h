@@ -53,18 +53,18 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
         static void* creator();
 
         PXRUSDMAYAGL_API
-        virtual void getDrawRequests(
+        void getDrawRequests(
                 const MDrawInfo& drawInfo,
-                bool isObjectAndActiveOnly,
+                bool objectAndActiveOnly,
                 MDrawRequestQueue& requests) override;
 
         PXRUSDMAYAGL_API
-        virtual void draw(
+        void draw(
                 const MDrawRequest& request,
                 M3dView& view) const override;
 
         PXRUSDMAYAGL_API
-        virtual bool select(
+        bool select(
                 MSelectInfo& selectInfo,
                 MSelectionList& selectionList,
                 MPointArray& worldSpaceSelectPts) const override;
@@ -72,11 +72,10 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     private:
 
         UsdMayaProxyShapeUI();
-        UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&);
+        ~UsdMayaProxyShapeUI() override;
 
-        virtual ~UsdMayaProxyShapeUI() override;
-
-        UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
+        UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&) = delete;
+        UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&) = delete;
 
         // Note that MPxSurfaceShapeUI::select() is declared as const, so we
         // must declare _shapeAdapter as mutable so that we're able to modify
@@ -100,4 +99,4 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_PROXY_SHAPE_UI_H
+#endif

@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
@@ -56,9 +57,9 @@ struct HdRenderPassAttachment {
     HdRenderPassAttachment()
         : renderBuffer(nullptr) {}
 
-    /// The name of the renderer output to be consumed. This should take a
-    /// value from HdAovTokens.
-    TfToken aovName;
+    /// The identifier of the renderer output to be consumed. This should take
+    /// a value from HdAovTokens.
+    HdAovIdentifier aovName;
 
     /// The render buffer to be bound to the above terminal output.
     ///

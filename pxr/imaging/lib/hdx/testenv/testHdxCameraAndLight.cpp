@@ -90,7 +90,8 @@ static void CameraAndLightTest()
     HdChangeTracker& tracker = index->GetChangeTracker();
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
-    HdRprimCollection collection(HdTokens->geometry, HdTokens->hull);
+    HdRprimCollection collection(HdTokens->geometry, 
+        HdReprSelector(HdReprTokens->hull));
     HdRenderPassStateSharedPtr renderPassState(new HdStRenderPassState());
     HdRenderPassSharedPtr renderPass(
         new HdSt_RenderPass(index.get(), collection));
@@ -112,7 +113,7 @@ static void CameraAndLightTest()
     delegate->AddLight(light, GlfSimpleLight());
     delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
-                                                HdTokens->hull)));
+                                        HdReprSelector(HdReprTokens->hull))));
 
     engine.Execute(*index, tasks);
 
@@ -131,7 +132,7 @@ static void CameraAndLightTest()
     // Update shadow collection
     delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
-                                                HdTokens->refined)));
+                        HdReprSelector(HdReprTokens->refined))));
     tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
     engine.Execute(*index, tasks);
@@ -142,7 +143,7 @@ static void CameraAndLightTest()
     // Update shadow collection again with the same data
     delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
-                                                HdTokens->refined)));
+                                HdReprSelector(HdReprTokens->refined))));
     tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
     engine.Execute(*index, tasks);

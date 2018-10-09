@@ -320,7 +320,6 @@ HdUnitTestDelegate::RebindMaterial(SdfPath const &rprimId,
     // the version of the global bindings so batches get rebuild (if needed)
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
-    tracker.MarkShaderBindingsDirty();
 }
 
 void
@@ -338,10 +337,11 @@ HdUnitTestDelegate::UnhideRprim(SdfPath const& id)
 }
 
 void
-HdUnitTestDelegate::SetReprName(SdfPath const &id, TfToken const &reprName)
+HdUnitTestDelegate::SetReprSelector(SdfPath const &id,
+                    HdReprSelector const &reprSelector)
 {
    if (_meshes.find(id) != _meshes.end()) {
-       _meshes[id].reprName = reprName;
+       _meshes[id].reprSelector = reprSelector;
    }
 }
 
@@ -524,7 +524,7 @@ HdUnitTestDelegate::UpdateTask(SdfPath const &id,
 
 /*virtual*/
 TfToken
-HdUnitTestDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
+HdUnitTestDelegate::GetRenderTag(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -854,15 +854,15 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
 }
 
 /* virtual */
-TfToken
-HdUnitTestDelegate::GetReprName(SdfPath const &id)
+HdReprSelector
+HdUnitTestDelegate::GetReprSelector(SdfPath const &id)
 {
     HD_TRACE_FUNCTION();
 
     if (_meshes.find(id) != _meshes.end()) {
-        return _meshes[id].reprName;
+        return _meshes[id].reprSelector;
     }
-    return TfToken();
+    return HdReprSelector();
 }
 
 /* virtual */
@@ -1608,23 +1608,27 @@ HdUnitTestDelegate::PopulateBasicTestSet()
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
         AddCube(SdfPath("/cube4"), GfMatrix4f(dmat), false, SdfPath(),
                          PxOsdOpenSubdivTokens->catmark);
-        SetReprName(SdfPath("/cube4"), HdTokens->smoothHull);
+        SetReprSelector(SdfPath("/cube4"),
+                HdReprSelector(HdReprTokens->smoothHull));
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
         AddCube(SdfPath("/cube5"), GfMatrix4f(dmat), false, SdfPath(),
                          PxOsdOpenSubdivTokens->catmark);
-        SetReprName(SdfPath("/cube5"), HdTokens->hull);
+        SetReprSelector(SdfPath("/cube5"),
+                HdReprSelector(HdReprTokens->hull));
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
         AddCube(SdfPath("/cube6"), GfMatrix4f(dmat), false, SdfPath(),
                          PxOsdOpenSubdivTokens->catmark);
-        SetReprName(SdfPath("/cube6"), HdTokens->refined);
+        SetReprSelector(SdfPath("/cube6"),
+                HdReprSelector(HdReprTokens->refined));
         SetRefineLevel(SdfPath("/cube6"), std::max(1, _refineLevel));
 
         dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));
         AddCube(SdfPath("/cube7"), GfMatrix4f(dmat), false, SdfPath(),
                          PxOsdOpenSubdivTokens->catmark);
-        SetReprName(SdfPath("/cube7"), HdTokens->wireOnSurf);
+        SetReprSelector(SdfPath("/cube7"),
+                HdReprSelector(HdReprTokens->wireOnSurf));
 
         xPos += 3.0;
     }

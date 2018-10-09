@@ -59,9 +59,11 @@ def main():
     parser.add_argument('inputFile', type=str, 
                         help='Name of the input file to inspect.')
     parser.add_argument('-s', '--skipVariants', dest='skipVariants',
-                        action='store_true', help='If specified, prims in all '
-                        'possible combinations of variant selections are '
-                        'validated.')
+                        action='store_true', help='If specified, only the prims'
+                        ' that are present in the default (i.e. selected) '
+                        'variants are checked. When this option is not '
+                        'specified, prims in all possible combinations of '
+                        'variant selections are checked.')
     parser.add_argument('-p', '--rootPackageOnly', dest='rootPackageOnly', 
                         action="store_true", help='Check only the specified'
                         'package. Nested packages, dependencies and their '
@@ -86,24 +88,26 @@ def main():
     inputFile = args.inputFile
     outFile = args.outFile
     
-    if args.dumpRules:
-        UsdUtils.ComplianceChecker.DumpRules(arkit=args.arkit)
-
-    checker = UsdUtils.ComplianceChecker(inputFile, arkit=args.arkit, 
+    checker = UsdUtils.ComplianceChecker(arkit=args.arkit, 
             skipARKitRootLayerCheck=False, rootPackageOnly=args.rootPackageOnly, 
             skipVariants=args.skipVariants, verbose=args.verbose)
+
+    if args.dumpRules:
+        checker.DumpRules()
+
+    checker.CheckCompliance(inputFile)
 
     errors = checker.GetErrors()
     failedChecks = checker.GetFailedChecks()
     
     if len(errors)> 0 or len(failedChecks) > 0:
-        print "Failed!"
         with _Stream(outFile, 'w') as ofp:
             for msg in errors + failedChecks:
                 # Add color if we're outputting to a terminal.
                 if outFile == '-':
                     msg = TermColors.FAIL + msg  + TermColors.END
                 _Print(ofp, msg)
+        print "Failed!"
         return 1
 
     print "Success!"

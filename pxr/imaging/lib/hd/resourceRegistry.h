@@ -265,19 +265,29 @@ public:
         HdTopology::ID id,
         HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
+    /// Globally unique id for texture, see RegisterTextureResource() for
+    /// details.
+    typedef size_t TextureKey;
+
     /// Register a texture into the texture registry.
-    /// XXX garbage collection?
+    /// Typically the other id's used refer to unique content
+    /// where as for textures it's a unique id provided by the scene delegate.
+    /// Hydra expects the id's to be unique in the context of a scene/stage
+    /// aka render index.  However, the texture registry can be shared between
+    /// multiple render indices, so the renderIndexId is used to create
+    /// a globally unique id for the texture resource.
     HD_API
     std::unique_lock<std::mutex> RegisterTextureResource(
-        HdTextureResource::ID id,
-        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+        TextureKey id,
+        HdInstance<TextureKey, HdTextureResourceSharedPtr>
         *pInstance);
 
     /// Find a texture in the texture registry. If found, it returns it.
+    /// See RegisterTextureResource() for parameter details.
     HD_API
     std::unique_lock<std::mutex> FindTextureResource(
-        HdTextureResource::ID id,
-        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+        TextureKey id,
+        HdInstance<TextureKey, HdTextureResourceSharedPtr>
         *instance, bool *found);
 
     /// Invalidate any shaders registered with this registry.
@@ -395,7 +405,7 @@ private:
         _extComputationDataRangeRegistry;
 
     // texture resource registry
-    typedef HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+    typedef HdInstance<TextureKey, HdTextureResourceSharedPtr>
          _TextureResourceRegistry;
     HdInstanceRegistry<_TextureResourceRegistry> _textureResourceRegistry;
 };

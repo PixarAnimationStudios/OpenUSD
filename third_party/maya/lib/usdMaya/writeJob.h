@@ -49,21 +49,29 @@ public:
 
     ~UsdMaya_WriteJob();
 
+    /// Writes the Maya stage to the given USD file name, If \p append is
+    /// \c true, adds to an existing stage. Otherwise, replaces any existing
+    /// file.
+    /// This will write the entire frame range specified by the export args.
+    /// Returns \c true if successful, or \c false if an error was encountered.
+    bool Write(const std::string& fileName, bool append);
+
+private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.
-    bool BeginWriting(const std::string &fileName, bool append);
+    bool _BeginWriting(const std::string& fileName, bool append);
   
     /// Writes the stage values at the given frame.
     /// Warning: this function must be called with non-decreasing frame numbers.
     /// If you call WriteFrame() with a frame number lower than a previous
     /// WriteFrame() call, internal code may generate errors.
-    void WriteFrame(double iFrame);
+    bool _WriteFrame(double iFrame);
 
     /// Runs any post-export processes, closes the USD stage, and writes it out
     /// to disk.
-    void FinishWriting();
+    bool _FinishWriting();
 
-private:
+    /// Writes the root prim variants based on the Maya render layers.
     TfToken _WriteVariants(const UsdPrim &usdRootPrim);
 
     /// Creates a usdz package from the write job's current USD stage.

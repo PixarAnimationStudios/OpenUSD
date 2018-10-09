@@ -190,6 +190,18 @@ public:
     GF_API
     double* Get(double m[2][2]) const;
 
+    /// Returns raw access to components of matrix as an array of
+    /// \c double values.  Components are in row-major order.
+    double* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c double values.  Components are in row-major order.
+    const double* data() const {
+        return _mtx.GetData();
+    }
+
     /// Returns vector components as an array of \c double values.
     double* GetArray()  {
         return _mtx.GetData();

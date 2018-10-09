@@ -43,8 +43,8 @@
 #include "pxr/base/vt/value.h"
 
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -1531,7 +1531,13 @@ private:
     /// Return true if the entire subtree rooted at \a path does not affect the 
     /// scene. For this purpose, property specs that have only required fields 
     /// are considered inert.
-    bool _IsInertSubtree(const SdfPath &path);
+    ///
+    /// If this function returns true and \p inertSpecs is given, it will be 
+    /// populated with the paths to all inert prim and property specs at and
+    /// beneath \p path. These paths will be sorted so that child paths
+    /// appear before their parent path.
+    bool _IsInertSubtree(const SdfPath &path,
+                         std::vector<SdfPath>* inertSpecs = nullptr);
 
     /// Cause \p spec to be removed if it does not affect the scene. This 
     /// removes any empty descendants before checking if \p spec itself is 
@@ -1718,7 +1724,7 @@ private:
     mutable bool _lastDirtyState;
 
     // Asset information for this layer.
-    boost::scoped_ptr<Sdf_AssetInfo> _assetInfo;
+    std::unique_ptr<Sdf_AssetInfo> _assetInfo;
 
     // Modification timestamp of the backing file asset when last read.
     mutable VtValue _assetModificationTime;

@@ -794,6 +794,10 @@ class StageView(QtOpenGL.QGLWidget):
     def rendererPluginName(self):
         return self._rendererPluginName
 
+    @property
+    def rendererAovName(self):
+        return self._rendererAovName
+
     def __init__(self, parent=None, dataModel=None, printTiming=False):
 
         glFormat = QtOpenGL.QGLFormat()
@@ -831,7 +835,7 @@ class StageView(QtOpenGL.QGLWidget):
         # prep HUD regions
         self._hud = HUD()
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
-        self._hud.addGroup("TopRight",    120, 16)   # Hydra: Enabled
+        self._hud.addGroup("TopRight",    140, 32)   # Hydra: Enabled
         self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
         self._hud.addGroup("BottomRight", 200, 32)   # Camera, Complexity
 
@@ -896,6 +900,7 @@ class StageView(QtOpenGL.QGLWidget):
             if self.isValid():
                 self._renderer = UsdImagingGL.GL()
                 self._rendererPluginName = ""
+                self._rendererAovName = "color"
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
@@ -925,6 +930,23 @@ class StageView(QtOpenGL.QGLWidget):
             if self._renderer.SetRendererPlugin(plugId):
                 self._rendererPluginName = \
                         self.GetRendererPluginDisplayName(plugId)
+                self._rendererAovName = "color"
+                self.updateGL()
+                return True
+            else:
+                return False
+        return True
+
+    def GetRendererAovs(self):
+        if self._renderer:
+            return self._renderer.GetRendererAovs()
+        else:
+            return []
+
+    def SetRendererAov(self, aov):
+        if self._renderer:
+            if self._renderer.SetRendererAov(aov):
+                self._rendererAovName = aov
                 self.updateGL()
                 return True
             else:
@@ -1279,7 +1301,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableIdRender = self._dataModel.viewSettings.displayPrimId
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
         self._renderParams.highlight = renderSelHighlights
-        self._renderParams.enableHardwareShading = self._dataModel.viewSettings.enableHardwareShading
+        self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
@@ -1749,7 +1771,10 @@ class StageView(QtOpenGL.QGLWidget):
                 hydraMode = "Enabled"
 
         toPrint = {"Hydra": hydraMode}
-        self._hud.updateGroup("TopRight", self.width()-140, 14, col, toPrint)
+        if self._rendererAovName != "color":
+            toPrint["  AOV"] = self._rendererAovName
+        self._hud.updateGroup("TopRight", self.width()-160, 14, col,
+                              toPrint, toPrint.keys())
 
         # bottom left
         from collections import OrderedDict
@@ -1827,7 +1852,10 @@ class StageView(QtOpenGL.QGLWidget):
         # initiated by this mouse-press
         self._dragActive = True
 
-        if (event.modifiers() & QtCore.Qt.AltModifier):
+        # Allow for either meta or alt key, since meta maps to Windows and Apple
+        # keys on various hardware/os combos, and some windowing systems consume
+        # one or the other by default, but hopefully not both.
+        if (event.modifiers() & (QtCore.Qt.AltModifier | QtCore.Qt.MetaModifier)):
             if event.button() == QtCore.Qt.LeftButton:
                 self.switchToFreeCamera()
                 self._cameraMode = "tumble"
@@ -1967,7 +1995,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = True
         self._renderParams.enableSampleAlphaToCoverage = False
-        self._renderParams.enableHardwareShading = self._dataModel.viewSettings.enableHardwareShading
+        self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
 
         results = renderer.TestIntersection(
                 pickFrustum.ComputeViewMatrix(),

@@ -35,6 +35,7 @@
 #include "pxr/base/tf/mallocTag.h"
 
 #include <map>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -110,11 +111,28 @@ public:
             const TraceEvent& event) = 0;
     };
 
-    /// Iterates over the events of the collection and calls the \p visitor 
-    /// callbacks.
+    /// Forward iterates over the events of the collection and calls the
+    /// \p visitor callbacks.
     TRACE_API void Iterate(Visitor& visitor) const;
 
+    /// Reverse iterates over the events of the collection and calls the
+    /// \p visitor callbacks.
+    TRACE_API void ReverseIterate(Visitor& visitor) const;
+
 private:
+    using KeyTokenCache = 
+        std::unordered_map<TraceKey, TfToken, TraceKey::HashFunctor>;
+
+    /// Iterate through threads, then choose either forward or reverse
+    /// iteration for the events in the threads
+    void _Iterate(Visitor& visitor, bool doReverse) const;
+
+    // Iterate through events in either forward or reverse order, depending on
+    // the templated arguments
+    template <class I> 
+    void _IterateEvents(Visitor&, KeyTokenCache&, 
+        const TraceThreadId&, I, I) const;
+
     using EventTable = std::map<TraceThreadId, EventListPtr>;
 
     EventTable _eventsPerThread;

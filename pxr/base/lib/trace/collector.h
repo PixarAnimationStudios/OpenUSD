@@ -179,6 +179,32 @@ public:
         _EndEventAtTime(key, ms, Category::GetId());
     }
 
+
+    /// Record a marker event with \a key if \p Category is enabled.
+    /// Unlike begin/end, there is no matching event for marker events
+    ///
+
+    template <typename Category = DefaultCategory>
+    TimeStamp MarkerEvent(const Key& key) {
+        if (ARCH_LIKELY(!Category::IsEnabled())) {
+            return 0;
+        } 
+        return _MarkerEvent(key, Category::GetId());
+    }
+
+    /// Record a marker event with \a key at a specified time if \p Category is 
+    /// enabled.
+    /// This version of the method allows the passing of a specific number of
+    /// elapsed milliseconds, \a ms, to use for this event.
+    /// This method is used for testing and debugging code.
+    template <typename Category = DefaultCategory>
+    void MarkerEventAtTime(const Key& key, double ms) {
+      if (ARCH_LIKELY(!Category::IsEnabled())) {
+          return;
+      }
+      _MarkerEventAtTime(key, ms, Category::GetId());
+    }
+
     /// Record a begin event for a scope described by \a key if \p Category is
     /// enabled.
     /// It is more efficient to use the \c Scope method than to call both
@@ -283,6 +309,23 @@ public:
         ScopeArgs<DefaultCategory>(std::forward<Args>(args)...);
     }
 
+
+    /// Record a scope event described by \a key that started at \a start if 
+    /// \p Category is enabled.
+    ///
+    /// This method is used by the TRACE_FUNCTION, TRACE_SCOPE and
+    /// TRACE_FUNCTION_SCOPE macros.
+    /// \sa BeginScope \sa EndScope
+    template <typename Category = DefaultCategory>
+    void MarkerEventStatic(const TraceKey& key) {
+        if (ARCH_LIKELY(!Category::IsEnabled()))
+            return;
+
+        _PerThreadData *threadData = _GetThreadData();
+        threadData->EmplaceEvent(
+            TraceEvent::Marker, key, Category::GetId());
+    }
+
     /// Record a data event with the given \a key and \a value if \p Category is
     /// enabled. \a value may be  of any type which a TraceEvent can
     /// be constructed from (bool, int, std::string, uint64, double).
@@ -372,6 +415,11 @@ private:
     TRACE_API void _EndEventAtTime(
          const Key& key, double ms, TraceCategoryId cat);
 
+    TRACE_API TimeStamp _MarkerEvent(const Key& key, TraceCategoryId cat);
+
+    TRACE_API void _MarkerEventAtTime(
+        const Key& key, double ms, TraceCategoryId cat);
+
     // This is the fast execution path called from the TRACE_FUNCTION
     // and TRACE_SCOPE macros
     void _BeginScope(const TraceKey& key, TraceCategoryId cat)
@@ -455,11 +503,13 @@ private:
             }
             TimeStamp BeginEvent(const Key& key, TraceCategoryId cat);
             TimeStamp EndEvent(const Key& key, TraceCategoryId cat);
+            TimeStamp MarkerEvent(const Key& key, TraceCategoryId cat);
 
             // Debug Methods
             void BeginEventAtTime(
                 const Key& key, double ms, TraceCategoryId cat);
             void EndEventAtTime(const Key& key, double ms, TraceCategoryId cat);
+            void MarkerEventAtTime(const Key& key, double ms, TraceCategoryId cat);
 
             void BeginScope(const TraceKey& key, TraceCategoryId cat) {
                 AtomicRef lock(_writing);

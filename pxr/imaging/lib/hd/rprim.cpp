@@ -50,8 +50,7 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
 
 HdRprim::HdRprim(SdfPath const& id,
                  SdfPath const& instancerId)
-    : _id(id)
-    , _instancerId(instancerId)
+    : _instancerId(instancerId)
     , _materialId()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
                   /*hasInstancer=*/(!instancerId.IsEmpty()),
@@ -71,12 +70,12 @@ HdRprim::Finalize(HdRenderParam *renderParam)
 }
 
 const std::vector<HdDrawItem*>*
-HdRprim::GetDrawItems(TfToken const &defaultReprName, bool forced) const
+HdRprim::GetDrawItems(HdReprSelector const &defaultReprSelector, bool forced) const
 {
     // note: GetDrawItems is called at execute phase.
     // All required dirtyBits should have cleaned at this point.
-    TfToken reprName = _GetReprName(defaultReprName, forced);
-    HdReprSharedPtr repr = _GetRepr(reprName);
+    HdReprSelector reprSelector = _GetReprSelector(defaultReprSelector, forced);
+    HdReprSharedPtr repr = _GetRepr(reprSelector);
 
     if (repr) {
         return &repr->GetDrawItems();
@@ -86,35 +85,36 @@ HdRprim::GetDrawItems(TfToken const &defaultReprName, bool forced) const
 }
 
 void
-HdRprim::_UpdateReprName(HdSceneDelegate* delegate,
-                         HdDirtyBits *dirtyBits)
+HdRprim::_UpdateReprSelector(HdSceneDelegate* delegate,
+                             HdDirtyBits *dirtyBits)
 {
     SdfPath const& id = GetId();
     if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-        _authoredReprName = delegate->GetReprName(id);
+        _authoredReprSelector = delegate->GetReprSelector(id);
         *dirtyBits &= ~HdChangeTracker::DirtyRepr;
     }
 }
 
-TfToken
-HdRprim::_GetReprName(TfToken const &defaultReprName, bool forced) const
+HdReprSelector
+HdRprim::_GetReprSelector(HdReprSelector const &defaultReprSelector, bool forced) const
 {
-    // if not forced, the prim's authored reprname wins.
-    // otherewise we respect defaultReprName (used for shadowmap drawing etc)
-    if (!forced && !_authoredReprName.IsEmpty()) {
-        return _authoredReprName;
+    // if not forced, the prim's authored opinion composites over the
+    // collection's repr, otherwise we respect the collection's repr
+    // (used for shadows)
+    if (!forced) {
+        return _authoredReprSelector.CompositeOver(defaultReprSelector);
     }
-    return defaultReprName;
+    return defaultReprSelector;
 }
 
 HdReprSharedPtr const &
-HdRprim::_GetRepr(TfToken const &reprName) const
+HdRprim::_GetRepr(HdReprSelector const &reprSelector) const
 {
     _ReprVector::const_iterator reprIt =
-        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprName));
+        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprSelector));
     if (reprIt == _reprs.end()) {
         TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
-                        reprName.GetText(), GetId().GetText());
+                        reprSelector.GetText(), GetId().GetText());
         static const HdReprSharedPtr ERROR_RETURN;
         return ERROR_RETURN;
     }
@@ -194,13 +194,13 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 
 void
 HdRprim::InitRepr(HdSceneDelegate* delegate,
-                  TfToken const &defaultReprName,
+                  HdReprSelector const &defaultReprSelector,
                   bool forced,
                   HdDirtyBits *dirtyBits)
 {
-    _UpdateReprName(delegate, dirtyBits);
-    TfToken reprName = _GetReprName(defaultReprName, forced);
-    _InitRepr(reprName, dirtyBits);
+    _UpdateReprSelector(delegate, dirtyBits);
+    HdReprSelector reprSelector = _GetReprSelector(defaultReprSelector, forced);
+    _InitRepr(reprSelector, dirtyBits);
 
 }
 
@@ -215,9 +215,9 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
 
 
 TfToken
-HdRprim::GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const
+HdRprim::GetRenderTag(HdSceneDelegate* delegate) const
 {
-    return delegate->GetRenderTag(_id, reprName);
+    return delegate->GetRenderTag(GetId());
 }
 
 void 
@@ -227,8 +227,9 @@ HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
     if (_materialId != materialId) {
         _materialId = materialId;
 
-        // The batches need to be verified and rebuilt if necessary.
-        changeTracker.MarkShaderBindingsDirty();
+        // The batches need to be verified and rebuilt, since a changed shader
+        // may change aggregation.
+        changeTracker.MarkBatchesDirty();
     }
 }
 

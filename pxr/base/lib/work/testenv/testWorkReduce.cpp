@@ -111,8 +111,8 @@ _DoSignatureTest()
 
     struct B
     {
-        // Test that this can be non-const
-        int operator()(int lhs, int rhs) {
+        // The reduction operator has to be const
+        int operator()(int lhs, int rhs) const {
             return lhs + rhs;
         }
     };

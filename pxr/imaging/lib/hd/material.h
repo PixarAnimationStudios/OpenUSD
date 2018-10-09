@@ -93,6 +93,7 @@ struct HdMaterialRelationship {
 };
 
 // VtValue requirements
+HD_API
 bool operator==(const HdMaterialRelationship& lhs, 
                 const HdMaterialRelationship& rhs);
 

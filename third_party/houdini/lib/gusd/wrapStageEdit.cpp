@@ -61,35 +61,43 @@ ARRAY _ListToArray(const list& list)
 }
 
 
-GusdStageBasicEditPtr _New()
+GusdStageEditPtr _New()
 {
-    return GusdStageBasicEditPtr(new GusdStageBasicEdit);
+    return GusdStageEditPtr(new GusdStageEdit);
 }
 
 
 const UT_Array<SdfPath>&
-_GetVariants(const GusdStageBasicEdit& self)
+_GetVariants(const GusdStageEdit& self)
 {
     return self.GetVariants();
 }
 
 
-void _SetVariants(GusdStageBasicEdit& self, const list& variants)
+void _SetVariants(GusdStageEdit& self, const list& variants)
 {
     self.GetVariants() = _ListToArray<UT_Array<SdfPath> >(variants);
 }
 
 
 const std::vector<std::string>&
-_GetLayersToMute(const GusdStageBasicEdit& self)
+_GetLayersToMute(const GusdStageEdit& self)
 {
     return self.GetLayersToMute();
 }
 
 
-void _SetLayersToMute(GusdStageBasicEdit& self, const list& layers)
+void _SetLayersToMute(GusdStageEdit& self, const list& layers)
 {
     self.GetLayersToMute() = _ListToVector<std::vector<std::string> >(layers);
+}
+
+bool _Apply(const GusdStageEdit& self, const object& obj)
+{
+    extract<SdfLayerHandle> x(obj);
+    if (x.check())
+        return self.Apply(x);
+    return self.Apply(extract<UsdStagePtr>(obj));
 }
 
 
@@ -121,18 +129,18 @@ namespace boost { namespace python {
 } // namespace boost
 
 
-namespace {
 
-
-void _wrapGusdStageBasicEdit()
+void wrapGusdStageEdit()
 {
-    using This = GusdStageBasicEdit;
-    using ThisPtr = UT_IntrusivePtr<GusdStageBasicEdit>;
+    using This = GusdStageEdit;
+    using ThisPtr = UT_IntrusivePtr<GusdStageEdit>;
 
-    class_<This, ThisPtr, bases<GusdStageEdit> >("StageBasicEdit", no_init)
+    class_<This, ThisPtr, boost::noncopyable>("StageEdit", no_init)
 
         .def("New", &_New)
         .staticmethod("New")
+
+        .def("Apply", &_Apply)
 
         .def("GetVariants", &_GetVariants,
              return_value_policy<TfPySequenceToList>())
@@ -144,36 +152,4 @@ void _wrapGusdStageBasicEdit()
 
         .def("SetLayersToMute", &_SetLayersToMute)
         ;
-
-    implicitly_convertible<GusdStageBasicEditPtr,GusdStageEditPtr>();
-}
-
-
-bool _Apply(const GusdStageEdit& self, const object& obj)
-{
-    extract<SdfLayerHandle> x(obj);
-    if(x.check())
-        return self.Apply(x);
-    return self.Apply(extract<UsdStagePtr>(obj));
-}
-
-
-} // namespace
-
-
-void wrapGusdStageEdit()
-{
-    using This = GusdStageEdit;
-    using ThisPtr = GusdStageEditPtr;
-
-    class_<This, ThisPtr, boost::noncopyable>("StageEdit", no_init)
-
-        .def("Apply", &_Apply)
-
-        .def("hash", &This::GetHash)
-        .def("__eq__", &This::operator==)
-        .def("__ne__", &This::operator!=)
-        ;
-
-    _wrapGusdStageBasicEdit();
 }

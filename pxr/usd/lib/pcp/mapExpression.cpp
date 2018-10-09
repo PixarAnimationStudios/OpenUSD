@@ -39,14 +39,14 @@ struct Pcp_VariableImpl;
 static PcpMapFunction
 _AddRootIdentity(const PcpMapFunction &value)
 {
-    static const SdfPath absoluteRoot = SdfPath::AbsoluteRootPath();
-    if (value.MapSourceToTarget(absoluteRoot) == absoluteRoot) {
+    if (value.HasRootIdentity()) {
         // This function already maps </> to </>; use it as-is.
         return value;
     }
     // Re-create the function with an added root identity mapping.
     PcpMapFunction::PathMap sourceToTargetMap = value.GetSourceToTargetMap();
-    sourceToTargetMap[absoluteRoot] = absoluteRoot;
+    SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
+    sourceToTargetMap[absRoot] = absRoot;
     return PcpMapFunction::Create(sourceToTargetMap, value.GetTimeOffset());
 }
 
@@ -218,8 +218,7 @@ PcpMapExpression::_Node::_ExpressionTreeAlwaysHasIdentity(const Key& key)
         {
             // Check if this maps </> back to </> -- in which case this
             // has a root identity mapping.
-            SdfPath absRoot = SdfPath::AbsoluteRootPath();
-            return key.valueForConstant.MapSourceToTarget(absRoot) == absRoot;
+            return key.valueForConstant.HasRootIdentity();
         }
 
     case _OpCompose:

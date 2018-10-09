@@ -49,6 +49,14 @@ def Step4():
     AddSpin(top)
     stage.Save()
 
+def Step4A():
+    stage = MakeInitialStage('Step4A.usda')
+    stage.SetMetadata('comment', 'Step 4A: Adding spin and tilt')
+    top = AddReferenceToGeometry(stage, '/Top')
+    AddSpin(top)
+    AddTilt(top)
+    stage.Save()
+
 def AddOffset(top):
     top.AddTranslateOp(opSuffix='offset').Set(value=(0, 0.1, 0))
 def AddPrecession(top):
@@ -101,5 +109,6 @@ if __name__ == '__main__':
     Step2()
     Step3()
     Step4()
+    Step4A()
     Step5()
     Step6()

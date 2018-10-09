@@ -41,6 +41,10 @@ struct HdBasisCurvesReprDesc {
         : geomStyle(geomStyle)
         {}
 
+    bool IsEmpty() const {
+        return geomStyle == HdBasisCurvesGeomStyleInvalid;
+    }
+    
     HdBasisCurvesGeomStyle geomStyle;
 };
 
@@ -75,7 +79,7 @@ protected:
 
     HD_API
     static _BasisCurvesReprConfig::DescArray
-        _GetReprDesc(TfToken const &reprName);
+        _GetReprDesc(HdReprSelector const &reprSelector);
 
 private:
     // Class can not be default constructed or copied.

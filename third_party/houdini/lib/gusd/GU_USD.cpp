@@ -45,6 +45,7 @@
 #include <GU/GU_PrimPacked.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_ParallelUtil.h>
+#include <SYS/SYS_Version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -445,7 +446,7 @@ GusdGU_USD::BindPrimsFromAttrs(
         UT_Array<GusdStageEditPtr> uniqueEdits;
         uniqueEdits.setSize(uniqueVariants.size());
         for(exint i = 0; i < uniqueVariants.size(); ++i) {
-            GusdStageBasicEdit* edit = new GusdStageBasicEdit;
+            GusdStageEdit* edit = new GusdStageEdit;
             edit->GetVariants().append(uniqueVariants(i));
             uniqueEdits(i).reset(edit);
         }
@@ -903,10 +904,20 @@ GusdGU_USD::AppendExpandedPackedPrims(
 
                 GA_Size gdCurrent = gd.getNumPrimitives();
 
+#if SYS_VERSION_FULL_INT >= 0x11000000
+                UT_Matrix4D transform;
+                pp->getFullTransform4(transform);
+
+                // Unpack this prim.
+                if (!prim->unpackGeometry(gd, primvarPattern.c_str(), &transform)) {
+                    return false;
+                }
+#else
                 // Unpack this prim.
                 if (!prim->unpackGeometry(gd, primvarPattern.c_str())) {
                     return false;
                 }
+#endif
 
                 const GA_Offset offset =
                     indexToOffset(primIndexPairs(i).second);
@@ -1342,7 +1353,7 @@ GusdGU_USD::GetPackedPrimViewportLODAndPurposes(
         if (const GusdGU_PackedUSD* prim =
             dynamic_cast<const GusdGU_PackedUSD*>(pp->implementation())) {
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
             viewportLOD(i) = prim->intrinsicViewportLOD();
 #else
             viewportLOD(i) = prim->intrinsicViewportLOD(pp);

@@ -129,8 +129,6 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/symbols.h"
 
-#include <boost/function.hpp>
-
 #include <tbb/enumerable_thread_specific.h>
 
 #include <cstdlib>
@@ -591,7 +589,7 @@ TfRegistryManager::RunUnloadersAtExit()
 }
 
 bool
-TfRegistryManager::AddFunctionForUnload(const boost::function<void ()>& func)
+TfRegistryManager::AddFunctionForUnload(const UnloadFunctionType& func)
 {
     return Tf_RegistryManagerImpl::GetInstance().AddFunctionForUnload(func);
 }

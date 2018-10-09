@@ -9,6 +9,7 @@ def "World"
             def Shader "PreviewShader"
             {
                 uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </World/material/pngTex.outputs:rgb>
             }
 
             def Shader "PrimvarSt1"
@@ -21,6 +22,7 @@ def "World"
         {
             uniform token info:id = "UsdUVTexture"
             asset inputs:file = @mat_png.png@
+            color3f outputs:rgb
         }
 
         def Shader "jpgTex"

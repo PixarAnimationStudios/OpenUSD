@@ -666,16 +666,18 @@ HdResourceRegistry::RegisterExtComputationDataRange(HdTopology::ID id,
 }
 
 std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterTextureResource(HdTextureResource::ID id,
-        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance)
+HdResourceRegistry::RegisterTextureResource(
+        TextureKey id,
+        HdInstance<TextureKey, HdTextureResourceSharedPtr> *instance)
 {
     return _textureResourceRegistry.GetInstance(id, instance);
 }
 
 std::unique_lock<std::mutex>
-HdResourceRegistry::FindTextureResource(HdTextureResource::ID id,
-        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance,
-                        bool *found)
+HdResourceRegistry::FindTextureResource(
+        TextureKey id,
+        HdInstance<TextureKey, HdTextureResourceSharedPtr> *instance,
+        bool *found)
 {
     return _textureResourceRegistry.FindInstance(id, instance, found);
 }

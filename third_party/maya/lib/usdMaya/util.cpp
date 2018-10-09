@@ -391,14 +391,19 @@ UsdMayaUtil::isPlugAnimated(const MPlug& plug)
 bool
 UsdMayaUtil::isIntermediate(const MObject& object)
 {
-    MStatus stat;
-    MFnDagNode mFn(object);
+    MStatus status;
 
-    MPlug plug = mFn.findPlug("intermediateObject", false, &stat);
-    if (stat == MS::kSuccess && plug.asBool())
-        return true;
-    else
+    const MFnDagNode dagNodeFn(object, &status);
+    if (status != MS::kSuccess) {
         return false;
+    }
+
+    const bool isIntermediateObj = dagNodeFn.isIntermediateObject(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    return isIntermediateObj;
 }
 
 bool
@@ -441,6 +446,24 @@ UsdMayaUtil::isRenderable(const MObject& object)
 
     // this shape is renderable
     return true;
+}
+
+bool
+UsdMayaUtil::isWritable(const MObject& object)
+{
+    MStatus status;
+
+    const MFnDependencyNode depNodeFn(object, &status);
+    if (status != MS::kSuccess) {
+        return true;
+    }
+
+    const bool isWritableObj = depNodeFn.canBeWritten(&status);
+    if (status != MS::kSuccess) {
+        return true;
+    }
+
+    return isWritableObj;
 }
 
 MString
@@ -955,25 +978,6 @@ UsdMayaUtil::CompressFaceVaryingPrimvarIndices(
     } else {
         *interpolation = UsdGeomTokens->faceVarying;
     }
-}
-
-bool
-UsdMayaUtil::SetUnassignedValueIndex(
-        VtIntArray* assignmentIndices,
-        int* unassignedValueIndex)
-{
-    if (assignmentIndices == nullptr || unassignedValueIndex == nullptr) {
-        return false;
-    }
-
-    *unassignedValueIndex = -1;
-    for (auto& index: *assignmentIndices) {
-        if (index < 0) {
-            index = -1;
-            *unassignedValueIndex = 0;
-        }
-    }
-    return *unassignedValueIndex == 0;
 }
 
 bool
@@ -1723,7 +1727,7 @@ UsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
         return std::vector<std::string>();
     }
 
-#if MAYA_API_VERSION < 201800
+#if MAYA_API_VERSION < 20180000
     // In older versions of Maya, the MEL command
     // "nodeType -isTypeName -inherited" returns an empty array (but does not
     // fail) for some built-in types.
@@ -1771,4 +1775,22 @@ UsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
         inheritedTypesVector.emplace_back(inheritedTypes[i].asChar());
     }
     return inheritedTypesVector;
+}
+
+bool
+UsdMayaUtil::FindAncestorSceneAssembly(
+        const MDagPath& dagPath,
+        MDagPath* assemblyPath)
+{
+    MDagPath currentPath(dagPath);
+    while (currentPath.length()) {
+        if (currentPath.hasFn(MFn::kAssembly)) {
+            if (assemblyPath) {
+                *assemblyPath = currentPath;
+            }
+            return true;
+        }
+        currentPath.pop();
+    }
+    return false;
 }

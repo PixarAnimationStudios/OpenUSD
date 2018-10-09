@@ -60,6 +60,8 @@
 #include "pxr/usd/usdUtils/pipeline.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
+#include <maya/MAnimControl.h>
+#include <maya/MComputation.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnRenderLayer.h>
 #include <maya/MGlobal.h>
@@ -112,13 +114,76 @@ static
 TfToken
 _GetFallbackExtension(const TfToken& compatibilityMode)
 {
-    if (compatibilityMode == PxrUsdExportJobArgsTokens->appleArKit) {
+    if (compatibilityMode == UsdMayaJobExportArgsTokens->appleArKit) {
         return UsdMayaTranslatorTokens->UsdFileExtensionPackage;
     }
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
-bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
+bool
+UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
+{
+    const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
+
+    MComputation computation;
+    if (timeSamples.empty()) {
+        // Non-animated export doesn't show progress.
+        computation.beginComputation(/*showProgressBar*/ false);
+    }
+    else {
+        // Animated export shows frame-by-frame progress.
+        computation.beginComputation(/*showProgressBar*/ true);
+        computation.setProgressRange(0, timeSamples.size());
+    }
+
+    // Default-time export.
+    if (!_BeginWriting(fileName, append)) {
+        computation.endComputation();
+        return false;
+    }
+
+    // Time-sampled export.
+    if (!timeSamples.empty()) {
+        const MTime oldCurTime = MAnimControl::currentTime();
+
+        int progress = 0;
+        for (double t : timeSamples) {
+            if (mJobCtx.mArgs.verbose) {
+                TF_STATUS("%f", t);
+            }
+            MGlobal::viewFrame(t);
+            computation.setProgress(progress);
+            progress++;
+
+            // Process per frame data.
+            if (!_WriteFrame(t)) {
+                MGlobal::viewFrame(oldCurTime);
+                computation.endComputation();
+                return false;
+            }
+
+            // Allow user cancellation.
+            if (computation.isInterruptRequested()) {
+                break;
+            }
+        }
+
+        // Set the time back.
+        MGlobal::viewFrame(oldCurTime);
+    }
+
+    // Finalize the export, close the stage.
+    if (!_FinishWriting()) {
+        computation.endComputation();
+        return false;
+    }
+
+    computation.endComputation();
+    return true;
+}
+
+bool
+UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -189,7 +254,8 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
 
     TF_STATUS("Creating stage file '%s'", _fileName.c_str());
 
-    if (mJobCtx.mArgs.renderLayerMode == PxrUsdExportJobArgsTokens->modelingVariant) {
+    if (mJobCtx.mArgs.renderLayerMode ==
+            UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
         if (mRenderLayerObjs.length() > 1) {
@@ -202,9 +268,9 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
     }
 
     // Set time range for the USD file if we're exporting animation.
-    if (!mJobCtx.mArgs.timeInterval.IsEmpty()) {
-        mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeInterval.GetMin());
-        mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeInterval.GetMax());
+    if (!mJobCtx.mArgs.timeSamples.empty()) {
+        mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeSamples.front());
+        mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeSamples.back());
     }
 
     // Setup the requested render layer mode:
@@ -224,8 +290,10 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
 
     // Switch to the default render layer unless the renderLayerMode is
     // 'currentLayer', or the default layer is already the current layer.
-    if (mJobCtx.mArgs.renderLayerMode != PxrUsdExportJobArgsTokens->currentLayer &&
-            MFnRenderLayer::currentLayer() != MFnRenderLayer::defaultRenderLayer()) {
+    if ((mJobCtx.mArgs.renderLayerMode !=
+            UsdMayaJobExportArgsTokens->currentLayer) &&
+            (MFnRenderLayer::currentLayer() !=
+            MFnRenderLayer::defaultRenderLayer())) {
         // Set the RenderLayer to the default render layer
         MFnRenderLayer defaultLayer(MFnRenderLayer::defaultRenderLayer());
         MGlobal::executeCommand(MString("editRenderLayerGlobals -currentRenderLayer ")+
@@ -406,11 +474,13 @@ bool UsdMaya_WriteJob::BeginWriting(const std::string& fileName, bool append)
     return true;
 }
 
-void UsdMaya_WriteJob::WriteFrame(double iFrame)
+bool
+UsdMaya_WriteJob::_WriteFrame(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
-    for (const UsdMayaPrimWriterSharedPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
+    for (const UsdMayaPrimWriterSharedPtr& primWriter :
+            mJobCtx.mMayaPrimWriterList) {
         const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
             primWriter->Write(usdTime);
@@ -418,13 +488,18 @@ void UsdMaya_WriteJob::WriteFrame(double iFrame)
     }
 
     for (UsdMayaChaserRefPtr& chaser : mChasers) {
-        chaser->ExportFrame(iFrame);
+        if (!chaser->ExportFrame(iFrame)) {
+            return false;
+        }
     }
 
     _PerFrameCallback(iFrame);
+
+    return true;
 }
 
-void UsdMaya_WriteJob::FinishWriting()
+bool
+UsdMaya_WriteJob::_FinishWriting()
 {
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -457,8 +532,6 @@ void UsdMaya_WriteJob::FinishWriting()
                                         mCurrentRenderLayerName, false, false);
     }
 
-    _PostCallback();
-
     // Unfortunately, MGlobal::isZAxisUp() is merely session state that does
     // not get recorded in Maya files, so we cannot rely on it being set
     // properly.  Since "Y" is the more common upAxis, we'll just use
@@ -473,10 +546,20 @@ void UsdMaya_WriteJob::FinishWriting()
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
     }
+
     // Running post export function on all the prim writers.
     for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();
     }
+
+    // Run post export function on the chasers.
+    for (const UsdMayaChaserRefPtr& chaser : mChasers) {
+        if (!chaser->PostExport()) {
+            return false;
+        }
+    }
+
+    _PostCallback();
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
@@ -500,6 +583,8 @@ void UsdMaya_WriteJob::FinishWriting()
     if (!_packageName.empty()) {
         TfDeleteFile(_fileName);
     }
+
+    return true;
 }
 
 TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
@@ -674,7 +759,7 @@ UsdMaya_WriteJob::_CreatePackage() const
             firstLayerBaseName.c_str(),
             UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
 
-    if (mJobCtx.mArgs.compatibility == PxrUsdExportJobArgsTokens->appleArKit) {
+    if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional
         // requirements on the usdz file to make it compatible with Apple's usdz
         // support in macOS Mojave/iOS 12.

@@ -837,6 +837,11 @@ private:
     // type is incompatible or if it's a pure over). 
     bool _GetXformOpOrderValue(VtTokenArray *xformOpOrder, 
                                bool *hasAuthoredValue=NULL) const;
+
+    // Helper function for getting xformops with or without attribute queries.
+    std::vector<UsdGeomXformOp>
+    _GetOrderedXformOps(bool *resetsXformStack,
+                        bool withAttributeQueries) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

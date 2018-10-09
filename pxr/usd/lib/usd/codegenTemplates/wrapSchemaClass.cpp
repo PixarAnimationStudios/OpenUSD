@@ -80,10 +80,15 @@ void wrap{{ cls.cppClassName }}()
 {
     typedef {{ cls.cppClassName }} This;
 
+{% if cls.isAPISchemaBase %}
+    class_< This , bases<{{ cls.parentCppClassName }}>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
+{% else %}
     class_<This, bases<{{ cls.parentCppClassName }}> >
         cls("{{ cls.className }}");
+{% endif %}
 
     cls
+{% if not cls.isAPISchemaBase %}
 {% if cls.isMultipleApply %}
         .def(init<UsdPrim, TfToken>())
         .def(init<UsdSchemaBase const&, TfToken>())
@@ -91,8 +96,10 @@ void wrap{{ cls.cppClassName }}()
         .def(init<UsdPrim>(arg("prim")))
         .def(init<UsdSchemaBase const&>(arg("schemaObj")))
 {% endif %}
+{% endif %}
         .def(TfTypePythonClass())
 
+{% if not cls.isAPISchemaBase %}
 {% if cls.isMultipleApply %}
         .def("Get",
             ({{ cls.cppClassName }}(*)(const UsdStagePtr &stage, 
@@ -108,6 +115,7 @@ void wrap{{ cls.cppClassName }}()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
 {% endif %}
         .staticmethod("Get")
+{% endif %}
 {% if cls.isConcrete %}
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))

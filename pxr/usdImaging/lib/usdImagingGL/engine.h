@@ -45,7 +45,6 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -61,8 +60,14 @@ TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
 ///
 /// Interface class for render engines.
 ///
-class UsdImagingGLEngine : private boost::noncopyable {
+class UsdImagingGLEngine {
 public:
+    UsdImagingGLEngine() = default;
+
+    // Disallow copies
+    UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
+    UsdImagingGLEngine& operator=(const UsdImagingGLEngine&) = delete;
+
     USDIMAGINGGL_API
     virtual ~UsdImagingGLEngine();
 
@@ -109,7 +114,7 @@ public:
         GfVec4f wireframeColor;
         float alphaThreshold; // threshold < 0 implies automatic
         ClipPlanesVector clipPlanes;
-        bool enableHardwareShading;
+        bool enableSceneMaterials;
         // Respect USD's model:drawMode attribute...
         bool enableUsdDrawModes;
 
@@ -133,7 +138,7 @@ public:
             wireframeColor(.0f, .0f, .0f, .0f),
             alphaThreshold(-1),
             clipPlanes(),
-            enableHardwareShading(true),
+            enableSceneMaterials(true),
             enableUsdDrawModes(true)
         {
         }
@@ -158,7 +163,7 @@ public:
                 && wireframeColor              == other.wireframeColor
                 && alphaThreshold              == other.alphaThreshold
                 && clipPlanes                  == other.clipPlanes
-                && enableHardwareShading       == other.enableHardwareShading
+                && enableSceneMaterials        == other.enableSceneMaterials
                 && enableUsdDrawModes          == other.enableUsdDrawModes;
         }
         bool operator!=(const RenderParams &other) const {
@@ -375,6 +380,14 @@ public:
     /// the plugin will be loaded if it's not yet.
     USDIMAGINGGL_API
     virtual bool SetRendererPlugin(TfToken const &id);
+
+    /// Return the vector of available renderer AOV settings.
+    USDIMAGINGGL_API
+    virtual TfTokenVector GetRendererAovs() const;
+
+    /// Set the current renderer AOV to \p id.
+    USDIMAGINGGL_API
+    virtual bool SetRendererAov(TfToken const& id);
 
     /// Returns GPU resource allocation info
     USDIMAGINGGL_API

@@ -53,10 +53,11 @@ class SdfAssetPath;
 /// \class UsdGeomCurves
 ///
 /// Base class for BasisCurves and NurbsCurves.  The BasisCurves
-/// schema is designed to be analagous to RenderMan's RiCurves 
-/// and RiBasis, while the NurbsCurve schema is designed to be 
-/// analgous to  the NURBS curves found in packages like Maya 
-/// and Houdini while retaining their consistency with the 
+/// schema is designed to be analagous to offline renderers' notion
+/// of batched curves (such as the classical RIB definition via
+/// Basis and Curves statements), while the NurbsCurve schema
+/// is designed to be analgous to the NURBS curves found in packages
+/// like Maya and Houdini while retaining their consistency with the 
 /// RenderMan specification for NURBS Patches.
 ///
 class UsdGeomCurves : public UsdGeomPointBased

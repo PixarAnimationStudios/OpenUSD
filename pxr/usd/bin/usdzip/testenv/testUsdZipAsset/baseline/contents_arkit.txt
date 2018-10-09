@@ -1,7 +1,7 @@
 root.usdc
-meta_c.usd
-meta_b.usd
-meta_a.usd
-attr_c.usd
-attr_b.usd
-attr_a.usd
+0/meta_c.usd
+0/meta_b.usd
+0/meta_a.usd
+0/attr_c.usd
+0/attr_b.usd
+0/attr_a.usd

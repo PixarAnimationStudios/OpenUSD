@@ -89,7 +89,6 @@ HdStBufferResourceGL::GetTextureBuffer()
     if (_texId == 0) {
         glGenTextures(1, &_texId);
 
-
         GLenum format = GL_R32F;
         switch(_tupleType.type) {
         case HdTypeFloat:
@@ -115,6 +114,9 @@ HdStBufferResourceGL::GetTextureBuffer()
             break;
         case HdTypeInt32Vec4:
             format = GL_RGBA32I;
+            break;
+        case HdTypeInt32_2_10_10_10_REV:
+            format = GL_R32I;
             break;
         default:
             TF_CODING_ERROR("unsupported type: 0x%x\n", _tupleType.type);

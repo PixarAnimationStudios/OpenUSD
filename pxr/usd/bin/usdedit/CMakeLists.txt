@@ -110,4 +110,35 @@ else()
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdEditPackageFile    
+        DEST testUsdEditPackageFile1
+    )
+
+    pxr_register_test(testUsdEditPackageFile1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit test.usdz"
+        EXPECTED_RETURN_CODE 0
+        ENV
+          USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdEditPackageFile    
+        DEST testUsdEditPackageFile2
+    )
+
+    pxr_register_test(testUsdEditPackageFile2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit test.usdz[test.usda]"
+        EXPECTED_RETURN_CODE 0
+        ENV
+          USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
 endif()

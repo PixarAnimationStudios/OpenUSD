@@ -33,8 +33,6 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DECLARE_WEAK_PTRS(NdrDiscoveryPlugin);
-
 static void wrapDiscoveryPluginContext()
 {
     typedef NdrDiscoveryPluginContext This;

@@ -137,7 +137,7 @@ class "CollectionAPI" (
         </li>
         </ul>
     </li>
-    <li><b>rel collection:<i>collectionName</i>:includeRoot</b> - boolean
+    <li><b>bool collection:<i>collectionName</i>:includeRoot</b> - boolean
     attribute indicating whether the pseudo-root path &lt;/&gt; should
     be counted as one of the included target paths.  The fallback is false.
     This separate attribute is required because relationships cannot

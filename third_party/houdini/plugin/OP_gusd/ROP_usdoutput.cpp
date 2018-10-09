@@ -23,10 +23,13 @@
 //
 #include "ROP_usdoutput.h"
 
+#include "OP_Utils.h"
+
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -58,6 +61,7 @@
 #include <PRM/PRM_ChoiceList.h>
 #include <PRM/PRM_Conditional.h>
 #include <PRM/PRM_Default.h>
+#include <PRM/PRM_Range.h>
 #include <PRM/PRM_SpareData.h>
 #include <ROP/ROP_Error.h>
 #include <ROP/ROP_Templates.h>
@@ -151,6 +155,25 @@ getTemplates()
     static PRM_Name faceVaryingPrimvarsName("facevaryingprimvars", "Facevarying");
     static PRM_Name uniformPrimvarsName("uniformprimvars", "Uniform");
     static PRM_Name constantPrimvarsName("constantprimvars", "Constant");
+
+    static PRM_Name multiSegHeadingName("multisegheading", "Multi-Seg");
+    static PRM_Name multiSegName("enablemultiseg", "Enable Multi-Seg");
+    static PRM_Name samplesName("samples", "Samples");
+    static PRM_Default samplesDefault(2);
+    static PRM_Range samplesRange(PRM_RANGE_RESTRICTED, 2, PRM_RANGE_UI, 10);
+    static PRM_Name shutterName("shutter", "Shutter");
+    static PRM_Default shutterDefault[2] = {PRM_Default(0), PRM_Default(1)};
+    static PRM_Range shutterRange[2] = {
+        PRM_Range(PRM_RANGE_RESTRICTED, -1, PRM_RANGE_RESTRICTED, 1),
+        PRM_Range(PRM_RANGE_RESTRICTED, -1, PRM_RANGE_RESTRICTED, 1)};
+    static PRM_Name samplingModeName("samplingmode", "Sampling Mode");
+    static PRM_Name samplingModeChoiceNames[] = {
+        PRM_Name("forward", "Forward"),
+        PRM_Name("backward", "Backward"),
+        PRM_Name()};
+    static PRM_ChoiceList samplingModeMenu(PRM_CHOICELIST_SINGLE,
+                                           samplingModeChoiceNames);
+    static PRM_Conditional multiSegConditional("{ enablemultiseg == 0 }");
     
     static PRM_Name shaderHeadingName("shaderheading", "Shaders");
     static PRM_Name enableShadersName("enableshaders", "Output Shaders");
@@ -483,6 +506,72 @@ getTemplates()
             0, // paramgroup (leave default)
             "Constant primvar exports", // help string
             0), // disable rules
+
+        PRM_Template(
+            PRM_HEADING,
+            1,
+            &multiSegHeadingName,
+            0, // default
+            0, // menu choices
+            0, // range
+            0, // callback
+            0, // thespareptr (leave default)
+            0, // paramgroup (leave default)
+            0, // help string
+            0), // disable rules
+
+        PRM_Template(
+            PRM_TOGGLE,
+            1,
+            &multiSegName,
+            0, // default
+            0, // menu choices
+            0, // range
+            0, // callback
+            0, // thespareptr (leave default)
+            0, // paramgroup (leave default)
+            "Enable writing multi-seg samples to the USD file",
+            0),
+
+        PRM_Template(
+            PRM_INT,
+            1,
+            &samplesName,
+            &samplesDefault,
+            0, // menu choices
+            &samplesRange,
+            0, // callback
+            0, // thespareptr (leave default)
+            0, // paramgroup (leave default)
+            "Number of multi-seg samples to be written",
+            &multiSegConditional),
+
+        PRM_Template(
+            PRM_FLT,
+            2,
+            &shutterName,
+            shutterDefault,
+            0, // menu choices
+            shutterRange,
+            0, // callback
+            0, // thespareptr (leave default)
+            0, // paramgroup (leave default)
+            "The open/close shutter interval for writing multi-seg samples",
+            &multiSegConditional),
+
+        PRM_Template(
+            PRM_ORD,
+            1,
+            &samplingModeName,
+            0,
+            &samplingModeMenu, // menu choices
+            0, // range
+            0, // callback
+            0, // thespareptr (leave default)
+            0, // paramgroup (leave default)
+            "\"Forward\" means the sampling interval follows the frame begin time."
+            "\"Backward\" means the sampling interval precedes the frame begin time.",
+            &multiSegConditional),
 
         PRM_Template(
             PRM_HEADING,
@@ -961,7 +1050,7 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
     } else {
         
         // Find out if a layer with this fileName already exists.
-        if (SdfLayer::Find(fileName)) {
+        if (SdfLayer::Find(fileName) || SdfLayer::Find(TfRealPath(fileName))) {
             // Get the SdfFileFormat from fileName.
             SdfFileFormatConstPtr format =
                 SdfFileFormat::FindByExtension(fileName);
@@ -1100,10 +1189,10 @@ closeStage(fpreal tend)
 
             // Reload any stages on the cache matching this path.
             // Note that this is not thread-safe.
-            GusdStageCacheWriter cache;
             UT_StringSet paths;
             paths.insert(targetPath);
-            cache.ReloadStages(paths);
+            paths.insert(TfRealPath(targetPath));
+            GusdOP_Utils::ReloadStagesAndClearCaches(paths);
         }
     }
 
@@ -1321,104 +1410,6 @@ renderFrame(fpreal time,
         refineParms.setPolysAsSubdivision( true );
     } 
 
-    OP_Context houdiniContext(time);
-
-    // Get the OBJ node transform
-    UT_Matrix4D localToWorldMatrix;
-    objNode->getLocalToWorldTransform( houdiniContext, localToWorldMatrix);
-
-    // Cook our input
-    GU_DetailHandle cookedGeoHdl = m_renderNode->getCookedGeoHandle(houdiniContext);
-    if (!cookedGeoHdl.isValid()) {
-        const std::string errorMessage = "invalid cooked geometry from sop: "
-            + std::string(m_renderNode->getName());
-        return abort(errorMessage);
-    }
-
-    GusdRefinerCollector refinerCollector;
-    GusdRefiner refiner( 
-        refinerCollector,
-        m_pathPrefix.empty() ? SdfPath() : SdfPath(m_pathPrefix),
-        m_partitionAttrName, 
-        localToWorldMatrix );
-
-    // If we ae only overlaying transforms and encounter a packed prim,
-    // just write the transform and don't refine further.
-    refiner.m_refinePackedPrims = !overlayGeo || !( overlayXforms && !(overlayAll || overlayPoints ));
-
-    // If writing an overlay and a prim has an instinsic path, write the prim to that path
-    refiner.m_useUSDIntrinsicNames = overlayGeo;
-
-    // Check for a (usd)instancepath paramter/property to set as the default
-    // value. This tells us to build a point instancer.
-    UT_String usdInstancePath;
-    if(!evalParameterOrProperty("usdinstancepath", 0, 0, usdInstancePath)) {
-        if(!objNode->evalParameterOrProperty("usdinstancepath", 0, 0, usdInstancePath)) {
-            if(!evalParameterOrProperty("instancepath", 0, 0, usdInstancePath)) {
-                objNode->evalParameterOrProperty("instancepath", 0, 0, usdInstancePath);
-            }
-        }
-    }
-    if(usdInstancePath.isstring()) {
-        refiner.m_buildPointInstancer = true;
-    }
-
-    refiner.m_writeCtrlFlags.overAll = overlayAll;
-    refiner.m_writeCtrlFlags.overPoints = overlayPoints;
-    refiner.m_writeCtrlFlags.overTransforms = overlayXforms;
-    refiner.m_writeCtrlFlags.overPrimvars = overlayPrimvars;
-
-    refiner.refineDetail( cookedGeoHdl, refineParms );
-
-    // If we are building a point instancer, the refiner will have accumulated all the 
-    // instances. Now we can build the instancer prims.
-    const GusdRefiner::GprimArray& gprimArray = refiner.finish();
-
-    DBG( cerr << "Num of refined gt prims = " << gprimArray.size() << endl );
-
-    // Build a structure to hold the data that the wrapper prims need to 
-    // write to USD.
-    GusdContext ctxt( UsdTimeCode(frame), 
-                      GusdContext::Granularity(m_granularity), 
-                      m_primvarFilter );
-
-    if(usdInstancePath.isstring()) {
-        ctxt.usdInstancePath = usdInstancePath;
-    }
-
-    ctxt.writeOverlay = overlayGeo;
-
-    // Check for a usdprototypespath paramter/property to set as the default
-    // for point instancing.
-    UT_String usdPrototypesPath;
-    if(!evalParameterOrProperty("usdprototypespath", 0, 0, usdPrototypesPath)) {
-        objNode->evalParameterOrProperty("usdprototypespath", 0, 0, usdPrototypesPath);
-    }
-    if(usdPrototypesPath.isstring()) {
-        ctxt.usdPrototypesPath = usdPrototypesPath.toStdString();
-    }
-
-    // Check for usd Layer Offset attributes (offset and scale).
-    fpreal usdTimeOffset = 0;
-    if(!evalParameterOrProperty("usdtimeoffset", 0, 0, usdTimeOffset)) {
-        objNode->evalParameterOrProperty("usdtimeoffset", 0, 0, usdTimeOffset);
-    }
-    ctxt.usdTimeOffset = usdTimeOffset;
-
-    fpreal usdTimeScale = 1.0;
-    if(!evalParameterOrProperty("usdtimescale", 0, 0, usdTimeScale)) {
-        objNode->evalParameterOrProperty("usdtimescale", 0, 0, usdTimeScale);
-    }
-    ctxt.usdTimeScale = usdTimeScale;
-
-    if( m_hasPartitionAttr )
-        ctxt.primPathAttribute = m_partitionAttrName;
-
-    ctxt.authorVariantSelections = evalInt( "authorvariantselection", 0, 0 );
-
-    ctxt.makeRefsInstanceable = 
-        static_cast<bool>(evalInt( "usdinstancing", 0, 0 ));
-
     // This ROP supports binding shaders from 2 different sources:
     // 1. A shader that is already defined in a usd file somewhere can be
     //    referenced into this stage.
@@ -1429,281 +1420,444 @@ renderFrame(fpreal time,
     UsdRefShaderMap usdRefShaderMap;
     HouMaterialMap houMaterialMap;
 
-    // Sort the refined prim array by primitive paths. This ensures parents
-    // will be written before their children.
-    GusdRefinerCollector::GprimArray gPrims = gprimArray;
-    std::sort( gPrims.begin(), gPrims.end(),
-            []( const GusdRefinerCollector::GprimArrayEntry& a,
-                const GusdRefinerCollector::GprimArrayEntry& b ) -> bool
-            { return a.path < b.path; } );
+    // Set up the variables needed for doing multi-seg writing of samples.
+    // The default behavior is to write a single sample at the given frame.
+    size_t samples = 1;
+    float shutterOpen = 0;
+    float shutterClose = 1.0;
 
-    UT_Set<SdfPath> gprimsProcessedThisFrame;
-    bool needToUpdateModelExtents = false;
+    // If "enablemultiseg" is on, update variables with user-specified values.
+    if (evalInt("enablemultiseg", 0, 0)) {
+        samples = evalInt("samples", 0, 0);
+        if (evalInt("samplingmode", 0, 0) == 0) { // samplingmode == "Forward"
+            shutterOpen = evalFloat("shutter", 0, 0);
+            shutterClose = evalFloat("shutter", 1, 0);
+        } else { // samplingmode == "Backward"
+            // Reverse the open/close shutter times.
+            shutterOpen = -(evalFloat("shutter", 1, 0));
+            shutterClose = -(evalFloat("shutter", 0, 0));
+        }
+    }
 
-    GusdSimpleXformCache xformCache;
+    // If there are 2 or more samples being taken, compute the time length of
+    // the segment(s). If only 1 sample is being taken, there is no segment.
+    double segment = samples < 2 ? 0.0 :
+        (shutterClose - shutterOpen) / double(samples - 1);
 
-    // If we are not writing an overlay, assume we are writing an asset rooted 
-    // at the prim named m_pathPrefix. Write the obj space transform at this 
-    // prim on all frames. This is needed to make sure that transform motion 
-    // blur is right when the object space is animated.
-    if( !overlayGeo && !m_pathPrefix.empty() ) {
+    // Loop through multi-seg samples, write out data for each sample.
+    for (size_t s = 0; s < samples; s++) {
+        double sampleFrame = frame + shutterOpen + (segment * s);
 
-        SdfPath assetPrimPath( m_pathPrefix );
+        OP_Context houdiniContext(CHgetTimeFromFrame(sampleFrame));
 
-        // Chec to make sure the asset prim isn't going to be written anyway.
-        bool assetPrimFound = false;
-        for( auto& gtPrim : gPrims ) {
+        // Get the OBJ node transform
+        UT_Matrix4D localToWorldMatrix;
+        objNode->getLocalToWorldTransform( houdiniContext, localToWorldMatrix);
 
-            if( gtPrim.path == assetPrimPath ) {
-                assetPrimFound = true;
-                break;
+        // Cook our input
+        GU_DetailHandle cookedGeoHdl = m_renderNode->getCookedGeoHandle(houdiniContext);
+        if (!cookedGeoHdl.isValid()) {
+            const std::string errorMessage = "invalid cooked geometry from sop: "
+                + std::string(m_renderNode->getName());
+            return abort(errorMessage);
+        }
+
+        GusdRefinerCollector refinerCollector;
+        GusdRefiner refiner( 
+            refinerCollector,
+            m_pathPrefix.empty() ? SdfPath() : SdfPath(m_pathPrefix),
+            m_partitionAttrName, 
+            localToWorldMatrix );
+
+        // If we ae only overlaying transforms and encounter a packed prim,
+        // just write the transform and don't refine further.
+        refiner.m_refinePackedPrims = !overlayGeo || !( overlayXforms && !(overlayAll || overlayPoints ));
+
+        // If writing an overlay and a prim has an instinsic path, write the prim to that path
+        refiner.m_useUSDIntrinsicNames = overlayGeo;
+
+        // Check for a (usd)instancepath paramter/property to set as the default
+        // value. This tells us to build a point instancer.
+        UT_String usdInstancePath;
+        if(!evalParameterOrProperty("usdinstancepath", 0, 0, usdInstancePath)) {
+            if(!objNode->evalParameterOrProperty("usdinstancepath", 0, 0, usdInstancePath)) {
+                if(!evalParameterOrProperty("instancepath", 0, 0, usdInstancePath)) {
+                    objNode->evalParameterOrProperty("instancepath", 0, 0, usdInstancePath);
+                }
+            }
+        }
+        if(usdInstancePath.isstring()) {
+            refiner.m_buildPointInstancer = true;
+        }
+
+        refiner.m_writeCtrlFlags.overAll = overlayAll;
+        refiner.m_writeCtrlFlags.overPoints = overlayPoints;
+        refiner.m_writeCtrlFlags.overTransforms = overlayXforms;
+        refiner.m_writeCtrlFlags.overPrimvars = overlayPrimvars;
+
+        refiner.refineDetail( cookedGeoHdl, refineParms );
+
+        // If we are building a point instancer, the refiner will have accumulated all the 
+        // instances. Now we can build the instancer prims.
+        const GusdRefiner::GprimArray& gprimArray = refiner.finish();
+
+        DBG( cerr << "Num of refined gt prims = " << gprimArray.size() << endl );
+
+        // Build a structure to hold the data that the wrapper prims need to 
+        // write to USD.
+        GusdContext ctxt( UsdTimeCode(sampleFrame), 
+                          GusdContext::Granularity(m_granularity), 
+                          m_primvarFilter );
+
+        if(usdInstancePath.isstring()) {
+            ctxt.usdInstancePath = usdInstancePath;
+        }
+
+        ctxt.writeOverlay = overlayGeo;
+
+        // Check for a usdprototypespath paramter/property to set as the default
+        // for point instancing.
+        UT_String usdPrototypesPath;
+        if(!evalParameterOrProperty("usdprototypespath", 0, 0, usdPrototypesPath)) {
+            objNode->evalParameterOrProperty("usdprototypespath", 0, 0, usdPrototypesPath);
+        }
+        if(usdPrototypesPath.isstring()) {
+            ctxt.usdPrototypesPath = usdPrototypesPath.toStdString();
+        }
+
+        // Check for usd Layer Offset attributes (offset and scale).
+        fpreal usdTimeOffset = 0;
+        if(!evalParameterOrProperty("usdtimeoffset", 0, 0, usdTimeOffset)) {
+            objNode->evalParameterOrProperty("usdtimeoffset", 0, 0, usdTimeOffset);
+        }
+        ctxt.usdTimeOffset = usdTimeOffset;
+
+        fpreal usdTimeScale = 1.0;
+        if(!evalParameterOrProperty("usdtimescale", 0, 0, usdTimeScale)) {
+            objNode->evalParameterOrProperty("usdtimescale", 0, 0, usdTimeScale);
+        }
+        ctxt.usdTimeScale = usdTimeScale;
+
+        if( m_hasPartitionAttr )
+            ctxt.primPathAttribute = m_partitionAttrName;
+
+        ctxt.authorVariantSelections = evalInt( "authorvariantselection", 0, 0 );
+
+        ctxt.makeRefsInstanceable = 
+            static_cast<bool>(evalInt( "usdinstancing", 0, 0 ));
+
+        // Sort the refined prim array by primitive paths. This ensures parents
+        // will be written before their children.
+        GusdRefinerCollector::GprimArray gPrims = gprimArray;
+        std::sort( gPrims.begin(), gPrims.end(),
+                []( const GusdRefinerCollector::GprimArrayEntry& a,
+                    const GusdRefinerCollector::GprimArrayEntry& b ) -> bool
+                { return a.path < b.path; } );
+
+        UT_Set<SdfPath> gprimsProcessedThisFrame;
+        bool needToUpdateModelExtents = false;
+
+        GusdSimpleXformCache xformCache;
+
+        // If we are not writing an overlay, assume we are writing an asset rooted 
+        // at the prim named m_pathPrefix. Write the obj space transform at this 
+        // prim on all frames. This is needed to make sure that transform motion 
+        // blur is right when the object space is animated.
+        if( !overlayGeo && !m_pathPrefix.empty() ) {
+
+            SdfPath assetPrimPath( m_pathPrefix );
+
+            // Chec to make sure the asset prim isn't going to be written anyway.
+            bool assetPrimFound = false;
+            for( auto& gtPrim : gPrims ) {
+
+                if( gtPrim.path == assetPrimPath ) {
+                    assetPrimFound = true;
+                    break;
+                }
+            }
+
+            if( !assetPrimFound ) {
+
+                GT_PrimitiveHandle assetPrim;
+
+                GprimMap::iterator gpit = m_gprimMap.find(assetPrimPath);
+                if( gpit == m_gprimMap.end() ) {
+                    GT_PrimitiveHandle assetXformWrapper = new GusdXformWrapper( m_usdStage, assetPrimPath );
+                    m_gprimMap[assetPrimPath] = assetXformWrapper; 
+                    assetPrim = assetXformWrapper;
+                } 
+                else {
+                    assetPrim = gpit->second;
+
+                    // If a USD version of this prim doesn't exist on the current edit
+                    // target's layer, create a new USD prim. This happens when we are
+                    // writing per frame files.
+                    SdfPrimSpecHandle ph = m_usdStage->GetEditTarget().GetPrimSpecForScenePath( assetPrimPath );
+                    if( !ph ) {
+                        dynamic_cast<GusdPrimWrapper*>(assetPrim.get())->
+                            redefine( m_usdStage, assetPrimPath, ctxt, NULL);
+                    }
+                }
+
+                if(assetPrim) {
+
+                    GusdPrimWrapper* primPtr
+                            = UTverify_cast<GusdPrimWrapper*>(assetPrim.get());
+
+                    // Copy attributes from gt prim to USD prim.
+                    primPtr->updateFromGTPrim( NULL, 
+                                               localToWorldMatrix,
+                                               ctxt,
+                                               xformCache );
+                    gprimsProcessedThisFrame.insert(assetPrimPath);
+                }
             }
         }
 
-        if( !assetPrimFound ) {
+        // Iterate over the refined prims and write
+        for( auto& gtPrim : gPrims ) {
 
-            GT_PrimitiveHandle assetPrim;
+            const SdfPath& primPath = gtPrim.path;
 
-            GprimMap::iterator gpit = m_gprimMap.find(assetPrimPath);
+            DBG(cerr << "Write prim: " << primPath << ", type = " << gtPrim.prim->className() << endl);
+
+            // Copy properties that were accumulated in the refiner and stored with 
+            // the refined prim to the context.
+            ctxt.purpose = gtPrim.purpose;
+            const GusdWriteCtrlFlags& flags = gtPrim.writeCtrlFlags;
+            ctxt.overlayPoints =     overlayGeo && (flags.overPoints || flags.overAll);
+            ctxt.overlayTransforms = overlayGeo && (flags.overTransforms || flags.overAll);
+            ctxt.overlayPrimvars =   overlayGeo && (flags.overPrimvars || flags.overAll);
+            ctxt.overlayAll =        overlayGeo && flags.overAll;
+
+            ctxt.writeStaticGeo = flags.writeStaticGeo;
+            ctxt.writeStaticTopology = flags.writeStaticTopology;
+            ctxt.writeStaticPrimvars = flags.writeStaticPrimvars;
+
+            // If doing an overlay of points or xforms, then bounds are likely
+            // changing due to prims being deformed or moved. The "extentsHint"
+            // attribute will need to be updated.
+            if( ctxt.overlayPoints || ctxt.overlayTransforms ) {
+                needToUpdateModelExtents = true;
+            }
+
+            gprimsProcessedThisFrame.insert(primPath);
+
+            // If we're attempting to overlay instanced geometry, set the root
+            // of the instance to 'instanceable = false'. Recurse on the parent
+            // in case it itself is an instance.
+            SdfPath currPath = primPath;
+            UsdPrim currPrim = m_usdStage->GetPrimAtPath( currPath );
+            std::vector<SdfPath> instancePrimPaths;
+            while ( currPrim.IsInstanceProxy() ) {
+                // Get the master prim which corresponds to each instance
+                UsdPrim masterPrim = currPrim.GetPrimInMaster(); 
+                const SdfPath& masterPath = masterPrim.GetPath();
+                // Removing common suffices results in just the path that was
+                // instance for our prim (and /__master_* for the master path)
+                const pair<SdfPath, SdfPath> pathsPair = currPath.RemoveCommonSuffix(masterPath);
+                currPath = pathsPair.first;
+                if ( currPath.IsEmpty() ) {
+                    // We shouldn't get here
+                    break;
+                }
+                // Get the prim on the stage (not on the master)
+                UsdPrim instancePrim = m_usdStage->GetPrimAtPath( currPath );
+                // Check to make sure we're deinstancing an instance
+                if ( instancePrim.IsInstance() ) {
+                    instancePrimPaths.push_back(currPath);
+                }
+                // Recurse on the parent prim in case it's nested as another instance
+                currPrim = instancePrim;
+            }
+
+            // Reverse the order to actually deinstance, as we can't edit nested
+            // instance proxies without first deinstancing their parent instances.
+            for (int i = instancePrimPaths.size()-1; i >=0; i--) {
+                UsdPrim instancePrim = m_usdStage->GetPrimAtPath( instancePrimPaths[i] );
+                instancePrim.SetInstanceable(false);
+                DBG(cerr << "Deinstanced prim at: " << instancePrimPaths[i].GetText() << endl);
+            }
+
+            GT_PrimitiveHandle usdPrim;
+
+            // Have we seen this prim on a previous frame?
+            GprimMap::iterator gpit = m_gprimMap.find(primPath);
             if( gpit == m_gprimMap.end() ) {
-                GT_PrimitiveHandle assetXformWrapper = new GusdXformWrapper( m_usdStage, assetPrimPath );
-                m_gprimMap[assetPrimPath] = assetXformWrapper; 
-                assetPrim = assetXformWrapper;
-            } 
+
+                // Create a new USD prim
+                usdPrim = GusdPrimWrapper::defineForWrite(
+                            gtPrim.prim, m_usdStage, primPath, ctxt );
+
+                if( !usdPrim ) {
+                    TF_WARN( "prim did not convert. %s", gtPrim.prim->className() );
+                }
+                else {
+                    m_gprimMap[primPath] = usdPrim;
+
+                    GusdPrimWrapper* primPtr
+                            = UTverify_cast<GusdPrimWrapper*>(usdPrim.get());
+
+                    // If we're writing many frames to a single file, write 
+                    // "bookend" visibility samples if this prim is not first
+                    // appearing on the start frame.
+                    if ( m_granularity == ONE_FILE ) {
+                        if ( !SYSisEqual(sampleFrame, m_startFrame + shutterOpen, 1e-6) ) {
+                            primPtr->addLeadingBookend( sampleFrame, m_startFrame );
+                        }
+                    }
+                    primPtr->markVisible( true );
+                }
+            }
             else {
-                assetPrim = gpit->second;
+
+                // Add samples to a existing prim
+                usdPrim = gpit->second;
+
+                SdfLayerHandle layer = overlayGeo ? 
+                        m_usdStage->GetSessionLayer() : m_usdStage->GetRootLayer();
 
                 // If a USD version of this prim doesn't exist on the current edit
                 // target's layer, create a new USD prim. This happens when we are
                 // writing per frame files.
-                SdfPrimSpecHandle ph = m_usdStage->GetEditTarget().GetPrimSpecForScenePath( assetPrimPath );
+                SdfPrimSpecHandle ph = m_usdStage->GetEditTarget().GetPrimSpecForScenePath( primPath );
                 if( !ph ) {
-                    dynamic_cast<GusdPrimWrapper*>(assetPrim.get())->
-                        redefine( m_usdStage, assetPrimPath, ctxt, NULL);
+                    dynamic_cast<GusdPrimWrapper*>(usdPrim.get())->
+                        redefine( m_usdStage, SdfPath( primPath ), ctxt, gtPrim.prim );
+                }
+
+                GusdPrimWrapper* primPtr
+                        = UTverify_cast<GusdPrimWrapper*>(usdPrim.get());
+                if( !primPtr->isVisible() ) {
+                    primPtr->markVisible( true );
                 }
             }
 
-            if(assetPrim) {
-
-                GusdPrimWrapper* primPtr
-                        = UTverify_cast<GusdPrimWrapper*>(assetPrim.get());
-
-                // Copy attributes from gt prim to USD prim.
-                primPtr->updateFromGTPrim( NULL, 
-                                           localToWorldMatrix,
-                                           ctxt,
-                                           xformCache );
-                gprimsProcessedThisFrame.insert(assetPrimPath);
-            }
-        }
-    }
-
-    // Iterate over the refined prims and write
-    for( auto& gtPrim : gPrims ) {
-
-        const SdfPath& primPath = gtPrim.path;
-
-        DBG(cerr << "Write prim: " << primPath << ", type = " << gtPrim.prim->className() << endl);
-
-        // Copy properties that were accumulated in the refiner and stored with 
-        // the refined prim to the context.
-        ctxt.purpose = gtPrim.purpose;
-        const GusdWriteCtrlFlags& flags = gtPrim.writeCtrlFlags;
-        ctxt.overlayPoints =     overlayGeo && (flags.overPoints || flags.overAll);
-        ctxt.overlayTransforms = overlayGeo && (flags.overTransforms || flags.overAll);
-        ctxt.overlayPrimvars =   overlayGeo && (flags.overPrimvars || flags.overAll);
-        ctxt.overlayAll =        overlayGeo && flags.overAll;
-
-        ctxt.writeStaticGeo = flags.writeStaticGeo;
-        ctxt.writeStaticTopology = flags.writeStaticTopology;
-        ctxt.writeStaticPrimvars = flags.writeStaticPrimvars;
-
-        if( ctxt.overlayPoints || ctxt.overlayTransforms ) {
-            needToUpdateModelExtents = true;
-        }
-
-        gprimsProcessedThisFrame.insert(primPath);
-
-        // If we're attempting to overlay instanced geometry, set the root
-        // of the instance to 'instanceable = false'. Recurse on the parent
-        // in case it itself is an instance.
-        SdfPath currPath = primPath;
-        UsdPrim currPrim = m_usdStage->GetPrimAtPath( currPath );
-        std::vector<SdfPath> instancePrimPaths;
-        while ( currPrim.IsInstanceProxy() ) {
-            // Get the master prim which corresponds to each instance
-            UsdPrim masterPrim = currPrim.GetPrimInMaster(); 
-            const SdfPath& masterPath = masterPrim.GetPath();
-            // Removing common suffices results in just the path that was
-            // instance for our prim (and /__master_* for the master path)
-            const pair<SdfPath, SdfPath> pathsPair = currPath.RemoveCommonSuffix(masterPath);
-            currPath = pathsPair.first;
-            if ( currPath.IsEmpty() ) {
-                // We shouldn't get here
-                break;
-            }
-            // Get the prim on the stage (not on the master)
-            UsdPrim instancePrim = m_usdStage->GetPrimAtPath( currPath );
-            // Check to make sure we're deinstancing an instance
-            if ( instancePrim.IsInstance() ) {
-                instancePrimPaths.push_back(currPath);
-            }
-            // Recurse on the parent prim in case it's nested as another instance
-            currPrim = instancePrim;
-        }
-
-        // Reverse the order to actually deinstance, as we can't edit nested
-        // instance proxies without first deinstancing their parent instances.
-        for (int i = instancePrimPaths.size()-1; i >=0; i--) {
-            UsdPrim instancePrim = m_usdStage->GetPrimAtPath( instancePrimPaths[i] );
-            instancePrim.SetInstanceable(false);
-            DBG(cerr << "Deinstanced prim at: " << instancePrimPaths[i].GetText() << endl);
-        }
-
-        GT_PrimitiveHandle usdPrim;
-
-        // Have we seen this prim on a previous frame?
-        GprimMap::iterator gpit = m_gprimMap.find(primPath);
-        if( gpit == m_gprimMap.end() ) {
-
-            // Create a new USD prim
-            usdPrim = GusdPrimWrapper::defineForWrite(
-                        gtPrim.prim, m_usdStage, primPath, ctxt );
-
-            if( !usdPrim ) {
-                TF_WARN( "prim did not convert. %s", gtPrim.prim->className() );
-            }
-            else {
-                m_gprimMap[primPath] = usdPrim;
+            if(usdPrim) {
 
                 GusdPrimWrapper* primPtr
                         = UTverify_cast<GusdPrimWrapper*>(usdPrim.get());
 
-                // If we're writing many frames to a single file, write 
-                // "bookend" visibility samples if the prim appears after 
-                // the start frame.
-                if ( m_granularity == ONE_FILE ) {
-                    if ( frame != m_startFrame ) {
-                        primPtr->addLeadingBookend( frame, m_startFrame );
+                // Copy attributes from gt prim to USD prim.
+                primPtr->updateFromGTPrim(gtPrim.prim,
+                                          gtPrim.xform,
+                                          ctxt,
+                                          xformCache );
+
+                // Get prim-level usdShadingFile and usdShader if they exist
+                string primUsdShadingFile = 
+                    getStringUniformOrDetailAttribute(gtPrim.prim, "usdShadingFile");
+                string primUsdShader = 
+                    getStringUniformOrDetailAttribute(gtPrim.prim, "usdShader");
+
+                if( !primUsdShadingFile.empty() && !primUsdShader.empty() ) {
+                    UsdRefShader usdRefShader = std::make_pair(primUsdShadingFile,
+                                                               primUsdShader);
+                    addShaderToMap(usdRefShader, SdfPath(gtPrim.path.GetString()),
+                                   usdRefShaderMap);
+                }
+
+                // Get prim-level shop_materialpath attribute if it exists.
+                string primMaterialPath =
+                    getStringUniformOrDetailAttribute(gtPrim.prim,
+                                                      "shop_materialpath");
+                if (!primMaterialPath.empty()) {
+                    addShaderToMap(primMaterialPath,
+                                   SdfPath(gtPrim.path.GetString()),
+                                   houMaterialMap);
+                }
+
+                // Check for a hero prim to operate on.
+                GT_Owner owner = GT_OWNER_UNIFORM;
+                GT_DataArrayHandle heroAttr = gtPrim.prim->findAttribute( "usdheroprim", owner, 0);
+                if(heroAttr != NULL && heroAttr->getI32(0) > 0) {
+
+                    // Get the hero prim from the stage.
+                    UsdPrim heroPrim = m_usdStage->GetPrimAtPath( primPath );
+
+                    // Call the registered operate on usd prim function on our hero.
+                    if ( heroPrim && m_modelPrim.IsValid() ) {
+                        std::string modelPath = m_modelPrim.GetName().GetString();
+                        do {
+                            GusdOperateOnUsdPrim( heroPrim );
+                            if (heroPrim.GetName().GetString() == modelPath) {
+                                break;
+                            }
+                            heroPrim = heroPrim.GetParent();
+                        } while ( heroPrim.IsValid());
                     }
                 }
-                primPtr->markVisible( true );
             }
         }
-        else {
+        
+        // If we're holding prims which weren't processed on this frame, they should
+        // become invisible on this frame
+        for(GprimMap::iterator gprimIt=m_gprimMap.begin();
+                gprimIt!=m_gprimMap.end();++gprimIt) {
 
-            // Add samples to a existing prim
-            usdPrim = gpit->second;
+            if(gprimsProcessedThisFrame.find(gprimIt->first)
+                    == gprimsProcessedThisFrame.end()) {
 
-            SdfLayerHandle layer = overlayGeo ? 
-                    m_usdStage->GetSessionLayer() : m_usdStage->GetRootLayer();
+                const SdfPath& primPath = gprimIt->first;
 
-            // If a USD version of this prim doesn't exist on the current edit
-            // target's layer, create a new USD prim. This happens when we are
-            // writing per frame files.
-            SdfPrimSpecHandle ph = m_usdStage->GetEditTarget().GetPrimSpecForScenePath( primPath );
-            if( !ph ) {
-                dynamic_cast<GusdPrimWrapper*>(usdPrim.get())->
-                    redefine( m_usdStage, SdfPath( primPath ), ctxt, gtPrim.prim );
-            }
+                GusdPrimWrapper* primPtr
+                    = UTverify_cast<GusdPrimWrapper*>(gprimIt->second.get());
 
-            GusdPrimWrapper* primPtr
-                    = UTverify_cast<GusdPrimWrapper*>(usdPrim.get());
-            if( !primPtr->isVisible() ) {
-                primPtr->markVisible( true );
-            }
-        }
+                SdfPrimSpecHandle ph = m_usdStage->GetRootLayer()->GetPrimAtPath( SdfPath( primPath ) );
+                if( !ph ) {
+                    primPtr->redefine( m_usdStage, primPath, ctxt, GT_PrimitiveHandle() );
+                }
 
-        if(usdPrim) {
-
-            GusdPrimWrapper* primPtr
-                    = UTverify_cast<GusdPrimWrapper*>(usdPrim.get());
-
-            // Copy attributes from gt prim to USD prim.
-            primPtr->updateFromGTPrim(gtPrim.prim,
-                                      gtPrim.xform,
-                                      ctxt,
-                                      xformCache );
-
-            // Get prim-level usdShadingFile and usdShader if they exist
-            string primUsdShadingFile = 
-                getStringUniformOrDetailAttribute(gtPrim.prim, "usdShadingFile");
-            string primUsdShader = 
-                getStringUniformOrDetailAttribute(gtPrim.prim, "usdShader");
-
-            if( !primUsdShadingFile.empty() && !primUsdShader.empty() ) {
-                UsdRefShader usdRefShader = std::make_pair(primUsdShadingFile,
-                                                           primUsdShader);
-                addShaderToMap(usdRefShader, SdfPath(gtPrim.path.GetString()),
-                               usdRefShaderMap);
-            }
-
-            // Get prim-level shop_materialpath attribute if it exists.
-            string primMaterialPath =
-                getStringUniformOrDetailAttribute(gtPrim.prim,
-                                                  "shop_materialpath");
-            if (!primMaterialPath.empty()) {
-                addShaderToMap(primMaterialPath,
-                               SdfPath(gtPrim.path.GetString()),
-                               houMaterialMap);
-            }
-
-            // Check for a hero prim to operate on.
-            GT_Owner owner = GT_OWNER_UNIFORM;
-            GT_DataArrayHandle heroAttr = gtPrim.prim->findAttribute( "usdheroprim", owner, 0);
-            if(heroAttr != NULL && heroAttr->getI32(0) > 0) {
-
-                // Get the hero prim from the stage.
-                UsdPrim heroPrim = m_usdStage->GetPrimAtPath( primPath );
-
-                // Call the registered operate on usd prim function on our hero.
-                if ( heroPrim && m_modelPrim.IsValid() ) {
-                    std::string modelPath = m_modelPrim.GetName().GetString();
-                    do {
-                        GusdOperateOnUsdPrim( heroPrim );
-                        if (heroPrim.GetName().GetString() == modelPath) {
-                            break;
-                        }
-                        heroPrim = heroPrim.GetParent();
-                    } while ( heroPrim.IsValid());
+                if ( m_granularity == ONE_FILE ) {
+                    primPtr->addTrailingBookend( sampleFrame );
+                    // Remove prim from the persistent gprim map.
+                    m_gprimMap.erase( gprimIt );
+                }
+                else {
+                    primPtr->setVisibility( UsdGeomTokens->invisible, ctxt.time );
                 }
             }
         }
-    }
-    
-    // If we're holding prims which weren't processed on this frame, they should
-    // become invisible on this frame
-    for(GprimMap::iterator gprimIt=m_gprimMap.begin();
-            gprimIt!=m_gprimMap.end();++gprimIt) {
 
-        if(gprimsProcessedThisFrame.find(gprimIt->first)
-                == gprimsProcessedThisFrame.end()) {
+        // Now the "extentsHint" attribute needs to be updated
+        // for prims and their ancestors.
+        if (needToUpdateModelExtents) {
+            // Create a UsdGeomBBoxCache for computing extents.
+            TfTokenVector includedPurposes = {UsdGeomTokens->default_ , UsdGeomTokens->render};
+            UsdGeomBBoxCache cache(ctxt.time, includedPurposes,
+                                   /*useExtentsHint*/ false);
 
-            const SdfPath& primPath = gprimIt->first;
+            // Maintain a set of paths of ancestors visited during the following
+            // loop. This is an optimization to avoid computing/setting the
+            // extentsHint multiple times for the same prim.
+            std::set<SdfPath> visitedPaths;
+            const SdfPath rootPath("/");
 
-            GusdPrimWrapper* primPtr
-                = UTverify_cast<GusdPrimWrapper*>(gprimIt->second.get());
+            for (GprimMap::const_iterator it = m_gprimMap.begin();
+                it != m_gprimMap.end(); ++it) {
 
-            SdfPrimSpecHandle ph = m_usdStage->GetRootLayer()->GetPrimAtPath( SdfPath( primPath ) );
-            if( !ph ) {
-                primPtr->redefine( m_usdStage, primPath, ctxt, GT_PrimitiveHandle() );
-            }
+                SdfPath path = SdfPath(it->first).GetParentPath();
 
-            if ( m_granularity == ONE_FILE ) {
-                primPtr->addTrailingBookend( frame );
-                // Remove prim from the persistent gprim map.
-                m_gprimMap.erase( gprimIt );
-            }
-            else {
-                primPtr->setVisibility( UsdGeomTokens->invisible, ctxt.time );
+                while (path != rootPath && path != SdfPath::EmptyPath()) {
+                    UsdGeomModelAPI model(m_usdStage->GetPrimAtPath(path));
+
+                    if (model.GetExtentsHintAttr() &&
+                        visitedPaths.find(path) == visitedPaths.end()) {
+                        const VtVec3fArray extentsHint =
+                            model.ComputeExtentsHint(cache);
+                        model.SetExtentsHint(extentsHint, ctxt.time);
+                    }
+                    visitedPaths.insert(path);
+                    path = path.GetParentPath();
+                }
             }
         }
-    }
+    } // end loop through multi-seg samples
 
-    // If we are not doing an overlay, assume that all the geometry is created
-    // under the node named by m_pathPrefix. User can thwart this using the usdprimprim attrribute, 
-    // but in practice is works reasonably well.
-
+    // If not writing an overlay and if m_pathPrefix is not empty,
+    // assume an asset rooted at the prim named m_pathPrefix has
+    // just been created. Bind any obj level shaders to this prim.
     if( !overlayGeo && !m_pathPrefix.empty() ) {
 
         const SdfPath assetPrimPath(m_pathPrefix);
@@ -1738,42 +1892,6 @@ renderFrame(fpreal time,
     }
     
     if (overlayGeo) {
-        // If doing an overlay of xforms or points (basically any overlay type
-        // except primvars) then bounds have likely changed due to prims being
-        // moved or deformed. Now the "extentsHint" attribute will need to be
-        // updated for ancestors of the prims that have been overlayed.
-        if (needToUpdateModelExtents) {
-            // Create a UsdGeomBBoxCache for computing extents.
-            TfTokenVector includedPurposes = {UsdGeomTokens->default_ , UsdGeomTokens->render};
-            UsdGeomBBoxCache cache(ctxt.time, includedPurposes,
-                                   /*useExtentsHint*/ false);
-
-            // Maintain a set of paths of ancestors visited during the following
-            // loop. This is an optimization to avoid computing/setting the
-            // extentsHint multiple times for the same prim.
-            std::set<SdfPath> visitedPaths;
-            const SdfPath rootPath("/");
-
-            for (GprimMap::const_iterator it = m_gprimMap.begin();
-                it != m_gprimMap.end(); ++it) {
-
-                SdfPath path = SdfPath(it->first).GetParentPath();
-
-                while (path != rootPath && path != SdfPath::EmptyPath()) {
-                    UsdGeomModelAPI model(m_usdStage->GetPrimAtPath(path));
-
-                    if (model.GetExtentsHintAttr() &&
-                        visitedPaths.find(path) == visitedPaths.end()) {
-                        const VtVec3fArray extentsHint =
-                            model.ComputeExtentsHint(cache);
-                        model.SetExtentsHint(extentsHint, ctxt.time);
-                    }
-                    visitedPaths.insert(path);
-                    path = path.GetParentPath();
-                }
-            }
-        }
-
         // Turn off pruning for all prims that have been overlayed.
         for (GprimMap::const_iterator it = m_gprimMap.begin();
              it != m_gprimMap.end(); ++it) {
@@ -1890,8 +2008,13 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
             shaderName = string("/") + shaderName;
         }
 
+        // The shaderName string is expected to contain either a single name,
+        // like "/FxFire", or a longer path, like "/Chair/Looks/Plastic".
+        // Take the substring after the last '/' as the material name.
+        string materialName = shaderName.substr(shaderName.rfind("/") + 1);
+
         UsdShadeMaterial usdMaterial = UsdShadeMaterial::Define(m_usdStage,
-            looksPath.AppendChild(TfToken(shaderName.substr(1))));
+            looksPath.AppendChild(TfToken(materialName)));
         
         UsdReferences refs = usdMaterial.GetPrim().GetReferences();
         shaderFile = GusdComputeRelativeSearchPath(shaderFile);
@@ -1907,8 +2030,9 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
                         shaderName.c_str(), shaderFile.c_str());
             }
             else {
-                SdfPathVector prefixes = shaderPrim.GetPath().GetPrefixes();
-                refs.AddReference(shaderFile, prefixes[0]);
+                // Reference shaderPrim on the usdMaterial prim that
+                // was just defined on m_usdStage.
+                refs.AddReference(shaderFile, shaderPrim.GetPath());
             }
         }
         if (shaderPrim) {

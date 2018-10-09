@@ -32,26 +32,14 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-static GarchGLPlatformDebugContextPtr
-_New(int majorVersion, int minorVersion,
-    bool coreProfile, bool directRendering)
-{
-    return TfCreateWeakPtr(new
-        GarchGLPlatformDebugContext(majorVersion, minorVersion,
-                                    coreProfile, directRendering));
-}
-
-} // anonymous namespace 
-
 void wrapPlatformDebugContext()
 {    
     typedef GarchGLPlatformDebugContext This;
 
     class_<This, TfWeakPtr<This>,
            boost::noncopyable>("GLPlatformDebugContext", no_init)
-        .def(TfMakePyConstructor(_New))
+        .def(TfPyRefAndWeakPtr())
+        .def(TfMakePyConstructor(GarchGLPlatformDebugContext::New))
         .def("makeCurrent", &This::makeCurrent)
     ;
 }

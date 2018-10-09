@@ -118,6 +118,23 @@ void wrapUsdShadeInput()
         .def("GetRenderType", &Input::GetRenderType)
         .def("HasRenderType", &Input::HasRenderType)
 
+        .def("GetSdrMetadata", &Input::GetSdrMetadata)
+        .def("GetSdrMetadataByKey", &Input::GetSdrMetadataByKey,
+             (arg("key")))
+
+        .def("SetSdrMetadata", &Input::SetSdrMetadata,
+             (arg("sdrMetadata")))
+        .def("SetSdrMetadataByKey", &Input::SetSdrMetadataByKey,
+             (arg("key"), arg("value")))
+
+        .def("HasSdrMetadata", &Input::HasSdrMetadata)
+        .def("HasSdrMetadataByKey", &Input::HasSdrMetadataByKey,
+             (arg("key")))
+
+        .def("ClearSdrMetadata", &Input::ClearSdrMetadata)
+        .def("ClearSdrMetadataByKey", 
+             &Input::ClearSdrMetadataByKey, (arg("key")))
+
         .def("SetDocumentation", &Input::SetDocumentation)
         .def("GetDocumentation", &Input::GetDocumentation)
         .def("SetDisplayGroup", &Input::SetDisplayGroup)

@@ -25,6 +25,8 @@
 
 #include "usdMaya/meshUtil.h"
 #include "usdMaya/pointBasedDeformerNode.h"
+#include "usdMaya/primReaderArgs.h"
+#include "usdMaya/primReaderContext.h"
 #include "usdMaya/readUtil.h"
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/stageNode.h"
@@ -33,6 +35,7 @@
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
@@ -40,22 +43,36 @@
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/tokens.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include <maya/MDGModifier.h>
+#include <maya/MDoubleArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnGeometryFilter.h>
+#include <maya/MFnMesh.h>
 #include <maya/MFnSet.h>
-#include <maya/MFnStringData.h>
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MIntArray.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+#include <maya/MStringArray.h>
+#include <maya/MTimeArray.h>
 #include <maya/MUintArray.h>
+#include <maya/MVector.h>
+#include <maya/MVectorArray.h>
 
 #include <string>
 #include <vector>
@@ -231,8 +248,6 @@ UsdMayaTranslatorMesh::Create(
         return false;
     }
 
-    VtVec3fArray points;
-    VtVec3fArray normals;
     VtIntArray faceVertexCounts;
     VtIntArray faceVertexIndices;
 
@@ -277,6 +292,8 @@ UsdMayaTranslatorMesh::Create(
     // Gather points and normals
     // If timeInterval is non-empty, pick the first available sample in the
     // timeInterval or default.
+    VtVec3fArray points;
+    VtVec3fArray normals;
     UsdTimeCode pointsTimeSample = UsdTimeCode::EarliestTime();
     UsdTimeCode normalsTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
@@ -303,7 +320,7 @@ UsdMayaTranslatorMesh::Create(
     if (points.empty()) {
         TF_RUNTIME_ERROR("points array is empty on Mesh <%s>. Skipping...",
                          prim.GetPath().GetText());
-        return false; // invalid mesh, so exit
+        return false;
     }
 
     std::string reason;
@@ -422,7 +439,7 @@ UsdMayaTranslatorMesh::Create(
             mayaHoleIndices[i] = holeIndices[i];
         }
 
-        if (meshFn.setInvisibleFaces(mayaHoleIndices) == MS::kFailure) {
+        if (meshFn.setInvisibleFaces(mayaHoleIndices) != MS::kSuccess) {
             TF_RUNTIME_ERROR("Unable to set Invisible Faces on <%s>",
                              meshFn.fullPathName().asChar());
         }
@@ -436,7 +453,6 @@ UsdMayaTranslatorMesh::Create(
         const TfToken fullName = primvar.GetPrimvarName();
         const SdfValueTypeName typeName = primvar.GetTypeName();
         const TfToken& interpolation = primvar.GetInterpolation();
-
 
         // Exclude primvars using the full primvar name without "primvars:".
         // This applies to all primvars; we don't care if it's a color set, a
@@ -461,7 +477,7 @@ UsdMayaTranslatorMesh::Create(
         // which store floats, so we currently only import primvars holding
         // float-typed arrays. Should we still consider other precisions
         // (double, half, ...) and/or numeric types (int)?
-        if(typeName == SdfValueTypeNames->TexCoord2fArray ||
+        if (typeName == SdfValueTypeNames->TexCoord2fArray ||
                 (UsdMayaReadUtil::ReadFloat2AsUV() &&
                  typeName == SdfValueTypeNames->Float2Array)) {
             // Looks for TexCoord2fArray types for UV sets first
@@ -474,10 +490,10 @@ UsdMayaTranslatorMesh::Create(
                         name.GetText(),
                         mesh.GetPrim().GetPath().GetText());
             }
-        } else if (typeName == SdfValueTypeNames->FloatArray   ||
-                   typeName == SdfValueTypeNames->Float3Array  ||
+        } else if (typeName == SdfValueTypeNames->FloatArray ||
+                   typeName == SdfValueTypeNames->Float3Array ||
                    typeName == SdfValueTypeNames->Color3fArray ||
-                   typeName == SdfValueTypeNames->Float4Array  ||
+                   typeName == SdfValueTypeNames->Float4Array ||
                    typeName == SdfValueTypeNames->Color4fArray) {
             if (!_AssignColorSetPrimvarToMesh(mesh, primvar, meshFn)) {
                 TF_WARN("Unable to retrieve and assign data for color set <%s> "
@@ -485,17 +501,15 @@ UsdMayaTranslatorMesh::Create(
                         name.GetText(),
                         mesh.GetPrim().GetPath().GetText());
             }
-        // 
-        // constant primvars get added as attributes on mesh
-        //
         } else if (interpolation == UsdGeomTokens->constant){
+            // Constant primvars get added as attributes on the mesh.
             if (!_AssignConstantPrimvarToMesh(primvar, meshFn)) {
-                TF_WARN("Unable to assign constant primvars as attributes, <%s> for mesh <%s>",
+                TF_WARN("Unable to assign constant primvar <%s> as attribute "
+                        "on mesh <%s>",
                         name.GetText(),
                         mesh.GetPrim().GetPath().GetText());
             }
         }
-
     }
 
     // We only vizualize the colorset by default if it is "displayColor".

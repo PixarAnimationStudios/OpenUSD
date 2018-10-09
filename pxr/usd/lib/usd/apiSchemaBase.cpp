@@ -43,17 +43,6 @@ UsdAPISchemaBase::~UsdAPISchemaBase()
 {
 }
 
-/* static */
-UsdAPISchemaBase
-UsdAPISchemaBase::Get(const UsdStagePtr &stage, const SdfPath &path)
-{
-    if (!stage) {
-        TF_CODING_ERROR("Invalid stage");
-        return UsdAPISchemaBase();
-    }
-    return UsdAPISchemaBase(stage->GetPrimAtPath(path));
-}
-
 
 /* virtual */
 UsdSchemaType UsdAPISchemaBase::_GetSchemaType() const {

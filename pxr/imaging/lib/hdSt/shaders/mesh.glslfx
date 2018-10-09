@@ -33,6 +33,7 @@
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/visibility.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -526,6 +527,10 @@ void main(void)
         discard;
     }
 
+    if (ShouldDiscardFragmentAccordingToTopology()) {
+        discard;
+    }
+
 #ifdef HD_HAS_color
     vec4 color = vec4(HdGet_color());
 #else
@@ -536,8 +541,9 @@ void main(void)
 
     vec3 Neye = inData.Neye;
     // Normalize Neye after rasterizer interpolation.
-    if (length(Neye) > 0.0)
+    if (length(Neye) > 0.0) {
         Neye = normalize(Neye);
+    }
     // Give the shader key a chance to override the normal.
     Neye = GetNormal(Neye, 0);
     // Orient the normal for shading.

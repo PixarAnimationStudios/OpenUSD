@@ -52,6 +52,9 @@ class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState> 
+    HdStRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
@@ -126,6 +129,7 @@ public:
             , cullStyle(HdCullStyleNothing)
             , depthMaskCallback(nullptr)
             , renderTags()
+            , enableSceneMaterials(true)
         {}
 
         HitMode hitMode;
@@ -138,6 +142,7 @@ public:
         std::vector<GfVec4d> clipPlanes;
         DepthMaskCallback depthMaskCallback;
         TfTokenVector renderTags;
+        bool enableSceneMaterials;
     };
 
     struct Hit {
@@ -212,11 +217,17 @@ public:
             return _viewport[2] > 0 && _viewport[3] > 0;
         }
 
-        /// Return the nearest single hit point. Not that this method may be
+        /// Return the nearest single hit point. Note that this method may be
         /// considerably more efficient, as it only needs to construct a single
         /// Hit object.
         HDX_API
-        bool ResolveNearest(HdxIntersector::Hit* hit) const;
+        bool ResolveNearestToCamera(HdxIntersector::Hit* hit) const;
+
+        /// Return the nearest single hit point from the center of the viewport.
+        /// Note that this method may be considerably more efficient, as it only
+        /// needs to construct a single Hit object.
+        HDX_API
+        bool ResolveNearestToCenter(HdxIntersector::Hit* hit) const;
 
         /// Return all hit points. Note that this may contain redundant objects,
         /// however it allows access to all depth values for a given object.
@@ -247,10 +258,15 @@ public:
 private:
     void _Init(GfVec2i const&);
     void _ConditionStencilWithGLCallback(DepthMaskCallback callback);
+    void _ConfigureSceneMaterials(bool enableSceneMaterials,
+        HdStRenderPassState *renderPassState);
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _occluderRenderPass;
+
+    // Override shader is used when scene materials are disabled
+    HdStShaderCodeSharedPtr _overrideShader;
 
     // Having separate render pass states allows us to queue up the tasks
     // corresponding to each of the above render passes. It also lets us use

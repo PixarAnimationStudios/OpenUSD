@@ -43,6 +43,8 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
+#include "pxr/base/arch/demangle.h"
+
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/info.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -330,23 +332,26 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     }
 
     // choose repr
-    TfToken reprName = HdTokens->smoothHull;
+    HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     bool refined = params.complexity > 1.0;
 
     if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT ||
         params.drawMode == UsdImagingGLEngine::DRAW_SHADED_FLAT) {
         // Flat shading
-        reprName = HdTokens->hull;
+        reprSelector = HdReprSelector(HdReprTokens->hull);
     } else if (
         params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE) {
         // Wireframe on surface
-        reprName = refined ? HdTokens->refinedWireOnSurf : HdTokens->wireOnSurf;
+        reprSelector = HdReprSelector(refined ?
+            HdReprTokens->refinedWireOnSurf : HdReprTokens->wireOnSurf);
     } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME) {
         // Wireframe
-        reprName = refined ? HdTokens->refinedWire : HdTokens->wire;
+        reprSelector = HdReprSelector(refined ?
+            HdReprTokens->refinedWire : HdReprTokens->wire);
     } else {
         // Smooth shading
-        reprName = refined ? HdTokens->refined : HdTokens->smoothHull;
+        reprSelector = HdReprSelector(refined ?
+            HdReprTokens->refined : HdReprTokens->smoothHull);
     }
 
     // Calculate the rendertags needed based on the parameters passed by
@@ -372,7 +377,7 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     // inexpensive comparison first
     bool match = collection->GetName() == colName &&
                  oldRoots.size() == roots.size() &&
-                 collection->GetReprName() == reprName &&
+                 collection->GetReprSelector() == reprSelector &&
                  collection->GetRenderTags().size() == renderTags->size();
 
     // Only take the time to compare root paths if everything else matches.
@@ -400,7 +405,7 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     }
 
     // Recreate the collection.
-    *collection = HdRprimCollection(colName, reprName);
+    *collection = HdRprimCollection(colName, reprSelector);
     collection->SetRootPaths(roots);
     collection->SetRenderTags(*renderTags);
 
@@ -457,7 +462,7 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
             renderParams.alphaThreshold;
     }
 
-    params.enableHardwareShading = renderParams.enableHardwareShading;
+    params.enableSceneMaterials = renderParams.enableSceneMaterials;
 
     // Leave default values for:
     // - params.geomStyle
@@ -531,6 +536,7 @@ UsdImagingGLHdEngine::TestIntersection(
     qparams.alphaThreshold = params.alphaThreshold;
     qparams.renderTags = _renderTags;
     qparams.cullStyle = HdCullStyleNothing;
+    qparams.enableSceneMaterials = params.enableSceneMaterials;
 
     if (!_taskController->TestIntersection(
             &_engine,
@@ -600,6 +606,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     qparams.alphaThreshold = params.alphaThreshold;
     qparams.cullStyle = USD_2_HD_CULL_STYLE[params.cullStyle];
     qparams.renderTags = _renderTags;
+    qparams.enableSceneMaterials = params.enableSceneMaterials;
 
     _taskController->SetPickResolution(pickResolution);
     if (!_taskController->TestIntersection(
@@ -631,15 +638,43 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     return true;
 }
 
+class _DebugGroupTaskWrapper : public HdTask {
+    const HdTaskSharedPtr _task;
+    public:
+    _DebugGroupTaskWrapper(const HdTaskSharedPtr task)
+        : _task(task)
+    {
+
+    }
+
+    void
+    _Execute(HdTaskContext* ctx) override
+    {
+        GlfDebugGroup dbgGroup((ArchGetDemangled(typeid(*_task.get())) +
+                "::Execute").c_str());
+        _task->Execute(ctx);
+    }
+
+    void
+    _Sync(HdTaskContext* ctx) override
+    {
+        GlfDebugGroup dbgGroup((ArchGetDemangled(typeid(*_task.get())) +
+                "::Sync").c_str());
+        _task->Sync(ctx);
+    }
+};
+
 void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
-    // Forward hw shading enable to delegate
-    _delegate->SetHardwareShadingEnabled(params.enableHardwareShading);
+    // Forward scene materials enable option to delegate
+    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
 
 
     // User is responsible for initializing GL context and glew
     bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
+
+    GLF_GROUP_FUNCTION();
 
     GLuint vao;
     if (isCoreProfileContext) {
@@ -704,7 +739,17 @@ UsdImagingGLHdEngine::Render(RenderParams params)
 
     TfToken const& renderMode = params.enableIdRender ?
         HdxTaskSetTokens->idRender : HdxTaskSetTokens->colorRender;
-    _engine.Execute(*_renderIndex, _taskController->GetTasks(renderMode));
+
+    HdTaskSharedPtrVector tasks;
+    
+    if (false) {
+        tasks = _taskController->GetTasks(renderMode);
+    } else {
+        TF_FOR_ALL(it, _taskController->GetTasks(renderMode)) {
+            tasks.push_back(boost::make_shared<_DebugGroupTaskWrapper>(*it));
+        }
+    }
+    _engine.Execute(*_renderIndex, tasks);
 
     if (isCoreProfileContext) {
 
@@ -715,11 +760,8 @@ UsdImagingGLHdEngine::Render(RenderParams params)
         glDeleteVertexArrays(1, &vao);
 
     } else {
-
         glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
-
     }
-
 }
 
 /*virtual*/
@@ -1000,6 +1042,39 @@ UsdImagingGLHdEngine::_DeleteHydraResources()
         HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_renderPlugin);
         _renderPlugin = nullptr;
     }
+}
+
+/* virtual */
+TfTokenVector
+UsdImagingGLHdEngine::GetRendererAovs() const
+{
+    if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
+        return TfTokenVector(
+            { HdAovTokens->color,
+              HdAovTokens->primId,
+              HdAovTokens->depth,
+              HdAovTokens->normal,
+              HdAovTokensMakePrimvar(TfToken("st")) }
+        );
+    }
+    return TfTokenVector();
+}
+
+/* virtual */
+bool
+UsdImagingGLHdEngine::SetRendererAov(TfToken const& id)
+{
+    if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
+        // For color, render straight to the viewport instead of rendering
+        // to an AOV and colorizing (which is the same, but more work).
+        if (id == HdAovTokens->color) {
+            _taskController->SetRenderOutputs(TfTokenVector());
+        } else {
+            _taskController->SetRenderOutputs({id});
+        }
+        return true;
+    }
+    return false;
 }
 
 /* virtual */

@@ -55,6 +55,7 @@ class HdSt_TestDriver final {
 public:
     HdSt_TestDriver();
     HdSt_TestDriver(TfToken const &reprName);
+    HdSt_TestDriver(HdReprSelector const &reprToken);
     ~HdSt_TestDriver();
 
     /// Draw
@@ -83,17 +84,17 @@ public:
     HdSt_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
-    void SetRepr(TfToken const &reprName);
+    void SetRepr(HdReprSelector const &reprToken);
 
 private:
 
-    void _Init(TfToken const &reprName);
+    void _Init(HdReprSelector const &reprToken);
 
     HdEngine _engine;
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdSt_UnitTestDelegate *_sceneDelegate;
-    TfToken _reprName;
+    HdReprSelector _reprToken;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdStRenderPassStateSharedPtr _renderPassState;

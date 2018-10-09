@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-            
 #define HD_TOKENS                               \
     (adjacency)                                 \
     (bboxLocalMin)                              \
@@ -55,9 +54,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawingShader)                             \
     (drawingCoord0)                             \
     (drawingCoord1)                             \
+    (drawingCoord2)                             \
     (drawingCoordI)                             \
     (edgeIndices)                               \
     (elementCount)                              \
+    (elementsVisibility)                        \
     (extent)                                    \
     (faceColors)                                \
     (full)                                      \
@@ -65,7 +66,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (guide)                                     \
     (hermite)                                   \
     (hidden)                                    \
-    (hull)                                      \
     (hullIndices)                               \
     (indices)                                   \
     (instancer)                                 \
@@ -90,28 +90,35 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pointsIndices)                             \
     (power)                                     \
     (preview)                                   \
+    (pointsVisibility)                          \
     (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
     (proxy)                                     \
     (quadInfo)                                  \
-    (refined)                                   \
-    (refinedWire)                               \
-    (refinedWireOnSurf)                         \
     (renderTags)                                \
     (rightHanded)                               \
     (segmented)                                 \
     (shadowLink)                                \
-    (smoothHull)                                \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
     (topology)                                  \
+    (topologyVisibility)                        \
     (totalItemCount)                            \
     (transform)                                 \
     (transformInverse)                          \
     (visibility)                                \
-    (widths)                                    \
+    (widths)
+
+#define HD_REPR_TOKENS                          \
+    (disabled)                                  \
+    (hull)                                      \
+    (points)                                    \
+    (smoothHull)                                \
+    (refined)                                   \
+    (refinedWire)                               \
+    (refinedWireOnSurf)                         \
     (wire)                                      \
     (wireOnSurf)
 
@@ -186,7 +193,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
 
-
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
 
@@ -195,6 +201,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \
+    (volume)                                    \
                                                 \
     /* Sprims */                                \
     (camera)                                    \
@@ -221,7 +228,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vector)                                    \
     (normal)                                    \
     (point)                                     \
-    (pointsVisibility)                          \
     (textureCoordinate)
 
 /* Schema for "Alternate Output Values" rendering,
@@ -257,25 +263,49 @@ PXR_NAMESPACE_OPEN_SCOPE
     (Neye)                                      \
     (patchCoord)                                \
     (primitiveParam)                            \
+    (normal)                                    \
+    /* Others we might want to add:
+     * https://rmanwiki.pixar.com/display/REN/Arbitrary+Output+Variables
+     * - curvature
+     * - tangent
+     * - velocity
+     */                                         \
     /* Primvars:
      *   The tokens don't try to enumerate primvars,
      *   but instead provide an identifying namespace.
-     *   The "color" primvar is addressable as "primvar:color".
+     *   The "color" primvar is addressable as "primvars:color".
      */                                         \
-    ((primvar, "primvar:"))                     \
+    ((primvars, "primvars:"))                   \
     /* Light path expressions:
      *   Applicable only to raytracers, these tell
      *   the renderer to output specific shading
      *   components for specific classes of lightpath.
+     *
+     *   Lightpath syntax is defined here:
+     *   https://rmanwiki.pixar.com/display/REN/Light+Path+Expressions
+     *   ... so for example, you could specify
+     *   "lpe:CD[<L.>O]"
      */                                         \
-    ((lpe, "lpe:"))
+    ((lpe, "lpe:"))                             \
+    /* Shader signals:
+     *   This tells the renderer to output a partial shading signal,
+     *   whether from the BXDF (e.g. bxdf.diffuse) or from an intermediate
+     *   shading node (e.g. fractal.rgb).
+     *   XXX: The exact format is TBD.
+     */                                         \
+    ((shader, "shader:"))
 
 HD_API
-TfToken HdAovTokensPrimvar(TfToken const& primvar);
+TfToken HdAovTokensMakePrimvar(TfToken const& primvar);
+
 HD_API
-TfToken HdAovTokensLpe(TfToken const& lpe);
+TfToken HdAovTokensMakeLpe(TfToken const& lpe);
+
+HD_API
+TfToken HdAovTokensMakeShader(TfToken const& shader);
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);

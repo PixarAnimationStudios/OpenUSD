@@ -66,12 +66,23 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
                                               renderIndex.GetResourceRegistry();
 
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
+
+        // Has the texture really changed.
+        // The safest thing to do is assume it has, so that's the default used
+        bool isNewTexture = true;
+
         if (texID != HdTextureResource::ID(-1)) {
-            HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
-                texInstance;
+            HdInstance<HdResourceRegistry::TextureKey,
+                       HdTextureResourceSharedPtr> texInstance;
+
+            // Use render index to convert local texture id into global
+            // texture key
+            HdResourceRegistry::TextureKey texKey =
+                                               renderIndex.GetTextureKey(texID);
 
             std::unique_lock<std::mutex> regLock =
-                resourceRegistry->RegisterTextureResource(texID, &texInstance);
+                resourceRegistry->RegisterTextureResource(texKey,
+                                                          &texInstance);
 
             if (texInstance.IsFirstInstance()) {
                 _textureResource = _GetTextureResource(sceneDelegate,
@@ -80,7 +91,14 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
             } else {
                 // Take a reference to the texture to ensure it lives as long
                 // as this class.
-                _textureResource = texInstance.GetValue();
+                HdTextureResourceSharedPtr textureResource
+                                                       = texInstance.GetValue();
+
+                if (_textureResource == textureResource) {
+                    isNewTexture = false;
+                } else {
+                    _textureResource = textureResource;
+                }
             }
         } else {
             _textureResource.reset();
@@ -93,7 +111,9 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
         // request.
         // As the cache may be still holding on to the resource with a larger
         // memory request.
-        renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
+        if (isNewTexture) {
+            renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
+        }
     }
 
     *dirtyBits = Clean;

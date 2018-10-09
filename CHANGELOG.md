@@ -1,5 +1,138 @@
 # Change Log
 
+## [18.11] - 2018-10-10
+
+### Added
+USD:
+- [usdVol] UsdVol schema for representing volumes. (PR #567)
+- [usdShade] Ability to define shaders in the shader definition registry 
+   using UsdShade. 
+- [usdShaders] Shader definition registry plugin for core nodes defined in 
+   the UsdPreviewSurface specification.
+
+Imaging:
+- [hd, usdImaging] Hydra support for UsdVol schema. (PR #567)
+- [hd, hdSt] Topology visibility operations for meshes in Hydra.
+- [hd, hdSt] Support for inverting the depth test of a draw target.
+- [hd, hdSt] "Flat normals" computed buffer source for meshes.
+- [hdx] ResolveNearestToCenter pick hit resolution method for ray picking.
+
+- [usdview] Menu for switching AOVs for supported backends.
+- [usdview] Menu for backend-specific settings.
+
+Alembic plugin:
+- [usdAbc] Behavior where an Xform with a single geometry or camera in an 
+  Alembic file would be collapsed into a single prim in USD can now be disabled 
+  by setting the environment variable `USD_ABC_XFORM_PRIM_COLLAPSE` to 0. 
+  (PR #527)
+
+Maya plugin:
+- [usdMaya] Display filter for USD proxy shapes.
+- [usdMaya, pxrUsdMayaGL] pxrHdImagingShape node that reduces overhead when 
+  imaging scenes with many Hydra-backed shapes.
+- [pxrUsdMayaGL] Support for Maya lights casting shadows between Hydra shapes, 
+  and Hydra shapes to Maya shapes, but not Maya shapes to Hydra shapes.
+
+Houdini plugin:
+- [gusd] Experimental build support for Houdini plugin on Windows.
+- [OP_gusd] Multi-seg export to USD output ROP.
+
+### Changed
+- Numerous fixes and cleanup changes throughout to improve performance, 
+  convert code to more modern patterns, and remove unneeded uses of boost.
+  (PR #373, #453, #481, #484, #488)
+
+USD:
+- [usd] UsdAPISchemaBase is now an abstract base class as originally intended.
+- [usdGeom] Improved performance of UsdGeomPointBased::ComputeExtent. In one 
+  example, this provided a ~30% improvement. (PR #588)
+- [usdGeom] Improved performance of computing extents for UsdGeomPointInstancer.
+  In one example with >5 million instances, extent computation time decreased
+  from ~25 seconds to ~3 seconds.
+- [usdSkel] UsdSkelBakeSkinning bakes skinning at additional time samples
+  based on stage's configured sampling rate.
+- [usdedit] Opening a .usdz file now forces read-only mode.
+- [usdzip] "-l" or "-d" arguments will now provide information about existing 
+  .usdz files.
+- [usdzip] ARKit compliance checks now require valid sources for shader inputs
+  with connections and valid prims and/or collections for material bindings.
+
+Imaging:
+- [hd] Improved Hydra AOV API.
+- [hd] Split reprs into the topology indices they affect.
+- [hd] Properly set up both the shadow projection and view matrices. (PR #583)
+- [hd] Optimization to not run garbage collection if a texture hasn't change.
+- [hd, hdSt, usdImaging] Update wrap mode fallback behavior to useMetadata.
+- [hdx] Improved shadow support in HdxTaskController. (PR #541)
+- [hdx] "Enable Hardware Shading" entry point is now "Enable Scene Materials".
+- [hdSt] Support to generate GLSL-compatible names for resources/primvars.
+- [usdImagingGL] Better support for animated textures. (PR #488)
+- [usdview] Better error reporting if an unsupported backend is selected. 
+  (PR #635)
+- [hdEmbree] Improved AO sampling (cosine-weighted sampling, stratified AO 
+  samples LHS).
+
+Maya plugin:
+- [pxrUsdMayaGL] Many performance improvements in the Hydra batch renderer.
+- [usdMaya, pxrUsdMayaGL] Using USD in live surface uses the normal at the 
+  snap point.
+- [usdMaya, pxrUsdTranslators] Various code cleanup in USD exporter.
+
+Katana plugin:
+- [usdKatana] Use bracketing sample closest to shutter open/close if no frames
+  found in shutter interval.
+- [usdKatana] Honor UsdStage's authored timeCodesPerSecond and framesPerSecond.
+  If they differ, Katana will operate in frames, with current time, motion
+  samples, and shutter interval scaled appropriately.
+
+Houdini plugin:
+- [gusd] Rebind materials when creating sub-root references.
+- [gusd] Optimizations in handling of stage mask operations.
+- [OP_gusd] USD output ROP now allows binding to shaders referenced from other 
+  models.
+
+### Removed
+
+Imaging:
+- [hd] Removed Repr requirements from GetRenderTag API.
+
+### Fixed
+Build:
+- [cmake] User-specified CMAKE_MODULE_PATH was being ignored during build. 
+  (PR #614)
+- [cmake] Installed headers could take precedence over source headers, leading 
+  to build failures. (Issue #83) 
+
+USD:
+- [tf] TfEnvSetting crash on MSVC 2017.
+- [ar] ArDefaultResolver::AnchorRelativePath did not call IsRelativePath on
+  derived resolvers. (PR #426)
+- [sdf] SdfCopySpec did not handle copying prim specs to variants and vice-versa.
+- [sdf] Incorrect notification was sent when removing subtrees of inert specs.
+- [usd] Prim payload was not automatically loaded when a deactivated ancestor 
+  prim with a payload was activated. (Issue #604)
+- [usd] Incorrect lists of time samples would be returned in certain cases
+  with value clips.
+- [usd, usdzip] .usdz files were not fully compliant with the zip file format 
+  specification. 
+- [usdUtils, usdzip] Creating an ARKit .usdz file with a .usda asset would 
+  create an invalid file.
+- [usdMtlx] MaterialX plugin build failures on Windows and macOS. (Issue #611)
+
+Imaging:
+- [hdx] Picking with disabled scene materials generating shader errors.
+- [hdSt] Fix immediate draw batch invalidation on buffer migration.
+- [hdSt] Fix garbage collection on buffer migration.
+- [hdSt] Bindless texture loading not being deferred.
+- [usdImaging] Wrong transforms were being used when using usdLux light 
+  transforms (Issue #612).
+- [usdImaging] Fix for usdImaging's TextureId not accounting for origin.
+
+Houdini plugin:
+- [gusd] Several fixes for building with Houdini 17. (PR #549)
+- [gusd] Several fixes for stale caches and crashes.
+- [gusd] Potential PackedUSD transform issues in Houdini 16.5.
+
 ## [18.09] - 2018-08-07
 
 This release includes several major new features and changes, including:

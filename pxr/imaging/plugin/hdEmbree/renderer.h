@@ -34,6 +34,8 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
+#include <random>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdEmbreeRenderer
@@ -89,6 +91,9 @@ public:
     /// Clear the bound attachments (typically before rendering).
     void Clear();
 
+    /// Mark the attachments as unconverged.
+    void MarkAttachmentsUnconverged();
+
 private:
     // Validate the internal consistency of attachments provided to
     // SetAttachments. If the attachments are invalid, this will issue
@@ -114,26 +119,31 @@ private:
     // attachments.
     void _TraceRay(unsigned int x, unsigned int y,
                    GfVec3f const& origin, GfVec3f const& dir,
-                   std::function<float()> uniform_float);
+                   std::default_random_engine &random);
 
     // Compute the color at the given ray hit.
     GfVec4f _ComputeColor(RTCRay const& rayHit,
-                          std::function<float()> uniform_float,
+                          std::default_random_engine &random,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
-    bool _ComputeDepth(RTCRay const& rayHit, float *depth);
+    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool ndc);
     // Compute the prim ID at the given ray hit.
     bool _ComputePrimId(RTCRay const& rayHit, int32_t *primId);
+    // Compute the normal at the given ray hit.
+    bool _ComputeNormal(RTCRay const& rayHit, GfVec3f *normal, bool eye);
+    // Compute a primvar at the given ray hit.
+    bool _ComputePrimvar(RTCRay const& rayHit, TfToken const& primvar,
+        GfVec3f *value);
 
     // Compute the ambient occlusion term at a given point by firing rays
     // from "position" in the hemisphere centered on "normal"; the occlusion
-    // factor is the fraction of those rays that are occluded.
+    // factor is the fraction of those rays that are visible.
     //
-    // Modulating surface color by (1 - occlusionFactor) is similar to taking
+    // Modulating surface color by occlusionFactor is similar to taking
     // the light contribution of an infinitely far, pure white dome light.
     float _ComputeAmbientOcclusion(GfVec3f const& position,
                                    GfVec3f const& normal,
-                                   std::function<float()> uniform_float);
+                                   std::default_random_engine &random);
 
     // The bound attachments for this renderer.
     HdRenderPassAttachmentVector _attachments;
@@ -148,6 +158,10 @@ private:
     // The height of the viewport we're rendering into.
     unsigned int _height;
 
+    // View matrix: world space to camera space.
+    GfMatrix4d _viewMatrix;
+    // Projection matrix: camera space to NDC space.
+    GfMatrix4d _projMatrix;
     // The inverse view matrix: camera space to world space.
     GfMatrix4d _inverseViewMatrix;
     // The inverse projection matrix: NDC space to camera space.

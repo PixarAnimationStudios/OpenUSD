@@ -27,7 +27,6 @@
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/trace/trace.h"
 
-#include <boost/assign/list_of.hpp>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -59,22 +58,22 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // List of valid rotate op types.
 TF_MAKE_STATIC_DATA(std::set<UsdGeomXformOp::Type>, _validRotateTypes) {
-    *_validRotateTypes = boost::assign::list_of
-        (UsdGeomXformOp::TypeRotateXYZ)
-        (UsdGeomXformOp::TypeRotateXZY)
-        (UsdGeomXformOp::TypeRotateYXZ)
-        (UsdGeomXformOp::TypeRotateYZX)
-        (UsdGeomXformOp::TypeRotateZXY)
-        (UsdGeomXformOp::TypeRotateZYX)
-        .convert_to_container< std::set<UsdGeomXformOp::Type> >();
+    *_validRotateTypes = {
+        UsdGeomXformOp::TypeRotateXYZ,
+        UsdGeomXformOp::TypeRotateXZY,
+        UsdGeomXformOp::TypeRotateYXZ,
+        UsdGeomXformOp::TypeRotateYZX,
+        UsdGeomXformOp::TypeRotateZXY,
+        UsdGeomXformOp::TypeRotateZYX
+    };
 }
 
 TF_MAKE_STATIC_DATA(std::set<UsdGeomXformOp::Type>, _validSingleAxisRotateTypes) {
-    *_validSingleAxisRotateTypes = boost::assign::list_of
-        (UsdGeomXformOp::TypeRotateX)
-        (UsdGeomXformOp::TypeRotateY)
-        (UsdGeomXformOp::TypeRotateZ)
-        .convert_to_container< std::set<UsdGeomXformOp::Type> >();
+    *_validSingleAxisRotateTypes = {
+        UsdGeomXformOp::TypeRotateX,
+        UsdGeomXformOp::TypeRotateY,
+        UsdGeomXformOp::TypeRotateZ
+    };
 }
 
 
@@ -598,12 +597,13 @@ UsdGeomXformCommonAPI::_ValidateAndComputeXformOpIndices(
 
     // The expected order is:
     // {Translate, TranslatePivot, Rotate, Scale, InvTranslatePivot}
-    TfTokenVector opNameTokens = boost::assign::list_of
-            (_tokens->xformOpTranslate)
-            (_tokens->xformOpTranslatePivot)
-            (_GetRotateOpNameToken(_xformOps))
-            (_tokens->xformOpScale)
-            (_tokens->xformOpInvTranslatePivot);
+    TfTokenVector opNameTokens = {
+        _tokens->xformOpTranslate,
+        _tokens->xformOpTranslatePivot,
+        _GetRotateOpNameToken(_xformOps),
+        _tokens->xformOpScale,
+        _tokens->xformOpInvTranslatePivot
+    };
 
     typedef std::map<TfToken, int> XformOpToIndexMap;
     XformOpToIndexMap xformOpToIndexMap;

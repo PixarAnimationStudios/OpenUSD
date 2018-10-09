@@ -98,6 +98,7 @@ private:
     void _ValidateCompatibility(
             HdStBufferArrayRangeGLSharedPtr const& constantBar,
             HdStBufferArrayRangeGLSharedPtr const& indexBar,
+            HdStBufferArrayRangeGLSharedPtr const& topologyVisibilityBar,
             HdStBufferArrayRangeGLSharedPtr const& elementBar,
             HdStBufferArrayRangeGLSharedPtr const& fvarBar,
             HdStBufferArrayRangeGLSharedPtr const& vertexBar,

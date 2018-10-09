@@ -22,8 +22,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Tf, Ndr, Sdr
 import os
+os.environ['PXR_USDMTLX_PLUGIN_SEARCH_PATHS'] = os.getcwd()
+
+from pxr import Tf, Ndr, Sdr
 import unittest
 
 class TestDiscovery(unittest.TestCase):
@@ -31,13 +33,9 @@ class TestDiscovery(unittest.TestCase):
         """
         Test MaterialX node discovery.
         """
-        # Let the plugin discover our nodes.
-        searchPath = os.getcwd()
-        os.environ['PXR_USDMTLX_PLUGIN_SEARCH_PATHS'] = searchPath
-
         registry = Sdr.Registry()
 
-        # Check node indentifiers.
+        # Check node identifiers.
         names = sorted(registry.GetNodeIdentifiers('UsdMtlxTestNode',
                                                    Ndr.VersionFilterAllVersions))
         self.assertEqual(names,

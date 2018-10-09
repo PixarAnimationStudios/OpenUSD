@@ -58,11 +58,11 @@ HdStPoints::~HdStPoints()
 }
 
 void
-HdStPoints::Sync(HdSceneDelegate* delegate,
-                 HdRenderParam*   renderParam,
-                 HdDirtyBits*     dirtyBits,
-                 TfToken const&   reprName,
-                 bool             forcedRepr)
+HdStPoints::Sync(HdSceneDelegate      *delegate,
+                 HdRenderParam        *renderParam,
+                 HdDirtyBits          *dirtyBits,
+                 HdReprSelector const &reprSelector,
+                 bool                  forcedRepr)
 {
     TF_UNUSED(renderParam);
 
@@ -71,8 +71,9 @@ HdStPoints::Sync(HdSceneDelegate* delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
-    _UpdateRepr(delegate, calcReprName, dirtyBits);
+    HdReprSelector calcReprSelector = _GetReprSelector(
+            reprSelector, forcedRepr);
+    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
@@ -93,7 +94,8 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits, constantPrimvars);
+    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
+            constantPrimvars);
 
     /* MATERIAL SHADER */
     drawItem->SetMaterialShaderFromRenderIndex(
@@ -128,19 +130,20 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                        TfToken const &reprName,
+                        HdReprSelector const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // XXX: We only support smoothHull for now
-    _PointsReprConfig::DescArray descs = _GetReprDesc(HdTokens->smoothHull);
+    _PointsReprConfig::DescArray descs = _GetReprDesc(
+            HdReprSelector(HdReprTokens->smoothHull));
     HdReprSharedPtr const &curRepr = _smoothHullRepr;
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStPoints::_UpdateRepr " << GetId()
-                  << " Repr = " << HdTokens->smoothHull << "\n";
+                  << " Repr = " << HdReprTokens->smoothHull << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
@@ -199,8 +202,9 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         if (!value.IsEmpty()) {
             // Store where the points will be stored in the source array
-            // we need this later to figure out if the number of points is changing
-            // and we need to force a garbage collection to resize the buffer
+            // we need this later to figure out if the number of points is
+            // changing and we need to force a garbage collection to resize
+            // the buffer
             if (primvar.name == HdTokens->points) {
                 pointsIndexInSourceArray = sources.size();
             }
@@ -235,9 +239,13 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         int newRange = sources[pointsIndexInSourceArray]->GetNumElements();
 
         // Check if the range is different and if so force a garbage collection
-        // which will make sure the points are up to date
+        // which will make sure the points are up to date; also mark batches
+        // dirty.
         if(previousRange != newRange) {
-            sceneDelegate->GetRenderIndex().GetChangeTracker().SetGarbageCollectionNeeded();
+            sceneDelegate->GetRenderIndex().GetChangeTracker().
+                SetGarbageCollectionNeeded();
+            sceneDelegate->GetRenderIndex().GetChangeTracker().
+                MarkBatchesDirty();
         }
     }
 
@@ -273,7 +281,7 @@ HdStPoints::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 void
-HdStPoints::_InitRepr(TfToken const &reprName,
+HdStPoints::_InitRepr(HdReprSelector const &reprToken,
                       HdDirtyBits *dirtyBits)
 {
     // We only support smoothHull for now, everything else points to it.
@@ -282,7 +290,7 @@ HdStPoints::_InitRepr(TfToken const &reprName,
         _smoothHullRepr = HdReprSharedPtr(new HdRepr());
         *dirtyBits |= HdChangeTracker::NewRepr;
 
-        _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprName);
+        _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprToken);
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
             const HdPointsReprDesc &desc = descs[descIdx];
@@ -295,12 +303,12 @@ HdStPoints::_InitRepr(TfToken const &reprName,
     }
      
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
+                                            _ReprComparator(reprToken));
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
         it = _reprs.insert(_reprs.end(),
-            std::make_pair(reprName, _smoothHullRepr));
+            std::make_pair(reprToken, _smoothHullRepr));
     }
 }
 

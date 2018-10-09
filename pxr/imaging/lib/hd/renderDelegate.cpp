@@ -77,5 +77,11 @@ HdRenderDelegate::GetMaterialNetworkSelector() const
     return TfToken();
 }
 
+HdAovDescriptor
+HdRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
+{
+    return HdAovDescriptor();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

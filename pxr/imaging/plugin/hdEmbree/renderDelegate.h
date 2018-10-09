@@ -190,6 +190,24 @@ public:
     ///   \param tracker The change tracker passed to prim Sync().
     virtual void CommitResources(HdChangeTracker *tracker) override;
 
+    /// This function tells the scene which material variant to reference.
+    /// Embree doesn't currently use materials but raytraced backends generally
+    /// specify "full".
+    ///   \return A token specifying which material variant this renderer
+    ///           prefers.
+    virtual TfToken GetMaterialBindingPurpose() const override {
+        return HdTokens->full;
+    }
+
+    /// This function returns the default AOV descriptor for a given named AOV.
+    /// This mechanism lets the renderer decide things like what format
+    /// a given AOV will be written as.
+    ///   \param name The name of the AOV whose descriptor we want.
+    ///   \return A descriptor specifying things like what format the AOV
+    ///           output buffer should be.
+    virtual HdAovDescriptor
+        GetDefaultAovDescriptor(TfToken const& name) const override;
+
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;

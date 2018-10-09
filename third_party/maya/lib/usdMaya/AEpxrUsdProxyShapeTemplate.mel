@@ -82,8 +82,6 @@ global proc AEpxrUsdProxyShapeTemplate( string $nodeName )
         editorTemplate -addControl "excludePrimPaths";
         editorTemplate -addControl "variantKey";
         editorTemplate -addControl "complexity";
-        editorTemplate -addControl "tint";
-        editorTemplate -addControl "tintColor";
     editorTemplate -endLayout;
 
     AEsurfaceShapeTemplate $nodeName;

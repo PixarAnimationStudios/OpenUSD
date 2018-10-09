@@ -120,7 +120,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
-    , _hardwareShadingEnabled(true)
+    , _sceneMaterialsEnabled(true)
 {
     // Default to 2 samples: this frame and the next frame.
     // XXX In the future this should be configurable via negotation
@@ -489,6 +489,10 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 
         _PrimInfo *primInfo = GetPrimInfo(usdPath);
         if (!TF_VERIFY(primInfo != nullptr, "%s\n", usdPath.GetText())) {
+            continue;
+        }
+
+        if (primInfo->dirtyBits == HdChangeTracker::Clean) {
             continue;
         }
 
@@ -1402,11 +1406,11 @@ UsdImagingDelegate::SetUsdDrawModesEnabled(bool enableUsdDrawModes)
 
 
 void
-UsdImagingDelegate::SetHardwareShadingEnabled(bool enable)
+UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 {
-    if (_hardwareShadingEnabled != enable)
+    if (_sceneMaterialsEnabled != enable)
     {
-        _hardwareShadingEnabled = enable;
+        _sceneMaterialsEnabled = enable;
 
         UsdImagingIndexProxy indexProxy(this, nullptr);
 
@@ -1426,7 +1430,7 @@ UsdImagingDelegate::SetHardwareShadingEnabled(bool enable)
 
 /*virtual*/
 TfToken
-UsdImagingDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
+UsdImagingDelegate::GetRenderTag(SdfPath const& id)
 {
     SdfPath usdPath = GetPathForUsd(id);
 
@@ -1512,10 +1516,14 @@ UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
     SdfPath usdPath = GetPathForUsd(id);
     SubdivTags tags;
 
-    // TODO: Support tag pre-fetch
+    if (_valueCache.ExtractSubdivTags(usdPath, &tags)) {
+        return tags;
+    }
     _UpdateSingleValue(usdPath, HdChangeTracker::DirtySubdivTags);
-    // No TF_VERIFY here because we don't always expect to have tags.
-    _valueCache.ExtractSubdivTags(usdPath, &tags);
+    if (TF_VERIFY(_valueCache.ExtractSubdivTags(usdPath, &tags))) {
+        return tags;
+    }
+
     return tags;
 }
 
@@ -1670,7 +1678,7 @@ UsdImagingDelegate::IsRefined(SdfPath const& usdPath) const
 
 
 void
-UsdImagingDelegate::SetReprFallback(TfToken const &repr)
+UsdImagingDelegate::SetReprFallback(HdReprSelector const &repr)
 {
     HD_TRACE_FUNCTION();
 
@@ -2210,7 +2218,6 @@ UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
     // XXX: We should add caching to the transform computation if this shows
     // up in profiling, but all of our current caches are cleared on time change
     // so we'd need to write a new structure.
-    UsdGeomXformCache xformCache(0.0);
     for (size_t i=0; i < numSamples; ++i) {
         UsdTimeCode offsetTime = GetTimeWithOffset(_timeSampleOffsets[i]);
         times[i] = _timeSampleOffsets[i];
@@ -2309,17 +2316,9 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 value = VtValue(vec);
             }
         } else if (key == HdTokens->transform) {
-            GfMatrix4d xform(1.);
-            bool resetsXformStack=false;
-            UsdGeomXformable xf(_GetPrim(usdPath));
-            if (xf && 
-                xf.GetLocalTransformation(&xform, &resetsXformStack, _time)) {
-                // resetsXformStack gets thrown away here since we're only 
-                // interested in the local transformation. The xformCache
-                // takes care of handling resetsXformStack appropriately when 
-                // computing CTMs.
-                value = VtValue(xform);
-            }
+            value = VtValue(
+                UsdImaging_XfStrategy::ComputeTransform(_GetPrim(usdPath), 
+                    _rootPrimPath, GetTime(), _rigidXformOverrides) * _rootXf);
         } else if (UsdGeomPrimvar pv = UsdGeomGprim(_GetPrim(usdPath))
                                                 .GetPrimvar(key)) {
             // Note here that Hydra requested "color" (e.g.) and we've converted
@@ -2365,8 +2364,8 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
 }
 
 /*virtual*/
-TfToken
-UsdImagingDelegate::GetReprName(SdfPath const &id)
+HdReprSelector
+UsdImagingDelegate::GetReprSelector(SdfPath const &id)
 {
     return _reprFallback;
 }
@@ -2524,7 +2523,7 @@ UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
     }
 
     // If custom shading is disabled, use fallback
-    if (!_hardwareShadingEnabled) {
+    if (!_sceneMaterialsEnabled) {
         return std::string();
     }
 
@@ -2553,7 +2552,7 @@ UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
     }
 
     // If custom shading is disabled, use fallback
-    if (!_hardwareShadingEnabled) {
+    if (!_sceneMaterialsEnabled) {
         return std::string();
     }
 
@@ -2613,7 +2612,7 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
     }
 
     // If custom shading is disabled, use fallback
-    if (!_hardwareShadingEnabled) {
+    if (!_sceneMaterialsEnabled) {
         return HdMaterialParamVector();
     }
 
@@ -2744,6 +2743,21 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     return VtValue();
+}
+
+HdVolumeFieldDescriptorVector
+UsdImagingDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
+{
+    // PERFORMANCE: We should schedule this to be updated during Sync, rather
+    // than pulling values on demand.
+    SdfPath usdPath = GetPathForUsd(volumeId);
+    _PrimInfo *primInfo = GetPrimInfo(usdPath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetVolumeFieldDescriptors(primInfo->usdPrim, usdPath, _time);
+    }
+
+    return HdVolumeFieldDescriptorVector();
 }
 
 VtValue

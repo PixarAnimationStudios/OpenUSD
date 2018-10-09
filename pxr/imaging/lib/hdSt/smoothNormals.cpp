@@ -49,9 +49,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdSt_SmoothNormalsComputationGPU::HdSt_SmoothNormalsComputationGPU(
     Hd_VertexAdjacency const *adjacency,
     TfToken const &srcName, TfToken const &dstName,
-    HdType srcDataType, HdType dstDataType)
+    HdType srcDataType, bool packed)
     : _adjacency(adjacency), _srcName(srcName), _dstName(dstName)
-    , _srcDataType(srcDataType), _dstDataType(dstDataType)
+    , _srcDataType(srcDataType)
 {
     if (srcDataType != HdTypeFloatVec3 && srcDataType != HdTypeDoubleVec3) {
         TF_CODING_ERROR(
@@ -59,13 +59,7 @@ HdSt_SmoothNormalsComputationGPU::HdSt_SmoothNormalsComputationGPU(
             TfEnum::GetName(srcDataType).c_str());
         _srcDataType = HdTypeInvalid;
     }
-    if (dstDataType != HdTypeFloatVec3 && dstDataType != HdTypeDoubleVec3 &&
-        dstDataType != HdTypeInt32_2_10_10_10_REV) {
-        TF_CODING_ERROR(
-            "Unsupported normals type %s for computing smooth normals",
-            TfEnum::GetName(dstDataType).c_str());
-        _dstDataType = HdTypeInvalid;
-    }
+    _dstDataType = packed ? HdTypeInt32_2_10_10_10_REV : _srcDataType;
 }
 
 void
@@ -78,7 +72,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     if (!glDispatchCompute)
         return;
-    if (_srcDataType == HdTypeInvalid || _dstDataType == HdTypeInvalid)
+    if (_srcDataType == HdTypeInvalid)
         return;
 
     TF_VERIFY(_adjacency);
@@ -94,15 +88,11 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     if (_srcDataType == HdTypeFloatVec3) {
         if (_dstDataType == HdTypeFloatVec3) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToFloat;
-        } else if (_dstDataType == HdTypeDoubleVec3) {
-            shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToDouble;
         } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToPacked;
         }
     } else if (_srcDataType == HdTypeDoubleVec3) {
-        if (_dstDataType == HdTypeFloatVec3) {
-            shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToFloat;
-        } else if (_dstDataType == HdTypeDoubleVec3) {
+        if (_dstDataType == HdTypeDoubleVec3) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToDouble;
         } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToPacked;

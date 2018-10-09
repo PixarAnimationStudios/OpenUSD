@@ -54,7 +54,7 @@ public:
     My_TestGLDrawing() {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
-        _reprName = HdTokens->hull;
+        _reprName = HdReprTokens->hull;
         _refineLevel = 0;
     }
 
@@ -125,7 +125,7 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
                            VtValue(HdRprimCollection(HdTokens->geometry,
-                                   _reprName)));
+                                   HdReprSelector(_reprName))));
 
     // prepare scene
     // To ensure that the non-aggregated element index returned via picking, 
@@ -259,7 +259,7 @@ My_TestGLDrawing::OffscreenTest()
     SdfPath primId;
     int instanceIndex = -1;
     int elementIndex = -1;
-    bool refined = (_reprName == HdTokens->refined);
+    bool refined = (_reprName == HdReprTokens->refined);
 
     primId = PickScene(175, 90, &instanceIndex, &elementIndex);
     TF_VERIFY(primId == SdfPath("/cube1") &&

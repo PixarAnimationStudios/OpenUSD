@@ -94,30 +94,30 @@ Hd_TestDriver::Hd_TestDriver()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
+ , _reprSelector()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(_renderDelegate.CreateRenderPassState())
 {
-    TfToken reprName = HdTokens->hull;
+    HdReprSelector reprSelector = HdReprSelector(HdReprTokens->hull);
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        reprName = HdTokens->smoothHull;
+        reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     }
-    _Init(reprName);
+    _Init(reprSelector);
 }
 
-Hd_TestDriver::Hd_TestDriver(TfToken const &reprName)
+Hd_TestDriver::Hd_TestDriver(HdReprSelector const &reprSelector)
  : _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
+ , _reprSelector()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(_renderDelegate.CreateRenderPassState())
 {
-    _Init(reprName);
+    _Init(reprSelector);
 }
 
 Hd_TestDriver::~Hd_TestDriver()
@@ -127,7 +127,7 @@ Hd_TestDriver::~Hd_TestDriver()
 }
 
 void
-Hd_TestDriver::_Init(TfToken const &reprName)
+Hd_TestDriver::_Init(HdReprSelector const &reprSelector)
 {
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
@@ -135,7 +135,7 @@ Hd_TestDriver::_Init(TfToken const &reprName)
     _sceneDelegate = new HdUnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
-    _reprName = reprName;
+    _reprSelector = reprSelector;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
     viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(0.0, 1000.0, 0.0));
@@ -193,7 +193,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
             
             HdRprimCollection col = HdRprimCollection(
                                      HdTokens->geometry,
-                                     _reprName);
+                                     _reprSelector);
             col.SetRenderTags(renderTags);
             _geomAndGuidePass = HdRenderPassSharedPtr(
                 new Hd_UnitTestNullRenderPass(&_sceneDelegate->GetRenderIndex(), col));
@@ -206,7 +206,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
 
             HdRprimCollection col = HdRprimCollection(
                                         HdTokens->geometry,
-                                        _reprName);
+                                        _reprSelector);
             col.SetRenderTags(renderTags);
             _geomPass = HdRenderPassSharedPtr(
                 new Hd_UnitTestNullRenderPass(&_sceneDelegate->GetRenderIndex(), col));
@@ -216,9 +216,9 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
 }
 
 void
-Hd_TestDriver::SetRepr(TfToken const &reprName)
+Hd_TestDriver::SetRepr(HdReprSelector const &reprSelector)
 {
-    _reprName = reprName;
+    _reprSelector = reprSelector;
 
     if (_geomAndGuidePass) {
         TfTokenVector renderTags;
@@ -227,7 +227,7 @@ Hd_TestDriver::SetRepr(TfToken const &reprName)
         
         HdRprimCollection col = HdRprimCollection(
                                  HdTokens->geometry,
-                                 _reprName);
+                                 _reprSelector);
         col.SetRenderTags(renderTags);
         _geomAndGuidePass->SetRprimCollection(col);
     }
@@ -237,7 +237,7 @@ Hd_TestDriver::SetRepr(TfToken const &reprName)
         
         HdRprimCollection col = HdRprimCollection(
                                  HdTokens->geometry,
-                                 _reprName);
+                                 _reprSelector);
         col.SetRenderTags(renderTags);
         _geomPass->SetRprimCollection(col);
     }

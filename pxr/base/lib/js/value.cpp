@@ -29,7 +29,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/noncopyable.hpp>
 #include <boost/variant.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,7 +49,7 @@ struct Js_Null
 /// \struct JsValue::_Holder
 /// Private holder class used to abstract away how a value is stored
 /// internally in JsValue objects.
-struct JsValue::_Holder : private boost::noncopyable
+struct JsValue::_Holder
 {
     // The order these types are defined in the variant is important. See the
     // comments in the implementation of IsUInt64 for details.
@@ -86,6 +85,10 @@ struct JsValue::_Holder : private boost::noncopyable
         : value(value), type(JsValue::IntType) { }
     _Holder(double value)
         : value(value), type(JsValue::RealType) { }
+
+    // _Holder is not copyable
+    _Holder(const _Holder&) = delete;
+    _Holder& operator=(const _Holder&) = delete;
 
     Variant value;
     JsValue::Type type;

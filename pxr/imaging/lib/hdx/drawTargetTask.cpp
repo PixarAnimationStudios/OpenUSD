@@ -39,6 +39,41 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static
+HdCompareFunction
+HdxDrawTargetTask_GetResolvedDepthFunc(HdCompareFunction depthFunc,
+                                       HdDepthPriority  priority)
+{
+    static const HdCompareFunction
+        ResolvedDepthFunc[HdDepthPriorityCount][HdCmpFuncLast] =
+    {
+        // HdDepthPriorityNearest
+        {
+            HdCmpFuncNever,     // HdCmpFuncNever
+            HdCmpFuncLess,      // HdCmpFuncLess
+            HdCmpFuncEqual,     // HdCmpFuncEqual
+            HdCmpFuncLEqual,    // HdCmpFuncLEqual
+            HdCmpFuncGreater,   // HdCmpFuncGreater
+            HdCmpFuncNotEqual,  // HdCmpFuncNotEqual
+            HdCmpFuncGEqual,    // HdCmpFuncGEqual
+            HdCmpFuncAlways,    // HdCmpFuncAlways
+        },
+
+        // HdDepthPriorityFarthest
+        {
+            HdCmpFuncNever,     // HdCmpFuncNever
+            HdCmpFuncGEqual,    // HdCmpFuncLess
+            HdCmpFuncEqual,     // HdCmpFuncEqual
+            HdCmpFuncGreater,   // HdCmpFuncLEqual
+            HdCmpFuncLEqual,    // HdCmpFuncGreater
+            HdCmpFuncNotEqual,  // HdCmpFuncNotEqual
+            HdCmpFuncLess,      // HdCmpFuncGEqual
+            HdCmpFuncAlways,    // HdCmpFuncAlways
+        },
+    };
+
+    return ResolvedDepthFunc[priority][depthFunc];
+}
 
 HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
@@ -186,8 +221,9 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         HdxDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].get();
         HdStRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
         const HdStDrawTarget *drawTarget = renderPassInfo.target;
-
-        const SdfPath &cameraId = drawTarget->GetRenderPassState()->GetCamera();
+        const HdStDrawTargetRenderPassState *drawTargetRenderPassState =
+                                               drawTarget->GetRenderPassState();
+        const SdfPath &cameraId = drawTargetRenderPassState->GetCamera();
 
         // XXX: Need to detect when camera changes and only update if
         // needed
@@ -223,6 +259,11 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 
         GfVec4d viewport(0, 0, resolution[0], resolution[1]);
 
+        HdCompareFunction depthFunc =
+            HdxDrawTargetTask_GetResolvedDepthFunc(
+                _depthFunc,
+                drawTargetRenderPassState->GetDepthPriority());
+
         // Update Raster States
         renderPassState->SetOverrideColor(_overrideColor);
         renderPassState->SetWireframeColor(_wireframeColor);
@@ -231,6 +272,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetTessLevel(_tessLevel);
         renderPassState->SetDrawingRange(_drawingRange);
         renderPassState->SetCullStyle(_cullStyle);
+        renderPassState->SetDepthFunc(depthFunc);
 
         HdxSimpleLightingShaderSharedPtr &simpleLightingShader
             = _renderPassesInfo[renderPassIdx].simpleLightingShader;
@@ -277,9 +319,6 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
     }
-    // XXX: Move conversion to sync once header is made private
-    // to the library
-    glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
 
     // XXX: Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it

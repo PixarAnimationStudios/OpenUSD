@@ -24,6 +24,8 @@
 #ifndef __GUSD_GT_POINTINSTANCER_H__
 #define __GUSD_GT_POINTINSTANCER_H__
 
+#include "gusd/api.h"
+
 #include <pxr/pxr.h>
 
 #include <GT/GT_PrimPointMesh.h>
@@ -34,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// that it is treated differently by the GusdRefiner and has
 /// a different GusdPrimWrapper.
 
-class GusdGT_PointInstancer : public GT_PrimPointMesh
+class GUSD_API GusdGT_PointInstancer : public GT_PrimPointMesh
 {
 public:
     GusdGT_PointInstancer() {}

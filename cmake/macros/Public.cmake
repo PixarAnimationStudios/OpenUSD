@@ -147,8 +147,8 @@ function(pxr_cpp_bin BIN_NAME)
 
     target_include_directories(${BIN_NAME}
         PRIVATE 
-        ${cb_INCLUDE_DIRS}
         ${PRIVATE_INC_DIR}
+        ${cb_INCLUDE_DIRS}
     )
 
     _pxr_init_rpath(rpath "${installDir}")

@@ -153,6 +153,7 @@ private:
 
     // Map of cached values.
     struct _Entry {
+        _Entry() = default;
         _Entry(const UsdGeomXformable::XformQuery & query_,
                const GfMatrix4d& ctm_,
                bool ctmIsValid_)

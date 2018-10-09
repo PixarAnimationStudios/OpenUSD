@@ -38,13 +38,23 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static void
 _SetExtraDiscoveryPlugins(NdrRegistry& self, const list& pylist)
 {
-    std::vector<TfWeakPtr<NdrDiscoveryPlugin>> result;
+    NdrDiscoveryPluginRefPtrVector plugins;
+    std::vector<TfType> types;
 
     for (int i = 0; i < len(pylist); ++i) {
-        result.push_back(extract<TfWeakPtr<NdrDiscoveryPlugin>>(pylist[i]));
+        extract<NdrDiscoveryPluginPtr> plugin(pylist[i]);
+        if (plugin.check()) {
+            NdrDiscoveryPluginPtr pluginPtr = plugin;
+            if (pluginPtr) {
+                plugins.push_back(pluginPtr);
+            }
+        } else {
+            types.push_back(extract<TfType>(pylist[i]));
+        }
     }
 
-    self.SetExtraDiscoveryPlugins(result);
+    self.SetExtraDiscoveryPlugins(std::move(plugins));
+    self.SetExtraDiscoveryPlugins(types);
 }
 
 struct ConstNodePtrToPython {

@@ -39,6 +39,7 @@ using ShaderMetadataHelpers::TokenVecVal;
 
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_NODE_METADATA_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeContext, SDR_NODE_CONTEXT_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrNodeRole, SDR_NODE_ROLE_TOKENS);
 
 SdrShaderNode::SdrShaderNode(
     const NdrIdentifier& identifier,
@@ -125,6 +126,34 @@ SdrShaderNode::GetShaderOutput(const TfToken& outputName) const
     );
 }
 
+NdrTokenVec
+SdrShaderNode::GetAssetIdentifierInputNames() const
+{
+    NdrTokenVec result;
+    for (const auto &inputName : GetInputNames()) {
+        if (auto input = GetShaderInput(inputName)) {
+            if (input->IsAssetIdentifier()) {
+                result.push_back(input->GetName());
+            }
+        }
+    }
+    return result;
+}
+
+SdrShaderPropertyConstPtr 
+SdrShaderNode::GetDefaultInput() const
+{
+    std::vector<SdrShaderPropertyConstPtr> result;
+    for (const auto &inputName : GetInputNames()) {
+        if (auto input = GetShaderInput(inputName)) {
+            if (input->IsDefaultInput()) {
+                return input;
+            }
+        }
+    }
+    return nullptr;
+}
+
 const std::string&
 SdrShaderNode::GetHelp() const
 {
@@ -135,6 +164,12 @@ const std::string&
 SdrShaderNode::GetImplementationName() const
 {
     return StringVal(SdrNodeMetadata->ImplementationName, _metadata, GetName());
+}
+
+const std::string&
+SdrShaderNode::GetRole() const
+{
+    return StringVal(SdrNodeMetadata->Role, _metadata, GetName());
 }
 
 NdrTokenVec

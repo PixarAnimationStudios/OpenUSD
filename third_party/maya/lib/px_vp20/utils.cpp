@@ -37,6 +37,7 @@
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
+#include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDrawContext.h>
@@ -692,7 +693,6 @@ px_vp20Utils::GetLightingContextFromDrawContext(
             }
         }
 
-        light.SetTransform(lightTransform);
         light.SetAmbient(lightAmbient);
         light.SetDiffuse(lightDiffuse);
         light.SetSpecular(lightSpecular);
@@ -726,6 +726,23 @@ px_vp20Utils::GetLightingContextFromDrawContext(
     lightingContext->SetSceneAmbient(blackColor);
 
     return lightingContext;
+}
+
+/* static */
+bool
+px_vp20Utils::GetViewFromDrawContext(
+        const MHWRender::MDrawContext& context,
+        M3dView& view)
+{
+    MString modelPanel;
+    if (context.renderingDestination(modelPanel) ==
+            MHWRender::MFrameContext::k3dViewport) {
+        if (M3dView::getM3dViewFromModelPanel(modelPanel, view)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /* static */

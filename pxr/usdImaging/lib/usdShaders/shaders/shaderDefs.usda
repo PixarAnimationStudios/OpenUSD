@@ -1,0 +1,366 @@
+#usda 1.0
+
+def Shader "UsdPreviewSurface" (
+    doc = "Preview surface specification"
+
+    sdrMetadata = {
+       token role = "surface"
+    }
+)
+{
+    uniform token info:id = "UsdPreviewSurface"
+    uniform token info:implementationSource = "sourceAsset"
+
+    # XXX: This doesn't resolve if it's defined as a search path.
+    # Might require special resolver configuration, to include the resources
+    # directory.
+    uniform asset info:glslfx:sourceAsset = @./previewSurface.glslfx@
+
+    # Outputs
+    token outputs:surface
+    token outputs:displacement
+ 
+    # Inputs
+    color3f inputs:diffuseColor = (0.18, 0.18, 0.18) (
+        doc = """Parameter used as diffuseColor when using the specular
+                 workflow, when using metallic workflow this is interpreted
+                 as albedo."""
+    )
+
+    color3f inputs:emissiveColor = (0.0, 0.0, 0.0) (
+        doc = """Emissive component."""
+    )
+
+    int inputs:useSpecularWorkflow = 0 (
+        connectability = "interfaceOnly"
+        doc = """This node can fundamentally operate in two modes :
+            Specular workflow where you provide a texture/value to the
+            "specularColor" input. Or, Metallic workflow where you
+            provide a texture/value to the "metallic" input."""
+    )
+ 
+    color3f inputs:specularColor = (0.0, 0.0, 0.0) (
+        doc = """Used only in the specular workflow.
+             Specular color to be used.
+             This is the color at 0 incidence. Edge color is assumed white.
+             Transition between the two colors according to Schlick fresnel 
+             approximation."""
+    )
+ 
+    float inputs:metallic = 0.0 (
+        doc = """Used only in the metalness workflow.
+            1 for metallic surfaces and 0 for non-metallic.
+            - If metallic is 1, then F0 (reflectivity at 0 degree incidence)
+            will be derived from ior ( (1-ior)/(1+ior) )^2, then multiplied by Albedo;
+            while edge F90 reflectivity will simply be the Albedo.
+            (As an option, you can put ior to 0 such that F0 comes equal to F90 and thus the Albedo).
+            - If metallic is 0, then Albedo is ignored; F0 is derived from ior and F90 is white.
+            In between, we interpolate."""
+    )
+ 
+    float inputs:roughness = 0.5 (
+        doc = """Roughness for the specular lobe. The value ranges from 0 to 1, 
+        which goes from a perfectly specular surface at 0.0 to maximum roughness 
+        of the specular lobe. This value is usually squared before use with a 
+        GGX or Beckmann lobe."""
+    )
+ 
+    float inputs:clearcoat = 0.0 (
+        doc = """Second specular lobe amount. The color is white."""
+    )
+ 
+    float inputs:clearcoatRoughness = 0.01 (
+        doc = """Roughness for the second specular lobe."""
+    )
+ 
+    float inputs:opacity = 1.0 (
+        doc = """Opacity of the material."""
+    )
+
+    float inputs:ior = 1.5 (
+        doc = """Index of Refraction to be used for translucent objects."""
+    )
+
+    normal3f inputs:normal = (0.0, 0.0, 1.0) (
+        doc = """Expects normal in tangent space [(-1,-1,-1), (1,1,1)]
+            This means your texture reader implementation should provide
+            data to this node that is properly scaled and ready
+            to be consumed as a tangent space normal."""
+    )
+
+    float inputs:displacement = 0.0 (
+        doc = """Displacement in the direction of the normal. """
+    )
+
+    float inputs:occlusion = 1.0 (
+        doc = """Occlusion signal. This provides extra information about the 
+        occlusion of different parts of the mesh that this material is applied 
+        to.  Occlusion only makes sense as a surface-varying signal, and 
+        pathtracers will likely choose to ignore it.  An occlusion value of 0.0 
+        means the surface point is fully occluded by other parts of the surface, 
+        and a value of 1.0 means the surface point is completely unoccluded by 
+        other parts of the surface. """
+    )
+}
+
+def Shader "UsdUVTexture" (
+    doc = """Texture Node Specification represents a node that can be used to 
+    read UV textures, including tiled textures such as Mari UDIM's.
+    
+    Reads from a texture file and outputs one or more values. If the texture has 
+    8 bits per component, [0, 255] values will first be converted to floating 
+    point in the range [0, 1] and then any transformations (bias, scale) 
+    indicated  are applied. Otherwise any indicated transformation (bias, 
+    scale) is just applied. If a single-channel texture is fed into a 
+    UsdUVTexture, the r, g, and b  components of the rgb and rgba outputs will
+    repeat the channel's value, while both the single 'a' output and the 'a' 
+    component of the rgba outputs will be set to 1.0.  If a two-channel texture 
+    is fed into a UsdUVTexture, the r, g, and b components of the rgb and rgba
+    outputs will repeat the first channel's value, while both the single "a" 
+    output and the "a" component of the rgba outputs will be set to the second
+    channel's value.
+"""
+    sdrMetadata = {
+        token role = "texture"
+    }
+)
+{
+    uniform token info:id = "UsdUVTexture"
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @./uvTexture.glslfx@
+
+    asset inputs:file = @@ (
+        connectability = "interfaceOnly"
+        doc = """Path to the texture this node uses."""
+    )
+
+    float2 inputs:st (
+        doc = """This input provides the texture coordinates. It is usually 
+                connected to a (primvar) node that will provide the texture 
+                coords."""
+    )
+
+    token inputs:wrapS = "useMetadata" (
+        connectability = "interfaceOnly"
+        doc = """<options> black, clamp, repeat, mirror, useMetadata."""
+    )
+
+    token inputs:wrapT = "useMetadata" (
+        connectability = "interfaceOnly"
+        doc = """<options> black, clamp, repeat, mirror, useMetadata."""
+    )
+
+    float4 inputs:fallback = (0.0, 0.0, 0.0, 1.0) (
+        doc = """Fallback value to be used when no texture is connected."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    float4 inputs:scale = (1.0, 1.0, 1.0, 1.0) (
+        doc = """Scale to be applied to all components of the texture. 
+                 value * scale + bias"""
+    )
+
+    float4 inputs:bias = (0.0, 0.0, 0.0, 0.0) (
+        doc = """Bias to be applied to all components of the texture. 
+                 value * scale + bias)"""
+    )
+
+    float outputs:r ( 
+        doc = "Outputs the red channel."
+    )
+
+    float outputs:g (
+        doc = "Outputs the green channel."
+    )
+
+    float outputs:b (
+        doc = "Outputs the blue channnel."
+    )
+
+    float3 outputs:rgb (
+        doc = "Outputs the red, green and blue channels."
+    )
+
+    float4 outputs:rgba (
+        doc = "Outputs all 4 channels (red, green, blue and alpha)."
+    )
+}
+
+class "UsdPrimvarReader" (
+    sdrMetadata = {
+        token role = "primvar"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @./primvarReader.glslfx@
+    token inputs:varname  (
+        connectability = "interfaceOnly"
+        doc = """Name of the primvar to be fetched from the geometry."""
+        sdrMetadata = {
+            token primvarProperty = "1"
+        }
+    )    
+}
+
+def Shader "UsdPrimvarReader_float" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_float"
+
+    float inputs:fallback = 0.0 (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    float outputs:result
+}
+
+def Shader "UsdPrimvarReader_float2" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_float2"
+
+    float2 inputs:fallback = (0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    float2 outputs:result
+}
+
+def Shader "UsdPrimvarReader_float3" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_float3"
+
+    float3 inputs:fallback = (0.0, 0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    float3 outputs:result
+}
+
+def Shader "UsdPrimvarReader_float4" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_float4"
+
+    float4 inputs:fallback = (0.0, 0.0, 0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    float4 outputs:result
+}
+
+def Shader "UsdPrimvarReader_int" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_int"
+
+    int inputs:fallback = 0 (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    int outputs:result
+}
+
+def Shader "UsdPrimvarReader_string" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_string"
+
+    string inputs:fallback = "" (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    string outputs:result
+}
+
+def Shader "UsdPrimvarReader_normal" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_normal"
+
+    normal3f inputs:fallback = (0.0, 0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    normal3f outputs:result
+}
+
+def Shader "UsdPrimvarReader_point" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_point"
+
+    point3f inputs:fallback = (0.0, 0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    point3f outputs:result
+}
+
+def Shader "UsdPrimvarReader_vector" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_vector"
+
+    vector3f inputs:fallback = (0.0, 0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    vector3f outputs:result
+}
+
+def Shader "UsdPrimvarReader_matrix" (
+    inherits = </UsdPrimvarReader>
+)
+{
+    uniform token info:id = "UsdPrimvarReader_matrix"
+
+    matrix4d inputs:fallback = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    matrix4d outputs:result
+}

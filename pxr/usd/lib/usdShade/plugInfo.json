@@ -37,9 +37,10 @@
                         "displayGroup": "Rendering", 
                         "type": "token"
                     }, 
-                    "shaderMetadata": {
+                    "sdrMetadata": {
                         "appliesTo": [
-                            "prims"
+                            "prims", 
+                            "attributes"
                         ], 
                         "displayGroup": "Shading", 
                         "type": "dictionary"
@@ -90,6 +91,12 @@
                         "bases": [
                             "UsdTyped"
                         ]
+                    }, 
+                    "UsdShadeShaderDefParserPlugin": {
+                        "bases": [
+                            "NdrParserPlugin"
+                        ], 
+                        "displayName": "USD-based shader definition parser plugin"
                     }
                 }
             }, 

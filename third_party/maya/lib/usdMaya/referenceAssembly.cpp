@@ -101,8 +101,6 @@ MObject UsdMayaReferenceAssembly::primPathAttr;
 MObject UsdMayaReferenceAssembly::excludePrimPathsAttr;
 MObject UsdMayaReferenceAssembly::timeAttr;
 MObject UsdMayaReferenceAssembly::complexityAttr;
-MObject UsdMayaReferenceAssembly::tintAttr;
-MObject UsdMayaReferenceAssembly::tintColorAttr;
 MObject UsdMayaReferenceAssembly::kindAttr;
 MObject UsdMayaReferenceAssembly::initialRepAttr;
 MObject UsdMayaReferenceAssembly::repNamespaceAttr;
@@ -160,27 +158,6 @@ UsdMayaReferenceAssembly::initialize()
     numericAttrFn.setMax(8);
     numericAttrFn.setStorable(false); // not written to the file
     status = addAttribute(complexityAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-
-    tintAttr = numericAttrFn.create(
-        "tint",
-        "tn",
-        MFnNumericData::kBoolean,
-        0,
-        &status);
-    numericAttrFn.setInternal(true);
-    numericAttrFn.setAffectsAppearance(true);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-    status = addAttribute(tintAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-
-    tintColorAttr = numericAttrFn.createColor(
-        "tintColor",
-        "tcol",
-        &status);
-    numericAttrFn.setAffectsAppearance(true);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-    status = addAttribute(tintColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MFnStringData defaultKind;
@@ -1214,12 +1191,6 @@ bool UsdMayaRepresentationProxyBase::activate()
         assemblyFn.findPlug(UsdMayaReferenceAssembly::complexityAttr, true),
         shapeFn.findPlug(UsdMayaProxyShape::complexityAttr, true));
     dgMod.connect(
-        assemblyFn.findPlug(UsdMayaReferenceAssembly::tintAttr, true),
-        shapeFn.findPlug(UsdMayaProxyShape::tintAttr, true));
-    dgMod.connect(
-        assemblyFn.findPlug(UsdMayaReferenceAssembly::tintColorAttr, true),
-        shapeFn.findPlug(UsdMayaProxyShape::tintColorAttr, true));
-    dgMod.connect(
         assemblyFn.findPlug(UsdMayaReferenceAssembly::outStageDataAttr, true),
         shapeFn.findPlug(UsdMayaProxyShape::inStageDataAttr, true));
 
@@ -1503,8 +1474,8 @@ bool UsdMayaRepresentationHierBase::activate()
     bool shouldImportWithProxies = _ShouldImportWithProxies();
     if (shouldImportWithProxies) {
         // In this mode, sub-assembly nodes we create should come in unloaded.
-        userArgs[PxrUsdImportJobArgsTokens->assemblyRep] =
-                PxrUsdImportJobArgsTokens->Unloaded.GetString();
+        userArgs[UsdMayaJobImportArgsTokens->assemblyRep] =
+                UsdMayaJobImportArgsTokens->Unloaded.GetString();
     }
 
     UsdMayaJobImportArgs importArgs =

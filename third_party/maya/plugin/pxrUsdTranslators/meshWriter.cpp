@@ -94,21 +94,7 @@ void _exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj) {
     primVar.GetAttr().Set(VtValue(points));
 }
 
-template <typename T>
-void _prependValue(UsdAttribute& attr, const UsdTimeCode& usdTime, const T& value) {
-    VtArray<T> arr;
-    if (attr.Get(&arr, usdTime)) {
-        const auto arrSize = arr.size();
-        arr.resize(arrSize + 1);
-        for (auto i = decltype(arrSize){arrSize}; i > 0; --i) {
-            arr[i] = arr[i - 1];
-        }
-        arr[0] = value;
-        attr.Set(arr, usdTime);
-    }
-}
-
-}
+} // anonymous namespace
 
 const GfVec2f PxrUsdTranslators_MeshWriter::_DefaultUV = GfVec2f(0.f);
 
@@ -141,95 +127,11 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     TF_AXIOM(_usdPrim);
 }
 
-void PxrUsdTranslators_MeshWriter::_prependDefaultValue(
-        UsdAttribute& attr,
-        const UsdTimeCode& usdTime) {
-    const auto typeName = attr.GetTypeName();
-    if (typeName == SdfValueTypeNames->FloatArray) {
-        _prependValue(
-                attr,
-                usdTime,
-                attr.GetName() == UsdGeomTokens->primvarsDisplayOpacity
-                    ? PxrUsdTranslators_MeshWriter::_ShaderDefaultAlpha
-                    : PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha);
-    } else if (typeName == (UsdMayaWriteUtil::WriteUVAsFloat2()
-                            ? SdfValueTypeNames->Float2Array
-                            : SdfValueTypeNames->TexCoord2fArray)) {
-        _prependValue(
-                attr,
-                usdTime,
-                PxrUsdTranslators_MeshWriter::_DefaultUV);
-    } else if (typeName == SdfValueTypeNames->Color3fArray) {
-        _prependValue(
-                attr,
-                usdTime,
-                attr.GetName() == UsdGeomTokens->primvarsDisplayColor
-                    ? PxrUsdTranslators_MeshWriter::_ShaderDefaultRGB
-                    : PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB);
-    } else if (typeName == SdfValueTypeNames->Color4fArray) {
-        _prependValue(
-                attr,
-                usdTime,
-                PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGBA);
-    }
-};
-
 // virtual
-void PxrUsdTranslators_MeshWriter::PostExport()
+void
+PxrUsdTranslators_MeshWriter::PostExport()
 {
-    auto shiftPrimvar = [](const UsdGeomPrimvar& primvar) {
-        if (!primvar) {
-            return;
-        }
-        auto shiftIndices = [](UsdAttribute& attr, const UsdTimeCode& usdTime) {
-            VtArray<int> indices;
-            if (attr.Get(&indices, usdTime)) {
-                for (auto& id: indices) {
-                    id += 1;
-                }
-                attr.Set(indices, usdTime);
-            }
-        };
-
-        const auto unauthoredValueIndex = primvar.GetUnauthoredValuesIndex();
-        if (unauthoredValueIndex == -1) {
-            return;
-        }
-
-        // Either 0 or -1.
-        TF_AXIOM(unauthoredValueIndex == 0);
-
-        // At least one of the samples contain an unassigned value,
-        // we have to increase the indices by one, so unassigned values get to be 0
-        // and the rest shifts by one.
-        if (primvar.IsIndexed()) {
-            auto indicesAttr = primvar.GetIndicesAttr();
-            shiftIndices(indicesAttr, UsdTimeCode::Default());
-
-            std::vector<double> timeSamples;
-            if (indicesAttr.GetTimeSamples(&timeSamples)) {
-                for (auto timeSample: timeSamples) {
-                    shiftIndices(indicesAttr, timeSample);
-                }
-            }
-        }
-
-        // Also we have to prepend the default value to all the time samples.
-        auto attr = primvar.GetAttr();
-        _prependDefaultValue(attr, UsdTimeCode::Default());
-        std::vector<double> timeSamples;
-        if (attr.GetTimeSamples(&timeSamples)) {
-            for (auto timeSample: timeSamples) {
-                _prependDefaultValue(attr, timeSample);
-            }
-        }
-    };
-
-    UsdGeomMesh primSchema(GetUsdPrim());
-
-    for (auto& primvar: primSchema.GetPrimvars()) {
-        shiftPrimvar(primvar);
-    }
+    _CleanupPrimvars();
 }
 
 //virtual 
@@ -284,13 +186,10 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
     }
 
     // Return if usdTime does not match if shape is animated.
-    // XXX In theory you could have an animated input mesh before the
-    // skinCluster is applied but we don't support that right now.
-    // Note that _HasAnimCurves() as computed by UsdMayaTransformWriter is
-    // whether the finalMesh is animated.
-    bool isAnimated = _skelInputMesh.isNull() ? _HasAnimCurves() : false;
-    if (usdTime.IsDefault() == isAnimated) {
-        // skip shape as the usdTime does not match if shape isAnimated value
+    if (usdTime.IsDefault() == _IsMeshAnimated()) {
+        // If the shape is animated (based on the check above), only export time
+        // samples. If the shape is non-animated, only export at the default
+        // time.
         return true; 
     }
 
@@ -405,10 +304,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
             continue;
         }
 
-        int unassignedValueIndex = -1;
-        UsdMayaUtil::SetUnassignedValueIndex(&assignmentIndices,
-                                                &unassignedValueIndex);
-
         // XXX:bug 118447
         // We should be able to configure the UV map name that triggers this
         // behavior, and the name to which it exports.
@@ -423,8 +318,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                          usdTime,
                          uvValues,
                          interpolation,
-                         assignmentIndices,
-                         unassignedValueIndex);
+                         assignmentIndices);
     }
 
     // == Gather ColorSets
@@ -484,7 +378,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
         VtArray<float> AlphaData;
         TfToken interpolation;
         VtArray<int> assignmentIndices;
-        int unassignedValueIndex = -1;
         MFnMesh::MColorRepresentation colorSetRep;
         bool clamped = false;
 
@@ -506,10 +399,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
             continue;
         }
 
-        UsdMayaUtil::SetUnassignedValueIndex(
-            &assignmentIndices,
-            &unassignedValueIndex);
-
         if (isDisplayColor) {
             // We tag the resulting displayColor/displayOpacity primvar as
             // authored to make sure we reconstruct the color set on import.
@@ -520,7 +409,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                                 AlphaData,
                                 interpolation,
                                 assignmentIndices,
-                                unassignedValueIndex,
                                 clamped,
                                 true);
         } else {
@@ -544,7 +432,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                                     AlphaData,
                                     interpolation,
                                     assignmentIndices,
-                                    unassignedValueIndex,
                                     clamped);
             } else if (colorSetRep == MFnMesh::kRGB) {
                 _createRGBPrimVar(primSchema,
@@ -553,7 +440,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                                   RGBData,
                                   interpolation,
                                   assignmentIndices,
-                                  unassignedValueIndex,
                                   clamped);
             } else if (colorSetRep == MFnMesh::kRGBA) {
                 _createRGBAPrimVar(primSchema,
@@ -563,7 +449,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                                    AlphaData,
                                    interpolation,
                                    assignmentIndices,
-                                   unassignedValueIndex,
                                    clamped);
             }
         }
@@ -576,11 +461,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
         // Using the shader default values (an alpha of zero, in particular)
         // results in Gprims rendering the same way in usdview as they do in
         // Maya (i.e. unassigned components are invisible).
-        int unassignedValueIndex = -1;
-        UsdMayaUtil::SetUnassignedValueIndex(
-                &shadersAssignmentIndices,
-                &unassignedValueIndex);
-
+        //
         // Since these colors come from the shaders and not a colorset, we are
         // not adding the clamp attribute as custom data. We also don't need to
         // reconstruct a color set from them on import since they originated
@@ -592,7 +473,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, Us
                             shadersAlphaData,
                             shadersInterpolation,
                             shadersAssignmentIndices,
-                            unassignedValueIndex,
                             false,
                             false);
     }
@@ -632,6 +512,14 @@ bool
 PxrUsdTranslators_MeshWriter::ExportsGprims() const
 {
     return true;
+}
+
+bool
+PxrUsdTranslators_MeshWriter::_IsMeshAnimated() const
+{
+    // Note that _HasAnimCurves() as computed by UsdMayaTransformWriter is
+    // whether the finalMesh is animated.
+    return _skelInputMesh.isNull() ? _HasAnimCurves() : false;
 }
 
 

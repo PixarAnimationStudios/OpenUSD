@@ -466,7 +466,7 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
         // Create a vector of _AnimChannels based on the Maya transformation
         // ordering
         _PushTransformStack(transFn, primSchema,
-                !_GetExportArgs().timeInterval.IsEmpty());
+                !_GetExportArgs().timeSamples.empty());
     }
 }
 

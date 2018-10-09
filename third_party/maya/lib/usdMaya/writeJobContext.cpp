@@ -27,6 +27,7 @@
 #include "usdMaya/skelBindingsProcessor.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/transformWriter.h"
+#include "usdMaya/util.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -314,6 +315,10 @@ UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
     // NOTE: Already skipping all intermediate objects
     // skip all intermediate nodes (and their children)
     if (UsdMayaUtil::isIntermediate(ob)) {
+        return false;
+    }
+
+    if (!UsdMayaUtil::isWritable(ob)) {
         return false;
     }
 

@@ -122,6 +122,12 @@ UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
                       HdInterpolationVertex,
                       HdPrimvarRoleTokens->point);
     }
+
+    if (_IsRefined(cachePath)) {
+        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
+            valueCache->GetSubdivTags(cachePath);
+        }
+    }
 }
 
 // -------------------------------------------------------------------------- //

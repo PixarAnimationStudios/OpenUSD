@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
-#include "pxr/base/tf/copyOnWritePtr.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/error.h"

@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    baseAsset = @base_a.usd@
+    upAxis = "Y"
+)
+
+def "foo" (
+    assetInfo = {
+        asset meta_a = @./meta_a.usd@
+        asset[] meta_b = [@./meta_b.usd@, @./meta_c.usd@]
+    }
+)
+{
+    asset attr_a = @./attr_a.usd@
+    asset[] attr_b = [@./attr_b.usd@, @./attr_c.usd@]
+
+    def "bar"
+    {
+    }
+}
+

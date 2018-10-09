@@ -37,14 +37,15 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/js/types.h"
 
+#include <functional>
 #include <vector>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class TraceCollection;
+class JsWriter;
 TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventTree);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,6 +63,10 @@ public:
     using CounterMap =
         std::unordered_map<TfToken, double, TfToken::HashFunctor>;
 
+    using MarkerValues = std::vector<std::pair<TraceEvent::TimeStamp, TraceThreadId>>;
+    using MarkerValuesMap =
+        std::unordered_map<TfToken, MarkerValues, TfToken::HashFunctor>;
+
     /// Creates a new TraceEventTree instance from the data in \p collection 
     /// and \p initialCounterValues.
     TRACE_API static TraceEventTreeRefPtr New(
@@ -75,9 +80,10 @@ public:
 
     static TraceEventTreeRefPtr New(
             TraceEventNodeRefPtr root, 
-            CounterValuesMap counters) {
+            CounterValuesMap counters,
+            MarkerValuesMap markers) {
         return TfCreateRefPtr( 
-            new TraceEventTree(root, std::move(counters)));
+            new TraceEventTree(root, std::move(counters), std::move(markers)));
     }
 
     /// Returns the root node of the tree.
@@ -86,12 +92,17 @@ public:
     /// Returns the map of counter values.
     const CounterValuesMap& GetCounters() const { return _counters; }
 
+    /// Returns the map of markers values.
+    const MarkerValuesMap& GetMarkers() const { return _markers; }
+
     /// Return the final value of the counters in the report.
     CounterMap GetFinalCounterValues() const;
 
-    /// Returns a JSON object representing the data in the call tree that 
+    /// Writes a JSON object representing the data in the call tree that 
     /// conforms to the Chrome Trace format.
-    TRACE_API JsObject CreateChromeTraceObject() const;
+    using ExtraFieldFn = std::function<void(JsWriter&)>;
+    TRACE_API void WriteChromeTraceObject(
+        JsWriter& writer, ExtraFieldFn extraFields = ExtraFieldFn()) const;
 
     /// Adds the contexts of \p tree to this tree.
     TRACE_API void Merge(const TraceEventTreeRefPtr& tree);
@@ -104,14 +115,18 @@ private:
         : _root(root) {}
 
     TraceEventTree(  TraceEventNodeRefPtr root, 
-                            CounterValuesMap counters)
+                            CounterValuesMap counters,
+                            MarkerValuesMap markers)
         : _root(root)
-        , _counters(std::move(counters)) {}
+        , _counters(std::move(counters))
+        , _markers(std::move(markers)) {}
 
     // Root of the call tree.
     TraceEventNodeRefPtr _root;
     // Counter data of the trace.
     CounterValuesMap _counters;
+    // Marker data of the trace.
+    MarkerValuesMap _markers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

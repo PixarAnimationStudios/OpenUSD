@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
 
-#include <boost/python.hpp>
 #include <string>
 
 using namespace boost::python;

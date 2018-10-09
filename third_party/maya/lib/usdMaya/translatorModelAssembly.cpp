@@ -337,7 +337,7 @@ UsdMayaTranslatorModelAssembly::Read(
         const TfToken& assemblyRep)
 {
     // This translator does not apply if assemblyRep == "Import".
-    if (assemblyRep == PxrUsdImportJobArgsTokens->Import) {
+    if (assemblyRep == UsdMayaJobImportArgsTokens->Import) {
         return false;
     }
 

@@ -47,7 +47,6 @@ struct PxrMayaHdRenderParams
 
     // Color Params
     //
-    GfVec4f overrideColor = GfVec4f(0.0f);
     GfVec4f wireframeColor = GfVec4f(0.0f);
 
     /// Custom bucketing on top of the regular bucketing based on render params.
@@ -61,7 +60,6 @@ struct PxrMayaHdRenderParams
     size_t Hash() const
     {
         size_t hash = size_t(enableLighting);
-        boost::hash_combine(hash, overrideColor);
         boost::hash_combine(hash, wireframeColor);
         boost::hash_combine(hash, customBucketName);
 
@@ -73,4 +71,4 @@ struct PxrMayaHdRenderParams
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_RENDER_PARAMS_H
+#endif

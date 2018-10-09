@@ -30,6 +30,7 @@
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_Util.h>
 #include <GA/GA_ATIGroupBool.h>
+#include <SYS/SYS_Version.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/gf/vec3h.h>
@@ -1324,9 +1325,14 @@ setCustomAttributesFromGTPrim(
     const GT_AttributeMapHandle attrMapHandle = gtAttrs->getMap();
     for(AttrMapIterator mapIt=attrMapHandle->begin(); !mapIt.atEnd(); ++mapIt) {
 
+#if SYS_VERSION_FULL_INT < 0x11000000
         string name = mapIt.name();
+#else
+        string name = mapIt->first.toStdString();
+#endif
+
 #if (GUSD_VER_CMP_1(>=,15))
-        const int attrIndex = attrMapHandle->get(mapIt.name());
+        const int attrIndex = attrMapHandle->get(name);
 #else
         const int attrIndex = attrMapHandle->getMapIndex(mapIt.thing());
 #endif

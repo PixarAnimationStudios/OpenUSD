@@ -97,10 +97,6 @@ public:
     PXRUSDMAYA_API
     static MObject complexityAttr;
     PXRUSDMAYA_API
-    static MObject tintAttr;
-    PXRUSDMAYA_API
-    static MObject tintColorAttr;
-    PXRUSDMAYA_API
     static MObject kindAttr;
     PXRUSDMAYA_API
     static MObject initialRepAttr;

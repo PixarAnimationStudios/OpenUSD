@@ -34,6 +34,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DECLARE_WEAK_AND_REF_PTRS(_NdrFilesystemDiscoveryPlugin);
+
 /// \class _NdrFilesystemDiscoveryPlugin
 ///
 /// Discovers nodes on the filesystem. The provided search paths are walked to

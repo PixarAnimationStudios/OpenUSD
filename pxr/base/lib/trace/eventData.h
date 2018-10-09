@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class JsValue;
+class JsWriter;
 ////////////////////////////////////////////////////////////////////////////////
 ///
 /// \class TraceEventData
@@ -80,8 +80,8 @@ public:
     /// Returns a pointer to the data or nullptr if the type is not String.
     TRACE_API const std::string* GetString() const;
 
-    /// Returns a JsValue representation of the data.
-    TRACE_API JsValue ToJson() const;
+    /// Writes a json representation of the data.
+    TRACE_API void WriteJson(JsWriter&) const;
 
 private:
     // Type that represents no data was stored in an event.

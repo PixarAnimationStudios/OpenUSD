@@ -19,6 +19,8 @@ pxr_library(usdShade
         materialBindingAPI
         output
         shader
+        shaderDefParser
+        shaderDefUtils
         nodeGraph
         tokens
         utils
@@ -37,6 +39,8 @@ pxr_library(usdShade
         wrapMaterialBindingAPI.cpp
         wrapOutput.cpp
         wrapShader.cpp
+        wrapShaderDefParser.cpp
+        wrapShaderDefUtils.cpp
         wrapNodeGraph.cpp
         wrapTokens.cpp
         wrapUtils.cpp
@@ -63,6 +67,7 @@ pxr_test_scripts(
     testenv/testUsdShadeMaterialSpecializesBaseComposition.py
     testenv/testUsdShadeNodeGraphs.py
     testenv/testUsdShadeShaders.py
+    testenv/testUsdShadeShaderDef.py
 )
 
 pxr_install_test_dir(
@@ -140,6 +145,12 @@ pxr_register_test(testUsdShadeMaterialBindFaceSubset
 pxr_register_test(testUsdShadeShaders
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeShaders"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeShaderDef
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeShaderDef"
     EXPECTED_RETURN_CODE 0
 )
 

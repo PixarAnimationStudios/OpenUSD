@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class TraceEventContainer
 ///
 /// Holds TraceEvent instances. This container only allows appending events at 
-/// the end and only supports forward iteration.
+/// the end and supports both forward and reverse iteration.
 ///
 class TraceEventContainer {
     using InnerStorage = std::vector<TraceEvent>;
@@ -48,14 +48,14 @@ class TraceEventContainer {
 public:
     ////////////////////////////////////////////////////////////////////////////
     /// \class const_iterator
-    /// Forward iterator of TraceEvents.
+    /// Bidirectional iterator of TraceEvents.
     ///
     class const_iterator {
         using Inner = typename InnerStorage::const_iterator;
         using Outer = typename OuterStorage::const_iterator;
 
     public:
-        using iterator_category = std::forward_iterator_tag;
+        using iterator_category = std::bidirectional_iterator_tag;
         using value_type = const TraceEvent;
         using difference_type = int64_t;
         using pointer = const TraceEvent*;
@@ -74,7 +74,10 @@ public:
         }
 
         bool operator == (const const_iterator& other) const {
-            return _outer == other._outer && _inner == other._inner;
+            const bool innerCompare = (_innerExists && other._innerExists) ?
+                (_inner == other._inner) :
+                (_innerExists == other._innerExists);
+            return _outer == other._outer && innerCompare;
         }
 
         const_iterator& operator ++() {
@@ -88,16 +91,33 @@ public:
             return result;
         }
 
+        const_iterator& operator --() {
+            Reverse();
+            return *this;
+        }
+
+        const_iterator operator --(int) {
+            const_iterator result(*this);
+            Reverse();
+            return result;
+        }
+
     private:
-        const_iterator(Outer outer, Outer outerEnd, Inner inner)
+        const_iterator(Outer outer, 
+            Outer outerBegin, Outer outerEnd, Inner inner)
             : _inner(inner)
             , _outer(outer)
+            , _outerBegin(outerBegin)
             , _outerEnd(outerEnd)
+            , _innerExists(true)
              {}
-        const_iterator(Outer outer, Outer outerEnd)
+
+        const_iterator(Outer outer, Outer outerBegin, Outer outerEnd)
             : _inner()
             , _outer(outer)
+            , _outerBegin(outerBegin)
             , _outerEnd(outerEnd)
+            , _innerExists(false)
              {}
 
         void Advance() {
@@ -108,6 +128,27 @@ public:
                     _inner = _outer->begin();
                 } else {
                     _inner = Inner();
+                    _innerExists = false;
+                }
+            }
+        }
+
+        void Reverse() {
+            if (IsEnd()) {
+                --_outer;
+                _inner = std::prev(_outer->end());
+                _innerExists = true;
+            } else {
+                if (_inner != _outer->begin()) {
+                    --_inner;
+                } else {
+                    if (_outer != _outerBegin){
+                        --_outer;
+                        _inner = std::prev(_outer->end());
+                    } else {
+                        _inner = Inner();
+                        _innerExists = false;
+                    }
                 }
             }
         }
@@ -118,10 +159,14 @@ public:
 
         Inner _inner;
         Outer _outer;
+        Outer _outerBegin;
         Outer _outerEnd;
+        bool _innerExists;
 
         friend class TraceEventContainer;
     };
+
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     /// Constructor.
     TraceEventContainer();
@@ -150,13 +195,26 @@ public:
     const TraceEvent& back() const { return _back->back(); }
 
     const_iterator begin() const { 
+        if (_outer.empty()) {
+            return end();
+        }
+
         return const_iterator(_outer.begin(), 
+            _outer.begin(), 
             _outer.end(), 
             _outer.begin()->begin()); 
     }
 
     const_iterator end() const { 
-        return const_iterator(_outer.end(), _outer.end()); 
+        return const_iterator(_outer.end(), _outer.begin(), _outer.end()); 
+    }
+
+    const_reverse_iterator rbegin() const { 
+        return const_reverse_iterator(end());
+    }
+
+    const_reverse_iterator rend() const { 
+        return const_reverse_iterator(begin());
     }
 
     bool empty() const { return _outer.empty();}

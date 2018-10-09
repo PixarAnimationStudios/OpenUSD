@@ -25,7 +25,6 @@ pxr_library(tf
         anyWeakPtr
         atomicOfstreamWrapper
         bitUtils
-        copyOnWritePtr
         debug
         debugNotice
         denseHashMap
@@ -249,6 +248,14 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
             ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyLock.cpp
+    )
+
+    pxr_build_test(testTfPyResultConversions
+        LIBRARIES
+            tf
+            ${Boost_PYTHON_LIBRARY}
+        CPPFILES
+            testenv/testTfPyResultConversions.cpp
     )
 endif()
 
@@ -627,6 +634,9 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     )
     pxr_register_test(testTfPyLock
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyLock"
+    )
+    pxr_register_test(testTfPyResultConversions
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyResultConversions"
     )
     pxr_register_test(testTfPyScopeDescription
         PYTHON

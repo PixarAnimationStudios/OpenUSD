@@ -1,0 +1,130 @@
+#usda 1.0 
+
+def Shader "HwPtexTexture_1" (
+    sdrMetadata = {
+        token role = "texture"
+        token isPtex = "1"
+    }
+)
+{
+    uniform token info:id = "HwPtexTexture_1"
+    uniform token info:implementationSource = "sourceAsset"
+
+    # Add a dummy sourceAsset attribute with sourceType="glslfx", so that 
+    # an entry gets created for this deprecated shader in the registry.
+    uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
+
+    token inputs:faceIndexPrimvar = "ptexFaceIndex" (
+        sdrMetadata = {
+            token primvarProperty = "1"
+        }
+    )
+
+    token inputs:faceOffsetPrimvar = "ptexFaceOffset" (
+        sdrMetadata = {
+            token primvarProperty = "1"
+        }
+    )
+
+    asset inputs:info:filename = @@ (
+        doc = "Asset path to the file containg the image data."
+    )
+
+    float inputs:frame (
+        doc = "The frame offset for animated textures."
+    )
+
+    float inputs:textureMemory (
+        doc = """Amount of memory used to store the texture (in Mb). A value of 
+        zero specifies the native resolution."""
+    )
+
+    int inputs:faceIndex (
+        doc = """The Ptex face index from which to sample. By default, this
+        parameter will be bound to the ptexFaceIndex primvar."""
+    )
+
+    int inputs:faceOffset (
+        doc = """The Ptex face offset to be applied to the face index. By
+        default, this parameter will be bound to the ptexFaceOffset primvar."""
+    )
+}
+
+def Shader "HwUvTexture_1" (
+    sdrMetadata = {
+        token role = "texture"
+        token primvars = "uv"
+    }
+)
+{
+    uniform token info:id = "HwUvTexture_1"
+    uniform token info:implementationSource = "sourceAsset"
+
+    # Add a dummy sourceAsset attribute with sourceType="glslfx", so that 
+    # an entry gets created for this deprecated shader in the registry.
+    uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
+
+    asset inputs:info:filename = @@ (
+        doc = "Asset path to the file containg the image data."
+    )
+
+    float inputs:frame (
+        doc = "The frame offset for animated textures."
+    )
+
+    float inputs:textureMemory (
+        doc = """Amount of memory used to store the texture (in Mb). A value of 
+        zero specifies the native resolution."""
+    )
+
+    float2 inputs:uv (
+        doc = "The uv coordinates at which to sample the texture."
+    )
+
+    token inputs:wrapS (
+        allowedTokens = ["clamp", "repeat", "mirror", "black"]
+        doc = "Specifies the wrap mode for this texture."
+    )
+
+    token inputs:wrapT (
+        allowedTokens = ["clamp", "repeat", "mirror", "black"]
+        doc = "Specifies the wrap mode for this texture."
+    )
+
+    token inputs:minFilter (
+        allowedTokens = ["nearest", "linear",
+                         "linearMipmapLinear", "linearMipmapNearest",
+                         "nearestMipmapLinear", "nearestMipmapNearest" ]
+        doc = "Specifies the minification filter mode for this texture."
+    )
+    
+    token inputs:magFilter (
+        allowedTokens = ["nearest", "linear"]
+        doc = "Specifies the magnification filter mode for this texture."
+    )
+}
+
+def Shader "HwPrimvar_1" (
+    sdrMetadata = {
+        token role = "primvar"
+    }
+)
+{
+    uniform token info:id = "HwPrimvar_1"
+    uniform token info:implementationSource = "sourceAsset"
+
+    # Add a dummy sourceAsset attribute with sourceType="glslfx", so that 
+    # an entry gets created for this deprecated shader in the registry.
+    uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
+
+    token inputs:info:varname = "" (
+        sdrMetadata = {
+            bool primvarProperty = 1
+        }
+        doc = """The name of the primvar. Note that on the gprim, this primvar
+        must follow the standard UsdGeom primvar declaration.        
+        Further note that this name should not contain the UsdGeom primvar
+        namespace prefix.
+        """
+    )
+}

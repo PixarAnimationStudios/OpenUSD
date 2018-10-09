@@ -51,48 +51,49 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
     public:
         PXRUSDMAYAGL_API
-        static MString sm_drawDbClassification;
-        PXRUSDMAYAGL_API
-        static MString sm_drawRegistrantId;
+        static const MString drawDbClassification;
 
         PXRUSDMAYAGL_API
         static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
         PXRUSDMAYAGL_API
-        virtual ~UsdMayaProxyDrawOverride() override;
+        ~UsdMayaProxyDrawOverride() override;
 
         PXRUSDMAYAGL_API
-        virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
+        MHWRender::DrawAPI supportedDrawAPIs() const override;
 
         PXRUSDMAYAGL_API
-        virtual MMatrix transform(
+        MMatrix transform(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual MBoundingBox boundingBox(
+        MBoundingBox boundingBox(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual bool isBounded(
+        bool isBounded(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual MUserData* prepareForDraw(
+        bool disableInternalBoundingBoxDraw() const override;
+
+        PXRUSDMAYAGL_API
+        MUserData* prepareForDraw(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath,
                 const MHWRender::MFrameContext& frameContext,
                 MUserData* oldData) override;
 
-#if MAYA_API_VERSION >= 201800
+#if MAYA_API_VERSION >= 20180000
         PXRUSDMAYAGL_API
-        virtual bool wantUserSelection() const override;
+        bool wantUserSelection() const override;
 
         PXRUSDMAYAGL_API
-        virtual bool userSelect(
-                MHWRender::MSelectionInfo& selectInfo,
+        bool userSelect(
+                MHWRender::MSelectionInfo& selectionInfo,
                 const MHWRender::MDrawContext& context,
                 MPoint& hitPoint,
                 const MUserData* data) override;
@@ -106,11 +107,20 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
     private:
         UsdMayaProxyDrawOverride(const MObject& obj);
 
+        UsdMayaProxyDrawOverride(const UsdMayaProxyDrawOverride&) = delete;
+        UsdMayaProxyDrawOverride& operator=(const UsdMayaProxyDrawOverride&) = delete;
+
         PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
+
+        /// DAG path at creation time. This is used only to display a warning
+        /// when this override is being used to draw a Maya instancer. *Do not*
+        /// use this DAG path to grab the object; use the DAG path that Maya
+        /// provides in callback functions instead.
+        MDagPath _originalDagPath;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_PROXY_DRAW_OVERRIDE_H
+#endif

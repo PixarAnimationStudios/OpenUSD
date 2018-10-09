@@ -51,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStCommandBuffer::HdStCommandBuffer()
     : _visibleSize(0)
     , _visChangeCount(0)
-    , _shaderBindingsVersion(0)
+    , _batchVersion(0)
 {
     /*NOTHING*/
 }
@@ -118,30 +118,30 @@ HdStCommandBuffer::ExecuteDraw(
 
 void
 HdStCommandBuffer::SwapDrawItems(std::vector<HdStDrawItem const*>* items,
-                               unsigned currentShaderBindingsVersion)
+                               unsigned currentBatchVersion)
 {
     _drawItems.swap(*items);
     _RebuildDrawBatches();
-    _shaderBindingsVersion = currentShaderBindingsVersion;
+    _batchVersion = currentBatchVersion;
 }
 
 void
-HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentShaderBindingsVersion)
+HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion)
 {
     HD_TRACE_FUNCTION();
 
     bool deepValidation
-        = (currentShaderBindingsVersion != _shaderBindingsVersion);
+        = (currentBatchVersion != _batchVersion);
 
     for (auto const& batch : _drawBatches) {
         if (!batch->Validate(deepValidation) && !batch->Rebuild()) {
             TRACE_SCOPE("Invalid Batches");
             _RebuildDrawBatches();
-            _shaderBindingsVersion = currentShaderBindingsVersion;
+            _batchVersion = currentBatchVersion;
             return;
         }
     }
-    _shaderBindingsVersion = currentShaderBindingsVersion;
+    _batchVersion = currentBatchVersion;
 }
 
 void

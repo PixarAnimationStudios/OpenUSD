@@ -55,6 +55,7 @@ public:
     enum BeginTag { Begin };
     enum EndTag { End };
     enum TimespanTag { Timespan };
+    enum MarkerTag { Marker };
     enum CounterDeltaTag { CounterDelta };
     enum CounterValueTag { CounterValue };
     enum DataTag { Data };
@@ -66,6 +67,7 @@ public:
         Begin, ///< The event represents the beginning timestamp of a scope.
         End, ///< The event represents the ending timestamp of a scope.
         Timespan, ///< The event represents begin and end timestamp of a scope.
+        Marker, ///< The event represents an marker without a duration.
         CounterDelta, ///< The event represents a change in a counter.
         CounterValue, ///< The event represents the value of a counter.
         ScopeData,
@@ -172,6 +174,26 @@ public:
         new (&_payload) TimeStamp(startTime);
     }
 
+    /// Constructor for Marker events that will automatically set the
+    /// timestamp from the current time.
+    TraceEvent(MarkerTag, const Key& key, TraceCategoryId cat) :
+        _key(key),
+        _category(cat),
+        _type(_InternalEventType::Marker),
+        _time(ArchGetTickTime()) {
+    }
+
+    /// Constructor for Mark events that takes a specific TimeStamp \a ts.
+    TraceEvent( MarkerTag, 
+                const Key& key,
+                TimeStamp ts,
+                TraceCategoryId cat) :
+        _key(key),
+        _category(cat),
+        _type(_InternalEventType::Marker),
+        _time(ts) {
+    }
+
     /// Constructor for Counter delta events.
     TraceEvent( CounterDeltaTag,
                 const Key& key, 
@@ -253,6 +275,13 @@ public:
     }
     /// @}
 
+    // Can move this, but not copy it
+    TraceEvent(const TraceEvent&) = delete;
+    TraceEvent& operator= (const TraceEvent&) = delete;
+
+    TraceEvent(TraceEvent&&) = default;
+    TraceEvent& operator= (TraceEvent&&) = default;
+
     /// @}
 
     /// Sets the events timestamp to \p time.
@@ -264,6 +293,7 @@ private:
         Begin,
         End,
         Timespan,
+        Marker,
         CounterDelta,
         CounterValue,
         ScopeData,

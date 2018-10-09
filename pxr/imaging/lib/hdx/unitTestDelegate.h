@@ -158,7 +158,7 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
                                              SdfPath const& prototypeId);
     virtual HdDisplayStyle GetDisplayStyle(SdfPath const& id) override;
-    virtual TfToken GetReprName(SdfPath const &id);
+    virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
 
 
     virtual SdfPath GetMaterialId(SdfPath const &rprimId);

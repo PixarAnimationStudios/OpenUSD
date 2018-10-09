@@ -23,6 +23,8 @@
 //
 #include "SOP_usdimport.h"
 
+#include "OP_Utils.h"
+
 #include "gusd/error.h"
 #include "gusd/GU_USD.h"
 #include "gusd/PRM_Shared.h"
@@ -32,6 +34,10 @@
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
 #include "gusd/UT_StaticInit.h"
+#include "gusd/GT_PrimCache.h"
+#include "gusd/USD_XformCache.h"
+#include "gusd/USD_VisCache.h"
+
 
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/fileUtils.h>
@@ -42,6 +48,7 @@
 #include <OP/OP_OperatorTable.h>
 #include <PI/PI_EditScriptedParms.h>
 #include <PRM/PRM_AutoDeleter.h>
+#include <PRM/PRM_Conditional.h>
 #include <UT/UT_WorkArgs.h>
 #include <UT/UT_UniquePtr.h>
 #include <PY/PY_Python.h>
@@ -372,9 +379,7 @@ GusdSOP_usdimport::Reload()
 
     UT_StringSet paths;
     paths.insert(file);
-    
-    GusdStageCacheWriter cache;
-    cache.ReloadStages(paths);
+    GusdOP_Utils::ReloadStagesAndClearCaches(paths);
     forceRecook();
 }
 
@@ -409,11 +414,11 @@ GusdSOP_usdimport::_Cook(OP_Context& ctx)
 namespace {
 
 
-GusdStageBasicEdit*
+GusdStageEdit*
 _CreateEdit(const SdfPath& variantSelPath)
 {
     if(!variantSelPath.IsEmpty()) {
-        GusdStageBasicEdit* edit = new GusdStageBasicEdit();
+        GusdStageEdit* edit = new GusdStageEdit();
         edit->GetVariants().append(variantSelPath);
         return edit;
     }

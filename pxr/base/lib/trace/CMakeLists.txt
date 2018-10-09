@@ -121,11 +121,25 @@ pxr_build_test(testTraceCounters
         testenv/testTraceCounters.cpp
 )
 
+pxr_build_test(testTraceMarkers
+    LIBRARIES
+        trace
+    CPPFILES
+        testenv/testTraceMarkers.cpp
+)
+
 pxr_build_test(testTraceReportPerf
     LIBRARIES
         trace
     CPPFILES
         testenv/testTraceReportPerf.cpp
+)
+
+pxr_build_test(testTraceEventContainer
+    LIBRARIES
+        trace
+    CPPFILES
+        testenv/testTraceEventContainer.cpp
 )
 
 pxr_test_scripts(
@@ -255,6 +269,14 @@ pxr_register_test(testTraceCounters
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCounters"
 )
 
+pxr_register_test(testTraceMarkers
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceMarkers"
+)
+
 pxr_register_test(testTraceReportPerf
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
+)
+
+pxr_register_test(testTraceEventContainer
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceEventContainer"
 )

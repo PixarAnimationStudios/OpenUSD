@@ -5,6 +5,12 @@
     "Plugins": [
         {
             "Info": {
+                "Types": {
+                    "UsdHydraDiscoveryPlugin" : {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "Discovery plugin for deprecated hydra shaders."
+                    }
+                }
             }, 
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
             "Name": "usdHydra", 

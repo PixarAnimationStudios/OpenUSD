@@ -105,7 +105,7 @@ public:
         TfTokenVector renderTags;
         renderTags.push_back(HdTokens->geometry);
         _Init(UsdStage::Open(usdFilePath), HdTokens->geometry,
-              HdTokens->hull, renderTags);
+              HdReprTokens->hull, renderTags);
     }
 
     UsdImaging_TestDriver(std::string const& usdFilePath,
@@ -135,7 +135,7 @@ public:
     {
         TfTokenVector renderTags;
         renderTags.push_back(HdTokens->geometry);
-        _Init(usdStage, HdTokens->geometry, HdTokens->hull, renderTags);
+        _Init(usdStage, HdTokens->geometry, HdReprTokens->hull, renderTags);
     }
 
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
@@ -223,7 +223,7 @@ private:
 
         _stage = usdStage;
         _delegate->Populate(_stage->GetPseudoRoot());
-        HdRprimCollection col = HdRprimCollection(collectionName, reprName);
+        HdRprimCollection col = HdRprimCollection(collectionName, HdReprSelector(reprName));
         col.SetRenderTags(renderTags);
         _geometryPass = HdRenderPassSharedPtr(new HdSt_RenderPass(_renderIndex, col));
         _renderPassState = HdRenderPassStateSharedPtr(new HdStRenderPassState());

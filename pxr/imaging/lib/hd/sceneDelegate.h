@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 
@@ -248,7 +249,36 @@ struct HdRenderBufferDescriptor {
     GfVec3i dimensions;
     HdFormat format;
     bool multiSampled;
+
+    bool operator==(HdRenderBufferDescriptor const& rhs) const {
+        return dimensions == rhs.dimensions &&
+               format == rhs.format && multiSampled == rhs.multiSampled;
+    }
+    bool operator!=(HdRenderBufferDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
+
+/// \struct HdVolumeFieldDescriptor
+///
+/// Description of a single field related to a volume primitive.
+///
+struct HdVolumeFieldDescriptor {
+    TfToken fieldName;
+    TfToken fieldPrimType;
+    SdfPath fieldId;
+
+    HdVolumeFieldDescriptor() {}
+    HdVolumeFieldDescriptor(
+        TfToken const & fieldName_,
+        TfToken const & fieldPrimType_,
+        SdfPath const & fieldId_)
+    : fieldName(fieldName_), fieldPrimType(fieldPrimType_), fieldId(fieldId_)
+    { }
+};
+
+typedef std::vector<HdVolumeFieldDescriptor>
+	HdVolumeFieldDescriptorVector;
 
 /// \class HdSceneDelegate
 ///
@@ -351,12 +381,12 @@ public:
 
     /// Returns the authored repr (if any) for the given prim.
     HD_API
-    virtual TfToken GetReprName(SdfPath const &id);
+    virtual HdReprSelector GetReprSelector(SdfPath const &id);
 
     /// Returns the render tag that will be used to bucket prims during
     /// render pass bucketing.
     HD_API
-    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
+    virtual TfToken GetRenderTag(SdfPath const& id);
 
     /// Returns the prim categories.
     HD_API
@@ -555,6 +585,14 @@ public:
     /// orientation.
     HD_API
     virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+
+    // -----------------------------------------------------------------------//
+    /// \name Volume Aspects
+    // -----------------------------------------------------------------------//
+
+    HD_API
+    virtual HdVolumeFieldDescriptorVector
+    GetVolumeFieldDescriptors(SdfPath const &volumeId);
 
     // -----------------------------------------------------------------------//
     /// \name ExtComputation Aspects

@@ -62,6 +62,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// made; client code should arrange for relationship targets and connections to
 /// be specified as prepended, appended, deleted, and/or ordered, as needed.
 ///
+/// Variant specs may be copied to prim paths and vice versa. When copying a
+/// variant to a prim, the specifier and typename from the variant's parent
+/// prim will be used.
+///
 /// Attribute connections, relationship targets, inherit and specializes paths,
 /// and internal sub-root references that target an object beneath \p srcPath 
 /// will be remapped to target objects beneath \p dstPath.
@@ -198,6 +202,10 @@ SdfShouldCopyChildren(
 /// SdfCopySpec is called, or a coding error will result.  For prim parents,
 /// clients may find it convenient to call SdfCreatePrimInLayer before
 /// SdfCopySpec.
+///
+/// Variant specs may be copied to prim paths and vice versa. When copying a
+/// variant to a prim, the specifier and typename from the variant's parent
+/// prim will be used.
 ///
 /// As a special case, if the top-level object to be copied is a relationship
 /// target or a connection, the destination spec must already exist.  That is

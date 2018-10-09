@@ -463,65 +463,65 @@ public:
 
     // -------------------------------------------------------------------------
 
-    /// \anchor UsdShadeShader_Metadata_API
-    /// \name Shader Metadata_API
+    /// \anchor UsdShadeShader_SdrMetadata_API
+    /// \name Shader Sdr Metadata API
     /// 
-    /// This section provides API for authoring and querying shader metadata.
-    /// When the shader's implementationSource is <b>sourceAsset</b> or 
-    /// <b>sourceCode</b>, the authored "shaderMetadata" dictionary value 
+    /// This section provides API for authoring and querying shader registry
+    /// metadata. When the shader's implementationSource is <b>sourceAsset</b> 
+    /// or <b>sourceCode</b>, the authored "sdrMetadata" dictionary value 
     /// provides additional metadata needed to process the shader source
     /// correctly. It is used in combination with the sourceAsset or sourceCode
     /// value to fetch the appropriate node from the shader registry.
     /// 
-    /// We expect the keys in shaderMetadata to correspond to the keys 
+    /// We expect the keys in sdrMetadata to correspond to the keys 
     /// in \ref SdrNodeMetadata. However, this is not strictly enforced in the 
-    /// API. The only allowed value type in the "shaderMetadata" dictionary is a 
+    /// API. The only allowed value type in the "sdrMetadata" dictionary is a 
     /// std::string since it needs to be converted into a NdrTokenMap, which Sdr
-    /// will parse using utilities available in \ref ShaderMetadataHelpers.
+    /// will parse using the utilities available in \ref SdrMetadataHelpers.
     /// 
     /// @{
 
-    /// Returns this shader's composed "shaderMetadata" dictionary as a 
+    /// Returns this shader's composed "sdrMetadata" dictionary as a 
     /// NdrTokenMap.
     USDSHADE_API
-    NdrTokenMap GetShaderMetadata() const;
+    NdrTokenMap GetSdrMetadata() const;
     
     /// Returns the value corresponding to \p key in the composed 
-    /// <b>shaderMetadata</b> dictionary.
+    /// <b>sdrMetadata</b> dictionary.
     USDSHADE_API
-    std::string GetShaderMetadataByKey(const TfToken &key) const;
+    std::string GetSdrMetadataByKey(const TfToken &key) const;
         
-    /// Authors the given \p shaderMetadata on this shader at the current 
+    /// Authors the given \p sdrMetadata on this shader at the current 
     /// EditTarget.
     USDSHADE_API
-    void SetShaderMetadata(const NdrTokenMap &shaderMetadata) const;
+    void SetSdrMetadata(const NdrTokenMap &sdrMetadata) const;
 
     /// Sets the value corresponding to \p key to the given string \p value, in 
-    /// the shader's "shaderMetadata" dictionary at the current EditTarget.
+    /// the shader's "sdrMetadata" dictionary at the current EditTarget.
     USDSHADE_API
-    void SetShaderMetadataByKey(
+    void SetSdrMetadataByKey(
         const TfToken &key, 
         const std::string &value) const;
 
-    /// Returns true if the shader has a non-empty composed "shaderMetadata" 
+    /// Returns true if the shader has a non-empty composed "sdrMetadata" 
     /// dictionary value.
     USDSHADE_API
-    bool HasShaderMetadata() const;
+    bool HasSdrMetadata() const;
 
     /// Returns true if there is a value corresponding to the given \p key in 
-    /// the composed "shaderMetadata" dictionary.
+    /// the composed "sdrMetadata" dictionary.
     USDSHADE_API
-    bool HasShaderMetadataByKey(const TfToken &key) const;
+    bool HasSdrMetadataByKey(const TfToken &key) const;
 
-    /// Clears any "shaderMetadata" value authored on the shader in the current 
+    /// Clears any "sdrMetadata" value authored on the shader in the current 
     /// EditTarget.
     USDSHADE_API
-    void ClearShaderMetadata() const;
+    void ClearSdrMetadata() const;
 
     /// Clears the entry corresponding to the given \p key in the 
-    /// "shaderMetadata" dictionary authored in the current EditTarget.
+    /// "sdrMetadata" dictionary authored in the current EditTarget.
     USDSHADE_API
-    void ClearShaderMetadataByKey(const TfToken &key) const;
+    void ClearSdrMetadataByKey(const TfToken &key) const;
 
     /// @}
 

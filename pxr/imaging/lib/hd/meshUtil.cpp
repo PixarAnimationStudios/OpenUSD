@@ -162,17 +162,40 @@ HdMeshUtil::ComputeTriangleIndices(VtVec3iArray *indices,
             //
             int edgeFlag = 0;
             for (int j=0; j < nv-2; ++j) {
-                if (nv > 3) {
-                    if (j == 0) edgeFlag = flip ? 2 : 1;
-                    else if (j == nv-3) edgeFlag = flip ? 1 : 2;
-                    else edgeFlag = 3;
-                }
-
                 if (!_FanTriangulate(
                         &(*indices)[tv],
                         vertsPtr, v, j, numVertIndices, flip)) {
                     invalidTopology = true;
                 }
+
+                if (nv > 3) {
+                    if (j == 0) {
+                        if (flip) {
+                            // If the topology is flipped, we get the triangle
+                            // 021 instead of 012, and we'd hide edge 0-1
+                            // instead of 0-2; so we rotate the indices to
+                            // produce triangle 210.
+                            GfVec3i &index = (*indices)[tv];
+                            index.Set(index[1], index[2], index[0]);
+                        }
+                        edgeFlag = 1;
+                    }
+                    else if (j == nv-3) {
+                        if (flip) {
+                            // If the topology is flipped, we get the triangle
+                            // 043 instead of 034, and we'd hide edge 0-4
+                            // instead of 0-3; so we rotate the indices to
+                            // produce triangle 304.
+                            GfVec3i &index = (*indices)[tv];
+                            index.Set(index[2], index[0], index[1]);
+                        }
+                        edgeFlag = 2;
+                    }
+                    else {
+                        edgeFlag = 3;
+                    }
+                }
+
 
                 if (edgeIndices) {
                     GfVec3i const& triIndices = (*indices)[tv];
@@ -263,6 +286,18 @@ void _TriangulateFaceVarying(
                 if (!_FanTriangulate(&results[dstIndex],
                         source, v, j, numElements, flip)) {
                     invalidTopology = true;
+                }
+                // To keep edge flags consistent, when a face is triangulated
+                // and the topology is flipped we rotate the first and last
+                // triangle indices. See ComputeTriangleIndices.
+                if (nVerts > 3 && flip) {
+                    if (j == 0) {
+                        std::swap(results[dstIndex], results[dstIndex+1]);
+                        std::swap(results[dstIndex+1], results[dstIndex+2]);
+                    } else if (j == nVerts-3) {
+                        std::swap(results[dstIndex+1], results[dstIndex+2]);
+                        std::swap(results[dstIndex], results[dstIndex+1]);
+                    }
                 }
                 dstIndex += 3;
             }
@@ -398,9 +433,7 @@ HdMeshUtil::ComputeQuadInfo(HdQuadInfo* quadInfo)
     int numFaces = _topology->GetFaceVertexCounts().size();
     int numVertIndices = _topology->GetFaceVertexIndices().size();
     int numHoleFaces = _topology->GetHoleIndices().size();
-    // compute numPoints from topology indices
-    int numPoints = HdMeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
+    int numPoints = _topology->GetNumPoints();
 
     quadInfo->numVerts.clear();
     quadInfo->verts.clear();
@@ -414,6 +447,10 @@ HdMeshUtil::ComputeQuadInfo(HdQuadInfo* quadInfo)
     for (int i = 0; i < numFaces; ++i) {
         int nv = numVertsPtr[i];
 
+        if (nv < 3) {
+            vertIndex += nv;
+            continue; // skip degenerated face
+        }
         if (holeIndex < numHoleFaces &&
             holeFacesPtr[holeIndex] == i) {
             // skip hole faces.
@@ -478,6 +515,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
     int numFaces = _topology->GetFaceVertexCounts().size();
     int numVertIndices = _topology->GetFaceVertexIndices().size();
     int numHoleFaces = _topology->GetHoleIndices().size();
+    int numPoints = _topology->GetNumPoints();
 
     // count num quads
     bool invalidTopology = false;
@@ -500,8 +538,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
 
     // quadrangulated verts is added to the end.
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
-    int vertIndex = HdMeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
+    int vertIndex = numPoints;
 
     EdgeMap edges;
     if (quadsEdgeIndices) {
@@ -556,10 +593,14 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
                 (*indices)[qv][3] = (vertsPtr[v+3]);
             }
 
-            //  Case               EdgeFlag               Draw
-            //  authored quad face    0      hide common edge for the tri-pair
-            //  non-quad face         1      hide common edge for the tri-pair & 
+            //  Case             EdgeFlag    Draw
+            //  Quad/Refined face   0        hide common edge for the tri-pair
+            //  Non-Quad face       1/2/3    hide common edge for the tri-pair & 
             //                               hide interior quadrangulated edges
+            //
+            //  The first quad of a non-quad face is marked 1; the last as 2; and
+            //  intermediate quads as 3.
+
             (*primitiveParams)[qv] = GfVec2i(
                 EncodeCoarseFaceParam(i, /*edgeFlag=*/0), qv);
 
@@ -606,10 +647,21 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
                     // edge prev
                     (*indices)[qv][3] = vertIndex + (j+nv-1)%nv;
                 }
-                // edge flag = 1 => quad face is from quadrangulation
+                // edge flag != 0 => quad face is from quadrangulation
                 // it is used to hide internal edges (edge-center) of the quad
+                // The first quad gets flag = 1, intermediate quads get flag = 3
+                // and the last quad gets flag = 2, so computations can tell
+                // how quads are grouped by looking at edge flags.
+                int edgeFlag = 0;
+                if (j == 0) {
+                    edgeFlag = 1;
+                } else if (j == nv - 1) {
+                    edgeFlag = 2;
+                } else {
+                    edgeFlag = 3;
+                }
                 (*primitiveParams)[qv] = GfVec2i(
-                    EncodeCoarseFaceParam(i, /*edgeFlag=*/1), qv);
+                    EncodeCoarseFaceParam(i, edgeFlag), qv);
 
                 if (quadsEdgeIndices) {
                     // only the first (index 0) and last (index 3) edges of the

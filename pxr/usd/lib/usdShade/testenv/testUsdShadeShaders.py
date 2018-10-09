@@ -151,7 +151,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         # Test boundaries of parameter type-testing when connecting
         print "Test Typed Input Connections"
 
-        colInput = pale.CreateInput("col1", Sdf.ValueTypeNames.Color3f);
+        colInput = pale.CreateInput("col1", Sdf.ValueTypeNames.Color3f)
         self.assertTrue(colInput)
         self.assertTrue(colInput.ConnectToSource(whiterPale, "colorOut"))
         outputAttr = whiterPale.GetPrim().GetAttribute("outputs:colorOut")
@@ -207,7 +207,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         # ensure by-value capture in 'inputs'
         self.assertNotEqual(len(pale.GetInputs()), len(inputs))
 
-    def test_ShaderMetadata(self):
+    def test_SdrMetadata(self):
         stage = self._SetupStage()
 
         ################################
@@ -217,38 +217,38 @@ class TestUsdShadeShaders(unittest.TestCase):
         pale = UsdShade.Shader.Get(stage, palePath)
         self.assertTrue(pale)
 
-        self.assertEqual(pale.GetShaderMetadata(), {})
+        self.assertEqual(pale.GetSdrMetadata(), {})
 
         # Pale inherits from ClassPale.
         classPale = UsdShade.Shader.Get(stage, classPalePath)
 
         from pxr import Sdr
-        baseShaderMetadata = {Sdr.NodeMetadata.Primvars : 
+        baseSdrMetadata = {Sdr.NodeMetadata.Primvars : 
                                 "primvarA|primvarB|primvarC"}
-        classPale.SetShaderMetadata(baseShaderMetadata)
+        classPale.SetSdrMetadata(baseSdrMetadata)
 
-        self.assertEqual(pale.GetShaderMetadata(), baseShaderMetadata)
-        paleShaderMetadata = {Sdr.NodeMetadata.Departments : "anim|layout",
+        self.assertEqual(pale.GetSdrMetadata(), baseSdrMetadata)
+        paleSdrMetadata = {Sdr.NodeMetadata.Departments : "anim|layout",
                               Sdr.NodeMetadata.Category : "preview"}
-        for i,j in paleShaderMetadata.iteritems():
-            pale.SetShaderMetadataByKey(i, j)
+        for i,j in paleSdrMetadata.iteritems():
+            pale.SetSdrMetadataByKey(i, j)
 
-        self.assertEqual(pale.GetShaderMetadata(), 
+        self.assertEqual(pale.GetSdrMetadata(), 
             {'category': 'preview', 
              'primvars': 'primvarA|primvarB|primvarC', 
              'departments': 'anim|layout'})
 
-        pale.ClearShaderMetadataByKey(Sdr.NodeMetadata.Primvars)
-        self.assertEqual(pale.GetShaderMetadata(), 
+        pale.ClearSdrMetadataByKey(Sdr.NodeMetadata.Primvars)
+        self.assertEqual(pale.GetSdrMetadata(), 
             {'category': 'preview', 
              'primvars': 'primvarA|primvarB|primvarC', 
              'departments': 'anim|layout'})
 
-        classPale.ClearShaderMetadataByKey(Sdr.NodeMetadata.Primvars)
-        self.assertEqual(pale.GetShaderMetadata(), paleShaderMetadata)
+        classPale.ClearSdrMetadataByKey(Sdr.NodeMetadata.Primvars)
+        self.assertEqual(pale.GetSdrMetadata(), paleSdrMetadata)
 
-        pale.ClearShaderMetadata()
-        self.assertEqual(pale.GetShaderMetadata(), {})
+        pale.ClearSdrMetadata()
+        self.assertEqual(pale.GetSdrMetadata(), {})
 
     def test_ImplementationSource(self):
         stage = self._SetupStage()

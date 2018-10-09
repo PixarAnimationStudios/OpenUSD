@@ -54,6 +54,14 @@
         _TRACE_FUNCTION_SCOPE_INSTANCE( \
             __LINE__, __ARCH_FUNCTION__, __ARCH_PRETTY_FUNCTION__, name)
 
+/// Records a timestamp when constructed, using \a name as the key.
+#define TRACE_MARKER(name) \
+        _TRACE_MARKER_INSTANCE(__LINE__, name)
+
+/// Records a timestamp when constructed, using \a name as the key.
+#define TRACE_MARKER_DYNAMIC(name) \
+        _TRACE_MARKER_DYNAMIC_INSTANCE(__LINE__, name)
+
 /// Records a counter \a delta using the \a name as the counter key. The delta can
 /// be positive or negative. A positive delta will increment the total counter
 /// value, whereas a negative delta will decrement it. The recorded value will
@@ -144,6 +152,11 @@ constexpr static PXR_NS::TraceStaticKeyData \
 PXR_NS::TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, instance)(\
     TF_PP_CAT(TraceKeyData_, instance));
 
+#define _TRACE_MARKER_INSTANCE(instance, name) \
+constexpr static PXR_NS::TraceStaticKeyData \
+    TF_PP_CAT(TraceKeyData_, instance)(name); \
+    TraceCollector::GetInstance().MarkerEventStatic(TF_PP_CAT(TraceKeyData_, instance));
+
 #define _TRACE_COUNTER_INSTANCE(instance, name, value, isDelta) \
 constexpr static PXR_NS::TraceStaticKeyData \
     TF_PP_CAT(TraceKeyData_, instance)(name); \
@@ -167,6 +180,9 @@ PXR_NS::TraceAuto TF_PP_CAT(TraceAuto_, instance)(fnName, fnPrettyName, name)
 #define _TRACE_SCOPE_DYNAMIC_INSTANCE(instance, str) \
 PXR_NS::TraceAuto TF_PP_CAT(TraceAuto_, instance)(str)
 
+#define _TRACE_MARKER_DYNAMIC_INSTANCE(instance, name) \
+    TraceCollector::GetInstance().MarkerEvent(name);
+
 #else // TRACE_DISABLE
 
 #define TRACE_FUNCTION()
@@ -174,6 +190,8 @@ PXR_NS::TraceAuto TF_PP_CAT(TraceAuto_, instance)(str)
 #define TRACE_SCOPE(name)
 #define TRACE_SCOPE_DYNAMIC(name)
 #define TRACE_FUNCTION_SCOPE(name)
+#define TRACE_MARKER(name)
+#define TRACE_MARKER_DYNAMIC(name)
 
 #endif // TRACE_DISABLE
 

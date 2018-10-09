@@ -52,9 +52,9 @@ public:
     /// at \p skelPath.
     /// Bindings are marked so that SkelRoots may be post-processed.
     /// Valid values for \p config are:
-    /// - PxrUsdExportJobArgsTokens->explicit_: search for an existing SkelRoot
-    /// - PxrUsdExportJobArgsTokens->auto_: create a SkelRoot if needed
-    /// PxrUsdExportJobArgsTokens->none is not valid for \p config; it will
+    /// - UsdMayaJobExportArgsTokens->explicit_: search for an existing SkelRoot
+    /// - UsdMayaJobExportArgsTokens->auto_: create a SkelRoot if needed
+    /// UsdMayaJobExportArgsTokens->none is not valid for \p config; it will
     /// mark an invalid binding.
     void MarkBindings(const SdfPath& path,
                       const SdfPath& skelPath,

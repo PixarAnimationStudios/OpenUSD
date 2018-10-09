@@ -28,6 +28,7 @@
 #define PXRUSDMAYA_TRANSLATOR_MESH_H
 
 #include "usdMaya/api.h"
+
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -39,45 +40,45 @@
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
-/// \brief Provides helper functions for creating UsdGeomMesh
-struct UsdMayaTranslatorMesh
+/// Provides helper functions for translating UsdGeomMesh prims into Maya
+/// meshes.
+class UsdMayaTranslatorMesh
 {
-    /// Creates an MFnMesh under \p parentNode from \p mesh.
-    PXRUSDMAYA_API
-    static bool Create(
-            const UsdGeomMesh& mesh,
-            MObject parentNode,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context);
+    public:
+        /// Creates an MFnMesh under \p parentNode from \p mesh.
+        PXRUSDMAYA_API
+        static bool Create(
+                const UsdGeomMesh& mesh,
+                MObject parentNode,
+                const UsdMayaPrimReaderArgs& args,
+                UsdMayaPrimReaderContext* context);
 
-private:
-    static bool _AssignSubDivTagsToMesh(
-            const UsdGeomMesh& primSchema,
-            MObject& meshObj,
-            MFnMesh& meshFn);
+    private:
+        static bool _AssignSubDivTagsToMesh(
+                const UsdGeomMesh& primSchema,
+                MObject& meshObj,
+                MFnMesh& meshFn);
 
-    static bool _AssignUVSetPrimvarToMesh(
-            const UsdGeomPrimvar& primvar,
-            MFnMesh& meshFn);
+        static bool _AssignUVSetPrimvarToMesh(
+                const UsdGeomPrimvar& primvar,
+                MFnMesh& meshFn);
 
-    static bool _AssignColorSetPrimvarToMesh(
-            const UsdGeomMesh& primSchema,
-            const UsdGeomPrimvar& primvar,
-            MFnMesh& meshFn);
+        static bool _AssignColorSetPrimvarToMesh(
+                const UsdGeomMesh& primSchema,
+                const UsdGeomPrimvar& primvar,
+                MFnMesh& meshFn);
 
-    static bool _AssignConstantPrimvarToMesh(
-            const UsdGeomPrimvar& primvar, 
-            MFnMesh& meshFn);
-
-
+        static bool _AssignConstantPrimvarToMesh(
+                const UsdGeomPrimvar& primvar,
+                MFnMesh& meshFn);
 };
 
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

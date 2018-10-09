@@ -78,5 +78,6 @@ pxr_register_test(testUsdZipAsset
 pxr_register_test(testUsdZipARKitAsset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip --arkitAsset root.usd package.usdz -l contents_arkit.txt"
+    DIFF_COMPARE contents_arkit.txt
     EXPECTED_RETURN_CODE 0
 )

@@ -45,8 +45,6 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
                                    SdfPath const& id)
     : HdSceneTask(delegate, id)
     , _lastVersion(-1)
-    , _offsetMin(0)
-    , _offsetMax(-1)
     , _hasSelection(false)
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)

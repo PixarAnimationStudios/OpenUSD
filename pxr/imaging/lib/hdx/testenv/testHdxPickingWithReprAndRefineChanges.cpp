@@ -138,7 +138,8 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
                             VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull)));
+                            VtValue(HdRprimCollection(HdTokens->geometry,
+                                    HdReprSelector(HdReprTokens->hull))));
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
@@ -157,7 +158,8 @@ My_TestGLDrawing::InitTest()
     // Worth noting that the collection's repr is set to refined (and not 
     // hull). When a prim has an authored repr, we'll use that instead, as
     // the collection's forcedRepr defaults to false.
-    _pickablesCol = HdRprimCollection(_tokens->pickables, HdTokens->refined);
+    _pickablesCol = HdRprimCollection(_tokens->pickables,
+                        HdReprSelector(HdReprTokens->refined));
     _marquee.InitGLResources();
     _picker.InitIntersector(_renderIndex);
     _SetPickParams();
@@ -289,7 +291,8 @@ My_TestGLDrawing::OffscreenTest()
         _picker.Pick(GfVec2i(0,0), GfVec2i(0,0)); // deselect
 
         std::cout << "Changing repr for cube2" << std::endl;
-        _delegate->SetReprName(SdfPath("/cube2"), HdTokens->refinedWireOnSurf);
+        _delegate->SetReprName(SdfPath("/cube2"), 
+            HdReprTokens->refinedWireOnSurf);
 
         // XXX: Repr initialization doesn't currently trigger the collection's
         // command buffer to be rebuilt, so we have to do that explicitly here.
@@ -310,7 +313,7 @@ My_TestGLDrawing::OffscreenTest()
 
        std::cout << "Changing repr on cube1" << std::endl;
 
-        _delegate->SetReprName(SdfPath("/cube1"), HdTokens->refinedWire);
+        _delegate->SetReprName(SdfPath("/cube1"), HdReprTokens->refinedWire);
         // XXX: If we don't mark the collection dirty, it'll be drawn with the
         // same command buffer and thus, cube1 will appear as hull and 
         // not refinedWireOnSurf.

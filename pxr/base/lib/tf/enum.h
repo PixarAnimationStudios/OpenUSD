@@ -43,6 +43,7 @@
 #include <iosfwd>
 #include <string>
 #include <typeinfo>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -148,7 +149,7 @@ public:
     /// Initializes value to enum variable \c value of enum type \c T.
     template <class T>
     TfEnum(T value,
-           typename boost::enable_if<boost::is_enum<T> >::type *dummy = 0)
+           typename boost::enable_if<boost::is_enum<T> >::type * = 0)
         : _typeInfo(&typeid(T)), _value(int(value))
     {
     }
@@ -247,8 +248,14 @@ public:
         return T(_value);
     }
 
-    template <class T>
-    operator T() const {
+    /// Conversion operator for enum and integral types only.
+    template <typename T,
+             typename = typename std::enable_if<
+                 std::is_integral<T>::value ||
+                 std::is_enum<T>::value>::type
+             >
+    operator T() const
+    {
         return T(_value);
     }
 

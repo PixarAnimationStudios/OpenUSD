@@ -96,7 +96,7 @@ public:
     My_TestGLDrawing() {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
-        _reprName = HdTokens->hull;
+        _reprName = HdReprTokens->hull;
         _refineLevel = 0;
     }
     ~My_TestGLDrawing();
@@ -175,7 +175,7 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
                             VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, _reprName)));
+                            VtValue(HdRprimCollection(HdTokens->geometry, HdReprSelector(_reprName))));
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
@@ -188,7 +188,8 @@ My_TestGLDrawing::InitTest()
     SetCameraTranslate(GfVec3f(0, 0, -20));
 
     // picking related init
-    _pickablesCol = HdRprimCollection(_tokens->pickables, HdTokens->refined);
+    _pickablesCol = HdRprimCollection(_tokens->pickables, 
+        HdReprSelector(HdReprTokens->refined));
     _marquee.InitGLResources();
     _picker.InitIntersector(_renderIndex);
     _SetPickParams();

@@ -54,6 +54,8 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/type_traits/is_abstract.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 //

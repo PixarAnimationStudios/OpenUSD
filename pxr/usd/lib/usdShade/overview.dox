@@ -104,7 +104,7 @@ connects nodes.
     exposedPort.Set(1.0)
     internalPort.ConnectToSource(exposedPort)
 ~~~~~~~~~~~~~
-
+ 
 Which will yield a public interface parameter called 'ExposedPort' on the
 UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
 
@@ -175,6 +175,136 @@ UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
                 }
             }
         }
+    }
+~~~~~~~~~~~~~
+# UsdShade Based Shader Definition {#UsdShadeShaderDefinition}
+
+UsdShade has an NdrParserPlugin (\ref UsdShadeShaderDefParserPlugin) that 
+enables shader definitions to be encoded as USD scene description using the 
+schemas available in UsdShade. A discovery plugin can open a USD stage 
+containing shader definitions and populate the shader registry with nodes 
+using the API \ref UsdShadeShaderDefUtils::GetNodeDiscoveryResults().
+
+A USD file containing UsdShade-based shader definitions must adhere to the 
+following rules, in order to produce valid SdrShaderNode s in the shader 
+registry:
+  - Every concrete shader prim at the root of the composed UsdStage should 
+  represent a new and complete shader definition. Inherits, references and other 
+  composition arcs may be used to avoid redundant scene description. 
+  - The shader prim's name becomes the unique <i>identifier</i> of the 
+  corresponding shader node in the registry. A shader's identifier is a 
+  concatenation of the 
+    -# family name of the shader, 
+    -# any type variations pertaining to the shader and
+    -# the shader version, which can contain one or two ints representing the 
+    major number and an optional minor number.
+  The type variations and shader version are optional parts of a shader 
+  identifier (i.e. not all shader identifiers may include them). If present,
+  the different parts of the identifier are delimited by an underscore.
+  Using \ref UsdShadeShaderDefUtils::SplitShaderIdentifier, a shader's 
+  identifier can be split into the family name, implementation-name 
+  of the shader node (which includes the family name and the type information) 
+  and the shader version. For example,
+    - if the shader prim is named "MultiTexture", the family name of the 
+    SdrShaderNode will be "MultiTexture". The corresponding shader-node's 
+    <b>implementation name</b> will also be "MultiTexture" and its version will 
+    be empty.
+    - if the shader prim is named "MultiTexture_float2", the family name of the 
+    shader will be "MultiTexture" and its implementation name will be 
+    "MultiTexture_float2". Its version will be empty.
+    - if the shader prim is named "MultiTexture_3", the family name of 
+    the shader will be "MultiTexture". It's implementation name will also be 
+    "MultiTexture" and its version will be 3.
+    - if the shader prim is named "MultiTexture_float2_3_1", the family name of 
+    the shader will be "MultiTexture". The <i>implementation name</i> will 
+    include the type information and be set to "Primvar_float2".
+  - The info:id attribute value of the shader, if authored, must match the name 
+  of the shader prim (i.e. the identifier of the SdrShaderNode).
+  - The info:implementationSource of the shader must be UsdShadeTokens->
+  sourceAsset. There must be one or more <i>"info:SOURCE_TYPE:sourceAsset"</i> 
+  attributes that point to resolvable shader implementations for different 
+  source types (eg, glslfx, OSL etc.).
+  - Shader prims, their inputs and outputs can contain sdrMetadata values meant
+  to be recorded in the shader registry. The keys in the sdrMetadata dictionary
+  correspond to the keys in \ref SdrNodeMetadata and \ref SdrPropertyMetadata. 
+  The only exceptions are as follows:
+    - <b>defaultInput</b> metadatum on shader inputs gets translated to a 
+    more obscure key value of <b>__SDR__defaultInput</b> (which is the value of 
+    SdrPropertyMetadata->DefaultInput) in the metadata dictionary recorded by 
+    SdrRegistry.
+    - Setting <b>sdrMetadata["primvarProperty"]="1"</b> on a shader 
+    input implies that the input names a primvar to be consumed by the shader. 
+    This causes '$' + inputName to be included in the 
+    <i>SdrShaderNode->Primvars</i> metadata on the <b>SdrShaderNode</b>. 
+    Note that it's not translated to metadata on the property itself.
+  - <b>connectability</b> metadata authored on UsdShadeInputs gets translated 
+  to SdrPropertyMetadata->Connectable. Connectability value of "interfaceOnly"
+  is converted to <i>connectable="0"</i>. Connectability value of "full" is 
+  converted to <i>connectable="1"</i>.
+  - SdfAssetPath (or asset) valued shader inputs are automatically tagged with 
+  sdr metadata <i>SdrPropertyMetadata->IsAssetIdentifier="1"</i>. 
+
+Here's an example shader definition file with comments explaining the various 
+bits.
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    # The prim name becomes the SdrShaderNode's identifier.
+    def Shader "Primvar_float_2" (
+        doc = "Version 2 of a Primvar node that outputs a float"
+        sdrMetadata = {
+            # This identifies the shader's role in the shading network as being 
+            # a primvar reader.
+            token role = "primvar"
+
+            # The following sdr-metadatum could be authored on the node directly 
+            # <b>in lieu of</b> authoring primvarProperty="1" on 
+            # inputs:primvarName.
+            # string primvars = "$primvarName"
+        }
+    )
+    {
+        uniform token info:implementationSource = "sourceAsset"
+
+        # If primvarReader.oso can be resolved to an existent asset, then a 
+        # SdrShaderNode is created with sourceType=OSL and sourceUri pointing
+        # to the resolved primvarReader.oso file.
+        uniform asset info:OSL:sourceAsset = @primvarReader.oso@
+
+        # If primvarReader.glslfx can be resolved to an existent asset, then 
+        # another SdrShaderNode is created with sourceType=glslfx and sourceUri 
+        # pointing to the resolved primvarReader.glslfx file.
+        uniform asset info:glslfx:sourceAsset = @primvarReader.glslfx@
+
+        token inputs:primvarName (
+            connectability = "interfaceOnly"
+            sdrMetadata = {
+                # This causes '$primvarName' to be appended to the 
+                # SdrNodeMetadata->Primvars metadata on the SdrShaderNode.
+                string primvarProperty = "1"
+            }
+            doc = """Name of the primvar to be fetched from the geometry."""
+        )
+
+        # Asset valued inputs are automatically tagged with 
+        # sdrMetadata[SdrPropertyMetadata->IsAssetIdentifier] = "1".
+        asset inputs:primvarFile = @@ (
+            connectability = "interfaceOnly"
+            doc = """File containing some primvar info."""
+        )
+
+        float inputs:fallback = 0.0 (
+            doc = """Fallback value to be returned when fetch failed."""
+            sdrMetadata = {
+                # This gets translated to SdrPropertyMetadata->DefaultInput="1"
+                # on the "fallback" SdrShaderProperty.
+                token defaultInput = "1"
+            }
+        )
+        
+        float outputs:result
+
     }
 ~~~~~~~~~~~~~
 

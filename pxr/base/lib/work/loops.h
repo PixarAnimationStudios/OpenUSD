@@ -125,7 +125,7 @@ template <typename Fn>
 void
 WorkParallelForN(size_t n, Fn &&callback)
 {
-    WorkParallelForN(n, callback, 1);
+    WorkParallelForN(n, std::forward<Fn>(callback), 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

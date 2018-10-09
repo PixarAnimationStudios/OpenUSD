@@ -33,11 +33,11 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
+#include <functional>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -53,7 +53,7 @@ class TfRegistryManager : boost::noncopyable {
 public:
     // The type of a registration function.  The arguments are not used.
     typedef void (*RegistrationFunctionType)(void*, void*);
-    typedef boost::function<void ()> UnloadFunctionType;
+    typedef std::function<void ()> UnloadFunctionType;
 
     /// Return the singleton \c TfRegistryManager instance.
     TF_API static TfRegistryManager& GetInstance();

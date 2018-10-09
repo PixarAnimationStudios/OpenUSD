@@ -41,6 +41,7 @@
 #include "pxr/base/vt/value.h"
 
 #include <boost/function.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -517,7 +518,7 @@ private:
         _SpecDefinitionMap;
     _SpecDefinitionMap _specDefinitions;
 
-    boost::scoped_ptr<Sdf_ValueTypeRegistry> _valueTypeRegistry;
+    std::unique_ptr<Sdf_ValueTypeRegistry> _valueTypeRegistry;
     TfTokenVector _requiredFieldNames;
 };
 

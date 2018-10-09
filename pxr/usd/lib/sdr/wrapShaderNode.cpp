@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
+#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/usd/sdr/shaderNode.h"
@@ -60,6 +61,10 @@ void wrapShaderNode()
         "NodeContext", SdrNodeContext, SDR_NODE_CONTEXT_TOKENS
     );
 
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
+    );
+
     return_value_policy<copy_const_reference> copyRefPolicy;
     to_python_converter<SdrShaderNodeConstPtr,
                         SdrShaderNodeConstPtrToPythonConverter>();
@@ -68,6 +73,10 @@ void wrapShaderNode()
         .def("GetShaderInput", &This::GetShaderInput,
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,
+            return_internal_reference<>())
+        .def("GetAssetIdentifierInputNames", &This::GetAssetIdentifierInputNames,
+            return_value_policy<TfPySequenceToList>())
+        .def("GetDefaultInput", &This::GetDefaultInput,
             return_internal_reference<>())
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
         .def("GetCategory", &This::GetCategory, copyRefPolicy)
@@ -79,6 +88,7 @@ void wrapShaderNode()
             &This::GetAdditionalPrimvarProperties, copyRefPolicy)
         .def("GetImplementationName",
             &This::GetImplementationName, copyRefPolicy)
+        .def("GetRole", &This::GetRole, copyRefPolicy)
         .def("GetPropertyNamesForPage", &This::GetPropertyNamesForPage)
         .def("GetAllVstructNames", &This::GetAllVstructNames)
         ;

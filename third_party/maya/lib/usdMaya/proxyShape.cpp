@@ -23,6 +23,7 @@
 //
 #include "usdMaya/proxyShape.h"
 
+#include "usdMaya/hdImagingShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
@@ -30,7 +31,7 @@
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/gf/ray.h"
-#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/hash.h"
@@ -94,10 +95,6 @@ TF_DEFINE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
 // we don't want to rely on Maya to do it on the CPU. AS such, the best
 // performance comes from telling Maya to pretend that every object has no
 // bounds.
-//
-// This has the side effect of disabling bounding box display mode, but that
-// is usually an acceptable loss.
-//
 TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
                       "Enable bounding box rendering (slows refresh rate)");
 
@@ -107,17 +104,17 @@ UsdMayaProxyShape::_sharedClosestPointDelegate = nullptr;
 UsdMayaProxyShape::ObjectSoftSelectEnabledDelgate
 UsdMayaProxyShape::_sharedObjectSoftSelectEnabledDelgate = nullptr;
 
-bool
-UsdMayaIsBoundingBoxModeEnabled()
-{
-    return TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE);
-}
 
 // ========================================================
 
 const MTypeId UsdMayaProxyShape::typeId(0x0010A259);
 const MString UsdMayaProxyShape::typeName(
     UsdMayaProxyShapeTokens->MayaTypeName.GetText());
+
+const MString UsdMayaProxyShape::displayFilterName(
+    TfStringPrintf("%sDisplayFilter",
+                   UsdMayaProxyShapeTokens->MayaTypeName.GetText()).c_str());
+const MString UsdMayaProxyShape::displayFilterLabel("USD Proxies");
 
 // Attributes
 MObject UsdMayaProxyShape::filePathAttr;
@@ -129,8 +126,6 @@ MObject UsdMayaProxyShape::complexityAttr;
 MObject UsdMayaProxyShape::inStageDataAttr;
 MObject UsdMayaProxyShape::inStageDataCachedAttr;
 MObject UsdMayaProxyShape::fastPlaybackAttr;
-MObject UsdMayaProxyShape::tintAttr;
-MObject UsdMayaProxyShape::tintColorAttr;
 MObject UsdMayaProxyShape::outStageDataAttr;
 MObject UsdMayaProxyShape::displayGuidesAttr;
 MObject UsdMayaProxyShape::displayRenderGuidesAttr;
@@ -271,27 +266,6 @@ UsdMayaProxyShape::initialize()
     retValue = addAttribute(fastPlaybackAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    tintAttr = numericAttrFn.create(
-        "tint",
-        "tn",
-        MFnNumericData::kBoolean,
-        0,
-        &retValue);
-    numericAttrFn.setInternal(true);
-    numericAttrFn.setAffectsAppearance(true);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(tintAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    tintColorAttr = numericAttrFn.createColor(
-        "tintColor",
-        "tcol",
-        &retValue);
-    numericAttrFn.setAffectsAppearance(true);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(tintColorAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
     outStageDataAttr = typedAttrFn.create(
         "outStageData",
         "od",
@@ -419,10 +393,11 @@ UsdMayaProxyShape::GetObjectSoftSelectEnabled()
 void
 UsdMayaProxyShape::postConstructor()
 {
-    //
-    // don't allow shading groups to be assigned
-    //
     setRenderable(true);
+
+    // This shape uses Hydra for imaging, so make sure that the
+    // pxrHdImagingShape is setup.
+    PxrMayaHdImagingShape::GetOrCreateInstance();
 }
 
 /* virtual */
@@ -432,8 +407,6 @@ UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     if (plug == excludePrimPathsAttr ||
             plug == timeAttr ||
             plug == complexityAttr ||
-            plug == tintAttr ||
-            plug == tintColorAttr ||
             plug == displayGuidesAttr ||
             plug == displayRenderGuidesAttr) {
         // If the attribute that needs to be computed is one of these, then it
@@ -668,8 +641,8 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
 bool
 UsdMayaProxyShape::isBounded() const
 {
-    return !_useFastPlayback && isStageValid()
-                && TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE);
+    return !_useFastPlayback &&
+        TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE)&& isStageValid();
 }
 
 /* virtual */
@@ -944,45 +917,13 @@ UsdMayaProxyShape::_GetDisplayRenderGuides(MDataBlock dataBlock) const
 }
 
 bool
-UsdMayaProxyShape::getTint(GfVec4f* outTintColor) const
-{
-    return _GetTint( const_cast<UsdMayaProxyShape*>(this)->forceCache(), outTintColor );
-}
-
-bool
-UsdMayaProxyShape::_GetTint(MDataBlock dataBlock, GfVec4f* outTintColor) const
-{
-    // We're hardcoding this for now -- could add more support later if need be
-    static const float tintAlpha = 0.35f;
-
-    MStatus status;
-    bool retValue = true;
-
-    MDataHandle tintHandle = dataBlock.inputValue(tintAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    retValue = tintHandle.asBool();
-
-    MDataHandle tintColorHandle = dataBlock.inputValue(tintColorAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    float3 &tintColor = tintColorHandle.asFloat3();
-
-    *outTintColor = { tintColor[0], tintColor[1], tintColor[2], tintAlpha };
-
-    return retValue;
-}
-
-bool
 UsdMayaProxyShape::GetAllRenderAttributes(
         UsdPrim* usdPrimOut,
         SdfPathVector* excludePrimPathsOut,
         int* complexityOut,
         UsdTimeCode* timeOut,
         bool* guidesOut,
-        bool* renderGuidesOut,
-        bool* tint,
-        GfVec4f* tintColor)
+        bool* renderGuidesOut)
 {
     MDataBlock dataBlock = forceCache();
 
@@ -995,7 +936,6 @@ UsdMayaProxyShape::GetAllRenderAttributes(
     *timeOut = _GetTime( dataBlock );
     *guidesOut = _GetDisplayGuides( dataBlock );
     *renderGuidesOut = _GetDisplayRenderGuides( dataBlock );
-    *tint = _GetTint( dataBlock, tintColor );
 
     return true;
 }
@@ -1081,12 +1021,10 @@ UsdMayaProxyShape::closestPoint(
             GfVec3d(raySource.x, raySource.y, raySource.z),
             GfVec3d(rayDirection.x, rayDirection.y, rayDirection.z));
         GfVec3d hitPoint;
-        if (_sharedClosestPointDelegate(*this, ray, &hitPoint)) {
+        GfVec3d hitNorm;
+        if (_sharedClosestPointDelegate(*this, ray, &hitPoint, &hitNorm)) {
             theClosestPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
-            // XXX: Need support in Hydra for sidecar information like surface
-            // normals in order to implement this. Right now, we're just
-            // returning a sane default of the up-axis.
-            theClosestNormal = MGlobal::upAxis();
+            theClosestNormal = MVector(hitNorm[0], hitNorm[1], hitNorm[2]);
             return true;
         }
     }

@@ -1,4 +1,4 @@
-root.usdc
+myLayer.usdc
 meta_c.usd
 meta_b.usd
 meta_a.usd

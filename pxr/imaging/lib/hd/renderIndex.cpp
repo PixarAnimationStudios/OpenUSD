@@ -54,6 +54,8 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -464,6 +466,16 @@ HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
     return _bprimIndex.GetFallbackPrim(typeId);
 }
 
+
+HdResourceRegistry::TextureKey
+HdRenderIndex::GetTextureKey(HdTextureResource::ID id) const
+{
+    HdResourceRegistry::TextureKey key = boost::hash_value(this);
+    boost::hash_combine(key, id);
+
+    return key;
+}
+
 // ---------------------------------------------------------------------- //
 // Render Delegate
 // ---------------------------------------------------------------------- //
@@ -501,43 +513,43 @@ void
 HdRenderIndex::_ConfigureReprs()
 {
     // pre-defined reprs (to be deprecated or minimalized)
-    HdMesh::ConfigureRepr(HdTokens->hull,
+    HdMesh::ConfigureRepr(HdReprTokens->hull,
                           HdMeshReprDesc(HdMeshGeomStyleHull,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/true,
                                          /*blendWireframeColor=*/false));
-    HdMesh::ConfigureRepr(HdTokens->smoothHull,
+    HdMesh::ConfigureRepr(HdReprTokens->smoothHull,
                           HdMeshReprDesc(HdMeshGeomStyleHull,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/false));
-    HdMesh::ConfigureRepr(HdTokens->wire,
+    HdMesh::ConfigureRepr(HdReprTokens->wire,
                           HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
-    HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
+    HdMesh::ConfigureRepr(HdReprTokens->wireOnSurf,
                           HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
-    HdMesh::ConfigureRepr(HdTokens->refined,
+    HdMesh::ConfigureRepr(HdReprTokens->refined,
                           HdMeshReprDesc(HdMeshGeomStyleSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/false));
-    HdMesh::ConfigureRepr(HdTokens->refinedWire,
+    HdMesh::ConfigureRepr(HdReprTokens->refinedWire,
                           HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
-    HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
+    HdMesh::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                           HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
@@ -546,34 +558,34 @@ HdRenderIndex::_ConfigureReprs()
 
     // TODO: Port over wire on surf geometry shader from internal code base
     // (internal pixar bug 129550)
-    HdBasisCurves::ConfigureRepr(HdTokens->hull,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->hull,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->smoothHull,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->wire,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->wire,
                                  HdBasisCurvesGeomStyleWire);
-    HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->wireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->refined,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refined,
                                  HdBasisCurvesGeomStylePatch);
-    HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWire,
                                  HdBasisCurvesGeomStyleWire);
-    HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
 
-    HdPoints::ConfigureRepr(HdTokens->hull,
+    HdPoints::ConfigureRepr(HdReprTokens->hull,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->smoothHull,
+    HdPoints::ConfigureRepr(HdReprTokens->smoothHull,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->wire,
+    HdPoints::ConfigureRepr(HdReprTokens->wire,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->wireOnSurf,
+    HdPoints::ConfigureRepr(HdReprTokens->wireOnSurf,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->refined,
+    HdPoints::ConfigureRepr(HdReprTokens->refined,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->refinedWire,
+    HdPoints::ConfigureRepr(HdReprTokens->refinedWire,
                             HdPointsGeomStylePoints);
-    HdPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
+    HdPoints::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                             HdPointsGeomStylePoints);
 }
 // -------------------------------------------------------------------------- //
@@ -595,9 +607,7 @@ _DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const HdRprimCollection &collection = filterParam->collection;
     const HdRenderIndex *renderIndex    = filterParam->renderIndex;
 
-   TfToken const & repr = collection.GetReprName();
-
-   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID, repr))) {
+   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID))) {
        return true;
    }
 
@@ -662,14 +672,14 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 }
 
 TfToken
-HdRenderIndex::GetRenderTag(SdfPath const& id, TfToken const& reprName) const
+HdRenderIndex::GetRenderTag(SdfPath const& id) const
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
     if (info == nullptr) {
         return HdTokens->hidden;
     }
 
-    return info->rprim->GetRenderTag(info->sceneDelegate, reprName);
+    return info->rprim->GetRenderTag(info->sceneDelegate);
 }
 
 SdfPathVector
@@ -734,17 +744,17 @@ namespace {
     };
 
     struct _ReprSpec {
-        _ReprSpec(TfToken const &repr, bool forced) :
-            reprName(repr), forcedRepr(forced) {}
-        TfToken reprName;
+        _ReprSpec(HdReprSelector const &repr, bool forced) :
+            reprSelector(repr), forcedRepr(forced) {}
+        HdReprSelector reprSelector;
         bool forcedRepr;
 
         bool operator < (_ReprSpec const &other) const {
-            return reprName < other.reprName ||
-                (reprName == other.reprName && (forcedRepr && (!other.forcedRepr)));
+            return reprSelector < other.reprSelector ||
+                (reprSelector == other.reprSelector && (forcedRepr && (!other.forcedRepr)));
         }
         bool operator == (_ReprSpec const &other) const {
-            return  (reprName == other.reprName) &&
+            return  (reprSelector == other.reprSelector) &&
                     (forcedRepr == other.forcedRepr);
         }
     };
@@ -785,7 +795,7 @@ namespace {
                         rprim.Sync(_sceneDelegate,
                                    _renderParam,
                                    &dirtyBits,
-                                    it->reprName,
+                                    it->reprSelector,
                                    it->forcedRepr);
                     }
                     reprsMask >>= 1;
@@ -843,7 +853,7 @@ namespace {
                 TF_FOR_ALL(it, reprs) {
                     if (reprsMask & 1) {
                         rprim->InitRepr(sceneDelegate,
-                                        it->reprName,
+                                        it->reprSelector,
                                         it->forcedRepr,
                                         &dirtyBits);
                     }
@@ -983,7 +993,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         for (auto const& hdDirtyList : _syncQueue) {
             HdRprimCollection const& collection = hdDirtyList->GetCollection();
 
-            _ReprSpec reprSpec(collection.GetReprName(),
+            _ReprSpec reprSpec(collection.GetReprSelector(),
                                collection.IsForcedRepr());
 
             // find reprIndex and append it if not exists.
@@ -1386,7 +1396,7 @@ HdRenderIndex::_AppendDrawItems(
                 HdRprimCollection const& collection,
                 _ConcurrentDrawItems* result)
 {
-    TfToken const& reprName = collection.GetReprName();
+    HdReprSelector const& reprSelector = collection.GetReprSelector();
     bool forcedRepr = collection.IsForcedRepr();
 
     // Get draw item view for this thread.
@@ -1403,12 +1413,11 @@ HdRenderIndex::_AppendDrawItems(
             // Extract the draw items and assign them to the right command buffer
             // based on the tag
             if (const std::vector<HdDrawItem*> *drawItems =
-                          rprimInfo.rprim->GetDrawItems(reprName,
+                          rprimInfo.rprim->GetDrawItems(reprSelector,
                                                         forcedRepr)) {
 
                 const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(
-                                                        rprimInfo.sceneDelegate,
-                                                        reprName);
+                                                       rprimInfo.sceneDelegate);
 
                 HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
 

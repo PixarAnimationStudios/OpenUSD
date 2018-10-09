@@ -69,8 +69,8 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
                       const SdfPath& path,
                       const TfToken& config)
 {
-    if (config != PxrUsdExportJobArgsTokens->auto_ &&
-        config != PxrUsdExportJobArgsTokens->explicit_) {
+    if (config != UsdMayaJobExportArgsTokens->auto_ &&
+        config != UsdMayaJobExportArgsTokens->explicit_) {
         return SdfPath();
     }
 
@@ -92,7 +92,7 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
         else {
             return root.GetPath();
         }
-    } else if(config == PxrUsdExportJobArgsTokens->auto_) {
+    } else if(config == UsdMayaJobExportArgsTokens->auto_) {
         // If auto-generating the SkelRoot, find the rootmost
         // UsdGeomXform and turn it into a SkelRoot.
         // XXX: It might be good to also consider model hierarchy here, and not

@@ -44,6 +44,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("plug"),
         TfToken("pxOsd"),
         TfToken("sdf"),
+        TfToken("sdr"),
         TfToken("tf"),
         TfToken("trace"),
         TfToken("usd"),

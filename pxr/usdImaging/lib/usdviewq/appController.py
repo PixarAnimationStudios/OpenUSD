@@ -801,8 +801,8 @@ class AppController(QtCore.QObject):
             self._ui.actionDisplay_PrimId.triggered.connect(
                 self._toggleDisplayPrimId)
 
-            self._ui.actionEnable_Hardware_Shading.triggered.connect(
-                self._toggleEnableHardwareShading)
+            self._ui.actionEnable_Scene_Materials.triggered.connect(
+                self._toggleEnableSceneMaterials)
 
             self._ui.actionCull_Backfaces.triggered.connect(
                 self._toggleCullBackfaces)
@@ -1222,6 +1222,19 @@ class AppController(QtCore.QObject):
                     if action.text() == self._stageView.rendererPluginName:
                         action.setChecked(True)
                         break
+                # Then display an error message to let the user know something
+                # went wrong, and disable the menu item so it can't be selected
+                # again.
+                for action in self._ui.rendererPluginActionGroup.actions():
+                    if action.pluginType == plugin:
+                        self.statusMessage(
+                            'Renderer not supported: %s' % action.text())
+                        action.setText(action.text() + " (unsupported)")
+                        action.setDisabled(True)
+                        break
+            else:
+                # Refresh the AOV menu
+                self._configureRendererAovs()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1251,13 +1264,61 @@ class AppController(QtCore.QObject):
                         break
                     i += 1
 
-            # Otherwise, put a no-op placeholder in.
-            if not foundPlugin:
-                action = self._ui.menuRendererPlugin.addAction('Default')
-                action.setCheckable(True)
-                action.setChecked(True)
-                self._ui.rendererPluginActionGroup.addAction(action)
+            # Otherwise, disable the menu.
+            self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
+            # Refresh the AOV menu
+            self._configureRendererAovs()
+
+    # Renderer AOV support
+    def _rendererAovChanged(self, aov):
+        if self._stageView:
+            self._stageView.SetRendererAov(aov)
+            self._ui.aovOtherAction.setText("Other...")
+
+    def _configureRendererAovs(self):
+        if self._stageView:
+            self._ui.rendererAovActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.rendererAovActionGroup.setExclusive(True)
+            self._ui.menuRendererAovs.clear()
+
+            aovs = self._stageView.GetRendererAovs()
+            for aov in aovs:
+                action = self._ui.menuRendererAovs.addAction(aov)
+                action.setCheckable(True)
+                if (aov == "color"):
+                    action.setChecked(True)
+                action.aov = aov
+                self._ui.rendererAovActionGroup.addAction(action)
+
+                action.triggered[bool].connect(lambda _, aov=aov:
+                        self._rendererAovChanged(aov))
+            self._ui.aovOtherAction = self._ui.menuRendererAovs.addAction("Other...")
+            self._ui.aovOtherAction.setCheckable(True)
+            self._ui.aovOtherAction.aov = "Other"
+            self._ui.rendererAovActionGroup.addAction(self._ui.aovOtherAction)
+            self._ui.aovOtherAction.triggered[bool].connect(self._otherAov)
+
+            self._ui.menuRendererAovs.setEnabled(len(aovs) != 0)
+
+    def _otherAov(self):
+        # If we've already selected "Other..." as an AOV, populate the current
+        # AOV name.
+        initial = ""
+        if self._ui.aovOtherAction.text() != "Other...":
+            initial = self._stageView.rendererAovName
+
+        aov, ok = QtWidgets.QInputDialog.getText(self._mainWindow, "Other AOVs",
+            "Enter the aov name. Visualize primvars with \"primvars:name\".",
+            QtWidgets.QLineEdit.Normal, initial)
+        if (ok and len(aov) > 0):
+            self._rendererAovChanged(str(aov))
+            self._ui.aovOtherAction.setText("Other (%r)..." % str(aov))
+        else:
+            for action in self._ui.rendererAovActionGroup.actions():
+                if action.text() == self._stageView.rendererAovName:
+                    action.setChecked(True)
+                    break
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
@@ -1948,9 +2009,9 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.displayPrimId = (
             self._ui.actionDisplay_PrimId.isChecked())
 
-    def _toggleEnableHardwareShading(self):
-        self._dataModel.viewSettings.enableHardwareShading = (
-            self._ui.actionEnable_Hardware_Shading.isChecked())
+    def _toggleEnableSceneMaterials(self):
+        self._dataModel.viewSettings.enableSceneMaterials = (
+            self._ui.actionEnable_Scene_Materials.isChecked())
 
     def _toggleCullBackfaces(self):
         self._dataModel.viewSettings.cullBackfaces = (
@@ -3896,9 +3957,9 @@ class AppController(QtCore.QObject):
 
             pathNames = ", ".join(path.name for path in paths)
             if active:
-                self.editComplete("Deactivated {}.".format(pathNames))
-            else:
                 self.editComplete("Activated {}.".format(pathNames))
+            else:
+                self.editComplete("Deactivated {}.".format(pathNames))
 
     def activateSelectedPrims(self):
         self._setSelectedPrimsActivation(True)
@@ -4299,8 +4360,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.displayRender)
 
     def _refreshViewMenu(self):
-        self._ui.actionEnable_Hardware_Shading.setChecked(
-            self._dataModel.viewSettings.enableHardwareShading)
+        self._ui.actionEnable_Scene_Materials.setChecked(
+            self._dataModel.viewSettings.enableSceneMaterials)
         self._ui.actionDisplay_PrimId.setChecked(
             self._dataModel.viewSettings.displayPrimId)
         self._ui.actionCull_Backfaces.setChecked(

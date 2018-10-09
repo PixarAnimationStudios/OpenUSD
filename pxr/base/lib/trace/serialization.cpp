@@ -52,12 +52,9 @@ TraceSerialization::Write(
         return false;
     }
     {
-        TF_DESCRIBE_SCOPE("Converting TraceCollections to JSON");
-        colVal = Trace_JSONSerialization::CollectionsToJSON(collections);
-    }
-    if (!colVal.IsNull()) {
         TF_DESCRIBE_SCOPE("Writing JSON");
-        JsWriteToStream(colVal, ostr);
+        JsWriter js(ostr);
+        Trace_JSONSerialization::WriteCollectionsToJSON(js, collections);
         return true;
     }
     return false;

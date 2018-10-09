@@ -361,12 +361,13 @@ string
 Sdf_GetLayerDisplayName(
     const string& identifier)
 {
-    if (Sdf_IsAnonLayerIdentifier(identifier)) {
-        return Sdf_GetAnonLayerDisplayName(identifier);
-    }
 
     string layerPath, arguments;
     Sdf_SplitIdentifier(identifier, &layerPath, &arguments);
+
+    if (Sdf_IsAnonLayerIdentifier(layerPath)) {
+        return Sdf_GetAnonLayerDisplayName(layerPath);
+    }
 
     // If the layer path is a package-relative path, we want
     // the basename of the outermost package combined with

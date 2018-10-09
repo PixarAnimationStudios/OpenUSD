@@ -29,6 +29,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <thread>
 
@@ -151,6 +152,13 @@ public:
     HD_API
     void SetRenderCallback(std::function<void()> renderCallback);
 
+    /// Set the shutdown callback for the render thread to use. This will be
+    /// called once, right before the render thread exits, regardless of whether
+    /// the render callback has been called. This can be used to clean up
+    /// thread-specific rendering resources.
+    HD_API
+    void SetShutdownCallback(std::function<void()> shutdownCallback);
+
     /// Start the rendering background thread.
     /// Note: it's an error to call this function when the render thread is
     /// already running, but it's acceptable to stop the render thread and then
@@ -247,8 +255,16 @@ private:
     // actually rendering.  It's called from _RenderLoop.
     std::function<void()> _renderCallback;
 
+    // _shutdownCallback is the render-delegate-provided function responsible
+    // for cleaning up thread-specific resources.  It's called once, right
+    // before _RenderLoop exits.
+    std::function<void()> _shutdownCallback;
+
     // A placeholder initial value for _renderCallback.
     static void _DefaultRenderCallback();
+
+    // A placeholder initial value for _shutdownCallback.
+    static void _DefaultShutdownCallback();
 
     // The state enumeration of the render thread state machine; see
     // \ref HdRenderThread_StateMachine for details.

@@ -178,11 +178,12 @@ over "GLOBAL" (
                 sparsely. The value "fallbackStrength" never gets authored 
                 into scene description."""
             }
-            dictionary shaderMetadata = {
-                string doc = """Dictionary valued metadata key authored on a 
-                Shader prim with implementationSource value of sourceAsset or 
+            dictionary sdrMetadata = {
+                string doc = """Dictionary valued metadata key authored on
+                Shader prims with implementationSource value of sourceAsset or 
                 sourceCode to pass along metadata to the shader parser or 
-                compiler.
+                compiler. It is also used to author metadata on shader 
+                properties in a UsdShade-based shader definition file.
                 """
             }
         }

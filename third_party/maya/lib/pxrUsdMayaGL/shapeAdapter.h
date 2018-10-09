@@ -93,6 +93,13 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         virtual bool UpdateVisibility(const MSelectionList& isolatedObjects);
 
+        /// Gets whether the shape adapter's shape is visible.
+        ///
+        /// This should be called after a call to UpdateVisibility() to ensure
+        /// that the returned value is correct. 
+        PXRUSDMAYAGL_API
+        virtual bool IsVisible() const;
+
         /// Get the Maya user data object for drawing in the legacy viewport.
         ///
         /// This Maya user data is attached to the given \p drawRequest. Its
@@ -242,4 +249,4 @@ class PxrMayaHdShapeAdapter
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_SHAPE_ADAPTER_H
+#endif
