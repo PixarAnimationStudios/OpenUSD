@@ -36,7 +36,6 @@
 
 #include <boost/assign.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashset.h"
 
 #include <set>

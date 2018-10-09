@@ -79,8 +79,12 @@ static const char* _helpMsg =
     "enables debugging for any symbol in STAF, all symbols in SIC except for\n"
     "SIC_REGISTRY_ENUMS and the symbol GPT_IK.\n";
 
-class ARCH_HIDDEN Tf_DebugSymbolRegistry : boost::noncopyable {
+class ARCH_HIDDEN Tf_DebugSymbolRegistry {
 public:
+    // Disallow copies
+    Tf_DebugSymbolRegistry(const Tf_DebugSymbolRegistry&) = delete;
+    Tf_DebugSymbolRegistry& operator=(const Tf_DebugSymbolRegistry&) = delete;
+
     static Tf_DebugSymbolRegistry& _GetInstance() {
         return TfSingleton<Tf_DebugSymbolRegistry>::GetInstance();
     }

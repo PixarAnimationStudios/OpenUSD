@@ -47,7 +47,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class TfPatternMatcher
 {
-
   public:
 
     /// Construct an empty (invalid) TfPatternMatcher.

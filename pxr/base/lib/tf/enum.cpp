@@ -37,7 +37,6 @@
 
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashmap.h"
 
 #include <tbb/spin_mutex.h>
@@ -62,8 +61,12 @@ typedef TfHashMap<string, TfEnum, TfHash> _NameToEnumTableType;
 typedef TfHashMap<string, vector<string>, TfHash> _TypeNameToNameVectorTableType;
 typedef TfHashMap<string, const type_info *, TfHash> _TypeNameToTypeTableType;
 
-class Tf_EnumRegistry : boost::noncopyable {
+class Tf_EnumRegistry {
 private:
+    // Disallow copies
+    Tf_EnumRegistry(const Tf_EnumRegistry&) = delete;
+    Tf_EnumRegistry& operator=(const Tf_EnumRegistry&) = delete;
+
     static Tf_EnumRegistry& _GetInstance() {
         return TfSingleton<Tf_EnumRegistry>::GetInstance();
     }
