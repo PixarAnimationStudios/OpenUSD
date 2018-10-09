@@ -28,7 +28,6 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/iterator.h"
 
 #include <boost/python.hpp>
 #include <string>
@@ -45,9 +44,9 @@ static dict
 _ConvertDict( const JsObject & dictionary )
 {
     dict result;
-    TF_FOR_ALL(i, dictionary) {
-        const string & key = i->first;
-        const JsValue & val = i->second;
+    for (const auto& p : dictionary) {
+        const string & key  = p.first;
+        const JsValue & val = p.second;
 
         result[key] = JsConvertToContainerType<object, dict>(val);
     }
