@@ -40,6 +40,7 @@
 #include "gusd/UT_Assert.h"
 #include "gusd/UT_Gf.h"
 
+#include "pxr/base/arch/hints.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/xform.h"
@@ -428,7 +429,7 @@ GusdOBJ_usdcamera::evalVariableValue(fpreal& val, int idx, int thread)
        variable, which requires evaluation of the frame parm...and we're
        stuck in a loop.*/
     _VarEvalStack*& stack = _varEvalStack.getValueForThread(thread);
-    if(BOOST_UNLIKELY(!stack)) stack = new _VarEvalStack;
+    if(ARCH_UNLIKELY(!stack)) stack = new _VarEvalStack;
     
     if(stack->Last() != idx) {
         stack->Push(idx);
