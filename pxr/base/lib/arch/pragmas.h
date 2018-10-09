@@ -51,6 +51,9 @@
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         _Pragma("GCC diagnostic ignored \"-Wbuiltin-macro-redefined\"")
 
+    // GCC Has no undefined-var-template warning
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
+
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("GCC diagnostic ignored \"-Wwrite-strings\"")
 
@@ -64,6 +67,9 @@
 
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         _Pragma("clang diagnostic ignored \"-Wbuiltin-macro-redefined\"")
+
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE \
+        _Pragma("clang diagnostic ignored \"-Wundefined-var-template\"")
 
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("clang diagnostic ignored \"-Wwrite-strings\"")
@@ -84,6 +90,9 @@
 
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         __pragma(warning(disable:4005)) 
+
+    // MSVC has no undefined-var-template warning.
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
 
     #define ARCH_PRAGMA_QUALIFIER_HAS_NO_MEANING \
         __pragma(warning(disable:4180)) 
