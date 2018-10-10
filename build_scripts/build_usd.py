@@ -446,13 +446,13 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # boost
 
 if Linux():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif MacOS():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     # The default installation of boost on Windows puts headers in a versioned 
     # subdirectory, which we have to account for here. In theory, specifying 
     # "layout=system" would make the Windows install match Linux/MacOS, but that 
@@ -461,7 +461,7 @@ elif Windows():
 
     # On Visual Studio 2017 we need at least boost 1.65.1
     if IsVisualStudio2017OrGreater():
-        BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
+        BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
 
 
@@ -606,7 +606,7 @@ JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
 ############################################################
 # TIFF
 
-TIFF_URL = "http://download.osgeo.org/libtiff/tiff-4.0.7.zip"
+TIFF_URL = "https://download.osgeo.org/libtiff/tiff-4.0.7.zip"
 
 def InstallTIFF(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TIFF_URL, context, force)):
@@ -628,7 +628,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "http://downloads.sourceforge.net/project/libpng/libpng16/older-releases/1.6.29/libpng-1.6.29.tar.gz"
+PNG_URL = "https://downloads.sourceforge.net/project/libpng/libpng16/older-releases/1.6.29/libpng-1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
@@ -660,7 +660,7 @@ OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 # GLEW
 
 if Windows():
-    GLEW_URL = "http://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
+    GLEW_URL = "https://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
 else:
     # Important to get source package from this URL and NOT github. This package
     # contains pre-generated code that the github repo does not.
@@ -1647,15 +1647,15 @@ Print("""
 """.format(requiredInPath="\n    ".join(sorted(requiredInPath))))
 
 if context.buildMaya:
-    Print("See documentation at http://openusd.org/docs/Maya-USD-Plugins.html "
+    Print("See documentation at https://graphics.pixar.com/usd/docs/Maya-USD-Plugins.html "
           "for setting up the Maya plugin.\n")
     
 if context.buildKatana:
-    Print("See documentation at http://openusd.org/docs/Katana-USD-Plugins.html "
+    Print("See documentation at https://graphics.pixar.com/usd/docs/Katana-USD-Plugins.html "
           "for setting up the Katana plugin.\n")
 
 if context.buildHoudini:
-    Print("See documentation at http://openusd.org/docs/Houdini-USD-Plugins.html "
+    Print("See documentation at https://graphics.pixar.com/usd/docs/Houdini-USD-Plugins.html "
           "for setting up the Houdini plugin.\n")
     
     
