@@ -270,9 +270,7 @@ GetNumericTime(UsdTimeCode time)
 inline bool
 ImageablePrimIsVisible(const UsdGeomImageable& prim, UsdTimeCode time)
 {
-    TfToken vis;
-    prim.GetVisibilityAttr().Get(&vis, time);
-    return vis == UsdGeomTokens->inherited;
+    return prim.ComputeVisibility(time) == UsdGeomTokens->inherited;
 }
 
 
