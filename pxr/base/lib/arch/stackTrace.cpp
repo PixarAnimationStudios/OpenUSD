@@ -55,7 +55,7 @@
 #include <algorithm>
 #include <atomic>
 #include <fstream>
-#include <iostream>
+#include <ostream>
 #include <iterator>
 #include <limits>
 #include <cstdlib>
@@ -1130,7 +1130,7 @@ ArchPrintStackTrace(std::ostream& out, const std::string& reason)
 
 /*
  * ArchPrintStackTrace
- *  print out a stack trace to the given iostream.
+ *  print out a stack trace to the given ostream.
  * 
  * This function should probably not be called from a signal handler as 
  * it calls printf and other unsafe functions.
@@ -1292,7 +1292,7 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames);
 
 /*
  * ArchPrintStackFrames
- *  print out stack frames to the given iostream.
+ *  print out stack frames to the given ostream.
  */
 void
 ArchPrintStackFrames(ostream& oss, const vector<uintptr_t> &frames)

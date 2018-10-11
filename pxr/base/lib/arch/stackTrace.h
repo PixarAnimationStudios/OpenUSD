@@ -147,7 +147,7 @@ void ArchPrintStackTrace(std::ostream& out,
                          const std::string& programName,
                          const std::string& reason);
 
-/// Print a stack trace to the given iostream.
+/// Print a stack trace to the given ostream.
 /// This function uses ArchGetProgramInfoForErrors as the \c programName.
 /// \overload
 ARCH_API
@@ -276,7 +276,7 @@ ARCH_API
 void ArchGetStackFrames(size_t maxDepth, size_t numFramesToSkipAtTop,
                         std::vector<uintptr_t> *frames);
 
-/// Print stack frames to the given iostream.
+/// Print stack frames to the given ostream.
 ARCH_API
 void ArchPrintStackFrames(std::ostream& out,
                           const std::vector<uintptr_t> &frames);
