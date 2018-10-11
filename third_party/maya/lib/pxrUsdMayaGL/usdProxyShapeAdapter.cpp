@@ -130,7 +130,8 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     UsdMayaProxyShape* usdProxyShape = 
             UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
-        TF_WARN("Failed to get UsdMayaProxyShape for '%s'",
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "Failed to get UsdMayaProxyShape for '%s'\n",
                 shapeDagPath.fullPathName().asChar());
         return false;
     }
@@ -147,7 +148,9 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
                                                &timeCode,
                                                &showGuides,
                                                &showRenderGuides)) {
-        TF_WARN("Failed to get render attributes for UsdMayaProxyShape.");
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "Failed to get render attributes for UsdMayaProxyShape '%s'\n",
+                shapeDagPath.fullPathName().asChar());
         return false;
     }
 
