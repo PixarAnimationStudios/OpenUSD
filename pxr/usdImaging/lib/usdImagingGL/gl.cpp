@@ -129,33 +129,6 @@ UsdImagingGL::IsBatchingSupported()
     return IsEnabledHydra();
 }
 
-/* static */
-void
-UsdImagingGL::PrepareBatch(
-    const UsdImagingGLSharedPtrVector& renderers,
-    const UsdPrimVector& rootPrims,
-    const std::vector<UsdTimeCode>& times,
-    RenderParams params)
-{
-    if (!IsBatchingSupported()) {
-        return;
-    }
-
-    // Batching is only supported if the Hydra engine is enabled, and if
-    // it is then all of the UsdImagingGL instances we've been given
-    // must use a UsdImagingGLHdEngine engine. So we explicitly call the
-    // the static method on that class.
-    UsdImagingGLHdEngineSharedPtrVector hdEngines;
-    hdEngines.reserve(renderers.size());
-    TF_FOR_ALL(it, renderers) {
-        hdEngines.push_back(
-            boost::dynamic_pointer_cast<UsdImagingGLHdEngine>(
-                (*it)->_engine));
-    }
-
-    UsdImagingGLHdEngine::PrepareBatch(hdEngines, rootPrims, times, params);
-}
-
 /*virtual*/
 void
 UsdImagingGL::PrepareBatch(const UsdPrim& root, RenderParams params)

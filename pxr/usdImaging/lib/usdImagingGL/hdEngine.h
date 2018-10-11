@@ -84,14 +84,8 @@ public:
     virtual void InvalidateBuffers();
 
     USDIMAGINGGL_API
-    static void PrepareBatch(
-        const UsdImagingGLHdEngineSharedPtrVector& engines,
-        const UsdPrimVector& rootPrims,
-        const std::vector<UsdTimeCode>& times,
-        RenderParams params);
-
-    USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+
     USDIMAGINGGL_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
@@ -196,20 +190,6 @@ public:
     virtual VtDictionary GetResourceAllocation() const;
 
 private:
-    // Helper functions for preparing multiple engines for
-    // batched drawing.
-    static void _PrepareBatch(const UsdImagingGLHdEngineSharedPtrVector& engines,
-                              const UsdPrimVector& rootPrims,
-                              const std::vector<UsdTimeCode>& times,
-                              const RenderParams& params);
-
-    static void _Populate(const UsdImagingGLHdEngineSharedPtrVector& engines,
-                          const UsdPrimVector& rootPrims,
-                          const RenderParams& params);
-    static void _SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engines,
-                          const UsdPrimVector& rootPrims,
-                          const std::vector<UsdTimeCode>& times,
-                          const RenderParams& params);
 
     // These functions factor batch preparation into separate steps so they
     // can be reused by both the vectorized and non-vectorized API.
