@@ -230,8 +230,10 @@ JsParseString(
     _InputHandler handler;
     rj::Reader reader;
     rj::StringStream ss(data.c_str());
+     // Need Full precision flag to round trip double values correctly.
     rj::ParseResult result =
-        reader.Parse<rj::kParseStopWhenDoneFlag>(ss, handler);
+        reader.Parse<rj::kParseFullPrecisionFlag|rj::kParseStopWhenDoneFlag>(
+            ss, handler);
 
     if (!result) {
         if (error) {
