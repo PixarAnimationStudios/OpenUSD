@@ -1012,16 +1012,20 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     } else {
         HdBufferArrayRangeSharedPtr range = bar;
 
+        // Get the hint for the previous range
+        HdBufferArrayUsageHint orgHint = range->GetUsageHint();
+
+        //
+        // Compute the new usage hints for the range, using the
+        // the  original hints to prevent ping-ponging between states.
+        HdBufferArrayUsageHint usageHint;
+        usageHint.value = orgHint.value;
+
         // Set up the usage hints to mark the primvar as size varying if
         // there is a previously set range and it contained a differing number
         // of elements
-        HdBufferArrayUsageHint usageHint;
-        usageHint.value = 0;
-
-        if (range) {
-            if ((int)range->GetNumElements() != numPoints) {
-                usageHint.bits.sizeVarying = 1;
-            }
+        if ((int)range->GetNumElements() != numPoints) {
+            usageHint.bits.sizeVarying = 1;
         }
 
         // already have a valid range, but the new repr may have
@@ -1030,7 +1034,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
                      (useSmoothNormals != _smoothNormals) ||
                      (usePackedSmoothNormals != _packedSmoothNormals) ||
-                     (range->GetUsageHint().value != usageHint.value);
+                     (orgHint.value != usageHint.value);
 
         if (bar->IsImmutable() && _IsEnabledSharedVertexPrimvar()) {
             if (isNew) {
@@ -1058,6 +1062,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             } else {
                 // something is going to change and the existing bar
                 // is immutable, migrate to a mutable buffer array
+                usageHint.bits.immutable = 0;
                 _vertexPrimvarId = 0;
                 range = resourceRegistry->MergeNonUniformBufferArrayRange(
                             HdTokens->primvar,
