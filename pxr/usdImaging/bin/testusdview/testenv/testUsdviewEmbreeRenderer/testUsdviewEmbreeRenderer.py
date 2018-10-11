@@ -37,8 +37,9 @@ def testUsdviewInputFunction(appController):
 
     _modifySettings(appController)
 
-    # process a couple of hundred events to let the renderer draw something
-    # reasonably converged.
-    for i in range(0,200):
-        QtWidgets.QApplication.processEvents()
+    # Wait until the image is converged
+    if appController._stageView._renderer:
+        while not appController._stageView._renderer.IsConverged():
+            QtWidgets.QApplication.processEvents()
+
     _takeShot(appController, "viewport.png")
