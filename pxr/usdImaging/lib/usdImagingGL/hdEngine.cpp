@@ -924,7 +924,7 @@ UsdImagingGLHdEngine::GetRendererPlugins() const
 
 /* virtual */
 std::string
-UsdImagingGLHdEngine::GetRendererPluginDesc(TfToken const &id) const
+UsdImagingGLHdEngine::GetRendererDisplayName(TfToken const &id) const
 {
     HfPluginDesc pluginDescriptor;
     if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().

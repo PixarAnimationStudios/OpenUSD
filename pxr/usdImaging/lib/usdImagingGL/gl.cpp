@@ -291,9 +291,9 @@ UsdImagingGL::GetRendererPlugins() const
 
 /* virtual */
 std::string
-UsdImagingGL::GetRendererPluginDesc(TfToken const &id) const
+UsdImagingGL::GetRendererDisplayName(TfToken const &id) const
 {
-    return _engine->GetRendererPluginDesc(id);
+    return _engine->GetRendererDisplayName(id);
 }
 
 /* virtual */

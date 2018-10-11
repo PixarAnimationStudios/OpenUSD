@@ -1223,7 +1223,7 @@ class AppController(QtCore.QObject):
                 # If SetRendererPlugin failed, we need to reset the check mark
                 # to whatever the currently loaded renderer is.
                 for action in self._ui.rendererPluginActionGroup.actions():
-                    if action.text() == self._stageView.rendererPluginName:
+                    if action.text() == self._stageView.rendererDisplayName:
                         action.setChecked(True)
                         break
                 # Then display an error message to let the user know something
@@ -1247,7 +1247,7 @@ class AppController(QtCore.QObject):
 
             pluginTypes = self._stageView.GetRendererPlugins()
             for pluginType in pluginTypes:
-                name = self._stageView.GetRendererPluginDisplayName(pluginType)
+                name = self._stageView.GetRendererDisplayName(pluginType)
                 action = self._ui.menuRendererPlugin.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType

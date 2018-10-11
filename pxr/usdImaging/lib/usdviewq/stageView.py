@@ -791,8 +791,8 @@ class StageView(QtOpenGL.QGLWidget):
         return self._lastComputedGfCamera.frustum
 
     @property
-    def rendererPluginName(self):
-        return self._rendererPluginName
+    def rendererDisplayName(self):
+        return self._rendererDisplayName
 
     @property
     def rendererAovName(self):
@@ -906,7 +906,7 @@ class StageView(QtOpenGL.QGLWidget):
         return self._renderer
 
     def _handleRendererChanged(self, rendererId):
-        self._rendererPluginName = self.GetRendererPluginDisplayName(rendererId)
+        self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
         self._rendererAovName = "color"
 
     def closeRenderer(self):
@@ -922,9 +922,9 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return []
 
-    def GetRendererPluginDisplayName(self, plugId):
+    def GetRendererDisplayName(self, plugId):
         if self._renderer:
-            return self._renderer.GetRendererPluginDesc(plugId)
+            return self._renderer.GetRendererDisplayName(plugId)
         else:
             return ""
 
@@ -1773,7 +1773,7 @@ class StageView(QtOpenGL.QGLWidget):
         hydraMode = "Disabled"
 
         if UsdImagingGL.GL.IsEnabledHydra():
-            hydraMode = self._rendererPluginName
+            hydraMode = self._rendererDisplayName
             if not hydraMode:
                 hydraMode = "Enabled"
 

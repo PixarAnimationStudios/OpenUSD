@@ -374,7 +374,7 @@ public:
 
     /// Return the user-friendly description of a renderer plugin.
     USDIMAGINGGL_API
-    virtual std::string GetRendererPluginDesc(TfToken const &id) const;
+    virtual std::string GetRendererDisplayName(TfToken const &id) const;
 
     /// Return the id of the currently used renderer plugin.
     USDIMAGINGGL_API

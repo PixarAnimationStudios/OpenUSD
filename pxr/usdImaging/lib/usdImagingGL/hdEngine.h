@@ -153,7 +153,8 @@ public:
     virtual TfTokenVector GetRendererPlugins() const;
 
     USDIMAGINGGL_API
-    virtual std::string GetRendererPluginDesc(TfToken const &id) const;
+    virtual std::string GetRendererDisplayName(TfToken const &id) const 
+        override;
 
     USDIMAGINGGL_API
     virtual TfToken GetCurrentRendererId() const override;
