@@ -26,7 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
+
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <iostream>
 #include <vector>
@@ -129,6 +131,28 @@ public:
     std::vector<JsObject::key_type> keys;
     std::vector<JsObject::mapped_type> values;
 };
+
+// This class is needed to override writing out doubles. There is a bug in 
+// rapidJSON when writing out some double values. These classes uses the Tf
+// library to do the conversion instead.
+// See: https://github.com/Tencent/rapidjson/issues/954
+
+template <class TBase>
+class _WriterFix : public TBase
+{
+public:
+    using Base = TBase;
+    using Base::Base;
+
+    bool Double(double d) { 
+        constexpr int bufferSize = 32;
+        char buffer[bufferSize];
+        TfDoubleToString(d, buffer, bufferSize, true);
+        
+        return Base::RawValue(buffer, strlen(buffer), rj::kNumberType);
+     }
+};
+
 }
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -230,7 +254,7 @@ JsParseString(
     _InputHandler handler;
     rj::Reader reader;
     rj::StringStream ss(data.c_str());
-     // Need Full precision flag to round trip double values correctly.
+    // Need Full precision flag to round trip double values correctly.
     rj::ParseResult result =
         reader.Parse<rj::kParseFullPrecisionFlag|rj::kParseStopWhenDoneFlag>(
             ss, handler);
@@ -276,7 +300,7 @@ JsWriteToStream(
     const rj::Value ivalue = _JsValueToImplValue(value, d.GetAllocator());
 
     rj::OStreamWrapper os(ostr);
-    rj::PrettyWriter<rj::OStreamWrapper> writer(os);
+    _WriterFix<rj::PrettyWriter<rj::OStreamWrapper>> writer(os);
     writer.SetFormatOptions(rj::kFormatSingleLineArray);
     ivalue.Accept(writer);
 }
@@ -289,7 +313,7 @@ JsWriteToString(
     const rj::Value ivalue = _JsValueToImplValue(value, d.GetAllocator());
 
     rj::StringBuffer buffer;
-    rj::PrettyWriter<rj::StringBuffer> writer(buffer);
+     _WriterFix<rj::PrettyWriter<rj::StringBuffer>> writer(buffer);
     writer.SetFormatOptions(rj::kFormatSingleLineArray);
     ivalue.Accept(writer);
 
@@ -302,9 +326,9 @@ JsWriteToString(
 
 // JsWriter is just a wrapper around a rapidJSON stream writer.
 
-class JsWriter::_Impl : public rj::Writer<rj::OStreamWrapper>
+class JsWriter::_Impl : public _WriterFix<rj::Writer<rj::OStreamWrapper>>
 {
-    using Parent = rj::Writer<rj::OStreamWrapper>;
+    using Parent = _WriterFix<rj::Writer<rj::OStreamWrapper>>;
 public:
     _Impl(std::ostream& s) 
     : Parent()

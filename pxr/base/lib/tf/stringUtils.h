@@ -544,6 +544,15 @@ TF_API std::string TfStringify(float);
 /// \overload
 TF_API std::string TfStringify(double);
 
+/// Writes the string representation of \c d to \c buffer of length \c len. 
+/// If \c emitTrailingZero is true, the string representation will end with .0 
+/// in the case where d is an integer otherwise it will be omitted.
+/// The buffer length must be at least 25 in order to ensure that all doubles 
+/// values can be represented.
+/// Returns whether the conversion was successful.
+TF_API bool TfDoubleToString(
+    double d, char* buffer, int len, bool emitTrailingZero);
+
 /// \struct TfStreamFloat
 /// 
 /// A type which offers streaming for floats in a canonical

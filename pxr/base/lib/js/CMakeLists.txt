@@ -46,7 +46,14 @@ pxr_build_test(testJsWriter
         js
     CPPFILES
         testenv/testJsWriter.cpp
-) 
+)
+pxr_build_test(testJsDouble
+    LIBRARIES
+        tf
+        js
+    CPPFILES
+        testenv/testJsDouble.cpp
+)  
 pxr_install_test_dir(
     SRC testenv/testJsIO
     DEST testJsIO
@@ -119,4 +126,8 @@ pxr_register_test(testJsWriter
         testJsWriter
     DIFF_COMPARE 
         test.json
+)
+pxr_register_test(testJsDouble
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsDouble"
 )
