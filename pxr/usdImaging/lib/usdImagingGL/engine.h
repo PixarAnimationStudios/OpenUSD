@@ -376,6 +376,10 @@ public:
     USDIMAGINGGL_API
     virtual std::string GetRendererPluginDesc(TfToken const &id) const;
 
+    /// Return the id of the currently used renderer plugin.
+    USDIMAGINGGL_API
+    virtual TfToken GetCurrentRendererId() const;
+
     /// Set the current render-graph delegate to \p id.
     /// the plugin will be loaded if it's not yet.
     USDIMAGINGGL_API

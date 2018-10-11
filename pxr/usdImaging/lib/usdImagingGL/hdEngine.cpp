@@ -41,6 +41,7 @@
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
 
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -67,7 +68,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _selTracker(new HdxSelectionTracker)
     , _delegateID(delegateID)
     , _delegate(nullptr)
-    , _renderPlugin(nullptr)
+    , _rendererPlugin(nullptr)
     , _taskController(nullptr)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
@@ -78,7 +79,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
 {
     // _renderIndex, _taskController, and _delegate are initialized
     // by the plugin system.
-    if (!SetRendererPlugin(TfToken())) {
+    if (!SetRendererPlugin(GetDefaultRendererPluginId())) {
         TF_CODING_ERROR("No renderer plugins found! Check before creation.");
     }
 }
@@ -934,6 +935,13 @@ UsdImagingGLHdEngine::GetRendererPluginDesc(TfToken const &id) const
     return pluginDescriptor.displayName;
 }
 
+/* virtual */
+TfToken
+UsdImagingGLHdEngine::GetCurrentRendererId() const
+{
+    return _rendererId;
+}
+
 /* static */
 bool
 UsdImagingGLHdEngine::IsDefaultRendererPluginAvailable()
@@ -941,6 +949,32 @@ UsdImagingGLHdEngine::IsDefaultRendererPluginAvailable()
     HfPluginDescVector descs;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&descs);
     return !descs.empty();
+}
+
+TfToken
+UsdImagingGLHdEngine::GetDefaultRendererPluginId()
+{
+    std::string defaultRendererDisplayName = 
+        TfGetenv("HD_DEFAULT_RENDERER", "");
+
+    if (defaultRendererDisplayName.empty()) {
+        return TfToken();
+    }
+
+    HfPluginDescVector pluginDescs;
+    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
+
+    // Look for the one with the matching display name
+    for (size_t i = 0; i < pluginDescs.size(); ++i) {
+        if (pluginDescs[i].displayName == defaultRendererDisplayName) {
+            return pluginDescs[i].id;
+        }
+    }
+
+    TF_WARN("Failed to find default renderer with display name '%s'.",
+            defaultRendererDisplayName.c_str());
+
+    return TfToken();
 }
 
 /* virtual */
@@ -961,7 +995,7 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
     if (plugin == nullptr) {
         TF_CODING_ERROR("Couldn't find plugin for id %s", actualId.GetText());
         return false;
-    } else if (plugin == _renderPlugin) {
+    } else if (plugin == _rendererPlugin) {
         // It's a no-op to load the same plugin twice.
         HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
         return true;
@@ -988,8 +1022,10 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
     _DeleteHydraResources();
 
     // Recreate the render index.
-    _renderPlugin = plugin;
-    HdRenderDelegate *renderDelegate = _renderPlugin->CreateRenderDelegate();
+    _rendererPlugin = plugin;
+    _rendererId = actualId;
+
+    HdRenderDelegate *renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
 
     // Create the new delegate & task controller.
@@ -1032,12 +1068,13 @@ UsdImagingGLHdEngine::_DeleteHydraResources()
         delete _renderIndex;
         _renderIndex = nullptr;
     }
-    if (_renderPlugin != nullptr) {
+    if (_rendererPlugin != nullptr) {
         if (renderDelegate != nullptr) {
-            _renderPlugin->DeleteRenderDelegate(renderDelegate);
+            _rendererPlugin->DeleteRenderDelegate(renderDelegate);
         }
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_renderPlugin);
-        _renderPlugin = nullptr;
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
+        _rendererPlugin = nullptr;
+        _rendererId = TfToken();
     }
 }
 

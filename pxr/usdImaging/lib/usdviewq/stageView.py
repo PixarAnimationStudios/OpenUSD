@@ -899,12 +899,15 @@ class StageView(QtOpenGL.QGLWidget):
         if not self._renderer:
             if self.isValid():
                 self._renderer = UsdImagingGL.GL()
-                self._rendererPluginName = ""
-                self._rendererAovName = "color"
+                self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
         return self._renderer
+
+    def _handleRendererChanged(self, rendererId):
+        self._rendererPluginName = self.GetRendererPluginDisplayName(rendererId)
+        self._rendererAovName = "color"
 
     def closeRenderer(self):
         '''Close the current renderer.'''
@@ -925,12 +928,16 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return ""
 
+    def GetCurrentRendererId(self):
+        if self._renderer:
+            return self._renderer.GetCurrentRendererId()
+        else:
+            return ""
+
     def SetRendererPlugin(self, plugId):
         if self._renderer:
             if self._renderer.SetRendererPlugin(plugId):
-                self._rendererPluginName = \
-                        self.GetRendererPluginDisplayName(plugId)
-                self._rendererAovName = "color"
+                self._handleRendererChanged(plugId)
                 self.updateGL()
                 return True
             else:

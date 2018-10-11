@@ -338,9 +338,13 @@ class AppController(QtCore.QObject):
             # be restored later.
             self._viewerModeEscapeSizes = None
 
-            AppController._renderer = parserData.renderer
-            if AppController._renderer == 'simple':
-                os.environ['HD_ENABLED'] = '0'
+            self._rendererNameOpt = parserData.renderer
+
+            if self._rendererNameOpt:
+                if self._rendererNameOpt == "HydraDisabled":
+                    os.environ['HD_ENABLED'] = '0'
+                else:
+                    os.environ['HD_DEFAULT_RENDERER'] = self._rendererNameOpt
 
             self._mainWindow = QtWidgets.QMainWindow(None)
             # Showing the window immediately prevents UI flashing.
@@ -1252,19 +1256,19 @@ class AppController(QtCore.QObject):
                 action.triggered[bool].connect(lambda _, pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
 
-            # If any plugins exist, set the first one we find supported as the
-            # default
-            foundPlugin = False
-            if len(self._ui.rendererPluginActionGroup.actions()) > 0:
-                i = 0
-                for pluginType in pluginTypes:
-                    if self._stageView.SetRendererPlugin(pluginType):
-                        self._ui.rendererPluginActionGroup.actions()[i].setChecked(True)
-                        foundPlugin = True
-                        break
-                    i += 1
 
-            # Otherwise, disable the menu.
+            # Now set the checked box on the current renderer (it should
+            # have been set by now).
+            currentRendererId = self._stageView.GetCurrentRendererId()
+            foundPlugin = False
+            
+            for action in self._ui.rendererPluginActionGroup.actions():
+                if action.pluginType == currentRendererId:
+                    action.setChecked(True)
+                    foundPlugin = True
+                    break
+
+            # Disable the menu if no plugins were found
             self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
             # Refresh the AOV menu

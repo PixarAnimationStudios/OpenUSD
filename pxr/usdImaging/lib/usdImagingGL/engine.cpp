@@ -699,6 +699,13 @@ UsdImagingGLEngine::GetRendererPluginDesc(TfToken const &id) const
 }
 
 /* virtual */
+TfToken
+UsdImagingGLEngine::GetCurrentRendererId() const
+{
+    return TfToken();
+}
+
+/* virtual */
 bool
 UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {

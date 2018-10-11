@@ -72,6 +72,9 @@ public:
     static bool IsDefaultRendererPluginAvailable();
 
     USDIMAGINGGL_API
+    static TfToken GetDefaultRendererPluginId();
+
+    USDIMAGINGGL_API
     virtual ~UsdImagingGLHdEngine();
 
     USDIMAGINGGL_API
@@ -151,6 +154,9 @@ public:
 
     USDIMAGINGGL_API
     virtual std::string GetRendererPluginDesc(TfToken const &id) const;
+
+    USDIMAGINGGL_API
+    virtual TfToken GetCurrentRendererId() const override;
 
     USDIMAGINGGL_API
     virtual bool SetRendererPlugin(TfToken const &id);
@@ -234,7 +240,8 @@ private:
     SdfPath const _delegateID;
     UsdImagingDelegate *_delegate;
 
-    HdxRendererPlugin *_renderPlugin;
+    HdxRendererPlugin *_rendererPlugin;
+    TfToken _rendererId;
     HdxTaskController *_taskController;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;

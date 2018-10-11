@@ -123,6 +123,7 @@ void wrapGL()
             .def("GetRendererPlugins", &UsdImagingGL::GetRendererPlugins,
                  return_value_policy< TfPySequenceToTuple >())
             .def("GetRendererPluginDesc", &UsdImagingGL::GetRendererPluginDesc)
+            .def("GetCurrentRendererId", &UsdImagingGL::GetCurrentRendererId)
             .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
             .def("GetRendererAovs", &UsdImagingGL::GetRendererAovs,
                  return_value_policy< TfPySequenceToTuple >())

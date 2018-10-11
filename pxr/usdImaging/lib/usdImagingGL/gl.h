@@ -180,6 +180,9 @@ public:
     virtual std::string GetRendererPluginDesc(TfToken const &id) const;
 
     USDIMAGINGGL_API
+    virtual TfToken GetCurrentRendererId() const;
+
+    USDIMAGINGGL_API
     virtual bool SetRendererPlugin(TfToken const &id);
 
     USDIMAGINGGL_API

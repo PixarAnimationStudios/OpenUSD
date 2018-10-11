@@ -84,9 +84,11 @@ class Launcher(object):
         register optional arguments on the ArgParser
         '''
         parser.add_argument('--renderer', action='store',
-                            type=str, choices=['opt', 'simple'], dest='renderer',
-                            help='Which renderer to use', default='opt')
-
+                            type=str, dest='renderer',
+                            help="Which render backend to use (named as it "
+                            "appears in the menu).  Use 'HydraDisabled' to "
+                            "turn off Hydra renderers.", default='')
+        
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
