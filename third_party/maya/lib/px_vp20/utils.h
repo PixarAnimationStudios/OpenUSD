@@ -37,8 +37,11 @@
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDrawContext.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
+
+#include <ostream>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -96,6 +99,23 @@ class px_vp20Utils
                 const MHWRender::MDrawContext& context,
                 GfMatrix4d& viewMatrix,
                 GfMatrix4d& projectionMatrix);
+
+        /// Outputs a human-readable form of the given \p displayStyle to
+        /// \p stream for debugging.
+        ///
+        /// \p displayStyle should be a bitwise combination of
+        /// MHWRender::MFrameContext::DisplayStyle values.
+        PX_VP20_API
+        static void OutputDisplayStyleToStream(
+                const unsigned int displayStyle,
+                std::ostream& stream);
+
+        /// Outputs a human-readable form of the given \p displayStatus to
+        /// \p stream for debugging.
+        PX_VP20_API
+        static void OutputDisplayStatusToStream(
+                const MHWRender::DisplayStatus displayStatus,
+                std::ostream& stream);
 
     private:
         px_vp20Utils() = delete;

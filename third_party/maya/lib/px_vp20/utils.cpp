@@ -34,6 +34,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
@@ -48,6 +49,7 @@
 #include <maya/MFloatVector.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MIntArray.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
@@ -57,7 +59,9 @@
 #include <maya/MTransformationMatrix.h>
 
 #include <cmath>
+#include <ostream>
 #include <string>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -985,6 +989,103 @@ px_vp20Utils::GetSelectionMatrices(
     projectionMatrix = GfMatrix4d(projectionMat.matrix);
 
     return true;
+}
+
+/* static */
+void
+px_vp20Utils::OutputDisplayStyleToStream(
+        const unsigned int displayStyle,
+        std::ostream& stream)
+{
+    std::vector<std::string> styleComponents;
+
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded) {
+        styleComponents.emplace_back("kGouraudShaded");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) {
+        styleComponents.emplace_back("kWireFrame");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox) {
+        styleComponents.emplace_back("kBoundingBox");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kTextured) {
+        styleComponents.emplace_back("kTextured");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kDefaultMaterial) {
+        styleComponents.emplace_back("kDefaultMaterial");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kXrayJoint) {
+        styleComponents.emplace_back("kXrayJoint");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kXray) {
+        styleComponents.emplace_back("kXray");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kTwoSidedLighting) {
+        styleComponents.emplace_back("kTwoSidedLighting");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded) {
+        styleComponents.emplace_back("kFlatShaded");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly) {
+        styleComponents.emplace_back("kShadeActiveOnly");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kXrayActiveComponents) {
+        styleComponents.emplace_back("kXrayActiveComponents");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
+        styleComponents.emplace_back("kBackfaceCulling");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kSmoothWireframe) {
+        styleComponents.emplace_back("kSmoothWireframe");
+    }
+
+    stream << "[" << TfStringJoin(styleComponents, ", ") << "]";
+}
+
+/* static */
+void
+px_vp20Utils::OutputDisplayStatusToStream(
+        const MHWRender::DisplayStatus displayStatus,
+        std::ostream& stream)
+{
+    switch (displayStatus) {
+        case MHWRender::kActive:
+            stream << "kActive";
+            break;
+        case MHWRender::kLive:
+            stream << "kLive";
+            break;
+        case MHWRender::kDormant:
+            stream << "kDormant";
+            break;
+        case MHWRender::kInvisible:
+            stream << "kInvisible";
+            break;
+        case MHWRender::kHilite:
+            stream << "kHilite";
+            break;
+        case MHWRender::kTemplate:
+            stream << "kTemplate";
+            break;
+        case MHWRender::kActiveTemplate:
+            stream << "kActiveTemplate";
+            break;
+        case MHWRender::kActiveComponent:
+            stream << "kActiveComponent";
+            break;
+        case MHWRender::kLead:
+            stream << "kLead";
+            break;
+        case MHWRender::kIntermediateObject:
+            stream << "kIntermediateObject";
+            break;
+        case MHWRender::kActiveAffected:
+            stream << "kActiveAffected";
+            break;
+        case MHWRender::kNoStatus:
+            stream << "kNoStatus";
+            break;
+    }
 }
 
 
