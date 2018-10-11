@@ -936,7 +936,7 @@ UsdImagingGLHdEngine::GetRendererPluginDesc(TfToken const &id) const
 
 /* static */
 bool
-UsdImagingGLHdEngine::IsDefaultPluginAvailable()
+UsdImagingGLHdEngine::IsDefaultRendererPluginAvailable()
 {
     HfPluginDescVector descs;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&descs);
