@@ -58,6 +58,7 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnArrayAttrsData.h>
@@ -89,11 +90,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 /* virtual */
 bool
-UsdMayaGL_InstancerShapeAdapter::UpdateVisibility(
-    const MSelectionList& isolatedObjects)
+UsdMayaGL_InstancerShapeAdapter::UpdateVisibility(const M3dView* view)
 {
     bool isVisible;
-    if (!_GetVisibility(_shapeDagPath, isolatedObjects, &isVisible)) {
+    if (!_GetVisibility(_shapeDagPath, view, &isVisible)) {
         return false;
     }
 

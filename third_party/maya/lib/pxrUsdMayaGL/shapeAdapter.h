@@ -88,10 +88,14 @@ class PxrMayaHdShapeAdapter
         /// This method can be called on demand to ensure that the shape
         /// adapter is updated with the current visibility state of the shape.
         ///
+        /// The optional \p view parameter can be passed to have view-based
+        /// state such as view and/or plugin object filtering factor into the
+        /// shape's visibility.
+        ///
         /// Returns true if the visibility state was changed, or false
         /// otherwise.
         PXRUSDMAYAGL_API
-        virtual bool UpdateVisibility(const MSelectionList& isolatedObjects);
+        virtual bool UpdateVisibility(const M3dView* view = nullptr);
 
         /// Gets whether the shape adapter's shape is visible.
         ///
@@ -213,16 +217,15 @@ class PxrMayaHdShapeAdapter
         /// Helper for computing the viewport visibility of the shape.
         ///
         /// Takes into account the visibility attribute on the shape and its
-        /// DAG ancestors, as well as the current \p isolatedObjects for the
-        /// viewport. If \p isolatedObjects is empty, then nothing is filtered,
-        /// but if \p isolatedObjects is non-empty, only the obejcts in the list
-        /// (and their descendants) are visible.
+        /// DAG ancestors. If an M3dView is provided to \p view, then
+        /// view-based state such as view and/or plugin object filtering will
+        /// also be factored into the shape's visibility.
         ///
         /// Returns true if computing the visibility was successful, false if
         /// there was an error. The visibility is returned in \p visibility.
         static bool _GetVisibility(
                 const MDagPath& dagPath,
-                const MSelectionList& isolatedObjects,
+                const M3dView* view,
                 bool* visibility);
 
         /// Construct a new uninitialized PxrMayaHdShapeAdapter.

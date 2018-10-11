@@ -402,7 +402,7 @@ private:
     /// occluded shapes will be included in the selection.
     HdRprimCollectionVector _GetIntersectionRprimCollections(
             _ShapeAdapterBucketsMap& bucketsMap,
-            const MSelectionList& isolatedObjects,
+            const M3dView* view,
             const bool useDepthSelection) const;
 
     /// Populates the selection results using the given parameters by

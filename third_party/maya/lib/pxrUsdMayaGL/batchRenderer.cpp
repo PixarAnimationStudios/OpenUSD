@@ -982,7 +982,7 @@ UsdMayaGLBatchRenderer::GetNearestHit(
 HdRprimCollectionVector
 UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterBucketsMap& bucketsMap,
-        const MSelectionList& isolatedObjects,
+        const M3dView* view,
         const bool useDepthSelection) const
 {
     HdRprimCollectionVector rprimCollections;
@@ -999,7 +999,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterSet& shapeAdapters = iter.second.second;
 
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility(isolatedObjects);
+            shapeAdapter->UpdateVisibility(view);
 
             isViewport2 = shapeAdapter->IsViewport2();
 
@@ -1057,14 +1057,6 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
-    // Figure out Maya's isolate for this viewport.
-    MSelectionList isolatedObjects;
-#if MAYA_API_VERSION >= 201700
-    if (view3d && view3d->viewIsFiltered()) {
-        view3d->filteredObjectList(isolatedObjects);
-    }
-#endif
-
     // If the enable depth selection env setting has not been turned on, then
     // we can optimize area/marquee selections by handling collections
     // similarly to a single selection, where we test intersections against the
@@ -1073,8 +1065,7 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         (!singleSelection && TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION));
 
     const HdRprimCollectionVector rprimCollections =
-        _GetIntersectionRprimCollections(
-            bucketsMap, isolatedObjects, useDepthSelection);
+        _GetIntersectionRprimCollections(bucketsMap, view3d, useDepthSelection);
 
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    ____________ SELECTION STAGE START ______________ "
@@ -1301,14 +1292,6 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         }
     }
 
-    // Figure out Maya's isolate for this viewport.
-    MSelectionList isolatedObjects;
-#if MAYA_API_VERSION >= 201700
-    if (view3d && view3d->viewIsFiltered()) {
-        view3d->filteredObjectList(isolatedObjects);
-    }
-#endif
-
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "    ____________ RENDER STAGE START ______________ (%zu buckets)\n",
         bucketsMap.size());
@@ -1330,7 +1313,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
         HdRprimCollectionVector rprimCollections;
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility(isolatedObjects);
+            shapeAdapter->UpdateVisibility(view3d);
             itemsVisible |= shapeAdapter->IsVisible();
 
             rprimCollections.push_back(shapeAdapter->GetRprimCollection());

@@ -181,7 +181,7 @@ PxrMayaHdShapeAdapter::Sync(
 
 /* virtual */
 bool
-PxrMayaHdShapeAdapter::UpdateVisibility(const MSelectionList&)
+PxrMayaHdShapeAdapter::UpdateVisibility(const M3dView* view)
 {
     return false;
 }
@@ -370,9 +370,10 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
 }
 
 /* static */
-bool PxrMayaHdShapeAdapter::_GetVisibility(
+bool
+PxrMayaHdShapeAdapter::_GetVisibility(
         const MDagPath& dagPath,
-        const MSelectionList& isolatedObjects,
+        const M3dView* view,
         bool* visibility)
 {
     MStatus status;
@@ -397,6 +398,15 @@ bool PxrMayaHdShapeAdapter::_GetVisibility(
         *visibility = false;
         return true;
     }
+
+    // If a view was provided, check to see whether it is being filtered, and
+    // get its isolated objects if so.
+    MSelectionList isolatedObjects;
+#if MAYA_API_VERSION >= 201700
+    if (view && view->viewIsFiltered()) {
+        view->filteredObjectList(isolatedObjects);
+    }
+#endif
 
     // If non-empty, isolatedObjects contains the "root" isolated objects, so
     // we'll need to check to see if one of our ancestors was isolated. (The

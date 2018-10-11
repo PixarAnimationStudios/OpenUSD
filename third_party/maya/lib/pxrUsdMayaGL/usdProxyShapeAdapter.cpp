@@ -47,6 +47,7 @@
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
@@ -75,11 +76,20 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 /* virtual */
 bool
-PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(
-    const MSelectionList& isolatedObjects)
+PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
 {
     bool isVisible;
-    if (!_GetVisibility(_shapeDagPath, isolatedObjects, &isVisible)) {
+
+    /// Note that M3dView::pluginObjectDisplay() is unfortunately not declared
+    /// const, so we have to cast away the const-ness here.
+    M3dView* nonConstView = const_cast<M3dView*>(view);
+
+    if (nonConstView &&
+            !nonConstView->pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        // USD proxy shapes are being filtered from this view, so don't bother
+        // checking any other visibility state.
+        isVisible = false;
+    } else if (!_GetVisibility(_shapeDagPath, view, &isVisible)) {
         return false;
     }
 
