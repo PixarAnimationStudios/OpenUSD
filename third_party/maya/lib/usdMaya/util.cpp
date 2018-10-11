@@ -1238,6 +1238,11 @@ UsdMayaUtil::setPlugValue(
     else if (val.IsHolding<bool>()) {
         status = attrPlug.setBool(val.UncheckedGet<bool>());
     }
+    else if (val.IsHolding<SdfAssetPath>()) {
+        // Assume that Ar and Maya will resolve paths the same.  This the best
+        // we can do w.r.t. to round-tripping.
+        status = attrPlug.setString(val.UncheckedGet<SdfAssetPath>().GetAssetPath().c_str());
+    }
     else if (val.IsHolding<std::string>()) {
         status = attrPlug.setString(val.UncheckedGet<std::string>().c_str());
     }
