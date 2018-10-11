@@ -107,7 +107,13 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
         HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(
                     new HdVtBufferSource(inputName, inputValue, arraySize));
-        inputs.push_back(inputSource);
+        if (inputSource->IsValid()) {
+            inputs.push_back(inputSource);
+        } else {
+            TF_WARN("Unsupported type %s for source %s in extComputation %s.",
+                    inputValue.GetType().GetTypeName().c_str(),
+                    inputName.GetText(), GetId().GetText());
+        }
     }
 
     _inputRange.reset();
