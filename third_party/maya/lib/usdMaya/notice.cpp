@@ -97,4 +97,47 @@ UsdMayaSceneResetNotice::RemoveListener()
     }
 }
 
+
+UsdMaya_AssemblyInstancerNoticeBase::UsdMaya_AssemblyInstancerNoticeBase(
+        const MObject& assembly,
+        const MObject& instancer)
+        : _assembly(assembly), _instancer(instancer)
+{
+}
+
+MObject
+UsdMaya_AssemblyInstancerNoticeBase::GetAssembly() const
+{
+    return _assembly;
+}
+
+MObject
+UsdMaya_AssemblyInstancerNoticeBase::GetInstancer() const
+{
+    return _instancer;
+}
+
+
+TF_INSTANTIATE_TYPE(UsdMayaAssemblyConnectedToInstancerNotice,
+                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+UsdMayaAssemblyConnectedToInstancerNotice::UsdMayaAssemblyConnectedToInstancerNotice(
+        const MObject& assembly,
+        const MObject& instancer)
+        : UsdMaya_AssemblyInstancerNoticeBase(assembly, instancer)
+{
+}
+
+
+TF_INSTANTIATE_TYPE(UsdMayaAssemblyDisconnectedFromInstancerNotice,
+                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+UsdMayaAssemblyDisconnectedFromInstancerNotice::UsdMayaAssemblyDisconnectedFromInstancerNotice(
+        const MObject& assembly,
+        const MObject& instancer)
+        : UsdMaya_AssemblyInstancerNoticeBase(assembly, instancer)
+{
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -111,12 +111,6 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
         UsdMayaProxyDrawOverride& operator=(const UsdMayaProxyDrawOverride&) = delete;
 
         PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
-
-        /// DAG path at creation time. This is used only to display a warning
-        /// when this override is being used to draw a Maya instancer. *Do not*
-        /// use this DAG path to grab the object; use the DAG path that Maya
-        /// provides in callback functions instead.
-        MDagPath _originalDagPath;
 };
 
 

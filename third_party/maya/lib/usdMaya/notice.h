@@ -58,6 +58,53 @@ private:
     static MCallbackId _beforeFileReadCallbackId;
 };
 
+class UsdMaya_AssemblyInstancerNoticeBase : public TfNotice
+{
+public:
+    PXRUSDMAYA_API
+    virtual ~UsdMaya_AssemblyInstancerNoticeBase() = default;
+
+    PXRUSDMAYA_API
+    MObject GetAssembly() const;
+
+    PXRUSDMAYA_API
+    MObject GetInstancer() const;
+
+protected:
+    PXRUSDMAYA_API
+    UsdMaya_AssemblyInstancerNoticeBase(
+            const MObject& assembly,
+            const MObject& instancer);
+
+private:
+    MObject _assembly;
+    MObject _instancer;
+};
+
+/// Notice sent when any reference assembly is connected as a prototype of a
+/// native Maya instancer.
+class UsdMayaAssemblyConnectedToInstancerNotice
+        : public UsdMaya_AssemblyInstancerNoticeBase
+{
+public:
+    PXRUSDMAYA_API
+    UsdMayaAssemblyConnectedToInstancerNotice(
+            const MObject& assembly,
+            const MObject& instancer);
+};
+
+/// Notice sent when any reference assembly was previously a prototype of a
+/// native Maya instancer but has now been disconnected from it.
+class UsdMayaAssemblyDisconnectedFromInstancerNotice
+        : public UsdMaya_AssemblyInstancerNoticeBase
+{
+public:
+    PXRUSDMAYA_API
+    UsdMayaAssemblyDisconnectedFromInstancerNotice(
+            const MObject& assembly,
+            const MObject& instancer);
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

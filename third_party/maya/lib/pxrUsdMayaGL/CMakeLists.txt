@@ -18,6 +18,7 @@ pxr_shared_library(${PXR_PACKAGE}
         sdf
         tf
         usd
+        usdGeom
         usdImaging
         usdImagingGL
         usdMaya
@@ -46,6 +47,10 @@ pxr_shared_library(${PXR_PACKAGE}
         softSelectHelper
         usdProxyShapeAdapter
         userData
+
+    PRIVATE_CLASSES
+        instancerImager
+        instancerShapeAdapter
 
     CPPFILES
         proxyShapeDelegate

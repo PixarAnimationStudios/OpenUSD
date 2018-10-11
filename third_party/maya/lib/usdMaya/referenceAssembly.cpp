@@ -25,6 +25,7 @@
 
 #include "usdMaya/editUtil.h"
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/notice.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/readJob.h"
@@ -32,6 +33,7 @@
 #include "usdMaya/stageData.h"
 
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -276,6 +278,8 @@ UsdMayaReferenceAssembly::UsdMayaReferenceAssembly() :
     _inSetInternalValue(false),
     _hasEdits(false)
 {
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaReferenceAssembly>();
+
     //
     // REMINDER: Also update usdMaya.mel:usdMaya_UsdMayaReferenceAssembly_listRepTypes()
     //           if adding a new Representation
@@ -532,6 +536,35 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     }
 
     return MS::kSuccess;
+}
+
+MStatus
+UsdMayaReferenceAssembly::connectionMade(
+        const MPlug& plug,
+        const MPlug& otherPlug,
+        bool asSrc)
+{
+    if (asSrc && otherPlug.node().hasFn(MFn::kInstancer)) {
+        const MObject assembly = plug.node();
+        const MObject instancer = otherPlug.node();
+        UsdMayaAssemblyConnectedToInstancerNotice(assembly, instancer).Send();
+    }
+    return MPxAssembly::connectionMade(plug, otherPlug, asSrc);
+}
+
+MStatus
+UsdMayaReferenceAssembly::connectionBroken(
+        const MPlug& plug,
+        const MPlug& otherPlug,
+        bool asSrc)
+{
+    if (asSrc && otherPlug.node().hasFn(MFn::kInstancer)) {
+        const MObject assembly = plug.node();
+        const MObject instancer = otherPlug.node();
+        UsdMayaAssemblyDisconnectedFromInstancerNotice(assembly, instancer)
+                .Send();
+    }
+    return MPxAssembly::connectionBroken(plug, otherPlug, asSrc);
 }
 
 MStatus UsdMayaReferenceAssembly::compute(const MPlug& aPlug,

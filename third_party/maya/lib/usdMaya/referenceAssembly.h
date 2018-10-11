@@ -190,6 +190,18 @@ public:
             const MPlug& plug,
             MPlugArray& plugArray) override;
 
+    PXRUSDMAYA_API
+    MStatus connectionMade(
+            const MPlug& plug,
+            const MPlug& otherPlug,
+            bool asSrc) override;
+
+    PXRUSDMAYA_API
+    MStatus connectionBroken(
+            const MPlug& plug,
+            const MPlug& otherPlug,
+            bool asSrc) override;
+
     // UsdMayaUsdPrimProvider overrides:
     PXRUSDMAYA_API
     UsdPrim usdPrim() const override;
