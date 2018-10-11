@@ -158,7 +158,9 @@ UsdMayaReferenceAssembly::initialize()
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
-    numericAttrFn.setStorable(false); // not written to the file
+    numericAttrFn.setChannelBox(true);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setAffectsAppearance(true);
     status = addAttribute(complexityAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
