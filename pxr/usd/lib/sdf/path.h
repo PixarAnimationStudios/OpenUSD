@@ -27,19 +27,16 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/tokens.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
-#include "pxr/base/tf/hashmap.h"
 
 #include <algorithm>
-#include <functional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

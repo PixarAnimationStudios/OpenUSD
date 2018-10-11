@@ -32,7 +32,6 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
@@ -40,16 +39,11 @@
 #include "pxr/base/trace/trace.h"
 
 #include <algorithm>
-#include <iostream>
-#include <sstream>
-
-#include <boost/functional/hash.hpp>
+#include <ostream>
 
 using std::pair;
 using std::string;
 using std::vector;
-
-using namespace std::placeholders;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
