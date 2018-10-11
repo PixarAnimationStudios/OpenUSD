@@ -27,12 +27,16 @@
 /// \file usdMaya/hdImagingShape.h
 
 #include "pxr/pxr.h"
+
 #include "usdMaya/api.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
@@ -108,6 +112,20 @@ class PxrMayaHdImagingShape : public MPxSurfaceShape
         void postConstructor() override;
 
     private:
+        // The callback IDs and functions below are used to ensure that this
+        // shape is always inserted into any viewport isolate selection set.
+        MCallbackId _objectSetAddedCallbackId;
+        MCallbackId _objectSetRemovedCallbackId;
+        UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>
+                _objectSetAttrChangedCallbackIds;
+
+        static void _OnObjectSetAdded(MObject& node, void* clientData);
+        static void _OnObjectSetRemoved(MObject& node, void* clientData);
+        static void _OnObjectSetAttrChanged(
+                MNodeMessage::AttributeMessage msg,
+                MPlug& plug,
+                MPlug& otherPlug,
+                void *clientData);
 
         PxrMayaHdImagingShape();
         ~PxrMayaHdImagingShape() override;

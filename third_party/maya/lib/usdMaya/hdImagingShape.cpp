@@ -34,9 +34,12 @@
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
+#include <maya/MDGMessage.h>
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnSet.h>
 #include <maya/MNamespace.h>
+#include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
@@ -214,13 +217,125 @@ PxrMayaHdImagingShape::postConstructor()
     CHECK_MSTATUS(status);
 }
 
+/* static */
+void
+PxrMayaHdImagingShape::_OnObjectSetAdded(MObject& node, void* clientData)
+{
+    MStatus status;
+    MFnSet objectSet(node, &status);
+    if (!status) {
+        return;
+    }
+
+    // Maya constructs sets with the name <modelPanelName>ViewSelectedSet to
+    // track nodes that should be drawn in isolate selection mode.
+    // For all practical purposes, we can assume that a set with this suffix
+    // is such a Maya-controlled set. (If we wanted to be more robust, we could
+    // query the MEL command isolateSelect, but that seems overkill here.)
+    if (!TfStringEndsWith(objectSet.name().asChar(), "ViewSelectedSet")) {
+        return;
+    }
+
+    // We listen to attribute changed callbacks on this set so that we can
+    // re-add ourselves if the user changes the set of nodes to isolate without
+    // exiting isolate selection mode. If the node is already being tracked,
+    // then skip it.
+    PxrMayaHdImagingShape* me =
+            static_cast<PxrMayaHdImagingShape*>(clientData);
+    MObjectHandle handle(node);
+    if (me->_objectSetAttrChangedCallbackIds.count(handle) != 0) {
+        return;
+    }
+    me->_objectSetAttrChangedCallbackIds[handle] =
+            MNodeMessage::addAttributeChangedCallback(
+            node, _OnObjectSetAttrChanged, me);
+
+    // In rare cases, the user may have manually added the pxrHdImagingShape
+    // into the isolate selection list. However, we won't know about it until
+    // the connection between the shape and the set is made. This isn't a big
+    // deal, though, since it's OK for the shape to appear twice in the set.
+    objectSet.addMember(me->thisMObject());
+}
+
+/* static */
+void
+PxrMayaHdImagingShape::_OnObjectSetRemoved(MObject& node, void* clientData)
+{
+    MStatus status;
+    MFnSet objectSet(node, &status);
+    if (!status) {
+        return;
+    }
+
+    // Just to be safe, always check the removed set to see if we've been
+    // tracking it, regardless of the set's name.
+    PxrMayaHdImagingShape* me =
+            static_cast<PxrMayaHdImagingShape*>(clientData);
+    MObjectHandle handle(node);
+    auto iter = me->_objectSetAttrChangedCallbackIds.find(handle);
+    if (iter == me->_objectSetAttrChangedCallbackIds.end()) {
+        return;
+    }
+
+    // Undo everything that we did in _OnObjectSetAdded by removing callbacks
+    // and then removing ourselves from the set.
+    MMessage::removeCallback(iter->second);
+    me->_objectSetAttrChangedCallbackIds.erase(iter);
+    objectSet.removeMember(me->thisMObject());
+}
+
+/* static */
+void
+PxrMayaHdImagingShape::_OnObjectSetAttrChanged(
+        MNodeMessage::AttributeMessage msg,
+        MPlug& plug,
+        MPlug& otherPlug,
+        void *clientData)
+{
+    // We only care about the case where the user has loaded a different set of
+    // nodes into the isolate selection set, and when that happens, new
+    // connections are made with the set. So we only listen for connection-made
+    // messages.
+    if (!(msg & MNodeMessage::kConnectionMade)) {
+        return;
+    }
+
+    // If the connection-made message indicates that _this node_ is the node
+    // connecting to the set, then there is no more work for us to do, so
+    // simply return.
+    PxrMayaHdImagingShape* me =
+            static_cast<PxrMayaHdImagingShape*>(clientData);
+    if (otherPlug.node() == me->thisMObject()) {
+        return;
+    }
+
+    MFnSet objectSet(plug.node());
+    objectSet.addMember(me->thisMObject());
+}
+
 PxrMayaHdImagingShape::PxrMayaHdImagingShape() : MPxSurfaceShape()
 {
+    // If a shape is isolated but depends on Hydra batched drawing for imaging,
+    // it won't image in the viewport unless the pxrHdImagingShape is also
+    // isolated. This is because Maya skips drawing the pxrHdImagingShape if
+    // it's not also isolated, but the pxrHdImagingShape is the one doing the
+    // actual drawing for the original shape. Thus, we listen for the
+    // addition/removal of objectSets so that we can insert ourselves into any
+    // objectSets used for viewport isolate selection.
+    _objectSetAddedCallbackId = MDGMessage::addNodeAddedCallback(
+            _OnObjectSetAdded, "objectSet", this);
+    _objectSetRemovedCallbackId = MDGMessage::addNodeRemovedCallback(
+            _OnObjectSetRemoved, "objectSet", this);
 }
 
 /* virtual */
 PxrMayaHdImagingShape::~PxrMayaHdImagingShape()
 {
+    MMessage::removeCallback(_objectSetAddedCallbackId);
+    MMessage::removeCallback(_objectSetRemovedCallbackId);
+    for (const auto& handleAndCallbackId : _objectSetAttrChangedCallbackIds) {
+        MMessage::removeCallback(handleAndCallbackId.second);
+    }
 }
 
 
