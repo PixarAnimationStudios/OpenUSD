@@ -68,7 +68,8 @@ public:
     HdBufferArrayRangeSharedPtr AllocateRange(
         HdAggregationStrategy *strategy,
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Triggers reallocation on all buffers managed by the registry.
     HD_API
@@ -146,7 +147,8 @@ private:
                                const HdBufferArraySharedPtr &expectedTail,
                                HdAggregationStrategy *strategy,
                                TfToken const &role,
-                               HdBufferSpecVector const &bufferSpecs);
+                               HdBufferSpecVector const &bufferSpecs,
+                               HdBufferArrayUsageHint usageHint);
 };
     
 

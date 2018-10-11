@@ -237,7 +237,8 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             HdBufferArrayRangeSharedPtr range =
                     resourceRegistry->AllocateShaderStorageBufferArrayRange(
                                                   HdTokens->materialParams,
-                                                  bufferSpecs);
+                                                  bufferSpecs,
+                                                  HdBufferArrayUsageHint());
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();

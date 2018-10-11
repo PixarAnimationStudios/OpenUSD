@@ -107,13 +107,16 @@ HdStInterleavedMemoryManager::GetResourceAllocation(
 HdBufferArraySharedPtr
 HdStInterleavedUBOMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            role, bufferSpecs,
+            role,
+            bufferSpecs,
+            usageHint,
             caps.uniformBufferOffsetAlignment,
             /*structAlignment=*/sizeof(float)*4,
             caps.maxUniformBlockSize,
@@ -122,7 +125,8 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
 
 HdAggregationStrategy::AggregationId
 HdStInterleavedUBOMemoryManager::ComputeAggregationId(
-    HdBufferSpecVector const &bufferSpecs) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
@@ -135,6 +139,8 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
     }
+    boost::hash_combine(result, usageHint.value);
+
     // promote to size_t
     return (AggregationId)result;
 }
@@ -145,13 +151,16 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
 HdBufferArraySharedPtr
 HdStInterleavedSSBOMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            role, bufferSpecs,
+            role,
+            bufferSpecs,
+            usageHint,
             /*bufferOffsetAlignment=*/0,
             /*structAlignment=*/0,
             caps.maxShaderStorageBlockSize,
@@ -160,7 +169,8 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
 
 HdAggregationStrategy::AggregationId
 HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
-    HdBufferSpecVector const &bufferSpecs) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
@@ -173,6 +183,8 @@ HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
     }
+    boost::hash_combine(result, usageHint.value);
+
     return result;
 }
 
@@ -219,11 +231,12 @@ _ComputeAlignment(HdTupleType tupleType)
 HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint,
     int bufferOffsetAlignment = 0,
     int structAlignment = 0,
     size_t maxSize = 0,
     TfToken const &garbageCollectionPerfToken = HdPerfTokens->garbageCollectedUbo)
-    : HdBufferArray(role, garbageCollectionPerfToken),
+    : HdBufferArray(role, garbageCollectionPerfToken, usageHint),
       _needsCompaction(false),
       _stride(0),
       _bufferOffsetAlignment(bufferOffsetAlignment),
@@ -730,6 +743,17 @@ size_t
 HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::GetMaxNumElements() const
 {
     return _stripedBuffer->GetMaxNumElements();
+}
+
+HdBufferArrayUsageHint
+HdStInterleavedMemoryManager::
+_StripedInterleavedBufferRange::GetUsageHint() const
+{
+    if (!TF_VERIFY(_stripedBuffer)) {
+        return HdBufferArrayUsageHint();
+    }
+
+    return _stripedBuffer->GetUsageHint();
 }
 
 HdStBufferResourceGLSharedPtr

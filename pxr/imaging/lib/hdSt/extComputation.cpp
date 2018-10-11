@@ -71,7 +71,9 @@ _AllocateComputationDataRange(
 
     HdBufferArrayRangeSharedPtr inputRange =
         resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                                HdPrimTypeTokens->extComputation, bufferSpecs);
+                                              HdPrimTypeTokens->extComputation,
+                                              bufferSpecs,
+                                              HdBufferArrayUsageHint());
     resourceRegistry->AddSources(inputRange, inputs);
 
     return inputRange;

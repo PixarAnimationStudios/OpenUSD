@@ -187,7 +187,9 @@ HdStInstancer::GetInstancePrimvars()
 
                     _instancePrimvarRange =
                         resourceRegistry->AllocateNonUniformBufferArrayRange(
-                            HdTokens->primvar, bufferSpecs);
+                            HdTokens->primvar,
+                            bufferSpecs,
+                            HdBufferArrayUsageHint());
                 }
                 TF_VERIFY(_instancePrimvarRange->IsValid());
 
@@ -298,7 +300,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 
             // allocate new one
             indexRange = resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->topology, bufferSpecs);
+                HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
             _instanceIndexRangeMap[prototypeId] = indexRange;
 
             // XXX: reconsider the lifetime of instanceIndexRangeMap entities.

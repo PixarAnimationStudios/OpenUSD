@@ -103,7 +103,8 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
                                      HdTupleType { HdTypeInt32, 1 });
             _selOffsetBar = resourceRegistry->AllocateSingleBufferArrayRange(
                                                 /*role*/HdxTokens->selection,
-                                                offsetSpecs);
+                                                offsetSpecs,
+                                                HdBufferArrayUsageHint());
         }
 
         if (!_selUniformBar) {
@@ -114,7 +115,8 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
                                       HdTupleType { HdTypeFloatVec4, 1 });
             _selUniformBar = resourceRegistry->AllocateUniformBufferArrayRange(
                                                 /*role*/HdxTokens->selection,
-                                                uniformSpecs);
+                                                uniformSpecs,
+                                                HdBufferArrayUsageHint());
         }
 
         if (!_selPointColorsBar) {
@@ -124,7 +126,8 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
             _selPointColorsBar =
                 resourceRegistry->AllocateSingleBufferArrayRange(
                                                 /*role*/HdxTokens->selection,
-                                                colorSpecs);
+                                                colorSpecs,
+                                                HdBufferArrayUsageHint());
         }
 
         //

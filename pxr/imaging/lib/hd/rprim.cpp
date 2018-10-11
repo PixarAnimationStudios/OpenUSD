@@ -377,7 +377,7 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         TF_VERIFY(range->IsValid());
 
         _sharedData.barContainer.Set(
