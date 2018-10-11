@@ -36,7 +36,7 @@ from glob import glob
 import os, sys
 from pxr import Usd,UsdGeom,UsdUtils,Sdf,Kind
 
-def insertReference( destFile, path, reffile ):
+def insertReference( destFile, path, reffile, primPath=None, offset=0, scale=1 ):
 
     if os.path.exists( destFile ):
 
@@ -46,18 +46,26 @@ def insertReference( destFile, path, reffile ):
 
         existingRefPath = None
         for p in stage.GetRootLayer().rootPrims:
-            existingRefPath = findMatchingReference( p, reffile )
-            if existingRefPath:
+            returnVal = findMatchingReference( p, reffile )
+            if returnVal:
                 break
 
-        if existingRefPath:
-            if existingRefPath == path:
-                # Our link already exists. 
+        layerOffset = Sdf.LayerOffset(offset, scale)
+        if returnVal:
+            existingRefPath, existingPrimPath, existingLayerOffset = returnVal
+            if ( existingRefPath == path and layerOffset == existingLayerOffset
+                 and existingPrimPath == primPath ):
+                # Our link already exists.
                 sys.exit()
             else:
-                # There is a existing link to our file but we want to rename it.
-                # Delete the old link
+                # There is a existing link to our file but we want to rename it,
+                # target a new prim path or add/change the layer offset.
+                # Delete the old link.
                 stage.RemovePrim(existingRefPath)
+
+            # If no provided prim path, use the pre-existing one.
+            if not primPath:
+                primPath = existingPrimPath
 
         frameRange, defaultPrim, firstRoot = getMetaData( reffile )
 
@@ -74,8 +82,11 @@ def insertReference( destFile, path, reffile ):
         stage.SetEndTimeCode(frameRange[1])
 
     # If the the file that we are referencing defines a default prim,
-    # we can use it (targetPrim = None). Otherwise, use rootPrim.
-    addReference( stage, path, reffile, firstRoot if not defaultPrim else None )
+    # we can use it (targetPrim = None). Otherwise, use rootPrim. An existing
+    # or provided prim path overrides either.
+    if not primPath:
+        primPath = firstRoot if not defaultPrim else None
+    addReference( stage, path, reffile, primPath, layerOffset=layerOffset )
     stage.GetRootLayer().Save()
 
 def findMatchingReference( sdfPrim, fileName ):
@@ -87,16 +98,17 @@ def findMatchingReference( sdfPrim, fileName ):
 
     for ref in sdfPrim.referenceList.GetAddedOrExplicitItems():
         if ref.assetPath == fileName:
-            return sdfPrim.path
+            return sdfPrim.path, ref.primPath, ref.layerOffset
 
     for child in sdfPrim.nameChildren:
-        path = findMatchingReference( child, fileName )
-        if path:
-            return path
+        returnVal = findMatchingReference( child, fileName )
+        if returnVal:
+            path, primPath, layerOffset = returnVal
+            return path, primPath, layerOffset
 
     return None
 
-def addReference( stage, path, fileName, targetPrim ):
+def addReference( stage, path, fileName, targetPrim, layerOffset=None ):
     '''
     Add a reference to the given USD stage at the given path.
     
@@ -122,9 +134,12 @@ def addReference( stage, path, fileName, targetPrim ):
 
     refList = prim.GetReferences()
     if targetPrim:
-        refList.AddReference( Sdf.Reference( fileName, targetPrim ))
+        refList.AddReference( Sdf.Reference( fileName,
+                                             targetPrim,
+                                             layerOffset=layerOffset ))
     else:
-        refList.AddReference( Sdf.Reference( fileName ))
+        refList.AddReference( Sdf.Reference( fileName, 
+                                             layerOffset=layerOffset ))
 
 def getMetaData( fileName ):
     ''' 
@@ -160,6 +175,8 @@ parameterDefines = {
     'destfile'  : soho.SohoParm('destfile', 'string', [''], False ),
     'path'      : soho.SohoParm('path', 'string', [''], False ),
     'reffile'   : soho.SohoParm('reffile', 'string', [''], False ),
+    'primpath'  : soho.SohoParm('primpath', 'string', [''], False ),
+    'offset'    : soho.SohoParm('offset', 'real', [0, 1], False),
 }
 
 parameters = soho.evaluate(parameterDefines)
@@ -174,13 +191,15 @@ soho.lockObjects(now)
 destFile =  parameters['destfile'].Value[0]
 path     =  parameters['path'].Value[0]
 reffile  =  parameters['reffile'].Value[0]
+primPath =  parameters['primpath'].Value[0]
+offset   =  parameters['offset'].Value[0]
+scale    =  parameters['offset'].Value[1]
 
 try:
 
-    insertReference( destFile, path, reffile )
+    insertReference( destFile, path, reffile, primPath=primPath, offset=offset,
+                     scale=scale )
 
 except Exception as e:
 
     soho.error( 'Failed to add USD file reference: ' + str(e) )
-
-
