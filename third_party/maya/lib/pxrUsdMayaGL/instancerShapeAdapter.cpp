@@ -42,9 +42,10 @@
 #include "pxr/base/tf/token.h"
 
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/kind/registry.h"
 
@@ -359,47 +360,27 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
 
     _delegate->SetTime(UsdTimeCode::EarliestTime());
 
+    // In contrast with the other shape adapters, this adapter ignores the
+    // selection wireframe. The native instancer doesn't draw selection
+    // wireframes, so we want to mimic that behavior for consistency.
+    HdReprSelector reprSelector =
+        GetReprSelectorForDisplayState(
+            displayStyle,
+            displayStatus);
+
+    _drawShape = reprSelector.AnyActiveRepr();
+
     // We won't ever draw the bounding box here because the native Maya
     // instancer already draws a bounding box, and we don't want to draw two.
     // XXX: The native Maya instancer's bounding box will only cover the native
     // geometry, though; is there any way to "teach" it about our bounds?
-    _drawShape = true;
     _drawBoundingBox = false;
 
-    HdReprSelector reprSelector;
-
-    // Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for
-    // whatever reason...
-    const bool flatShaded =
-#if MAYA_API_VERSION >= 201600
-        displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
-#else
-        false;
-#endif
-
-    // In contrast with the other shape adapters, this adapter ignores the
-    // selection wireframe. The native instancer doesn't draw selection
-    // wireframes, so we want to mimic that behavior for consistency.
-    if (flatShaded) {
-        reprSelector = HdReprSelector(HdReprTokens->hull);
-    }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
-    {
-        if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) {
-            reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
-        }
-        else {
-            reprSelector = HdReprSelector(HdReprTokens->refined);
-        }
-    }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
-    {
-        reprSelector = HdReprSelector(HdReprTokens->refinedWire);
+    // If the repr selector specifies a wireframe-only repr, then disable
+    // lighting.
+    if (reprSelector.Contains(HdReprTokens->wire) ||
+            reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;
-    }
-    else
-    {
-        _drawShape = false;
     }
 
     if (_delegate->GetRootVisibility() != _drawShape) {
@@ -419,8 +400,7 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
             _rprimCollection.GetName());
     }
 
-    // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
-    // for whatever reason...
+    // The kBackfaceCulling display style was introduced in Maya 2016 SP2.
     HdCullStyle cullStyle = HdCullStyleNothing;
 #if MAYA_API_VERSION >= 201603
     if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {

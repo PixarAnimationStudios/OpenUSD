@@ -35,6 +35,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -260,6 +261,87 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
 }
 
 /* virtual */
+HdReprSelector
+PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
+        const unsigned int displayStyle,
+        const MHWRender::DisplayStatus displayStatus) const
+{
+    HdReprSelector reprSelector;
+
+    const bool boundingBoxStyle =
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
+
+    if (boundingBoxStyle) {
+        // We don't currently use Hydra to draw bounding boxes, so we return an
+        // empty repr selector here. Also, Maya seems to ignore most other
+        // DisplayStyle bits when the viewport is in the kBoundingBox display
+        // style anyway, and it just changes the color of the bounding box on
+        // selection rather than adding in the wireframe like it does for
+        // shaded display styles. So if we eventually do end up using Hydra for
+        // bounding boxes, we could just return the appropriate repr here.
+        return reprSelector;
+    }
+
+    const bool shadeActiveOnlyStyle =
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly;
+
+    const bool isActive =
+        (displayStatus == MHWRender::DisplayStatus::kActive) ||
+        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
+        (displayStatus == MHWRender::DisplayStatus::kLead);
+
+    const bool wireframeStyle =
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame;
+
+    // The kFlatShaded display style was introduced in Maya 2016.
+    const bool flatShadedStyle =
+#if MAYA_API_VERSION >= 201600
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
+#else
+        false;
+#endif
+
+    if (flatShadedStyle) {
+        if (!shadeActiveOnlyStyle || isActive) {
+            if (wireframeStyle) {
+                reprSelector = HdReprSelector(HdReprTokens->wireOnSurf);
+            } else {
+                reprSelector = HdReprSelector(HdReprTokens->hull);
+            }
+        } else {
+            // We're in shadeActiveOnly mode but this shape is not active.
+            reprSelector = HdReprSelector(HdReprTokens->wire);
+        }
+    }
+    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded) {
+        if (!shadeActiveOnlyStyle || isActive) {
+            if (wireframeStyle) {
+                reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
+            } else {
+                reprSelector = HdReprSelector(HdReprTokens->refined);
+            }
+        } else {
+            // We're in shadeActiveOnly mode but this shape is not active.
+            reprSelector = HdReprSelector(HdReprTokens->refinedWire);
+        }
+    }
+    else if (wireframeStyle) {
+        reprSelector = HdReprSelector(HdReprTokens->refinedWire);
+    }
+    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kTwoSidedLighting) {
+        // The UV editor uses the kTwoSidedLighting displayStyle.
+        //
+        // For now, to prevent objects from completely disappearing, we just
+        // treat it similarly to kGouraudShaded.
+        reprSelector = HdReprSelector(HdReprTokens->refined);
+    }
+
+    return reprSelector;
+}
+
+/* virtual */
 PxrMayaHdRenderParams
 PxrMayaHdShapeAdapter::GetRenderParams(
         bool* drawShape,
@@ -357,12 +439,16 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
         MHWRender::MFrameContext::DisplayStyle::kWireFrame |
         MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
-    if (displayStyle & wireframeDisplayStyles) {
-        useWireframeColor = true;
-    } else if ((displayStatus == MHWRender::kActive) ||
-               (displayStatus == MHWRender::kLead) ||
-               (displayStatus == MHWRender::kHilite) ||
-               (displayStatus == MHWRender::kActiveComponent)) {
+    const bool wireframeStyle = (displayStyle & wireframeDisplayStyles);
+
+    const bool isActive =
+        (displayStatus == MHWRender::DisplayStatus::kActive) ||
+        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
+        (displayStatus == MHWRender::DisplayStatus::kLead);
+
+    if (wireframeStyle || isActive) {
         useWireframeColor = true;
     }
 

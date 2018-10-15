@@ -33,6 +33,7 @@
 #include "pxrUsdMayaGL/userData.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -141,6 +142,29 @@ class PxrMayaHdShapeAdapter
         virtual PxrMayaHdUserData* GetMayaUserData(
                 MUserData* oldData,
                 const MBoundingBox* boundingBox = nullptr);
+
+        /// Gets the HdReprSelector that corresponds to the given Maya display
+        /// state.
+        ///
+        /// \p displayStyle should be a bitwise combination of
+        /// MHWRender::MFrameContext::DisplayStyle values, typically either
+        /// up-converted from a single M3dView::DisplayStyle value obtained
+        /// using MDrawInfo::displayStyle() for the legacy viewport, or
+        /// obtained using MHWRender::MFrameContext::getDisplayStyle() for
+        /// Viewport 2.0.
+        ///
+        /// \p displayStatus is typically either up-converted from
+        /// a M3dView::DisplayStatus value obtained using
+        /// MDrawInfo::displayStatus() for the legacy viewport, or obtained
+        /// using MHWRender::MGeometryUtilities::displayStatus() for Viewport
+        /// 2.0.
+        ///
+        /// If there is no corresponding HdReprSelector for the given display
+        /// state, an empty HdReprSelector is returned.
+        PXRUSDMAYAGL_API
+        virtual HdReprSelector GetReprSelectorForDisplayState(
+                const unsigned int displayStyle,
+                const MHWRender::DisplayStatus displayStatus) const;
 
         /// Get a set of render params from the shape adapter's current state.
         ///
