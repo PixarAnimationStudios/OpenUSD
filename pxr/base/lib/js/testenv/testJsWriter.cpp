@@ -26,24 +26,42 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include <fstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+static JsWriter::Style
+StyleFromArg(const std::string& styleStr)
+{
+    if (styleStr == "compact") {
+        return JsWriter::Style::Compact;
+    } else if (styleStr == "pretty") {
+        return JsWriter::Style::Pretty;
+    } else {
+        // Invalid style argument.
+        TF_AXIOM(false);
+        return JsWriter::Style::Compact;
+    }
+}
+
 int main(int argc, char const *argv[])
 {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s outputFile\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s outputFile [compact|pretty]\n", argv[0]);
         return 1;
     }
 
-    std::ofstream ifs(argv[1]);
-    if (!ifs) {
+    std::ofstream ofs(argv[1]);
+    if (!ofs) {
         fprintf(stderr, "Error: failed to open output file '%s'", argv[1]);
         return 2;
     }
-    JsWriter js(ifs);
+
+    JsWriter::Style style = StyleFromArg(argv[2]);
+
+    JsWriter js(ofs, style);
     js.BeginArray();
 
     // Explicit interface

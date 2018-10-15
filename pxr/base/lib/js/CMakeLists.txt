@@ -121,13 +121,22 @@ pxr_register_test(testJsUtils
 )
 pxr_register_test(testJsWriter
     COMMAND 
-        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test.json"
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test.json compact"
     TESTENV
         testJsWriter
     DIFF_COMPARE 
         test.json
 )
+pxr_register_test(testJsWriter_Pretty
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test-pretty.json pretty"
+    TESTENV
+        testJsWriter
+    DIFF_COMPARE 
+        test-pretty.json
+)
 pxr_register_test(testJsDouble
     COMMAND 
         "${CMAKE_INSTALL_PREFIX}/tests/testJsDouble"
 )
+
