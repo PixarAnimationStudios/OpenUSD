@@ -79,8 +79,10 @@ GlfTextureRegistry::GetTextureHandle(const TfToken &texture,
     } else {
         // if not exists, create it
         textureHandle = _CreateTexture(texture, originLocation);
-        md.SetHandle(textureHandle);
-        _textureRegistry[std::make_pair(texture, originLocation)] = md;
+        if (textureHandle) {
+            md.SetHandle(textureHandle);
+            _textureRegistry[std::make_pair(texture, originLocation)] = md;
+        }
     }
 
     return textureHandle;
@@ -114,8 +116,10 @@ GlfTextureRegistry::GetTextureHandle(const TfTokenVector &textures,
         // if not exists, create it
         textureHandle = _CreateTexture(textures, numTextures,
                                        originLocation);
-        md.SetHandle(textureHandle);
-        _textureRegistry[std::make_pair(texture, originLocation)] = md;
+        if (textureHandle) {
+            md.SetHandle(textureHandle);
+            _textureRegistry[std::make_pair(texture, originLocation)] = md;
+        }
     }
 
     return textureHandle;
@@ -151,7 +155,8 @@ GlfTextureHandleRefPtr
 GlfTextureRegistry::GetTextureHandle(
     const TfToken& texture,
     GlfImage::ImageOriginLocation originLocation,
-    const GlfTextureFactoryBase* textureFactory) {
+    const GlfTextureFactoryBase* textureFactory)
+{
     if (!TF_VERIFY(textureFactory != nullptr)) {
         return nullptr;
     }
@@ -165,11 +170,14 @@ GlfTextureRegistry::GetTextureHandle(
     if (it != _textureRegistry.end() && it->second.IsMetadataEqual(md)) {
         return it->second.GetHandle();
     } else {
-        GlfTextureHandleRefPtr textureHandle =
-            GlfTextureHandle::New(
-                textureFactory->New(texture, originLocation));
-        md.SetHandle(textureHandle);
-        _textureRegistry[std::make_pair(texture, originLocation)] = md;
+        GlfTextureHandleRefPtr textureHandle;
+        textureHandle = _CreateTexture(texture,
+                                       originLocation,
+                                       textureFactory);
+        if (textureHandle) {
+            md.SetHandle(textureHandle);
+            _textureRegistry[std::make_pair(texture, originLocation)] = md;
+        }
         return textureHandle;
     }
 }
@@ -215,6 +223,23 @@ GlfTextureRegistry::_CreateTexture(const TfTokenVector &textures,
             TF_CODING_ERROR("[PluginLoad] Cannot construct texture for "
                             "type '%s'\n",
                             TfStringGetSuffix(filename).c_str());
+        }
+    }
+    return result ? GlfTextureHandle::New(result) : TfNullPtr;
+}
+
+GlfTextureHandleRefPtr
+GlfTextureRegistry::_CreateTexture(const TfToken &texture,
+                                   GlfImage::ImageOriginLocation originLocation,
+                                   const GlfTextureFactoryBase *textureFactory)
+{
+    GlfTextureRefPtr result;
+    if (textureFactory != nullptr) {
+        result = textureFactory->New(texture, originLocation);
+        if (!result) {
+            TF_CODING_ERROR("Supplied Texture factory cannot construct texture "
+                            "for token '%s'\n",
+                            texture.GetText());
         }
     }
     return result ? GlfTextureHandle::New(result) : TfNullPtr;
@@ -292,8 +317,11 @@ GlfTextureRegistry::GarbageCollectIfNeeded()
              _TextureMetadata>::iterator it =
         _textureRegistry.begin();
     while (it != _textureRegistry.end()){
-        if ((it->second.GetHandle()->IsUnique()) ) {
-            _textureRegistry.erase(it++);
+        const GlfTextureHandleRefPtr &handle = it->second.GetHandle();
+
+        // Null handles should not have been added to the registry
+        if (TF_VERIFY(handle) && handle->IsUnique()) {
+            it = _textureRegistry.erase(it);
             // TextureHandle (and its GlfTexture) will be released here.
         } else {
             ++it;
