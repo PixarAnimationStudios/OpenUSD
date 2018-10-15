@@ -64,12 +64,14 @@ public:
     bool coreProfile;
 
     // Max constants
+    int maxArrayTextureLayers;
     int maxUniformBlockSize;
     int maxShaderStorageBlockSize;
     int maxTextureBufferSize;
     int uniformBufferOffsetAlignment;
 
     // GL extensions (ordered by version)
+    bool arrayTexturesEnabled;        // EXT_texture_array                (3.0)
     bool shaderStorageBufferEnabled;  // ARB_shader_storage_buffer_object (4.3)
     bool bufferStorageEnabled;        // ARB_buffer_storage               (4.4)
     bool directStateAccessEnabled;    // ARB_direct_state_access          (4.5)

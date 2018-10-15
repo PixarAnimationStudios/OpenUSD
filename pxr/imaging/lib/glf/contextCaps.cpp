@@ -62,11 +62,13 @@ GlfContextCaps::GlfContextCaps()
     : glVersion(0)
     , coreProfile(false)
 
+    , maxArrayTextureLayers(0)
     , maxUniformBlockSize(0)
     , maxShaderStorageBlockSize(0)
     , maxTextureBufferSize(0)
     , uniformBufferOffsetAlignment(0)
 
+    , arrayTexturesEnabled(false)
     , shaderStorageBufferEnabled(false)
     , bufferStorageEnabled(false)
     , directStateAccessEnabled(false)
@@ -110,6 +112,7 @@ GlfContextCaps::_LoadCaps()
 
     // note that this function is called without GL context, in some unit tests.
 
+    arrayTexturesEnabled         = false;
     shaderStorageBufferEnabled   = false;
     bufferStorageEnabled         = false;
     directStateAccessEnabled     = false;
@@ -119,6 +122,7 @@ GlfContextCaps::_LoadCaps()
     explicitUniformLocation      = false;
     shadingLanguage420pack       = false;
     shaderDrawParametersEnabled  = false;
+    maxArrayTextureLayers        = 256;          // GL spec minimum
     maxUniformBlockSize          = 16*1024;      // GL spec minimum
     maxShaderStorageBlockSize    = 16*1024*1024; // GL spec minimum
     maxTextureBufferSize         = 64*1024;      // GL spec minimum
@@ -155,6 +159,11 @@ GlfContextCaps::_LoadCaps()
         }
     } else {
         glslVersion = 0;
+    }
+
+    if (glVersion >= 300) {
+        glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
+        arrayTexturesEnabled = true;
     }
 
     // initialize by Core versions

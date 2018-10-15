@@ -101,7 +101,7 @@ GlfUVTextureData::_GetDegradedImageInputChain(double scaleX, double scaleY,
 {
     _DegradedImageInput chain(scaleX, scaleY);
     for (int level = startMip; level < lastMip; level++) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, level);
+        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, level);
         chain.images.push_back(image);
     }
     return chain;
@@ -122,7 +122,7 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
     // in that case 
     for (int mipCounter = 1; mipCounter < 32; mipCounter++) {
         GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath,
-            mipCounter, /*suppressErrors=*/ true);
+            0 /*subimage*/, mipCounter, /*suppressErrors=*/ true);
         if (!image) {
             potentialMipLevels = mipCounter;
             break;
@@ -190,7 +190,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     // If no targetMemory set, use degradeLevel to determine mipLevel
     if (targetMemory == 0) {
         GlfImageSharedPtr image =
-		GlfImage::OpenForReading(_filePath, degradeLevel);
+        GlfImage::OpenForReading(_filePath, 0, degradeLevel);
         if (!image) {
             return _DegradedImageInput(1.0, 1.0);
         }
@@ -215,7 +215,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     for (int i = 1; i < numMipLevels; i++) {
         // Open the image and is requested to use the i-th
         // down-sampled image (mipLevel).
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, i);
+        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, i);
 
         // If mipLevel could not be opened, return fullImage. We are
         // not supposed to hit this. GlfImage will return the last

@@ -83,7 +83,7 @@ public:
 
 protected:
     virtual bool _OpenForReading(std::string const & filename, int subimage,
-                                 bool suppressErrors);
+                                 int mip, bool suppressErrors);
     virtual bool _OpenForWriting(std::string const & filename);
 
 private:
@@ -98,7 +98,6 @@ private:
                    StorageSpec const & storage);
         
     std::string _filename;
-    int _subimage;
     int _width;
     int _height;
     
@@ -186,7 +185,6 @@ Glf_StbImage::_GetInfoFromStorageSpec(GlfImage::StorageSpec const & storage)
 }
 
 Glf_StbImage::Glf_StbImage()
-    : _subimage(0)
 {
 }
 
@@ -363,11 +361,10 @@ Glf_StbImage::GetNumMipLevels() const
 /* virtual */
 bool
 Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
-                               bool suppressErrors)
+                              int mip, bool suppressErrors)
 {
     _filename = filename;
-    _subimage = subimage;
-   
+
     std::string fileExtension = _GetFilenameExtension();
     if (fileExtension == "hdr") {
         _outputType = GL_FLOAT;
@@ -375,7 +372,6 @@ Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
         _outputType = GL_UNSIGNED_BYTE;
     }
 
-    //read the header file to obtain width, height, and bpp info
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
     if (!asset) { 
         return false;
@@ -388,7 +384,8 @@ Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
 
     return stbi_info_from_memory(
         reinterpret_cast<stbi_uc const*>(buffer.get()), asset->GetSize(), 
-        &_width, &_height, &_nchannels);
+        &_width, &_height, &_nchannels) &&
+            subimage == 0 && mip == 0;
 }
 
 /* virtual */

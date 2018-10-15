@@ -2652,7 +2652,7 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
                 paramIt->GetFallbackValue(),
                 GetPathForIndex(paramIt->GetConnection()),
                 paramIt->GetSamplerCoordinates(),
-                paramIt->IsPtex());
+                paramIt->GetTextureType());
         }
     }
 

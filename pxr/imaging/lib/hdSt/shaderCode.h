@@ -81,7 +81,8 @@ public:
     struct TextureDescriptor {
         TfToken name;
         size_t handle; // GLuint64, for bindless textures
-        enum { TEXTURE_2D, TEXTURE_PTEX_TEXEL, TEXTURE_PTEX_LAYOUT };
+        enum { TEXTURE_2D, TEXTURE_UDIM_ARRAY, TEXTURE_UDIM_LAYOUT,
+               TEXTURE_PTEX_TEXEL, TEXTURE_PTEX_LAYOUT };
         int type;
         unsigned int sampler;
     };

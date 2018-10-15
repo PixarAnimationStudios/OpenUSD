@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,40 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_TEXTURE_RESOURCE_H
-#define HD_TEXTURE_RESOURCE_H
+#ifndef USDIMAGING_TEXTURE_UTILS_H
+#define USDIMAGING_TEXTURE_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
+#include "pxr/usd/sdf/layer.h"
 
-#include <cstdint>
+#include "pxr/usdImaging/usdImaging/api.h"
+
+#include <tuple>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+USDIMAGING_API
+std::vector<std::tuple<int, TfToken>>
+UsdImaging_GetUdimTiles(
+    std::string const& basePath,
+    int tileLimit,
+    SdfLayerHandle const& layerHandle = SdfLayerHandle());
 
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-
-class HdTextureResource {
-public:
-    typedef size_t ID;
-
-    /// Returns the hash value of the texture for \a sourceFile
-    HD_API
-    static ID ComputeHash(TfToken const & sourceFile);
-
-    HD_API
-    virtual ~HdTextureResource();
-
-    virtual HdTextureType GetTextureType() const = 0;
-
-    virtual size_t GetMemoryUsed() = 0;
-};
+USDIMAGING_API
+bool
+UsdImaging_UdimTilesExist(
+    std::string const& basePath,
+    int tileLimit,
+    SdfLayerHandle const& layerHandle = SdfLayerHandle());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_TEXTURE_RESOURCE_H
+#endif // USDIMAGING_TEXTURE_UTILS_H

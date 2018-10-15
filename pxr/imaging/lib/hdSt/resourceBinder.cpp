@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hd/bufferSpec.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -552,7 +553,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     = MetaData::ShaderParameterAccessor(glName,
                                                         /*type=*/glType);
             } else if (it->IsTexture()) {
-                if (it->IsPtex()) {
+                if (it->GetTextureType() == HdTextureType::Ptex) {
                     // ptex texture
                     HdBinding texelBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL, bindlessTextureLocation++)
@@ -577,7 +578,42 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     // XXX: same name ?
                     TfToken layoutName = TfToken(std::string(name.GetText()) + "_layout");
                     _bindingMap[layoutName] = layoutBinding; // used for non-bindless
-                } else {
+                } else if (it->GetTextureType() == HdTextureType::Udim) {
+                    // Texture Array for UDIM
+                    HdBinding textureBinding =
+                        bindless
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY,
+                            bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_UDIM_ARRAY,
+                            locator.uniformLocation++);
+                    metaDataOut->shaderParameterBinding[textureBinding] =
+                        MetaData::ShaderParameterAccessor(
+                            /*name=*/it->GetName(),
+                            /*type=*/glType,
+                            /*inPrimvars=*/it->GetSamplerCoordinates());
+                    // used for non-bindless
+                    _bindingMap[it->GetName()] = textureBinding;
+
+                    // Layout for UDIM
+                    TfToken layoutName =
+                        TfToken(std::string(it->GetName().GetText())
+                        + "_layout");
+                    HdBinding layoutBinding =
+                        bindless
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT,
+                            bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_UDIM_LAYOUT,
+                            locator.uniformLocation++);
+
+                    metaDataOut->shaderParameterBinding[layoutBinding] =
+                        MetaData::ShaderParameterAccessor(
+                            /*name=*/layoutName,
+                            /*type=*/HdStGLConversions::GetGLSLTypename(
+                                HdType::HdTypeFloat));
+
+                    // used for non-bindless
+                    _bindingMap[layoutName] = layoutBinding;
+                } else if (it->GetTextureType() == HdTextureType::Uv) {
                     // 2d texture
                     HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D, bindlessTextureLocation++)
