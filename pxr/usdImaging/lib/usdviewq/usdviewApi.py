@@ -191,6 +191,12 @@ class UsdviewApi(object):
         """DEPRECATED Returns the old settings object."""
 
         return self.__appController._settings
+    
+    def AddPrimSelectionChangedCallback(self, callback):
+        self.__appController._dataModel.selection.signalPrimSelectionChanged.connect(callback)
+
+    def RemovePrimSelectionChangedCallback(self, callback):
+        self.__appController._dataModel.selection.signalPrimSelectionChanged.disconnect(callback)
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
