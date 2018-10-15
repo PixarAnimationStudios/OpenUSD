@@ -255,6 +255,8 @@ class Blocker:
 
 class AppController(QtCore.QObject):
 
+    HYDRA_DISABLED_OPTION_STRING = "HydraDisabled"
+
     ###########
     # Signals #
     ###########
@@ -341,7 +343,8 @@ class AppController(QtCore.QObject):
             self._rendererNameOpt = parserData.renderer
 
             if self._rendererNameOpt:
-                if self._rendererNameOpt == "HydraDisabled":
+                if self._rendererNameOpt == \
+                            AppController.HYDRA_DISABLED_OPTION_STRING:
                     os.environ['HD_ENABLED'] = '0'
                 else:
                     os.environ['HD_DEFAULT_RENDERER'] = self._rendererNameOpt
@@ -1215,6 +1218,14 @@ class AppController(QtCore.QObject):
 
         self._refreshCameraListAndMenu(preserveCurrCamera = preserveCamera)
 
+    @staticmethod
+    def GetRendererOptionChoices():
+        choices = UsdImagingGL.GL.GetRegisteredRendererPluginsDisplayNames()
+        if choices:
+            choices.append(AppController.HYDRA_DISABLED_OPTION_STRING)
+        else:
+            choices = [AppController.HYDRA_DISABLED_OPTION_STRING]
+        return choices
 
     # Render plugin support
     def _rendererPluginChanged(self, plugin):

@@ -85,9 +85,12 @@ class Launcher(object):
         '''
         parser.add_argument('--renderer', action='store',
                             type=str, dest='renderer',
+                            choices=AppController.GetRendererOptionChoices(),
                             help="Which render backend to use (named as it "
-                            "appears in the menu).  Use 'HydraDisabled' to "
-                            "turn off Hydra renderers.", default='')
+                            "appears in the menu).  Use '%s' to "
+                            "turn off Hydra renderers." %
+                            AppController.HYDRA_DISABLED_OPTION_STRING,
+                            default='')
         
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,

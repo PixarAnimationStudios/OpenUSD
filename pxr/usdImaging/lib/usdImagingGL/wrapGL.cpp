@@ -31,6 +31,8 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include "pxr/imaging/hdx/rendererPluginRegistry.h"
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
@@ -94,6 +96,19 @@ _SetLightingState(UsdImagingGL &self, GlfSimpleLightVector const &lights,
     self.SetLightingState(lights, material, sceneAmbient);
 }
 
+static std::vector<std::string>
+_GetRegisteredRendererPluginsDisplayNames()
+{
+    HfPluginDescVector pluginDescriptors;
+    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
+
+    std::vector<std::string> displayNames;
+    for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
+        displayNames.push_back(pluginDescriptors[i].displayName);
+    }
+    return displayNames;
+}
+
 } // anonymous namespace 
 
 void wrapGL()
@@ -130,6 +145,9 @@ void wrapGL()
                  return_value_policy< TfPySequenceToTuple >())
             .def ("SetRendererAov", &UsdImagingGL::SetRendererAov)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
+            .def("GetRegisteredRendererPluginsDisplayNames", 
+                 &_GetRegisteredRendererPluginsDisplayNames)
+                .staticmethod("GetRegisteredRendererPluginsDisplayNames")
         ;
 
         // Wrap the constants.
