@@ -70,7 +70,8 @@ struct DefaultImageablePrimVisitorT
     bool                    AcceptPrim(const UsdPrim& prim,
                                        UsdTimeCode time,
                                        GusdPurposeSet purposes,
-                                       GusdUSD_TraverseControl& ctl) const;
+                                       GusdUSD_TraverseControl& ctl,
+                                       bool isTraversalRoot) const;
     
     Usd_PrimFlagsPredicate  TraversalPredicate() const
                             { return UsdTraverseInstanceProxies(UsdPrimIsActive && UsdPrimIsDefined &&
@@ -84,7 +85,8 @@ DefaultImageablePrimVisitorT<Visitor,Recursive>::AcceptPrim(
     const UsdPrim& prim,
     UsdTimeCode time,
     GusdPurposeSet purposes,
-    GusdUSD_TraverseControl& ctl) const
+    GusdUSD_TraverseControl& ctl,
+    bool isTraversalRoot) const
 {
     UsdGeomImageable ip(prim);
     if(ip) {
@@ -138,9 +140,12 @@ struct TraverseTaskT : public UT_Task
 {
     TraverseTaskT(const UsdPrim& prim,  exint idx, UsdTimeCode time,
                   GusdPurposeSet purposes,
-                  TaskData& data, const Visitor& visitor, bool skipPrim)
-        :  UT_Task(), _prim(prim), _idx(idx), _time(time), _purposes(purposes), _data(data),
-           _visited(false), _visitor(visitor), _skipPrim(skipPrim) {}
+                  TaskData& data, const Visitor& visitor,
+                  bool skipPrim, bool isTraversalRoot)
+        :  UT_Task(), _prim(prim), _idx(idx), _time(time),
+           _purposes(purposes), _data(data),
+           _visited(false), _visitor(visitor),
+           _skipPrim(skipPrim), _isTraversalRoot(isTraversalRoot) {}
 
     virtual UT_Task*    run();
 
@@ -153,6 +158,7 @@ private:
     bool            _visited;
     const Visitor&  _visitor;
     bool            _skipPrim;
+    bool            _isTraversalRoot;
 };
 
 
@@ -173,7 +179,8 @@ TraverseTaskT<Visitor>::run()
     if(!_skipPrim) {
 
         GusdUSD_TraverseControl ctl;
-        if(BOOST_UNLIKELY(_visitor.AcceptPrim(_prim, _time, _purposes, ctl))) {
+        if(BOOST_UNLIKELY(_visitor.AcceptPrim(_prim, _time, _purposes, ctl,
+                                              _isTraversalRoot))) {
             /* Matched. Add it to the thread-specific list.*/
             auto*& threadData = _data.threadData.get();
             if(!threadData)
@@ -204,7 +211,8 @@ TraverseTaskT<Visitor>::run()
         auto& task =
             *new(allocate_child()) TraverseTaskT(child, _idx, _time, 
                                                  _purposes, _data,
-                                                 _visitor, /*skip prim*/ false);
+                                                 _visitor, /*skip prim*/ false,
+                                                 /*isTraversalRoot*/ false);
         if(idx == last)
             return &task;
         else
@@ -228,7 +236,8 @@ ParallelFindPrims(const UsdPrim& root,
     bool skipPrim = skipRoot || root.GetPath() == SdfPath::AbsoluteRootPath();
     auto& task =
         *new(UT_Task::allocate_root())
-        TraverseTaskT<Visitor>(root, -1, time, purposes, data, visitor, skipPrim);
+        TraverseTaskT<Visitor>(root, -1, time, purposes, data,
+                               visitor, skipPrim, /*isTraversalRoot*/ true);
     UT_Task::spawnRootAndWait(task);
     
     if(UTgetInterrupt()->opInterrupt())
@@ -265,7 +274,8 @@ struct RunTasksT
                             *new(UT_Task::allocate_root())
                             TraverseTaskT<Visitor>(prim, i, _times(i),
                                                    _purposes(i), _data,
-                                                   _visitor, skipPrim);
+                                                   _visitor, skipPrim,
+                                                   /*isTraversalRoot*/ true);
                         UT_Task::spawnRootAndWait(task);
                     }
                 }

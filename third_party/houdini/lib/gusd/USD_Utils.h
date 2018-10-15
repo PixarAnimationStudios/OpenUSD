@@ -106,10 +106,6 @@ void        ExtractPrimPathAndVariants(const SdfPath& path,
                                        SdfPath& primPath,
                                        SdfPath& variants);
 
-GUSD_API
-bool        ImageablePrimIsVisible(const UsdGeomImageable& prim,
-                                   UsdTimeCode time);
-
 /** Sort an array of prims (by path) */
 GUSD_API
 bool        SortPrims(UT_Array<UsdPrim>& prims);
@@ -264,15 +260,6 @@ GetNumericTime(UsdTimeCode time)
 {
     return time.IsNumeric() ?
         time.GetValue() : UsdTimeCode::EarliestTime().GetValue();
-}
-
-
-inline bool
-ImageablePrimIsVisible(const UsdGeomImageable& prim, UsdTimeCode time)
-{
-    TfToken vis;
-    prim.GetVisibilityAttr().Get(&vis, time);
-    return vis == UsdGeomTokens->inherited;
 }
 
 
