@@ -339,12 +339,7 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color5_refine_change_cube2.png");
         selection = _picker.GetSelection();
-        // XXX: A bug in primvar sharing (HD_ENABLE_SHARED_VERTEX_PRIMVAR)
-        // makes cube2 disappear because the vertex primvar BAR is not
-        // updated correctly. The dumped image and the verify below will
-        // fail once it is fixed.
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
-        //TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
      // deselect    

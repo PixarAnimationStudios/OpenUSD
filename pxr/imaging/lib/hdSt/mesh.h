@@ -188,6 +188,8 @@ private:
     bool _sceneNormals : 1;
     bool _flatNormals : 1;
     bool _pointsVisibilityAuthored : 1;
+    bool _hasVaryingTopology : 1;  // The prim's topology has changed since
+                                   // the prim was created
 };
 
 

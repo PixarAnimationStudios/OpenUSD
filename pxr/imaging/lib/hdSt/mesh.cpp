@@ -96,6 +96,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _sceneNormals(false)
     , _flatNormals(false)
     , _pointsVisibilityAuthored(false)
+    , _hasVaryingTopology(false)
 {
     /*NOTHING*/
 }
@@ -397,6 +398,9 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 .SetGarbageCollectionNeeded();
             sceneDelegate->GetRenderIndex().GetChangeTracker()
                 .MarkBatchesDirty();
+
+            // Setup a flag to say this prims.
+            _hasVaryingTopology = true;
         }
 
         // TODO: reuse same range for varying topology
@@ -1021,10 +1025,19 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         HdBufferArrayUsageHint usageHint;
         usageHint.value = orgHint.value;
 
-        // Set up the usage hints to mark the primvar as size varying if
-        // there is a previously set range and it contained a differing number
-        // of elements
-        if ((int)range->GetNumElements() != numPoints) {
+
+        // Set up the usage hints to mark the primvars as size varying if
+        // there is a varying topology and it will contain a differing number
+        // of elements.
+        //
+        // We can't compare the points size as computations such as refinement
+        // may expand the number of elements in the BAR from the topologies
+        // number of points.
+        //
+        // If the primvars are size varying, it also doesn't make sense for
+        // them to be immutable anymore, so clear the immutable flag.
+        if (_hasVaryingTopology) {
+            usageHint.bits.immutable   = 0;
             usageHint.bits.sizeVarying = 1;
         }
 
@@ -1037,7 +1050,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                      (orgHint.value != usageHint.value);
 
         if (bar->IsImmutable() && _IsEnabledSharedVertexPrimvar()) {
-            if (isNew) {
+            if (isNew && usageHint.bits.immutable) {
                 // see if we can share an immutable buffer primvar range
                 // include our existing sharing id so that we can take
                 // into account previously committed sources along
