@@ -43,8 +43,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 struct _TextureSize {
-    _TextureSize(int w, int h) : width(w), height(h) { }
-    int width, height;
+    _TextureSize(unsigned int w, unsigned int h) : width(w), height(h) { }
+    unsigned int width;
+    unsigned int height;
 };
 
 struct _MipDesc {
@@ -61,15 +62,15 @@ _MipDescArray _GetMipLevels(const TfToken& filePath)
     constexpr int maxMipReads = 32;
     _MipDescArray ret {};
     ret.reserve(maxMipReads);
-    int prevWidth = std::numeric_limits<int>::max();
-    int prevHeight = std::numeric_limits<int>::max();
-    for (int mip = 0; mip < maxMipReads; ++mip) {
+    unsigned int prevWidth = std::numeric_limits<int>::max();
+    unsigned int prevHeight = std::numeric_limits<int>::max();
+    for (unsigned int mip = 0; mip < maxMipReads; ++mip) {
         GlfImageSharedPtr image = GlfImage::OpenForReading(filePath, 0, mip);
         if (image == nullptr) {
             break;
         }
-        const int currHeight = image->GetWidth();
-        const int currWidth = image->GetHeight();
+        const unsigned int currHeight = std::max(1, image->GetWidth());
+        const unsigned int currWidth = std::max(1, image->GetHeight());
         if (currWidth < prevWidth &&
             currHeight < prevHeight) {
             prevWidth = currWidth;
@@ -201,7 +202,7 @@ GlfUdimTexture::_ReadImage()
 
     _format = firstImageMips[0].image->GetFormat();
     const GLenum type = firstImageMips[0].image->GetType();
-    int numChannels;
+    unsigned int numChannels;
     if (_format == GL_RED || _format == GL_LUMINANCE) {
         numChannels = 1;
     } else if (_format == GL_RG) {
@@ -215,7 +216,7 @@ GlfUdimTexture::_ReadImage()
     }
 
     GLenum internalFormat = GL_RGBA8;
-    int sizePerElem = 1;
+    unsigned int sizePerElem = 1;
     if (type == GL_FLOAT) {
         constexpr GLenum internalFormats[] =
             { GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F };
@@ -238,58 +239,73 @@ GlfUdimTexture::_ReadImage()
         sizePerElem = 1;
     }
 
-    const int maxTileCount =
+    const unsigned int maxTileCount =
         std::get<0>(_tiles.back()) + 1;
     _depth = static_cast<int>(_tiles.size());
-    const int numBytesPerPixel = sizePerElem * numChannels;
-    const int numBytesPerPixelLayer = numBytesPerPixel * _depth;
+    const unsigned int numBytesPerPixel = sizePerElem * numChannels;
+    const unsigned int numBytesPerPixelLayer = numBytesPerPixel * _depth;
 
-    int targetPixelCount =
-        static_cast<int>(GetMemoryRequested() / (_depth * numBytesPerPixel));
-    
-    // XXX : POL : They need to fix this, GetMemoryRequest 0 should mean all
-    //             pixels
-    targetPixelCount = 1000000000;
-    //
+    unsigned int targetPixelCount =
+        static_cast<unsigned int>(GetMemoryRequested());
+    const bool loadAllTiles = targetPixelCount == 0;
+    targetPixelCount /= _depth * numBytesPerPixel;
 
     std::vector<_TextureSize> mips {};
     mips.reserve(firstImageMips.size());
     if (firstImageMips.size() == 1) {
-        int width = firstImageMips[0].size.width;
-        int height = firstImageMips[0].size.height;
+        unsigned int width = firstImageMips[0].size.width;
+        unsigned int height = firstImageMips[0].size.height;
         while (true) {
             mips.emplace_back(width, height);
             if (width == 1 && height == 1) {
                 break;
             }
-            width = std::max(1, width / 2);
-            height = std::max(1, height / 2);
+            width = std::max(1u, width / 2u);
+            height = std::max(1u, height / 2u);
         }
-        std::reverse(mips.begin(), mips.end());
+        if (!loadAllTiles) {
+            std::reverse(mips.begin(), mips.end());
+        }
     } else {
-        for (auto it = firstImageMips.crbegin();
-             it != firstImageMips.crend(); ++it) {
-            mips.emplace_back(it->size);
-        }
-    }
-
-    int mipCount = 0;
-    {
-        for (auto const& mip: mips) {
-            ++mipCount;
-            if ((targetPixelCount -= (mip.width * mip.height)) <= 0) {
-                break;
+        if (loadAllTiles) {
+            for (_MipDesc const& mip: firstImageMips) {
+                mips.emplace_back(mip.size);
+            }
+        } else {
+            for (auto it = firstImageMips.crbegin();
+                 it != firstImageMips.crend(); ++it) {
+                mips.emplace_back(it->size);
             }
         }
     }
-    mips.resize(mipCount, {0, 0});
-    std::reverse(mips.begin(), mips.end());
 
-    _width = mips[0].width;
-    _height = mips[0].height;
+    unsigned int mipCount = mips.size();
+    if (!loadAllTiles) {
+        mipCount = 0;
+        for (auto const& mip: mips) {
+            const unsigned int currentPixelCount = mip.width * mip.height;
+            if (targetPixelCount <= currentPixelCount) {
+                break;
+            }
+            ++mipCount;
+            targetPixelCount -= currentPixelCount;
+        }
+
+        if (mipCount == 0) {
+            mips.clear();
+            mips.emplace_back(1, 1);
+            mipCount = 1;
+        } else {
+            mips.resize(mipCount, {0, 0});
+            std::reverse(mips.begin(), mips.end());
+        }
+    }
 
     std::vector<std::vector<uint8_t>> mipData;
     mipData.resize(mipCount);
+
+    _width = mips[0].width;
+    _height = mips[0].height;
 
     // Texture array queries will use a float as the array specifier.
     std::vector<float> layoutData;
@@ -302,9 +318,9 @@ GlfUdimTexture::_ReadImage()
         _width, _height, _depth);
 
     size_t totalTextureMemory = 0;
-    for (int mip = 0; mip < mipCount; ++mip) {
+    for (unsigned int mip = 0; mip < mipCount; ++mip) {
         _TextureSize const& mipSize = mips[mip];
-        const int currentMipMemory =
+        const unsigned int currentMipMemory =
             mipSize.width * mipSize.height * numBytesPerPixelLayer;
         mipData[mip].resize(currentMipMemory, 0);
         totalTextureMemory += currentMipMemory;
@@ -313,12 +329,12 @@ GlfUdimTexture::_ReadImage()
     WorkParallelForN(_tiles.size(), [&](size_t begin, size_t end) {
         for (size_t tileId = begin; tileId < end; ++tileId) {
             std::tuple<int, TfToken> const& tile = _tiles[tileId];
-            layoutData[std::get<0>(tile)] = tileId;
+            layoutData[std::get<0>(tile)] = tileId + 1;
             _MipDescArray images = _GetMipLevels(std::get<1>(tile));
             if (images.empty()) { continue; }
-            for (int mip = 0; mip < mipCount; ++mip) {
+            for (unsigned int mip = 0; mip < mipCount; ++mip) {
                 _TextureSize const& mipSize = mips[mip];
-                const int numBytesPerLayer =
+                const unsigned int numBytesPerLayer =
                     mipSize.width * mipSize.height * numBytesPerPixel;
                 GlfImage::StorageSpec spec;
                 spec.width = mipSize.width;
@@ -329,7 +345,7 @@ GlfUdimTexture::_ReadImage()
                 spec.data = mipData[mip].data()
                             + (tileId * numBytesPerLayer);
                 const auto it = std::find_if(images.rbegin(), images.rend(),
-                    [&mipSize](const _MipDesc& i)
+                    [&mipSize](_MipDesc const& i)
                     { return mipSize.width <= i.size.width &&
                              mipSize.height <= i.size.height;});
                 (it == images.rend() ? images.front() : *it).image->Read(spec);
@@ -337,7 +353,7 @@ GlfUdimTexture::_ReadImage()
         }
     }, 1);
 
-    for (int mip = 0; mip < mipCount; ++mip) {
+    for (unsigned int mip = 0; mip < mipCount; ++mip) {
         _TextureSize const& mipSize = mips[mip];
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, mip, 0, 0, 0,
                         mipSize.width, mipSize.height, _depth, _format, type,
