@@ -156,6 +156,8 @@ class testUsdExportPointInstancer(unittest.TestCase):
         self.assertEqual(Usd.ModelAPI(prototypesPrim).GetKind(),
                 Kind.Tokens.subcomponent)
 
+        # Note that pCube1_0 is a special case where instancerTranslate
+        # isn't the opposite of translate, so both have to be left in.
         prototype0 = prototypesPrim.GetChild("pCube1_0")
         self._AssertPrototype(prototype0, "Xform", 2, True)
 
@@ -163,7 +165,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
         self._AssertPrototype(prototype1, "Mesh", 0, False)
 
         prototype2 = prototypesPrim.GetChild("referencePrototype_2")
-        self._AssertPrototype(prototype2, "Xform", 1, True)
+        self._AssertPrototype(prototype2, "Xform", 1, False)
         self.assertEqual(
                 Usd.ModelAPI(prototype2).GetAssetName(),
                 "ConeAssetName")
