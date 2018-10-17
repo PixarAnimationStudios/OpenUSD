@@ -62,10 +62,6 @@ typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 class UsdImagingGL : public UsdImagingGLEngine {
 public:
 
-    /// Returns true if Hydra is enabled for GL drawing.
-    USDIMAGINGGL_API
-    static bool IsEnabledHydra();
-
     USDIMAGINGGL_API
     UsdImagingGL();
     USDIMAGINGGL_API

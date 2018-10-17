@@ -71,6 +71,10 @@ public:
     USDIMAGINGGL_API
     virtual ~UsdImagingGLEngine();
 
+    /// Returns true if Hydra is enabled for GL drawing.
+    USDIMAGINGGL_API
+    static bool IsHydraEnabled();
+
     enum DrawMode {
         DRAW_POINTS,
         DRAW_WIREFRAME,

@@ -22,15 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
 
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #include "pxr/usdImaging/usdImagingGL/refEngine.h"
 
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
-
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/imaging/glf/glContext.h"
@@ -38,51 +34,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-namespace {
-
 static
-bool
-_IsEnabledHydra()
+UsdImagingGLEngine* 
+_InitEngine(const SdfPath& rootPath,
+            const SdfPathVector& excludedPaths,
+            const SdfPathVector& invisedPaths,
+            const SdfPath& delegateID = SdfPath::AbsoluteRootPath())
 {
-    // Make sure there is an OpenGL context when 
-    // trying to initialize Hydra/Reference
-    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (!context) {
-        TF_CODING_ERROR("OpenGL context required, using reference renderer");
-        return false;
-    }
-    if (TfGetenv("HD_ENABLED", "1") != "1") {
-        return false;
-    }
-    
-    // Check to see if we have a default plugin for the renderer
-    TfToken defaultPlugin = 
-        HdxRendererPluginRegistry::GetInstance().GetDefaultPluginId();
-
-    return !defaultPlugin.IsEmpty();
-}
-
-} // anonymous namespace
-
-/*static*/
-bool
-UsdImagingGL::IsEnabledHydra()
-{
-    GlfGlewInit();
-
-    static bool isEnabledHydra = _IsEnabledHydra();
-    return isEnabledHydra;
-}
-
-static
-UsdImagingGLEngine* _InitEngine(const SdfPath& rootPath,
-                              const SdfPathVector& excludedPaths,
-                              const SdfPathVector& invisedPaths,
-                              const SdfPath& delegateID =
-                                        SdfPath::AbsoluteRootPath())
-{
-    if (UsdImagingGL::IsEnabledHydra()) {
+    if (UsdImagingGLEngine::IsHydraEnabled()) {
         return new UsdImagingGLHdEngine(rootPath, excludedPaths,
                                         invisedPaths, delegateID);
     } else {

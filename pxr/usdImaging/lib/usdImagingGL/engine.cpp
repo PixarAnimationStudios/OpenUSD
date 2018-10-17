@@ -30,7 +30,9 @@
 #include "pxr/imaging/glf/info.h"
 
 #include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hdx/rendererPluginRegistry.h"
 
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stl.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -38,7 +40,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+namespace {
 
 struct _HitData {
     int xMin;
@@ -49,7 +51,43 @@ struct _HitData {
 typedef TfHashMap< int32_t, _HitData > _HitDataById;
 
 
+static
+bool
+_IsHydraEnabled()
+{
+    // Make sure there is an OpenGL context when 
+    // trying to initialize Hydra/Reference
+    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
+    if (!context) {
+        TF_CODING_ERROR("OpenGL context required, using reference renderer");
+        return false;
+    }
+
+    if (TfGetenv("HD_ENABLED", "1") != "1") {
+        return false;
+    }
+    
+    // Check to see if we have a default plugin for the renderer
+    TfToken defaultPlugin = 
+        HdxRendererPluginRegistry::GetInstance().GetDefaultPluginId();
+
+    return !defaultPlugin.IsEmpty();
+}
+
+} // anonymous namespace
+
+
 UsdImagingGLEngine::~UsdImagingGLEngine() { /*nothing*/ }
+
+/*static*/
+bool
+UsdImagingGLEngine::IsHydraEnabled()
+{
+    GlfGlewInit();
+
+    static bool isHydraEnabled = _IsHydraEnabled();
+    return isHydraEnabled;
+}
 
 /*virtual*/
 void 

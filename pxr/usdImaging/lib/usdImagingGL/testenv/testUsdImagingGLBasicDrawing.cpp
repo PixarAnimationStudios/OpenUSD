@@ -160,7 +160,7 @@ My_TestGLDrawing::InitTest()
     }
 
     if(IsEnabledTestLighting()) {
-        if(UsdImagingGL::IsEnabledHydra()) {
+        if(UsdImagingGLEngine::IsHydraEnabled()) {
             // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
             // OpenGL defaults
             _lightingContext = GlfSimpleLightingContext::New();
@@ -263,7 +263,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         glEnable(GL_DEPTH_TEST);
 
         if(IsEnabledTestLighting()) {
-            if(UsdImagingGL::IsEnabledHydra()) {
+            if(UsdImagingGLEngine::IsHydraEnabled()) {
                 _engine->SetLightingState(_lightingContext);
             } else {
                 _engine->SetLightingStateFromOpenGL();

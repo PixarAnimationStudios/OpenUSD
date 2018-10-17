@@ -1772,7 +1772,7 @@ class StageView(QtOpenGL.QGLWidget):
         # Hydra Enabled (Top Right)
         hydraMode = "Disabled"
 
-        if UsdImagingGL.GL.IsEnabledHydra():
+        if UsdImagingGL.GL.IsHydraEnabled():
             hydraMode = self._rendererDisplayName
             if not hydraMode:
                 hydraMode = "Enabled"
