@@ -68,6 +68,7 @@ public:
     SDF_API
     virtual SdfSpecType GetSpecType(const SdfAbstractDataSpecId& id) const;
 
+    SDF_API
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken &fieldName,
                      SdfAbstractDataValue* value) const;
     SDF_API
