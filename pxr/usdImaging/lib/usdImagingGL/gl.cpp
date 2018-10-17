@@ -121,14 +121,6 @@ UsdImagingGL::InvalidateBuffers()
     _engine->InvalidateBuffers();
 }
 
-/* static */
-bool
-UsdImagingGL::IsBatchingSupported()
-{
-    // Currently, batch drawing is supported only by the Hydra engine.
-    return IsEnabledHydra();
-}
-
 /*virtual*/
 void
 UsdImagingGL::PrepareBatch(const UsdPrim& root, RenderParams params)

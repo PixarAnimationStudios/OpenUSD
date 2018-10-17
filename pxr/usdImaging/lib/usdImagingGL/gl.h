@@ -77,11 +77,6 @@ public:
     USDIMAGINGGL_API
     virtual ~UsdImagingGL();
 
-    // Support for batched rendering
-    // Currently, supported only when Hydra is enabled
-    USDIMAGINGGL_API
-    static bool IsBatchingSupported();
-
     /// Prepares a sub-index delegate for drawing.
     ///
     /// This can be called many times for different sub-indexes (prim paths)
