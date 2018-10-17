@@ -1794,8 +1794,8 @@ class StageView(QtOpenGL.QGLWidget):
             texMem = 0
             if "gpuMemoryUsed" in allocInfo:
                 gpuMemTotal = allocInfo["gpuMemoryUsed"]
-            if "textureMemoryUsed" in allocInfo:
-                texMem = allocInfo["textureMemoryUsed"]
+            if "textureMemory" in allocInfo:
+                texMem = allocInfo["textureMemory"]
                 gpuMemTotal += texMem
 
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()

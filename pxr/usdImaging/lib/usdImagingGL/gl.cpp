@@ -30,7 +30,6 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/glf/textureRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -287,23 +286,7 @@ UsdImagingGL::TestIntersectionBatch(
 VtDictionary
 UsdImagingGL::GetResourceAllocation() const
 {
-    VtDictionary dict;
-    dict = _engine->GetResourceAllocation();
-
-    // append texture usage
-    size_t texMem = 0;
-    for (auto const &texInfo :
-             GlfTextureRegistry::GetInstance().GetTextureInfos()) {
-        VtDictionary::const_iterator it = texInfo.find("memoryUsed");
-        if (it != texInfo.end()) {
-            VtValue mem = it->second;
-            if (mem.IsHolding<size_t>()) {
-                texMem += mem.Get<size_t>();
-            }
-        }
-    }
-    dict["textureMemoryUsed"] = texMem;
-    return dict;
+    return _engine->GetResourceAllocation();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
