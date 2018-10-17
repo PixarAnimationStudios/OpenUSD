@@ -85,18 +85,19 @@ public:
 
     USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, 
-        UsdImagingGLRenderParams params);
+        const UsdImagingGLRenderParams& params) override;
 
     USDIMAGINGGL_API
     virtual void RenderBatch(const SdfPathVector& paths, 
-        UsdImagingGLRenderParams params);
+        const UsdImagingGLRenderParams& params) override;
 
     USDIMAGINGGL_API
-    virtual void Render(const UsdPrim& root, UsdImagingGLRenderParams params);
+    virtual void Render(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params) override;
 
     // Core rendering function: just draw, don't update anything.
     USDIMAGINGGL_API
-    void Render(UsdImagingGLRenderParams params);
+    void Render(const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
@@ -170,7 +171,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const UsdPrim& root, 
-        UsdImagingGLRenderParams params,
+        const UsdImagingGLRenderParams& params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
@@ -183,7 +184,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const SdfPathVector& paths, 
-        UsdImagingGLRenderParams params,
+        const UsdImagingGLRenderParams& params,
         unsigned int pickResolution,
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);

@@ -182,7 +182,7 @@ UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root,
 /*virtual*/
 void
 UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, 
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams &params)
 {
     HD_TRACE_FUNCTION();
 
@@ -367,7 +367,7 @@ UsdImagingGLHdEngine::_MakeHydraUsdImagingGLRenderParams(
 /*virtual*/
 void
 UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, 
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams& params)
 {
     _taskController->SetCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags);
@@ -383,7 +383,7 @@ UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths,
 /*virtual*/
 void
 UsdImagingGLHdEngine::Render(const UsdPrim& root, 
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams& params)
 {
     PrepareBatch(root, params);
 
@@ -407,7 +407,7 @@ UsdImagingGLHdEngine::TestIntersection(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
-    UsdImagingGLRenderParams params,
+    const UsdImagingGLRenderParams& params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
@@ -469,7 +469,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const SdfPathVector& paths, 
-    UsdImagingGLRenderParams params,
+    const UsdImagingGLRenderParams& params,
     unsigned int pickResolution,
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
@@ -555,7 +555,7 @@ class _DebugGroupTaskWrapper : public HdTask {
 };
 
 void
-UsdImagingGLHdEngine::Render(UsdImagingGLRenderParams params)
+UsdImagingGLHdEngine::Render(const UsdImagingGLRenderParams& params)
 {
     // Forward scene materials enable option to delegate
     _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);

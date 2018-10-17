@@ -81,7 +81,8 @@ UsdImagingGL::InvalidateBuffers()
 
 /*virtual*/
 void
-UsdImagingGL::PrepareBatch(const UsdPrim& root, UsdImagingGLRenderParams params)
+UsdImagingGL::PrepareBatch(const UsdPrim& root, 
+                           const UsdImagingGLRenderParams& params)
 {
     _engine->PrepareBatch(root, params);
 }
@@ -89,14 +90,15 @@ UsdImagingGL::PrepareBatch(const UsdPrim& root, UsdImagingGLRenderParams params)
 /*virtual*/
 void
 UsdImagingGL::RenderBatch(const SdfPathVector& paths, 
-                          UsdImagingGLRenderParams params)
+                          const UsdImagingGLRenderParams& params)
 {
     _engine->RenderBatch(paths, params);
 }
 
 /*virtual*/
 void
-UsdImagingGL::Render(const UsdPrim& root, UsdImagingGLRenderParams params)
+UsdImagingGL::Render(const UsdPrim& root, 
+                     const UsdImagingGLRenderParams& params)
 {
     _engine->Render(root, params);
 }
@@ -255,7 +257,7 @@ UsdImagingGL::TestIntersection(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
-    UsdImagingGLRenderParams params,
+    const UsdImagingGLRenderParams& params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
@@ -274,7 +276,7 @@ UsdImagingGL::TestIntersectionBatch(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const SdfPathVector& paths, 
-    UsdImagingGLRenderParams params,
+    const UsdImagingGLRenderParams& params,
     unsigned int pickResolution,
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)

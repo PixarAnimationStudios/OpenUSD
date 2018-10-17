@@ -179,7 +179,7 @@ UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
 /* virtual */
 void
 UsdImagingGLEngine::PrepareBatch(const UsdPrim& root, 
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams& params)
 {
     // By default, do nothing.
 }
@@ -187,7 +187,7 @@ UsdImagingGLEngine::PrepareBatch(const UsdPrim& root,
 /* virtual */
 void
 UsdImagingGLEngine::RenderBatch(const SdfPathVector& paths, 
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams& params)
 {
     // By default, do nothing.
 }
@@ -198,7 +198,7 @@ UsdImagingGLEngine::TestIntersection(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
-    UsdImagingGLRenderParams params,
+    const UsdImagingGLRenderParams& params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
@@ -424,7 +424,7 @@ UsdImagingGLEngine::TestIntersectionBatch(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const SdfPathVector& paths, 
-    UsdImagingGLRenderParams params,
+    const UsdImagingGLRenderParams& params,
     unsigned int pickResolution,
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)

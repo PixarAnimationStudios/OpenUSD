@@ -270,7 +270,7 @@ UsdImagingGLRefEngine::_DrawLines(bool drawID)
 
 void
 UsdImagingGLRefEngine::Render(const UsdPrim& root, 
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams& params)
 {
     TRACE_FUNCTION();
 

@@ -86,14 +86,14 @@ public:
     /// Support for batched drawing
     USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, 
-                              UsdImagingGLRenderParams params);
+                              const UsdImagingGLRenderParams& params);
     USDIMAGINGGL_API
     virtual void RenderBatch(const SdfPathVector& paths, 
-                             UsdImagingGLRenderParams params);
+                             const UsdImagingGLRenderParams& params);
 
     /// Entry point for kicking off a render
     virtual void Render(const UsdPrim& root, 
-                        UsdImagingGLRenderParams params) = 0;
+                        const UsdImagingGLRenderParams &params) = 0;
 
     virtual void InvalidateBuffers() = 0;
 
@@ -173,7 +173,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const UsdPrim& root,
-        UsdImagingGLRenderParams params,
+        const UsdImagingGLRenderParams& params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
@@ -217,7 +217,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const SdfPathVector& paths, 
-        UsdImagingGLRenderParams params,
+        const UsdImagingGLRenderParams& params,
         unsigned int pickResolution,
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
