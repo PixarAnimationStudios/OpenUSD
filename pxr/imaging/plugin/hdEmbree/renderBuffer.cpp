@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdEmbree/renderBuffer.h"
+#include "pxr/base/gf/half.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -77,7 +78,7 @@ HdEmbreeRenderBuffer::_GetSampleFormat(HdFormat format)
     size_t arity = HdGetComponentCount(format);
 
     if (component == HdFormatUNorm8 || component == HdFormatSNorm8 ||
-        component == HdFormatFloat32) {
+        component == HdFormatFloat16 || component == HdFormatFloat32) {
         if (arity == 1) { return HdFormatFloat32; }
         else if (arity == 2) { return HdFormatFloat32Vec2; }
         else if (arity == 3) { return HdFormatFloat32Vec3; }
@@ -151,6 +152,9 @@ static void _WriteOutput(HdFormat format, uint8_t *dst,
         if (componentFormat == HdFormatInt32) {
             ((int32_t*)dst)[c] =
                 (c < valueComponents) ? (int32_t)(value[c]) : 0;
+        } else if (componentFormat == HdFormatFloat16) {
+            ((uint16_t*)dst)[c] =
+                (c < valueComponents) ? GfHalf(value[c]).bits() : 0;
         } else if (componentFormat == HdFormatFloat32) {
             ((float*)dst)[c] =
                 (c < valueComponents) ? (float)(value[c]) : 0.0f;
@@ -257,6 +261,9 @@ HdEmbreeRenderBuffer::Resolve()
         for (size_t c = 0; c < componentCount; ++c) {
             if (componentFormat == HdFormatInt32) {
                 ((int32_t*)dst)[c] = ((int32_t*)src)[c] / sampleCount;
+            } else if (componentFormat == HdFormatFloat16) {
+                ((uint16_t*)dst)[c] = GfHalf(
+                    ((float*)src)[c] / sampleCount).bits();
             } else if (componentFormat == HdFormatFloat32) {
                 ((float*)dst)[c] = ((float*)src)[c] / sampleCount;
             } else if (componentFormat == HdFormatUNorm8) {

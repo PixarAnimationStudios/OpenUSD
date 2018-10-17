@@ -89,6 +89,10 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatSNorm8Vec2);
     TF_ADD_ENUM_NAME(HdFormatSNorm8Vec3);
     TF_ADD_ENUM_NAME(HdFormatSNorm8Vec4);
+    TF_ADD_ENUM_NAME(HdFormatFloat16);
+    TF_ADD_ENUM_NAME(HdFormatFloat16Vec2);
+    TF_ADD_ENUM_NAME(HdFormatFloat16Vec3);
+    TF_ADD_ENUM_NAME(HdFormatFloat16Vec4);
     TF_ADD_ENUM_NAME(HdFormatFloat32);
     TF_ADD_ENUM_NAME(HdFormatFloat32Vec2);
     TF_ADD_ENUM_NAME(HdFormatFloat32Vec3);
@@ -342,6 +346,11 @@ HdFormat HdGetComponentFormat(HdFormat f)
     case HdFormatSNorm8Vec3:
     case HdFormatSNorm8Vec4:
         return HdFormatSNorm8;
+    case HdFormatFloat16:
+    case HdFormatFloat16Vec2:
+    case HdFormatFloat16Vec3:
+    case HdFormatFloat16Vec4:
+        return HdFormatFloat16;
     case HdFormatFloat32:
     case HdFormatFloat32Vec2:
     case HdFormatFloat32Vec3:
@@ -362,16 +371,19 @@ size_t HdGetComponentCount(HdFormat f)
     switch (f) {
     case HdFormatUNorm8Vec2:
     case HdFormatSNorm8Vec2:
+    case HdFormatFloat16Vec2:
     case HdFormatFloat32Vec2:
     case HdFormatInt32Vec2:
         return 2;
     case HdFormatUNorm8Vec3:
     case HdFormatSNorm8Vec3:
+    case HdFormatFloat16Vec3:
     case HdFormatFloat32Vec3:
     case HdFormatInt32Vec3:
         return 3;
     case HdFormatUNorm8Vec4:
     case HdFormatSNorm8Vec4:
+    case HdFormatFloat16Vec4:
     case HdFormatFloat32Vec4:
     case HdFormatInt32Vec4:
         return 4;
@@ -395,6 +407,14 @@ size_t HdDataSizeOfFormat(HdFormat f)
     case HdFormatUNorm8Vec4:
     case HdFormatSNorm8Vec4:
         return 4;
+    case HdFormatFloat16:
+        return 2;
+    case HdFormatFloat16Vec2:
+        return 4;
+    case HdFormatFloat16Vec3:
+        return 6;
+    case HdFormatFloat16Vec4:
+        return 8;
     case HdFormatFloat32:
     case HdFormatInt32:
         return 4;
