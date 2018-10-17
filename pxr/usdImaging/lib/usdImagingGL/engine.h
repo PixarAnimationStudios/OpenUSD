@@ -31,6 +31,8 @@
 #include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 
+#include "pxr/usdImaging/usdImagingGL/renderParams.h"
+
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
@@ -75,106 +77,6 @@ public:
     USDIMAGINGGL_API
     static bool IsHydraEnabled();
 
-    enum DrawMode {
-        DRAW_POINTS,
-        DRAW_WIREFRAME,
-        DRAW_WIREFRAME_ON_SURFACE,
-        DRAW_SHADED_FLAT,
-        DRAW_SHADED_SMOOTH,
-        DRAW_GEOM_ONLY,
-        DRAW_GEOM_FLAT,
-        DRAW_GEOM_SMOOTH
-    };
-
-    enum CullStyle {
-        CULL_STYLE_NO_OPINION,
-        CULL_STYLE_NOTHING,
-        CULL_STYLE_BACK,
-        CULL_STYLE_FRONT,
-        CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED,
-
-        CULL_STYLE_COUNT
-    };
-
-    typedef std::vector<GfVec4d> ClipPlanesVector;
-
-    struct RenderParams {
-        UsdTimeCode frame;
-        float complexity;
-        DrawMode drawMode;
-        bool showGuides;
-        bool showProxy;
-        bool showRender;
-        bool forceRefresh;
-        bool flipFrontFacing;
-        CullStyle cullStyle;
-        bool enableIdRender;
-        bool enableLighting;
-        bool enableSampleAlphaToCoverage;
-        bool applyRenderState;
-        bool gammaCorrectColors;
-        bool highlight;
-        GfVec4f overrideColor;
-        GfVec4f wireframeColor;
-        float alphaThreshold; // threshold < 0 implies automatic
-        ClipPlanesVector clipPlanes;
-        bool enableSceneMaterials;
-        // Respect USD's model:drawMode attribute...
-        bool enableUsdDrawModes;
-
-        RenderParams() : 
-            frame(UsdTimeCode::Default()),
-            complexity(1.0),
-            drawMode(DRAW_SHADED_SMOOTH),
-            showGuides(false),
-            showProxy(true),
-            showRender(false),
-            forceRefresh(false),
-            flipFrontFacing(false),
-            cullStyle(CULL_STYLE_NOTHING),
-            enableIdRender(false),
-            enableLighting(true),
-            enableSampleAlphaToCoverage(false),
-            applyRenderState(true),
-            gammaCorrectColors(true),
-            highlight(false),
-            overrideColor(.0f, .0f, .0f, .0f),
-            wireframeColor(.0f, .0f, .0f, .0f),
-            alphaThreshold(-1),
-            clipPlanes(),
-            enableSceneMaterials(true),
-            enableUsdDrawModes(true)
-        {
-        }
-
-        bool operator==(const RenderParams &other) const {
-            return frame                        == other.frame
-                && complexity                  == other.complexity
-                && drawMode                    == other.drawMode
-                && showGuides                  == other.showGuides
-                && showProxy                   == other.showProxy
-                && showRender                  == other.showRender
-                && forceRefresh                == other.forceRefresh
-                && flipFrontFacing             == other.flipFrontFacing
-                && cullStyle                   == other.cullStyle
-                && enableIdRender              == other.enableIdRender
-                && enableLighting              == other.enableLighting
-                && enableSampleAlphaToCoverage == other.enableSampleAlphaToCoverage
-                && applyRenderState            == other.applyRenderState
-                && gammaCorrectColors          == other.gammaCorrectColors
-                && highlight                   == other.highlight
-                && overrideColor               == other.overrideColor
-                && wireframeColor              == other.wireframeColor
-                && alphaThreshold              == other.alphaThreshold
-                && clipPlanes                  == other.clipPlanes
-                && enableSceneMaterials        == other.enableSceneMaterials
-                && enableUsdDrawModes          == other.enableUsdDrawModes;
-        }
-        bool operator!=(const RenderParams &other) const {
-            return !(*this == other);
-        }
-    };
-
     struct HitInfo {
         GfVec3d worldSpaceHitPoint;
         int hitInstanceIndex;
@@ -183,12 +85,15 @@ public:
 
     /// Support for batched drawing
     USDIMAGINGGL_API
-    virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    virtual void PrepareBatch(const UsdPrim& root, 
+                              UsdImagingGLRenderParams params);
     USDIMAGINGGL_API
-    virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
+    virtual void RenderBatch(const SdfPathVector& paths, 
+                             UsdImagingGLRenderParams params);
 
     /// Entry point for kicking off a render
-    virtual void Render(const UsdPrim& root, RenderParams params) = 0;
+    virtual void Render(const UsdPrim& root, 
+                        UsdImagingGLRenderParams params) = 0;
 
     virtual void InvalidateBuffers() = 0;
 
@@ -268,7 +173,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const UsdPrim& root,
-        RenderParams params,
+        UsdImagingGLRenderParams params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
@@ -312,7 +217,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const SdfPathVector& paths, 
-        RenderParams params,
+        UsdImagingGLRenderParams params,
         unsigned int pickResolution,
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);

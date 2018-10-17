@@ -91,7 +91,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   _hdRenderer.CheckRendererSetup(prim, excludePaths);
 ///
 ///   // create a params object and setup it up for the shape.
-///   UsdImagingGL::RenderParams params;
+///   UsdImagingGLRenderParams params;
 ///   ...
 ///
 ///   // invoke the render
@@ -144,7 +144,7 @@ public:
     void Render(
             const MDrawRequest& aRequest,
             M3dView& aView,
-            UsdImagingGL::RenderParams params) const;
+            UsdImagingGLRenderParams params) const;
 
     /// \brief Render the array of draw requests in viewport 2.0
     ///
@@ -155,13 +155,13 @@ public:
     void RenderVp2(
         const RequestDataArray &requests,
         const MHWRender::MDrawContext& context,
-        UsdImagingGL::RenderParams params) const;
+        UsdImagingGLRenderParams params) const;
 
     /// \brief Test for intersection, for use in \c select().
     PXRUSDMAYAGL_API
     bool TestIntersection(
             MSelectInfo& selectInfo,
-            UsdImagingGL::RenderParams params,
+            UsdImagingGLRenderParams params,
             GfVec3d* hitPoint) const;
 
     /// \brief Helper function to convert from \p subdLevel (int) into Hydra's

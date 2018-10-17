@@ -99,7 +99,7 @@ private:
 
     PXR_NS::UsdStageRefPtr _stage;
     UsdImagingGLSharedPtr _renderer;
-    PXR_NS::UsdImagingGL::RenderParams _params;
+    PXR_NS::UsdImagingGLRenderParams _params;
     PXR_NS::UsdPrim _prim;
 
     PXR_NS::GfMatrix4d _viewMatrix;

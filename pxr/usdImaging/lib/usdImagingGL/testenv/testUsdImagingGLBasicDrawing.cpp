@@ -248,15 +248,15 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         if (*timeIt == -999) {
             time = UsdTimeCode::Default();
         }
-        UsdImagingGLEngine::RenderParams params;
+        UsdImagingGLRenderParams params;
         params.drawMode = GetDrawMode();
         params.enableLighting = IsEnabledTestLighting();
         params.enableIdRender = IsEnabledIdRender();
         params.frame = time;
         params.complexity = _GetComplexity();
         params.cullStyle = IsEnabledCullBackfaces() ?
-                            UsdImagingGLEngine::CULL_STYLE_BACK :
-                            UsdImagingGLEngine::CULL_STYLE_NOTHING;
+                            UsdImagingGLCullStyle::CULL_STYLE_BACK :
+                            UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
 
         glViewport(0, 0, width, height);
 

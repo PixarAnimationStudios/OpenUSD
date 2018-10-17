@@ -53,7 +53,7 @@ _TestIntersection(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
-    UsdImagingGL::RenderParams params)
+    UsdImagingGLRenderParams params)
 {
     GfVec3d hitPoint;
     SdfPath hitPrimPath;
@@ -114,7 +114,8 @@ _GetRegisteredRendererPluginsDisplayNames()
 void wrapGL()
 {
     { 
-        // Start a new scope so that DrawMode, CullStyle and RenderParams are under GL.
+        // Start a new scope so that DrawMode, CullStyle and 
+        // UsdImagingGLRenderParams are under GL.
         scope GL = class_<UsdImagingGL, boost::noncopyable>("GL",
                                         "UsdImaging GL Renderer class")
             .def( init<>() )
@@ -154,31 +155,34 @@ void wrapGL()
         GL.attr("ALL_INSTANCES") = UsdImagingDelegate::ALL_INSTANCES;
 
         // Wrap the DrawMode enum. Accessible as UsdImaging.GL.DrawMode
-        enum_<UsdImagingGL::DrawMode>("DrawMode")
-            .value("DRAW_POINTS", UsdImagingGL::DRAW_POINTS)
-            .value("DRAW_WIREFRAME", UsdImagingGL::DRAW_WIREFRAME)
+        enum_<UsdImagingGLDrawMode>("DrawMode")
+            .value("DRAW_POINTS", UsdImagingGLDrawMode::DRAW_POINTS)
+            .value("DRAW_WIREFRAME", UsdImagingGLDrawMode::DRAW_WIREFRAME)
             .value("DRAW_WIREFRAME_ON_SURFACE", 
-                UsdImagingGL::DRAW_WIREFRAME_ON_SURFACE)
-        .value("DRAW_SHADED_FLAT", UsdImagingGL::DRAW_SHADED_FLAT)
-        .value("DRAW_SHADED_SMOOTH", UsdImagingGL::DRAW_SHADED_SMOOTH)
-        .value("DRAW_GEOM_ONLY", UsdImagingGL::DRAW_GEOM_ONLY)
-        .value("DRAW_GEOM_FLAT", UsdImagingGL::DRAW_GEOM_FLAT)
-        .value("DRAW_GEOM_SMOOTH", UsdImagingGL::DRAW_GEOM_SMOOTH)
+                UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE)
+        .value("DRAW_SHADED_FLAT", UsdImagingGLDrawMode::DRAW_SHADED_FLAT)
+        .value("DRAW_SHADED_SMOOTH", UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
+        .value("DRAW_GEOM_ONLY", UsdImagingGLDrawMode::DRAW_GEOM_ONLY)
+        .value("DRAW_GEOM_FLAT", UsdImagingGLDrawMode::DRAW_GEOM_FLAT)
+        .value("DRAW_GEOM_SMOOTH", UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH)
         ;
 
         // Wrap the CullStyle enum. Accessible as UsdImaging.GL.CullStyle
-        enum_<UsdImagingGL::CullStyle>("CullStyle")
-                .value("CULL_STYLE_NOTHING", UsdImagingGL::CULL_STYLE_NOTHING)
-                .value("CULL_STYLE_BACK", UsdImagingGL::CULL_STYLE_BACK)
-                .value("CULL_STYLE_FRONT", UsdImagingGL::CULL_STYLE_FRONT)
+        enum_<UsdImagingGLCullStyle>("CullStyle")
+                .value("CULL_STYLE_NOTHING", 
+                    UsdImagingGLCullStyle::CULL_STYLE_NOTHING)
+                .value("CULL_STYLE_BACK", 
+                    UsdImagingGLCullStyle::CULL_STYLE_BACK)
+                .value("CULL_STYLE_FRONT", 
+                    UsdImagingGLCullStyle::CULL_STYLE_FRONT)
                 .value("CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED", 
-                    UsdImagingGL::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED)
+                    UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED)
          ;
 
-        // Wrap the RenderParams struct.
+        // Wrap the UsdImagingGLRenderParams struct.
         // Accessible as UsdImaging.GL.RenderParams
-        typedef UsdImagingGL::RenderParams Params;
-        class_<UsdImagingGL::RenderParams>("RenderParams",
+        typedef UsdImagingGLRenderParams Params;
+        class_<UsdImagingGLRenderParams>("RenderParams",
                                         "GL Renderer parameters")
             .def_readwrite("frame", &Params::frame)
             .def_readwrite("complexity", &Params::complexity)

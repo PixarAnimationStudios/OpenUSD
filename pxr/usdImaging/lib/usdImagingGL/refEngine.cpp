@@ -269,7 +269,8 @@ UsdImagingGLRefEngine::_DrawLines(bool drawID)
 }
 
 void
-UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
+UsdImagingGLRefEngine::Render(const UsdPrim& root, 
+    UsdImagingGLRenderParams params)
 {
     TRACE_FUNCTION();
 
@@ -296,7 +297,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     glPushAttrib( GL_CURRENT_BIT );
     glPushAttrib( GL_ENABLE_BIT );
 
-    if (params.cullStyle == CULL_STYLE_NOTHING) {
+    if (params.cullStyle == UsdImagingGLCullStyle::CULL_STYLE_NOTHING) {
         glDisable( GL_CULL_FACE );
     } else {
         static const GLenum USD_2_GL_CULL_FACE[] =
@@ -307,16 +308,20 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
                 GL_FRONT,  // CULL_STYLE_FRONT
                 GL_BACK,   // CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
         };
-        static_assert((sizeof(USD_2_GL_CULL_FACE) / sizeof(USD_2_GL_CULL_FACE[0])) == CULL_STYLE_COUNT, "enum size mismatch");
+        static_assert((sizeof(USD_2_GL_CULL_FACE) / 
+                       sizeof(USD_2_GL_CULL_FACE[0])) 
+                == (size_t)UsdImagingGLCullStyle::CULL_STYLE_COUNT, 
+            "enum size mismatch");
 
-        // XXX: CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED, should disable cull face for double-sided prims.
+        // XXX: CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED, should disable cull face 
+        // for double-sided prims.
         glEnable( GL_CULL_FACE );
-        glCullFace(USD_2_GL_CULL_FACE[params.cullStyle]);
+        glCullFace(USD_2_GL_CULL_FACE[(size_t)params.cullStyle]);
     }
 
-    if (_params.drawMode != DRAW_GEOM_ONLY      &&
-        _params.drawMode != DRAW_GEOM_SMOOTH    &&
-        _params.drawMode != DRAW_GEOM_FLAT) {
+    if (_params.drawMode != UsdImagingGLDrawMode::DRAW_GEOM_ONLY      &&
+        _params.drawMode != UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH    &&
+        _params.drawMode != UsdImagingGLDrawMode::DRAW_GEOM_FLAT) {
         glEnable(GL_COLOR_MATERIAL);
         glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE); 
                 
@@ -327,12 +332,12 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     }
 
     switch (_params.drawMode) {
-    case DRAW_WIREFRAME:
+    case UsdImagingGLDrawMode::DRAW_WIREFRAME:
         glDisable( GL_LIGHTING );
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
         break;
-    case DRAW_SHADED_FLAT:
-    case DRAW_SHADED_SMOOTH:
+    case UsdImagingGLDrawMode::DRAW_SHADED_FLAT:
+    case UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH:
         break;
     default:
         break;
@@ -395,23 +400,23 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     }
 
     switch (_params.drawMode) {
-    case DRAW_GEOM_FLAT:
-    case DRAW_GEOM_SMOOTH:
+    case UsdImagingGLDrawMode::DRAW_GEOM_FLAT:
+    case UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH:
         glEnableClientState(GL_NORMAL_ARRAY);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
         break;
-    case DRAW_SHADED_FLAT:
+    case UsdImagingGLDrawMode::DRAW_SHADED_FLAT:
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
         glShadeModel(GL_FLAT);
         break;
-    case DRAW_SHADED_SMOOTH:
+    case UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH:
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
         break;
-    case DRAW_POINTS:
+    case UsdImagingGLDrawMode::DRAW_POINTS:
         glEnableClientState(GL_COLOR_ARRAY);
         glPolygonMode( GL_FRONT_AND_BACK, GL_POINT);
     default:
@@ -419,7 +424,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     }
 
     // Draw the overlay wireframe, if requested.
-    if (_params.drawMode == DRAW_WIREFRAME_ON_SURFACE) {
+    if (_params.drawMode == UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE) {
         // We have to push lighting again since we don't know what state we want
         // after this without popping.
         glPushAttrib( GL_LIGHTING_BIT );
@@ -439,7 +444,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     // Draw polygons & curves.
     _DrawPolygons(drawID);
 
-    if (_params.drawMode == DRAW_WIREFRAME_ON_SURFACE)
+    if (_params.drawMode == UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE)
         glDisable(GL_POLYGON_OFFSET_FILL);
 
     _DrawLines(drawID);

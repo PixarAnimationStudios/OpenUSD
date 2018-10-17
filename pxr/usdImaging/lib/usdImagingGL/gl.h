@@ -79,13 +79,15 @@ public:
     /// over the stage, and then all rendered together with a call to
     /// RenderBatch()
     USDIMAGINGGL_API
-    virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    virtual void PrepareBatch(const UsdPrim& root, 
+                              UsdImagingGLRenderParams params);
 
     /// Draws all sub-indices identified by \p paths.  Presumes that each
     /// sub-index has already been prepared for drawing by calling
     /// PrepareBatch()
     USDIMAGINGGL_API
-    virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
+    virtual void RenderBatch(const SdfPathVector& paths, 
+                             UsdImagingGLRenderParams params);
 
     /// Render everything at and beneath \p root, using the configuration in
     /// \p params
@@ -95,7 +97,7 @@ public:
     /// again on \p root or any descendant of \p root, but not on any parent,
     /// sibling, or cousin of \p root.
     USDIMAGINGGL_API
-    virtual void Render(const UsdPrim& root, RenderParams params);
+    virtual void Render(const UsdPrim& root, UsdImagingGLRenderParams params);
 
     USDIMAGINGGL_API
     virtual void InvalidateBuffers();
@@ -179,7 +181,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const UsdPrim& root, 
-        RenderParams params,
+        UsdImagingGLRenderParams params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
@@ -192,7 +194,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const SdfPathVector& paths, 
-        RenderParams params,
+        UsdImagingGLRenderParams params,
         unsigned int pickResolution,
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);

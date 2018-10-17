@@ -56,7 +56,7 @@ public:
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
 
-    UsdImagingGLEngine::DrawMode GetDrawMode() const { return _drawMode; }
+    UsdImagingGLDrawMode GetDrawMode() const { return _drawMode; }
 
     std::string const & GetStageFilePath() const { return _stageFilePath; }
     std::string const & GetOutputFilePath() const { return _outputFilePath; }
@@ -104,7 +104,7 @@ private:
 
     std::vector<GfVec4d> _clipPlanes;
 
-    UsdImagingGLEngine::DrawMode _drawMode;
+    UsdImagingGLDrawMode _drawMode;
     bool _shouldFrameAll;
     bool _cullBackfaces;
     GfVec4f _clearColor;

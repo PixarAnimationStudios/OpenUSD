@@ -81,20 +81,22 @@ UsdImagingGL::InvalidateBuffers()
 
 /*virtual*/
 void
-UsdImagingGL::PrepareBatch(const UsdPrim& root, RenderParams params)
+UsdImagingGL::PrepareBatch(const UsdPrim& root, UsdImagingGLRenderParams params)
 {
     _engine->PrepareBatch(root, params);
 }
 
 /*virtual*/
 void
-UsdImagingGL::RenderBatch(const SdfPathVector& paths, RenderParams params) {
+UsdImagingGL::RenderBatch(const SdfPathVector& paths, 
+                          UsdImagingGLRenderParams params)
+{
     _engine->RenderBatch(paths, params);
 }
 
 /*virtual*/
 void
-UsdImagingGL::Render(const UsdPrim& root, RenderParams params)
+UsdImagingGL::Render(const UsdPrim& root, UsdImagingGLRenderParams params)
 {
     _engine->Render(root, params);
 }
@@ -253,7 +255,7 @@ UsdImagingGL::TestIntersection(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
-    RenderParams params,
+    UsdImagingGLRenderParams params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
@@ -272,7 +274,7 @@ UsdImagingGL::TestIntersectionBatch(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const SdfPathVector& paths, 
-    RenderParams params,
+    UsdImagingGLRenderParams params,
     unsigned int pickResolution,
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)

@@ -139,7 +139,7 @@ _GetRefineLevel(float c)
 
 bool 
 UsdImagingGLHdEngine::_CanPrepareBatch(const UsdPrim& root, 
-                                     const RenderParams& params)
+                                       const UsdImagingGLRenderParams& params)
 {
     HD_TRACE_FUNCTION();
 
@@ -158,7 +158,8 @@ UsdImagingGLHdEngine::_CanPrepareBatch(const UsdPrim& root,
 }
 
 void
-UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& params)
+UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, 
+    const UsdImagingGLRenderParams& params)
 {
     HD_TRACE_FUNCTION();
 
@@ -172,14 +173,16 @@ UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& param
 }
 
 void
-UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& params)
+UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root, 
+    const UsdImagingGLRenderParams& params)
 {
     HD_TRACE_FUNCTION();
 }
 
 /*virtual*/
 void
-UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
+UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, 
+    UsdImagingGLRenderParams params)
 {
     HD_TRACE_FUNCTION();
 
@@ -203,7 +206,7 @@ UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
 bool
 UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
-                          UsdImagingGLEngine::RenderParams const& params,
+                          UsdImagingGLRenderParams const& params,
                           TfTokenVector *renderTags)
 {
     if (collection == nullptr) {
@@ -215,16 +218,16 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     bool refined = params.complexity > 1.0;
 
-    if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT ||
-        params.drawMode == UsdImagingGLEngine::DRAW_SHADED_FLAT) {
+    if (params.drawMode == UsdImagingGLDrawMode::DRAW_GEOM_FLAT ||
+        params.drawMode == UsdImagingGLDrawMode::DRAW_SHADED_FLAT) {
         // Flat shading
         reprSelector = HdReprSelector(HdReprTokens->hull);
     } else if (
-        params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE) {
+        params.drawMode == UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE) {
         // Wireframe on surface
         reprSelector = HdReprSelector(refined ?
             HdReprTokens->refinedWireOnSurf : HdReprTokens->wireOnSurf);
-    } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME) {
+    } else if (params.drawMode == UsdImagingGLDrawMode::DRAW_WIREFRAME) {
         // Wireframe
         reprSelector = HdReprSelector(refined ?
             HdReprTokens->refinedWire : HdReprTokens->wire);
@@ -294,9 +297,11 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
 
 /* static */
 HdxRenderTaskParams
-UsdImagingGLHdEngine::_MakeHydraRenderParams(
-                  UsdImagingGLHdEngine::RenderParams const& renderParams)
+UsdImagingGLHdEngine::_MakeHydraUsdImagingGLRenderParams(
+    UsdImagingGLRenderParams const& renderParams)
 {
+    // Note this table is dangerous and making changes to the order of the 
+    // enums in UsdImagingGLCullStyle, will affect this with no compiler help.
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
     {
         HdCullStyleDontCare,              // Cull No Opinion (unused)
@@ -307,15 +312,16 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
     };
     static_assert(((sizeof(USD_2_HD_CULL_STYLE) / 
                     sizeof(USD_2_HD_CULL_STYLE[0])) 
-                == UsdImagingGLEngine::CULL_STYLE_COUNT),"enum size mismatch");
+              == (size_t)UsdImagingGLCullStyle::CULL_STYLE_COUNT),
+        "enum size mismatch");
 
     HdxRenderTaskParams params;
 
     params.overrideColor       = renderParams.overrideColor;
     params.wireframeColor      = renderParams.wireframeColor;
 
-    if (renderParams.drawMode == UsdImagingGLEngine::DRAW_GEOM_ONLY ||
-        renderParams.drawMode == UsdImagingGLEngine::DRAW_POINTS) {
+    if (renderParams.drawMode == UsdImagingGLDrawMode::DRAW_GEOM_ONLY ||
+        renderParams.drawMode == UsdImagingGLDrawMode::DRAW_POINTS) {
         params.enableLighting = false;
     } else {
         params.enableLighting =  renderParams.enableLighting &&
@@ -325,7 +331,8 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
     params.enableIdRender      = renderParams.enableIdRender;
     params.depthBiasUseDefault = true;
     params.depthFunc           = HdCmpFuncLess;
-    params.cullStyle           = USD_2_HD_CULL_STYLE[renderParams.cullStyle];
+    params.cullStyle           = USD_2_HD_CULL_STYLE[
+        (size_t)renderParams.cullStyle];
     // 32.0 is the default tessLevel of HdRasterState. we can change if we like.
     params.tessLevel           = 32.0;
 
@@ -359,13 +366,14 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
 
 /*virtual*/
 void
-UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
+UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, 
+    UsdImagingGLRenderParams params)
 {
     _taskController->SetCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags);
     _taskController->SetCollection(_renderCollection);
 
-    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
+    HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
@@ -374,7 +382,8 @@ UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams param
 
 /*virtual*/
 void
-UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
+UsdImagingGLHdEngine::Render(const UsdPrim& root, 
+    UsdImagingGLRenderParams params)
 {
     PrepareBatch(root, params);
 
@@ -385,7 +394,7 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
     _UpdateHydraCollection(&_renderCollection, roots, params, &_renderTags);
     _taskController->SetCollection(_renderCollection);
 
-    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
+    HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
@@ -398,7 +407,7 @@ UsdImagingGLHdEngine::TestIntersection(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
-    RenderParams params,
+    UsdImagingGLRenderParams params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
@@ -460,7 +469,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
     const SdfPathVector& paths, 
-    RenderParams params,
+    UsdImagingGLRenderParams params,
     unsigned int pickResolution,
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
@@ -477,14 +486,15 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     };
     static_assert(((sizeof(USD_2_HD_CULL_STYLE) / 
                     sizeof(USD_2_HD_CULL_STYLE[0])) 
-                == UsdImagingGLEngine::CULL_STYLE_COUNT),"enum size mismatch");
+                    == (size_t)UsdImagingGLCullStyle::CULL_STYLE_COUNT),
+            "enum size mismatch");
 
     HdxIntersector::HitVector allHits;
     HdxIntersector::Params qparams;
     qparams.viewMatrix = worldToLocalSpace * viewMatrix;
     qparams.projectionMatrix = projectionMatrix;
     qparams.alphaThreshold = params.alphaThreshold;
-    qparams.cullStyle = USD_2_HD_CULL_STYLE[params.cullStyle];
+    qparams.cullStyle = USD_2_HD_CULL_STYLE[(size_t)params.cullStyle];
     qparams.renderTags = _renderTags;
     qparams.enableSceneMaterials = params.enableSceneMaterials;
 
@@ -545,7 +555,7 @@ class _DebugGroupTaskWrapper : public HdTask {
 };
 
 void
-UsdImagingGLHdEngine::Render(RenderParams params)
+UsdImagingGLHdEngine::Render(UsdImagingGLRenderParams params)
 {
     // Forward scene materials enable option to delegate
     _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
@@ -603,7 +613,7 @@ UsdImagingGLHdEngine::Render(RenderParams params)
         // drawmode.
         // XXX: Temporary solution until shader-based styling implemented.
         switch (params.drawMode) {
-        case DRAW_POINTS:
+        case UsdImagingGLDrawMode::DRAW_POINTS:
             glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
             break;
         default:
