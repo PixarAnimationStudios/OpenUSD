@@ -1807,10 +1807,14 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     TF_VERIFY(geomShader);
 
-    drawItem->SetGeometricShader(geomShader);
+    if (geomShader != drawItem->GetGeometricShader())
+    {
+        drawItem->SetGeometricShader(geomShader);
 
-    // The batches need to be validated and rebuilt if necessary.
-    renderIndex.GetChangeTracker().MarkBatchesDirty();
+        // If the gometric shader changes, we need to do a deep validation of
+        // batches, so they can be rebuilt if necessary.
+        renderIndex.GetChangeTracker().MarkBatchesDirty();
+    }
 }
 
 // virtual
