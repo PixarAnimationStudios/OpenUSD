@@ -713,6 +713,9 @@ nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
     
     .set('numberValue', 1.0)
     .set('stringValue', '')
+
+    .set('forceArrayForSingleValue', 0)
+
     .build(),
         forceArrayNames=(
             'locations',
@@ -730,6 +733,10 @@ nb.setHintsForParameter('type', {
 })
 
 nb.setHintsForParameter('asMetadata', {
+    'widget' : 'boolean',
+})
+
+nb.setHintsForParameter('forceArrayForSingleValue', {
     'widget' : 'boolean',
 })
 
@@ -803,9 +810,15 @@ def buildOpChain(self, interface):
             
             entryGroup = entryGb.build()
         else:
-            entryGroup = (FnAttribute.GroupBuilder()
-                .set('value', valueAttr)
-                .build())
+            entryGb = FnAttribute.GroupBuilder()
+            entryGb.set('value', valueAttr)
+            
+            if valueAttr.getNumberOfValues() == 1:
+                if self.getParameter('forceArrayForSingleValue'
+                        ).getValue(frameTime):
+                    entryGb.set('forceArray', 1)
+
+            entryGroup = entryGb.build()
             
         gb = FnAttribute.GroupBuilder()
 
