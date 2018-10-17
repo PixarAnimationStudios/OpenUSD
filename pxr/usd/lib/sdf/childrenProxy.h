@@ -481,10 +481,7 @@ struct Tf_ShouldIterateOverCopy<SdfChildrenProxy<_View> > : boost::true_type
 // Cannot get from a VtValue except as the correct type.
 template <class _View>
 struct Vt_DefaultValueFactory<SdfChildrenProxy<_View> > {
-    static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false && "Failed VtValue::Get<SdfChildrenProxy> not allowed");
-        return Vt_DefaultValueHolder::Create((void*)0);
-    }
+    static Vt_DefaultValueHolder Invoke() = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

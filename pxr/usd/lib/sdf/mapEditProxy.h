@@ -932,10 +932,7 @@ private:
 // Cannot get from a VtValue except as the correct type.
 template <class T, class _ValuePolicy>
 struct Vt_DefaultValueFactory<SdfMapEditProxy<T, _ValuePolicy> > {
-    static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false && "Failed VtValue::Get<SdfMapEditProxy> not allowed");
-        return Vt_DefaultValueHolder::Create((void*)0);
-    }
+    static Vt_DefaultValueHolder Invoke() = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

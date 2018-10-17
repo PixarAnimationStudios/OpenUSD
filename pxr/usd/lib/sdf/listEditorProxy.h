@@ -482,10 +482,7 @@ private:
 // Cannot get from a VtValue except as the correct type.
 template <class TP>
 struct Vt_DefaultValueFactory<SdfListEditorProxy<TP> > {
-    static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false && "Failed VtValue::Get<SdfListEditorProxy> not allowed");
-        return Vt_DefaultValueHolder::Create((void*)0);
-    }
+    static Vt_DefaultValueHolder Invoke() = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
