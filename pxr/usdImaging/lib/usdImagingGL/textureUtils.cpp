@@ -251,6 +251,36 @@ _FindLayerHandle(const UsdAttribute& attr, const UsdTimeCode& time) {
     return {};
 }
 
+UsdAttribute 
+_GetTextureResourceAttr(UsdPrim const &shaderPrim, 
+                        SdfPath const &fileInputPath)
+{
+    UsdAttribute attr = shaderPrim.GetAttribute(fileInputPath.GetNameToken());
+    if (!attr) {
+        return attr;
+    }
+
+    UsdShadeInput attrInput(attr);
+    if (!attrInput) {
+        return attr;
+    }
+
+    // If the texture 'file' input is connected to an interface input on a 
+    // node-graph, then read from the connection source instead.
+    UsdShadeConnectableAPI source;
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    if (attrInput.GetConnectedSource(&source, &sourceName, &sourceType) && 
+        sourceType == UsdShadeAttributeType::Input && 
+        source.IsNodeGraph()) {
+        if (UsdShadeInput sourceInput = source.GetInput(sourceName)) {
+            return sourceInput.GetAttr();
+        }
+    }
+
+    return attr;
+}
+
 }
 
 HdTextureResource::ID
@@ -268,7 +298,8 @@ UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
 
     // If the texture name attribute doesn't exist, it might be badly specified
     // in scene data.
-    UsdAttribute attr = usdPrim.GetAttribute(usdPath.GetNameToken());
+    UsdAttribute attr = _GetTextureResourceAttr(usdPrim, usdPath);
+
     SdfAssetPath asset;
     if (!attr || !attr.Get(&asset, time)) {
         TF_WARN("Unable to find texture attribute <%s> in scene data",
@@ -359,7 +390,7 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     if (!TF_VERIFY(usdPath != SdfPath()))
         return HdTextureResourceSharedPtr();
 
-    UsdAttribute attr = usdPrim.GetAttribute(usdPath.GetNameToken());
+    UsdAttribute attr = _GetTextureResourceAttr(usdPrim, usdPath);
     SdfAssetPath asset;
     if (!TF_VERIFY(attr) || !TF_VERIFY(attr.Get(&asset, time))) {
         return HdTextureResourceSharedPtr();

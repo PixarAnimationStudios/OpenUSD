@@ -1074,8 +1074,8 @@ _ShaderNetworkWalker::_ProcessTextureNode(
             // "texcoord" to any node that can produce a surface-varying output.
             if (primvarInput.GetConnectedSource(&_source, &_sourceName, 
                         &_sourceType) && 
-                    _GetShaderRole(_source) == SdrNodeRole->Primvar &&
-                    _sourceType == UsdShadeAttributeType::Output) {
+                    _sourceType == UsdShadeAttributeType::Output &&
+                    _GetShaderRole(_source) == SdrNodeRole->Primvar) {
                 connectionPrimvar = _source.GetPath();
             }
         }
@@ -1156,7 +1156,7 @@ std::string
 _ShaderNetworkWalker::_GetShaderRole(const UsdShadeShader &shader)
 {
     TfToken id;
-    if (shader.GetShaderId(&id) && !id.IsEmpty()) {
+    if (shader && shader.GetShaderId(&id) && !id.IsEmpty()) {
         auto &shaderReg = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr sdrNode = 
                 shaderReg.GetShaderNodeByIdentifierAndType(id, 
