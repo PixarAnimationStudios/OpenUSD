@@ -2738,7 +2738,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
             // vec4 HdGet_name(vec2 coord) { vec3 c = hd_sample_udim(coord);
             // c.z = texelFetch(sampler1d_name_layout, int(c.z), 0).x - 1;
             // if (c.z < -0.5) { return vec4(0, 0, 0, 0).xyz; } else {
-            // return texture(sampler2dArray_name, hd_sample_udim(coord)).xyz;}}
+            // return texture(sampler2dArray_name, c).xyz;}}
             accessors
                 << it->second.dataType
                 << " HdGet_" << it->second.name

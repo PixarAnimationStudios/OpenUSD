@@ -95,10 +95,10 @@ protected:
     void _OnMemoryRequestedDirty() override;
 private:
     std::vector<std::tuple<int, TfToken>> _tiles;
-    int _width = 0;
-    int _height = 0;
-    int _depth = 0;
-    int _format = 0;
+    unsigned int _width = 0;
+    unsigned int _height = 0;
+    unsigned int _depth = 0;
+    unsigned int _format = 0;
     GLuint _imageArray = 0;
     GLuint _layout = 0;
     bool _loaded = false;
