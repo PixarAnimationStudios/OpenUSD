@@ -773,6 +773,26 @@ UsdImagingGLEngine::GetResourceAllocation() const
     return VtDictionary();
 }
 
+/* virtual */
+UsdImagingGLRendererSettingsList
+UsdImagingGLEngine::GetRendererSettingsList() const
+{
+    return UsdImagingGLRendererSettingsList();
+}
+
+/* virtual */
+VtValue
+UsdImagingGLEngine::GetRendererSetting(TfToken const& id) const
+{
+    return VtValue();
+}
+
+/* virtual */
+void
+UsdImagingGLEngine::SetRendererSetting(TfToken const& id,
+                                       VtValue const& value)
+{
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -960,6 +960,23 @@ class StageView(QtOpenGL.QGLWidget):
                 return False
         return True
 
+    def GetRendererSettingsList(self):
+        if self._renderer:
+            return self._renderer.GetRendererSettingsList()
+        else:
+            return []
+
+    def GetRendererSetting(self, name):
+        if self._renderer:
+            return self._renderer.GetRendererSetting(name)
+        else:
+            return None
+
+    def SetRendererSetting(self, name, value):
+        if self._renderer:
+            self._renderer.SetRendererSetting(name, value)
+            self.updateGL()
+
     def _stageReplaced(self):
         '''Set the USD Stage this widget will be displaying. To decommission
         (even temporarily) this widget, supply None as 'stage'.'''

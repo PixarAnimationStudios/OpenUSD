@@ -40,6 +40,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_TOKENS);
+
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -97,7 +99,43 @@ static void _RenderCallback(HdEmbreeRenderer *renderer,
 }
 
 HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
+    : HdRenderDelegate()
 {
+    _Initialize();
+}
+
+HdEmbreeRenderDelegate::HdEmbreeRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+    : HdRenderDelegate(settingsMap)
+{
+    _Initialize();
+}
+
+void
+HdEmbreeRenderDelegate::_Initialize()
+{
+    // Initialize the settings and settings descriptors.
+    _settingDescriptors.resize(4);
+    _settingDescriptors[0] = { "Enable Scene Colors",
+        HdEmbreeRenderSettingsTokens->enableSceneColors,
+        VtValue(HdEmbreeConfig::GetInstance().useFaceColors) };
+    _settingDescriptors[1] = { "Enable Ambient Occlusion",
+        HdEmbreeRenderSettingsTokens->enableAmbientOcclusion,
+        VtValue(HdEmbreeConfig::GetInstance().ambientOcclusionSamples > 0) };
+    _settingDescriptors[2] = { "Ambient Occlusion Samples",
+        HdEmbreeRenderSettingsTokens->ambientOcclusionSamples,
+        VtValue(int(HdEmbreeConfig::GetInstance().ambientOcclusionSamples)) };
+    _settingDescriptors[3] = { "Samples To Convergence",
+        HdRenderSettingsTokens->convergedSamplesPerPixel,
+        VtValue(int(HdEmbreeConfig::GetInstance().samplesToConvergence)) };
+
+    for (size_t i = 0; i < _settingDescriptors.size(); ++i) {
+        if (_settingsMap.count(_settingDescriptors[i].key) == 0) {
+            _settingsMap[_settingDescriptors[i].key] =
+                _settingDescriptors[i].defaultValue;
+        }
+    }
+
     // Initialize the embree library handle (_rtcDevice).
     _rtcDevice = rtcNewDevice(nullptr);
 
@@ -161,6 +199,12 @@ HdEmbreeRenderDelegate::~HdEmbreeRenderDelegate()
     _renderParam.reset();
     rtcDeleteScene(_rtcScene);
     rtcDeleteDevice(_rtcDevice);
+}
+
+HdRenderSettingDescriptorList
+HdEmbreeRenderDelegate::GetRenderSettingDescriptors() const
+{
+    return _settingDescriptors;
 }
 
 HdRenderParam*

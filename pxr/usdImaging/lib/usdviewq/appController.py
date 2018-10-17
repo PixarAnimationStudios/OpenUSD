@@ -1248,8 +1248,9 @@ class AppController(QtCore.QObject):
                         action.setDisabled(True)
                         break
             else:
-                # Refresh the AOV menu
+                # Refresh the AOV menu and settings menu
                 self._configureRendererAovs()
+                self._configureRendererSettings()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1282,8 +1283,9 @@ class AppController(QtCore.QObject):
             # Disable the menu if no plugins were found
             self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
-            # Refresh the AOV menu
+            # Refresh the AOV menu and settings menu
             self._configureRendererAovs()
+            self._configureRendererSettings()
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
@@ -1308,6 +1310,9 @@ class AppController(QtCore.QObject):
 
                 action.triggered[bool].connect(lambda _, aov=aov:
                         self._rendererAovChanged(aov))
+
+            self._ui.menuRendererAovs.addSeparator()
+
             self._ui.aovOtherAction = self._ui.menuRendererAovs.addAction("Other...")
             self._ui.aovOtherAction.setCheckable(True)
             self._ui.aovOtherAction.aov = "Other"
@@ -1334,6 +1339,128 @@ class AppController(QtCore.QObject):
                 if action.text() == self._stageView.rendererAovName:
                     action.setChecked(True)
                     break
+
+    def _rendererSettingsFlagChanged(self, action):
+        if self._stageView:
+            self._stageView.SetRendererSetting(action.key, action.isChecked())
+
+    def _configureRendererSettings(self):
+        if self._stageView:
+            self._ui.menuRendererSettings.clear()
+            self._ui.settingsFlagActions = []
+
+            settings = self._stageView.GetRendererSettingsList()
+            for setting in settings:
+                if setting.type != UsdImagingGL.GL.RendererSettingType.FLAG:
+                    continue
+                action = self._ui.menuRendererSettings.addAction(setting.name)
+                action.setCheckable(True)
+                action.key = str(setting.key)
+                action.setChecked(self._stageView.GetRendererSetting(setting.key))
+                action.triggered[bool].connect(lambda _, action=action:
+                    self._rendererSettingsFlagChanged(action))
+                self._ui.settingsFlagActions.append(action)
+
+            self._ui.menuRendererSettings.addSeparator()
+
+            self._ui.settingsAdvancedAction = self._ui.menuRendererSettings.addAction("More...")
+            self._ui.settingsAdvancedAction.setCheckable(False)
+            self._ui.settingsAdvancedAction.triggered[bool].connect(self._advancedRendererSettings)
+
+            self._ui.menuRendererSettings.setEnabled(len(settings) != 0)
+            if hasattr(self._ui, 'settingsAdvancedDialog'):
+                self._ui.settingsAdvancedDialog.reject()
+
+    def _advancedRendererSettings(self):
+        # Recreate the settings dialog
+        self._ui.settingsAdvancedDialog = QtWidgets.QDialog(self._mainWindow)
+        self._ui.settingsAdvancedDialog.setWindowTitle("Hydra Settings")
+        self._ui.settingsAdvancedWidgets = []
+        layout = QtWidgets.QVBoxLayout()
+
+        # Add settings
+        groupBox = QtWidgets.QGroupBox()
+        formLayout = QtWidgets.QFormLayout()
+        groupBox.setLayout(formLayout)
+        layout.addWidget(groupBox)
+        formLayout.setLabelAlignment(QtCore.Qt.AlignLeft)
+        formLayout.setFormAlignment(QtCore.Qt.AlignRight)
+
+        settings = self._stageView.GetRendererSettingsList()
+        for setting in settings:
+            if setting.type == UsdImagingGL.GL.RendererSettingType.FLAG:
+                checkBox = QtWidgets.QCheckBox()
+                checkBox.setChecked(self._stageView.GetRendererSetting(setting.key))
+                checkBox.key = str(setting.key)
+                checkBox.defValue = setting.defValue
+                formLayout.addRow(setting.name, checkBox)
+                self._ui.settingsAdvancedWidgets.append(checkBox)
+            if setting.type == UsdImagingGL.GL.RendererSettingType.INT:
+                spinBox = QtWidgets.QSpinBox()
+                spinBox.setMinimum(-2 ** 31)
+                spinBox.setMaximum(2 ** 31 - 1)
+                spinBox.setValue(self._stageView.GetRendererSetting(setting.key))
+                spinBox.key = str(setting.key)
+                spinBox.defValue = setting.defValue
+                formLayout.addRow(setting.name, spinBox)
+                self._ui.settingsAdvancedWidgets.append(spinBox)
+            if setting.type == UsdImagingGL.GL.RendererSettingType.FLOAT:
+                spinBox = QtWidgets.QDoubleSpinBox()
+                spinBox.setDecimals(10)
+                spinBox.setMinimum(-2 ** 31)
+                spinBox.setMaximum(2 ** 31 - 1)
+                spinBox.setValue(self._stageView.GetRendererSetting(setting.key))
+                spinBox.key = str(setting.key)
+                spinBox.defValue = setting.defValue
+                formLayout.addRow(setting.name, spinBox)
+                self._ui.settingsAdvancedWidgets.append(spinBox)
+            if setting.type == UsdImagingGL.GL.RendererSettingType.STRING:
+                lineEdit = QtWidgets.QLineEdit()
+                lineEdit.setText(self._stageView.GetRendererSetting(setting.key))
+                lineEdit.key = str(setting.key)
+                lineEdit.defValue = setting.defValue
+                formLayout.addRow(setting.name, lineEdit)
+                self._ui.settingsAdvancedWidgets.append(lineEdit)
+
+        # Add buttons
+        buttonBox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok |
+            QtWidgets.QDialogButtonBox.Cancel |
+            QtWidgets.QDialogButtonBox.RestoreDefaults)
+        layout.addWidget(buttonBox)
+        buttonBox.rejected.connect(self._ui.settingsAdvancedDialog.reject)
+        buttonBox.accepted.connect(self._ui.settingsAdvancedDialog.accept)
+        self._ui.settingsAdvancedDialog.accepted.connect(self._applyAdvancedRendererSettings)
+        defaultButton = buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults)
+        defaultButton.clicked.connect(self._resetAdvancedRendererSettings)
+
+        self._ui.settingsAdvancedDialog.setLayout(layout)
+        self._ui.settingsAdvancedDialog.show()
+
+    def _applyAdvancedRendererSettings(self):
+        for widget in self._ui.settingsAdvancedWidgets:
+            if isinstance(widget, QtWidgets.QCheckBox):
+                self._stageView.SetRendererSetting(widget.key, widget.isChecked())
+            if isinstance(widget, QtWidgets.QSpinBox):
+                self._stageView.SetRendererSetting(widget.key, widget.value())
+            if isinstance(widget, QtWidgets.QDoubleSpinBox):
+                self._stageView.SetRendererSetting(widget.key, widget.value())
+            if isinstance(widget, QtWidgets.QLineEdit):
+                self._stageView.SetRendererSetting(widget.key, widget.text())
+
+        for action in self._ui.settingsFlagActions:
+            action.setChecked(self._stageView.GetRendererSetting(action.key))
+
+    def _resetAdvancedRendererSettings(self):
+        for widget in self._ui.settingsAdvancedWidgets:
+            if isinstance(widget, QtWidgets.QCheckBox):
+                widget.setChecked(widget.defValue)
+            if isinstance(widget, QtWidgets.QSpinBox):
+                widget.setValue(widget.defValue)
+            if isinstance(widget, QtWidgets.QDoubleSpinBox):
+                widget.setValue(widget.defValue)
+            if isinstance(widget, QtWidgets.QLineEdit):
+                widget.setText(widget.defValue)
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):

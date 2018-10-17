@@ -192,6 +192,16 @@ public:
     USDIMAGINGGL_API
     virtual VtDictionary GetResourceAllocation() const;
 
+    USDIMAGINGGL_API
+    virtual UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
+
+    USDIMAGINGGL_API
+    virtual VtValue GetRendererSetting(TfToken const& id) const;
+
+    USDIMAGINGGL_API
+    virtual void SetRendererSetting(TfToken const& id,
+                                    VtValue const& value);
+
 private:
 
     // These functions factor batch preparation into separate steps so they

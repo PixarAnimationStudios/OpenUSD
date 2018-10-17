@@ -55,6 +55,7 @@ pxr_library(usdImagingGL
 
     PUBLIC_HEADERS
         api.h
+        rendererSettings.h
         version.h
 
     PRIVATE_CLASSES

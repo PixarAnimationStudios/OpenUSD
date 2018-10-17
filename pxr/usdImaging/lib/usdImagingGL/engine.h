@@ -32,6 +32,7 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
+#include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
@@ -305,6 +306,19 @@ public:
     /// Returns GPU resource allocation info
     USDIMAGINGGL_API
     virtual VtDictionary GetResourceAllocation() const;
+
+    /// Returns the list of renderer settings.
+    USDIMAGINGGL_API
+    virtual UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
+
+    /// Gets a renderer setting's current value.
+    USDIMAGINGGL_API
+    virtual VtValue GetRendererSetting(TfToken const& id) const;
+
+    /// Sets a renderer setting's value.
+    USDIMAGINGGL_API
+    virtual void SetRendererSetting(TfToken const& id,
+                                    VtValue const& value);
 
 protected:
     // Intentionally putting these under protected so that subclasses can share the usage of draw targets.

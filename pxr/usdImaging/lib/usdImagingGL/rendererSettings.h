@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,48 +21,34 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/tokens.h"
+
+/// \file usdImagingGL/renderSettings.h
+
+#ifndef USDIMAGINGGL_RENDERSETTINGS_H
+#define USDIMAGINGGL_RENDERSETTINGS_H
+
+#include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
+struct UsdImagingGLRendererSetting {
+    enum Type {
+        TYPE_FLAG,
+        TYPE_INT,
+        TYPE_FLOAT,
+        TYPE_STRING
+    };
+    std::string name;
+    TfToken key;
+    Type type;
+    VtValue defValue;
+};
 
-TF_DEFINE_PUBLIC_TOKENS(HdReprTokens, HD_REPR_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdShaderTokens, HD_SHADER_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_PRIMTYPE_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_PRIMVAR_ROLE_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdAovTokens, HD_AOV_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_RENDER_SETTINGS_TOKENS);
-
-TfToken HdAovTokensMakePrimvar(TfToken const& primvar)
-{
-    return TfToken(
-        HdAovTokens->primvars.GetString() +
-        primvar.GetString());
-}
-
-TfToken HdAovTokensMakeLpe(TfToken const& lpe)
-{
-    return TfToken(
-        HdAovTokens->lpe.GetString() +
-        lpe.GetString());
-}
-
-TfToken HdAovTokensMakeShader(TfToken const& shader)
-{
-    return TfToken(
-        HdAovTokens->shader.GetString() +
-        shader.GetString());
-}
+typedef std::vector<UsdImagingGLRendererSetting>
+    UsdImagingGLRendererSettingsList;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif // USDIMAGINGGL_RENDERSETTINGS_H

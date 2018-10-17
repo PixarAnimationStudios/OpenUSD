@@ -104,6 +104,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_MDI,
         "Report info related to multi-draw-indirect batches");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RENDER_SETTINGS,
+        "Report render settings changes");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_ADDED,
         "Report when rprims are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_CLEANED,

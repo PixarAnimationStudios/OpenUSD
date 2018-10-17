@@ -97,7 +97,10 @@ private:
     std::atomic<int> *_sceneVersion;
 
     // The last scene version we rendered with.
-    int _lastRenderedVersion;
+    int _lastSceneVersion;
+
+    // The last settings version we rendered with.
+    int _lastSettingsVersion;
 
     // The width of the viewport we're rendering into.
     unsigned int _width;

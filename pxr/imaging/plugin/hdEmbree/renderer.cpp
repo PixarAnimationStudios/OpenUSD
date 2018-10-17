@@ -47,6 +47,9 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _inverseViewMatrix(1.0f) // == identity
     , _inverseProjMatrix(1.0f) // == identity
     , _scene(nullptr)
+    , _samplesToConvergence(0)
+    , _ambientOcclusionSamples(0)
+    , _enableSceneColors(false)
 {
 }
 
@@ -58,6 +61,24 @@ void
 HdEmbreeRenderer::SetScene(RTCScene scene)
 {
     _scene = scene;
+}
+
+void
+HdEmbreeRenderer::SetSamplesToConvergence(int samplesToConvergence)
+{
+    _samplesToConvergence = samplesToConvergence;
+}
+
+void
+HdEmbreeRenderer::SetAmbientOcclusionSamples(int ambientOcclusionSamples)
+{
+    _ambientOcclusionSamples = ambientOcclusionSamples;
+}
+
+void
+HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
+{
+    _enableSceneColors = enableSceneColors;
 }
 
 void
@@ -338,11 +359,6 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         return;
     }
 
-    // A super simple heuristic: consider ourselves converged after N
-    // samples.
-    unsigned int samplesToConvergence =
-        HdEmbreeConfig::GetInstance().samplesToConvergence;
-
     // Map all of the attachments.
     for (size_t i = 0; i < _attachments.size(); ++i) {
         static_cast<HdEmbreeRenderBuffer*>(
@@ -352,7 +368,10 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
     // Render the image. Each pass through the loop adds a sample per pixel
     // (with jittered ray direction); the longer the loop runs, the less noisy
     // the image becomes. We add a cancellation point once per loop.
-    for (unsigned int i = 0; i < samplesToConvergence; ++i) {
+    //
+    // We consider the image converged after N samples, which is a convenient
+    // and simple heuristic.
+    for (int i = 0; i < _samplesToConvergence; ++i) {
         unsigned int tileSize = HdEmbreeConfig::GetInstance().tileSize;
         const unsigned int numTilesX = (_width + tileSize-1) / tileSize;
         const unsigned int numTilesY = (_height + tileSize-1) / tileSize;
@@ -725,7 +744,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
     // If a color primvar is present, use that as diffuse color; otherwise,
     // use flat white.
     GfVec4f color = GfVec4f(1.0f, 1.0f, 1.0f, 1.0f);
-    if (HdEmbreeConfig::GetInstance().useFaceColors &&
+    if (_enableSceneColors &&
             prototypeContext->primvarMap.count(HdTokens->color) > 0) {
         prototypeContext->primvarMap[HdTokens->color]->Sample(
                 rayHit.primID, rayHit.u, rayHit.v, &color);
@@ -771,9 +790,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     std::function<float()> uniform_float = std::bind(uniform_dist, random);
 
     // 0 ambient occlusion samples means disable the ambient occlusion term.
-    unsigned int ambientOcclusionSamples =
-        HdEmbreeConfig::GetInstance().ambientOcclusionSamples;
-    if (ambientOcclusionSamples < 1) {
+    if (_ambientOcclusionSamples < 1) {
         return 1.0f;
     }
 
@@ -801,19 +818,19 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     // bunched in the far corner of the hemisphere, but instead have some
     // equal spacing guarantees.
     std::vector<GfVec2f> samples;
-    samples.resize(ambientOcclusionSamples);
-    for (unsigned int i = 0; i < ambientOcclusionSamples; ++i) {
-        samples[i][0] = (float(i) + uniform_float()) / ambientOcclusionSamples;
+    samples.resize(_ambientOcclusionSamples);
+    for (int i = 0; i < _ambientOcclusionSamples; ++i) {
+        samples[i][0] = (float(i) + uniform_float()) / _ambientOcclusionSamples;
     }
     std::shuffle(samples.begin(), samples.end(), random);
-    for (unsigned int i = 0; i < ambientOcclusionSamples; ++i) {
-        samples[i][1] = (float(i) + uniform_float()) / ambientOcclusionSamples;
+    for (int i = 0; i < _ambientOcclusionSamples; ++i) {
+        samples[i][1] = (float(i) + uniform_float()) / _ambientOcclusionSamples;
     }
 
     // Trace ambient occlusion rays. The occlusion factor is the fraction of
     // the hemisphere that's occluded when rays are traced to infinity,
     // computed by random sampling over the hemisphere.
-    for (unsigned int i = 0; i < ambientOcclusionSamples; i++)
+    for (int i = 0; i < _ambientOcclusionSamples; i++)
     {
         // Sample in the hemisphere centered on the face normal. Use
         // cosine-weighted hemisphere sampling to bias towards samples which
@@ -832,7 +849,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
             occlusionFactor += GfDot(shadowDir, normal);
     }
     // Compute the average of the occlusion samples.
-    occlusionFactor /= ambientOcclusionSamples;
+    occlusionFactor /= _ambientOcclusionSamples;
 
     return occlusionFactor;
 }

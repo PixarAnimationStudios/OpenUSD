@@ -137,18 +137,22 @@ void wrapGL()
                 .staticmethod("IsHydraEnabled")
             .def("IsConverged", &UsdImagingGL::IsConverged)
             .def("GetRendererPlugins", &UsdImagingGL::GetRendererPlugins,
-                 return_value_policy< TfPySequenceToTuple >())
+                 return_value_policy< TfPySequenceToList >())
             .def("GetRendererDisplayName", 
                     &UsdImagingGL::GetRendererDisplayName)
             .def("GetCurrentRendererId", &UsdImagingGL::GetCurrentRendererId)
             .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
             .def("GetRendererAovs", &UsdImagingGL::GetRendererAovs,
-                 return_value_policy< TfPySequenceToTuple >())
-            .def ("SetRendererAov", &UsdImagingGL::SetRendererAov)
+                 return_value_policy< TfPySequenceToList >())
+            .def("SetRendererAov", &UsdImagingGL::SetRendererAov)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
             .def("GetRegisteredRendererPluginsDisplayNames", 
                  &_GetRegisteredRendererPluginsDisplayNames)
                 .staticmethod("GetRegisteredRendererPluginsDisplayNames")
+            .def("GetRendererSettingsList", &UsdImagingGL::GetRendererSettingsList,
+                 return_value_policy< TfPySequenceToList >())
+            .def("GetRendererSetting", &UsdImagingGL::GetRendererSetting)
+            .def("SetRendererSetting", &UsdImagingGL::SetRendererSetting)
         ;
 
         // Wrap the constants.
@@ -205,6 +209,28 @@ void wrapGL()
             .def_readwrite("enableSceneMaterials", 
                 &Params::enableSceneMaterials)
             .def_readwrite("enableUsdDrawModes", &Params::enableUsdDrawModes)
+        ;
+
+        // Wrap the UsdImagingGLRendererSetting::Type enum. Accessible as
+        // UsdImaging.GL.RendererSettingType.
+        enum_<UsdImagingGLRendererSetting::Type>("RendererSettingType")
+            .value("FLAG", UsdImagingGLRendererSetting::TYPE_FLAG)
+            .value("INT", UsdImagingGLRendererSetting::TYPE_INT)
+            .value("FLOAT", UsdImagingGLRendererSetting::TYPE_FLOAT)
+            .value("STRING", UsdImagingGLRendererSetting::TYPE_STRING)
+        ;
+
+        // Wrap the UsdImagingGLRendererSetting struct.
+        // Accessible as UsdImaging.GL.RendererSetting
+        typedef UsdImagingGLRendererSetting Setting;
+        class_<UsdImagingGLRendererSetting>("RendererSetting",
+                "Renderer Setting Metadata")
+            .add_property("key", make_getter(&Setting::key,
+                return_value_policy<return_by_value>()))
+            .def_readonly("name", &Setting::name)
+            .def_readonly("type", &Setting::type)
+            .add_property("defValue", make_getter(&Setting::defValue,
+                return_value_policy<return_by_value>()))
         ;
 
         TfPyContainerConversions::from_python_sequence<

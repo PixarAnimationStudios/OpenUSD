@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hdEmbree/renderDelegate.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,7 +38,8 @@ HdEmbreeRenderPass::HdEmbreeRenderPass(HdRenderIndex *index,
     , _renderThread(renderThread)
     , _renderer(renderer)
     , _sceneVersion(sceneVersion)
-    , _lastRenderedVersion(0)
+    , _lastSceneVersion(0)
+    , _lastSettingsVersion(0)
     , _width(0)
     , _height(0)
     , _viewMatrix(1.0f) // == identity
@@ -86,9 +88,38 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // Determine whether the scene has changed since the last time we rendered.
     bool needStartRender = false;
     int currentSceneVersion = _sceneVersion->load();
-    if (_lastRenderedVersion != currentSceneVersion) {
+    if (_lastSceneVersion != currentSceneVersion) {
         needStartRender = true;
-        _lastRenderedVersion = currentSceneVersion;
+        _lastSceneVersion = currentSceneVersion;
+    }
+
+    // Likewise the render settings.
+    HdRenderDelegate *renderDelegate = GetRenderIndex()->GetRenderDelegate();
+    int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
+    if (_lastSettingsVersion != currentSettingsVersion) {
+        _renderThread->StopRender();
+        _lastSettingsVersion = currentSettingsVersion;
+
+        _renderer->SetSamplesToConvergence(
+            renderDelegate->GetRenderSetting<int>(
+                HdRenderSettingsTokens->convergedSamplesPerPixel, 1));
+
+        bool enableAmbientOcclusion =
+            renderDelegate->GetRenderSetting<bool>(
+                HdEmbreeRenderSettingsTokens->enableAmbientOcclusion, false);
+        if (enableAmbientOcclusion) {
+            _renderer->SetAmbientOcclusionSamples(
+                renderDelegate->GetRenderSetting<int>(
+                    HdEmbreeRenderSettingsTokens->ambientOcclusionSamples, 0));
+        } else {
+            _renderer->SetAmbientOcclusionSamples(0);
+        }
+
+        _renderer->SetEnableSceneColors(
+            renderDelegate->GetRenderSetting<bool>(
+                HdEmbreeRenderSettingsTokens->enableSceneColors, true));
+
+        needStartRender = true;
     }
 
     GfVec4f vp = renderPassState->GetViewport();

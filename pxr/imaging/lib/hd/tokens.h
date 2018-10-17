@@ -304,6 +304,19 @@ TfToken HdAovTokensMakeLpe(TfToken const& lpe);
 HD_API
 TfToken HdAovTokensMakeShader(TfToken const& shader);
 
+/* Schema for application-configurable render settings. */
+#define HD_RENDER_SETTINGS_TOKENS                     \
+    /* General graphical options */                   \
+    (enableShadows)                                   \
+    (enableSceneMaterials)                            \
+    (enableSceneLights)                               \
+    /* Raytracer sampling settings */                 \
+    (convergedVariance)                               \
+    (convergedSamplesPerPixel)                        \
+    /* (for raytracers which use a fixed-size internal buffer) */ \
+    (renderBufferWidth)                               \
+    (renderBufferHeight)
+
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
@@ -312,6 +325,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

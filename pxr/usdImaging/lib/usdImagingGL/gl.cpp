@@ -251,6 +251,28 @@ UsdImagingGL::SetRendererAov(TfToken const &id)
     return _engine->SetRendererAov(id);
 }
 
+/* virtual */
+UsdImagingGLRendererSettingsList
+UsdImagingGL::GetRendererSettingsList() const
+{
+    return _engine->GetRendererSettingsList();
+}
+
+/* virtual */
+VtValue
+UsdImagingGL::GetRendererSetting(TfToken const& id) const
+{
+    return _engine->GetRendererSetting(id);
+}
+
+/* virtual */
+void
+UsdImagingGL::SetRendererSetting(TfToken const& id,
+                                 VtValue const& value)
+{
+    _engine->SetRendererSetting(id, value);
+}
+
 bool
 UsdImagingGL::TestIntersection(
     const GfMatrix4d &viewMatrix,

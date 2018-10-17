@@ -1317,11 +1317,10 @@
       <string>Hydra Renderer</string>
      </property>
     </widget>
-    <widget class="QMenu" name="menuRendererSettingsPlugin">
+    <widget class="QMenu" name="menuRendererSettings">
      <property name="title">
       <string>Hydra Settings</string>
      </property>
-     <addaction name="actionCull_Backfaces"/>
     </widget>
     <widget class="QMenu" name="menuRendererAovs">
      <property name="title">
@@ -1340,7 +1339,7 @@
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
     <addaction name="menuRendererPlugin"/>
-    <addaction name="menuRendererSettingsPlugin"/>
+    <addaction name="menuRendererSettings"/>
     <addaction name="menuRendererAovs"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
@@ -1366,6 +1365,7 @@
     <addaction name="menuInterpolation"/>
     <addaction name="actionEnable_Scene_Materials"/>
     <addaction name="actionDisplay_PrimId"/>
+    <addaction name="actionCull_Backfaces"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="minimumSize">

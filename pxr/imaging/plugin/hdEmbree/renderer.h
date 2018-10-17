@@ -81,6 +81,21 @@ public:
         return _attachments;
     }
 
+    /// Set how many samples to render before considering an image converged.
+    ///   \param samplesToConvergence How many samples are needed, per-pixel,
+    ///                               before the image is considered finished.
+    void SetSamplesToConvergence(int samplesToConvergence);
+
+    /// Set how many samples to use for ambient occlusion.
+    ///   \param ambientOcclusionSamples How many samples are needed for
+    ///                                  ambient occlusion? 0 = disable.
+    void SetAmbientOcclusionSamples(int ambientOcclusionSamples);
+
+    /// Sets whether to use scene colors while rendering.
+    ///   \param enableSceneColors Whether drawing should sample color, or draw
+    ///                            everything as white.
+    void SetEnableSceneColors(bool enableSceneColors);
+
     /// Rendering entrypoint: add one sample per pixel to the whole sample
     /// buffer, and then loop until the image is converged.  After each pass,
     /// the image will be resolved into a color buffer.
@@ -169,6 +184,13 @@ private:
 
     // Our handle to the embree scene.
     RTCScene _scene;
+
+    // How many samples should we render to convergence?
+    int _samplesToConvergence;
+    // How many samples should we use for ambient occlusion?
+    int _ambientOcclusionSamples;
+    // Should we enable scene colors?
+    bool _enableSceneColors;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
