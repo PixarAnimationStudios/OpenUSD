@@ -388,26 +388,37 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             // save new range to registry
             rangeInstance.SetValue(range);
         }
-        
-        if (drawItem->GetTopologyRange() &&
-            drawItem->GetTopologyRange() != rangeInstance.GetValue()) {
+
+        // If we are updating an existing topology, notify downstream
+        // systems of the change
+        HdBufferArrayRangeSharedPtr orgRange = drawItem->GetTopologyRange();
+        HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+
+        if (newRange != orgRange) {
             // If this is a varying topology (we already have one and we're
             // going to replace it), ensure we update the draw batches and
             // garbage collect the old buffer.
-            sceneDelegate->GetRenderIndex().GetChangeTracker()
-                .SetGarbageCollectionNeeded();
-            sceneDelegate->GetRenderIndex().GetChangeTracker()
-                .MarkBatchesDirty();
+            if (orgRange) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .SetGarbageCollectionNeeded();
 
-            // Setup a flag to say this prims.
-            _hasVaryingTopology = true;
+                // Setup a flag to say this prims topology is varying.
+                _hasVaryingTopology = true;
+            }
+
+            // Check to see if the new BAR is associated with a different
+            // buffer array.
+            if (!newRange->IsAggregatedWith(orgRange)) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .MarkBatchesDirty();
+            }
         }
 
         // TODO: reuse same range for varying topology
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
             rangeInstance.GetValue());
-    }
+    }  // Release regLock
 }
 
 static HdBufferSourceSharedPtr
@@ -1098,9 +1109,13 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
             // If buffer migration actually happens, the old buffer will no
             // longer be needed, and GC is required to reclaim the memory.
-            // We also need to trigger a batch rebuild.
             renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
-            renderIndex.GetChangeTracker().MarkBatchesDirty();
+
+            // Check to see if the new BAR is associated with a different
+            // buffer array.
+            if (!range->IsAggregatedWith(bar)) {
+                renderIndex.GetChangeTracker().MarkBatchesDirty();
+            }
         }
     }
 
