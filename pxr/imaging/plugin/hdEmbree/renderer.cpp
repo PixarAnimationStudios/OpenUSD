@@ -475,11 +475,13 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                                       -1);
                 GfVec3f nearPlaneTrace = _inverseProjMatrix.Transform(ndc);
 
-                GfVec3f origin, dir;
-                if (fabsf(nearPlaneTrace[2]) < 0.0001f) {
-                    // If the near plane is co-planar with the camera origin,
-                    // assume we're doing an orthographic projection: trace
-                    // parallel rays from the near plane trace.
+                GfVec3f origin;
+                GfVec3f dir;
+
+                bool isOrthographic = round(_projMatrix[3][3]) == 1;
+                if (isOrthographic) {
+                    // During orthographic projection: trace parallel rays
+                    // from the near plane trace.
                     origin = nearPlaneTrace;
                     dir = GfVec3f(0,0,-1);
                 } else {
