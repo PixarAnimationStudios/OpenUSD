@@ -3,6 +3,7 @@ set(DIRS
     usdchecker
     usddiff
     usdedit
+    usdresolve
     usdstitch
     usdstitchclips
     usdzip
