@@ -376,7 +376,7 @@ UsdMayaUtil::isPlugAnimated(const MPlug& plug)
     if (plug.isNull()) {
         return false;
     }
-    if (plug.isKeyable() && MAnimUtil::isAnimated(plug)) {
+    if (MAnimUtil::isAnimated(plug)) {
         return true;
     }
     if (plug.isDestination()) {

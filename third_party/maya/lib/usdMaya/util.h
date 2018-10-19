@@ -383,7 +383,7 @@ bool getPlugValue(
     }
 
     if (isAnimated) {
-        *isAnimated = plg.isDestination();
+        *isAnimated = isPlugAnimated(plg);
     }
 
     return plg.getValue(*val);
