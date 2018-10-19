@@ -825,11 +825,11 @@ SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
     if (oldPrefix == newPrefix) {
         return *this;
     }
-    if (*this == oldPrefix) {
-        return newPrefix;
-    }
     if (oldPrefix.IsEmpty() || newPrefix.IsEmpty()) {
         return EmptyPath();
+    }
+    if (*this == oldPrefix) {
+        return newPrefix;
     }
 
     size_t thisElemCount = GetPathElementCount();
@@ -839,7 +839,7 @@ SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
         (oldPfxElemCount >= thisElemCount &&
          (!fixTargetPaths || !_pathNode.get()->ContainsTargetPath()))) {
         return *this;
-}
+    }
 
     // Get temporary node storage -- stack if small enough, heap otherwise.
     constexpr size_t MaxLocalNodes = 16;
