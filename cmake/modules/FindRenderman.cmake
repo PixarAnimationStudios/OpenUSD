@@ -24,9 +24,9 @@
 #=============================================================================
 #
 # The module defines the following variables:
-#   RENDERMAN_INCLUDE_DIR - path to embree header directory
-#   RENDERMAN_LIBRARY     - path to embree library file
-#       RENDERMAN_FOUND   - true if embree was found
+#   RENDERMAN_INCLUDE_DIR - path to renderman header directory
+#   RENDERMAN_LIBRARY     - path to renderman library files
+#       RENDERMAN_FOUND   - true if renderman was found
 #
 # Example usage:
 #   find_package(RENDERMAN)
