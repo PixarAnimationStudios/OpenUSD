@@ -12,4 +12,3 @@ Checking rules:
 [11] If the root layer is a package, then the composed stage should not contain references to files outside the package. In other words, the package should be entirely self-contained.
 [12] The root layer of the package must be a usdc file and must not include any external dependencies that participate in stage composition.
 ------------------------------
-Success!
