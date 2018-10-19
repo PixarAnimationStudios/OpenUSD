@@ -45,6 +45,7 @@ def insertReference( destFile, path, reffile, primPath=None, offset=0, scale=1 )
             soho.error("Could not open USD file: " + destFile)
 
         existingRefPath = None
+        returnVal = None
         for p in stage.GetRootLayer().rootPrims:
             returnVal = findMatchingReference( p, reffile )
             if returnVal:
