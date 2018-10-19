@@ -705,11 +705,6 @@ private:
     // Helper used by the string path elem constructors.
     void _InitWithString(const std::string &path);
 
-    // Helper for ReplacePrefix().
-    SdfPath
-    _ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                   bool fixTargetPaths) const;
-
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool
     _LessThanInternal(Sdf_PathNodeConstRefPtr const &lhs,

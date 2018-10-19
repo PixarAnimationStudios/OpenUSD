@@ -475,8 +475,16 @@ SdfPath::GetAbsoluteRootOrPrimPath() const {
     return (*this == AbsoluteRootPath()) ? *this : GetPrimPath();
 }
 
-static SdfPath
-_AppendNode(const SdfPath &path, const Sdf_PathNodeConstRefPtr &node) {
+static inline SdfPath
+_AppendNode(const SdfPath &path, Sdf_PathNode const *node);
+
+static inline SdfPath
+_AppendNode(const SdfPath &path, Sdf_PathNodeConstRefPtr const &node) {
+    return _AppendNode(path, node.get());
+}
+
+static inline SdfPath
+_AppendNode(const SdfPath &path, Sdf_PathNode const *node) {
 
     switch (node->GetNodeType()) {
         case Sdf_PathNode::PrimNode:
@@ -808,78 +816,127 @@ SdfPath
 SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
                       bool fixTargetPaths) const
 {
+    // Perhaps surprisingly, this path need not have oldPrefix as a prefix.  For
+    // example, '/a.rel[/target]'.ReplacePrefix('/target', '/other/target') ->
+    // '/a.rel[/other/target]' when fixTargetPaths == true.
+
     TRACE_FUNCTION();
 
     if (oldPrefix == newPrefix) {
         return *this;
     }
+    if (*this == oldPrefix) {
+        return newPrefix;
+    }
     if (oldPrefix.IsEmpty() || newPrefix.IsEmpty()) {
         return EmptyPath();
     }
 
-    return _ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths);
+    size_t thisElemCount = GetPathElementCount();
+    size_t oldPfxElemCount = oldPrefix.GetPathElementCount();
+
+    if (thisElemCount == 0 ||
+        (oldPfxElemCount >= thisElemCount &&
+         (!fixTargetPaths || !_pathNode.get()->ContainsTargetPath()))) {
+        return *this;
 }
 
-SdfPath
-SdfPath::_ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                       bool fixTargetPaths) const
-{
-    if (*this == oldPrefix) {
-        // Base case: we've reached oldPrefix.
-        return newPrefix;
+    // Get temporary node storage -- stack if small enough, heap otherwise.
+    constexpr size_t MaxLocalNodes = 16;
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+    Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
+    std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
+    Sdf_PathNodeConstPtr *tmpNodes = localNodes;
+    // If we're fixing target paths, we may need to examine the entirety of this
+    // path, not just the tail elements.
+    size_t requiredTmpNodes =
+        fixTargetPaths ? thisElemCount : thisElemCount - oldPfxElemCount;
+    if (requiredTmpNodes > MaxLocalNodes) {
+        remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
+        tmpNodes = remoteNodes.get();
+    }
+    // Now tmpNodes is our temporary node storage.
+
+    // Walk up this path until we do not need to check anymore.  If we're not
+    // fixing target paths, this is just until we hit the same elem count as
+    // oldPrefix.  If we are doing target paths it's additionally until there
+    // are no more target path elements to examine.
+    size_t i = 0;
+    tmpNodes[i++] = _pathNode.get();
+    size_t numTailNodes =
+        thisElemCount > oldPfxElemCount ? thisElemCount - oldPfxElemCount : 0;
+    bool foundOldPrefix = false;
+    bool foundTargetPaths =
+        fixTargetPaths && _pathNode.get()->ContainsTargetPath();
+    bool moreTargetPaths = foundTargetPaths;
+    while (numTailNodes || moreTargetPaths) {
+        Sdf_PathNodeConstPtr tmp = tmpNodes[i-1]->GetParentNode().get();
+        if (numTailNodes) {
+            --numTailNodes;
+            foundOldPrefix = _NodesEqual(tmp, oldPrefix._pathNode.get());
+            if (foundOldPrefix)
+                break;
+        }
+        moreTargetPaths =
+            moreTargetPaths && tmpNodes[i-1]->ContainsTargetPath();
+        tmpNodes[i++] = tmp;
     }
 
-    if (GetPathElementCount() == 0) {
-        // Empty paths have nothing to replace.
+    // Now tmpNodes[i-1]->GetParentNode() is either equal to oldPrefix or we
+    // never hit oldPrefix and we're just fixing target paths above.
+
+    // If we didn't find the old prefix and we're not fixing up embedded target
+    // paths, then oldPrefix is not a prefix of this path so we just return this
+    // path.
+    if (!foundOldPrefix && (!fixTargetPaths || !foundTargetPaths)) {
         return *this;
     }
 
-    // If we've recursed above the oldPrefix, we can bail as long as there
-    // are no target paths we need to fix.
-    if (GetPathElementCount() <= oldPrefix.GetPathElementCount() &&
-        (!fixTargetPaths || !_pathNode->ContainsTargetPath())) {
-        // We'll never see oldPrefix beyond here, so return.
-        return *this;
-    }
-
-    // Recursively translate the parent.
-    SdfPath parent =
-        GetParentPath()._ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths);
-
-    // Translation of the parent may fail; it will have emitted an error.
-    // Return here so we don't deref an invalid _pathNode below.
-    if (parent.IsEmpty())
-        return SdfPath();
+    --i;
 
     // Append the tail component.  Use _AppendNode() except in these cases:
     // - For prims and properties, we construct child nodes directly
     //   so as to not expand out ".." components and to avoid the cost
     //   of unnecessarily re-validating identifiers.
     // - For embedded target paths, translate the target path.
-    switch (_pathNode->GetNodeType()) {
+
+    Sdf_PathNodeConstRefPtr newPath = foundOldPrefix ? 
+        newPrefix._pathNode : tmpNodes[i]->GetParentNode();
+
+    do {
+        switch (tmpNodes[i]->GetNodeType()) {
     case Sdf_PathNode::PrimNode:
-        return SdfPath(Sdf_PathNode::FindOrCreatePrim(parent._pathNode,
-                                                    _pathNode->GetName()));
+            newPath = Sdf_PathNode::FindOrCreatePrim(
+                newPath, tmpNodes[i]->GetName());
+            break;
     case Sdf_PathNode::PrimPropertyNode:
-        return SdfPath(Sdf_PathNode::FindOrCreatePrimProperty(
-                                parent._pathNode, _pathNode->GetName()));
+            newPath = Sdf_PathNode::FindOrCreatePrimProperty(
+                newPath, tmpNodes[i]->GetName());
+            break;
     case Sdf_PathNode::TargetNode:
         if (fixTargetPaths) {
-            return parent.AppendTarget( _pathNode->GetTargetPath()
-                ._ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths));
+                newPath = SdfPath(newPath).AppendTarget(
+                    tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                        oldPrefix, newPrefix, fixTargetPaths))._pathNode;
         } else {
-            return _AppendNode(parent, _pathNode);
+                newPath = _AppendNode(SdfPath(newPath), tmpNodes[i])._pathNode;
         }
+            break;
     case Sdf_PathNode::MapperNode:
         if (fixTargetPaths) {
-            return parent.AppendMapper( _pathNode->GetTargetPath()
-                ._ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths));
+                newPath = SdfPath(newPath).AppendMapper(
+                    tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                        oldPrefix, newPrefix, fixTargetPaths))._pathNode;
         } else {
-            return _AppendNode(parent, _pathNode);
+                newPath = _AppendNode(SdfPath(newPath), tmpNodes[i])._pathNode;
         }
+            break;
     default:
-        return _AppendNode(parent, _pathNode);
+            newPath = _AppendNode(SdfPath(newPath), tmpNodes[i])._pathNode;
     }
+    } while (i--);
+    
+    return SdfPath(std::move(newPath));
 }
 
 SdfPath
