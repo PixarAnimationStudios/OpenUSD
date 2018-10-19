@@ -350,6 +350,65 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
+    // If stripNamespaces is on, this validates that we don't have a
+    // name collision as a result (and maintains mUsdPathToDagPathMap,
+    // which is only used to do this validity / name collision check,
+    // and so is only populated if stripNamespaces is on)
+    auto checkStrippedNamespaceIsUnique = [this] (
+            const UsdMayaPrimWriter& primWriter,
+            const UsdPrim& usdPrim)
+            -> bool {
+        auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
+        if (foundPair != mUsdPathToDagPathMap.end()){
+            if (mJobCtx.mArgs.mergeTransformAndShape) {
+                // If we're merging, we may have two primwriters with different
+                // dag paths mapping to the same prim - the transform and the
+                // shape. Check for this...
+                if (foundPair->second.node().hasFn(MFn::kShape)) {
+                    // The found one was the shape, our new one is the transform
+                    MDagPath shapeParent = foundPair->second;
+                    shapeParent.pop();
+                    const MDagPath& transform = primWriter.GetDagPath();
+
+                    if (shapeParent == transform
+                            && mJobCtx.IsMergedTransform(transform)) {
+                        return true;
+                    }
+                }
+                else {
+                    // The found one was the transform, our new one is the shape
+                    MDagPath shapeParent = primWriter.GetDagPath();
+                    shapeParent.pop();
+                    const MDagPath& transform = foundPair->second;
+
+                    if (shapeParent == transform
+                            && mJobCtx.IsMergedTransform(transform)) {
+                        // We'll standardize on the dagpath in
+                        // mUsdPathToDagPathMap being the shape, since it's a
+                        // little more specific...
+                        foundPair->second = primWriter.GetDagPath();
+                        return true;
+                    }
+                }
+            }
+            TF_RUNTIME_ERROR(
+                    "Multiple dag nodes map to the same prim "
+                    "path after stripping namespaces: %s - %s",
+                    foundPair->second.fullPathName().asChar(),
+                    primWriter.GetDagPath().fullPathName()
+                        .asChar());
+            return false;
+        }
+        // Note that mUsdPathToDagPathMap is _only_ used for
+        // stripping namespaces, so we only need to populate it
+        // when stripping namespaces. (This is different from
+        // mDagPathToUsdPathMap!)
+        mUsdPathToDagPathMap[usdPrim.GetPath()] =
+                primWriter.GetDagPath();
+        return true;
+    };
+
+
     // Now do a depth-first traversal of the Maya DAG from the world root.
     // We keep a reference to arg dagPaths as we encounter them.
     MDagPath curLeafDagPath;
@@ -386,22 +445,10 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 // Write out data (non-animated/default values).
                 if (const auto& usdPrim = primWriter->GetUsdPrim()) {
                     if (mJobCtx.mArgs.stripNamespaces) {
-                        auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
-                        if (foundPair != mUsdPathToDagPathMap.end()){
-                            TF_RUNTIME_ERROR(
-                                    "Multiple dag nodes map to the same prim "
-                                    "path after stripping namespaces: %s - %s",
-                                    foundPair->second.fullPathName().asChar(),
-                                    primWriter->GetDagPath().fullPathName()
-                                        .asChar());
+                        if (!ARCH_LIKELY(checkStrippedNamespaceIsUnique(
+                                *primWriter, usdPrim))) {
                             return false;
                         }
-                        // Note that mUsdPathToDagPathMap is _only_ used for
-                        // stripping namespaces, so we only need to populate it
-                        // when stripping namespaces. (This is different from
-                        // mDagPathToUsdPathMap!)
-                        mUsdPathToDagPathMap[usdPrim.GetPath()] =
-                                primWriter->GetDagPath();
                     }
 
                     primWriter->Write(UsdTimeCode::Default());
