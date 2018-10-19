@@ -30,10 +30,16 @@
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/usd/usd/schemaBase.h"
 
-#include <boost/assign.hpp>
+#include <map>
+#include <string>
+#include <utility>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,8 +52,9 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 typedef std::map<TfToken, UsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
 static _Registry _reg;
 
+
 /* static */
-void 
+void
 UsdMayaPrimReaderRegistry::Register(
         const TfType& t,
         UsdMayaPrimReaderRegistry::ReaderFactoryFn fn)
@@ -55,7 +62,7 @@ UsdMayaPrimReaderRegistry::Register(
     TfToken tfTypeName(t.GetTypeName());
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
             "Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
-    std::pair< _Registry::iterator, bool> insertStatus = 
+    std::pair< _Registry::iterator, bool> insertStatus =
         _reg.insert(std::make_pair(tfTypeName, fn));
     if (!insertStatus.second) {
         TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
@@ -74,8 +81,7 @@ UsdMayaPrimReaderRegistry::RegisterRaw(
 
 /* static */
 UsdMayaPrimReaderRegistry::ReaderFactoryFn
-UsdMayaPrimReaderRegistry::Find(
-        const TfToken& usdTypeName)
+UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimReaderRegistry>();
 
@@ -89,15 +95,17 @@ UsdMayaPrimReaderRegistry::Find(
         return ret;
     }
 
-    static std::vector<TfToken> SCOPE = boost::assign::list_of
-        (_tokens->UsdMaya)(_tokens->PrimReader);
+    static const TfTokenVector SCOPE = {
+        _tokens->UsdMaya,
+        _tokens->PrimReader
+    };
     UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.
     if (!TfMapLookup(_reg, typeName, &ret)) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-                "No usdMaya reader plugin for TfType %s.  No maya plugin.\n", 
+                "No usdMaya reader plugin for TfType %s. No maya plugin.\n",
                 typeName.GetText());
         _reg[typeName] = nullptr;
     }
@@ -115,5 +123,5 @@ UsdMayaPrimReaderRegistry::FindOrFallback(const TfToken& usdTypeName)
     return UsdMaya_FallbackPrimReader::CreateFactory();
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE
