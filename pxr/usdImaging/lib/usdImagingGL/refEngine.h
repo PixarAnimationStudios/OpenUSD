@@ -38,6 +38,9 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
+#include <boost/unordered_map.hpp>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -74,6 +77,30 @@ public:
 
     USDIMAGINGGL_API
     virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+
+    USDIMAGINGGL_API
+    virtual bool TestIntersection(
+        const GfMatrix4d &viewMatrix,
+        const GfMatrix4d &projectionMatrix,
+        const GfMatrix4d &worldToLocalSpace,
+        const UsdPrim& root,
+        const UsdImagingGLRenderParams& params,
+        GfVec3d *outHitPoint,
+        SdfPath *outHitPrimPath = NULL,
+        SdfPath *outInstancerPath = NULL,
+        int *outHitInstanceIndex = NULL,
+        int *outHitElementIndex = NULL);
+
+    USDIMAGINGGL_API
+    virtual bool TestIntersectionBatch(
+        const GfMatrix4d &viewMatrix,
+        const GfMatrix4d &projectionMatrix,
+        const GfMatrix4d &worldToLocalSpace,
+        const SdfPathVector& paths, 
+        const UsdImagingGLRenderParams& params,
+        unsigned int pickResolution,
+        PathTranslatorCallback pathTranslator,
+        HitBatch *outHit);
 
 private:
     bool _SupportsPrimitiveRestartIndex();
@@ -230,6 +257,9 @@ private:
 
     // For changes from UsdStage.
     TfNotice::Key _objectsChangedNoticeKey;
+
+    typedef boost::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr> _DrawTargetPerContextMap;
+    _DrawTargetPerContextMap _drawTargets;
 };
 
 

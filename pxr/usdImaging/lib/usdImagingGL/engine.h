@@ -48,8 +48,6 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/unordered_map.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -179,7 +177,7 @@ public:
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
         int *outHitInstanceIndex = NULL,
-        int *outHitElementIndex = NULL);
+        int *outHitElementIndex = NULL) = 0;
 
     /// A callback function to control collating intersection test hits.
     /// See the documentation for TestIntersectionBatch() below for more detail.
@@ -221,7 +219,7 @@ public:
         const UsdImagingGLRenderParams& params,
         unsigned int pickResolution,
         PathTranslatorCallback pathTranslator,
-        HitBatch *outHit);
+        HitBatch *outHit) = 0;
 
     /// Using an Id extracted from an Id render, returns the associated
     /// rprim path.
@@ -320,11 +318,6 @@ public:
     virtual void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
-protected:
-    // Intentionally putting these under protected so that subclasses can share the usage of draw targets.
-    // Once refEngine goes away and we only have hdEngine, it may be best to move this to private
-    typedef boost::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr> _DrawTargetPerContextMap;
-    _DrawTargetPerContextMap _drawTargets;
 };
 
 
