@@ -905,35 +905,35 @@ SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
 
     do {
         switch (tmpNodes[i]->GetNodeType()) {
-    case Sdf_PathNode::PrimNode:
+        case Sdf_PathNode::PrimNode:
             newPath = Sdf_PathNode::FindOrCreatePrim(
                 newPath, tmpNodes[i]->GetName());
             break;
-    case Sdf_PathNode::PrimPropertyNode:
+        case Sdf_PathNode::PrimPropertyNode:
             newPath = Sdf_PathNode::FindOrCreatePrimProperty(
                 newPath, tmpNodes[i]->GetName());
             break;
-    case Sdf_PathNode::TargetNode:
-        if (fixTargetPaths) {
+        case Sdf_PathNode::TargetNode:
+            if (fixTargetPaths) {
                 newPath = SdfPath(newPath).AppendTarget(
                     tmpNodes[i]->GetTargetPath().ReplacePrefix(
                         oldPrefix, newPrefix, fixTargetPaths))._pathNode;
-        } else {
+            } else {
                 newPath = _AppendNode(SdfPath(newPath), tmpNodes[i])._pathNode;
-        }
+            }
             break;
-    case Sdf_PathNode::MapperNode:
-        if (fixTargetPaths) {
+        case Sdf_PathNode::MapperNode:
+            if (fixTargetPaths) {
                 newPath = SdfPath(newPath).AppendMapper(
                     tmpNodes[i]->GetTargetPath().ReplacePrefix(
                         oldPrefix, newPrefix, fixTargetPaths))._pathNode;
-        } else {
+            } else {
                 newPath = _AppendNode(SdfPath(newPath), tmpNodes[i])._pathNode;
-        }
+            }
             break;
-    default:
+        default:
             newPath = _AppendNode(SdfPath(newPath), tmpNodes[i])._pathNode;
-    }
+        }
     } while (i--);
     
     return SdfPath(std::move(newPath));
@@ -1488,13 +1488,6 @@ size_t
 SdfPath::_HashInternal(Sdf_PathNodeConstRefPtr const &ptr)
 {
     return Sdf_PathNode::Hash(ptr.get());
-}
-
-bool
-SdfPath::_EqualsInternal(Sdf_PathNode const *lhs,
-                         Sdf_PathNode const *rhs)
-{
-    return Sdf_PathNode::Equals(lhs, rhs);
 }
 
 std::ostream & operator<<( std::ostream &out, const SdfPath &path ) {

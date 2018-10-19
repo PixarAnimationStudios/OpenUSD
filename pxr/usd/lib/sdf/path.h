@@ -712,14 +712,8 @@ private:
 
     SDF_API static size_t _HashInternal(Sdf_PathNodeConstRefPtr const &ptr);
 
-    SDF_API static bool
-    _EqualsInternal(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs);
-
     static inline bool
-    _NodesEqual(Sdf_PathNode const *lhs,
-                Sdf_PathNode const *rhs) {
-        return (lhs == rhs) || _EqualsInternal(lhs, rhs);
-    }
+    _NodesEqual(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs);
 
     static inline bool
     _NodesEqual(Sdf_PathNodeConstRefPtr const &lhs,
@@ -848,6 +842,11 @@ SdfPath::FastLessThan::operator()(const SdfPath& a, const SdfPath& b) const
     }
 
     return lhs < rhs;
+}
+
+inline bool
+SdfPath::_NodesEqual(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs) {
+    return (lhs == rhs) || Sdf_PathNode::Equals(lhs, rhs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

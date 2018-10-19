@@ -583,8 +583,11 @@ Sdf_PathNode::Equals(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs) {
         return false;
     }
     auto lhsNodeType = lhs->GetNodeType();
+    if (lhsNodeType != PrimPropertyNode) {
+        return false;
+    }
     auto rhsNodeType = rhs->GetNodeType();
-    if (lhsNodeType != rhsNodeType || lhsNodeType != PrimPropertyNode) {
+    if (rhsNodeType != PrimPropertyNode) {
         return false;
     }
     auto pplhs = lhs->_Downcast<Sdf_PrimPropertyPathNode>();
