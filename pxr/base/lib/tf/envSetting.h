@@ -95,17 +95,6 @@
 /// differs from the default, when the program starts or the module defining
 /// the TfEnvSetting variable is loaded, a warning messages is printed.
 ///
-/// From Python you can also access all currently defined TfEnvSetting
-/// variables:
-///
-/// \code{.py}
-/// settingsDict = Tf.GetEnvSettingsDictionary()
-/// \endcode
-///
-/// The keys of the returned dictionary are the names of the environment
-/// variables; the values are tuples (defaultValue, description) corresponding
-/// to the second and third arguments in the TF_DEFINE_ENV_SETTING() macro.
-///
 /// Additionally, at program startup time (or when lib/tf is first loaded),
 /// the environment variable PIXAR_TF_ENV_SETTING_FILE is examined.  If this
 /// variable indicates a file that can be read, then the file is parsed, and
