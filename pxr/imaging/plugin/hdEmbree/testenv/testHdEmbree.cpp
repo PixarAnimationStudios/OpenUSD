@@ -168,25 +168,25 @@ void HdEmbree_TestGLDrawing::InitTest()
     _sceneDelegate->AddTask<HdxRenderTask>(renderTask);
 
     // We can optionally supply output buffer bindings to hydra (triggered
-    // by the --aov flag), so create a buffer and attachment if necessary.
-    HdRenderPassAttachment attach;
+    // by the --aov flag), so create a buffer and aov binding if necessary.
+    HdRenderPassAovBinding aovBinding;
     SdfPath renderBuffer("/renderBuffer");
     if (_aov.size() > 0) {
         HdFormat format = HdFormatInvalid;
         if (_aov == "color") {
             format = HdFormatUNorm8Vec4;
-            attach.aovName = HdAovTokens->color;
-            attach.clearValue = VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
+            aovBinding.aovName = HdAovTokens->color;
+            aovBinding.clearValue = VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
         } else if (_aov == "linearDepth") {
             format = HdFormatFloat32;
-            attach.aovName = HdAovTokens->linearDepth;
-            attach.clearValue = VtValue(0.0f);
+            aovBinding.aovName = HdAovTokens->linearDepth;
+            aovBinding.clearValue = VtValue(0.0f);
         } else if (_aov == "primId") {
             format = HdFormatInt32;
-            attach.aovName = HdAovTokens->primId;
-            attach.clearValue = VtValue(-1);
+            aovBinding.aovName = HdAovTokens->primId;
+            aovBinding.clearValue = VtValue(-1);
         }
-        attach.renderBufferId = renderBuffer;
+        aovBinding.renderBufferId = renderBuffer;
         _sceneDelegate->AddRenderBuffer(renderBuffer,
             GfVec3i(GetWidth(), GetHeight(), 1),
             format, false);
@@ -195,13 +195,13 @@ void HdEmbree_TestGLDrawing::InitTest()
     // Params is a general argument structure to the render task.
     // - Specify the camera to render from.
     // - Specify the viewport size.
-    // - If we are using the AOV API, specify attachments. (Otherwise, the
+    // - If we are using the AOV API, specify aov bindings. (Otherwise, the
     //   default is to blit color to the GL framebuffer).
     HdxRenderTaskParams params;
     params.camera = camera;
     params.viewport = GfVec4f(0, 0, GetWidth(), GetHeight());
     if (_aov.size() > 0) {
-        params.attachments.push_back(attach);
+        params.aovBindings.push_back(aovBinding);
     }
     _sceneDelegate->UpdateTask(renderTask, HdTokens->params, VtValue(params));
 

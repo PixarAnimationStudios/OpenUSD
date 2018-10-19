@@ -385,19 +385,20 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     }
     oldRenderBufferIds.clear();
 
-    // Create the attachment list and set it on the render task.
-    HdRenderPassAttachmentVector attachments;
-    attachments.resize(outputs.size());
+    // Create the aov binding list and set it on the render task.
+    HdRenderPassAovBindingVector aovBindings;
+    aovBindings.resize(outputs.size());
     for (size_t i = 0; i < outputs.size(); ++i) {
         SdfPath renderBufferId = _GetAovPath(outputs[i]);
 
-        attachments[i].aovName = outputs[i];
-        attachments[i].clearValue = outputDescs[i].clearValue;
-        attachments[i].renderBufferId = renderBufferId;
+        aovBindings[i].aovName = outputs[i];
+        aovBindings[i].clearValue = outputDescs[i].clearValue;
+        aovBindings[i].renderBufferId = renderBufferId;
+        aovBindings[i].aovSettings = outputDescs[i].aovSettings;
     }
 
-    if (renderParams.attachments != attachments) {
-        renderParams.attachments = attachments;
+    if (renderParams.aovBindings != aovBindings) {
+        renderParams.aovBindings = aovBindings;
         _delegate.SetParameter(_renderTaskId, HdTokens->params, renderParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _renderTaskId, HdChangeTracker::DirtyParams);
@@ -472,7 +473,7 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
     }
 
     // HdAovDescriptor contains data for both the renderbuffer descriptor,
-    // and the renderpass attachment.  Update them both.
+    // and the renderpass aov binding.  Update them both.
     HdRenderBufferDescriptor rbDesc =
         _delegate.GetParameter<HdRenderBufferDescriptor>(renderBufferId,
             _tokens->renderBufferDescriptor);
@@ -492,10 +493,12 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
         _delegate.GetParameter<HdxRenderTaskParams>(
             _renderTaskId, HdTokens->params);
 
-    for (size_t i = 0; i < renderParams.attachments.size(); ++i) {
-        if (renderParams.attachments[i].renderBufferId == renderBufferId) {
-            if (renderParams.attachments[i].clearValue != desc.clearValue) {
-                renderParams.attachments[i].clearValue = desc.clearValue;
+    for (size_t i = 0; i < renderParams.aovBindings.size(); ++i) {
+        if (renderParams.aovBindings[i].renderBufferId == renderBufferId) {
+            if (renderParams.aovBindings[i].clearValue != desc.clearValue ||
+                renderParams.aovBindings[i].aovSettings != desc.aovSettings) {
+                renderParams.aovBindings[i].clearValue = desc.clearValue;
+                renderParams.aovBindings[i].aovSettings = desc.aovSettings;
                 _delegate.SetParameter(_renderTaskId, HdTokens->params,
                                        renderParams);
                 GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -531,7 +534,7 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
     HdxRenderTaskParams mergedParams = params;
     mergedParams.camera = oldParams.camera;
     mergedParams.viewport = oldParams.viewport;
-    mergedParams.attachments = oldParams.attachments;
+    mergedParams.aovBindings = oldParams.aovBindings;
 
     if (mergedParams != oldParams) {
         _delegate.SetParameter(_renderTaskId, HdTokens->params, mergedParams);

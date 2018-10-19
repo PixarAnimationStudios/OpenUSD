@@ -70,7 +70,7 @@ public:
     HDX_API
     void SyncCamera();
     HDX_API
-    void SyncAttachments();
+    void SyncAovBindings();
     HDX_API
     void SyncRenderPassState();
 
@@ -97,7 +97,7 @@ private:
     GfVec4d _viewport;
     SdfPath _cameraId;
     TfTokenVector _renderTags;
-    HdRenderPassAttachmentVector _attachments;
+    HdRenderPassAovBindingVector _aovBindings;
 
     static HdStShaderCodeSharedPtr _overrideShader;
 
@@ -145,7 +145,7 @@ struct HdxRenderTaskParams : public HdTaskParams
         , complexity(HdComplexityLow)
         , hullVisibility(false)
         , surfaceVisibility(true)
-        , attachments()
+        , aovBindings()
         , camera()
         , viewport(0.0)
         {}
@@ -194,10 +194,10 @@ struct HdxRenderTaskParams : public HdTaskParams
     bool hullVisibility;
     bool surfaceVisibility;
 
-    // Attachments.
+    // AOV bindings.
     // XXX: As a transitional API, if this is empty it indicates the renderer
     // should write color and depth to the GL framebuffer.
-    HdRenderPassAttachmentVector attachments;
+    HdRenderPassAovBindingVector aovBindings;
 
     // RasterState index objects
     SdfPath camera;

@@ -195,7 +195,7 @@ HdxColorizeTask::_Execute(HdTaskContext* ctx)
         }
     }
     // (special handling for primvar tokens).
-    if (HdAovIdentifier(_aovName).isPrimvar &&
+    if (HdParsedAovToken(_aovName).isPrimvar &&
         _renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
         _colorizePrimvar(_outputBuffer, _renderBuffer->Map(),
                          _outputBufferSize);
@@ -241,7 +241,7 @@ HdxColorizeTask::_Sync(HdTaskContext* ctx)
                 break;
             }
         }
-        if (HdAovIdentifier(_aovName).isPrimvar &&
+        if (HdParsedAovToken(_aovName).isPrimvar &&
             _renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
             match = true;
         }

@@ -26,7 +26,44 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdAovIdentifier::HdAovIdentifier(TfToken const& aovName)
+std::ostream& operator<<(std::ostream& out,
+                         const HdRenderPassAovBinding& desc)
+{
+    out << "RenderPassAovBinding: {"
+        << desc.aovName << ", "
+        << desc.renderBuffer << ", "
+        << desc.renderBufferId << ", "
+        << desc.clearValue << ", "
+        << "aovSettings: { ";
+    for (auto const& pair : desc.aovSettings) {
+        out << pair.first << ": " << pair.second << ", ";
+    }
+    out << "}}";
+    return out;
+}
+
+bool operator==(const HdRenderPassAovBinding& lhs,
+                const HdRenderPassAovBinding& rhs)
+{
+    return lhs.aovName           == rhs.aovName           &&
+           lhs.renderBuffer      == rhs.renderBuffer      &&
+           lhs.renderBufferId    == rhs.renderBufferId    &&
+           lhs.clearValue        == rhs.clearValue        &&
+           lhs.aovSettings       == rhs.aovSettings;
+}
+
+bool operator!=(const HdRenderPassAovBinding& lhs,
+                const HdRenderPassAovBinding& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HdParsedAovToken::HdParsedAovToken()
+    : name(), isPrimvar(false), isLpe(false), isShader(false)
+{
+}
+
+HdParsedAovToken::HdParsedAovToken(TfToken const& aovName)
     : isPrimvar(false)
     , isLpe(false)
     , isShader(false)

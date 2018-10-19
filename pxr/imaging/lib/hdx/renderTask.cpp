@@ -220,7 +220,7 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
     }
 
     if (_setupTask) {
-        _setupTask->SyncAttachments();
+        _setupTask->SyncAovBindings();
         _setupTask->SyncCamera();
         _setupTask->SyncRenderPassState();
     }

@@ -28,6 +28,7 @@
 
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
@@ -71,14 +72,14 @@ public:
     ///   \param projMatrix The camera's view-to-NDC projection matrix.
     void SetCamera(const GfMatrix4d& viewMatrix, const GfMatrix4d& projMatrix);
 
-    /// Set the attachments to use for rendering.
-    ///   \param attachments A list of attachments.
-    void SetAttachments(HdRenderPassAttachmentVector const &attachments);
+    /// Set the aov bindings to use for rendering.
+    ///   \param aovBindings A list of aov bindings.
+    void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
 
-    /// Get the attachments being used for rendering.
-    ///   \return the currently bound attachments.
-    HdRenderPassAttachmentVector const& GetAttachments() const {
-        return _attachments;
+    /// Get the aov bindings being used for rendering.
+    ///   \return the current aov bindings.
+    HdRenderPassAovBindingVector const& GetAovBindings() const {
+        return _aovBindings;
     }
 
     /// Set how many samples to render before considering an image converged.
@@ -103,22 +104,22 @@ public:
     ///                       for cancellation and locking the color buffer.
     void Render(HdRenderThread *renderThread);
 
-    /// Clear the bound attachments (typically before rendering).
+    /// Clear the bound aov buffers (typically before rendering).
     void Clear();
 
-    /// Mark the attachments as unconverged.
-    void MarkAttachmentsUnconverged();
+    /// Mark the aov buffers as unconverged.
+    void MarkAovBuffersUnconverged();
 
 private:
-    // Validate the internal consistency of attachments provided to
-    // SetAttachments. If the attachments are invalid, this will issue
+    // Validate the internal consistency of aov bindings provided to
+    // SetAovBindings. If the aov bindings are invalid, this will issue
     // appropriate warnings. If the function returns false, Render() will fail
     // early.
     //
-    // This function thunks itself using _attachmentsNeedValidation and
-    // _attachmentsValid.
-    //   \return True if the attachments are valid for rendering.
-    bool _ValidateAttachments();
+    // This function thunks itself using _aovBindingsNeedValidation and
+    // _aovBindingsValid.
+    //   \return True if the aov bindings are valid for rendering.
+    bool _ValidateAovBindings();
 
     // Return the clear color to use for the given VtValue.
     static GfVec4f _GetClearColor(VtValue const& clearValue);
@@ -131,7 +132,7 @@ private:
                       size_t tileStart, size_t tileEnd);
 
     // Cast a ray into the scene and if it hits an object, write to the bound
-    // attachments.
+    // aov buffers.
     void _TraceRay(unsigned int x, unsigned int y,
                    GfVec3f const& origin, GfVec3f const& dir,
                    std::default_random_engine &random);
@@ -160,13 +161,15 @@ private:
                                    GfVec3f const& normal,
                                    std::default_random_engine &random);
 
-    // The bound attachments for this renderer.
-    HdRenderPassAttachmentVector _attachments;
+    // The bound aovs for this renderer.
+    HdRenderPassAovBindingVector _aovBindings;
+    // Parsed AOV name tokens.
+    HdParsedAovTokenVector _aovNames;
 
-    // Do the attachments need to be re-validated?
-    bool _attachmentsNeedValidation;
-    // Are the attachments valid?
-    bool _attachmentsValid;
+    // Do the aov bindings need to be re-validated?
+    bool _aovBindingsNeedValidation;
+    // Are the aov bindings valid?
+    bool _aovBindingsValid;
 
     // The width of the viewport we're rendering into.
     unsigned int _width;

@@ -92,7 +92,7 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
         SyncParams(params);
     }
 
-    SyncAttachments();
+    SyncAovBindings();
     SyncCamera();
     SyncRenderPassState();
 }
@@ -168,7 +168,7 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
     _viewport = params.viewport;
     _renderTags = params.renderTags;
     _cameraId = params.camera;
-    _attachments = params.attachments;
+    _aovBindings = params.aovBindings;
 
     if (HdStRenderPassState* extendedState =
             dynamic_cast<HdStRenderPassState*>(_renderPassState.get())) {
@@ -177,21 +177,21 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
 }
 
 void
-HdxRenderSetupTask::SyncAttachments()
+HdxRenderSetupTask::SyncAovBindings()
 {
-    // Walk the attachments, resolving the render index references as they're
+    // Walk the aov bindings, resolving the render index references as they're
     // encountered.
     const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-    HdRenderPassAttachmentVector attachments = _attachments;
-    for (size_t i = 0; i < attachments.size(); ++i)
+    HdRenderPassAovBindingVector aovBindings = _aovBindings;
+    for (size_t i = 0; i < aovBindings.size(); ++i)
     {
-        if (attachments[i].renderBuffer == nullptr) {
-            attachments[i].renderBuffer = static_cast<HdRenderBuffer*>(
+        if (aovBindings[i].renderBuffer == nullptr) {
+            aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
                 renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer,
-                attachments[i].renderBufferId));
+                aovBindings[i].renderBufferId));
         }
     }
-    _renderPassState->SetAttachments(attachments);
+    _renderPassState->SetAovBindings(aovBindings);
 }
 
 void
@@ -274,7 +274,7 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.surfaceVisibility << " "
         << pv.camera << " "
         << pv.viewport << " ";
-        for (auto const& a : pv.attachments) {
+        for (auto const& a : pv.aovBindings) {
             out << a << " ";
         }
         for (auto const& rt : pv.renderTags) {
@@ -307,7 +307,7 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.complexity              == rhs.complexity              &&
            lhs.hullVisibility          == rhs.hullVisibility          &&
            lhs.surfaceVisibility       == rhs.surfaceVisibility       &&
-           lhs.attachments             == rhs.attachments             &&
+           lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&
            lhs.viewport                == rhs.viewport                &&
            lhs.renderTags              == rhs.renderTags;

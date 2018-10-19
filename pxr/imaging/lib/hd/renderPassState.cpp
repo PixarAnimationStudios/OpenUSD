@@ -193,16 +193,16 @@ HdRenderPassState::GetClipPlanes() const
 }
 
 void
-HdRenderPassState::SetAttachments(
-        HdRenderPassAttachmentVector const& attachments)
+HdRenderPassState::SetAovBindings(
+        HdRenderPassAovBindingVector const& aovBindings)
 {
-    _attachments = attachments;
+    _aovBindings= aovBindings;
 }
 
-HdRenderPassAttachmentVector const&
-HdRenderPassState::GetAttachments() const
+HdRenderPassAovBindingVector const&
+HdRenderPassState::GetAovBindings() const
 {
-    return _attachments;
+    return _aovBindings;
 }
 
 void
@@ -277,40 +277,6 @@ void
 HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
 {
     _colorMask = mask;
-}
-
-std::ostream& operator<<(std::ostream& out,
-                         const HdRenderPassAttachment& desc)
-{
-    out << "RenderPassAttachment: {";
-    if (desc.aovName.isPrimvar) {
-        out << HdAovTokensMakePrimvar(desc.aovName.name) << ", ";
-    } else if (desc.aovName.isLpe) {
-        out << HdAovTokensMakeLpe(desc.aovName.name) << ", ";
-    } else {
-        out << desc.aovName.name << ", ";
-    }
-    out << desc.renderBuffer << ", "
-        << desc.renderBufferId << ", "
-        << desc.clearValue << "}";
-    return out;
-}
-
-bool operator==(const HdRenderPassAttachment& lhs,
-                const HdRenderPassAttachment& rhs)
-{
-    return lhs.aovName.name      == rhs.aovName.name      &&
-           lhs.aovName.isPrimvar == rhs.aovName.isPrimvar &&
-           lhs.aovName.isLpe     == rhs.aovName.isLpe     &&
-           lhs.renderBuffer      == rhs.renderBuffer      &&
-           lhs.renderBufferId    == rhs.renderBufferId    &&
-           lhs.clearValue        == rhs.clearValue;
-}
-
-bool operator!=(const HdRenderPassAttachment& lhs,
-                const HdRenderPassAttachment& rhs)
-{
-    return !(lhs == rhs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
