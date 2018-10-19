@@ -137,6 +137,10 @@ protected:
 private:
     const VtValue* _GetFieldValue(const SdfAbstractDataSpecId& id,
                                   const TfToken& field) const;
+
+    VtValue* _GetMutableFieldValue(const SdfAbstractDataSpecId& id,
+                                   const TfToken& field);
+
     VtValue* _GetOrCreateFieldValue(const SdfAbstractDataSpecId& id,
                                     const TfToken& field);
 
