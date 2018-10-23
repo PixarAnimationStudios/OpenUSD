@@ -247,8 +247,8 @@ _CreateUniqueGeomSubset(
     size_t idx = 0;
     while (true) {
         SdfPath childPath = parentPath.AppendChild(TfToken(name));
-        bool exists = stage->GetPrimAtPath(childPath);
-        if (!exists) {
+        auto subsetPrim = stage->GetPrimAtPath(childPath);
+        if (!subsetPrim) {
             return UsdGeomSubset::Define(stage, childPath);
         }
         idx++;

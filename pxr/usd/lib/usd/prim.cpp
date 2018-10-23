@@ -290,7 +290,7 @@ UsdPrim::GetProperty(const TfToken &propName) const
 bool
 UsdPrim::HasProperty(const TfToken &propName) const 
 {
-    return GetProperty(propName);
+    return static_cast<bool>(GetProperty(propName));
 }
 
 TfTokenVector
@@ -590,7 +590,7 @@ UsdPrim::GetAttribute(const TfToken& attrName) const
 bool
 UsdPrim::HasAttribute(const TfToken& attrName) const
 {
-    return GetAttribute(attrName);
+    return static_cast<bool>(GetAttribute(attrName));
 }
 
 UsdRelationship
@@ -649,7 +649,7 @@ UsdPrim::GetRelationship(const TfToken& relName) const
 bool
 UsdPrim::HasRelationship(const TfToken& relName) const
 {
-    return GetRelationship(relName);
+    return static_cast<bool>(GetRelationship(relName));
 } 
 
 template <class PropertyType, class Derived>
