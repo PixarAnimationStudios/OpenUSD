@@ -183,7 +183,7 @@ SdfValueTypeName::GetHash() const
 }
 
 bool
-SdfValueTypeName::operator!() const
+SdfValueTypeName::_IsEmpty() const
 {
     return _impl == Sdf_ValueTypePrivate::GetEmptyTypeName();
 }
