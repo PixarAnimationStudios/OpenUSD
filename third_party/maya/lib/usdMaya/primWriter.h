@@ -26,33 +26,54 @@
 
 /// \file usdMaya/primWriter.h
 
-#include "usdMaya/api.h"
-#include "usdMaya/jobArgs.h"
-
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/util.h"
+
+#include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdUtils/sparseValueWriter.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MObject.h>
+
+#include <memory>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct UsdMayaJobExportArgs;
-class UsdGeomImageable;
+
 class UsdMayaWriteJobContext;
-class UsdTimeCode;
-class UsdUtilsSparseValueWriter;
+
 
 /// Base class for all built-in and user-defined prim writers. Translates Maya
 /// node data into USD prim(s).
+///
+/// Note that this class can be used to write USD prims for both DG and DAG
+/// Maya nodes. For DAG nodes, an MDagPath is required to uniquely identify
+/// instances in the DAG, so the writer should be constructed using an
+/// MDagPath. For DG nodes, the MObject constructor must be used.
 class UsdMayaPrimWriter
 {
 public:
+    /// Constructs a prim writer for writing a Maya DAG node.
     PXRUSDMAYA_API
     UsdMayaPrimWriter(
-            const MDagPath& iDag,
-            const SdfPath& uPath,
+            const MDagPath& dagPath,
+            const SdfPath& usdPath,
+            UsdMayaWriteJobContext& jobCtx);
+
+    /// Constructs a prim writer for writing a Maya DG node.
+    PXRUSDMAYA_API
+    UsdMayaPrimWriter(
+            const MObject& dgNode,
+            const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx);
 
     PXRUSDMAYA_API
@@ -64,7 +85,7 @@ public:
     /// cases, subclasses will want to invoke the base class Write() method
     /// when overriding.
     PXRUSDMAYA_API
-    virtual void Write(const UsdTimeCode &usdTime);
+    virtual void Write(const UsdTimeCode& usdTime);
 
     /// Post export function that runs before saving the stage.
     ///
@@ -102,7 +123,7 @@ public:
     /// Sets whether visibility can be exported for this prim.
     /// This will override the export args.
     PXRUSDMAYA_API
-    void SetExportVisibility(bool exportVis);
+    void SetExportVisibility(const bool exportVis);
 
     /// Gets all of the exported prim paths that are potentially models, i.e.
     /// the prims on which this prim writer has authored kind metadata or
@@ -116,7 +137,7 @@ public:
     virtual const SdfPathVector& GetModelPaths() const;
 
     /// Gets a mapping from MDagPaths to exported prim paths.
-    /// Useful only for prim writers that override ShouldPruneChildren() to
+    /// Useful only for DAG prim writers that override ShouldPruneChildren() to
     /// \c true but still want the export process to know about the Maya-to-USD
     /// correspondence for their descendants, e.g., for material binding
     /// purposes.
@@ -124,14 +145,22 @@ public:
     /// one-to-one correspondence between the Maya node and USD prim; don't
     /// include any mappings where the mapped value is an invalid path.
     ///
-    /// The base implementation simply maps GetDagPath() to GetUsdPath().
+    /// The base implementation for DAG prim writers simply maps GetDagPath()
+    /// to GetUsdPath(). For DG prim writers, an empty map is returned.
     PXRUSDMAYA_API
     virtual const UsdMayaUtil::MDagPathMap<SdfPath>&
             GetDagToUsdPathMapping() const;
 
     /// The source Maya DAG path that we are consuming.
+    ///
+    /// If this prim writer is for a Maya DG node and not a DAG node, this will
+    /// return an invalid MDagPath.
     PXRUSDMAYA_API
     const MDagPath& GetDagPath() const;
+
+    /// The MObject for the Maya node being written by this writer.
+    PXRUSDMAYA_API
+    const MObject& GetMayaObject() const;
 
     /// The path of the destination USD prim to which we are writing.
     PXRUSDMAYA_API
@@ -155,35 +184,37 @@ protected:
     PXRUSDMAYA_API
     const UsdMayaJobExportArgs& _GetExportArgs() const;
 
-    /// Sets the value of \p attr to \p value at \p time with value 
-    /// compression. When this method is used to write attribute values, 
-    /// any redundant authoring of the default value or of time-samples 
+    /// Sets the value of \p attr to \p value at \p time with value
+    /// compression. When this method is used to write attribute values,
+    /// any redundant authoring of the default value or of time-samples
     /// are avoided (by using the utility class UsdUtilsSparseValueWriter).
     template <typename T>
-    bool _SetAttribute(const UsdAttribute &attr, 
-                       const T &value, 
-                       const UsdTimeCode time=UsdTimeCode::Default()) {
+    bool _SetAttribute(
+            const UsdAttribute& attr,
+            const T& value,
+            const UsdTimeCode time = UsdTimeCode::Default()) {
         VtValue val(value);
         return _valueWriter.SetAttribute(attr, &val, time);
     }
 
     /// \overload
-    /// This overload takes the value by pointer and hence avoids a copy 
+    /// This overload takes the value by pointer and hence avoids a copy
     /// of the value.
-    /// However, it swaps out the value held in \p value for efficiency, 
+    /// However, it swaps out the value held in \p value for efficiency,
     /// leaving it in default-constructed state (value-initialized).
     template <typename T>
-    bool _SetAttribute(const UsdAttribute &attr, 
-                       T *value, 
-                       const UsdTimeCode time=UsdTimeCode::Default()) {
+    bool _SetAttribute(
+            const UsdAttribute& attr,
+            T* value,
+            const UsdTimeCode time = UsdTimeCode::Default()) {
         return _valueWriter.SetAttribute(attr, VtValue::Take(*value), time);
     }
 
-    /// Get the attribute value-writer object to be used when writing 
-    /// attributes. Access to this is provided so that attribute authoring 
+    /// Get the attribute value-writer object to be used when writing
+    /// attributes. Access to this is provided so that attribute authoring
     /// happening inside non-member functions can make use of it.
     PXRUSDMAYA_API
-    UsdUtilsSparseValueWriter *_GetSparseValueWriter();
+    UsdUtilsSparseValueWriter* _GetSparseValueWriter();
 
     UsdPrim _usdPrim;
     UsdMayaWriteJobContext& _writeJobCtx;
@@ -197,7 +228,14 @@ private:
     /// and transform.
     bool _IsMergedShape() const;
 
+    /// The MDagPath for the Maya node being written, valid only when the prim
+    /// writer is constructed with an MDagPath.
     const MDagPath _dagPath;
+
+    /// The MObject for the Maya node being written, valid for both DAG and DG
+    /// node prim writers.
+    const MObject _mayaObject;
+
     const SdfPath _usdPath;
     const UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
 
@@ -209,6 +247,8 @@ private:
 
 typedef std::shared_ptr<UsdMayaPrimWriter> UsdMayaPrimWriterSharedPtr;
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif
