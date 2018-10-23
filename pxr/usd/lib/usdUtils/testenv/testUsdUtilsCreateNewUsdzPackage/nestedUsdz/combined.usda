@@ -1,0 +1,21 @@
+#usda 1.0
+(
+   upAxis = "Y"
+   defaultPrim = "World"
+)
+
+def Xform "World"
+{
+    def "simpleMesh" (
+       references = @simpleMesh.usdz@
+    )
+    {}
+
+    def "simpleMaterial" (
+       references = @simpleMaterial.usdz@
+    )
+    {
+         token[] xformOpOrder = [ "xformOp:translate" ]
+         double3 xformOp:translate = (4, 0, 0)
+    }
+}
