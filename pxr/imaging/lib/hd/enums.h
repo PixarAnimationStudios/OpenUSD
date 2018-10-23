@@ -65,6 +65,50 @@ enum HdStencilOp
     HdStencilOpLast
 };
 
+/// \enum HdBlendOp
+///
+/// Abstraction of the Graphics blend operations.
+///
+enum HdBlendOp
+{
+    HdBlendOpAdd,
+    HdBlendOpSubtract,
+    HdBlendOpReverseSubtract,
+    HdBlendOpMin,
+    HdBlendOpMax,
+
+    HdBlendOpLast
+};
+
+/// \enum HdBlendFactor
+///
+/// Abstraction of the Graphics blend factors.
+///
+enum HdBlendFactor
+{
+    HdBlendFactorZero,
+    HdBlendFactorOne,
+    HdBlendFactorSrcColor,
+    HdBlendFactorOneMinusSrcColor,
+    HdBlendFactorDstColor,
+    HdBlendFactorOneMinusDstColor,
+    HdBlendFactorSrcAlpha,
+    HdBlendFactorOneMinusSrcAlpha,
+    HdBlendFactorDstAlpha,
+    HdBlendFactorOneMinusDstAlpha,
+    HdBlendFactorConstantColor,
+    HdBlendFactorOneMinusConstantColor,
+    HdBlendFactorConstantAlpha,
+    HdBlendFactorOneMinusConstantAlpha,
+    HdBlendFactorSrcAlphaSaturate,
+    HdBlendFactorSrc1Color,
+    HdBlendFactorOneMinusSrc1Color,
+    HdBlendFactorSrc1Alpha,
+    HdBlendFactorOneMinusSrc1Alpha,
+
+    HdBlendFactorLast
+};
+
 /// \enum HdCullStyle
 ///
 /// Face culling options.

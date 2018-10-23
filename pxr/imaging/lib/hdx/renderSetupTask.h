@@ -140,6 +140,14 @@ struct HdxRenderTaskParams : public HdTaskParams
         , stencilZFailOp(HdStencilOpKeep)
         , stencilZPassOp(HdStencilOpKeep)
         , stencilEnable(false)
+        , blendColorOp(HdBlendOpAdd)
+        , blendColorSrcFactor(HdBlendFactorOne)
+        , blendColorDstFactor(HdBlendFactorZero)
+        , blendAlphaOp(HdBlendOpAdd)
+        , blendAlphaSrcFactor(HdBlendFactorOne)
+        , blendAlphaDstFactor(HdBlendFactorZero)
+        , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+        , blendEnable(false)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
         , geomStyle(HdGeomStylePolygons)
         , complexity(HdComplexityLow)
@@ -186,6 +194,16 @@ struct HdxRenderTaskParams : public HdTaskParams
     HdStencilOp stencilZFailOp;
     HdStencilOp stencilZPassOp;
     bool stencilEnable;
+
+    // Blending
+    HdBlendOp blendColorOp;
+    HdBlendFactor blendColorSrcFactor;
+    HdBlendFactor blendColorDstFactor;
+    HdBlendOp blendAlphaOp;
+    HdBlendFactor blendAlphaSrcFactor;
+    HdBlendFactor blendAlphaDstFactor;
+    GfVec4f blendConstantColor;
+    bool blendEnable;
 
     // Viewer's Render Style
     HdCullStyle cullStyle;

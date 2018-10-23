@@ -50,6 +50,12 @@ public:
     static GLenum GetGlStencilOp(HdStencilOp op);
 
     HDST_API
+    static GLenum GetGlBlendOp(HdBlendOp op);
+
+    HDST_API
+    static GLenum GetGlBlendFactor(HdBlendFactor factor);
+
+    HDST_API
     static GLenum GetMinFilter(HdMinFilter filter);
 
     HDST_API

@@ -37,6 +37,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -196,6 +197,25 @@ public:
     float GetLineWidth() const { return _lineWidth; }
     
     HD_API
+    void SetBlend(HdBlendOp colorOp,
+                  HdBlendFactor colorSrcFactor,
+                  HdBlendFactor colorDstFactor,
+                  HdBlendOp alphaOp,
+                  HdBlendFactor alphaSrcFactor,
+                  HdBlendFactor alphaDstFactor);
+    HdBlendOp GetBlendColorOp() { return _blendColorOp; }
+    HdBlendFactor GetBlendColorSrcFactor() { return _blendColorSrcFactor; }
+    HdBlendFactor GetBlendColorDstFactor() { return _blendColorDstFactor; }
+    HdBlendOp GetBlendAlphaOp() { return _blendAlphaOp; }
+    HdBlendFactor GetBlendAlphaSrcFactor() { return _blendAlphaSrcFactor; }
+    HdBlendFactor GetBlendAlphaDstFactor() { return _blendAlphaDstFactor; }
+    HD_API
+    void SetBlendConstantColor(GfVec4f const & color);
+    const GfVec4f& GetBlendConstantColor() const { return _blendConstantColor; }
+    HD_API
+    void SetBlendEnabled(bool enabled);
+
+    HD_API
     void SetAlphaToCoverageUseDefault(bool useDefault);
     bool GetAlphaToCoverageUseDefault() const { return _alphaToCoverageUseDefault; }
 
@@ -268,6 +288,16 @@ protected:
     // Line width
     float _lineWidth;
     
+    // Blending
+    HdBlendOp _blendColorOp;
+    HdBlendFactor _blendColorSrcFactor;
+    HdBlendFactor _blendColorDstFactor;
+    HdBlendOp _blendAlphaOp;
+    HdBlendFactor _blendAlphaSrcFactor;
+    HdBlendFactor _blendAlphaDstFactor;
+    GfVec4f _blendConstantColor;
+    bool _blendEnabled;
+
     // alpha to coverage
     bool _alphaToCoverageUseDefault;
     bool _alphaToCoverageEnabled;

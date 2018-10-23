@@ -64,6 +64,14 @@ HdRenderPassState::HdRenderPassState()
     , _stencilZPassOp(HdStencilOpKeep)
     , _stencilEnabled(false)
     , _lineWidth(1.0f)
+    , _blendColorOp(HdBlendOpAdd)
+    , _blendColorSrcFactor(HdBlendFactorOne)
+    , _blendColorDstFactor(HdBlendFactorZero)
+    , _blendAlphaOp(HdBlendOpAdd)
+    , _blendAlphaSrcFactor(HdBlendFactorOne)
+    , _blendAlphaDstFactor(HdBlendFactorZero)
+    , _blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _blendEnabled(false)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
@@ -253,6 +261,34 @@ void
 HdRenderPassState::SetLineWidth(float width)
 {
     _lineWidth = width;
+}
+
+void
+HdRenderPassState::SetBlend(HdBlendOp colorOp,
+                            HdBlendFactor colorSrcFactor,
+                            HdBlendFactor colorDstFactor,
+                            HdBlendOp alphaOp,
+                            HdBlendFactor alphaSrcFactor,
+                            HdBlendFactor alphaDstFactor)
+{
+    _blendColorOp = colorOp;
+    _blendColorSrcFactor = colorSrcFactor;
+    _blendColorDstFactor = colorDstFactor;
+    _blendAlphaOp = alphaOp;
+    _blendAlphaSrcFactor = alphaSrcFactor;
+    _blendAlphaDstFactor = alphaDstFactor;
+}
+
+void
+HdRenderPassState::SetBlendConstantColor(GfVec4f const & color)
+{
+    _blendConstantColor = color;
+}
+
+void
+HdRenderPassState::SetBlendEnabled(bool enabled)
+{
+    _blendEnabled = enabled;
 }
 
 void
