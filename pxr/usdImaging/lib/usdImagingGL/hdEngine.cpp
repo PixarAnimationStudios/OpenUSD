@@ -71,6 +71,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _rendererPlugin(nullptr)
     , _taskController(nullptr)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
+    , _viewport(0.0f, 0.0f, 512.0f, 512.0f)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPrimPaths)
     , _invisedPrimPaths(invisedPrimPaths)
@@ -662,6 +663,7 @@ UsdImagingGLHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
     // update the camera in the task controller accordingly.
     _taskController->SetCameraMatrices(viewMatrix, projectionMatrix);
     _taskController->SetCameraViewport(viewport);
+    _viewport = viewport;
 }
 
 /*virtual*/
@@ -907,7 +909,16 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
     _rendererPlugin = plugin;
     _rendererId = actualId;
 
-    HdRenderDelegate *renderDelegate = _rendererPlugin->CreateRenderDelegate();
+    // Pass the viewport dimensions into CreateRenderDelegate, for backends that
+    // need to allocate the viewport early.
+    HdRenderSettingsMap renderSettings;
+    renderSettings[HdRenderSettingsTokens->renderBufferWidth] =
+        int(_viewport[2]);
+    renderSettings[HdRenderSettingsTokens->renderBufferHeight] =
+        int(_viewport[3]);
+
+    HdRenderDelegate *renderDelegate =
+        _rendererPlugin->CreateRenderDelegate(renderSettings);
     _renderIndex = HdRenderIndex::New(renderDelegate);
 
     // Create the new delegate & task controller.
