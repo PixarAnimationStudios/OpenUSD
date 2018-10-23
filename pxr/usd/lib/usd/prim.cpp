@@ -50,6 +50,10 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_unordered_set.h>
+#include <tbb/parallel_sort.h>
+
 #include <algorithm>
 #include <functional>
 #include <vector>

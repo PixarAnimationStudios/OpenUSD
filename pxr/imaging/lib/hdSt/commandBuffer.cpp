@@ -43,6 +43,8 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <tbb/enumerable_thread_specific.h>
+
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
