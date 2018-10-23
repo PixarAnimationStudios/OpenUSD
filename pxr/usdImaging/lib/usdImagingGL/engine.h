@@ -52,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdPrim;
+class HdRenderIndex;
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
@@ -317,6 +318,21 @@ public:
     USDIMAGINGGL_API
     virtual void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
+
+protected:
+
+    /// Open some protected methods for whitebox testing.
+    friend class UsdImagingGL_UnitTestGLDrawing;
+    friend class UsdImagingGL;
+
+    /// Returns the render index of the engine, if any.  This is only used for
+    /// whitebox testing.
+    USDIMAGINGGL_API
+    virtual HdRenderIndex *_GetRenderIndex() const;
+
+    USDIMAGINGGL_API
+    virtual void _Render(const UsdImagingGLRenderParams &params);
+
 
 };
 

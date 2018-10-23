@@ -90,7 +90,7 @@ UsdImagingGLHdEngine::~UsdImagingGLHdEngine()
 }
 
 HdRenderIndex *
-UsdImagingGLHdEngine::GetRenderIndex() const
+UsdImagingGLHdEngine::_GetRenderIndex() const
 {
     return _renderIndex;
 }
@@ -377,7 +377,7 @@ UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths,
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    Render(params);
+    _Render(params);
 }
 
 /*virtual*/
@@ -398,7 +398,7 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root,
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    Render(params);
+    _Render(params);
 }
 
 bool
@@ -554,8 +554,9 @@ class _DebugGroupTaskWrapper : public HdTask {
     }
 };
 
+/*virtual*/
 void
-UsdImagingGLHdEngine::Render(const UsdImagingGLRenderParams& params)
+UsdImagingGLHdEngine::_Render(const UsdImagingGLRenderParams& params)
 {
     // Forward scene materials enable option to delegate
     _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);

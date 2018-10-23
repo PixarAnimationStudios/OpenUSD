@@ -216,6 +216,14 @@ public:
     virtual void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
+protected:
+
+    USDIMAGINGGL_API
+    virtual HdRenderIndex *_GetRenderIndex() const;
+
+    USDIMAGINGGL_API
+    virtual void _Render(const UsdImagingGLRenderParams &params);
+
 private:
     UsdImagingGLEngineSharedPtr _engine;
 };

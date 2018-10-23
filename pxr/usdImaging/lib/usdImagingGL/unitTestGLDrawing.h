@@ -84,6 +84,15 @@ protected:
     bool _ShouldFrameAll() const { return _shouldFrameAll; }
     TfToken _GetRenderer() const { return _renderer; }
 
+    HdRenderIndex *_GetRenderIndex(UsdImagingGLEngine *engine) {
+        return engine->_GetRenderIndex();
+    }
+    
+    void _Render(UsdImagingGLEngine *engine, 
+                 const UsdImagingGLRenderParams &params) {
+        engine->_Render(params);
+    }
+
 private:
     struct _Args;
     void _Parse(int argc, char *argv[], _Args* args);

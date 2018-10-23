@@ -69,9 +69,6 @@ public:
     virtual ~UsdImagingGLHdEngine();
 
     USDIMAGINGGL_API
-    HdRenderIndex *GetRenderIndex() const;
-
-    USDIMAGINGGL_API
     virtual void InvalidateBuffers();
 
     USDIMAGINGGL_API
@@ -85,10 +82,6 @@ public:
     USDIMAGINGGL_API
     virtual void Render(const UsdPrim& root, 
         const UsdImagingGLRenderParams& params) override;
-
-    // Core rendering function: just draw, don't update anything.
-    USDIMAGINGGL_API
-    void Render(const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
@@ -193,7 +186,16 @@ public:
     virtual void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
+protected:
+
+    USDIMAGINGGL_API
+    HdRenderIndex *_GetRenderIndex() const override;
+
 private:
+
+    // Core rendering function: just draw, don't update anything.
+    virtual void _Render(const UsdImagingGLRenderParams& params);
+
 
     // These functions factor batch preparation into separate steps so they
     // can be reused by both the vectorized and non-vectorized API.

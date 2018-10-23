@@ -309,5 +309,19 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id,
 {
 }
 
+/* virtual */
+HdRenderIndex *
+UsdImagingGLEngine::_GetRenderIndex() const
+{
+    return nullptr;
+}
+
+/* virtual */
+void 
+UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
+{
+    // nothing here
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -315,5 +315,19 @@ UsdImagingGL::GetResourceAllocation() const
     return _engine->GetResourceAllocation();
 }
 
+/* virtual */
+HdRenderIndex *
+UsdImagingGL::_GetRenderIndex() const
+{
+    return _engine->_GetRenderIndex();
+}
+
+/* virtual */
+void 
+UsdImagingGL::_Render(const UsdImagingGLRenderParams &params)
+{
+    _engine->_Render(params);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
