@@ -57,10 +57,6 @@ struct Sdf_PathNodePrivateAccess
     static inline tbb::atomic<unsigned int> &
     GetRefCount(const Sdf_PathNode *p) { return p->_refCount; }
 
-    static inline bool IsInternedPrimPropPath(const Sdf_PathNode *p) {
-        return p->_isInternedPrimPropNode;
-    }
-
     template <class T>
     static inline Sdf_PathNodeConstRefPtr
     New(const Sdf_PathNodeConstRefPtr &parent) {
@@ -103,14 +99,14 @@ _MakeParentAnd(const Sdf_PathNode *parent) {
 inline size_t
 hash_value(const Sdf_PathNode *p)
 {
-    return Sdf_PathNode::Hash(p);
+    return TfHash()(p);
 }
 
 template <class T>
 struct _HashParentAnd
 {
     inline bool equal(const T &l, const T &r) const {
-        return Sdf_PathNode::Equals(l.parent, r.parent) && l.value == r.value;
+        return l.parent == r.parent && l.value == r.value;
     }
 
     inline size_t hash(const T &t) const {
@@ -125,7 +121,7 @@ struct _HashParentAnd<_ParentAnd<void> >
 {
     inline bool equal(const _ParentAnd<void> &l,
                       const _ParentAnd<void> &r) const {
-        return Sdf_PathNode::Equals(l.parent, r.parent);
+        return l.parent == r.parent;
     }
 
     inline size_t hash(const _ParentAnd<void> &t) const {
@@ -263,8 +259,6 @@ Sdf_PathNode::FindOrCreatePrimProperty(Sdf_PathNodeConstRefPtr const &parent,
 {
     return _FindOrCreate<Sdf_PrimPropertyPathNode>(
         *_primPropertyNodes, parent, name);
-
-    //return Sdf_PrimPropertyPathNode::NewFloatingNode(parent, name);
 }
     
 Sdf_PathNodeConstRefPtr
@@ -281,19 +275,8 @@ Sdf_PathNodeConstRefPtr
 Sdf_PathNode::FindOrCreateTarget(Sdf_PathNodeConstRefPtr const &parent, 
                                  Sdf_PathNodeConstRefPtr const &targetPathNode)
 {
-    // We must ensure that we have an interned parent node if it's a prim
-    // property node.
-    bool makeInternedParent =
-        parent->GetNodeType() == PrimPropertyNode &&
-        !parent->_isInternedPrimPropNode;
-
     return _FindOrCreate<Sdf_TargetPathNode>(
-        *_targetNodes,
-        makeInternedParent
-        ? Sdf_PathNode::FindOrCreatePrimProperty(
-            parent->GetParentNode(), parent->GetName())
-        : parent,
-        SdfPath(targetPathNode));
+        *_targetNodes, parent, SdfPath(targetPathNode));
 }
 
 Sdf_PathNodeConstRefPtr
@@ -310,19 +293,8 @@ Sdf_PathNode
 ::FindOrCreateMapper(Sdf_PathNodeConstRefPtr const &parent, 
                      Sdf_PathNodeConstRefPtr const &targetPathNode)
 {
-    // We must ensure that we have an interned parent node if it's a prim
-    // property node.
-    bool makeInternedParent =
-        parent->GetNodeType() == PrimPropertyNode &&
-        !parent->_isInternedPrimPropNode;
-
     return _FindOrCreate<Sdf_MapperPathNode>(
-        *_mapperNodes,
-        makeInternedParent
-        ? Sdf_PathNode::FindOrCreatePrimProperty(
-            parent->GetParentNode(), parent->GetName())
-        : parent,
-        SdfPath(targetPathNode));
+        *_mapperNodes, parent, SdfPath(targetPathNode));
 }
 
 Sdf_PathNodeConstRefPtr
@@ -335,18 +307,7 @@ Sdf_PathNode::FindOrCreateMapperArg(Sdf_PathNodeConstRefPtr const &parent,
 Sdf_PathNodeConstRefPtr
 Sdf_PathNode::FindOrCreateExpression(Sdf_PathNodeConstRefPtr const &parent)
 {
-    // We must ensure that we have an interned parent node if it's a prim
-    // property node.
-    bool makeInternedParent =
-        parent->GetNodeType() == PrimPropertyNode &&
-        !parent->_isInternedPrimPropNode;
-
-    return _FindOrCreate<Sdf_ExpressionPathNode>(
-        *_expressionNodes,
-        makeInternedParent
-        ? Sdf_PathNode::FindOrCreatePrimProperty(
-            parent->GetParentNode(), parent->GetName())
-        : parent);
+    return _FindOrCreate<Sdf_ExpressionPathNode>(*_expressionNodes, parent);
 }
 
 Sdf_PathNode::Sdf_PathNode(bool isAbsolute) :
@@ -356,7 +317,6 @@ Sdf_PathNode::Sdf_PathNode(bool isAbsolute) :
     _isAbsolute(isAbsolute),
     _containsPrimVariantSelection(false),
     _containsTargetPath(false),
-    _isInternedPrimPropNode(false),
     _hasToken(false)
 {
 }
@@ -514,9 +474,7 @@ Sdf_PrimPathNode::~Sdf_PrimPathNode() {
 }
 
 Sdf_PrimPropertyPathNode::~Sdf_PrimPropertyPathNode() {
-    if (Access::IsInternedPrimPropPath(this)) {
-        _Remove(this, *_primPropertyNodes, GetParentNode(), _name);
-    }
+    _Remove(this, *_primPropertyNodes, GetParentNode(), _name);
 }
 
 const TfToken &
@@ -618,6 +576,7 @@ _GetChildren(Sdf_PathNode const *pathNode)
     _GatherChildrenFrom(pathNode, *_targetNodes, &children);
     _GatherChildrenFrom(pathNode, *_mapperArgNodes, &children);
     _GatherChildrenFrom(pathNode, *_primNodes, &children);
+    _GatherChildrenFrom(pathNode, *_primPropertyNodes, &children);
     _GatherChildrenFrom(pathNode, *_relAttrNodes, &children);
     _GatherChildrenFrom(pathNode, *_primVarSelNodes, &children);
     _GatherChildrenFrom(pathNode, *_expressionNodes, &children);

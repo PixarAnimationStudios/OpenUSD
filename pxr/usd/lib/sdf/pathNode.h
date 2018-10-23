@@ -180,13 +180,6 @@ public:
     SDF_API
     const TfToken &GetPathToken() const;
 
-    // Equality check, accounting for interned & non-interned prim property
-    // nodes.
-    static inline bool Equals(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs);
-    
-    // Hash, accounting for interned & non-interned prim property nodes.
-    static inline size_t Hash(Sdf_PathNode const *p);
-    
     // Lexicographic ordering for Compare().
     struct LessThan {
         template <class T>
@@ -205,8 +198,7 @@ public:
     unsigned int GetCurrentRefCount() const { return _refCount; }
 
 protected:
-    Sdf_PathNode(Sdf_PathNodeConstRefPtr const &parent, NodeType nodeType,
-                 bool isInternedPrimPropNode=true)
+    Sdf_PathNode(Sdf_PathNodeConstRefPtr const &parent, NodeType nodeType)
         : _parent(parent)
         , _refCount(0)
         , _elementCount(parent->_elementCount + 1)
@@ -218,7 +210,6 @@ protected:
         , _containsTargetPath(nodeType == TargetNode ||
                               nodeType == MapperNode ||
                               parent->_containsTargetPath)
-        , _isInternedPrimPropNode(isInternedPrimPropNode)
         , _hasToken(false)
         {}
     
@@ -277,7 +268,6 @@ private:
     const bool _isAbsolute:1;
     const bool _containsPrimVariantSelection:1;
     const bool _containsTargetPath:1;
-    const bool _isInternedPrimPropNode:1;
 
     // This is racy -- we ensure that the token creation code carefully
     // synchronizes so that if we read 'true' from this flag, it guarantees that
@@ -345,29 +335,10 @@ public:
 
     TF_MALLOC_TAG_NEW("Sdf", "new Sdf_PrimPropertyPathNode");
 
-    // Return this prim property node's property name.
-    TfToken const &GetName() const { return _name; }
-    
-    // Create a "floating" non-interned prim property path node.  This is used
-    // by SdfPath::AppendProperty() to let us create property paths as quickly
-    // as possible.  These path nodes are not allowed to have children -- so
-    // target, mapper, expression nodes, will never have one of these as their
-    // parent.  Also, equality comparisons and hash functions are carefully
-    // written to ensure that interned and non-interned prim property nodes
-    // always behave the same.
-    static Sdf_PathNodeConstRefPtr
-    NewFloatingNode(Sdf_PathNodeConstRefPtr const &parent,
-                    const TfToken &name) {
-        return Sdf_PathNodeConstRefPtr(
-            new Sdf_PrimPropertyPathNode(
-                parent, name, /*isInternedPrimPropNode=*/false));
-    }
-
 private:
     Sdf_PrimPropertyPathNode(Sdf_PathNodeConstRefPtr const &parent,
-                             const TfToken &name,
-                             bool isInternedPrimPropNode=true)
-        : Sdf_PathNode(parent, nodeType, isInternedPrimPropNode)
+                             const TfToken &name)
+        : Sdf_PathNode(parent, nodeType)
         , _name(name) {}
 
     SDF_API ~Sdf_PrimPropertyPathNode();
@@ -573,42 +544,6 @@ template <> struct Sdf_PathNodeTypeToType<Sdf_PathNode::ExpressionNode> {
 template <> struct Sdf_PathNodeTypeToType<Sdf_PathNode::RootNode> {
     typedef Sdf_RootPathNode Type;
 };
-
-inline bool
-Sdf_PathNode::Equals(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs) {
-    if (lhs == rhs) {
-        return true;
-    }
-    if (!lhs || !rhs) {
-        return false;
-    }
-    auto lhsNodeType = lhs->GetNodeType();
-    if (lhsNodeType != PrimPropertyNode) {
-        return false;
-    }
-    auto rhsNodeType = rhs->GetNodeType();
-    if (rhsNodeType != PrimPropertyNode) {
-        return false;
-    }
-    auto pplhs = lhs->_Downcast<Sdf_PrimPropertyPathNode>();
-    auto pprhs = rhs->_Downcast<Sdf_PrimPropertyPathNode>();
-    return pplhs->_parent == pprhs->_parent && pplhs->_name == pprhs->_name;
-}
-
-inline size_t
-Sdf_PathNode::Hash(Sdf_PathNode const *p) {
-    size_t result = 0;
-    if (p) {
-        if (p->GetNodeType() == Sdf_PathNode::PrimPropertyNode) {
-            auto pp = p->_Downcast<Sdf_PrimPropertyPathNode>();
-            result = ((uintptr_t)(pp->_parent.get()) >> 5) ^ pp->_name.Hash();
-        }
-        else {
-            result = (uintptr_t)(p) >> 5;
-        }
-    }
-    return result;
-}
 
 template <int nodeType, class Comp>
 struct Sdf_PathNodeCompare {

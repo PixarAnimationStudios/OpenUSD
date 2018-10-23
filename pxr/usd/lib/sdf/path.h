@@ -630,7 +630,7 @@ public:
     /// Equality operator.
     /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
-        return _NodesEqual(_pathNode, rhs._pathNode);
+        return _pathNode == rhs._pathNode;
     }
 
     /// Comparison operator.
@@ -648,7 +648,8 @@ public:
     // For hash maps and sets
     struct Hash {
         inline size_t operator()(const SdfPath& path) const {
-            return _HashInternal(path._pathNode);
+            // Assumption: heap allocated path nodes are aligned on 32b.
+            return size_t(path._pathNode.get()) >> 5;
         }
     };
 
@@ -659,7 +660,9 @@ public:
     // For cases where an unspecified total order that is not stable from
     // run-to-run is needed.
     struct FastLessThan {
-        inline bool operator()(const SdfPath& a, const SdfPath& b) const;
+        bool operator()(const SdfPath& a, const SdfPath& b) const {
+            return a._pathNode < b._pathNode;
+        }
     };
 
     /// @}
@@ -710,17 +713,6 @@ private:
     _LessThanInternal(Sdf_PathNodeConstRefPtr const &lhs,
                       Sdf_PathNodeConstRefPtr const &rhs);
 
-    SDF_API static size_t _HashInternal(Sdf_PathNodeConstRefPtr const &ptr);
-
-    static inline bool
-    _NodesEqual(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs);
-
-    static inline bool
-    _NodesEqual(Sdf_PathNodeConstRefPtr const &lhs,
-                Sdf_PathNodeConstRefPtr const &rhs) {
-        return _NodesEqual(lhs.get(), rhs.get());
-    }
-        
     friend void swap(SdfPath &lhs, SdfPath &rhs) {
         lhs._pathNode.swap(rhs._pathNode);
     }
@@ -811,44 +803,5 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // so we can inline the ref-counting operations, which must manipulate
 // its internal _refCount member.
 #include "pxr/usd/sdf/pathNode.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-inline bool
-SdfPath::FastLessThan::operator()(const SdfPath& a, const SdfPath& b) const
-{
-    // Prim property path nodes are not unique, so we have to treat them
-    // specially.
-    Sdf_PathNode const *lhs = a._pathNode.get();
-    Sdf_PathNode const *rhs = b._pathNode.get();
-    if (!lhs || !rhs) {
-        return !lhs && rhs;
-    }
-    auto lhsNodeType = lhs->GetNodeType();
-    auto rhsNodeType = rhs->GetNodeType();
-
-    if (lhsNodeType != rhsNodeType) {
-        return lhsNodeType < rhsNodeType;
-    }
-
-    if (lhsNodeType == Sdf_PathNode::PrimPropertyNode) {
-        auto pplhs = static_cast<Sdf_PrimPropertyPathNode const *>(lhs);
-        auto pprhs = static_cast<Sdf_PrimPropertyPathNode const *>(rhs);
-        auto lhsparent = pplhs->GetParentNode().get();
-        auto rhsparent = pprhs->GetParentNode().get();
-        return lhsparent < rhsparent ||
-            (lhsparent == rhsparent && TfTokenFastArbitraryLessThan()(
-                pplhs->GetName(), pprhs->GetName()));
-    }
-
-    return lhs < rhs;
-}
-
-inline bool
-SdfPath::_NodesEqual(Sdf_PathNode const *lhs, Sdf_PathNode const *rhs) {
-    return (lhs == rhs) || Sdf_PathNode::Equals(lhs, rhs);
-}
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PATH_H
