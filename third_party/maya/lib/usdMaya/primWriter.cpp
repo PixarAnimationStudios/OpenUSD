@@ -150,7 +150,7 @@ UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
 
     // Note that the prim may not actually conform to this schema, so we must
     // check it for validity before using it below.
-    UsdGeomImageable imageable = UsdGeomImageable(_usdPrim);
+    UsdGeomImageable imageable(_usdPrim);
 
     // Visibility is unfortunately special when merging transforms and shapes
     // in that visibility is "pruning" and cannot be overridden by descendants.
@@ -205,7 +205,8 @@ UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
         // Gprim attrs here.
         // We imagine that many, but not all, prim writers will write Gprims,
         // so it's OK to skip writing if this isn't a Gprim.
-        if (UsdGeomGprim gprim = UsdGeomGprim(_usdPrim)) {
+        UsdGeomGprim gprim(_usdPrim);
+        if (gprim) {
             UsdMayaTranslatorGprim::Write(GetMayaObject(), gprim, nullptr);
         }
 
