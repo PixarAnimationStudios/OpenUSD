@@ -24,25 +24,43 @@
 #include "usdMaya/writeJobContext.h"
 
 #include "usdMaya/instancedNodeWriter.h"
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/primWriter.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/skelBindingsProcessor.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/transformWriter.h"
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/xform.h"
 
+#include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MFn.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MItDag.h>
+#include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MPxNode.h>
 
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,22 +72,26 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Shape)
 );
 
+
 namespace {
-    inline SdfPath
-    _GetRootOverridePath(
-        const UsdMayaJobExportArgs& args,
-        const SdfPath& path)
-    {
-        if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
-            return path.ReplacePrefix(
-                    path.GetPrefixes()[0],
-                    args.usdModelRootOverridePath);
-        }
-        return path;
+
+inline
+SdfPath
+_GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
+{
+    if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
+        return path.ReplacePrefix(
+            path.GetPrefixes()[0],
+            args.usdModelRootOverridePath);
     }
 
-    const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
+    return path;
 }
+
+const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
+
+} // anonymous namespace
+
 
 UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
     : mArgs(args),
@@ -95,6 +117,12 @@ bool
 UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
     if (!mArgs.mergeTransformAndShape) {
+        return false;
+    }
+
+    MStatus status;
+    const bool isDagPathValid = path.isValid(&status);
+    if (status != MS::kSuccess || !isDagPathValid) {
         return false;
     }
 
