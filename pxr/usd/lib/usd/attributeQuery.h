@@ -102,17 +102,11 @@ public:
         return GetAttribute().IsValid();
     }
 
-#ifdef doxygen
-    /// Safe bool-conversion operator.  Equivalent to IsValid().
-    operator unspecified-bool-type() const();
-#else
-private:
-    typedef const UsdAttribute UsdAttributeQuery::*_UnspecifiedBoolType;
 public:
-    operator _UnspecifiedBoolType() const {
-        return IsValid() ? &UsdAttributeQuery::_attr : NULL;
+    /// Returns \c true if the query object is valid, \c false otherwise.
+    explicit operator bool() const {
+        return IsValid();
     }
-#endif // doxygen
 
     /// @}
 
