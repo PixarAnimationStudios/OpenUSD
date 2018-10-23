@@ -129,7 +129,8 @@ private:
     /// 
     /// This obtains the shading source.
     std::string _GetShaderSource(UsdPrim const& prim,
-                                 TfToken const& shaderType) const;
+                                 TfToken const& shaderType,
+                                 VtDictionary * metadataOut = nullptr) const;
 
     /// \brief Returns the root "surface" shader prim for the material, by 
     /// traversing which the entire hydra shading network can be discovered.

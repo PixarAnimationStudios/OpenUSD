@@ -350,9 +350,12 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
         std::string surfaceSource;
         std::string displacementSource;
 
+        VtDictionary surfaceMetadata;
+
         if (surfaceShaderPrim) {
             surfaceSource = _GetShaderSource(surfaceShaderPrim,
-                                             _tokens->surfaceShader);
+                                             _tokens->surfaceShader,
+                                             &surfaceMetadata);
         }
 
         if (displacementShaderPrim) {
@@ -362,7 +365,10 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
 
         // DirtySurfaceShader triggers a refresh of both shader sources.
         valueCache->GetSurfaceShaderSource(cachePath) = surfaceSource;
-        valueCache->GetDisplacementShaderSource(cachePath) = displacementSource;
+        valueCache->GetDisplacementShaderSource(cachePath) =
+                                                        displacementSource;
+        valueCache->GetMaterialMetadata(cachePath) =
+                                            VtValue(surfaceMetadata);
 
         // Extract the primvars
         valueCache->GetMaterialPrimvars(cachePath) = primvars;
@@ -440,11 +446,15 @@ UsdImagingGLHydraMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
 std::string
 UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
     UsdPrim const& shaderPrim, 
-    TfToken const& shaderType) const
+    TfToken const& shaderType,
+    VtDictionary * metadataOut) const
 {
-    auto getGLSLFXSource = [&shaderType](const GlfGLSLFX &gfx) {
+    auto getGLSLFXSource = [&shaderType, &metadataOut](const GlfGLSLFX &gfx) {
         if (!gfx.IsValid()){
             return std::string();
+        }
+        if (metadataOut) {
+            *metadataOut = gfx.GetMetadata();
         }
         if (shaderType == _tokens->surfaceShader){
             return gfx.GetSurfaceSource();

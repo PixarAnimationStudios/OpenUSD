@@ -2793,5 +2793,35 @@ UsdImagingDelegate::GetMaterialPrimvars(SdfPath const &materialId)
     return TfTokenVector();
 }
 
+VtDictionary
+UsdImagingDelegate::GetMaterialMetadata(SdfPath const &materialId)
+{
+
+    HD_TRACE_FUNCTION();
+
+    if (!TF_VERIFY(materialId != SdfPath())) {
+        return VtDictionary();
+    }
+
+    // If custom shading is disabled, use fallback
+    if (!_sceneMaterialsEnabled) {
+        return VtDictionary();
+    }
+
+    SdfPath usdPath = GetPathForUsd(materialId);
+    VtValue value;
+
+    if (!_valueCache.ExtractMaterialMetadata(usdPath, &value)) {
+        TF_DEBUG(HD_SAFE_MODE).Msg(
+            "WARNING: Slow material metadata fetch for %s\n",
+            materialId.GetText());
+        // MaterialMetadata updates along with DirtySurfaceShader
+        _UpdateSingleValue(usdPath, HdMaterial::DirtySurfaceShader);
+        TF_VERIFY(_valueCache.ExtractMaterialMetadata(usdPath, &value));
+    }
+
+    return value.GetWithDefault<VtDictionary>();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
