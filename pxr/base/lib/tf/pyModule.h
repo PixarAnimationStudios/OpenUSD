@@ -72,14 +72,12 @@ void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-// In presto, when we generate boost python bindings for a library
-// named Foo, we generate the library contents in libFoo.so, we
-// generate a python package in a directory named Foo that has
-// __init__.py and _Foo.so, and we put all the python bindings in
-// _Foo.so.  The __init__.py file imports _Foo and then publishes
-// _Foo's symbols as its own.  Since the module with the bindings is
-// named _Foo, the init routine must be named init_Foo.  This little
-// block produces that function.
+// When we generate boost python bindings for a library named Foo, 
+// we generate a python package that has __init__.py and _Foo.so, 
+// and we put all the python bindings in _Foo.so.  The __init__.py 
+// file imports _Foo and then publishes _Foo's symbols as its own.  
+// Since the module with the bindings is named _Foo, the init routine 
+// must be named init_Foo.  This little block produces that function.
 //
 extern "C"
 ARCH_EXPORT
@@ -90,9 +88,8 @@ void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
          BOOST_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
 }
 
-// Boost wrapped 2x code follows a different pattern.  Both the
-// library contents and the python bindings go into libfoo.so (2x uses
-// lower case library names).  We still generate a package named foo
+// We also support the case where both the library contents and the 
+// python bindings go into libfoo.so.  We still generate a package named foo
 // but the __init__.py file in the package foo imports libfoo and
 // publishes it's symbols as its own.  Since the module with the
 // bindings is named libfoo, the init routine must be named initlibfoo.
@@ -115,4 +112,4 @@ void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
 #define TF_WRAP_MODULE static void WrapModule()
 
 // Declares and calls the class wrapper for x
-#define TF_WRAP(x) void wrap ## x (); wrap ## x ()
+#define TF_WRAP(x) ARCH_HIDDEN void wrap ## x (); wrap ## x ()
