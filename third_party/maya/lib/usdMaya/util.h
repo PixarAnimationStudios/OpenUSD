@@ -220,9 +220,9 @@ bool isAncestorDescendentRelationship(
 PXRUSDMAYA_API
 int getSampledType(const MPlug& iPlug, const bool includeConnectedChildren);
 
-// determine if a Maya Object is animated or not
+/// Determine if the Maya object \p mayaObject is animated or not
 PXRUSDMAYA_API
-bool isAnimated(MObject& object, const bool checkParent = false);
+bool isAnimated(const MObject& mayaObject, const bool checkParent = false);
 
 // Determine if a specific Maya plug is animated or not.
 PXRUSDMAYA_API
