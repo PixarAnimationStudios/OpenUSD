@@ -185,10 +185,6 @@ class TfIterator {
         _IteratorPairAndCopy, _IteratorPair
         >::type _Data;
 
-    // Use a pointer-to-member safe bool idiom so that TfIterator instances can
-    // be converted to bool, but won't implicitly convert to integral types.
-    typedef const _Data (TfIterator::*_UnspecifiedBoolType);
-
 public:
     // Choose either iterator or const_iterator for Iterator depending on
     // whether T is const.
@@ -295,10 +291,10 @@ public:
         return _data.current.operator->();
     }   
 
-    /// Returns true if this Iterator has not been exhausted.
-    /// \return true if this Iterator has not been exhausted
-    operator _UnspecifiedBoolType() const {
-        return _data.current == _data.end ? 0 : &TfIterator::_data;
+    /// Explicit bool conversion operator.
+    /// The Iterator object converts to true if it has not been exhausted.
+    explicit operator bool() const {
+        return !(_data.current == _data.end);
     }
 
     /// Returns an \c STL iterator that has the same position as this
