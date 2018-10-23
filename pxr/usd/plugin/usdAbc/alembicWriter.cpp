@@ -1376,7 +1376,7 @@ _CheckSample(
                 message.c_str());
         return false;
     }
-    return sample;
+    return static_cast<bool>(sample);
 }
 
 // An object we can use for mapping in _MakeIndexed.  It holds a pointer to

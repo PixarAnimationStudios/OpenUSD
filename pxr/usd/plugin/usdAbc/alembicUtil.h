@@ -192,10 +192,6 @@ struct UsdAbc_AlembicType : boost::totally_ordered<UsdAbc_AlembicType> {
 /// templatizing them.
 class UsdAbc_AlembicDataAny {
 public:
-#if !defined(doxygen)
-    typedef bool (UsdAbc_AlembicDataAny::*_UnspecifiedBoolType)() const;
-#endif
-
     /// Construct an empty any.
     UsdAbc_AlembicDataAny() { }
 
@@ -230,17 +226,11 @@ public:
         return _valuePtr.which() == 0;
     }
 
-    /// Returns \c true iff constructed with a NULL pointer.
-    bool operator!() const
-    {
-        return _valuePtr.which() == 0;
-    }
-
-    /// Returns value convertable to \c true in a boolean expression iff
+    /// Explicit bool conversion operator. Converts to true iff this object was 
     /// constructed with a non-NULL pointer.
-    operator _UnspecifiedBoolType() const
+    explicit operator bool() const
     {
-        return IsEmpty() ? 0 : &UsdAbc_AlembicDataAny::IsEmpty;
+        return !IsEmpty();
     }
 
 private:
@@ -336,10 +326,6 @@ struct _ExtractSampleForAlembic<VtArray<T> > {
 /// providing a common interface to several forms of data.
 class _SampleForAlembic {
 public:
-#if !defined(doxygen)
-    typedef bool (_SampleForAlembic::*_UnspecifiedBoolType)() const;
-#endif
-
     typedef std::vector<uint32_t> IndexArray;
     typedef boost::shared_ptr<IndexArray> IndexArrayPtr;
 
@@ -419,16 +405,11 @@ public:
         return _value.IsError(message);
     }
 
-    /// Returns a value evaluating to \c true iff the data is valid.
-    operator _UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. Converts to \c true iff the data is 
+    /// valid.
+    explicit operator bool() const
     {
-        return _IsValid() ? &_SampleForAlembic::_IsValid : 0;
-    }
-
-    /// Returns \c false iff the data is valid.
-    bool operator!() const
-    {
-        return !_IsValid();
+        return _IsValid();
     }
 
     /// Returns the raw data.
