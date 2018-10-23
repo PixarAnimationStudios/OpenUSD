@@ -42,8 +42,8 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/concurrent_unordered_map.h>
 
-#include <iostream>
 #include <map>
+#include <ostream>
 #include <string>
 #include <typeindex>
 #include <typeinfo>

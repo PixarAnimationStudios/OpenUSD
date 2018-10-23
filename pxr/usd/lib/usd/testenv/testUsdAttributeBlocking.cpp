@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/references.h"
 
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 #include <string>
 #include <tuple>

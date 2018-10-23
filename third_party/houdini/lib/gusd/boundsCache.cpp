@@ -23,6 +23,8 @@
 //
 #include "boundsCache.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cerr;

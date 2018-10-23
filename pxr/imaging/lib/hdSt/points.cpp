@@ -43,6 +43,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/base/vt/value.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStPoints::HdStPoints(SdfPath const& id,

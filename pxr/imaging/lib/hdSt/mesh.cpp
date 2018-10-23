@@ -64,6 +64,7 @@
 
 #include "pxr/base/vt/value.h"
 
+#include <iostream>
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE

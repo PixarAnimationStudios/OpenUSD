@@ -49,6 +49,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include <iostream>
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE

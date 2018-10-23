@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include <boost/functional/hash.hpp>
+#include <iostream>
 #include <unordered_map>
 #include <set>
 

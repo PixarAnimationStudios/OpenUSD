@@ -51,6 +51,8 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/vt/value.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
