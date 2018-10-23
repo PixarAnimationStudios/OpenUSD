@@ -298,6 +298,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                       HdxIntersector::Result* result)
 {
     TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // XXX: Check if we're using the stream render delegate. The current
     // implementation needs to be extended to be truly backend agnostic.
