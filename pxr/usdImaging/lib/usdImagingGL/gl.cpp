@@ -25,7 +25,7 @@
 
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-#include "pxr/usdImaging/usdImagingGL/refEngine.h"
+#include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -44,12 +44,12 @@ _InitEngine(const SdfPath& rootPath,
         return new UsdImagingGLHdEngine(rootPath, excludedPaths,
                                         invisedPaths, delegateID);
     } else {
-        // In the refEngine, both excluded paths and invised paths are treated
-        // the same way.
+        // In the legacy engine, both excluded paths and invised paths are 
+        // treated the same way.
         SdfPathVector pathsToExclude = excludedPaths;
         pathsToExclude.insert(pathsToExclude.end(), 
             invisedPaths.begin(), invisedPaths.end());
-        return new UsdImagingGLRefEngine(pathsToExclude);
+        return new UsdImagingGLLegacyEngine(pathsToExclude);
     }
 }
 

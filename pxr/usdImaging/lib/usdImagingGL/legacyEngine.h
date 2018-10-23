@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGINGGL_REFENGINE_H
-#define USDIMAGINGGL_REFENGINE_H
+#ifndef USDIMAGINGGL_LEGACY_ENGINE_H
+#define USDIMAGINGGL_LEGACY_ENGINE_H
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/api.h"
@@ -44,17 +44,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DECLARE_WEAK_PTRS(UsdImagingGLRefEngine);
+TF_DECLARE_WEAK_PTRS(UsdImagingGLLegacyEngine);
 
-class UsdImagingGLRefEngine : public UsdImagingGLEngine, public TfWeakBase {
-    typedef UsdImagingGLRefEngine This;
+class UsdImagingGLLegacyEngine : public UsdImagingGLEngine, public TfWeakBase {
+    typedef UsdImagingGLLegacyEngine This;
 public:
 
     USDIMAGINGGL_API
-    UsdImagingGLRefEngine(const SdfPathVector& excludedPaths);
+    UsdImagingGLLegacyEngine(const SdfPathVector& excludedPaths);
 
     USDIMAGINGGL_API
-    ~UsdImagingGLRefEngine();
+    ~UsdImagingGLLegacyEngine();
 
     // Entry point for kicking off a render
     USDIMAGINGGL_API
@@ -265,4 +265,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGINGGL_REFENGINE_H
+#endif // USDIMAGINGGL_LEGACY_ENGINE_H

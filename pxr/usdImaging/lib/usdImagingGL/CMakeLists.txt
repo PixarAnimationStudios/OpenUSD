@@ -58,7 +58,7 @@ pxr_library(usdImagingGL
 
     PRIVATE_CLASSES
         hdEngine
-        refEngine
+        legacyEngine
         textureUtils
 
     PRIVATE_HEADERS
