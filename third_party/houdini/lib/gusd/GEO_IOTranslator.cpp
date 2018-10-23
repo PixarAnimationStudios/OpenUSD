@@ -100,7 +100,10 @@ fileLoad(GEO_Detail* gdp, UT_IStream& is, bool ate_magic)
         return GA_Detail::IOStatus( false );
     }
 
-    float f = CHgetSampleFromTime( CHgetEvalTime() );
+    float f = 1.0;
+
+    if (CH_Manager::getContextExists())
+	CHgetSampleFromTime( CHgetEvalTime() );
 
     GU_Detail* detail = dynamic_cast<GU_Detail *>(gdp); 
     if( !detail ) {
