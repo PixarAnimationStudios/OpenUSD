@@ -47,7 +47,7 @@ PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(
         UsdGeomTokens->purpose, "USD_purpose");
 
 TF_DEFINE_PRIVATE_TOKENS(
-        _tokens, 
+        _tokens,
 
         (USD_inheritClassNames)
 );
@@ -94,14 +94,14 @@ UsdMayaPrimWriter::_IsMergedShape() const
 }
 
 // In the future, we'd like to make this a plugin point.
-static bool 
+static bool
 _GetClassNamesToWrite(
         MObject mObj,
         std::vector<std::string>* outClassNames)
 {
     std::vector<std::string> ret;
     if (UsdMayaWriteUtil::ReadMayaAttribute(
-            MFnDependencyNode(mObj), 
+            MFnDependencyNode(mObj),
             MString(_tokens->USD_inheritClassNames.GetText()),
             outClassNames)) {
         return true;
@@ -147,10 +147,10 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
             isAnimated = isAnimated || parentAnimated;
         }
 
-        TfToken const &visibilityTok = (isVisible ? UsdGeomTokens->inherited : 
+        TfToken const &visibilityTok = (isVisible ? UsdGeomTokens->inherited :
                                         UsdGeomTokens->invisible);
         if (usdTime.IsDefault() != isAnimated) {
-            _SetAttribute(primSchema.CreateVisibilityAttr(VtValue(), true), 
+            _SetAttribute(primSchema.CreateVisibilityAttr(VtValue(), true),
                           visibilityTok,
                           usdTime);
         }
@@ -196,10 +196,13 @@ UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
                 GetDagPath().node(), usdPrim, _GetSparseValueWriter());
     }
 
-    // Write out user-tagged attributes, which are supported at default time and
-    // at animated time-samples.
-    UsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
-            usdTime, _GetSparseValueWriter());
+    // Write out user-tagged attributes, which are supported at default time
+    // and at animated time-samples.
+    UsdMayaWriteUtil::WriteUserExportedAttributes(
+        GetDagPath().node(),
+        usdPrim,
+        usdTime,
+        _GetSparseValueWriter());
 }
 
 bool
@@ -216,7 +219,7 @@ UsdMayaPrimWriter::ShouldPruneChildren() const
 
 void
 UsdMayaPrimWriter::PostExport()
-{ 
+{
 }
 
 void

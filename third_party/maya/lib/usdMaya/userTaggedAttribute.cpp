@@ -24,19 +24,30 @@
 #include "pxr/pxr.h"
 #include "usdMaya/userTaggedAttribute.h"
 
+#include "usdMaya/util.h"
+
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
 #include <set>
+#include <string>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaUserTaggedAttributeTokens,
+TF_DEFINE_PUBLIC_TOKENS(
+    UsdMayaUserTaggedAttributeTokens,
     PXRUSDMAYA_ATTR_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -47,6 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (translateMayaDoubleToUsdSinglePrecision)
     ((UserPropertiesNamespace, "userProperties:"))
 );
+
 
 UsdMayaUserTaggedAttribute::UsdMayaUserTaggedAttribute(
         const MPlug& plug,
@@ -134,33 +146,39 @@ _GetExportAttributeMetadata(
 /* static */
 std::vector<UsdMayaUserTaggedAttribute>
 UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
-        const MDagPath& dagPath)
+        const MObject& mayaNode)
 {
-    MStatus status;
-    MFnDependencyNode depFn(dagPath.node());
     std::vector<UsdMayaUserTaggedAttribute> result;
-    std::set<std::string> processedAttributeNames;
 
-    MPlug exportedAttrsJsonPlug = depFn.findPlug(
-        _tokens->USD_UserExportedAttributesJson.GetText(), true, &status);
+    MStatus status;
+    const MFnDependencyNode depNodeFn(mayaNode, &status);
+    if (status != MS::kSuccess) {
+        return result;
+    }
+
+    const MPlug exportedAttrsJsonPlug =
+        depNodeFn.findPlug(
+            _tokens->USD_UserExportedAttributesJson.GetText(),
+            true,
+            &status);
     if (status != MS::kSuccess || exportedAttrsJsonPlug.isNull()) {
         // No attributes specified for export on this node.
         return result;
     }
 
-    std::string exportedAttrsJsonString(
+    const std::string exportedAttrsJsonString(
         exportedAttrsJsonPlug.asString().asChar());
     if (exportedAttrsJsonString.empty()) {
         return result;
     }
 
     JsParseError jsError;
-    JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
+    const JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
     if (!jsValue) {
         TF_RUNTIME_ERROR(
-            "Failed to parse USD exported attributes JSON on node at"
-            " dagPath '%s' at line %d, column %d: %s",
-            dagPath.fullPathName().asChar(),
+            "Failed to parse USD exported attributes JSON on node '%s' "
+            "at line %d, column %d: %s",
+            UsdMayaUtil::GetMayaNodeName(mayaNode).c_str(),
             jsError.line, jsError.column, jsError.reason.c_str());
         return result;
     }
@@ -168,17 +186,18 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
     // If an attribute is multiply-defined, we'll use the first tag encountered
     // and issue warnings for the subsequent definitions. JsObject is really
     // just a std::map, so we'll be considering attributes in sorted order.
+    std::set<std::string> processedAttributeNames;
     const JsObject& exportedAttrs = jsValue.GetJsObject();
     for (const auto& exportedAttr : exportedAttrs) {
         const std::string mayaAttrName = exportedAttr.first;
 
-        const MPlug attrPlug = depFn.findPlug(
-                mayaAttrName.c_str(), true, &status);
+        const MPlug attrPlug =
+            depNodeFn.findPlug(mayaAttrName.c_str(), true, &status);
         if (status != MS::kSuccess || attrPlug.isNull()) {
             TF_RUNTIME_ERROR(
-                "Could not find attribute '%s' for USD export on node at"
-                " dagPath '%s'",
-                mayaAttrName.c_str(), dagPath.fullPathName().asChar());
+                "Could not find attribute '%s' for USD export on node '%s'",
+                mayaAttrName.c_str(),
+                UsdMayaUtil::GetMayaNodeName(mayaNode).c_str());
             continue;
         }
 
@@ -187,19 +206,19 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         // Check if this is a particular type of attribute (e.g. primvar or
         // usdRi attribute). If we don't recognize the type specified, we'll
         // fall back to a regular USD attribute.
-        TfToken usdAttrType(
+        const TfToken usdAttrType(
             _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrType));
 
         // Check whether an interpolation type was specified. This is only
         // relevant for primvars.
-        TfToken interpolation(
+        const TfToken interpolation(
             _GetExportAttributeMetadata(attrMetadata,
                                         UsdGeomTokens->interpolation));
 
         // Check whether it was specified that the double precision Maya
         // attribute type should be mapped to a single precision USD type.
         // If it wasn't specified, use the fallback value.
-        bool translateMayaDoubleToUsdSinglePrecision(
+        const bool translateMayaDoubleToUsdSinglePrecision(
             _GetExportAttributeMetadata(
                 attrMetadata,
                 _tokens->translateMayaDoubleToUsdSinglePrecision,
@@ -211,7 +230,7 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
         if (usdAttrName.empty()) {
             const auto& tokens = UsdMayaUserTaggedAttributeTokens;
-            if (usdAttrType == tokens->USDAttrTypePrimvar || 
+            if (usdAttrType == tokens->USDAttrTypePrimvar ||
                     usdAttrType == tokens->USDAttrTypeUsdRi) {
                 // Primvars and UsdRi attributes will be given a type-specific
                 // namespace, so just use the Maya attribute name.
@@ -228,9 +247,10 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         const auto& insertIter = processedAttributeNames.emplace(usdAttrName);
         if (!insertIter.second) {
             TF_RUNTIME_ERROR(
-                "Ignoring duplicate USD export tag for attribute '%s' on node"
-                " at dagPath '%s'",
-                usdAttrName.c_str(), dagPath.fullPathName().asChar());
+                "Ignoring duplicate USD export tag for attribute '%s' "
+                "on node '%s'",
+                usdAttrName.c_str(),
+                UsdMayaUtil::GetMayaNodeName(mayaNode).c_str());
             continue;
         }
 
@@ -244,5 +264,5 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
     return result;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE
