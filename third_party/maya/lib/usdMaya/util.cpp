@@ -77,6 +77,37 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
+std::string
+UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
+{
+    MString nodeName;
+    MStatus status;
+
+    // All DAG nodes are also DG nodes, so try it as a DG node first.
+    const MFnDependencyNode depNodeFn(mayaNode, &status);
+    if (status == MS::kSuccess) {
+#if MAYA_API_VERSION >= 20180000
+        const MString depName = depNodeFn.absoluteName(&status);
+#else
+        const MString depName = depNodeFn.name(&status);
+#endif
+        if (status == MS::kSuccess) {
+            nodeName = depName;
+        }
+    }
+
+    // Overwrite the DG name if we find that it's a DAG node.
+    const MFnDagNode dagNodeFn(mayaNode, &status);
+    if (status == MS::kSuccess) {
+        const MString dagName = dagNodeFn.fullPathName(&status);
+        if (status == MS::kSuccess) {
+            nodeName = dagName;
+        }
+    }
+
+    return nodeName.asChar();
+}
+
 MStatus
 UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 {

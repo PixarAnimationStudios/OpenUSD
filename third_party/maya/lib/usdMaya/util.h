@@ -169,6 +169,19 @@ ConvertCMToMM(const double cm)
     return cm * MillimetersPerCentimeter;
 }
 
+/// Get the full name of the Maya node \p mayaNode.
+///
+/// If \p mayaNode refers to a DAG node (i.e. supports the MFnDagNode function
+/// set), then the name returned will be the DAG node's full path name.
+///
+/// If \p mayaNode refers to a DG node (i.e. supports the MFnDependencyNode
+/// function set), then the name returned will be the DG node's absolute name.
+///
+/// If \p mayaNode is not one of these or if an error is encountered, an
+/// empty string will be returned.
+PXRUSDMAYA_API
+std::string GetMayaNodeName(const MObject& mayaNode);
+
 /// Gets the Maya MObject for the node named \p nodeName.
 PXRUSDMAYA_API
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
