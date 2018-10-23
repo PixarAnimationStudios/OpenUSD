@@ -634,21 +634,11 @@ public:
         return _editor && _editor->IsExpired();
     }
 
-#if !defined(doxygen)
-    typedef boost::shared_ptr<Sdf_MapEditor<Type> > This::*UnspecifiedBoolType;
-#endif
-
-    /// Returns \c true in a boolean context if the value is valid,
-    /// \c false otherwise.
-    operator UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. Returns \c true if the value is 
+    /// valid, \c false otherwise.
+    explicit operator bool() const
     {
-        return _ConstData() && !IsExpired() ? &This::_editor : NULL;
-    }
-    /// Returns \c false in a boolean context if the value is valid,
-    /// \c true otherwise.
-    bool operator!() const
-    {
-        return !_ConstData() || IsExpired();
+        return _ConstData() && !IsExpired();
     }
 
 private:

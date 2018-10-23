@@ -353,22 +353,11 @@ public:
         return _view == other._view;
     }
 
-#if !defined(doxygen)
-    typedef void(This::*_UnspecifiedBoolType)() const;
-    void _UnspecifiedBool() const {}
-#endif
-
-    /// Returns \c true in a boolean context if the proxy is valid,
-    /// \c false otherwise.
-    operator _UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. The proxy object converts to 
+    /// \c true if it is valid, \c false otherwise.
+    explicit operator bool() const
     {
-        return _view.IsValid() ? &This::_UnspecifiedBool : 0;
-    }
-    /// Returns \c false in a boolean context if the proxy is valid,
-    /// \c true otherwise.
-    bool operator!() const
-    {
-        return !_view.IsValid();
+        return _view.IsValid();
     }
 
 private:
