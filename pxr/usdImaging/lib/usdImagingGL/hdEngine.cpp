@@ -79,7 +79,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
 {
     // _renderIndex, _taskController, and _delegate are initialized
     // by the plugin system.
-    if (!SetRendererPlugin(GetDefaultRendererPluginId())) {
+    if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
         TF_CODING_ERROR("No renderer plugins found! Check before creation.");
     }
 }
@@ -840,8 +840,9 @@ UsdImagingGLHdEngine::IsDefaultRendererPluginAvailable()
     return !descs.empty();
 }
 
+/* static */
 TfToken
-UsdImagingGLHdEngine::GetDefaultRendererPluginId()
+UsdImagingGLHdEngine::_GetDefaultRendererPluginId()
 {
     std::string defaultRendererDisplayName = 
         TfGetenv("HD_DEFAULT_RENDERER", "");

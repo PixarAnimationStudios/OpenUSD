@@ -72,9 +72,6 @@ public:
     static bool IsDefaultRendererPluginAvailable();
 
     USDIMAGINGGL_API
-    static TfToken GetDefaultRendererPluginId();
-
-    USDIMAGINGGL_API
     virtual ~UsdImagingGLHdEngine();
 
     USDIMAGINGGL_API
@@ -225,6 +222,8 @@ private:
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
     void _DeleteHydraResources();
+
+    static TfToken _GetDefaultRendererPluginId();
 
     HdEngine _engine;
 
