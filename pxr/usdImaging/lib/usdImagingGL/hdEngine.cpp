@@ -832,15 +832,6 @@ UsdImagingGLHdEngine::GetCurrentRendererId() const
 }
 
 /* static */
-bool
-UsdImagingGLHdEngine::IsDefaultRendererPluginAvailable()
-{
-    HfPluginDescVector descs;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&descs);
-    return !descs.empty();
-}
-
-/* static */
 TfToken
 UsdImagingGLHdEngine::_GetDefaultRendererPluginId()
 {

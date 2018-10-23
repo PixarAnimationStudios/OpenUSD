@@ -59,17 +59,11 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingGLHdEngine : public UsdImagingGLEngine
 {
 public:
-    // Important! Call UsdImagingGLHdEngine::IsDefaultRendererPluginAvailable()
-    // before construction; if no plugins are available, the class will only
-    // get halfway constructed.
     USDIMAGINGGL_API
     UsdImagingGLHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
                        const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
-
-    USDIMAGINGGL_API
-    static bool IsDefaultRendererPluginAvailable();
 
     USDIMAGINGGL_API
     virtual ~UsdImagingGLHdEngine();
