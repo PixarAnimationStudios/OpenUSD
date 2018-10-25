@@ -43,6 +43,7 @@
 #include "pxr/usd/usd/timeCode.h"
 
 #include <maya/MArgDatabase.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
@@ -508,6 +509,9 @@ PXRUSDMAYA_API
 bool FindAncestorSceneAssembly(
         const MDagPath& dagPath,
         MDagPath* assemblyPath = nullptr);
+
+PXRUSDMAYA_API
+MBoundingBox GetInfiniteBoundingBox();
 
 } // namespace UsdMayaUtil
 

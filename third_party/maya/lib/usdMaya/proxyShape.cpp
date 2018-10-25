@@ -27,6 +27,7 @@
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
@@ -651,7 +652,7 @@ MBoundingBox
 UsdMayaProxyShape::boundingBox() const
 {
     if (_useFastPlayback) {
-        return MBoundingBox();
+        return UsdMayaUtil::GetInfiniteBoundingBox();
     }
 
     MStatus status;

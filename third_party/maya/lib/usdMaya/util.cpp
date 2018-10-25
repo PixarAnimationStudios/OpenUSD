@@ -42,6 +42,7 @@
 #include <maya/MAnimUtil.h>
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
@@ -63,6 +64,7 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -1828,4 +1830,11 @@ UsdMayaUtil::FindAncestorSceneAssembly(
         currentPath.pop();
     }
     return false;
+}
+
+MBoundingBox
+UsdMayaUtil::GetInfiniteBoundingBox()
+{
+    constexpr double inf = std::numeric_limits<double>::infinity();
+    return MBoundingBox(MPoint(-inf, -inf, -inf), MPoint(inf, inf, inf));
 }
