@@ -66,8 +66,9 @@ _IsHydraEnabled()
 
 } // anonymous namespace
 
-
-UsdImagingGLEngine::~UsdImagingGLEngine() { /*nothing*/ }
+//----------------------------------------------------------------------------
+// Global State
+//----------------------------------------------------------------------------
 
 /*static*/
 bool
@@ -78,6 +79,66 @@ UsdImagingGLEngine::IsHydraEnabled()
     static bool isHydraEnabled = _IsHydraEnabled();
     return isHydraEnabled;
 }
+
+//----------------------------------------------------------------------------
+// Construction
+//----------------------------------------------------------------------------
+
+UsdImagingGLEngine::~UsdImagingGLEngine()
+{ 
+    /*nothing*/ 
+}
+
+//----------------------------------------------------------------------------
+// Rendering
+//----------------------------------------------------------------------------
+
+/* virtual */
+void
+UsdImagingGLEngine::PrepareBatch(const UsdPrim& root, 
+    const UsdImagingGLRenderParams& params)
+{
+    // By default, do nothing.
+}
+
+/* virtual */
+void
+UsdImagingGLEngine::RenderBatch(const SdfPathVector& paths, 
+    const UsdImagingGLRenderParams& params)
+{
+    // By default, do nothing.
+}
+
+/* virtual */
+bool
+UsdImagingGLEngine::IsConverged() const
+{
+    // always converges by default.
+    return true;
+}
+
+
+//----------------------------------------------------------------------------
+// Root and Transform Visibility
+//----------------------------------------------------------------------------
+
+/* virtual */
+void
+UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
+{
+    // By default, do nothing.
+}
+
+/* virtual */
+void
+UsdImagingGLEngine::SetRootVisibility(bool isVisible)
+{
+    // By default, do nothing.
+}
+
+//----------------------------------------------------------------------------
+// Camera and Light State
+//----------------------------------------------------------------------------
 
 /*virtual*/
 void 
@@ -123,20 +184,9 @@ UsdImagingGLEngine::SetLightingState(GlfSimpleLightVector const &lights,
     // By default, do nothing.
 }
 
-
-/* virtual */
-void
-UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
-{
-    // By default, do nothing.
-}
-
-/* virtual */
-void
-UsdImagingGLEngine::SetRootVisibility(bool isVisible)
-{
-    // By default, do nothing.
-}
+//----------------------------------------------------------------------------
+// Selection Highlighting
+//----------------------------------------------------------------------------
 
 /* virtual */
 void
@@ -166,21 +216,9 @@ UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
     // By default, do nothing.
 }
 
-/* virtual */
-void
-UsdImagingGLEngine::PrepareBatch(const UsdPrim& root, 
-    const UsdImagingGLRenderParams& params)
-{
-    // By default, do nothing.
-}
-
-/* virtual */
-void
-UsdImagingGLEngine::RenderBatch(const SdfPathVector& paths, 
-    const UsdImagingGLRenderParams& params)
-{
-    // By default, do nothing.
-}
+//----------------------------------------------------------------------------
+// Picking
+//----------------------------------------------------------------------------
 
 /* virtual */
 SdfPath
@@ -231,13 +269,9 @@ UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
     return SdfPath();
 }
 
-/* virtual */
-bool
-UsdImagingGLEngine::IsConverged() const
-{
-    // always converges by default.
-    return true;
-}
+//----------------------------------------------------------------------------
+// Renderer Plugin Management
+//----------------------------------------------------------------------------
 
 /* virtual */
 TfTokenVector
@@ -267,6 +301,10 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
     return false;
 }
 
+//----------------------------------------------------------------------------
+// AOVs and Renderer Settings
+//----------------------------------------------------------------------------
+
 /* virtual */
 TfTokenVector
 UsdImagingGLEngine::GetRendererAovs() const
@@ -279,13 +317,6 @@ bool
 UsdImagingGLEngine::SetRendererAov(TfToken const &id)
 {
     return false;
-}
-
-/* virtual */
-VtDictionary
-UsdImagingGLEngine::GetResourceAllocation() const
-{
-    return VtDictionary();
 }
 
 /* virtual */
@@ -308,6 +339,21 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id,
                                        VtValue const& value)
 {
 }
+
+//----------------------------------------------------------------------------
+// Resource Information
+//----------------------------------------------------------------------------
+
+/* virtual */
+VtDictionary
+UsdImagingGLEngine::GetResourceAllocation() const
+{
+    return VtDictionary();
+}
+
+//----------------------------------------------------------------------------
+// Private/Protected
+//----------------------------------------------------------------------------
 
 /* virtual */
 HdRenderIndex *

@@ -64,6 +64,22 @@ TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
 ///
 class UsdImagingGLEngine {
 public:
+
+    // ---------------------------------------------------------------------
+    /// \name Global State
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Returns true if Hydra is enabled for GL drawing.
+    USDIMAGINGGL_API
+    static bool IsHydraEnabled();
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Construction
+    /// @{
+    // ---------------------------------------------------------------------
     UsdImagingGLEngine() = default;
 
     // Disallow copies
@@ -73,15 +89,12 @@ public:
     USDIMAGINGGL_API
     virtual ~UsdImagingGLEngine();
 
-    /// Returns true if Hydra is enabled for GL drawing.
-    USDIMAGINGGL_API
-    static bool IsHydraEnabled();
+    /// @}
 
-    struct HitInfo {
-        GfVec3d worldSpaceHitPoint;
-        int hitInstanceIndex;
-    };
-    typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
+    // ---------------------------------------------------------------------
+    /// \name Rendering
+    /// @{
+    // ---------------------------------------------------------------------
 
     /// Support for batched drawing
     USDIMAGINGGL_API
@@ -97,6 +110,34 @@ public:
 
     virtual void InvalidateBuffers() = 0;
 
+    /// Returns true if the resulting image is fully converged.
+    /// (otherwise, caller may need to call Render() again to refine the result)
+    USDIMAGINGGL_API
+    virtual bool IsConverged() const;
+
+
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name Root Transform and Visibility
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Sets the root transform.
+    USDIMAGINGGL_API
+    virtual void SetRootTransform(GfMatrix4d const& xf);
+
+    /// Sets the root visibility.
+    USDIMAGINGGL_API
+    virtual void SetRootVisibility(bool isVisible);
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Camera and Light State
+    /// @{
+    // ---------------------------------------------------------------------
+    
     USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
@@ -125,19 +166,16 @@ public:
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
-    /// Sets the root transform.
-    USDIMAGINGGL_API
-    virtual void SetRootTransform(GfMatrix4d const& xf);
+    /// @}
 
-    /// Sets the root visibility.
-    USDIMAGINGGL_API
-    virtual void SetRootVisibility(bool isVisible);
+    // ---------------------------------------------------------------------
+    /// \name Selection Highlighting
+    /// @{
+    // ---------------------------------------------------------------------
 
-    // selection highlighting
-
-    /// Sets (replaces) the list of prim paths that should be included in selection
-    /// highlighting. These paths may include root paths which will be expanded
-    /// internally.
+    /// Sets (replaces) the list of prim paths that should be included in 
+    /// selection highlighting. These paths may include root paths which will 
+    /// be expanded internally.
     USDIMAGINGGL_API
     virtual void SetSelected(SdfPathVector const& paths);
 
@@ -156,15 +194,22 @@ public:
     USDIMAGINGGL_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name Picking
+    /// @{
+    // ---------------------------------------------------------------------
+    
     /// Finds closest point of intersection with a frustum by rendering.
     ///	
     /// This method uses a PickRender and a customized depth buffer to find an
     /// approximate point of intersection by rendering. This is less accurate
-    /// than implicit methods or rendering with GL_SELECT, but leverages any data
-    /// already cached in the renderer.
+    /// than implicit methods or rendering with GL_SELECT, but leverages any 
+    /// data already cached in the renderer.
     ///
-    /// Returns whether a hit occurred and if so, \p outHitPoint will contain the
-    /// intersection point in world space (i.e. \p projectionMatrix and
+    /// Returns whether a hit occurred and if so, \p outHitPoint will contain
+    /// the intersection point in world space (i.e. \p projectionMatrix and
     /// \p viewMatrix factored back out of the result).
     ///
     USDIMAGINGGL_API
@@ -182,30 +227,41 @@ public:
 
     /// A callback function to control collating intersection test hits.
     /// See the documentation for TestIntersectionBatch() below for more detail.
-    typedef std::function< SdfPath(const SdfPath&, const SdfPath&, const int) > PathTranslatorCallback;
+    typedef std::function< SdfPath(const SdfPath&, const SdfPath&, const int) >
+        PathTranslatorCallback;
+
+    struct HitInfo {
+        GfVec3d worldSpaceHitPoint;
+        int hitInstanceIndex;
+    };
+    typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
+
 
     /// Finds closest point of intersection with a frustum by rendering a batch.
     ///
     /// This method uses a PickRender and a customized depth buffer to find an
     /// approximate point of intersection by rendering. This is less accurate
-    /// than implicit methods or rendering with GL_SELECT, but leverages any data
-    /// already cached in the renderer. The resolution of the pick renderer is
-    /// controlled through \p pickResolution.
+    /// than implicit methods or rendering with GL_SELECT, but leverages any 
+    /// data already cached in the renderer. The resolution of the pick 
+    /// renderer is controlled through \p pickResolution.
     ///
-    /// In batched selection scenarios, the path desired may not be as granular as
-    /// the leaf-level prim. For example, one might want to find the closest hit
-    /// for all prims underneath a certain path scope, or ignore others altogether.
+    /// In batched selection scenarios, the path desired may not be as granular
+    /// as the leaf-level prim. For example, one might want to find the closest
+    /// hit for all prims underneath a certain path scope, or ignore others 
+    /// altogether.
+    ///
     /// The \p pathTranslator receives an \c SdfPath pointing to the hit prim
     /// as well as an \c SdfPath pointing to the instancer prim and an integer
     /// instance index in the case where the hit is an instanced object. It may
     /// return an empty path (signifying an ignored hit), or a different
     /// simplified path altogether.
     ///
-    /// Returned hits are collated by the translated \c SdfPath above, and placed
-    /// in the structure pointed to by \p outHit. For each \c SdfPath in the
-    /// \c HitBatch, the closest found hit point and instance id is given. The
-    /// intersection point returned is in world space (i.e. \p projectionMatrix
-    /// and \p viewMatrix factored back out of the result).
+    /// Returned hits are collated by the translated \c SdfPath above, and
+    /// placed in the structure pointed to by \p outHit. For each \c SdfPath in
+    /// the \c HitBatch, the closest found hit point and instance id is given.
+    /// The intersection point returned is in world space 
+    /// (i.e. \p projectionMatrix and \p viewMatrix factored back out of the 
+    /// result).
     ///
     /// \c outHit is not cleared between consecutive runs -- this allows
     /// hits to be accumulated across multiple calls to \cTestIntersection. Hits
@@ -232,7 +288,6 @@ public:
     ///
     USDIMAGINGGL_API
     virtual SdfPath GetRprimPathFromPrimId(int primId) const;
-
 
     /// Using colors extracted from an Id render, returns the associated
     /// prim path and optional instance index.
@@ -272,10 +327,12 @@ public:
         SdfPath * rprimPath=NULL,
         SdfPathVector *instanceContext=NULL);
 
-    /// Returns true if the resulting image is fully converged.
-    /// (otherwise, caller may need to call Render() again to refine the result)
-    USDIMAGINGGL_API
-    virtual bool IsConverged() const;
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name Renderer Plugin Management
+    /// @{
+    // ---------------------------------------------------------------------
 
     /// Return the vector of available render-graph delegate plugins.
     USDIMAGINGGL_API
@@ -294,6 +351,13 @@ public:
     USDIMAGINGGL_API
     virtual bool SetRendererPlugin(TfToken const &id);
 
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name AOVs and Renderer Settings
+    /// @{
+    // ---------------------------------------------------------------------
+
     /// Return the vector of available renderer AOV settings.
     USDIMAGINGGL_API
     virtual TfTokenVector GetRendererAovs() const;
@@ -301,10 +365,6 @@ public:
     /// Set the current renderer AOV to \p id.
     USDIMAGINGGL_API
     virtual bool SetRendererAov(TfToken const& id);
-
-    /// Returns GPU resource allocation info
-    USDIMAGINGGL_API
-    virtual VtDictionary GetResourceAllocation() const;
 
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
@@ -318,6 +378,20 @@ public:
     USDIMAGINGGL_API
     virtual void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Resource Information
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Returns GPU resource allocation info
+    USDIMAGINGGL_API
+    virtual VtDictionary GetResourceAllocation() const;
+
+    /// @}
+
 
 protected:
 
