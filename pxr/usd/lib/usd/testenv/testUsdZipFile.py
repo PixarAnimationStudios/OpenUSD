@@ -66,6 +66,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.size, 82)
         self.assertEqual(fileInfo.uncompressedSize, 82)
         self.assertEqual(fileInfo.compressionMethod, 0)
+        self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile(
             "src/a.txt", zf, "a.txt", fixLineEndings)
 
@@ -74,6 +75,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.size, 7228)
         self.assertEqual(fileInfo.uncompressedSize, 7228)
         self.assertEqual(fileInfo.compressionMethod, 0)
+        self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile("src/b.png", zf, "b.png")
 
         fileInfo = zf.GetFileInfo("sub/c.png")
@@ -81,6 +83,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.size, 6139)
         self.assertEqual(fileInfo.uncompressedSize, 6139)
         self.assertEqual(fileInfo.compressionMethod, 0)
+        self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile("src/sub/c.png", zf, "sub/c.png")
 
         fileInfo = zf.GetFileInfo("sub/d.txt")
@@ -88,6 +91,7 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.size, 87)
         self.assertEqual(fileInfo.uncompressedSize, 87)
         self.assertEqual(fileInfo.compressionMethod, 0)
+        self.assertFalse(fileInfo.encrypted)
         self._ValidateSourceAndZippedFile(
             "src/sub/d.txt", zf, "sub/d.txt", fixLineEndings)
         
@@ -128,12 +132,14 @@ class TestUsdZipFile(unittest.TestCase):
         self.assertEqual(fileInfo.size, _GetFileSize("src/a.txt"))
         self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.txt"))
         self.assertEqual(fileInfo.compressionMethod, 0)
+        self.assertFalse(fileInfo.encrypted)
 
         fileInfo = zf.GetFileInfo("b.png")
         self.assertEqual(fileInfo.dataOffset, 192)
         self.assertEqual(fileInfo.size, 7228)
         self.assertEqual(fileInfo.uncompressedSize, 7228)
         self.assertEqual(fileInfo.compressionMethod, 0)
+        self.assertFalse(fileInfo.encrypted)
 
         self._ValidateSourceAndZippedFile(
             "src/a.txt", zf, "src/a.txt", dontFixLineEndings)

@@ -126,6 +126,8 @@ wrapUsdZipFile()
                 &UsdZipFile::FileInfo::uncompressedSize)
             .def_readonly("compressionMethod", 
                 &UsdZipFile::FileInfo::compressionMethod)
+            .def_readonly("encrypted",
+                &UsdZipFile::FileInfo::encrypted)
             ;
     }
 
