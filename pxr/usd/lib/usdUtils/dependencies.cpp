@@ -811,8 +811,8 @@ private:
     static std::string _RemapAssetPath(
         const std::string &refPath, 
         const SdfLayerRefPtr &layer,
-        const std::string &origRootFilePath, 
-        const std::string &rootFilePath, 
+        const std::string origRootFilePath, 
+        const std::string rootFilePath, 
         const std::string &firstLayerName,
         _DirectoryRemapper *dirRemapper,
         _PathType *pathType);
@@ -821,8 +821,8 @@ private:
 std::string 
 _AssetLocalizer::_RemapAssetPath(const std::string &refPath, 
                                  const SdfLayerRefPtr &layer,
-                                 const std::string &origRootFilePath,
-                                 const std::string &rootFilePath, 
+                                 std::string origRootFilePath,
+                                 std::string rootFilePath, 
                                  const std::string &firstLayerName,
                                  _DirectoryRemapper *dirRemapper,
                                  _PathType *pathType)
@@ -868,11 +868,18 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
         *pathType = _PathType::AbsolutePath;
     }
 
+    // Normalize paths compared below to account for path format differences.
+    const std::string layerPath = 
+        resolver.ComputeNormalizedPath(layer->GetRealPath());
+    result = resolver.ComputeNormalizedPath(result);
+    rootFilePath = resolver.ComputeNormalizedPath(rootFilePath);
+    origRootFilePath = resolver.ComputeNormalizedPath(origRootFilePath);
+
     bool resultPointsToRoot = ((result == rootFilePath) || 
                                (result == origRootFilePath));
     // If this is a self-reference, then remap to a relative path that points 
     // to the file itself.
-    if (result == layer->GetRealPath()) {
+    if (result == layerPath) {
         // If this is a self-reference in the root layer and we're renaming the 
         // root layer, simply set the reference path to point to the renamed 
         // root layer.
@@ -882,14 +889,12 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
    
     // References to the original (unflattened) root file need to be remapped 
     // to point to the new root file.
-    if (resultPointsToRoot && layer->GetRealPath() == rootFilePath) {
+    if (resultPointsToRoot && layerPath == rootFilePath) {
         return !firstLayerName.empty() ? firstLayerName : TfGetBaseName(result);
     }
 
     // Result is now an absolute or a repository path. Simply strip off the 
     // leading slashes to make it relative.
-    result = resolver.ComputeNormalizedPath(result);
-
     // Strip off any drive letters.
     if (result.size() >= 2 && result[1] == ':') {
         result.erase(0, 2);
