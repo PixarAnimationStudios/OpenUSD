@@ -26,6 +26,7 @@
 from pxr.Usdviewq.qt import QtWidgets
 
 def _modifySettings(appController):
+    appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = True
     appController._dataModel.viewSettings.showHUD_Performance = False
 

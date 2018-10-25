@@ -189,17 +189,21 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // the GL framebuffer.
     if (_aovBindings.size() == 0) {
         _converged = _colorBuffer.IsConverged() && _depthBuffer.IsConverged();
-        _colorBuffer.Resolve();
-        uint8_t *cdata = _colorBuffer.Map();
-        if (cdata) {
-            _compositor.UpdateColor(_width, _height, cdata);
-            _colorBuffer.Unmap();
-        }
-        _depthBuffer.Resolve();
-        uint8_t *ddata = _depthBuffer.Map();
-        if (ddata) {
-            _compositor.UpdateDepth(_width, _height, ddata);
-            _depthBuffer.Unmap();
+        // To reduce flickering, don't update the compositor until every pixel
+        // has a sample (as determined by depth buffer convergence).
+        if (_depthBuffer.IsConverged()) {
+            _colorBuffer.Resolve();
+            uint8_t *cdata = _colorBuffer.Map();
+            if (cdata) {
+                _compositor.UpdateColor(_width, _height, cdata);
+                _colorBuffer.Unmap();
+            }
+            _depthBuffer.Resolve();
+            uint8_t *ddata = _depthBuffer.Map();
+            if (ddata) {
+                _compositor.UpdateDepth(_width, _height, ddata);
+                _depthBuffer.Unmap();
+            }
         }
         _compositor.Draw();
     }
