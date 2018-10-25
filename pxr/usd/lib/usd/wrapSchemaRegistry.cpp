@@ -104,5 +104,8 @@ void wrapUsdSchemaRegistry()
              (arg("apiSchemaType")))
         .staticmethod("IsMultipleApplyAPISchema")
 
+        .def("GetTypeFromName", &UsdSchemaRegistry::GetTypeFromName, 
+            (arg("typeName")))
+        .staticmethod("GetTypeFromName")
         ;
 }

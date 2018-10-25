@@ -106,6 +106,12 @@ UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
 }
 
 bool
+UsdPrim::IsA(const TfType& schemaType) const
+{
+    return _IsA(schemaType, true);
+}
+
+bool
 UsdPrim::_HasAPI(
     const TfType& schemaType, 
     bool validateSchemaType, 
@@ -212,6 +218,11 @@ UsdPrim::_HasAPI(
     }
 
     return false;
+}
+
+bool
+UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const{
+    return _HasAPI(schemaType, true, instanceName);
 }
 
 std::vector<UsdProperty>
