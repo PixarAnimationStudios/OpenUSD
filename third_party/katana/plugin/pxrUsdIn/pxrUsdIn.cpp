@@ -216,6 +216,7 @@ public:
             lightListEditor.Build();
             
             interface.setAttr("info.usdOpArgs", opArgs);
+            interface.setAttr("info.usd.outputSession", usdInArgs->GetSessionAttr());
         }
         
         if (FnAttribute::IntAttribute(
@@ -227,6 +228,9 @@ public:
                 .build();
             
             interface.setAttr("info.usdOpArgs", opArgs);
+            interface.setAttr("info.usd.outputSession", usdInArgs->GetSessionAttr());
+
+
         }
         
         
