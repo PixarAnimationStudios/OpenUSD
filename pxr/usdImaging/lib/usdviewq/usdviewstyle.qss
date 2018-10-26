@@ -466,7 +466,14 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 /* *** QMenuBar ***
  * Style the menu bar 
  */
-QMenuBar {
+QMenuBar#menubar {
+    font-size: 10pt;
+    background: rgb(80, 80, 80);
+    border: 2px solid rgb(41, 41, 41);
+}
+
+QMenuBar#primViewMenuBar {
+    font-size: 8pt;
     background: rgb(80, 80, 80);
     border: 2px solid rgb(41, 41, 41);
 }

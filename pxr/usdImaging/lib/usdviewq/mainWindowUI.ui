@@ -110,6 +110,58 @@
           <number>6</number>
          </property>
          <item>
+          <widget class="QMenuBar" name="primViewMenuBar">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="nativeMenuBar">
+            <bool>false</bool>
+           </property>
+           <widget class="QMenu" name="menuNavigation">
+            <property name="title">
+             <string>&amp;Navigation</string>
+            </property>
+            <addaction name="actionFind_Prims"/>
+            <addaction name="actionSelect_Stage_Root"/>
+            <addaction name="actionSelect_Model_Root"/>
+            <addaction name="separator"/>
+            <addaction name="actionSelect_Bound_Preview_Material"/>
+            <addaction name="actionSelect_Bound_Full_Material"/>
+            <addaction name="actionSelect_Preview_Binding_Relationship"/>
+            <addaction name="actionSelect_Full_Binding_Relationship"/>
+           </widget>
+           <widget class="QMenu" name="menuShow">
+            <property name="title">
+             <string>&amp;Show</string>
+            </property>
+            <widget class="QMenu" name="menuPrim_View_Depth">
+             <property name="title">
+              <string>Prim View Depth</string>
+             </property>
+             <addaction name="actionLevel_1"/>
+             <addaction name="actionLevel_2"/>
+             <addaction name="actionLevel_3"/>
+             <addaction name="actionLevel_4"/>
+             <addaction name="actionLevel_5"/>
+             <addaction name="actionLevel_6"/>
+             <addaction name="actionLevel_7"/>
+             <addaction name="actionLevel_8"/>
+             <addaction name="separator"/>
+             <addaction name="actionExpand_All"/>
+             <addaction name="actionCollapse_All"/>
+            </widget>
+            <addaction name="menuPrim_View_Depth"/>
+            <addaction name="separator"/>
+            <addaction name="actionShow_Inactive_Prims"/>
+            <addaction name="actionShow_All_Master_Prims"/>
+            <addaction name="actionShow_Undefined_Prims"/>
+            <addaction name="actionShow_Abstract_Prims"/>
+           </widget>
+           <addaction name="menuNavigation"/>
+           <addaction name="menuShow"/>
+          </widget>
+         </item>
+         <item>
           <widget class="QTreeWidget" name="primView">
            <property name="font">
             <font>
@@ -221,6 +273,9 @@
              </property>
              <property name="focusPolicy">
               <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Prim legend</string>
              </property>
              <property name="text">
               <string>?</string>
@@ -421,6 +476,9 @@
              </property>
              <property name="focusPolicy">
               <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Property legend</string>
              </property>
              <property name="text">
               <string>?</string>
@@ -1116,7 +1174,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1138,26 +1196,33 @@
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
-   <widget class="QMenu" name="menuOptions">
+   <widget class="QMenu" name="menuEdit">
+        <property name="title">
+            <string>&amp;Edit</string>
+        </property>
+        <widget class="QMenu" name="menuInterpolation">
+            <property name="title">
+            <string>Stage Interpolation</string>
+            </property>
+        </widget>
+        <addaction name="menuInterpolation"/>
+        <addaction name="separator"/>
+        <addaction name="actionLoad"/>
+        <addaction name="actionUnload"/>
+        <addaction name="separator"/>
+        <addaction name="actionActivate"/>
+        <addaction name="actionDeactivate"/>
+        <addaction name="separator"/>
+        <addaction name="actionMake_Visible"/>
+        <addaction name="actionVis_Only"/>
+        <addaction name="actionMake_Invisible"/>
+        <addaction name="actionRemove_Session_Visibility"/>
+        <addaction name="actionReset_All_Session_Visibility"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
     <property name="title">
-     <string>&amp;Options</string>
+     <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menuPrim_View_Depth">
-     <property name="title">
-      <string>Prim View Depth</string>
-     </property>
-     <addaction name="actionLevel_1"/>
-     <addaction name="actionLevel_2"/>
-     <addaction name="actionLevel_3"/>
-     <addaction name="actionLevel_4"/>
-     <addaction name="actionLevel_5"/>
-     <addaction name="actionLevel_6"/>
-     <addaction name="actionLevel_7"/>
-     <addaction name="actionLevel_8"/>
-     <addaction name="separator"/>
-     <addaction name="actionExpand_All"/>
-     <addaction name="actionCollapse_All"/>
-    </widget>
     <widget class="QMenu" name="menuHUD">
      <property name="title">
       <string>Heads-Up Display</string>
@@ -1194,23 +1259,6 @@
      <addaction name="actionAlways"/>
      <addaction name="menuHighlightColor"/>
     </widget>
-    <addaction name="menuHUD"/>
-    <addaction name="separator"/>
-    <addaction name="menuPrim_View_Depth"/>
-    <addaction name="actionShow_Inactive_Prims"/>
-    <addaction name="actionShow_All_Master_Prims"/>
-    <addaction name="actionShow_Undefined_Prims"/>
-    <addaction name="actionShow_Abstract_Prims"/>
-    <addaction name="separator"/>
-    <addaction name="actionRollover_Prim_Info"/>
-    <addaction name="separator"/>
-    <addaction name="menuPickMode"/>
-    <addaction name="menuSelection_Highlighting"/>
-   </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>&amp;View</string>
-    </property>
     <widget class="QMenu" name="menuLights">
      <property name="enabled">
       <bool>true</bool>
@@ -1307,11 +1355,6 @@
      <addaction name="separator"/>
      <addaction name="useExtentsHint"/>
     </widget>
-    <widget class="QMenu" name="menuInterpolation">
-     <property name="title">
-      <string>Interpolation</string>
-     </property>
-    </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
       <string>Hydra Renderer</string>
@@ -1362,7 +1405,13 @@
     <addaction name="menuCamera"/>
     <addaction name="menuCameraGuides"/>
     <addaction name="menuDisplay"/>
-    <addaction name="menuInterpolation"/>
+    <addaction name="separator"/>
+    <addaction name="menuHUD"/>
+    <addaction name="separator"/>
+    <addaction name="menuPickMode"/>
+    <addaction name="menuSelection_Highlighting"/>
+    <addaction name="actionRollover_Prim_Info"/>
+    <addaction name="separator"/>
     <addaction name="actionEnable_Scene_Materials"/>
     <addaction name="actionDisplay_PrimId"/>
     <addaction name="actionCull_Backfaces"/>
@@ -1379,39 +1428,13 @@
     </property>
     <addaction name="showInterpreter"/>
    </widget>
-   <widget class="QMenu" name="menuEdit_Prim">
-    <property name="title">
-     <string>Edit Prim(s)</string>
-    </property>
-    <addaction name="actionFind_Prims"/>
-    <addaction name="actionJump_to_Stage_Root"/>
-    <addaction name="actionJump_to_Model_Root"/>
-    <addaction name="separator"/>
-    <addaction name="actionJump_to_Bound_Preview_Material"/>
-    <addaction name="actionJump_to_Bound_Full_Material"/>
-    <addaction name="actionSelect_Preview_Binding_Relationship"/>
-    <addaction name="actionSelect_Full_Binding_Relationship"/>
-    <addaction name="separator"/>
-    <addaction name="actionMake_Visible"/>
-    <addaction name="actionVis_Only"/>
-    <addaction name="actionMake_Invisible"/>
-    <addaction name="actionRemove_Session_Visibility"/>
-    <addaction name="actionReset_All_Session_Visibility"/>
-    <addaction name="separator"/>
-    <addaction name="actionLoad"/>
-    <addaction name="actionUnload"/>
-    <addaction name="separator"/>
-    <addaction name="actionActivate"/>
-    <addaction name="actionDeactivate"/>
-   </widget>
    <widget class="QMenu" name="menuDebug">
     <property name="title">
      <string>Debug</string>
     </property>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit_Prim"/>
-   <addaction name="menuOptions"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuDebug"/>
@@ -2079,7 +2102,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Inactive Prims</string>
+    <string>Inactive Prims</string>
    </property>
   </action>
   <action name="showAABBox">
@@ -2212,12 +2235,12 @@
     <string>Deactivate</string>
    </property>
   </action>
-  <action name="actionJump_to_Model_Root">
+  <action name="actionSelect_Model_Root">
    <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Jump to Enclosing Model</string>
+    <string>Select Enclosing Model</string>
    </property>
    <property name="shortcut">
     <string>\</string>
@@ -2271,7 +2294,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Master Prims</string>
+    <string>Master Prims</string>
    </property>
   </action>
   <action name="actionShow_Undefined_Prims">
@@ -2279,7 +2302,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Undefined Prims (Overs)</string>
+    <string>Undefined Prims (Overs)</string>
    </property>
   </action>
   <action name="actionShow_Abstract_Prims">
@@ -2287,7 +2310,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Abstract Prims (Classes)</string>
+    <string>Abstract Prims (Classes)</string>
    </property>
   </action>
   <action name="actionPick_Prims">
@@ -2419,9 +2442,9 @@
     <string>Unload</string>
    </property>
   </action>
-  <action name="actionJump_to_Bound_Preview_Material">
+  <action name="actionSelect_Bound_Preview_Material">
    <property name="text">
-    <string>Jump to Bound Preview Material</string>
+    <string>Select Bound Preview Material</string>
    </property>
    <property name="shortcut">
     <string>Shift+L</string>
@@ -2454,9 +2477,9 @@
     <string>Ctrl+F</string>
    </property>
   </action>
-  <action name="actionJump_to_Stage_Root">
+  <action name="actionSelect_Stage_Root">
    <property name="text">
-    <string>Jump to Stage Root</string>
+    <string>Select Stage Root</string>
    </property>
    <property name="shortcut">
     <string>|</string>
@@ -2545,9 +2568,9 @@
     <string>Very High</string>
    </property>
   </action>
-  <action name="actionJump_to_Bound_Full_Material">
+  <action name="actionSelect_Bound_Full_Material">
    <property name="text">
-    <string>Jump to Bound Full Material</string>
+    <string>Select Bound Full Material</string>
    </property>
   </action>
   <action name="actionSelect_Preview_Binding_Relationship">

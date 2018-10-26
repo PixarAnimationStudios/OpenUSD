@@ -42,7 +42,8 @@ from headerContextMenu import HeaderContextMenu
 from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import (_GetCustomAttributes, CustomAttribute,
-                              BoundingBoxAttribute, LocalToWorldXformAttribute)
+                              BoundingBoxAttribute, LocalToWorldXformAttribute,
+                              ResolvedBoundMaterial)
 from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
@@ -51,11 +52,13 @@ from constantGroup import ConstantGroup
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
-from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttributeColor, GetAttributeTextFont,
+from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
+                    GetPropertyColor, GetPropertyTextFont,
                     Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
-                    PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, RenderModes, ShadedRenderModes,
+                    PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
+                    RenderModes, ShadedRenderModes,
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
@@ -125,7 +128,6 @@ class UsdviewDataModel(RootDataModel):
     @property
     def viewSettings(self):
         return self._viewSettingsDataModel
-
 
 class UIStateProxySource(StateSource):
     """XXX Temporary class which allows AppController to serve as two state sources.
@@ -956,21 +958,22 @@ class AppController(QtCore.QObject):
             self._ui.attributeValueEditor.editComplete.connect(self.editComplete)
 
             # Edit Prim menu
-            self._ui.menuEdit_Prim.aboutToShow.connect(self._updateEditPrimMenu)
+            self._ui.menuEdit.aboutToShow.connect(self._updateEditMenu)
+            self._ui.menuNavigation.aboutToShow.connect(self._updateNavigationMenu)
 
             self._ui.actionFind_Prims.triggered.connect(
                 self._ui.primViewLineEdit.setFocus)
 
-            self._ui.actionJump_to_Stage_Root.triggered.connect(
+            self._ui.actionSelect_Stage_Root.triggered.connect(
                 self.selectPseudoroot)
 
-            self._ui.actionJump_to_Model_Root.triggered.connect(
+            self._ui.actionSelect_Model_Root.triggered.connect(
                 self.selectEnclosingModel)
 
-            self._ui.actionJump_to_Bound_Preview_Material.triggered.connect(
+            self._ui.actionSelect_Bound_Preview_Material.triggered.connect(
                 self.selectBoundPreviewMaterial)
 
-            self._ui.actionJump_to_Bound_Full_Material.triggered.connect(
+            self._ui.actionSelect_Bound_Full_Material.triggered.connect(
                 self.selectBoundFullMaterial)
 
             self._ui.actionSelect_Preview_Binding_Relationship.triggered.connect(
@@ -1566,7 +1569,7 @@ class AppController(QtCore.QObject):
         the active stage.
         """
         self._resetPrimView()
-        self._updateAttributeView()
+        self._updatePropertyView()
 
         self._populateAttributeInspector()
         self._updateMetadataView()
@@ -1878,7 +1881,7 @@ class AppController(QtCore.QObject):
             nextResult = self._attrSearchResults.popleft()
             itemName = str(nextResult.text(PropertyViewIndex.NAME))
 
-            selectedProp = self._attributeDict[itemName]
+            selectedProp = self._propertiesDict[itemName]
             if isinstance(selectedProp, CustomAttribute):
                 self._dataModel.selection.clearProps()
                 self._dataModel.selection.setComputedProp(selectedProp)
@@ -2100,7 +2103,7 @@ class AppController(QtCore.QObject):
     def _setUseExtentsHint(self):
         self._dataModel.useExtentsHint = self._ui.useExtentsHint.isChecked()
 
-        self._updateAttributeView()
+        self._updatePropertyView()
 
         #recompute and display bbox
         self._refreshBBox()
@@ -2461,7 +2464,7 @@ class AppController(QtCore.QObject):
 
                 # Get the owning property's set of selected targets.
                 propName = str(item.parent().text(PropertyViewIndex.NAME))
-                prop = self._attributeDict[propName]
+                prop = self._propertiesDict[propName]
                 targets = selectedProperties.setdefault(prop, set())
 
                 # Add the target to the set of targets.
@@ -2478,7 +2481,7 @@ class AppController(QtCore.QObject):
             else:
 
                 propName = str(item.text(PropertyViewIndex.NAME))
-                prop = self._attributeDict[propName]
+                prop = self._propertiesDict[propName]
                 selectedProperties.setdefault(prop, set())
 
         with self._dataModel.selection.batchPropChanges:
@@ -2519,7 +2522,7 @@ class AppController(QtCore.QObject):
         """Called whenever the property selection in the data model changes.
         Updates any UI that relies on the selection state.
         """
-        self._updateAttributeViewSelection()
+        self._updatePropertyViewSelection()
         self._populateAttributeInspector()
         self._updateAttributeInspector()
 
@@ -2918,7 +2921,7 @@ class AppController(QtCore.QObject):
             self._stageView.updateView()
         self._updateAttributeInspector(
             obj=self._dataModel.selection.getFocusPrim())
-        self._updateAttributeView()
+        self._updatePropertyView()
         self._refreshAttributeValue()
 
     def _getPrimsFromPaths(self, paths):
@@ -3103,7 +3106,7 @@ class AppController(QtCore.QObject):
         if refreshUI: # slow stuff that we do only when not playing
             # topology might have changed, recalculate
             self._updateHUDGeomCounts()
-            self._updateAttributeView()
+            self._updatePropertyView()
             self._refreshAttributeValue()
             self._sliderTimer.stop()
 
@@ -3134,42 +3137,43 @@ class AppController(QtCore.QObject):
             pm =  QtGui.QPixmap.grabWindow(self._stageView.winId())
             pm.save(fileName, 'TIFF')
 
-    def _getAttributeDict(self):
-        attributeDict = OrderedDict()
+    def _getPropertiesDict(self):
+        propertiesDict = OrderedDict()
 
         # leave attribute viewer empty if multiple prims selected
         if len(self._dataModel.selection.getPrims()) != 1:
-            return attributeDict
+            return propertiesDict
 
         prim = self._dataModel.selection.getFocusPrim()
-
         composed = _GetCustomAttributes(prim, self._dataModel)
+        inheritedPrimvars = UsdGeom.PrimvarsAPI(prim).FindInheritedPrimvars() 
 
-        attrs = prim.GetAttributes() + prim.GetRelationships()
-        def cmpFunc(attrA, attrB):
-            aName = attrA.GetName()
-            bName = attrB.GetName()
+        inheritedProps = [primvar.GetAttr() for primvar in inheritedPrimvars]
+        props = prim.GetAttributes() + prim.GetRelationships()  + inheritedProps
+
+        def cmpFunc(propA, propB):
+            aName = propA.GetName()
+            bName = propB.GetName()
             return cmp(aName.lower(), bName.lower())
 
-        attrs.sort(cmp=cmpFunc)
+        props.sort(cmp=cmpFunc)
 
         # Add the special composed attributes usdview generates
         # at the top of our property list.
-        for attr in composed:
-            attributeDict[attr.GetName()] = attr
+        for prop in composed:
+            propertiesDict[prop.GetName()] = prop
 
-        for attr in attrs:
-            attributeDict[attr.GetName()] = attr
+        for prop in props:
+            propertiesDict[prop.GetName()] = prop
 
-        return attributeDict
+        return propertiesDict
 
     def _propertyViewDeselectItem(self, item):
-
         item.setSelected(False)
         for i in range(item.childCount()):
             item.child(i).setSelected(False)
 
-    def _updateAttributeViewSelection(self):
+    def _updatePropertyViewSelection(self):
         """Updates property view's selected items to match the data model."""
 
         focusPrim = self._dataModel.selection.getFocusPrim()
@@ -3178,11 +3182,9 @@ class AppController(QtCore.QObject):
 
         selectedPrimPropNames = dict()
         selectedPrimPropNames.update({prop.GetName(): targets
-            for prop, targets in propTargets.items()
-            if prop.GetPrim() == focusPrim})
+            for prop, targets in propTargets.items()})
         selectedPrimPropNames.update({propName: set()
-            for primPath, propName in computedProps
-            if primPath == focusPrim.GetPath()})
+            for primPath, propName in computedProps})
 
         rootItem = self._ui.propertyView.invisibleRootItem()
 
@@ -3192,7 +3194,6 @@ class AppController(QtCore.QObject):
                 propName = str(item.text(PropertyViewIndex.NAME))
                 if propName in selectedPrimPropNames:
                     item.setSelected(True)
-
                     # Select relationships and connections.
                     targets = {prop.GetPath()
                         for prop in selectedPrimPropNames[propName]}
@@ -3205,92 +3206,115 @@ class AppController(QtCore.QObject):
                 else:
                     self._propertyViewDeselectItem(item)
 
-    def _updateAttributeViewInternal(self):
+    def _updatePropertyViewInternal(self):
         frame = self._dataModel.currentFrame
         treeWidget = self._ui.propertyView
-
+        treeWidget.setTextElideMode(QtCore.Qt.ElideMiddle)
         scrollPosition = treeWidget.verticalScrollBar().value()
 
-        # get a dictionary of prim attribs/members and store it in self._attributeDict
-        self._attributeDict = self._getAttributeDict()
+        # get a dictionary of prim attribs/members and store it in self._propertiesDict
+        self._propertiesDict = self._getPropertiesDict()
         with self._propertyViewSelectionBlocker:
             treeWidget.clear()
         self._populateAttributeInspector()
 
-        currRow = 0
-        for key, attribute in self._attributeDict.iteritems():
-            targets = None
+        curPrimSelection = self._dataModel.selection.getFocusPrim()
 
-            if (isinstance(attribute, BoundingBoxAttribute) or
-                isinstance(attribute, LocalToWorldXformAttribute)):
-                typeContent = PropertyViewIcons.COMPOSED()
-                typeRole = PropertyViewDataRoles.COMPOSED
-            elif type(attribute) == Usd.Attribute:
-                if attribute.HasAuthoredConnections():
+        currRow = 0
+        for key, primProperty in self._propertiesDict.iteritems():
+            targets = None
+            isInheritedProperty = isinstance(primProperty, Usd.Property) and \
+                (primProperty.GetPrim() != curPrimSelection)
+            if type(primProperty) == Usd.Attribute:
+                if primProperty.HasAuthoredConnections():
                     typeContent = PropertyViewIcons.ATTRIBUTE_WITH_CONNECTIONS()
                     typeRole = PropertyViewDataRoles.ATTRIBUTE_WITH_CONNNECTIONS
-                    targets = attribute.GetConnections()
+                    targets = primProperty.GetConnections()
                 else:
                     typeContent = PropertyViewIcons.ATTRIBUTE()
                     typeRole = PropertyViewDataRoles.ATTRIBUTE
-            else:
+            elif isinstance(primProperty, ResolvedBoundMaterial):
+                typeContent = PropertyViewIcons.COMPOSED()
+                typeRole = PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
+            elif isinstance(primProperty, CustomAttribute):
+                typeContent = PropertyViewIcons.COMPOSED()
+                typeRole = PropertyViewDataRoles.COMPOSED
+            elif isinstance(primProperty, Usd.Relationship):
                 # Otherwise we have a relationship
-                targets = attribute.GetTargets()
-
+                targets = primProperty.GetTargets()
                 if targets:
                     typeContent = PropertyViewIcons.RELATIONSHIP_WITH_TARGETS()
                     typeRole = PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
                 else:
                     typeContent = PropertyViewIcons.RELATIONSHIP()
                     typeRole = PropertyViewDataRoles.RELATIONSHIP
+            else:
+                PrintWarning("Property '%s' has unknown property type <%s>." %
+                    (key, type(primProperty)))
+                continue
 
-            attrText = GetShortString(attribute, frame) or ""
+            attrText = GetShortString(primProperty, frame) or ""
             treeWidget.addTopLevelItem(
                 QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
-            treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, typeContent)
+
+            treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, 
+                    typeContent)
             treeWidget.topLevelItem(currRow).setData(PropertyViewIndex.TYPE,
-                                                     QtCore.Qt.ItemDataRole.WhatsThisRole,
-                                                     typeRole)
+                    QtCore.Qt.ItemDataRole.WhatsThisRole,
+                    typeRole)
 
             currItem = treeWidget.topLevelItem(currRow)
 
-            valTextFont = GetAttributeTextFont(attribute, frame)
+            valTextFont = GetPropertyTextFont(primProperty, frame)
             if valTextFont:
                 currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                 currItem.setFont(PropertyViewIndex.NAME, valTextFont)
             else:
                 currItem.setFont(PropertyViewIndex.NAME, UIFonts.BOLD)
 
-            fgColor = GetAttributeColor(attribute, frame)
+            fgColor = GetPropertyColor(primProperty, frame)
+            # Inherited properties are colored 15% darker, along with the 
+            # addition of "(i)" in the type column.
+            if isInheritedProperty:
+                # Add "(i)" to the type column to indicate an inherited 
+                # property.
+                treeWidget.topLevelItem(currRow).setText(PropertyViewIndex.TYPE, 
+                                                         "(i)")
+                fgColor = fgColor.darker(115)
+                currItem.setFont(PropertyViewIndex.TYPE, UIFonts.INHERITED)
+
             currItem.setForeground(PropertyViewIndex.NAME, fgColor)
             currItem.setForeground(PropertyViewIndex.VALUE, fgColor)
 
             if targets:
                 childRow = 0
                 for t in targets:
-                    valTextFont = GetAttributeTextFont(attribute, frame) or UIFonts.BOLD
+                    valTextFont = GetPropertyTextFont(primProperty, frame) or \
+                            UIFonts.BOLD
                     # USD does not provide or infer values for relationship or
                     # connection targets, so we don't display them here.
-                    currItem.addChild(QtWidgets.QTreeWidgetItem(["", str(t), ""]))
+                    currItem.addChild(
+                            QtWidgets.QTreeWidgetItem(["", str(t), ""]))
                     currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                     child = currItem.child(childRow)
 
                     if typeRole == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
-                        child.setIcon(PropertyViewIndex.TYPE, PropertyViewIcons.TARGET())
+                        child.setIcon(PropertyViewIndex.TYPE, 
+                                      PropertyViewIcons.TARGET())
                         child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       PropertyViewDataRoles.TARGET)
                     else:
-                        child.setIcon(PropertyViewIndex.TYPE, PropertyViewIcons.CONNECTION())
+                        child.setIcon(PropertyViewIndex.TYPE,
+                                      PropertyViewIcons.CONNECTION())
                         child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       PropertyViewDataRoles.CONNECTION)
-
                     childRow += 1
 
             currRow += 1
 
-        self._updateAttributeViewSelection()
+        self._updatePropertyViewSelection()
 
         # For some reason, resetting the scrollbar position here only works on a
         # frame change, not when the prim changes. When the prim changes, the
@@ -3298,13 +3322,13 @@ class AppController(QtCore.QObject):
         # effect.
         treeWidget.verticalScrollBar().setValue(scrollPosition)
 
-    def _updateAttributeView(self):
+    def _updatePropertyView(self):
         """ Sets the contents of the attribute value viewer """
         cursorOverride = not self._timer.isActive()
         if cursorOverride:
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
-            self._updateAttributeViewInternal()
+            self._updatePropertyViewInternal()
         except Exception as err:
             print "Problem encountered updating attribute view: %s" % err
             raise
@@ -3312,25 +3336,27 @@ class AppController(QtCore.QObject):
             if cursorOverride:
                 QtWidgets.QApplication.restoreOverrideCursor()
 
-    def _getSelectedObject(self, selectedAttribute=None):
-        if selectedAttribute is None:
-            attrs = self._ui.propertyView.selectedItems()
-            if len(attrs) > 0:
-                selectedAttribute = attrs[0]
+    def _getSelectedObject(self):
+        focusPrim = self._dataModel.selection.getFocusPrim()
 
-        if selectedAttribute:
-            attrName = str(selectedAttribute.text(PropertyViewIndex.NAME))
+        attrs = self._ui.propertyView.selectedItems()
+        if len(attrs) == 0:
+            return focusPrim
 
-            if PropTreeWidgetTypeIsRel(selectedAttribute):
-                obj = self._dataModel.selection.getFocusPrim().GetRelationship(
-                    attrName)
-            else:
-                obj = self._dataModel.selection.getFocusPrim().GetAttribute(
-                    attrName)
+        selectedAttribute = attrs[0]
+        attrName = str(selectedAttribute.text(PropertyViewIndex.NAME))
+        
+        if PropTreeWidgetTypeIsRel(selectedAttribute):
+            return focusPrim.GetRelationship(attrName)
 
-            return obj
-
-        return self._dataModel.selection.getFocusPrim()
+        obj = focusPrim.GetAttribute(attrName)
+        if not obj:
+            # Check if it is an inherited primvar.
+            inheritedPrimvar = UsdGeom.PrimvarsAPI(
+                    focusPrim).FindInheritedPrimvar(attrName)
+            if inheritedPrimvar:
+                obj = inheritedPrimvar.GetAttr()
+        return obj
 
     def _findIndentPos(self, s):
         for index, char in enumerate(s):
@@ -3456,7 +3482,7 @@ class AppController(QtCore.QObject):
         # would be nice to clean that up and ensure we only update as needed.
 
         tableWidget = self._ui.metadataView
-        self._attributeDict = self._getAttributeDict()
+        self._propertiesDict = self._getPropertiesDict()
 
         # Setup table widget
         tableWidget.clearContents()
@@ -3954,26 +3980,16 @@ class AppController(QtCore.QObject):
             action.setStatusTip(Tf.Debug.GetDebugSymbolDescription(flag))
             action.triggered[bool].connect(__createTriggerLambda(flag, not isEnabled))
 
-    def _updateEditPrimMenu(self):
-        """Make the Edit Prim menu items enabled or disabled depending on the
+    def _updateNavigationMenu(self):
+        """Make the Navigation menu items enabled or disabled depending on the
         selected prim."""
-        
-        # Use the descendent-pruned selection set to avoid redundant
-        # traversal of the stage to answer isLoaded...
-        anyLoadable, unused = GetPrimsLoadability(
-            self._dataModel.selection.getLCDPrims())
-        removeEnabled = False
-        anyImageable = False
         anyModels = False
         anyBoundPreviewMaterials = False
         anyBoundFullMaterials = False
-        anyActive = False
-        anyInactive = False
+
         for prim in self._dataModel.selection.getPrims():
             if prim.IsA(UsdGeom.Imageable):
                 imageable = UsdGeom.Imageable(prim)
-                anyImageable = anyImageable or bool(imageable)
-                removeEnabled = removeEnabled or HasSessionVis(prim)
             anyModels = anyModels or GetEnclosingModelPrim(prim) is not None
             
             (previewMat,previewBindingRel) =\
@@ -3985,23 +4001,39 @@ class AppController(QtCore.QObject):
                 UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
                     materialPurpose=UsdShade.Tokens.full)            
             anyBoundFullMaterials |= bool(fullMat)
-            
+
+        self._ui.actionSelect_Model_Root.setEnabled(anyModels)
+        self._ui.actionSelect_Bound_Preview_Material.setEnabled(
+                anyBoundPreviewMaterials)
+        self._ui.actionSelect_Preview_Binding_Relationship.setEnabled(
+                anyBoundPreviewMaterials)
+        self._ui.actionSelect_Bound_Full_Material.setEnabled(
+                anyBoundFullMaterials)
+        self._ui.actionSelect_Full_Binding_Relationship.setEnabled(
+                anyBoundFullMaterials)
+
+    def _updateEditMenu(self):
+        """Make the Edit Prim menu items enabled or disabled depending on the
+        selected prim."""
+        
+        # Use the descendent-pruned selection set to avoid redundant
+        # traversal of the stage to answer isLoaded...
+        anyLoadable, unused = GetPrimsLoadability(
+            self._dataModel.selection.getLCDPrims())
+        removeEnabled = False
+        anyImageable = False
+        anyActive = False
+        anyInactive = False
+        for prim in self._dataModel.selection.getPrims():
+            if prim.IsA(UsdGeom.Imageable):
+                imageable = UsdGeom.Imageable(prim)
+                anyImageable = anyImageable or bool(imageable)
+                removeEnabled = removeEnabled or HasSessionVis(prim)            
             if prim.IsActive():
                 anyActive = True
             else:
                 anyInactive = True
-
-        self._ui.actionJump_to_Model_Root.setEnabled(anyModels)
         
-        self._ui.actionJump_to_Bound_Preview_Material.setEnabled(
-                anyBoundPreviewMaterials)
-        self._ui.actionSelect_Preview_Binding_Relationship.setEnabled(
-                anyBoundPreviewMaterials)
-        
-        self._ui.actionJump_to_Bound_Full_Material.setEnabled(
-                anyBoundFullMaterials)
-        self._ui.actionSelect_Full_Binding_Relationship.setEnabled(
-                anyBoundFullMaterials)
         self._ui.actionRemove_Session_Visibility.setEnabled(removeEnabled)
         self._ui.actionMake_Visible.setEnabled(anyImageable)
         self._ui.actionVis_Only.setEnabled(anyImageable)
@@ -4010,7 +4042,6 @@ class AppController(QtCore.QObject):
         self._ui.actionUnload.setEnabled(anyLoadable)
         self._ui.actionActivate.setEnabled(anyInactive)
         self._ui.actionDeactivate.setEnabled(anyActive)
-
 
     def getSelectedItems(self):
         return [self._primToItemMap[n]
@@ -4551,7 +4582,7 @@ class AppController(QtCore.QObject):
                 == self._dataModel.viewSettings.highlightColorName)
 
     def _displayPurposeChanged(self):
-        self._updateAttributeView()
+        self._updatePropertyView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
             self._stageView.updateView()

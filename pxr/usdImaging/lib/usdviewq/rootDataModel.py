@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Usd, UsdGeom
+from pxr import Usd, UsdGeom, UsdShade
 from qt import QtCore
 from common import Timer, IncludedPurposes
 
@@ -177,3 +177,14 @@ class RootDataModel(QtCore.QObject):
                 repr(prim)))
 
         return self._xformCache.GetLocalToWorldTransform(prim)
+
+    def computeBoundMaterial(self, prim, purpose):
+        """Compute the material that the prim is bound to, for the given value
+           of material purpose. 
+        """
+        if not isinstance(prim, Usd.Prim):
+            raise ValueError("Expected Usd.Prim object, got: {}".format(
+                repr(prim)))
+        # We don't use the binding cache yet since it isn't exposed to python.
+        return UsdShade.MaterialBindingAPI(
+                prim).ComputeBoundMaterial(purpose)
