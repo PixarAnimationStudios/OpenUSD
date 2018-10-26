@@ -91,17 +91,6 @@ public:
         int *outHitInstanceIndex = NULL,
         int *outHitElementIndex = NULL);
 
-    USDIMAGINGGL_API
-    virtual bool TestIntersectionBatch(
-        const GfMatrix4d &viewMatrix,
-        const GfMatrix4d &projectionMatrix,
-        const GfMatrix4d &worldToLocalSpace,
-        const SdfPathVector& paths, 
-        const UsdImagingGLRenderParams& params,
-        unsigned int pickResolution,
-        PathTranslatorCallback pathTranslator,
-        HitBatch *outHit);
-
 private:
     bool _SupportsPrimitiveRestartIndex();
 

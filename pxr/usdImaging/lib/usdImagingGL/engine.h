@@ -225,59 +225,6 @@ public:
         int *outHitInstanceIndex = NULL,
         int *outHitElementIndex = NULL) = 0;
 
-    /// A callback function to control collating intersection test hits.
-    /// See the documentation for TestIntersectionBatch() below for more detail.
-    typedef std::function< SdfPath(const SdfPath&, const SdfPath&, const int) >
-        PathTranslatorCallback;
-
-    struct HitInfo {
-        GfVec3d worldSpaceHitPoint;
-        int hitInstanceIndex;
-    };
-    typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
-
-
-    /// Finds closest point of intersection with a frustum by rendering a batch.
-    ///
-    /// This method uses a PickRender and a customized depth buffer to find an
-    /// approximate point of intersection by rendering. This is less accurate
-    /// than implicit methods or rendering with GL_SELECT, but leverages any 
-    /// data already cached in the renderer. The resolution of the pick 
-    /// renderer is controlled through \p pickResolution.
-    ///
-    /// In batched selection scenarios, the path desired may not be as granular
-    /// as the leaf-level prim. For example, one might want to find the closest
-    /// hit for all prims underneath a certain path scope, or ignore others 
-    /// altogether.
-    ///
-    /// The \p pathTranslator receives an \c SdfPath pointing to the hit prim
-    /// as well as an \c SdfPath pointing to the instancer prim and an integer
-    /// instance index in the case where the hit is an instanced object. It may
-    /// return an empty path (signifying an ignored hit), or a different
-    /// simplified path altogether.
-    ///
-    /// Returned hits are collated by the translated \c SdfPath above, and
-    /// placed in the structure pointed to by \p outHit. For each \c SdfPath in
-    /// the \c HitBatch, the closest found hit point and instance id is given.
-    /// The intersection point returned is in world space 
-    /// (i.e. \p projectionMatrix and \p viewMatrix factored back out of the 
-    /// result).
-    ///
-    /// \c outHit is not cleared between consecutive runs -- this allows
-    /// hits to be accumulated across multiple calls to \cTestIntersection. Hits
-    /// to any single SdfPath will be overwritten on successive calls.
-    ///
-    USDIMAGINGGL_API
-    virtual bool TestIntersectionBatch(
-        const GfMatrix4d &viewMatrix,
-        const GfMatrix4d &projectionMatrix,
-        const GfMatrix4d &worldToLocalSpace,
-        const SdfPathVector& paths, 
-        const UsdImagingGLRenderParams& params,
-        unsigned int pickResolution,
-        PathTranslatorCallback pathTranslator,
-        HitBatch *outHit) = 0;
-
     /// Using an Id extracted from an Id render, returns the associated
     /// rprim path.
     ///

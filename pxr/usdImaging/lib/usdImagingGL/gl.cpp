@@ -292,22 +292,6 @@ UsdImagingGL::TestIntersection(
                 outHitElementIndex);
 }
 
-bool
-UsdImagingGL::TestIntersectionBatch(
-    const GfMatrix4d &viewMatrix,
-    const GfMatrix4d &projectionMatrix,
-    const GfMatrix4d &worldToLocalSpace,
-    const SdfPathVector& paths, 
-    const UsdImagingGLRenderParams& params,
-    unsigned int pickResolution,
-    PathTranslatorCallback pathTranslator,
-    HitBatch *outHit)
-{
-    return _engine->TestIntersectionBatch(viewMatrix, projectionMatrix,
-                worldToLocalSpace, paths, params, pickResolution,
-                pathTranslator, outHit);
-}
-
 /* virtual */
 VtDictionary
 UsdImagingGL::GetResourceAllocation() const
