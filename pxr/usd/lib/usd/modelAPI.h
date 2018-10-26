@@ -153,6 +153,15 @@ public:
     /// \anchor Usd_ModelKind
     /// \name Kind and Model-ness
     /// @{
+    
+    /// \enum KindValidation
+    ///
+    /// Option for validating queries to a prim's kind metadata.
+    /// \sa IsKind()
+    enum KindValidation{
+        KindValidationNone,
+        KindValidationModelHierarchy
+    };
 
     /// Retrieve the authored \p kind for this prim.
     /// 
@@ -177,6 +186,25 @@ public:
     /// \return true if \p kind was successully authored, otherwise false.
     USD_API
     bool SetKind(const TfToken& kind);
+
+    /// Return true if the prim's kind metadata is or inherits from
+    /// \p baseKind as defined by the Kind Registry.
+    /// 
+    /// If \p validation is KindValidationModelHierarchy (the default), then
+    /// this also ensures that if baseKind is a model, the prim conforms to
+    /// the rules of model hierarchy, as defined by IsModel. If set to
+    /// KindValidationNone, no additional validation is done.
+    ///
+    /// IsModel and IsGroup are preferrable to IsKind("model") as they are
+    /// optimized for fast traversal.
+    ///
+    /// \note If a prim's model hierarchy is not valid, it is possible that
+    /// that prim.IsModel() and 
+    /// prim.IsKind("model", Usd.ModelAPI.KindValidationNone) return different
+    /// answers. (As a corallary, this is also true for for prim.IsGroup())
+    USD_API
+    bool IsKind(const TfToken& baseKind,
+                KindValidation validation=KindValidationModelHierarchy) const;
 
     /// Return true if this prim represents a model, based on its kind
     /// metadata.

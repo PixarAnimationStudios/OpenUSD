@@ -71,13 +71,31 @@ class TestUsdModel(unittest.TestCase):
             # to 'component'.
             ym.SetKind(Kind.Tokens.component)
             self.assertFalse(ym.IsModel())
-
+            self.assertFalse(ym.IsKind(Kind.Tokens.component))
+            self.assertFalse(ym.IsKind(Kind.Tokens.model))
+            self.assertTrue(
+                ym.IsKind(Kind.Tokens.component,
+                          Usd.ModelAPI.KindValidationNone))
+            self.assertTrue(
+                ym.IsKind(Kind.Tokens.model,
+                          Usd.ModelAPI.KindValidationNone))
+                            
             # Setting X's kind to component, causes it to be a model, but Y still 
             # remains a non-model as component below another component violates the 
             # model hierarchy.
             xm.SetKind(Kind.Tokens.component)
             self.assertTrue(xm.IsModel())
             self.assertFalse(ym.IsModel())
+            self.assertTrue(xm.IsKind(Kind.Tokens.component))
+            self.assertTrue(xm.IsKind(Kind.Tokens.model))
+            self.assertFalse(ym.IsKind(Kind.Tokens.component))
+            self.assertFalse(ym.IsKind(Kind.Tokens.model))
+            self.assertTrue(
+                ym.IsKind(Kind.Tokens.component,
+                          validation=Usd.ModelAPI.KindValidationNone))
+            self.assertTrue(
+                ym.IsKind(Kind.Tokens.model,
+                          Usd.ModelAPI.KindValidationNone))
 
             # Setting X's kind to assembly fixes the model hierarchy and causes 
             # X to be a model group and Y to be a model.
@@ -86,6 +104,16 @@ class TestUsdModel(unittest.TestCase):
             self.assertTrue(xm.IsGroup())
             self.assertTrue(ym.IsModel())
             self.assertFalse(ym.IsGroup())
+            self.assertTrue(xm.IsKind(Kind.Tokens.assembly))
+            self.assertTrue(xm.IsKind(Kind.Tokens.group))
+            self.assertTrue(ym.IsKind(Kind.Tokens.component))
+            self.assertTrue(ym.IsKind(Kind.Tokens.model))
+            self.assertTrue(
+                ym.IsKind(Kind.Tokens.component,
+                          validation=Usd.ModelAPI.KindValidationNone))
+            self.assertTrue(
+                ym.IsKind(Kind.Tokens.model,
+                          Usd.ModelAPI.KindValidationNone))
 
             # A component below a component violates model hierarchy.
             zm.SetKind(Kind.Tokens.component)
@@ -94,6 +122,9 @@ class TestUsdModel(unittest.TestCase):
             # A subcomponent also isn't considered to be a model.
             zm.SetKind(Kind.Tokens.subcomponent)
             self.assertFalse(zm.IsModel())
+            self.assertTrue(zm.IsKind(Kind.Tokens.subcomponent))
+            self.assertTrue(zm.IsKind(Kind.Tokens.subcomponent,
+                                      Usd.ModelAPI.KindValidationNone))
 
     def test_AssetInfo(self):
         for fmt in allFormats:
