@@ -43,7 +43,7 @@ HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
 
 void
 HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
-                                HdDirtyBits *dirtyBits, int instancePrimvarSlot)
+                                HdDirtyBits dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -60,8 +60,6 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     HdStInstancer *currentInstancer = this;
     while (currentInstancer) {
         // allocate instance primvar slot in the drawing coordinate.
-        drawingCoord->SetInstancePrimvarIndex(level,
-                                              instancePrimvarSlot + level);
         sharedData->barContainer.Set(
             drawingCoord->GetInstancePrimvarIndex(level),
             currentInstancer->GetInstancePrimvars());
@@ -73,7 +71,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     }
 
     /* INSTANCE INDICES */
-    if (HdChangeTracker::IsInstanceIndexDirty(*dirtyBits, sharedData->rprimID)) {
+    if (HdChangeTracker::IsInstanceIndexDirty(dirtyBits, sharedData->rprimID)) {
         sharedData->barContainer.Set(
             drawingCoord->GetInstanceIndexIndex(),
             GetInstanceIndices(sharedData->rprimID));
@@ -96,7 +94,7 @@ HdStInstancer::GetInstancePrimvars()
 
     // Two RPrim's might be trying to update the same instancer at once.
     // do a quick unguarded check to see if it is dirty.
-    int dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
+    HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
     if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
         std::lock_guard<std::mutex> lock(_instanceLock);
   

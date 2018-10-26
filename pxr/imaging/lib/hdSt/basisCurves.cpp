@@ -118,8 +118,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
             sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
         if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(drawItem, &_sharedData,
-                dirtyBits, InstancePrimvar);
+            instancer->PopulateDrawItem(drawItem, &_sharedData, *dirtyBits);
         }
     }
 
@@ -287,10 +286,10 @@ HdStBasisCurves::_InitRepr(HdReprSelector const &reprToken,
             }
 
             HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+            HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
             repr->AddDrawItem(drawItem);
             if (desc.geomStyle == HdBasisCurvesGeomStyleWire) {
                 // Why does geom style require this change?
-                HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 drawingCoord->SetTopologyIndex(HdStBasisCurves::HullTopology);
                 if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
                     _customDirtyBitsInUse |= DirtyHullIndices;
@@ -302,6 +301,10 @@ HdStBasisCurves::_InitRepr(HdReprSelector const &reprToken,
                     *dirtyBits |= DirtyIndices;
                 }
             }
+
+            // Set up drawing coord instance primvars.
+            drawingCoord->SetInstancePrimvarBaseIndex(
+                HdStBasisCurves::InstancePrimvar);
         }
     }
 }

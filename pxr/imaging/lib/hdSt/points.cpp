@@ -108,8 +108,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
             sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
         if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(drawItem, &_sharedData,
-                dirtyBits, InstancePrimvar);
+            instancer->PopulateDrawItem(drawItem, &_sharedData, *dirtyBits);
         }
     }
 
@@ -299,7 +298,12 @@ HdStPoints::_InitRepr(HdReprSelector const &reprToken,
 
             if (desc.geomStyle != HdPointsGeomStyleInvalid) {
                 HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+                HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 _smoothHullRepr->AddDrawItem(drawItem);
+
+                // Set up drawing coord instance primvars.
+                drawingCoord->SetInstancePrimvarBaseIndex(
+                    HdStPoints::InstancePrimvar);
             }
         }
     }

@@ -53,7 +53,6 @@ HdRprim::HdRprim(SdfPath const& id,
     : _instancerId(instancerId)
     , _materialId()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
-                  /*hasInstancer=*/(!instancerId.IsEmpty()),
                   /*visible=*/true)
 {
     _sharedData.rprimID = id;
@@ -194,6 +193,13 @@ HdRprim::InitRepr(HdSceneDelegate* delegate,
                   bool forced,
                   HdDirtyBits *dirtyBits)
 {
+    // If _sharedData.instancerLevels == -1, it's uninitialized and we should
+    // compute it now.
+    if (_sharedData.instancerLevels == -1) {
+        _sharedData.instancerLevels = HdInstancer::GetInstancerNumLevels(
+            delegate->GetRenderIndex(), *this);
+    }
+
     _UpdateReprSelector(delegate, dirtyBits);
     HdReprSelector reprSelector = _GetReprSelector(defaultReprSelector, forced);
     _InitRepr(reprSelector, dirtyBits);
