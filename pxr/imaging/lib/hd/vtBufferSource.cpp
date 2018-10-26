@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/patchIndex.h"
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"

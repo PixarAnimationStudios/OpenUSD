@@ -57,7 +57,6 @@ pxr_library(hd
         mesh
         meshTopology
         meshUtil
-        patchIndex
         perfLog
         points
         primGather
