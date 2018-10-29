@@ -63,8 +63,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPathVector& excludedPrimPaths,
         const SdfPathVector& invisedPrimPaths,
         const SdfPath& delegateID)
-    : UsdImagingGLEngine()
-    , _renderIndex(nullptr)
+    : _renderIndex(nullptr)
     , _selTracker(new HdxSelectionTracker)
     , _delegateID(delegateID)
     , _delegate(nullptr)
@@ -91,7 +90,7 @@ UsdImagingGLHdEngine::~UsdImagingGLHdEngine()
 }
 
 HdRenderIndex *
-UsdImagingGLHdEngine::_GetRenderIndex() const
+UsdImagingGLHdEngine::GetRenderIndex() const
 {
     return _renderIndex;
 }
@@ -180,7 +179,6 @@ UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root,
     HD_TRACE_FUNCTION();
 }
 
-/*virtual*/
 void
 UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, 
     const UsdImagingGLRenderParams &params)
@@ -365,7 +363,6 @@ UsdImagingGLHdEngine::_MakeHydraUsdImagingGLRenderParams(
     return params;
 }
 
-/*virtual*/
 void
 UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, 
     const UsdImagingGLRenderParams& params)
@@ -378,10 +375,9 @@ UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths,
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    _Render(params);
+    Render(params);
 }
 
-/*virtual*/
 void
 UsdImagingGLHdEngine::Render(const UsdPrim& root, 
     const UsdImagingGLRenderParams& params)
@@ -399,7 +395,7 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root,
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    _Render(params);
+    Render(params);
 }
 
 bool
@@ -490,9 +486,8 @@ class _DebugGroupTaskWrapper : public HdTask {
     }
 };
 
-/*virtual*/
 void
-UsdImagingGLHdEngine::_Render(const UsdImagingGLRenderParams& params)
+UsdImagingGLHdEngine::Render(const UsdImagingGLRenderParams& params)
 {
     // Forward scene materials enable option to delegate
     _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
@@ -588,7 +583,6 @@ UsdImagingGLHdEngine::_Render(const UsdImagingGLRenderParams& params)
     }
 }
 
-/*virtual*/
 void 
 UsdImagingGLHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
@@ -601,14 +595,12 @@ UsdImagingGLHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
     _viewport = viewport;
 }
 
-/*virtual*/
 SdfPath
 UsdImagingGLHdEngine::GetRprimPathFromPrimId(int primId) const 
 {
     return _delegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
 }
 
-/* virtual */
 SdfPath
 UsdImagingGLHdEngine::GetPrimPathFromInstanceIndex(
     SdfPath const& protoPrimPath,
@@ -622,7 +614,6 @@ UsdImagingGLHdEngine::GetPrimPathFromInstanceIndex(
                                              instanceContext);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::SetLightingStateFromOpenGL()
 {
@@ -634,7 +625,6 @@ UsdImagingGLHdEngine::SetLightingStateFromOpenGL()
     _taskController->SetLightingState(_lightingContextForOpenGLState);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightVector const &lights,
                                        GlfSimpleMaterial const &material,
@@ -653,21 +643,18 @@ UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightVector const &lights,
     _taskController->SetLightingState(_lightingContextForOpenGLState);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
     _taskController->SetLightingState(src);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::SetRootTransform(GfMatrix4d const& xf)
 {
     _delegate->SetRootTransform(xf);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::SetRootVisibility(bool isVisible)
 {
@@ -675,7 +662,6 @@ UsdImagingGLHdEngine::SetRootVisibility(bool isVisible)
 }
 
 
-/*virtual*/
 void
 UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 {
@@ -695,7 +681,6 @@ UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
     _selTracker->SetSelection(selection);
 }
 
-/*virtual*/
 void
 UsdImagingGLHdEngine::ClearSelected()
 {
@@ -703,7 +688,6 @@ UsdImagingGLHdEngine::ClearSelected()
     _selTracker->SetSelection(selection);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
@@ -720,7 +704,6 @@ UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
     _selTracker->SetSelection(selection);
 }
 
-/*virtual*/
 void
 UsdImagingGLHdEngine::SetSelectionColor(GfVec4f const& color)
 {
@@ -728,14 +711,12 @@ UsdImagingGLHdEngine::SetSelectionColor(GfVec4f const& color)
     _taskController->SetSelectionColor(_selectionColor);
 }
 
-/* virtual */
 bool
 UsdImagingGLHdEngine::IsConverged() const
 {
     return _taskController->IsConverged();
 }
 
-/* virtual */
 TfTokenVector
 UsdImagingGLHdEngine::GetRendererPlugins() const
 {
@@ -749,7 +730,6 @@ UsdImagingGLHdEngine::GetRendererPlugins() const
     return plugins;
 }
 
-/* virtual */
 std::string
 UsdImagingGLHdEngine::GetRendererDisplayName(TfToken const &id) const
 {
@@ -762,7 +742,6 @@ UsdImagingGLHdEngine::GetRendererDisplayName(TfToken const &id) const
     return pluginDescriptor.displayName;
 }
 
-/* virtual */
 TfToken
 UsdImagingGLHdEngine::GetCurrentRendererId() const
 {
@@ -796,7 +775,6 @@ UsdImagingGLHdEngine::_GetDefaultRendererPluginId()
     return TfToken();
 }
 
-/* virtual */
 bool
 UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
 {
@@ -906,7 +884,6 @@ UsdImagingGLHdEngine::_DeleteHydraResources()
     }
 }
 
-/* virtual */
 TfTokenVector
 UsdImagingGLHdEngine::GetRendererAovs() const
 {
@@ -922,7 +899,6 @@ UsdImagingGLHdEngine::GetRendererAovs() const
     return TfTokenVector();
 }
 
-/* virtual */
 bool
 UsdImagingGLHdEngine::SetRendererAov(TfToken const& id)
 {
@@ -939,14 +915,12 @@ UsdImagingGLHdEngine::SetRendererAov(TfToken const& id)
     return false;
 }
 
-/* virtual */
 VtDictionary
 UsdImagingGLHdEngine::GetResourceAllocation() const
 {
     return _renderIndex->GetResourceRegistry()->GetResourceAllocation();
 }
 
-/* virtual */
 UsdImagingGLRendererSettingsList
 UsdImagingGLHdEngine::GetRendererSettingsList() const
 {
@@ -984,14 +958,12 @@ UsdImagingGLHdEngine::GetRendererSettingsList() const
     return ret;
 }
 
-/* virtual */
 VtValue
 UsdImagingGLHdEngine::GetRendererSetting(TfToken const& id) const
 {
     return _renderIndex->GetRenderDelegate()->GetRenderSetting(id);
 }
 
-/* virtual */
 void
 UsdImagingGLHdEngine::SetRendererSetting(TfToken const& id,
                                          VtValue const& value)

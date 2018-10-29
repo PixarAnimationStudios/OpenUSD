@@ -53,6 +53,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 class HdRenderIndex;
+class UsdImagingGLHdEngine;
+class UsdImagingGLLegacyEngine;
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
@@ -80,14 +82,21 @@ public:
     /// \name Construction
     /// @{
     // ---------------------------------------------------------------------
-    UsdImagingGLEngine() = default;
+    USDIMAGINGGL_API
+    UsdImagingGLEngine();
+
+    USDIMAGINGGL_API
+    UsdImagingGLEngine(const SdfPath& rootPath,
+                       const SdfPathVector& excludedPaths,
+                       const SdfPathVector& invisedPaths=SdfPathVector(),
+                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
     UsdImagingGLEngine& operator=(const UsdImagingGLEngine&) = delete;
 
     USDIMAGINGGL_API
-    virtual ~UsdImagingGLEngine();
+    ~UsdImagingGLEngine();
 
     /// @}
 
@@ -98,23 +107,24 @@ public:
 
     /// Support for batched drawing
     USDIMAGINGGL_API
-    virtual void PrepareBatch(const UsdPrim& root, 
-                              const UsdImagingGLRenderParams& params);
+    void PrepareBatch(const UsdPrim& root, 
+                      const UsdImagingGLRenderParams& params);
     USDIMAGINGGL_API
-    virtual void RenderBatch(const SdfPathVector& paths, 
-                             const UsdImagingGLRenderParams& params);
+    void RenderBatch(const SdfPathVector& paths, 
+                     const UsdImagingGLRenderParams& params);
 
     /// Entry point for kicking off a render
-    virtual void Render(const UsdPrim& root, 
-                        const UsdImagingGLRenderParams &params) = 0;
+    USDIMAGINGGL_API
+    void Render(const UsdPrim& root, 
+                const UsdImagingGLRenderParams &params);
 
-    virtual void InvalidateBuffers() = 0;
+    USDIMAGINGGL_API
+    void InvalidateBuffers();
 
     /// Returns true if the resulting image is fully converged.
     /// (otherwise, caller may need to call Render() again to refine the result)
     USDIMAGINGGL_API
-    virtual bool IsConverged() const;
-
+    bool IsConverged() const;
 
     /// @}
     
@@ -125,11 +135,11 @@ public:
 
     /// Sets the root transform.
     USDIMAGINGGL_API
-    virtual void SetRootTransform(GfMatrix4d const& xf);
+    void SetRootTransform(GfMatrix4d const& xf);
 
     /// Sets the root visibility.
     USDIMAGINGGL_API
-    virtual void SetRootVisibility(bool isVisible);
+    void SetRootVisibility(bool isVisible);
 
     /// @}
 
@@ -139,7 +149,7 @@ public:
     // ---------------------------------------------------------------------
     
     USDIMAGINGGL_API
-    virtual void SetCameraState(const GfMatrix4d& viewMatrix,
+    void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
@@ -151,18 +161,18 @@ public:
     /// Helper function to extract lighting state from opengl and then
     /// call SetLights.
     USDIMAGINGGL_API
-    virtual void SetLightingStateFromOpenGL();
+    void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
+    void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     /// Set lighting state
     /// Derived classes should ensure that passing an empty lights
     /// vector disables lighting.
     /// \param lights is the set of lights to use, or empty to disable lighting.
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+    void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
@@ -177,22 +187,22 @@ public:
     /// selection highlighting. These paths may include root paths which will 
     /// be expanded internally.
     USDIMAGINGGL_API
-    virtual void SetSelected(SdfPathVector const& paths);
+    void SetSelected(SdfPathVector const& paths);
 
     /// Clear the list of prim paths that should be included in selection
     /// highlighting.
     USDIMAGINGGL_API
-    virtual void ClearSelected();
+    void ClearSelected();
 
     /// Add a path with instanceIndex to the list of prim paths that should be
     /// included in selection highlighting. UsdImagingDelegate::ALL_INSTANCES
     /// can be used for highlighting all instances if path is an instancer.
     USDIMAGINGGL_API
-    virtual void AddSelected(SdfPath const &path, int instanceIndex);
+    void AddSelected(SdfPath const &path, int instanceIndex);
 
     /// Sets the selection highlighting color.
     USDIMAGINGGL_API
-    virtual void SetSelectionColor(GfVec4f const& color);
+    void SetSelectionColor(GfVec4f const& color);
 
     /// @}
     
@@ -213,7 +223,7 @@ public:
     /// \p viewMatrix factored back out of the result).
     ///
     USDIMAGINGGL_API
-    virtual bool TestIntersection(
+    bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
@@ -223,7 +233,7 @@ public:
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
         int *outHitInstanceIndex = NULL,
-        int *outHitElementIndex = NULL) = 0;
+        int *outHitElementIndex = NULL);
 
     /// Using an Id extracted from an Id render, returns the associated
     /// rprim path.
@@ -234,7 +244,7 @@ public:
     /// index by GetPrimPathFromInstanceIndex().
     ///
     USDIMAGINGGL_API
-    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+    SdfPath GetRprimPathFromPrimId(int primId) const;
 
     /// Using colors extracted from an Id render, returns the associated
     /// prim path and optional instance index.
@@ -247,7 +257,7 @@ public:
     /// XXX: consider renaming to GetRprimPathFromPrimIdColor
     ///
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromPrimIdColor(
+    SdfPath GetPrimPathFromPrimIdColor(
         GfVec4i const & primIdColor,
         GfVec4i const & instanceIdColor,
         int * instanceIndexOut = NULL);
@@ -267,7 +277,7 @@ public:
     /// in this vector is always the resolved (or forwarded) rprim.
     /// 
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromInstanceIndex(
+    SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoRprimPath,
         int instanceIndex,
         int *absoluteInstanceIndex=NULL,
@@ -283,20 +293,20 @@ public:
 
     /// Return the vector of available render-graph delegate plugins.
     USDIMAGINGGL_API
-    virtual TfTokenVector GetRendererPlugins() const;
+    TfTokenVector GetRendererPlugins() const;
 
     /// Return the user-friendly description of a renderer plugin.
     USDIMAGINGGL_API
-    virtual std::string GetRendererDisplayName(TfToken const &id) const;
+    std::string GetRendererDisplayName(TfToken const &id) const;
 
     /// Return the id of the currently used renderer plugin.
     USDIMAGINGGL_API
-    virtual TfToken GetCurrentRendererId() const;
+    TfToken GetCurrentRendererId() const;
 
     /// Set the current render-graph delegate to \p id.
     /// the plugin will be loaded if it's not yet.
     USDIMAGINGGL_API
-    virtual bool SetRendererPlugin(TfToken const &id);
+    bool SetRendererPlugin(TfToken const &id);
 
     /// @}
     
@@ -307,23 +317,23 @@ public:
 
     /// Return the vector of available renderer AOV settings.
     USDIMAGINGGL_API
-    virtual TfTokenVector GetRendererAovs() const;
+    TfTokenVector GetRendererAovs() const;
 
     /// Set the current renderer AOV to \p id.
     USDIMAGINGGL_API
-    virtual bool SetRendererAov(TfToken const& id);
+    bool SetRendererAov(TfToken const& id);
 
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
-    virtual UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
+    UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
 
     /// Gets a renderer setting's current value.
     USDIMAGINGGL_API
-    virtual VtValue GetRendererSetting(TfToken const& id) const;
+    VtValue GetRendererSetting(TfToken const& id) const;
 
     /// Sets a renderer setting's value.
     USDIMAGINGGL_API
-    virtual void SetRendererSetting(TfToken const& id,
+    void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
     /// @}
@@ -335,7 +345,7 @@ public:
 
     /// Returns GPU resource allocation info
     USDIMAGINGGL_API
-    virtual VtDictionary GetResourceAllocation() const;
+    VtDictionary GetResourceAllocation() const;
 
     /// @}
 
@@ -344,16 +354,19 @@ protected:
 
     /// Open some protected methods for whitebox testing.
     friend class UsdImagingGL_UnitTestGLDrawing;
-    friend class UsdImagingGL;
 
     /// Returns the render index of the engine, if any.  This is only used for
     /// whitebox testing.
     USDIMAGINGGL_API
-    virtual HdRenderIndex *_GetRenderIndex() const;
+    HdRenderIndex *_GetRenderIndex() const;
 
     USDIMAGINGGL_API
-    virtual void _Render(const UsdImagingGLRenderParams &params);
+    void _Render(const UsdImagingGLRenderParams &params);
 
+private:
+
+    std::unique_ptr<UsdImagingGLHdEngine> _hdImpl;
+    std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
 
 };
 

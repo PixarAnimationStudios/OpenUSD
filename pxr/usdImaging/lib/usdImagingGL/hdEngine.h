@@ -42,21 +42,14 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 class HdRenderIndex;
-typedef boost::shared_ptr<class UsdImagingGLHdEngine> 
-                                        UsdImagingGLHdEngineSharedPtr;
-typedef std::vector<UsdImagingGLHdEngineSharedPtr> 
-                                        UsdImagingGLHdEngineSharedPtrVector;
-typedef std::vector<UsdPrim> UsdPrimVector;
 
-class UsdImagingGLHdEngine : public UsdImagingGLEngine
+class UsdImagingGLHdEngine
 {
 public:
     USDIMAGINGGL_API
@@ -66,61 +59,61 @@ public:
                        const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
 
     USDIMAGINGGL_API
-    virtual ~UsdImagingGLHdEngine();
+    ~UsdImagingGLHdEngine();
 
     USDIMAGINGGL_API
-    virtual void InvalidateBuffers();
+    void InvalidateBuffers();
 
     USDIMAGINGGL_API
-    virtual void PrepareBatch(const UsdPrim& root, 
-        const UsdImagingGLRenderParams& params) override;
+    void PrepareBatch(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
-    virtual void RenderBatch(const SdfPathVector& paths, 
-        const UsdImagingGLRenderParams& params) override;
+    void RenderBatch(const SdfPathVector& paths, 
+        const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
-    virtual void Render(const UsdPrim& root, 
-        const UsdImagingGLRenderParams& params) override;
+    void Render(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
-    virtual void SetCameraState(const GfMatrix4d& viewMatrix,
+    void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
     USDIMAGINGGL_API
-    virtual void SetLightingStateFromOpenGL();
+    void SetLightingStateFromOpenGL();
 
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
+    void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+    void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
     USDIMAGINGGL_API
-    virtual void SetRootTransform(GfMatrix4d const& xf);
+    void SetRootTransform(GfMatrix4d const& xf);
 
     USDIMAGINGGL_API
-    virtual void SetRootVisibility(bool isVisible);
+    void SetRootVisibility(bool isVisible);
 
     USDIMAGINGGL_API
-    virtual void SetSelected(SdfPathVector const& paths);
+    void SetSelected(SdfPathVector const& paths);
 
     USDIMAGINGGL_API
-    virtual void ClearSelected();
+    void ClearSelected();
     USDIMAGINGGL_API
-    virtual void AddSelected(SdfPath const &path, int instanceIndex);
+    void AddSelected(SdfPath const &path, int instanceIndex);
 
     USDIMAGINGGL_API
-    virtual void SetSelectionColor(GfVec4f const& color);
+    void SetSelectionColor(GfVec4f const& color);
 
     USDIMAGINGGL_API
-    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+    SdfPath GetRprimPathFromPrimId(int primId) const;
 
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromInstanceIndex(
+    SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoPrimPath,
         int instanceIndex,
         int *absoluteInstanceIndex=NULL,
@@ -128,29 +121,28 @@ public:
         SdfPathVector *instanceContext=NULL);
 
     USDIMAGINGGL_API
-    virtual bool IsConverged() const;
+    bool IsConverged() const;
 
     USDIMAGINGGL_API
-    virtual TfTokenVector GetRendererPlugins() const;
+    TfTokenVector GetRendererPlugins() const;
 
     USDIMAGINGGL_API
-    virtual std::string GetRendererDisplayName(TfToken const &id) const 
-        override;
+    std::string GetRendererDisplayName(TfToken const &id) const;
 
     USDIMAGINGGL_API
-    virtual TfToken GetCurrentRendererId() const override;
+    TfToken GetCurrentRendererId() const;
 
     USDIMAGINGGL_API
-    virtual bool SetRendererPlugin(TfToken const &id);
+    bool SetRendererPlugin(TfToken const &id);
 
     USDIMAGINGGL_API
-    virtual TfTokenVector GetRendererAovs() const;
+    TfTokenVector GetRendererAovs() const;
 
     USDIMAGINGGL_API
-    virtual bool SetRendererAov(TfToken const& id);
+    bool SetRendererAov(TfToken const& id);
 
     USDIMAGINGGL_API
-    virtual bool TestIntersection(
+    bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
@@ -163,28 +155,26 @@ public:
         int *outHitElementIndex = NULL);
 
     USDIMAGINGGL_API
-    virtual VtDictionary GetResourceAllocation() const;
+    VtDictionary GetResourceAllocation() const;
 
     USDIMAGINGGL_API
-    virtual UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
+    UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
 
     USDIMAGINGGL_API
-    virtual VtValue GetRendererSetting(TfToken const& id) const;
+    VtValue GetRendererSetting(TfToken const& id) const;
 
     USDIMAGINGGL_API
-    virtual void SetRendererSetting(TfToken const& id,
+    void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
-protected:
-
-    USDIMAGINGGL_API
-    HdRenderIndex *_GetRenderIndex() const override;
-
-private:
 
     // Core rendering function: just draw, don't update anything.
-    virtual void _Render(const UsdImagingGLRenderParams& params);
+    void Render(const UsdImagingGLRenderParams& params);
 
+    USDIMAGINGGL_API
+    HdRenderIndex *GetRenderIndex() const;
+
+private:
 
     // These functions factor batch preparation into separate steps so they
     // can be reused by both the vectorized and non-vectorized API.

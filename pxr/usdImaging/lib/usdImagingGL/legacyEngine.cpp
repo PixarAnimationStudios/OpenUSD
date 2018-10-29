@@ -205,7 +205,6 @@ UsdImagingGLLegacyEngine::_PopulateBuffers()
     _AppendSubData<GLuint>(GL_ELEMENT_ARRAY_BUFFER, &offset, _lineVerts);
 }
 
-/*virtual*/ 
 SdfPath
 UsdImagingGLLegacyEngine::GetRprimPathFromPrimId(int primId) const 
 {

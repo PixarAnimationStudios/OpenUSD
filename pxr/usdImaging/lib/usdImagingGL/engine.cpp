@@ -24,6 +24,9 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
+#include "pxr/usdImaging/usdImagingGL/hdEngine.h"
+#include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
+
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/info.h"
@@ -84,69 +87,148 @@ UsdImagingGLEngine::IsHydraEnabled()
 // Construction
 //----------------------------------------------------------------------------
 
+UsdImagingGLEngine::UsdImagingGLEngine()
+{
+    SdfPathVector excluded, invised;
+    if (IsHydraEnabled()) {
+        _hdImpl.reset(new UsdImagingGLHdEngine(
+            SdfPath::AbsoluteRootPath(), excluded, invised));
+    } else {
+        _legacyImpl.reset(new UsdImagingGLLegacyEngine(excluded));
+    }
+}
+
+UsdImagingGLEngine::UsdImagingGLEngine(
+    const SdfPath& rootPath,
+    const SdfPathVector& excludedPaths,
+    const SdfPathVector& invisedPaths,
+    const SdfPath& delegateID)
+{
+    if (IsHydraEnabled()) {
+        _hdImpl.reset(new UsdImagingGLHdEngine(rootPath, excludedPaths,
+                                                 invisedPaths, delegateID));
+    } else {
+        // In the legacy engine, both excluded paths and invised paths are 
+        // treated the same way.
+        SdfPathVector pathsToExclude = excludedPaths;
+        pathsToExclude.insert(pathsToExclude.end(), 
+            invisedPaths.begin(), invisedPaths.end());
+        _legacyImpl.reset(new UsdImagingGLLegacyEngine(pathsToExclude));
+    }
+}
+
 UsdImagingGLEngine::~UsdImagingGLEngine()
 { 
-    /*nothing*/ 
 }
 
 //----------------------------------------------------------------------------
 // Rendering
 //----------------------------------------------------------------------------
 
-/* virtual */
 void
-UsdImagingGLEngine::PrepareBatch(const UsdPrim& root, 
+UsdImagingGLEngine::PrepareBatch(
+    const UsdPrim& root, 
     const UsdImagingGLRenderParams& params)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->PrepareBatch(root, params);
 }
 
-/* virtual */
 void
-UsdImagingGLEngine::RenderBatch(const SdfPathVector& paths, 
+UsdImagingGLEngine::RenderBatch(
+    const SdfPathVector& paths, 
     const UsdImagingGLRenderParams& params)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->RenderBatch(paths, params);
 }
 
-/* virtual */
+void 
+UsdImagingGLEngine::Render(
+    const UsdPrim& root, 
+    const UsdImagingGLRenderParams &params)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return _legacyImpl->Render(root, params);
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->Render(root, params);
+}
+
+void
+UsdImagingGLEngine::InvalidateBuffers()
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return _legacyImpl->InvalidateBuffers();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->InvalidateBuffers();
+}
+
 bool
 UsdImagingGLEngine::IsConverged() const
 {
-    // always converges by default.
-    return true;
-}
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return true;
+    }
 
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->IsConverged();
+}
 
 //----------------------------------------------------------------------------
 // Root and Transform Visibility
 //----------------------------------------------------------------------------
 
-/* virtual */
 void
 UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetRootTransform(xf);
 }
 
-/* virtual */
 void
 UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetRootVisibility(isVisible);
 }
 
 //----------------------------------------------------------------------------
 // Camera and Light State
 //----------------------------------------------------------------------------
 
-/*virtual*/
 void 
-UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
-                            const GfMatrix4d& projectionMatrix,
-                            const GfVec4d& viewport)
+UsdImagingGLEngine::SetCameraState(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const GfVec4d& viewport)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetCameraState(viewMatrix, projectionMatrix, viewport);
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetCameraState(viewMatrix, projectionMatrix, viewport);
 }
 
 void
@@ -161,77 +243,152 @@ UsdImagingGLEngine::SetCameraStateFromOpenGL()
     SetCameraState(viewMatrix, projectionMatrix, viewport);
 }
 
-/* virtual */
 void
 UsdImagingGLEngine::SetLightingStateFromOpenGL()
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetLightingStateFromOpenGL();
 }
 
-/* virtual */
 void
 UsdImagingGLEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetLightingState(src);
 }
 
-/* virtual */
 void
-UsdImagingGLEngine::SetLightingState(GlfSimpleLightVector const &lights,
-                                     GlfSimpleMaterial const &material,
-                                     GfVec4f const &sceneAmbient)
+UsdImagingGLEngine::SetLightingState(
+    GlfSimpleLightVector const &lights,
+    GlfSimpleMaterial const &material,
+    GfVec4f const &sceneAmbient)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetLightingState(lights, material, sceneAmbient);
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetLightingState(lights, material, sceneAmbient);
 }
 
 //----------------------------------------------------------------------------
 // Selection Highlighting
 //----------------------------------------------------------------------------
 
-/* virtual */
 void
 UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetSelected(paths);
 }
 
-/* virtual */
 void
 UsdImagingGLEngine::ClearSelected()
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->ClearSelected();
 }
 
-/* virtual */
 void
 UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->AddSelected(path, instanceIndex);
 }
 
-/*virtual*/
 void
 UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
 {
-    // By default, do nothing.
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetSelectionColor(color);
 }
 
 //----------------------------------------------------------------------------
 // Picking
 //----------------------------------------------------------------------------
 
-/* virtual */
+bool 
+UsdImagingGLEngine::TestIntersection(
+    const GfMatrix4d &viewMatrix,
+    const GfMatrix4d &projectionMatrix,
+    const GfMatrix4d &worldToLocalSpace,
+    const UsdPrim& root,
+    const UsdImagingGLRenderParams& params,
+    GfVec3d *outHitPoint,
+    SdfPath *outHitPrimPath,
+    SdfPath *outInstancerPath,
+    int *outHitInstanceIndex,
+    int *outHitElementIndex)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return _legacyImpl->TestIntersection(
+            viewMatrix,
+            projectionMatrix,
+            worldToLocalSpace,
+            root,
+            params,
+            outHitPoint,
+            outHitPrimPath,
+            outInstancerPath,
+            outHitInstanceIndex,
+            outHitElementIndex);
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->TestIntersection(
+        viewMatrix,
+        projectionMatrix,
+        worldToLocalSpace,
+        root,
+        params,
+        outHitPoint,
+        outHitPrimPath,
+        outInstancerPath,
+        outHitInstanceIndex,
+        outHitElementIndex);
+}
+
 SdfPath
 UsdImagingGLEngine::GetRprimPathFromPrimId(int primId) const
 {
-    return SdfPath();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return _legacyImpl->GetRprimPathFromPrimId(primId);
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRprimPathFromPrimId(primId);
 }
 
-/* virtual */
 SdfPath
-UsdImagingGLEngine::GetPrimPathFromPrimIdColor(GfVec4i const &primIdColor,
-                                             GfVec4i const &instanceIdColor,
-                                             int * instanceIndexOut)
+UsdImagingGLEngine::GetPrimPathFromPrimIdColor(
+    GfVec4i const &primIdColor,
+    GfVec4i const &instanceIdColor,
+    int * instanceIndexOut)
 {
     unsigned char primIdColorBytes[] =  {
         uint8_t(primIdColor[0]),
@@ -257,7 +414,6 @@ UsdImagingGLEngine::GetPrimPathFromPrimIdColor(GfVec4i const &primIdColor,
     return result;
 }
 
-/* virtual */
 SdfPath 
 UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
     SdfPath const& protoPrimPath,
@@ -266,107 +422,165 @@ UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
     SdfPath *rprimPath,
     SdfPathVector *instanceContext)
 {
-    return SdfPath();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return SdfPath();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetPrimPathFromInstanceIndex(
+        protoPrimPath,
+        instanceIndex,
+        absoluteInstanceIndex,
+        rprimPath,
+        instanceContext);
 }
 
 //----------------------------------------------------------------------------
 // Renderer Plugin Management
 //----------------------------------------------------------------------------
 
-/* virtual */
 TfTokenVector
 UsdImagingGLEngine::GetRendererPlugins() const
 {
-    return std::vector<TfToken>();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return std::vector<TfToken>();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRendererPlugins();
 }
 
-/* virtual */
 std::string
 UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id) const
 {
-    return std::string();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return std::string();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRendererDisplayName(id);
 }
 
-/* virtual */
 TfToken
 UsdImagingGLEngine::GetCurrentRendererId() const
 {
-    return TfToken();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return TfToken();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetCurrentRendererId();
 }
 
-/* virtual */
 bool
 UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {
-    return false;
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->SetRendererPlugin(id);
 }
 
 //----------------------------------------------------------------------------
 // AOVs and Renderer Settings
 //----------------------------------------------------------------------------
 
-/* virtual */
 TfTokenVector
 UsdImagingGLEngine::GetRendererAovs() const
 {
-    return std::vector<TfToken>();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return std::vector<TfToken>();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRendererAovs();
 }
 
-/* virtual */
 bool
 UsdImagingGLEngine::SetRendererAov(TfToken const &id)
 {
-    return false;
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->SetRendererAov(id);
 }
 
-/* virtual */
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
-    return UsdImagingGLRendererSettingsList();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return UsdImagingGLRendererSettingsList();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRendererSettingsList();
 }
 
-/* virtual */
 VtValue
 UsdImagingGLEngine::GetRendererSetting(TfToken const& id) const
 {
-    return VtValue();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return VtValue();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRendererSetting(id);
 }
 
-/* virtual */
 void
-UsdImagingGLEngine::SetRendererSetting(TfToken const& id,
-                                       VtValue const& value)
+UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 {
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->SetRendererSetting(id, value);
 }
 
 //----------------------------------------------------------------------------
 // Resource Information
 //----------------------------------------------------------------------------
 
-/* virtual */
 VtDictionary
 UsdImagingGLEngine::GetResourceAllocation() const
 {
-    return VtDictionary();
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return VtDictionary();
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetResourceAllocation();
 }
 
 //----------------------------------------------------------------------------
 // Private/Protected
 //----------------------------------------------------------------------------
 
-/* virtual */
 HdRenderIndex *
 UsdImagingGLEngine::_GetRenderIndex() const
 {
-    return nullptr;
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return nullptr;
+    }
+
+    TF_VERIFY(_hdImpl);
+    return _hdImpl->GetRenderIndex();
 }
 
-/* virtual */
 void 
 UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
 {
-    // nothing here
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_hdImpl);
+    _hdImpl->Render(params);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

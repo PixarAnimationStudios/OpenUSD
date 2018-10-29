@@ -26,7 +26,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/api.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+
+#include "pxr/usdImaging/usdImagingGL/renderParams.h"
+
+#include "pxr/imaging/glf/drawTarget.h"
+#include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/glf/simpleMaterial.h"
 
 #include "pxr/imaging/garch/gl.h"
 
@@ -46,8 +52,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(UsdImagingGLLegacyEngine);
 
-class UsdImagingGLLegacyEngine : public UsdImagingGLEngine, public TfWeakBase {
+class UsdImagingGLLegacyEngine : public TfWeakBase 
+{
+
     typedef UsdImagingGLLegacyEngine This;
+
 public:
 
     USDIMAGINGGL_API
@@ -58,28 +67,28 @@ public:
 
     // Entry point for kicking off a render
     USDIMAGINGGL_API
-    virtual void Render(const UsdPrim& root, 
-                        const UsdImagingGLRenderParams& params) override;
+    void Render(const UsdPrim& root, 
+                const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
-    virtual void SetCameraState(const GfMatrix4d& viewMatrix,
-                                const GfMatrix4d& projectionMatrix,
-                                const GfVec4d& viewport);
+    void SetCameraState(const GfMatrix4d& viewMatrix,
+                        const GfMatrix4d& projectionMatrix,
+                        const GfVec4d& viewport);
 
     /// Set lighting state
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightVector const &lights,
-                                  GlfSimpleMaterial const &material,
-                                  GfVec4f const &sceneAmbient);
+    void SetLightingState(GlfSimpleLightVector const &lights,
+                          GlfSimpleMaterial const &material,
+                          GfVec4f const &sceneAmbient);
 
     USDIMAGINGGL_API
-    virtual void InvalidateBuffers();
+    void InvalidateBuffers();
 
     USDIMAGINGGL_API
-    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+    SdfPath GetRprimPathFromPrimId(int primId) const;
 
     USDIMAGINGGL_API
-    virtual bool TestIntersection(
+    bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
