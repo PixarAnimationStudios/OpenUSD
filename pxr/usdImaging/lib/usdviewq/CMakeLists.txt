@@ -54,6 +54,7 @@ pxr_library(usdviewq
         common.py
         legendUtil.py
         primLegend.py
+        primTreeWidget.py
         propertyLegend.py
         attributeValueEditor.py
         overridableLineEdit.py

@@ -44,6 +44,7 @@ from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import (_GetCustomAttributes, CustomAttribute,
                               BoundingBoxAttribute, LocalToWorldXformAttribute,
                               ResolvedBoundMaterial)
+from primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
@@ -139,7 +140,8 @@ class UIStateProxySource(StateSource):
 
         self._mainWindow = mainWindow
         primViewColumnVisibility = self.stateProperty("primViewColumnVisibility",
-                default=[True, True, True], validator=lambda value: len(value) == 3)
+                default=[True, True, True, False], validator=lambda value: 
+                len(value) == 4)
         propertyViewColumnVisibility = self.stateProperty("propertyViewColumnVisibility",
                 default=[True, True, True], validator=lambda value: len(value) == 3)
         attributeInspectorCurrentTab = self.stateProperty("attributeInspectorCurrentTab", default=PropertyIndex.VALUE)
@@ -182,7 +184,7 @@ class UIStateProxySource(StateSource):
         propertyIndex = attributeInspectorCurrentTab
         if propertyIndex not in PropertyIndex:
             propertyIndex = PropertyIndex.VALUE
-        self._mainWindow._ui.attributeInspector.setCurrentIndex(propertyIndex)
+        self._mainWindow._ui.propertyInspector.setCurrentIndex(propertyIndex)
 
     def onSaveState(self, state):
         # UI is different when --norender is used so don't load the splitter sizes.
@@ -220,7 +222,7 @@ class UIStateProxySource(StateSource):
             not self._mainWindow._ui.propertyView.isColumnHidden(c)
             for c in range(self._mainWindow._ui.propertyView.columnCount())]
 
-        state["attributeInspectorCurrentTab"] = self._mainWindow._ui.attributeInspector.currentIndex()
+        state["attributeInspectorCurrentTab"] = self._mainWindow._ui.propertyInspector.currentIndex()
 
 
 class Blocker:
@@ -667,6 +669,8 @@ class AppController(QtCore.QObject):
             nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
             nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+            nvh.resizeSection(3, 116)
+            nvh.setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
 
             pvh = self._ui.propertyView.header()
             pvh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
@@ -687,6 +691,7 @@ class AppController(QtCore.QObject):
                 QtCore.Qt.ScrollBarAlwaysOn)
 
             self._ui.attributeValueEditor.setAppController(self)
+            self._ui.primView.InitDrawModeDelegate(self)
 
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
@@ -699,6 +704,7 @@ class AppController(QtCore.QObject):
             primViewSelModel.selectionChanged.connect(self._selectionChanged)
 
             self._ui.primView.itemClicked.connect(self._itemClicked)
+            self._ui.primView.itemPressed.connect(self._itemPressed)
 
             self._ui.primView.header().customContextMenuRequested.connect(
                 self._primViewHeaderContextMenu)
@@ -816,8 +822,8 @@ class AppController(QtCore.QObject):
             self._ui.actionCull_Backfaces.triggered.connect(
                 self._toggleCullBackfaces)
 
-            self._ui.attributeInspector.currentChanged.connect(
-                self._updateAttributeInspector)
+            self._ui.propertyInspector.currentChanged.connect(
+                self._updatePropertyInspector)
 
             self._ui.propertyView.itemSelectionChanged.connect(
                 self._propertyViewSelectionChanged)
@@ -1571,7 +1577,7 @@ class AppController(QtCore.QObject):
         self._resetPrimView()
         self._updatePropertyView()
 
-        self._populateAttributeInspector()
+        self._populatePropertyInspector()
         self._updateMetadataView()
         self._updateLayerStackView()
         self._updateCompositionView()
@@ -2523,10 +2529,10 @@ class AppController(QtCore.QObject):
         Updates any UI that relies on the selection state.
         """
         self._updatePropertyViewSelection()
-        self._populateAttributeInspector()
-        self._updateAttributeInspector()
+        self._populatePropertyInspector()
+        self._updatePropertyInspector()
 
-    def _populateAttributeInspector(self):
+    def _populatePropertyInspector(self):
 
         focusPrimPath = None
         focusPropName = None
@@ -2549,11 +2555,11 @@ class AppController(QtCore.QObject):
         self._currentSpec = getattr(curr, 'spec', None)
         self._currentLayer = getattr(curr, 'layer', None)
 
-    def _updateAttributeInspector(self, index=None, obj=None):
+    def _updatePropertyInspector(self, index=None, obj=None):
         # index must be the first parameter since this method is used as
-        # attributeInspector tab widget's currentChanged(int) signal callback
+        # propertyInspector tab widget's currentChanged(int) signal callback
         if index is None:
-            index = self._ui.attributeInspector.currentIndex()
+            index = self._ui.propertyInspector.currentIndex()
 
         if obj is None:
             obj = self._getSelectedObject()
@@ -2720,7 +2726,8 @@ class AppController(QtCore.QObject):
             # Create a new item.  If we want its children we obviously
             # have to create those too.
             children = self._getFilteredChildren(prim)
-            item = PrimViewItem(prim, self, len(children) != 0)
+            item = PrimViewItem(prim, self, len(children) != 0, 
+                                parent=self._ui.primView)
             self._primToItemMap[prim] = item
             self._populateChildren(item, depth, maxDepth, children)
             # Push the item after the children so ancestors are processed
@@ -2919,7 +2926,7 @@ class AppController(QtCore.QObject):
             self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
             self._stageView.updateView()
-        self._updateAttributeInspector(
+        self._updatePropertyInspector(
             obj=self._dataModel.selection.getFocusPrim())
         self._updatePropertyView()
         self._refreshAttributeValue()
@@ -3033,16 +3040,19 @@ class AppController(QtCore.QObject):
                     self._dataModel.selection.removePrim(prim)
 
     def _itemClicked(self, item, col):
-        # onClick() returns True if the click caused a state change (currently
-        # this will only be a change to visibility).
-        if item.onClick(col):
+        # toggleVis() returns True if the click caused a visibility change.
+        if col == PrimViewColumnIndex.VIS and item.toggleVis():
             self.editComplete('Updated prim visibility')
             with Timer() as t:
                 PrimViewItem.propagateVis(item)
             if self._printTiming:
                 t.PrintTime("update vis column")
-        self._updateAttributeInspector(
-            obj=self._dataModel.selection.getFocusPrim())
+            self._updatePropertyInspector(
+                obj=self._dataModel.selection.getFocusPrim())
+
+    def _itemPressed(self, item, col):
+        if col == PrimViewColumnIndex.DRAWMODE:
+            self._ui.primView.ShowDrawModeWidgetForItem(item)
 
     def _getPathsFromItems(self, items, prune = False):
         # this function returns a list of paths given a list of items if
@@ -3216,7 +3226,7 @@ class AppController(QtCore.QObject):
         self._propertiesDict = self._getPropertiesDict()
         with self._propertyViewSelectionBlocker:
             treeWidget.clear()
-        self._populateAttributeInspector()
+        self._populatePropertyInspector()
 
         curPrimSelection = self._dataModel.selection.getFocusPrim()
 
@@ -4585,6 +4595,31 @@ class AppController(QtCore.QObject):
         self._updatePropertyView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
+            self._stageView.updateView()
+
+    def _resetPrimViewDrawMode(self, rootItem=None):
+        """Updates browser's "Draw Mode" columns. """
+        with Timer() as t:
+            primView = self._ui.primView
+            primView.setUpdatesEnabled(False)
+            # Update draw-model for the entire prim tree if the given 
+            # rootItem is None.
+            if rootItem is None:
+                rootItem = primView.invisibleRootItem().child(0)
+            if rootItem.childCount() == 0:
+                self._populateChildren(rootItem)
+            rootsToProcess = [rootItem.child(i) for i in 
+                    xrange(rootItem.childCount())]
+            for item in rootsToProcess:
+                PrimViewItem.propagateDrawMode(item, primView)
+            primView.setUpdatesEnabled(True)
+        if self._printTiming:
+            t.PrintTime("update draw mode column")
+
+    def _drawModeChanged(self, primViewItem):
+        self._updatePropertyView()
+        self._resetPrimViewDrawMode(rootItem=primViewItem)
+        if self._stageView:
             self._stageView.updateView()
 
     def _HUDInfoChanged(self):

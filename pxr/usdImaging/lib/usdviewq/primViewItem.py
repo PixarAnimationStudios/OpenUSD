@@ -21,13 +21,14 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtWidgets
-from pxr import Usd, UsdGeom
+from qt import QtCore, QtGui, QtWidgets
+from pxr import Sdf, Usd, UsdGeom
 from ._usdviewq import Utils
 
 from common import UIPrimTypeColors, UIFonts
 
 HALF_DARKER = 150
+
 # Pulled out as a wrapper to facilitate cprofile tracking
 def _GetPrimInfo(prim, time):
     return Utils.GetPrimInfo(prim, time)
@@ -36,11 +37,11 @@ def _GetPrimInfo(prim, time):
 # prim data associated with it and populate itself with that data.
 
 class PrimViewItem(QtWidgets.QTreeWidgetItem):
-    def __init__(self, prim, appController, primHasChildren):
+    def __init__(self, prim, appController, primHasChildren, parent=None):
         # Do *not* pass a parent.  The client must build the hierarchy.
         # This can dramatically improve performance when building a
         # large hierarchy.
-        super(PrimViewItem, self).__init__()
+        super(PrimViewItem, self).__init__(parent=parent)
 
         self.prim = prim
         self._appController = appController
@@ -55,17 +56,21 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
 
         # If we know we'll have children show a norgie, otherwise don't.
         if primHasChildren:
-            self.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.ShowIndicator)
+            self.setChildIndicatorPolicy(
+                    QtWidgets.QTreeWidgetItem.ShowIndicator)
         else:
-            self.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.DontShowIndicator)
+            self.setChildIndicatorPolicy(
+                    QtWidgets.QTreeWidgetItem.DontShowIndicator)
 
+        # If this item includes a persistent drawMode widget, it is stored here.
+        self.drawModeWidget = None
+        
     def push(self):
         """Pushes prim data to the UI."""
         # Push to UI.
         if self._needsPush:
             self._needsPush = False
             self._pull()
-            self.emitDataChanged()
 
     def _pull(self):
         """Extracts and stores prim data."""
@@ -84,6 +89,34 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                 self.prim, self._appController._dataModel.currentFrame)
             self._extractInfo(info)
 
+            self.emitDataChanged()
+
+    @staticmethod
+    def _HasAuthoredDrawMode(prim):
+        modelAPI = UsdGeom.ModelAPI(prim)
+        drawModeAttr = modelAPI.GetModelDrawModeAttr()
+        return drawModeAttr and drawModeAttr.HasAuthoredValueOpinion()
+
+    def _isComputedDrawModeInherited(self, parentDrawModeIsInherited=None):
+        """Returns true if the computed draw mode for this item is inherited 
+           from an authored "model:drawMode" value on an ancestor prim.
+        """
+        if PrimViewItem._HasAuthoredDrawMode(self.prim):
+            return False
+
+        parent = self.prim.GetParent()
+        while parent and parent.GetPath() != Sdf.Path.absoluteRootPath:
+            if PrimViewItem._HasAuthoredDrawMode(parent):
+                return True
+
+            # Stop the upward traversal if we know whether the parent's draw 
+            # mode is inherited.
+            if parentDrawModeIsInherited is not None:
+                return parentDrawModeIsInherited
+            
+            parent = parent.GetParent()
+        return False
+
     def _extractInfo(self, info):
         ( self.hasArcs,
           self.active,
@@ -92,20 +125,44 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
           self.abstract,
           self.isInMaster,
           self.isInstance,
+          self.supportsDrawMode,
           isVisibilityInherited,
           self.visVaries,
           self.name,
           self.typeName ) = info
 
         parent = self.parent()
-        self.computedVis =  parent.computedVis \
-            if isinstance(parent, PrimViewItem) \
-            else UsdGeom.Tokens.inherited
+        parentIsPrimViewItem = isinstance(parent, PrimViewItem)
+        self.computedVis =  parent.computedVis if parentIsPrimViewItem \
+                            else UsdGeom.Tokens.inherited
         if self.imageable and self.active:
             if isVisibilityInherited:
                 self.vis = UsdGeom.Tokens.inherited
             else:
                 self.vis = self.computedVis = UsdGeom.Tokens.invisible
+
+        # If this is the invisible root item, initialize fallback values for 
+        # the drawMode related parameters.
+        if not parentIsPrimViewItem:
+            self.computedDrawMode = ''
+            self.isDrawModeInherited = False
+            return
+
+        # We don't need to compute drawMode related parameters for primViewItems
+        # that don't support draw mode.
+        if not self.supportsDrawMode:
+            return
+        
+        self.computedDrawMode = UsdGeom.ModelAPI(self.prim).ComputeModelDrawMode(
+            parent.computedDrawMode) if parentIsPrimViewItem else ''
+
+
+        parentDrawModeIsInherited = parent.isDrawModeInherited if \
+                parentIsPrimViewItem else None
+        
+        self.isDrawModeInherited = self._isComputedDrawModeInherited(
+                    parentDrawModeIsInherited)
+        
 
     def addChildren(self, children):
         """Adds children to the end of this item.  This is the only
@@ -131,9 +188,24 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             result = self._typeData(role)
         elif column == 2:
             result = self._visData(role)
+        elif column == 3 and self.supportsDrawMode:
+            result = self._drawModeData(role)
         if not result:
             result = super(PrimViewItem, self).data(column, role)
         return result
+
+    def _GetForegroundColor(self):
+        self.push()
+        
+        if self.isInstance:
+            color = UIPrimTypeColors.INSTANCE
+        elif self.hasArcs:
+            color = UIPrimTypeColors.HAS_ARCS
+        elif self.isInMaster:
+            color = UIPrimTypeColors.MASTER
+        else:
+            color = UIPrimTypeColors.NORMAL
+        return color.color() if self.active else color.color().darker(HALF_DARKER)
 
     def _nameData(self, role):
         if role == QtCore.Qt.DisplayRole:
@@ -149,16 +221,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             else:
                 return UIFonts.DEFINED_PRIM
         elif role == QtCore.Qt.ForegroundRole:
-            if self.isInstance:
-                color = UIPrimTypeColors.INSTANCE
-            elif self.hasArcs:
-                color = UIPrimTypeColors.HAS_ARCS
-            elif self.isInMaster:
-                color = UIPrimTypeColors.MASTER
-            else:
-                color = UIPrimTypeColors.NORMAL
-
-            return color if self.active else color.color().darker(HALF_DARKER)
+            return self._GetForegroundColor()
         elif role == QtCore.Qt.ToolTipRole:
             toolTip = 'Prim'
             if len(self.typeName) > 0:
@@ -181,11 +244,27 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         else:
             return None
 
+    def _drawModeData(self, role):
+        if role == QtCore.Qt.DisplayRole:
+            return self.computedDrawMode
+        elif role == QtCore.Qt.FontRole:
+            return UIFonts.BOLD_ITALIC if self.isDrawModeInherited else \
+                   UIFonts.DEFINED_PRIM
+        elif role == QtCore.Qt.ForegroundRole:
+            color = self._GetForegroundColor()
+            return color.darker(110) if self.isDrawModeInherited else \
+                   color
+
     def _typeData(self, role):
         if role == QtCore.Qt.DisplayRole:
             return self.typeName
         else:
             return self._nameData(role)
+            
+    def _isVisInherited(self):
+        return self.imageable and self.active and \
+               self.vis != UsdGeom.Tokens.invisible and \
+               self.computedVis == UsdGeom.Tokens.invisible
 
     def _visData(self, role):
         if role == QtCore.Qt.DisplayRole:
@@ -196,14 +275,12 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignCenter
         elif role == QtCore.Qt.FontRole:
-            return UIFonts.BOLD
+            return UIFonts.BOLD_ITALIC if self._isVisInherited() \
+                   else UIFonts.BOLD
         elif role == QtCore.Qt.ForegroundRole:
-            fgColor = self._nameData(role)
-            if (self.imageable and self.active and
-                    self.vis != UsdGeom.Tokens.invisible and
-                    self.computedVis == UsdGeom.Tokens.invisible):
-                fgColor = fgColor.color().darker()
-            return fgColor
+            fgColor = self._GetForegroundColor()
+            return fgColor.darker() if self._isVisInherited() \
+                   else fgColor
         else:
             return None
 
@@ -261,6 +338,35 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         self._appController.updateGUI()
 
     @staticmethod
+    def propagateDrawMode(item, primView, parentDrawMode='', 
+                          parentDrawModeIsInherited=None):
+        # If this item does not support draw mode, none of its descendants 
+        # can support it. Hence, stop recursion here.
+        # 
+        # Call push() here to ensure that supportsDrawMode has been populated
+        # for the item.
+        item.push()
+        if not item.supportsDrawMode:
+            return
+
+        from primTreeWidget import DrawModeWidget
+        drawModeWidget = item.drawModeWidget
+        if drawModeWidget:
+            drawModeWidget.RefreshDrawMode()
+        else:
+            modelAPI = UsdGeom.ModelAPI(item.prim)
+            item.computedDrawMode = modelAPI.ComputeModelDrawMode(parentDrawMode)
+            item.isDrawModeInherited = item._isComputedDrawModeInherited(
+                    parentDrawModeIsInherited=parentDrawModeIsInherited)
+            item.emitDataChanged()
+
+        # Traverse down to children to update their drawMode.
+        for child in [item.child(i) for i in xrange(item.childCount())]:            
+            PrimViewItem.propagateDrawMode(child, primView, 
+                    parentDrawMode=item.computedDrawMode,
+                    parentDrawModeIsInherited=item.isDrawModeInherited)
+
+    @staticmethod
     def propagateVis(item, authoredVisHasChanged=True):
         parent = item.parent()
         inheritedVis = parent._resetAncestorsRecursive(authoredVisHasChanged) \
@@ -274,7 +380,6 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         else:
             for child in [item.child(i) for i in xrange(item.childCount())]:
                 child._pushVisRecursive(inheritedVis, authoredVisHasChanged)
-
 
     def _resetAncestorsRecursive(self, authoredVisHasChanged):
         parent = self.parent()
@@ -333,11 +438,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         # we must re-determine if visibility is varying over time
         self.loadVis(self.parent().computedVis, True)
 
-    def onClick(self, col):
-        """Return True if the click caused the prim to change state (visibility,
-        etc)"""
-        if col == 2 and self.imageable and self.active:
+    def toggleVis(self):
+        """Return True if the the prim's visibility state was toggled. """
+        if self.imageable and self.active:
             self.setVisible(self.vis == UsdGeom.Tokens.invisible)
             return True
         return False
-

@@ -162,7 +162,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeWidget" name="primView">
+          <widget class="PrimTreeWidget" name="primView">
            <property name="font">
             <font>
              <family>Gotham Rounded</family>
@@ -227,6 +227,11 @@
             </property>
             <property name="textAlignment">
              <set>AlignLeading|AlignVCenter</set>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Draw Mode</string>
             </property>
            </column>
           </widget>
@@ -426,6 +431,9 @@
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
+           <property name="textElideMode">
+            <enum>Qt::ElideMiddle</enum>
+           </property>
            <property name="columnCount">
             <number>3</number>
            </property>
@@ -548,7 +556,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QFrame" name="attributeInspectorFrame">
+       <widget class="QFrame" name="propertyInspectorFrame">
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
@@ -575,7 +583,7 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QFrame" name="attributeInspectorContainer">
+          <widget class="QFrame" name="propertyInspectorContainer">
            <property name="frameShape">
             <enum>QFrame::NoFrame</enum>
            </property>
@@ -596,7 +604,7 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QTabWidget" name="attributeInspector">
+             <widget class="QTabWidget" name="propertyInspector">
               <property name="currentIndex">
                <number>0</number>
               </property>
@@ -2645,6 +2653,11 @@
    <extends>QWidget</extends>
    <header>propertyLegend</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PrimTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>primTreeWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

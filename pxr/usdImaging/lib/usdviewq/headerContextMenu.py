@@ -59,7 +59,7 @@ class HeaderContextMenuItem(UsdviewContextMenuItem):
         self._parent = parent
         self._column = column
 
-        if parent.__class__ == QtWidgets.QTreeWidget:
+        if isinstance(parent, QtWidgets.QTreeWidget):
             self._text = parent.headerItem().text(column)
         else:
             self._text = parent.horizontalHeaderItem(column).text()
@@ -69,16 +69,14 @@ class HeaderContextMenuItem(UsdviewContextMenuItem):
         return self._text
 
     def IsEnabled(self):
-        return self._column > 0
+        # Enable context menu item for columns except the "Name" column.
+        return 'Name' not in self.GetText()
 
     def IsChecked(self):
         # true if the column is visible, false otherwise
         return not self._parent.isColumnHidden(self._column)
 
     def RunCommand(self):
-        if self._column <= 0 :
-            return
-
         # show or hide the column depending on its previous state
         self._parent.setColumnHidden(self._column, self.IsChecked())
 
