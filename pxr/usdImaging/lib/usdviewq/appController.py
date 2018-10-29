@@ -539,7 +539,8 @@ class AppController(QtCore.QObject):
             self._ui.propertyView.setHorizontalScrollMode(
                 QtWidgets.QAbstractItemView.ScrollPerPixel)
 
-            self._ui.frameSlider.setTracking(self._dataModel.viewSettings.redrawOnScrub)
+            self._ui.frameSlider.setUpdateOnFrameScrub(
+                    self._dataModel.viewSettings.redrawOnScrub)
 
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
             self._ui.colorGroup.setExclusive(True)
@@ -716,11 +717,8 @@ class AppController(QtCore.QObject):
 
             self._ui.primView.expanded.connect(self._primViewExpanded)
 
-            self._ui.frameSlider.valueChanged.connect(self.setFrame)
-
-            self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
-
-            self._ui.frameSlider.sliderReleased.connect(self._updateOnFrameChange)
+            self._ui.frameSlider.signalFrameChanged.connect(self.setFrame)
+            self._ui.frameSlider.signalPositionChanged.connect(self._sliderMoved)
 
             self._ui.frameField.editingFinished.connect(self._frameStringChanged)
 
@@ -1012,14 +1010,6 @@ class AppController(QtCore.QObject):
 
             self._setupDebugMenu()
 
-            # timer for slider. when user stops scrubbing for 0.5s, update stuff.
-            self._sliderTimer = QtCore.QTimer(self)
-            self._sliderTimer.setInterval(500)
-
-            # Connect the update timer to _frameStringChanged, which will ensure
-            # we update _currentTime prior to updating UI
-            self._sliderTimer.timeout.connect(self._frameStringChanged)
-
             # We refresh as if all view settings changed. In the future, we
             # should do more granular refreshes. This first requires more
             # granular signals from ViewSettingsDataModel.
@@ -1211,8 +1201,7 @@ class AppController(QtCore.QObject):
 
         if self._playbackAvailable:
             if not resetStageDataOnly:
-                self._ui.frameSlider.setRange(0, len(self._timeSamples)-1)
-                self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
+                self._ui.frameSlider.resetSlider(len(self._timeSamples))
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
             self._ui.playButton.setChecked(False)
@@ -1483,7 +1472,7 @@ class AppController(QtCore.QObject):
         else:
             self._resetPrimView(restoreSelection=False)
 
-        self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
+        self._ui.frameSlider.resetToMinimum()
 
         if not self._stageView:
 
@@ -1674,7 +1663,8 @@ class AppController(QtCore.QObject):
 
     def _redrawOptionToggled(self, checked):
         self._dataModel.viewSettings.redrawOnScrub = checked
-        self._ui.frameSlider.setTracking(self._dataModel.viewSettings.redrawOnScrub)
+        self._ui.frameSlider.setUpdateOnFrameScrub(
+            self._dataModel.viewSettings.redrawOnScrub)
 
     # Frame-by-frame/Playback functionality ===================================
 
@@ -1742,18 +1732,12 @@ class AppController(QtCore.QObject):
     def _advanceFrame(self):
         if not self._playbackAvailable:
             return
-        newValue = self._ui.frameSlider.value() + 1
-        if newValue > self._ui.frameSlider.maximum():
-            newValue = self._ui.frameSlider.minimum()
-        self._ui.frameSlider.setValue(newValue)
+        self._ui.frameSlider.advanceFrame()
 
     def _retreatFrame(self):
         if not self._playbackAvailable:
             return
-        newValue = self._ui.frameSlider.value() - 1
-        if newValue < self._ui.frameSlider.minimum():
-            newValue = self._ui.frameSlider.maximum()
-        self._ui.frameSlider.setValue(newValue)
+        self._ui.frameSlider.retreatFrame()
 
     def _findIndexOfFieldContents(self, field):
         # don't convert string to float directly because of rounding error
@@ -1795,15 +1779,13 @@ class AppController(QtCore.QObject):
 
         if (indexOfFrame != Usd.TimeCode.Default()):
             self.setFrame(indexOfFrame, forceUpdate=True)
-            self._ui.frameSlider.setValue(indexOfFrame)
+            self._ui.frameSlider.setValueImmediate(indexOfFrame)
 
         self._ui.frameField.setText(
             str(self._dataModel.currentFrame.GetValue()))
 
     def _sliderMoved(self, value):
         self._ui.frameField.setText(str(self._timeSamples[value]))
-        self._sliderTimer.stop()
-        self._sliderTimer.start()
 
     # Prim/Attribute search functionality =====================================
 
@@ -3118,7 +3100,6 @@ class AppController(QtCore.QObject):
             self._updateHUDGeomCounts()
             self._updatePropertyView()
             self._refreshAttributeValue()
-            self._sliderTimer.stop()
 
             # value sources of an attribute can change upon frame change
             # due to value clips, so we must update the layer stack.

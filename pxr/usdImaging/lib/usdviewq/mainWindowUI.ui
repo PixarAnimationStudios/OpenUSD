@@ -949,12 +949,15 @@
            </widget>
           </item>
           <item>
-           <widget class="QSlider" name="frameSlider">
+           <widget class="FrameSlider" name="frameSlider">
             <property name="minimumSize">
              <size>
               <width>0</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="pageStep">
+             <number>0</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -1205,27 +1208,27 @@
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
-        <property name="title">
-            <string>&amp;Edit</string>
-        </property>
-        <widget class="QMenu" name="menuInterpolation">
-            <property name="title">
-            <string>Stage Interpolation</string>
-            </property>
-        </widget>
-        <addaction name="menuInterpolation"/>
-        <addaction name="separator"/>
-        <addaction name="actionLoad"/>
-        <addaction name="actionUnload"/>
-        <addaction name="separator"/>
-        <addaction name="actionActivate"/>
-        <addaction name="actionDeactivate"/>
-        <addaction name="separator"/>
-        <addaction name="actionMake_Visible"/>
-        <addaction name="actionVis_Only"/>
-        <addaction name="actionMake_Invisible"/>
-        <addaction name="actionRemove_Session_Visibility"/>
-        <addaction name="actionReset_All_Session_Visibility"/>
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <widget class="QMenu" name="menuInterpolation">
+     <property name="title">
+      <string>Stage Interpolation</string>
+     </property>
+    </widget>
+    <addaction name="menuInterpolation"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad"/>
+    <addaction name="actionUnload"/>
+    <addaction name="separator"/>
+    <addaction name="actionActivate"/>
+    <addaction name="actionDeactivate"/>
+    <addaction name="separator"/>
+    <addaction name="actionMake_Visible"/>
+    <addaction name="actionVis_Only"/>
+    <addaction name="actionMake_Invisible"/>
+    <addaction name="actionRemove_Session_Visibility"/>
+    <addaction name="actionReset_All_Session_Visibility"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -2657,7 +2660,12 @@
   <customwidget>
    <class>PrimTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>primTreeWidget.h</header>
+   <header>primTreeWidget</header>
+  </customwidget>
+  <customwidget>
+   <class>FrameSlider</class>
+   <extends>QSlider</extends>
+   <header>frameSlider</header>
   </customwidget>
  </customwidgets>
  <resources/>

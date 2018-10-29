@@ -33,6 +33,7 @@ pxr_library(usdviewq
         appEventFilter.py
         arrayAttributeView.py
         customAttributes.py
+        frameSlider.py
         appController.py
         usdviewApi.py
         plugin.py
