@@ -463,24 +463,41 @@ UsdGeomModelAPI::GetConstraintTargets() const
     return constraintTargets;
 }
 
-TfToken
-UsdGeomModelAPI::ComputeModelDrawMode() const
+namespace {
+static 
+bool
+_GetAuthoredDrawMode(const UsdPrim &prim, TfToken *drawMode)
 {
+    // Only check for the attribute on models; don't check the pseudo-root.
+    if (!prim.IsModel() || !prim.GetParent()) {
+        return false;
+    }
+
+    UsdGeomModelAPI modelAPI(prim);
+    UsdAttribute attr = modelAPI.GetModelDrawModeAttr();
+    return attr && attr.Get(drawMode);
+}
+}
+
+TfToken
+UsdGeomModelAPI::ComputeModelDrawMode(const TfToken &parentDrawMode) const
+{
+    TfToken drawMode;
+
+    if (_GetAuthoredDrawMode(GetPrim(), &drawMode)) {
+        return drawMode;
+    }
+
+    if (!parentDrawMode.IsEmpty()) {
+        return parentDrawMode;
+    }
+
     // Find the closest applicable model:drawMode among this prim's ancestors.
-    for (UsdPrim curPrim = GetPrim(); curPrim; curPrim = curPrim.GetParent()) {
-        // Only check for the attribute on models; don't check the pseudo-root.
-        if (!curPrim.IsModel() || !curPrim.GetParent()) {
-            continue;
-        }
+    for (UsdPrim curPrim = GetPrim().GetParent(); 
+         curPrim; 
+         curPrim = curPrim.GetParent()) {
 
-        // If model:drawMode is set, use its value; we want the first attribute
-        // we find.
-        UsdGeomModelAPI curModel(curPrim);
-        UsdAttribute attr;
-        TfToken drawMode;
-
-        if ((attr = curModel.GetModelDrawModeAttr()) && attr &&
-            attr.Get(&drawMode)) {
+        if (_GetAuthoredDrawMode(curPrim, &drawMode)) {
             return drawMode;
         }
     }
@@ -488,6 +505,7 @@ UsdGeomModelAPI::ComputeModelDrawMode() const
     // If the attribute isn't set on any ancestors, return "default".
     return UsdGeomTokens->default_;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
