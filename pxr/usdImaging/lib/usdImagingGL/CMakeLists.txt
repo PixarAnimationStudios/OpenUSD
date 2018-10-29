@@ -57,7 +57,6 @@ pxr_library(usdImagingGL
         version.h
 
     PRIVATE_CLASSES
-        hdEngine
         legacyEngine
         textureUtils
 

@@ -34,10 +34,15 @@
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
 
+#include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/rprimCollection.h"
+
+#include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hdx/renderSetupTask.h"
+
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/base/tf/declarePtrs.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -46,19 +51,23 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
+
 #include "pxr/base/vt/dictionary.h"
+
+#include "pxr/base/tf/declarePtrs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdPrim;
 class HdRenderIndex;
-class UsdImagingGLHdEngine;
+class HdxRendererPlugin;
+class HdxTaskController;
+class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 /// \class UsdImagingGLEngine
 ///
@@ -231,7 +240,7 @@ public:
         const UsdImagingGLRenderParams& params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
-        SdfPath *outInstancerPath = NULL,
+        SdfPath *outHitInstancerPath = NULL,
         int *outHitInstanceIndex = NULL,
         int *outHitElementIndex = NULL);
 
@@ -293,11 +302,11 @@ public:
 
     /// Return the vector of available render-graph delegate plugins.
     USDIMAGINGGL_API
-    TfTokenVector GetRendererPlugins() const;
+    static TfTokenVector GetRendererPlugins();
 
     /// Return the user-friendly description of a renderer plugin.
     USDIMAGINGGL_API
-    std::string GetRendererDisplayName(TfToken const &id) const;
+    static std::string GetRendererDisplayName(TfToken const &id);
 
     /// Return the id of the currently used renderer plugin.
     USDIMAGINGGL_API
@@ -363,9 +372,66 @@ protected:
     USDIMAGINGGL_API
     void _Render(const UsdImagingGLRenderParams &params);
 
-private:
+    // These functions factor batch preparation into separate steps so they
+    // can be reused by both the vectorized and non-vectorized API.
+    bool _CanPrepareBatch(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
+    void _PreSetTime(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
+    void _PostSetTime(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
 
-    std::unique_ptr<UsdImagingGLHdEngine> _hdImpl;
+    // Create a hydra collection given root paths and render params.
+    // Returns true if the collection was updated.
+    static bool _UpdateHydraCollection(HdRprimCollection *collection,
+                          SdfPathVector const& roots,
+                          UsdImagingGLRenderParams const& params,
+                          TfTokenVector *renderTags);
+    static HdxRenderTaskParams _MakeHydraUsdImagingGLRenderParams(
+                          UsdImagingGLRenderParams const& params);
+
+    // This function disposes of: the render index, the render plugin,
+    // the task controller, and the usd imaging delegate.
+    void _DeleteHydraResources();
+
+    static TfToken _GetDefaultRendererPluginId();
+
+    HdEngine _engine;
+
+    HdRenderIndex *_renderIndex;
+
+    HdxSelectionTrackerSharedPtr _selTracker;
+    HdRprimCollection _renderCollection;
+    HdRprimCollection _intersectCollection;
+
+    SdfPath const _delegateID;
+    UsdImagingDelegate *_delegate;
+
+    HdxRendererPlugin *_rendererPlugin;
+    TfToken _rendererId;
+    HdxTaskController *_taskController;
+
+    GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
+
+    // Data we want to live across render plugin switches:
+    GfVec4f _selectionColor;
+
+    // Hold onto viewport dimensions for render delegate creation.
+    GfVec4d _viewport;
+
+    SdfPath _rootPath;
+    SdfPathVector _excludedPrimPaths;
+    SdfPathVector _invisedPrimPaths;
+    bool _isPopulated;
+
+    TfTokenVector _renderTags;
+
+
+    // An implementation of much of the engine functionality that doesn't
+    // invoke any of the advanced Hydra features.  It is kept around for 
+    // backwards compatibility and may one day be deprecated.  Most of the 
+    // time we expect this to be null.  When it is not null, none of the other
+    // member variables of this class are used.
     std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
 
 };

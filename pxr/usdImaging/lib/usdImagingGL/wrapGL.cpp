@@ -138,8 +138,10 @@ void wrapGL()
             .def("IsConverged", &UsdImagingGL::IsConverged)
             .def("GetRendererPlugins", &UsdImagingGL::GetRendererPlugins,
                  return_value_policy< TfPySequenceToList >())
+                .staticmethod("GetRendererPlugins")
             .def("GetRendererDisplayName", 
                     &UsdImagingGL::GetRendererDisplayName)
+                .staticmethod("GetRendererDisplayName")
             .def("GetCurrentRendererId", &UsdImagingGL::GetCurrentRendererId)
             .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
             .def("GetRendererAovs", &UsdImagingGL::GetRendererAovs,
