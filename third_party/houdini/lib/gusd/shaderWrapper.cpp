@@ -28,6 +28,7 @@
 #include <pxr/usd/usdShade/connectableAPI.h>
 
 #include <pxr/usd/usdRi/materialAPI.h>
+#include <pxr/base/arch/filesystem.h>
 
 #include <DEP/DEP_MicroNode.h>
 #include <PRM/PRM_ParmList.h>
@@ -39,8 +40,6 @@
 #include <VOP/VOP_CodeGenerator.h>
 #include <UT/UT_Version.h>
 #include <UT/UT_EnvControl.h>
-
-#include <boost/filesystem.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -74,9 +73,7 @@ _buildCustomOslNode(const VOP_Node* vopNode,
     shaderName.prepend(shaderOutDir.c_str());
 
     // Create shaderOutDir path directories, if they don't exist.
-    try {
-        boost::filesystem::create_directories(shaderOutDir);
-    } catch (boost::filesystem::filesystem_error &e) {
+    if (!ArchMkDir(shaderOutDir.c_str()) {
         TF_CODING_ERROR("Failed to create dir '%s': %s", shaderOutDir.c_str(),
                         e.what());
         return false;

@@ -31,7 +31,7 @@
 import os, sys
 
 if len(sys.argv) != 3:
-    print "Usage: {0} src dst".format(sys.argv[0])
+    print ("Usage: {0} src dst".format(sys.argv[0]))
     sys.exit(1)
 
 srcFile = sys.argv[1]

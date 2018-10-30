@@ -22,7 +22,6 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUtils
         cameraUtil
         katanaAttrfncApi
-        ${Boost_SYSTEM_LIBRARY} 
         ${Boost_THREAD_LIBRARY} 
 
     PUBLIC_CLASSES

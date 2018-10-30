@@ -145,8 +145,33 @@ int main()
     // create and remove a tmp subdir
     std::string retpath;
     retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");
-    ARCH_AXIOM (retpath != "");
+    ARCH_AXIOM(retpath != "");
     ArchRmDir(retpath.c_str());
+
+    // create a temp subdir again
+    retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");
+    ARCH_AXIOM(retpath != "");
+
+    // ensure that MkDir on an existing directory returns true
+    ARCH_AXIOM(ArchMkDir(retpath.c_str()));
+
+    // make a nested subdir
+    std::string nestedpath = retpath + "/sub/dir/test";
+    ARCH_AXIOM(ArchMkDir(nestedpath.c_str()));
+
+    // create a file in that directory
+    std::string filename = nestedpath + "/dummy.test";
+    ARCH_AXIOM((firstFile = ArchOpenFile(filename.c_str(), "wb")) != NULL);
+    fputs(testContent, firstFile);
+    fclose(firstFile);
+
+    // ensure mkdir returns false if trying to create a directory where it can't
+    ARCH_AXIOM(!ArchMkDir(filename.c_str()));
+
+    // remove 
+    ArchRmDir(nestedpath.c_str());
+
+    printf("YAY\n");
 
     // Test other utilities
     TestArchNormPath();

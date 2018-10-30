@@ -179,6 +179,8 @@ ArchOpenFile(char const* fileName, char const* mode);
 #   define ArchRmDir(path)   rmdir(path)
 #endif
 
+ARCH_API bool ArchMkDir(const char* path);
+
 /// Return the length of a file in bytes.
 ///
 /// Returns -1 if the file cannot be opened/read.

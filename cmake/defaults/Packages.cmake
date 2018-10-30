@@ -45,10 +45,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Boost
     find_package(Boost
         COMPONENTS
-            filesystem
             program_options
             python
-            system
         REQUIRED
     )
 
@@ -60,11 +58,14 @@ else()
     # --Boost
     find_package(Boost
         COMPONENTS
-            filesystem
             program_options
-            system
         REQUIRED
     )
+endif()
+
+if(WIN32)
+    # On Windows, boost automagic library linking via pragma lib is problematic, so suppress it
+    add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 
 # --TBB

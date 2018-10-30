@@ -40,6 +40,7 @@
 #include <cerrno>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -83,6 +84,45 @@ int ArchRmDir(const char* path)
     return RemoveDirectory(path) ? 0 : -1;
 }
 #endif
+
+bool ArchMkDir(const char* full_path)
+{
+    if (!full_path)
+        return true;
+
+    size_t sz = strlen(full_path);
+    if (!sz)
+        return true;
+
+    std::string path(full_path);
+    path = ArchNormPath(path, false);
+
+    // test the full path for existence
+    ArchStatType st;
+#if defined(ARCH_OS_WINDOWS)
+    if ((_stat64(path.c_str(), &st) == 0) && (((st.st_mode & _S_IFDIR) == _S_IFDIR)))
+        return true;
+#else
+    if ((stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode)))
+        return true;
+#endif
+
+    size_t sep = path.rfind('/');
+    if (sep != string::npos)
+    {
+        std::string sub_path = path.substr(0, sep);
+        if (!ArchMkDir(sub_path.c_str()))
+            return false;   // propagate failures
+    }
+
+    int result;
+#if defined(ARCH_OS_WINDOWS)
+    result = _mkdir(path.c_str());
+#else
+    result = mkdir(path.c_str(), 0777);    
+#endif
+    return result == 0;
+}
 
 bool
 ArchStatIsWritable(const ArchStatType *st)
