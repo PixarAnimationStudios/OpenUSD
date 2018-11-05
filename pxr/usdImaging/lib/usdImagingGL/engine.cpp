@@ -53,6 +53,17 @@ namespace {
 
 static
 bool
+_GetHydraEnabledEnvVar()
+{
+    // XXX: Note that we don't cache the result here.  This is primarily because
+    // of the way usdview currently interacts with this setting.  This should
+    // be cleaned up, and the new class hierarchy around UsdImagingGLEngine
+    // makes it much easier to do so.
+    return TfGetenv("HD_ENABLED", "1") == "1";
+}
+
+static
+bool
 _IsHydraEnabled()
 {
     // Make sure there is an OpenGL context when 
@@ -63,7 +74,7 @@ _IsHydraEnabled()
         return false;
     }
 
-    if (TfGetenv("HD_ENABLED", "1") != "1") {
+    if (!_GetHydraEnabledEnvVar()) {
         return false;
     }
     
@@ -614,7 +625,7 @@ UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
 TfTokenVector
 UsdImagingGLEngine::GetRendererPlugins()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar())) {
         // No plugins if the legacy implementation is active.
         return std::vector<TfToken>();
     }
@@ -633,7 +644,7 @@ UsdImagingGLEngine::GetRendererPlugins()
 std::string
 UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar())) {
         // No renderer support if the legacy implementation is active.
         return std::string();
     }
