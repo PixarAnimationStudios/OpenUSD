@@ -868,6 +868,8 @@ class AppController(QtCore.QObject):
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
+            # Configuring the PrimView's Show menu.  In addition to the
+            # "designed" menu items, we inject a PrimView HeaderContextMenu
             self._ui.primViewDepthGroup.triggered.connect(self._changePrimViewDepth)
 
             self._ui.actionExpand_All.triggered.connect(
@@ -887,6 +889,12 @@ class AppController(QtCore.QObject):
 
             self._ui.actionShow_Abstract_Prims.triggered.connect(
                 self._toggleShowAbstractPrims)
+
+            # Since setting column visibility is probably not a common
+            # operation, it's actually good to have Columns at the end.
+            self._ui.menuShow.addSeparator()
+            self._ui.menuShow.addMenu(HeaderContextMenu(self._ui.primView))
+
 
             self._ui.actionRollover_Prim_Info.triggered.connect(
                 self._toggleRolloverPrimInfo)
