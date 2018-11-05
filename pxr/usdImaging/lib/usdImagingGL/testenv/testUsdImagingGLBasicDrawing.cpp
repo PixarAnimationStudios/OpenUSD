@@ -48,7 +48,7 @@
 #include "pxr/usdImaging/usdImaging/unitTestHelper.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/usdImaging/usdImagingGL/gl.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -100,7 +100,7 @@ My_TestGLDrawing::InitTest()
 
     if (UsdImagingGLEngine::IsHydraEnabled()) {
         std::cout << "Using HD Renderer.\n";
-        _engine.reset(new UsdImagingGL(
+        _engine.reset(new UsdImagingGLEngine(
             _stage->GetPseudoRoot().GetPath(), excludedPaths));
         if (!_GetRenderer().IsEmpty()) {
             if (!_engine->SetRendererPlugin(_GetRenderer())) {
@@ -115,7 +115,8 @@ My_TestGLDrawing::InitTest()
     } else{
         std::cout << "Using Reference Renderer.\n"; 
         _engine.reset(
-            new UsdImagingGL(_stage->GetPseudoRoot().GetPath(), excludedPaths));
+            new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 
+                    excludedPaths));
     }
 
     std::cout << glGetString(GL_VENDOR) << "\n";
