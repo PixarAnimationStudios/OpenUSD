@@ -71,9 +71,10 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 /// \class UsdImagingGLEngine
 ///
-/// Interface class for render engines.
+/// The UsdImagingGLEngine is the main entry point API for rendering USD scenes.
 ///
-class UsdImagingGLEngine {
+class UsdImagingGLEngine
+{
 public:
 
     // ---------------------------------------------------------------------
