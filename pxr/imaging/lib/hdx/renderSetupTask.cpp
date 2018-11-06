@@ -135,13 +135,7 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
     _renderPassState->SetPointSelectedSize(params.pointSelectedSize);
     _renderPassState->SetLightingEnabled(params.enableLighting);
     _renderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _renderPassState->SetTessLevel(params.tessLevel);
-    _renderPassState->SetDrawingRange(params.drawingRange);
     _renderPassState->SetCullStyle(params.cullStyle);
-
-    // XXX TODO: Handle params.geomStyle
-    // XXX TODO: Handle params.complexity
-    // XXX TODO: Handle params visability (hullVisibility, surfaceVisibility)
 
     // depth bias
     _renderPassState->SetDepthBiasUseDefault(params.depthBiasUseDefault);
@@ -269,8 +263,6 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.enableLighting << " "
         << pv.enableIdRender << " "
         << pv.alphaThreshold << " "
-        << pv.tessLevel << " "
-        << pv.drawingRange << " "
         << pv.enableSceneMaterials << " "
         << pv.depthBiasUseDefault << " "
         << pv.depthBiasEnable << " "
@@ -293,10 +285,6 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.blendConstantColor << " "
         << pv.blendEnable << " "
         << pv.cullStyle << " "
-        << pv.geomStyle << " "
-        << pv.complexity << " "
-        << pv.hullVisibility << " "
-        << pv.surfaceVisibility << " "
         << pv.camera << " "
         << pv.viewport << " ";
         for (auto const& a : pv.aovBindings) {
@@ -320,8 +308,6 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.enableLighting          == rhs.enableLighting          &&
            lhs.enableIdRender          == rhs.enableIdRender          &&
            lhs.alphaThreshold          == rhs.alphaThreshold          &&
-           lhs.tessLevel               == rhs.tessLevel               &&
-           lhs.drawingRange            == rhs.drawingRange            &&
            lhs.enableSceneMaterials    == rhs.enableSceneMaterials    &&
            lhs.depthBiasUseDefault     == rhs.depthBiasUseDefault     &&
            lhs.depthBiasEnable         == rhs.depthBiasEnable         &&
@@ -344,10 +330,6 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.blendConstantColor      == rhs.blendConstantColor      &&
            lhs.blendEnable             == rhs.blendEnable             &&
            lhs.cullStyle               == rhs.cullStyle               &&
-           lhs.geomStyle               == rhs.geomStyle               &&
-           lhs.complexity              == rhs.complexity              &&
-           lhs.hullVisibility          == rhs.hullVisibility          &&
-           lhs.surfaceVisibility       == rhs.surfaceVisibility       &&
            lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&
            lhs.viewport                == rhs.viewport                &&

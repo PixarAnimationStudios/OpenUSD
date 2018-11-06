@@ -113,10 +113,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         _enableLighting          = params.enableLighting;
         _overrideColor           = params.overrideColor;
         _alphaThreshold          = params.alphaThreshold;
-        _tessLevel               = params.tessLevel;
-        _drawingRange            = params.drawingRange;
         _cullStyle               = params.cullStyle;
-
 
         // Depth
         // XXX: Should be in raster state?
@@ -125,12 +122,6 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         _depthBiasConstantFactor = params.depthBiasConstantFactor;
         _depthBiasSlopeFactor    = params.depthBiasSlopeFactor;
         _depthFunc               = params.depthFunc;
-
-        _cullStyle               = params.cullStyle;
-        _geomStyle               = params.geomStyle;
-        _complexity              = params.complexity;
-        _hullVisibility          = params.hullVisibility;
-        _surfaceVisibility       = params.surfaceVisibility;
     }
 
     HdSceneDelegate* delegate = GetDelegate();
@@ -269,8 +260,6 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetWireframeColor(_wireframeColor);
         renderPassState->SetLightingEnabled(_enableLighting);
         renderPassState->SetAlphaThreshold(_alphaThreshold);
-        renderPassState->SetTessLevel(_tessLevel);
-        renderPassState->SetDrawingRange(_drawingRange);
         renderPassState->SetCullStyle(_cullStyle);
         renderPassState->SetDepthFunc(depthFunc);
 
@@ -375,17 +364,11 @@ std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
         << "         wireframeColor          = " << pv.wireframeColor << "\n"
         << "         enableLighting          = " << pv.enableLighting << "\n"
         << "         alphaThreshold          = " << pv.alphaThreshold << "\n"
-        << "         tessLevel               = " << pv.tessLevel << "\n"
-        << "         drawingRange            = " << pv.drawingRange << "\n"
         << "         depthBiasUseDefault     = " << pv.depthBiasUseDefault << "\n"
         << "         depthBiasEnable         = " << pv.depthBiasEnable << "\n"
         << "         depthBiasConstantFactor = " << pv.depthBiasConstantFactor << "\n"
         << "         depthFunc               = " << pv.depthFunc << "\n"
         << "         cullStyle               = " << pv.cullStyle << "\n"
-        << "         geomStyle               = " << pv.geomStyle << "\n"
-        << "         complexity              = " << pv.complexity << "\n"
-        << "         hullVisibility          = " << pv.hullVisibility << "\n"
-        << "         surfaceVisibility       = " << pv.surfaceVisibility << "\n"
         ;
 
     return out;
@@ -398,18 +381,12 @@ bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParam
         lhs.wireframeColor == rhs.wireframeColor                    &&  
         lhs.enableLighting == rhs.enableLighting                    && 
         lhs.alphaThreshold == rhs.alphaThreshold                    && 
-        lhs.tessLevel == rhs.tessLevel                              && 
-        lhs.drawingRange == rhs.drawingRange                        && 
         lhs.depthBiasUseDefault == rhs.depthBiasUseDefault          && 
         lhs.depthBiasEnable == rhs.depthBiasEnable                  && 
         lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor  && 
         lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor        && 
         lhs.depthFunc == rhs.depthFunc                              && 
-        lhs.cullStyle == rhs.cullStyle                              &&
-        lhs.geomStyle == rhs.geomStyle                              && 
-        lhs.complexity == rhs.complexity                            && 
-        lhs.hullVisibility == rhs.hullVisibility                    && 
-        lhs.surfaceVisibility == rhs.surfaceVisibility;
+        lhs.cullStyle == rhs.cullStyle;
 }
 
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)

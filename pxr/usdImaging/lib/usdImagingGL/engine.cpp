@@ -1236,11 +1236,6 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
     params.depthFunc           = HdCmpFuncLess;
     params.cullStyle           = USD_2_HD_CULL_STYLE[
         (size_t)renderParams.cullStyle];
-    // 32.0 is the default tessLevel of HdRasterState. we can change if we like.
-    params.tessLevel           = 32.0;
-
-    const float tinyThreshold = 0.9f;
-    params.drawingRange = GfVec2f(tinyThreshold, -1.0f);
 
     // Decrease the alpha threshold if we are using sample alpha to
     // coverage.
@@ -1253,12 +1248,6 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
     }
 
     params.enableSceneMaterials = renderParams.enableSceneMaterials;
-
-    // Leave default values for:
-    // - params.geomStyle
-    // - params.complexity
-    // - params.hullVisibility
-    // - params.surfaceVisibility
 
     // We don't provide the following because task controller ignores them:
     // - params.camera

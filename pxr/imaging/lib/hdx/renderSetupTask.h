@@ -124,8 +124,6 @@ struct HdxRenderTaskParams : public HdTaskParams
         , enableLighting(false)
         , enableIdRender(false)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.0, -1.0)
         , enableSceneMaterials(true)
         , renderTags()
         , depthBiasUseDefault(true)
@@ -149,10 +147,6 @@ struct HdxRenderTaskParams : public HdTaskParams
         , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
         , blendEnable(false)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , geomStyle(HdGeomStylePolygons)
-        , complexity(HdComplexityLow)
-        , hullVisibility(false)
-        , surfaceVisibility(true)
         , aovBindings()
         , camera()
         , viewport(0.0)
@@ -169,8 +163,6 @@ struct HdxRenderTaskParams : public HdTaskParams
     bool enableLighting;
     bool enableIdRender;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
     bool enableSceneMaterials;
     TfTokenVector renderTags;
 
@@ -207,10 +199,6 @@ struct HdxRenderTaskParams : public HdTaskParams
 
     // Viewer's Render Style
     HdCullStyle cullStyle;
-    HdGeomStyle geomStyle;
-    HdComplexity complexity;
-    bool hullVisibility;
-    bool surfaceVisibility;
 
     // AOV bindings.
     // XXX: As a transitional API, if this is empty it indicates the renderer

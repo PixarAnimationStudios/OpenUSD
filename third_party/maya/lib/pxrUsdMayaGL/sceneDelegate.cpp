@@ -410,13 +410,9 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // Set the parameters that are constant for all draws.
         renderSetupTaskParams.enableIdRender = false;
         renderSetupTaskParams.alphaThreshold = 0.1f;
-        renderSetupTaskParams.tessLevel = 32.0f;
-        const float tinyThreshold = 0.9f;
-        renderSetupTaskParams.drawingRange = GfVec2f(tinyThreshold, -1.0f);
         renderSetupTaskParams.enableSceneMaterials = true;
         renderSetupTaskParams.depthBiasUseDefault = true;
         renderSetupTaskParams.depthFunc = HdCmpFuncLess;
-        renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
 
         _ValueCache& cache = _valueCacheMap[renderSetupTaskId];
         cache[HdTokens->params] = VtValue(renderSetupTaskParams);

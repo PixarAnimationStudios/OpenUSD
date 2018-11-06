@@ -62,14 +62,11 @@ struct HdxShadowTaskParams : public HdTaskParams {
         , enableIdRender(false)
         , enableSceneMaterials(true)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.0, -1.0)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , complexity(HdComplexityLow)
         , camera()
         , viewport(0.0)
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
@@ -83,14 +80,11 @@ struct HdxShadowTaskParams : public HdTaskParams {
     bool enableIdRender;
     bool enableSceneMaterials;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
     bool  depthBiasEnable;
     float depthBiasConstantFactor;
     float depthBiasSlopeFactor;
     HdCompareFunction depthFunc;
     HdCullStyle cullStyle;
-    HdComplexity complexity;
 
     // RenderPassState index objects
     SdfPath camera;

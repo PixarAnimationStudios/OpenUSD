@@ -167,63 +167,6 @@ enum HdPointsGeomStyle {
     HdPointsGeomStylePoints
 };
 
-/// \enum HdGeomStyle
-///
-/// Defines geometric styles for how each polygon/triangle
-/// of a gprim is to be rendered.
-///
-/// Unspecified indicates this gprim does not indicate how it should be drawn
-/// (ie, it will always be overridden by another opinion).
-/// The actual geomstyle must come from somewhere else, such as the viewer.
-///
-/// The polygons/triangles of a gprim can be drawn as Lines or Polygons.
-/// The HiddenLine, FeyRay, and Sheer styles are combinations
-/// of these styles:
-/// <ul>
-///  <li> HiddenLine draws both lines and polygons, so the object has outline but
-///       also occludes those objects behind it.</li>
-///  <li> FeyRay is the effect you get when you peel the skin
-///       off the front of the object: you see line style on the front half,
-///       but the backfacing half remains polygon and solid.</li>
-///  <li> Sheer draws lines and polygons but with the polygons mostly
-///       transparent.</li>
-/// </ul>
-///
-enum HdGeomStyle
-{
-    HdGeomStyleUnspecified,
-    HdGeomStyleLines,
-    HdGeomStylePolygons,
-    HdGeomStyleHiddenLine,
-    HdGeomStyleFeyRay,
-    HdGeomStyleSheer,
-    HdGeomStyleOutline
-};
-
-/// \enum HdComplexity
-///
-/// Defines the display complexity for primitives that support refinement.
-///
-/// <ul>
-///     <li>\b BoundingBoxComplexity:  Complexity is bounding box.</li>
-///     <li>\b VeryLowComplexity:      Complexity is very low.</li>
-///     <li>\b LowComplexity:          Complexity is low.</li>
-///     <li>\b MediumComplexity:       Complexity is medium.</li>
-///     <li>\b HighComplexity:         Complexity is high.</li>
-///     <li>\b VeryHighComplexity:     Complexity is very high.</li>
-///     <li>\b NumComplexities:        Number of distinct complexity values.</li>
-/// </ul>
-///
-enum HdComplexity
-{
-    HdComplexityBoundingBox,
-    HdComplexityVeryLow,
-    HdComplexityLow,
-    HdComplexityMedium,
-    HdComplexityHigh,
-    HdComplexityVeryHigh,
-};
-
 /// \enum HdWrap
 ///
 /// Enumerates wrapping attributes type values.

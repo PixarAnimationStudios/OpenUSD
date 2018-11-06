@@ -82,9 +82,6 @@ private:
     GfVec4f _wireframeColor;
     bool _enableLighting;
     float _alphaThreshold;
-    float _tessLevel;
-    GfVec2f _drawingRange;
-
 
     /// Polygon Offset State
     bool _depthBiasUseDefault;
@@ -96,11 +93,6 @@ private:
 
     // Viewer's Render Style
     HdCullStyle _cullStyle;
-    HdGeomStyle _geomStyle;
-    HdComplexity _complexity;
-    bool _hullVisibility;
-    bool _surfaceVisibility;
-
 
     HdxDrawTargetTask()                                      = delete;
     HdxDrawTargetTask(const HdxDrawTargetTask &)             = delete;
@@ -114,18 +106,12 @@ struct HdxDrawTargetTaskParams
         , wireframeColor(0.0)
         , enableLighting(false)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.9, -1.0)
         , depthBiasUseDefault(true)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , geomStyle(HdGeomStylePolygons)
-        , complexity(HdComplexityLow)
-        , hullVisibility(false)
-        , surfaceVisibility(true)
         {}
 
 //    ClipPlanesVector clipPlanes;
@@ -133,8 +119,6 @@ struct HdxDrawTargetTaskParams
     GfVec4f wireframeColor;
     bool enableLighting;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
 
     // Depth Bias Raster State
     // When use default is true - state
@@ -151,11 +135,6 @@ struct HdxDrawTargetTaskParams
 
     // Viewer's Render Style
     HdCullStyle cullStyle;
-    HdGeomStyle geomStyle;
-    HdComplexity complexity;
-    bool hullVisibility;
-    bool surfaceVisibility;
-
 };
 
 // VtValue requirements

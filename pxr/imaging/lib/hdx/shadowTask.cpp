@@ -151,8 +151,6 @@ HdxShadowTask::_UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState,
 {
     renderPassState->SetOverrideColor(params.overrideColor);
     renderPassState->SetWireframeColor(params.wireframeColor);
-    renderPassState->SetTessLevel(params.tessLevel);
-    renderPassState->SetDrawingRange(params.drawingRange);
     renderPassState->SetCullStyle(HdInvertCullStyle(params.cullStyle));
 
     if (HdStRenderPassState* extendedState =
@@ -316,8 +314,6 @@ std::ostream& operator<<(std::ostream& out, const HdxShadowTaskParams& pv)
         << pv.enableIdRender << " "
         << pv.enableSceneMaterials << " "
         << pv.alphaThreshold << " "
-        << pv.tessLevel << " "
-        << pv.drawingRange << " "
         << pv.depthBiasEnable << " "
         << pv.depthBiasConstantFactor << " "
         << pv.depthBiasSlopeFactor << " "
@@ -343,8 +339,6 @@ bool operator==(const HdxShadowTaskParams& lhs, const HdxShadowTaskParams& rhs)
             lhs.enableIdRender == rhs.enableIdRender                    &&
             lhs.enableSceneMaterials == rhs.enableSceneMaterials        &&
             lhs.alphaThreshold == rhs.alphaThreshold                    &&
-            lhs.tessLevel == rhs.tessLevel                              && 
-            lhs.drawingRange == rhs.drawingRange                        && 
             lhs.depthBiasEnable == rhs.depthBiasEnable                  && 
             lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor  && 
             lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor        && 
