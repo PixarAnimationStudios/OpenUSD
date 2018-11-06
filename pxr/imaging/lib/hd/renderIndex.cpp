@@ -96,6 +96,16 @@ HdRenderIndex::~HdRenderIndex()
     _DestroyFallbackPrims();
 }
 
+HdRenderIndex*
+HdRenderIndex::New(HdRenderDelegate *renderDelegate)
+{
+    if (renderDelegate == nullptr) {
+        TF_CODING_ERROR(
+            "Null Render Delegate provided to create render index");
+        return nullptr;
+    }
+    return new HdRenderIndex(renderDelegate);
+}
 
 void
 HdRenderIndex::RemoveSubtree(const SdfPath &root,

@@ -125,14 +125,7 @@ public:
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
     HD_API
-    static HdRenderIndex* New(HdRenderDelegate *renderDelegate) {
-        if (renderDelegate == nullptr) {
-            TF_CODING_ERROR(
-                "Null Render Delegate provided to create render index");
-            return nullptr;
-        }
-        return new HdRenderIndex(renderDelegate);
-    }
+    static HdRenderIndex* New(HdRenderDelegate *renderDelegate);
 
     HD_API
     ~HdRenderIndex();
