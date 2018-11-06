@@ -1359,8 +1359,10 @@ class AppController(QtCore.QObject):
             self._ui.settingsFlagActions = []
 
             settings = self._stageView.GetRendererSettingsList()
+            moreSettings = False
             for setting in settings:
                 if setting.type != UsdImagingGL.GL.RendererSettingType.FLAG:
+                    moreSettings = True
                     continue
                 action = self._ui.menuRendererSettings.addAction(setting.name)
                 action.setCheckable(True)
@@ -1370,21 +1372,24 @@ class AppController(QtCore.QObject):
                     self._rendererSettingsFlagChanged(action))
                 self._ui.settingsFlagActions.append(action)
 
-            self._ui.menuRendererSettings.addSeparator()
+            if moreSettings:
+                self._ui.menuRendererSettings.addSeparator()
 
-            self._ui.settingsAdvancedAction = self._ui.menuRendererSettings.addAction("More...")
-            self._ui.settingsAdvancedAction.setCheckable(False)
-            self._ui.settingsAdvancedAction.triggered[bool].connect(self._advancedRendererSettings)
+                self._ui.settingsMoreAction = self._ui.menuRendererSettings.addAction("More...")
+                self._ui.settingsMoreAction.setCheckable(False)
+                self._ui.settingsMoreAction.triggered[bool].connect(self._moreRendererSettings)
 
             self._ui.menuRendererSettings.setEnabled(len(settings) != 0)
-            if hasattr(self._ui, 'settingsAdvancedDialog'):
-                self._ui.settingsAdvancedDialog.reject()
 
-    def _advancedRendererSettings(self):
+            # Close the old "More..." dialog if it's still open
+            if hasattr(self._ui, 'settingsMoreDialog'):
+                self._ui.settingsMoreDialog.reject()
+
+    def _moreRendererSettings(self):
         # Recreate the settings dialog
-        self._ui.settingsAdvancedDialog = QtWidgets.QDialog(self._mainWindow)
-        self._ui.settingsAdvancedDialog.setWindowTitle("Hydra Settings")
-        self._ui.settingsAdvancedWidgets = []
+        self._ui.settingsMoreDialog = QtWidgets.QDialog(self._mainWindow)
+        self._ui.settingsMoreDialog.setWindowTitle("Hydra Settings")
+        self._ui.settingsMoreWidgets = []
         layout = QtWidgets.QVBoxLayout()
 
         # Add settings
@@ -1403,7 +1408,7 @@ class AppController(QtCore.QObject):
                 checkBox.key = str(setting.key)
                 checkBox.defValue = setting.defValue
                 formLayout.addRow(setting.name, checkBox)
-                self._ui.settingsAdvancedWidgets.append(checkBox)
+                self._ui.settingsMoreWidgets.append(checkBox)
             if setting.type == UsdImagingGL.GL.RendererSettingType.INT:
                 spinBox = QtWidgets.QSpinBox()
                 spinBox.setMinimum(-2 ** 31)
@@ -1412,7 +1417,7 @@ class AppController(QtCore.QObject):
                 spinBox.key = str(setting.key)
                 spinBox.defValue = setting.defValue
                 formLayout.addRow(setting.name, spinBox)
-                self._ui.settingsAdvancedWidgets.append(spinBox)
+                self._ui.settingsMoreWidgets.append(spinBox)
             if setting.type == UsdImagingGL.GL.RendererSettingType.FLOAT:
                 spinBox = QtWidgets.QDoubleSpinBox()
                 spinBox.setDecimals(10)
@@ -1422,14 +1427,14 @@ class AppController(QtCore.QObject):
                 spinBox.key = str(setting.key)
                 spinBox.defValue = setting.defValue
                 formLayout.addRow(setting.name, spinBox)
-                self._ui.settingsAdvancedWidgets.append(spinBox)
+                self._ui.settingsMoreWidgets.append(spinBox)
             if setting.type == UsdImagingGL.GL.RendererSettingType.STRING:
                 lineEdit = QtWidgets.QLineEdit()
                 lineEdit.setText(self._stageView.GetRendererSetting(setting.key))
                 lineEdit.key = str(setting.key)
                 lineEdit.defValue = setting.defValue
                 formLayout.addRow(setting.name, lineEdit)
-                self._ui.settingsAdvancedWidgets.append(lineEdit)
+                self._ui.settingsMoreWidgets.append(lineEdit)
 
         # Add buttons
         buttonBox = QtWidgets.QDialogButtonBox(
@@ -1437,17 +1442,17 @@ class AppController(QtCore.QObject):
             QtWidgets.QDialogButtonBox.Cancel |
             QtWidgets.QDialogButtonBox.RestoreDefaults)
         layout.addWidget(buttonBox)
-        buttonBox.rejected.connect(self._ui.settingsAdvancedDialog.reject)
-        buttonBox.accepted.connect(self._ui.settingsAdvancedDialog.accept)
-        self._ui.settingsAdvancedDialog.accepted.connect(self._applyAdvancedRendererSettings)
+        buttonBox.rejected.connect(self._ui.settingsMoreDialog.reject)
+        buttonBox.accepted.connect(self._ui.settingsMoreDialog.accept)
+        self._ui.settingsMoreDialog.accepted.connect(self._applyMoreRendererSettings)
         defaultButton = buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults)
-        defaultButton.clicked.connect(self._resetAdvancedRendererSettings)
+        defaultButton.clicked.connect(self._resetMoreRendererSettings)
 
-        self._ui.settingsAdvancedDialog.setLayout(layout)
-        self._ui.settingsAdvancedDialog.show()
+        self._ui.settingsMoreDialog.setLayout(layout)
+        self._ui.settingsMoreDialog.show()
 
-    def _applyAdvancedRendererSettings(self):
-        for widget in self._ui.settingsAdvancedWidgets:
+    def _applyMoreRendererSettings(self):
+        for widget in self._ui.settingsMoreWidgets:
             if isinstance(widget, QtWidgets.QCheckBox):
                 self._stageView.SetRendererSetting(widget.key, widget.isChecked())
             if isinstance(widget, QtWidgets.QSpinBox):
@@ -1460,8 +1465,8 @@ class AppController(QtCore.QObject):
         for action in self._ui.settingsFlagActions:
             action.setChecked(self._stageView.GetRendererSetting(action.key))
 
-    def _resetAdvancedRendererSettings(self):
-        for widget in self._ui.settingsAdvancedWidgets:
+    def _resetMoreRendererSettings(self):
+        for widget in self._ui.settingsMoreWidgets:
             if isinstance(widget, QtWidgets.QCheckBox):
                 widget.setChecked(widget.defValue)
             if isinstance(widget, QtWidgets.QSpinBox):
