@@ -245,7 +245,8 @@ class UsdviewSignalSlotConnection(object):
     pattern.
     
     When this object is destroyed, the Qt signal slot connection is disconnected. Note that in most
-    cases, Qt itself will automatically disconnect signal-slot connections.    
+    cases, Qt itself will automatically disconnect signal-slot connections. Also note that 
+    __del__() is not guaranteed to be called for a given Python object.    
     
     """
 
