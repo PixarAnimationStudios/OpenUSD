@@ -68,6 +68,9 @@ private:
                                boost::hash<TfToken> > _HdStCommandBufferMap;
     _HdStCommandBufferMap _cmdBuffers;
 
+    int _lastSettingsVersion;
+    bool _useTinyPrimCulling;
+
     // -----------------------------------------------------------------------
     // Change tracking state.
 

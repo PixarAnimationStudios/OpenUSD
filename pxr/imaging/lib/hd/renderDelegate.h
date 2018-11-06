@@ -355,6 +355,10 @@ protected:
     HdRenderDelegate(const HdRenderDelegate &) = delete;
     HdRenderDelegate &operator=(const HdRenderDelegate &) = delete;
 
+    HD_API
+    void _PopulateDefaultSettings(
+        HdRenderSettingDescriptorList const& defaultSettings);
+
     /// Render settings state.
     HdRenderSettingsMap _settingsMap;
     unsigned int _settingsVersion;

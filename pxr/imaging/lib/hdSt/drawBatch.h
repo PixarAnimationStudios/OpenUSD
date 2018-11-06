@@ -97,6 +97,10 @@ public:
     HDST_API
     virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance);
 
+    /// Let the batch know whether to use tiny prim culling.
+    HDST_API
+    virtual void SetEnableTinyPrimCulling(bool tinyPrimCulling);
+
 protected:
     HDST_API
     virtual void _Init(HdStDrawItemInstance * drawItemInstance);

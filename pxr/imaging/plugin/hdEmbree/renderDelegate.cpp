@@ -129,13 +129,7 @@ HdEmbreeRenderDelegate::_Initialize()
     _settingDescriptors[3] = { "Samples To Convergence",
         HdRenderSettingsTokens->convergedSamplesPerPixel,
         VtValue(int(HdEmbreeConfig::GetInstance().samplesToConvergence)) };
-
-    for (size_t i = 0; i < _settingDescriptors.size(); ++i) {
-        if (_settingsMap.count(_settingDescriptors[i].key) == 0) {
-            _settingsMap[_settingDescriptors[i].key] =
-                _settingDescriptors[i].defaultValue;
-        }
-    }
+    _PopulateDefaultSettings(_settingDescriptors);
 
     // Initialize the embree library handle (_rtcDevice).
     _rtcDevice = rtcNewDevice(nullptr);

@@ -32,6 +32,9 @@
 
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/tokens.h"
+
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/gf/frustum.h"
@@ -43,6 +46,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
                                  HdRprimCollection const &collection)
     : HdRenderPass(index, collection)
+    , _lastSettingsVersion(0)
+    , _useTinyPrimCulling(false)
     , _collectionVersion(0)
     , _collectionChanged(false)
 {
@@ -112,10 +117,10 @@ HdSt_RenderPass::_PrepareCommandBuffer()
 {
     HD_TRACE_FUNCTION();
     GLF_GROUP_FUNCTION();
-    
-    // ------------------------------------------------------------------- #
+
+    // -------------------------------------------------------------------
     // SCHEDULE PREPARATION
-    // ------------------------------------------------------------------- #
+    // -------------------------------------------------------------------
     // We know what must be drawn and that the stream needs to be updated, 
     // so iterate over each prim, cull it and schedule it to be drawn.
 
@@ -167,6 +172,21 @@ HdSt_RenderPass::_PrepareCommandBuffer()
                                            it != _cmdBuffers.end(); it++) {
             it->second.RebuildDrawBatchesIfNeeded(batchVersion);
         }
+    }
+
+    // -------------------------------------------------------------------
+    // RENDER SETTINGS
+    // -------------------------------------------------------------------
+    HdRenderDelegate *renderDelegate = GetRenderIndex()->GetRenderDelegate();
+    int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
+    if (_lastSettingsVersion != currentSettingsVersion) {
+        _lastSettingsVersion = currentSettingsVersion;
+        _useTinyPrimCulling = renderDelegate->GetRenderSetting<bool>(
+            HdStRenderSettingsTokens->enableTinyPrimCulling, false);
+    }
+    for (_HdStCommandBufferMap::iterator it = _cmdBuffers.begin();
+            it != _cmdBuffers.end(); ++it) {
+        it->second.SetEnableTinyPrimCulling(_useTinyPrimCulling);
     }
 }
 

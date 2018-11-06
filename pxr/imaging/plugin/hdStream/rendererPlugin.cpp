@@ -38,7 +38,14 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderDelegate *
 HdStreamRendererPlugin::CreateRenderDelegate()
 {
-    return new HdStRenderDelegate;
+    return new HdStRenderDelegate();
+}
+
+HdRenderDelegate*
+HdStreamRendererPlugin::CreateRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+{
+    return new HdStRenderDelegate(settingsMap);
 }
 
 void

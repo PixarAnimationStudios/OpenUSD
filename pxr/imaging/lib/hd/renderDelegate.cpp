@@ -139,5 +139,17 @@ HdRenderDelegate::GetRenderSettingsVersion() const
     return _settingsVersion;
 }
 
+void
+HdRenderDelegate::_PopulateDefaultSettings(
+    HdRenderSettingDescriptorList const& defaultSettings)
+{
+    for (size_t i = 0; i < defaultSettings.size(); ++i) {
+        if (_settingsMap.count(defaultSettings[i].key) == 0) {
+            _settingsMap[defaultSettings[i].key] =
+                defaultSettings[i].defaultValue;
+        }
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

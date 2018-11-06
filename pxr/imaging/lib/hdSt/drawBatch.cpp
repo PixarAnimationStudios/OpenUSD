@@ -75,6 +75,11 @@ HdSt_DrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* /*instance*/
 {
 }
 
+void
+HdSt_DrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
+{
+}
+
 namespace {
 inline bool isAggregated(HdBufferArrayRangeSharedPtr const &rangeA,
                          HdBufferArrayRangeSharedPtr const &rangeB)
