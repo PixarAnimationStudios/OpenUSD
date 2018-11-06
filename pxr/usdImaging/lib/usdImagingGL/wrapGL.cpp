@@ -96,19 +96,6 @@ _SetLightingState(UsdImagingGL &self, GlfSimpleLightVector const &lights,
     self.SetLightingState(lights, material, sceneAmbient);
 }
 
-static std::vector<std::string>
-_GetRegisteredRendererPluginsDisplayNames()
-{
-    HfPluginDescVector pluginDescriptors;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
-
-    std::vector<std::string> displayNames;
-    for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
-        displayNames.push_back(pluginDescriptors[i].displayName);
-    }
-    return displayNames;
-}
-
 } // anonymous namespace 
 
 void wrapGL()
@@ -148,9 +135,6 @@ void wrapGL()
                  return_value_policy< TfPySequenceToList >())
             .def("SetRendererAov", &UsdImagingGL::SetRendererAov)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
-            .def("GetRegisteredRendererPluginsDisplayNames", 
-                 &_GetRegisteredRendererPluginsDisplayNames)
-                .staticmethod("GetRegisteredRendererPluginsDisplayNames")
             .def("GetRendererSettingsList", &UsdImagingGL::GetRendererSettingsList,
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGL::GetRendererSetting)

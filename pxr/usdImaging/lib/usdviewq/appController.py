@@ -1226,11 +1226,14 @@ class AppController(QtCore.QObject):
 
     @staticmethod
     def GetRendererOptionChoices():
-        choices = UsdImagingGL.GL.GetRegisteredRendererPluginsDisplayNames()
-        if choices:
+        ids = UsdImagingGL.GL.GetRendererPlugins()
+        choices = []
+        if ids:
+            choices = [UsdImagingGL.GL.GetRendererDisplayName(x) for x in ids]
             choices.append(AppController.HYDRA_DISABLED_OPTION_STRING)
         else:
             choices = [AppController.HYDRA_DISABLED_OPTION_STRING]
+
         return choices
 
     # Render plugin support
