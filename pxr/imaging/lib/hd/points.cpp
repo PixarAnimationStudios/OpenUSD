@@ -59,7 +59,7 @@ HdPoints::_GetReprDesc(HdReprSelector const &reprSelector)
     _PointsReprConfig::DescArray result;
     size_t index = 0;
     
-    for (size_t i = 0; i < reprSelector.size(); ++i) {
+    for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
         if (reprSelector.IsActiveRepr(i)) {
             _PointsReprConfig::DescArray descs = _reprDescConfig.Find(
                     reprSelector[i]);
