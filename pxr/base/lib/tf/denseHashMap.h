@@ -29,12 +29,12 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
 
+#include <memory>
 #include <vector>
 
 #include <boost/compressed_pair.hpp>
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/utility.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -599,7 +599,7 @@ private:
     _VectorHashFnEqualFn _vectorHashFnEqualFn;
 
     // Optional hash map that maps from keys to vector indices.
-    boost::scoped_ptr<_HashMap> _h;
+    std::unique_ptr<_HashMap> _h;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

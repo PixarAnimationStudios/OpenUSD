@@ -32,8 +32,8 @@
 #include <boost/python/def.hpp>
 #include <boost/python/return_arg.hpp>
 #include <boost/python/return_value_policy.hpp>
-#include <boost/scoped_ptr.hpp>
 
+#include <memory>
 #include <string>
 
 using std::string;
@@ -89,7 +89,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<_Holder> _descriptionHolder;
+    std::unique_ptr<_Holder> _descriptionHolder;
     string _description;
 };
 
