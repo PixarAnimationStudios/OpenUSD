@@ -55,8 +55,10 @@ protected:
     virtual void _MarkCollectionDirty() override;
 
 private:
-    void _PrepareCommandBuffer(
-            HdStRenderPassStateSharedPtr const &renderPasssState);
+    void _PrepareCommandBuffer();
+
+    // XXX: This should really be in HdSt_DrawBatch::PrepareDraw.
+    void _Cull(HdStRenderPassStateSharedPtr const &renderPasssState);
 
     // -----------------------------------------------------------------------
     // Drawing state
@@ -65,8 +67,6 @@ private:
                                HdStCommandBuffer,
                                boost::hash<TfToken> > _HdStCommandBufferMap;
     _HdStCommandBufferMap _cmdBuffers;
-
-    bool _lastCullingDisabledState;
 
     // -----------------------------------------------------------------------
     // Change tracking state.
