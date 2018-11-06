@@ -25,7 +25,12 @@
 from pxr import Usd, UsdGeom, UsdShade
 from qt import QtCore
 from common import Timer, IncludedPurposes
+from constantGroup import ConstantGroup
 
+class ChangeNotice(ConstantGroup):
+    NONE = 0
+    RESYNC = 1
+    INFOCHANGES = 2
 
 class RootDataModel(QtCore.QObject):
     """Data model providing centralized, moderated access to fundamental
@@ -34,6 +39,7 @@ class RootDataModel(QtCore.QObject):
 
     # Emitted when a new stage is set.
     signalStageReplaced = QtCore.Signal()
+    signalPrimsChanged = QtCore.Signal(ChangeNotice, ChangeNotice)
 
     def __init__(self, printTiming=False):
 
@@ -48,6 +54,8 @@ class RootDataModel(QtCore.QObject):
         self._bboxCache = UsdGeom.BBoxCache(self._currentFrame,
             [IncludedPurposes.DEFAULT, IncludedPurposes.PROXY], True)
         self._xformCache = UsdGeom.XformCache(self._currentFrame)
+
+        self._pcListener = None
 
     @property
     def stage(self):
@@ -67,6 +75,10 @@ class RootDataModel(QtCore.QObject):
 
         if value is not self._stage:
 
+            if self._pcListener:
+                self._pcListener.Revoke()
+                self._pcListener = None
+
             if value is None:
                 with Timer() as t:
                     self._stage = None
@@ -75,7 +87,32 @@ class RootDataModel(QtCore.QObject):
             else:
                 self._stage = value
 
+            if self._stage:
+                from pxr import Tf
+                self._pcListener = \
+                    Tf.Notice.Register(Usd.Notice.ObjectsChanged,
+                                       self.__OnPrimsChanged, self._stage)
+
             self.signalStageReplaced.emit()
+
+    def __OnPrimsChanged(self, notice, sender):
+        primChange = ChangeNotice.NONE
+        propertyChange = ChangeNotice.NONE
+
+        for p in notice.GetResyncedPaths():
+            if p.IsPrimPath():
+                primChange = ChangeNotice.RESYNC
+            if p.IsPropertyPath():
+                propertyChange = ChangeNotice.RESYNC
+
+        if primChange == ChangeNotice.NONE or propertyChange == ChangeNotice.NONE:
+            for p in notice.GetChangedInfoOnlyPaths():
+                if p.IsPrimPath() and primChange == ChangeNotice.NONE:
+                    primChange = ChangeNotice.INFOCHANGES
+                if p.IsPropertyPath() and propertyChange == ChangeNotice.NONE:
+                    propertyChange = ChangeNotice.INFOCHANGES
+
+        self.signalPrimsChanged.emit(primChange, propertyChange)
 
     @property
     def currentFrame(self):

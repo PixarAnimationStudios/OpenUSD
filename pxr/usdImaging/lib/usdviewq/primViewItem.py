@@ -323,20 +323,6 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         self.emitDataChanged()
         return self.computedVis
 
-    def activeChanged(self):
-        # We need to completely re-generate the prim tree because making a prim
-        # inactive can break a reference chain, and/or make another prim
-        # inactive due to inheritance.
-        # In the future this will be handled by notices from the USD stage.
-        self._appController.updateGUI()
-
-    def loadStateChanged(self):
-        # We can do better than nuking the whole GUI, but for now,
-        # use what's already handy
-        # In the future this will be handled by notices from the USD stage and
-        # do a better job of partial updates.
-        self._appController.updateGUI()
-
     @staticmethod
     def propagateDrawMode(item, primView, parentDrawMode='', 
                           parentDrawModeIsInherited=None):
@@ -406,7 +392,6 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                 self.prim.Load()
             else:
                 self.prim.Unload()
-            self.loadStateChanged()
 
     def setVisible(self, visible):
         if self.canChangeVis():

@@ -209,9 +209,9 @@ class DrawModeItemDelegate(QtWidgets.QStyledItemDelegate):
             return None
 
         drawModeWidget = DrawModeWidget(primViewItem, 
-                refreshFunc=self._appController._drawModeChanged,
-                printTiming=self._appController._printTiming,
-                parent=parent)
+            refreshFunc=self._treeWidget.UpdatePrimViewDrawMode,
+            printTiming=self._appController._printTiming,
+            parent=parent)
         # Store a copy of the widget in the primViewItem, for use when 
         # propagating changes to draw mode down a prim hierarchy.
         primViewItem.drawModeWidget = drawModeWidget
@@ -234,3 +234,21 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
 
     def ShowDrawModeWidgetForItem(self, primViewItem):
         self.openPersistentEditor(primViewItem, PrimViewColumnIndex.DRAWMODE)
+
+    def UpdatePrimViewDrawMode(self, rootItem=None):
+        """Updates browser's "Draw Mode" columns."""
+        with Timer() as t:
+            self.setUpdatesEnabled(False)
+            # Update draw-model for the entire prim tree if the given
+            # rootItem is None.
+            if rootItem is None:
+                rootItem = self.invisibleRootItem().child(0)
+            if rootItem.childCount() == 0:
+                self._appController._populateChildren(rootItem)
+            rootsToProcess = [rootItem.child(i) for i in 
+                    xrange(rootItem.childCount())]
+            for item in rootsToProcess:
+                PrimViewItem.propagateDrawMode(item, self)
+            self.setUpdatesEnabled(True)
+        if self._appController._printTiming:
+            t.PrintTime("update draw mode column")

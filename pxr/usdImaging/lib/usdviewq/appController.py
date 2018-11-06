@@ -393,6 +393,9 @@ class AppController(QtCore.QObject):
             self._dataModel = UsdviewDataModel(
                 self._printTiming, self._settings2)
 
+            self._dataModel.signalPrimsChanged.connect(
+                self._onPrimsChanged)
+
             self._dataModel.stage = stage
 
             self._primViewSelectionBlocker = Blocker()
@@ -422,6 +425,7 @@ class AppController(QtCore.QObject):
                         parserData.complexity, fallback.id))
                 self._dataModel.viewSettings.complexity = fallback
 
+            self._hasPrimResync = False
             self._timeSamples = None
             self._stageView = None
             self._startingPrimCamera = None
@@ -1578,17 +1582,25 @@ class AppController(QtCore.QObject):
         previously fetched from the stage is invalid. In the future, more
         granular updates will be supported by listening to UsdNotice objects on
         the active stage.
+
+        If a prim resync is needed then we fully update the prim view,
+        otherwise can just do a simplified update to the prim view.
         """
-        self._resetPrimView()
-        self._updatePropertyView()
+        with BusyContext():
+            if self._hasPrimResync:
+                self._resetPrimView()
+                self._hasPrimResync = False
+            else:
+                self._resetPrimViewVis(selItemsOnly=False)
 
-        self._populatePropertyInspector()
-        self._updateMetadataView()
-        self._updateLayerStackView()
-        self._updateCompositionView()
+            self._updatePropertyView()
+            self._populatePropertyInspector()
+            self._updateMetadataView()
+            self._updateLayerStackView()
+            self._updateCompositionView()
 
-        if self._stageView:
-            self._stageView.update()
+            if self._stageView:
+                self._stageView.update()
 
     def updateGUI(self):
         """Will schedule a full refresh/resync of the GUI contents.
@@ -1981,13 +1993,15 @@ class AppController(QtCore.QObject):
 
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
 
-    def _updateForStageChanges(self):
+    def _updateForStageChanges(self, hasPrimResync=True):
         """Assuming there have been authoring changes to the already-loaded
         stage, make the minimal updates to the UI required to maintain a
         consistent state.  This may still be over-zealous until we know
         what actually changed, but we should be able to preserve camera and
         playback positions (unless viewing through a stage camera that no
         longer exists"""
+
+        self._hasPrimResync = hasPrimResync or self._hasPrimResync
 
         self._clearCaches(preserveCamera=True)
 
@@ -2379,7 +2393,6 @@ class AppController(QtCore.QObject):
             Glf.TextureRegistry.Reset()
             # reset timeline, and playback settings from stage metadata
             self._reloadFixedUI(resetStageDataOnly=True)
-            self._updateForStageChanges()
         except Exception as err:
             self.statusMessage('Error occurred rereading all layers for Stage: %s' % err)
         finally:
@@ -3597,7 +3610,7 @@ class AppController(QtCore.QObject):
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(
                 lambda i, combo=combo: combo.updateVariantSelection(
-                    i, self._updateForStageChanges, self._printTiming))
+                    i, self._printTiming))
             rowIndex += 1
 
         tableWidget.resizeColumnToContents(0)
@@ -4132,9 +4145,6 @@ class AppController(QtCore.QObject):
                     sdfPrim = Sdf.CreatePrimInLayer(layer, path)
                     sdfPrim.active = active
 
-            # Refresh primView to support the stage changes.
-            self.updateGUI()
-
             pathNames = ", ".join(path.name for path in paths)
             if active:
                 self.editComplete("Activated {}.".format(pathNames))
@@ -4594,33 +4604,14 @@ class AppController(QtCore.QObject):
             self._stageView.updateBboxPurposes()
             self._stageView.updateView()
 
-    def _resetPrimViewDrawMode(self, rootItem=None):
-        """Updates browser's "Draw Mode" columns. """
-        with Timer() as t:
-            primView = self._ui.primView
-            primView.setUpdatesEnabled(False)
-            # Update draw-model for the entire prim tree if the given 
-            # rootItem is None.
-            if rootItem is None:
-                rootItem = primView.invisibleRootItem().child(0)
-            if rootItem.childCount() == 0:
-                self._populateChildren(rootItem)
-            rootsToProcess = [rootItem.child(i) for i in 
-                    xrange(rootItem.childCount())]
-            for item in rootsToProcess:
-                PrimViewItem.propagateDrawMode(item, primView)
-            primView.setUpdatesEnabled(True)
-        if self._printTiming:
-            t.PrintTime("update draw mode column")
-
-    def _drawModeChanged(self, primViewItem):
-        self._updatePropertyView()
-        self._resetPrimViewDrawMode(rootItem=primViewItem)
-        if self._stageView:
-            self._stageView.updateView()
-
     def _HUDInfoChanged(self):
         """Called when a HUD setting that requires info refresh has changed."""
         if self._isHUDVisible():
             self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
+
+    def _onPrimsChanged(self, primsChange, propertiesChange):
+        """Called when prims in the USD stage have changed."""
+        from rootDataModel import ChangeNotice
+        self._updateForStageChanges(
+            hasPrimResync=(primsChange==ChangeNotice.RESYNC))
