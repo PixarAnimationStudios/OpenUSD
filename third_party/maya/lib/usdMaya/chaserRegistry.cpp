@@ -24,6 +24,7 @@
 #include "usdMaya/chaserRegistry.h"
 
 #include "usdMaya/debugCodes.h"
+#include "usdMaya/registryHelper.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -69,8 +70,14 @@ UsdMayaChaserRegistry::RegisterFactory(
         const std::string& name,
         FactoryFn fn)
 {
-    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("registering chaser '%s'.\n", name.c_str());
+    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
+            "Registering chaser '%s'.\n", name.c_str());
     auto ret = _factoryRegistry.insert(std::make_pair(name, fn));
+    if (ret.second) {
+        UsdMaya_RegistryHelper::AddUnloader([name]() {
+            _factoryRegistry.erase(name);
+        });
+    }
     return ret.second;
 }
 

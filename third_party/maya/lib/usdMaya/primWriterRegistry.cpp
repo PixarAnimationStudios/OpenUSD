@@ -60,9 +60,13 @@ UsdMayaPrimWriterRegistry::Register(
 
     std::pair< _Registry::iterator, bool> insertStatus =
         _reg.insert(std::make_pair(mayaTypeName, fn));
-    if (!insertStatus.second) {
+    if (insertStatus.second) {
+        UsdMaya_RegistryHelper::AddUnloader([mayaTypeName]() {
+            _reg.erase(mayaTypeName);
+        });
+    }
+    else {
         TF_CODING_ERROR("Multiple writers for type %s", mayaTypeName.c_str());
-        insertStatus.first->second = fn;
     }
 }
 

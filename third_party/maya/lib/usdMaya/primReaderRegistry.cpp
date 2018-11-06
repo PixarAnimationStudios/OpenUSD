@@ -64,9 +64,13 @@ UsdMayaPrimReaderRegistry::Register(
             "Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
     std::pair< _Registry::iterator, bool> insertStatus =
         _reg.insert(std::make_pair(tfTypeName, fn));
-    if (!insertStatus.second) {
+    if (insertStatus.second) {
+        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() {
+            _reg.erase(tfTypeName);
+        });
+    }
+    else {
         TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
-        insertStatus.first->second = fn;
     }
 }
 
