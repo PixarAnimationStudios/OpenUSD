@@ -34,7 +34,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
-#include "pxr/usdImaging/usdImagingGL/gl.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -172,7 +171,7 @@ public:
 private:
     UsdPrim _renderedPrim;
     SdfPathVector _excludePrimPaths;
-    std::unique_ptr<UsdImagingGL> _renderer;
+    std::unique_ptr<UsdImagingGLEngine> _renderer;
 };
 
 

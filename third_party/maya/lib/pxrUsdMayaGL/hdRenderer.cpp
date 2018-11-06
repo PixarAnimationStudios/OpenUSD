@@ -62,8 +62,8 @@ UsdMayaGLHdRenderer::CheckRendererSetup(
         _renderedPrim = usdPrim;
         _excludePrimPaths = excludePaths;
 
-        _renderer.reset(new UsdImagingGL(_renderedPrim.GetPath(),
-                                         _excludePrimPaths));
+        _renderer.reset(new UsdImagingGLEngine(_renderedPrim.GetPath(),
+                                               _excludePrimPaths));
     }
 }
 
