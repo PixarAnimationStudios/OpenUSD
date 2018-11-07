@@ -193,10 +193,13 @@ class UsdviewApi(object):
         return self.__appController._settings
     
     def CreateStageReplacedConnection(self, callback):
-        return UsdviewSignalSlotConnection(self.__appController._dataModel.signalStageReplaced, callback)
+        return SignalSlotConnection(self.__appController._dataModel
+                                    .signalStageReplaced, callback)
     
     def CreateSelectionChangedConnection(self, callback):
-        return UsdviewSignalSlotConnection(self.__appController._dataModel.selection.signalPrimSelectionChanged, callback)
+        return SignalSlotConnection(self.__appController._dataModel
+                                    .selection.signalPrimSelectionChanged, 
+                                    callback)
 
     def AddStageReplacedCallback(self, callback):
         self.__appController._dataModel.signalStageReplaced.connect(callback)
@@ -205,10 +208,12 @@ class UsdviewApi(object):
         self.__appController._dataModel.signalStageReplaced.disconnect(callback)
 
     def AddPrimSelectionChangedCallback(self, callback):
-        self.__appController._dataModel.selection.signalPrimSelectionChanged.connect(callback)
+        self.__appController._dataModel.selection.\
+            signalPrimSelectionChanged.connect(callback)
 
     def RemovePrimSelectionChangedCallback(self, callback):
-        self.__appController._dataModel.selection.signalPrimSelectionChanged.disconnect(callback)
+        self.__appController._dataModel.selection.\
+            signalPrimSelectionChanged.disconnect(callback)
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
@@ -240,13 +245,12 @@ class UsdviewApi(object):
                 imgWidth=None, imgHeight=None)
 
 
-class UsdviewSignalSlotConnection(object):
-    """Th UsdviewSignalSlotConnection class encapsulates a Qt signal-slot connection using an RAII
-    pattern.
+class SignalSlotConnection(object):
+    """The SignalSlotConnection class encapsulates a Qt signal-slot
+    connection using an RAII pattern.
     
-    When this object is destroyed, the Qt signal slot connection is disconnected. Note that in most
-    cases, Qt itself will automatically disconnect signal-slot connections. Also note that 
-    __del__() is not guaranteed to be called for a given Python object.    
+    When this object is destroyed, the Qt signal-slot connection is
+    disconnected.    
     
     """
 
