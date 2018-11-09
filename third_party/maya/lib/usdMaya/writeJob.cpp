@@ -69,9 +69,7 @@
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
-
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <maya/MUuid.h>
 
 #include <limits>
 #include <map>
@@ -98,12 +96,13 @@ static
 std::string
 _MakeTmpStageName(const std::string& dir)
 {
-    const std::string uuid =
-            boost::uuids::to_string(boost::uuids::random_generator()());
+    MUuid uuid;
+    uuid.generate();
+
     const std::string fileName =
             TfStringPrintf(
                 "tmp-%s.%s",
-                uuid.c_str(),
+                uuid.asString().asChar(),
                 UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     return TfStringCatPaths(dir, fileName);
 }
