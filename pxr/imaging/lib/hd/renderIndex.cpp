@@ -878,6 +878,7 @@ namespace {
                 // XXX: This is quite hacky. See comment in the implementation
                 // of HdRprim::CanSkipDirtyBitPropagationAndSync
                 dirtyBits = HdChangeTracker::Clean;
+                tracker->ResetRprimVaryingState(rprim->GetId());
                 continue;
             }
 
@@ -1046,6 +1047,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
         // PERFORMANCE: Hot loop.
         int numSkipped = 0;
+        int numNonVarying = 0;
         TF_FOR_ALL(idIt, dirtyIds) {
             _RprimMap::const_iterator it = _rprimMap.find(idIt->first);
             if (!TF_VERIFY(it != _rprimMap.end())) {
@@ -1054,7 +1056,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
             const _RprimInfo &rprimInfo = it->second;
             const SdfPath &rprimId = rprimInfo.rprim->GetId();
-            int dirtyBits =
+            HdDirtyBits dirtyBits =
                            _tracker.GetRprimDirtyBits(rprimId);
             size_t reprsMask = idIt->second;
 
@@ -1063,12 +1065,17 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
                 continue;
             }
 
+            if (!HdChangeTracker::IsVarying(dirtyBits)) {
+                ++numNonVarying;
+            }
+
             // PERFORMANCE: This loop is constrained by memory access, avoid
             // re-fetching the sync request vector if possible.
             if (curdel != rprimInfo.sceneDelegate) {
                 curdel = rprimInfo.sceneDelegate;
                 curvec = &syncMap[curdel];
             }
+
             curvec->PushBack(rprimInfo.rprim,
                              reprsMask, dirtyBits);
         }
@@ -1076,21 +1083,37 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         // Use a heuristic to determine whether or not to destroy the entire
         // dirty state.  We say that if we've skipped more than 25% of the
         // rprims that were claimed dirty, then it's time to clean up this
-        // list.  This leads to performance improvements after many rprims
+        // list.
+        // Alternatively if the list contains more the 10% rprims that
+        // are not marked as varying.  (This can happen when prims are
+        // invisible for example).
+        //
+        // This leads to performance improvements after many rprims
         // get dirty and then cleaned one, and the steady state becomes a
         // small number of dirty items.
         if (!dirtyIds.empty()) {
             resetVaryingState =
                 ((float )numSkipped / (float)dirtyIds.size()) > 0.25f;
 
+            resetVaryingState |=
+                ((float )numNonVarying / (float)dirtyIds.size()) > 0.10f;
+
+
             if (TfDebug::IsEnabled(HD_VARYING_STATE)) {
-                std::cout << "Dirty List Redundancy  = "
-                          << ((float )numSkipped * 100.0f / (float)dirtyIds.size())
+                std::cout << "Dirty List Redundancy: "
+                          << "Skipped  = "
+                          << ((float )numSkipped * 100.0f /
+                              (float)dirtyIds.size())
                           << "% (" <<  numSkipped << " / "
-                          << dirtyIds.size() << ")" << std::endl;
+                          << dirtyIds.size() << ") "
+                          << "Non-Varying  = "
+                          << ((float )numNonVarying * 100.0f /
+                              (float)dirtyIds.size())
+                          << "% (" <<  numNonVarying << " / "
+                          << dirtyIds.size() << ")"
+                          << std::endl;
             }
         }
-
     }
 
     // Drop the GIL before we spawn parallel tasks.

@@ -148,7 +148,7 @@ public:
     HD_API
     void MarkAllRprimsDirty(HdDirtyBits bits);
 
-    // Clear Varying bit of all prims.
+    ///  Clear Varying bit of all prims.
     ///
     /// The idea is that from frame to frame (update iteration), the set of
     /// dirty rprims and their dirty bits do not change; that is, the same
@@ -157,6 +157,13 @@ public:
     /// overall cost of an update iteration.
     HD_API
     void ResetVaryingState();
+
+    /// Reset the varying state on one Rprim
+    /// This is done for Rprims, where we choose not to clean them
+    /// (due to state like invisibility).
+    HD_API
+    void ResetRprimVaryingState(SdfPath const& id);
+
 
     // ---------------------------------------------------------------------- //
 
@@ -217,6 +224,11 @@ public:
     /// Returns true if the dirtyBits has no flags set except the varying flag.
     static bool IsClean(HdDirtyBits dirtyBits) {
         return (dirtyBits & AllDirty) == 0;
+    }
+
+    /// Returns true if the dirtyBits has no flags set except the varying flag.
+    static bool IsVarying(HdDirtyBits dirtyBits) {
+        return (dirtyBits & Varying) != 0;
     }
 
     /// Returns true if the dirtyBits has a dirty extent. id is for perflog.

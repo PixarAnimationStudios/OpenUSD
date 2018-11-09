@@ -50,6 +50,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_COUNTER_CHANGED,
         "Report values when counters change");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DIRTY_ALL_COLLECTIONS,
+        "Reports diagnostics when all collections are marked dirty");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DIRTY_LIST,
         "Reports dirty list state changes");
 
