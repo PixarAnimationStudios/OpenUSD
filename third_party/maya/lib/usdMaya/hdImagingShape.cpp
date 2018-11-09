@@ -42,9 +42,11 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShape.h>
+#include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
+#include <maya/MUuid.h>
 
 #include <string>
 
@@ -59,15 +61,28 @@ const MTypeId PxrMayaHdImagingShape::typeId(0x00126402);
 const MString PxrMayaHdImagingShape::typeName(
     PxrMayaHdImagingShapeTokens->MayaTypeName.GetText());
 
+namespace {
+
+// Generates a new UUID that is extremely unlikely to clash with the UUID of
+// any other node in Maya. These are consistent over a Maya session, so that
+// we can find the nodes again, but they are re-generated between different
+// Maya runs since we don't write the imaging shape to disk.
+static
+MUuid
+_GenerateUuid()
+{
+    MUuid uuid;
+    uuid.generate();
+    return uuid;
+}
+
 static const std::string _HdImagingTransformName("HdImaging");
 static const std::string _HdImagingShapeName =
     TfStringPrintf("%sShape", _HdImagingTransformName.c_str());
-static const std::string _HdImagingShapePath =
-    TfStringPrintf(
-        "|%s|%s",
-        _HdImagingTransformName.c_str(),
-        _HdImagingShapeName.c_str());
+static const MUuid _HdImagingTransformUuid = _GenerateUuid();
+static const MUuid _HdImagingShapeUuid = _GenerateUuid();
 
+} // anonymous namespace
 
 /* static */
 void*
@@ -116,23 +131,25 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
 {
     MStatus status;
 
-    // Ensure that we search for (or create) the nodes in the root namespace,
-    // in case this function is getting invoked by a node in a non-root
-    // namespace (e.g. a USD proxy shape that represents the "Collapsed"
-    // representation of an assembly).
+    // Look up the imaging shape via UUID; this is namespace-independent.
+    MSelectionList selList;
+    selList.add(_HdImagingShapeUuid);
+
+    MObject hdImagingShapeObj;
+    if (!selList.isEmpty() && selList.getDependNode(0, hdImagingShapeObj)) {
+        return hdImagingShapeObj;
+    }
+
+    // Ensure that we create the nodes in the root namespace, in case this
+    // function is getting invoked by a node in a non-root namespace (e.g. a USD
+    // proxy shape that represents the "Collapsed" representation of an
+    // assembly).
     const MString currNamespace = MNamespace::currentNamespace(&status);
     CHECK_MSTATUS_AND_RETURN(status, MObject());
     const MString rootNamespace = MNamespace::rootNamespace(&status);
     CHECK_MSTATUS_AND_RETURN(status, MObject());
 
     MNamespace::setCurrentNamespace(rootNamespace);
-
-    MObject hdImagingShapeObj;
-    if (UsdMayaUtil::GetMObjectByName(_HdImagingShapePath, hdImagingShapeObj)) {
-        MNamespace::setCurrentNamespace(currNamespace);
-
-        return hdImagingShapeObj;
-    }
 
     // We never intend for the imaging shape to get saved out to the Maya scene
     // file, so make sure that we preserve the scene modification status from
@@ -156,16 +173,19 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
         return MObject();
     }
 
-    // Set the do not write flag on the shape's transform and lock it. If there
-    // is an error, let Maya report it but keep going.
+    // Set the do not write flag, set its UUID, and hide it in the outliner.
+    // Don't lock the transform, because that causes problems reordering root
+    // nodes. If there is an error, let Maya report it but keep going.
     MFnDependencyNode depNodeFn(hdImagingTransformObj, &status);
     CHECK_MSTATUS(status);
 
     status = depNodeFn.setDoNotWrite(true);
     CHECK_MSTATUS(status);
 
-    status = depNodeFn.setLocked(true);
+    depNodeFn.setUuid(_HdImagingTransformUuid, &status);
     CHECK_MSTATUS(status);
+
+    UsdMayaUtil::SetHiddenInOutliner(depNodeFn, true);
 
     // Create the HdImagingShape.
     if (!UsdMayaTranslatorUtil::CreateNode(
@@ -215,6 +235,12 @@ PxrMayaHdImagingShape::postConstructor()
 {
     MStatus status = setDoNotWrite(true);
     CHECK_MSTATUS(status);
+
+    MFnDependencyNode depNodeFn(thisMObject());
+    depNodeFn.setUuid(_HdImagingShapeUuid, &status);
+    CHECK_MSTATUS(status);
+
+    UsdMayaUtil::SetHiddenInOutliner(depNodeFn, true);
 }
 
 /* static */

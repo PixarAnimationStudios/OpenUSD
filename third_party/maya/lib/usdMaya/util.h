@@ -472,6 +472,9 @@ TfRefPtr<MDataHandleHolder> GetPlugDataHandle(const MPlug& plug);
 PXRUSDMAYA_API
 bool SetNotes(MFnDependencyNode& depNode, const std::string& notes);
 
+PXRUSDMAYA_API
+bool SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden);
+
 /// Reads values from the given \p argData into a VtDictionary, using the
 /// \p guideDict to figure out which keys and what type of values should be read
 /// from \p argData.

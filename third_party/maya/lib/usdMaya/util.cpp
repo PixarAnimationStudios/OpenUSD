@@ -1601,6 +1601,17 @@ UsdMayaUtil::SetNotes(
     return true;
 }
 
+bool
+UsdMayaUtil::SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden)
+{
+    MPlug plug = depNode.findPlug("hiddenInOutliner", true);
+    if (!plug.isNull()) {
+        plug.setBool(hidden);
+        return true;
+    }
+    return false;
+}
+
 UsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
         const MPlug& plug,
         MDataHandle dataHandle) :
