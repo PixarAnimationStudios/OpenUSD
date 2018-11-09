@@ -63,62 +63,9 @@ HdRprim::~HdRprim()
     /*NOTHING*/
 }
 
-void
-HdRprim::Finalize(HdRenderParam *renderParam)
-{
-}
-
-const std::vector<HdDrawItem*>*
-HdRprim::GetDrawItems(HdReprSelector const &defaultReprSelector, bool forced) const
-{
-    // note: GetDrawItems is called at execute phase.
-    // All required dirtyBits should have cleaned at this point.
-    HdReprSelector reprSelector = _GetReprSelector(defaultReprSelector, forced);
-    HdReprSharedPtr repr = _GetRepr(reprSelector);
-
-    if (repr) {
-        return &repr->GetDrawItems();
-    } else {
-        return nullptr;
-    }
-}
-
-void
-HdRprim::_UpdateReprSelector(HdSceneDelegate* delegate,
-                             HdDirtyBits *dirtyBits)
-{
-    SdfPath const& id = GetId();
-    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-        _authoredReprSelector = delegate->GetReprSelector(id);
-        *dirtyBits &= ~HdChangeTracker::DirtyRepr;
-    }
-}
-
-HdReprSelector
-HdRprim::_GetReprSelector(HdReprSelector const &defaultReprSelector, bool forced) const
-{
-    // if not forced, the prim's authored opinion composites over the
-    // collection's repr, otherwise we respect the collection's repr
-    // (used for shadows)
-    if (!forced) {
-        return _authoredReprSelector.CompositeOver(defaultReprSelector);
-    }
-    return defaultReprSelector;
-}
-
-HdReprSharedPtr const &
-HdRprim::_GetRepr(HdReprSelector const &reprSelector) const
-{
-    _ReprVector::const_iterator reprIt =
-        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprSelector));
-    if (reprIt == _reprs.end()) {
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
-                        reprSelector.GetText(), GetId().GetText());
-        static const HdReprSharedPtr ERROR_RETURN;
-        return ERROR_RETURN;
-    }
-    return reprIt->second;
-}
+// -------------------------------------------------------------------------- //
+///                 Rprim Hydra Engine API : Pre-Sync & Sync-Phase
+// -------------------------------------------------------------------------- //
 
 bool
 HdRprim::CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const
@@ -189,7 +136,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 
 void
 HdRprim::InitRepr(HdSceneDelegate* delegate,
-                  HdReprSelector const &defaultReprSelector,
+                  HdReprSelector const &colReprSelector,
                   bool forced,
                   HdDirtyBits *dirtyBits)
 {
@@ -201,9 +148,91 @@ HdRprim::InitRepr(HdSceneDelegate* delegate,
     }
 
     _UpdateReprSelector(delegate, dirtyBits);
-    HdReprSelector reprSelector = _GetReprSelector(defaultReprSelector, forced);
+    HdReprSelector reprSelector = _GetReprSelector(colReprSelector, forced);
     _InitRepr(reprSelector, dirtyBits);
 
+}
+
+// -------------------------------------------------------------------------- //
+///                 Rprim Hydra Engine API : Execute-Phase
+// -------------------------------------------------------------------------- //
+const std::vector<HdDrawItem*>*
+HdRprim::GetDrawItems(HdReprSelector const &colReprSelector, bool forced) const
+{
+    // note: GetDrawItems is called at execute phase.
+    // All required dirtyBits should have cleaned at this point.
+    HdReprSelector reprSelector = _GetReprSelector(colReprSelector, forced);
+    HdReprSharedPtr repr = _GetRepr(reprSelector);
+
+    if (repr) {
+        return &repr->GetDrawItems();
+    } else {
+        return nullptr;
+    }
+}
+
+// -------------------------------------------------------------------------- //
+///                     Rprim Hydra Engine API : Cleanup
+// -------------------------------------------------------------------------- //
+void
+HdRprim::Finalize(HdRenderParam *renderParam)
+{
+}
+
+// -------------------------------------------------------------------------- //
+///                              Rprim Data API
+// -------------------------------------------------------------------------- //
+void
+HdRprim::SetPrimId(int32_t primId)
+{
+    _primId = primId;
+    // Don't set DirtyPrimID here, to avoid undesired variability tracking.
+}
+
+bool
+HdRprim::IsDirty(HdChangeTracker &changeTracker) const
+{
+    return changeTracker.IsRprimDirty(GetId());
+}
+
+// -------------------------------------------------------------------------- //
+///                             Rprim Shared API
+// -------------------------------------------------------------------------- //
+HdReprSharedPtr const &
+HdRprim::_GetRepr(HdReprSelector const &reprSelector) const
+{
+    _ReprVector::const_iterator reprIt =
+        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprSelector));
+    if (reprIt == _reprs.end()) {
+        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
+                        reprSelector.GetText(), GetId().GetText());
+        static const HdReprSharedPtr ERROR_RETURN;
+        return ERROR_RETURN;
+    }
+    return reprIt->second;
+}
+
+HdReprSelector
+HdRprim::_GetReprSelector(HdReprSelector const &colReprSelector, bool forced) const
+{
+    // if not forced, the prim's authored opinion composites over the
+    // collection's repr, otherwise we respect the collection's repr
+    // (used for shadows)
+    if (!forced) {
+        return _authoredReprSelector.CompositeOver(colReprSelector);
+    }
+    return colReprSelector;
+}
+
+void
+HdRprim::_UpdateReprSelector(HdSceneDelegate* delegate,
+                             HdDirtyBits *dirtyBits)
+{
+    SdfPath const& id = GetId();
+    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
+        _authoredReprSelector = delegate->GetReprSelector(id);
+        *dirtyBits &= ~HdChangeTracker::DirtyRepr;
+    }
 }
 
 void
@@ -213,13 +242,6 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, GetId())) {
         _sharedData.visible = delegate->GetVisible(GetId());
     }
-}
-
-
-TfToken
-HdRprim::GetRenderTag(HdSceneDelegate* delegate) const
-{
-    return delegate->GetRenderTag(GetId());
 }
 
 void 
@@ -233,19 +255,6 @@ HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
         // may change aggregation.
         changeTracker.MarkBatchesDirty();
     }
-}
-
-bool
-HdRprim::IsDirty(HdChangeTracker &changeTracker) const
-{
-    return changeTracker.IsRprimDirty(GetId());
-}
-
-void
-HdRprim::SetPrimId(int32_t primId)
-{
-    _primId = primId;
-    // Don't set DirtyPrimID here, to avoid undesired variability tracking.
 }
 
 void
