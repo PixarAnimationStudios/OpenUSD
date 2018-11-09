@@ -1230,10 +1230,11 @@ class AppController(QtCore.QObject):
 
     @staticmethod
     def GetRendererOptionChoices():
-        ids = UsdImagingGL.GL.GetRendererPlugins()
+        ids = UsdImagingGL.Engine.GetRendererPlugins()
         choices = []
         if ids:
-            choices = [UsdImagingGL.GL.GetRendererDisplayName(x) for x in ids]
+            choices = [UsdImagingGL.Engine.GetRendererDisplayName(x) 
+                        for x in ids]
             choices.append(AppController.HYDRA_DISABLED_OPTION_STRING)
         else:
             choices = [AppController.HYDRA_DISABLED_OPTION_STRING]
@@ -1365,7 +1366,7 @@ class AppController(QtCore.QObject):
             settings = self._stageView.GetRendererSettingsList()
             moreSettings = False
             for setting in settings:
-                if setting.type != UsdImagingGL.GL.RendererSettingType.FLAG:
+                if setting.type != UsdImagingGL.RendererSettingType.FLAG:
                     moreSettings = True
                     continue
                 action = self._ui.menuRendererSettings.addAction(setting.name)
@@ -1406,14 +1407,14 @@ class AppController(QtCore.QObject):
 
         settings = self._stageView.GetRendererSettingsList()
         for setting in settings:
-            if setting.type == UsdImagingGL.GL.RendererSettingType.FLAG:
+            if setting.type == UsdImagingGL.RendererSettingType.FLAG:
                 checkBox = QtWidgets.QCheckBox()
                 checkBox.setChecked(self._stageView.GetRendererSetting(setting.key))
                 checkBox.key = str(setting.key)
                 checkBox.defValue = setting.defValue
                 formLayout.addRow(setting.name, checkBox)
                 self._ui.settingsMoreWidgets.append(checkBox)
-            if setting.type == UsdImagingGL.GL.RendererSettingType.INT:
+            if setting.type == UsdImagingGL.RendererSettingType.INT:
                 spinBox = QtWidgets.QSpinBox()
                 spinBox.setMinimum(-2 ** 31)
                 spinBox.setMaximum(2 ** 31 - 1)
@@ -1422,7 +1423,7 @@ class AppController(QtCore.QObject):
                 spinBox.defValue = setting.defValue
                 formLayout.addRow(setting.name, spinBox)
                 self._ui.settingsMoreWidgets.append(spinBox)
-            if setting.type == UsdImagingGL.GL.RendererSettingType.FLOAT:
+            if setting.type == UsdImagingGL.RendererSettingType.FLOAT:
                 spinBox = QtWidgets.QDoubleSpinBox()
                 spinBox.setDecimals(10)
                 spinBox.setMinimum(-2 ** 31)
@@ -1432,7 +1433,7 @@ class AppController(QtCore.QObject):
                 spinBox.defValue = setting.defValue
                 formLayout.addRow(setting.name, spinBox)
                 self._ui.settingsMoreWidgets.append(spinBox)
-            if setting.type == UsdImagingGL.GL.RendererSettingType.STRING:
+            if setting.type == UsdImagingGL.RendererSettingType.STRING:
                 lineEdit = QtWidgets.QLineEdit()
                 lineEdit.setText(self._stageView.GetRendererSetting(setting.key))
                 lineEdit.key = str(setting.key)

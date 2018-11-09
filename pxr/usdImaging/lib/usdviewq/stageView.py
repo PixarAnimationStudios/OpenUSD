@@ -655,7 +655,8 @@ class StageView(QtOpenGL.QGLWidget):
     signalBboxUpdateTimeChanged = QtCore.Signal(int)
 
     # First arg is primPath, (which could be empty Path)
-    # Second arg is instanceIndex (or UsdImagingGL.GL.ALL_INSTANCES for all instances)
+    # Second arg is instanceIndex (or UsdImagingGL.ALL_INSTANCES for all
+    #  instances)
     # Third arg is selectedPoint
     # Fourth and Fifth args represent state at time of the pick
     signalPrimSelected = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.MouseButton,
@@ -848,17 +849,21 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._renderer = None
         self._reportedContextError = False
-        self._renderModeDict={RenderModes.WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME,
-                              RenderModes.WIREFRAME_ON_SURFACE:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
-                              RenderModes.SMOOTH_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_SMOOTH,
-                              RenderModes.POINTS:UsdImagingGL.GL.DrawMode.DRAW_POINTS,
-                              RenderModes.FLAT_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_FLAT,
-                              RenderModes.GEOM_ONLY:UsdImagingGL.GL.DrawMode.DRAW_GEOM_ONLY,
-                              RenderModes.GEOM_SMOOTH:UsdImagingGL.GL.DrawMode.DRAW_GEOM_SMOOTH,
-                              RenderModes.GEOM_FLAT:UsdImagingGL.GL.DrawMode.DRAW_GEOM_FLAT,
-                              RenderModes.HIDDEN_SURFACE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
+        self._renderModeDict = {
+            RenderModes.WIREFRAME: UsdImagingGL.DrawMode.DRAW_WIREFRAME,
+            RenderModes.WIREFRAME_ON_SURFACE: 
+                UsdImagingGL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
+            RenderModes.SMOOTH_SHADED: UsdImagingGL.DrawMode.DRAW_SHADED_SMOOTH,
+            RenderModes.POINTS: UsdImagingGL.DrawMode.DRAW_POINTS,
+            RenderModes.FLAT_SHADED: UsdImagingGL.DrawMode.DRAW_SHADED_FLAT,
+            RenderModes.GEOM_ONLY: UsdImagingGL.DrawMode.DRAW_GEOM_ONLY,
+            RenderModes.GEOM_SMOOTH: UsdImagingGL.DrawMode.DRAW_GEOM_SMOOTH,
+            RenderModes.GEOM_FLAT: UsdImagingGL.DrawMode.DRAW_GEOM_FLAT,
+            RenderModes.HIDDEN_SURFACE_WIREFRAME:
+                UsdImagingGL.DrawMode.DRAW_WIREFRAME
+        }
 
-        self._renderParams = UsdImagingGL.GL.RenderParams()
+        self._renderParams = UsdImagingGL.RenderParams()
         self._dist = 50 
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
@@ -898,7 +903,7 @@ class StageView(QtOpenGL.QGLWidget):
         # create the renderer lazily, when we try to do real work with it.
         if not self._renderer:
             if self.isValid():
-                self._renderer = UsdImagingGL.GL()
+                self._renderer = UsdImagingGL.Engine()
                 self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
@@ -1270,7 +1275,7 @@ class StageView(QtOpenGL.QGLWidget):
                         renderer.AddSelected(prim.GetPath(), instanceIndex)
                 else:
                     renderer.AddSelected(
-                        prim.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
+                        prim.GetPath(), UsdImagingGL.ALL_INSTANCES)
         except Tf.ErrorException as e:
             # If we encounter an error, we want to continue running. Just log 
             # the error and continue.
@@ -1318,9 +1323,10 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy
         self._renderParams.showRender = self._dataModel.viewSettings.displayRender
         self._renderParams.forceRefresh = self._forceRefresh
-        self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
-                                               if self._dataModel.viewSettings.cullBackfaces
-                                               else UsdImagingGL.GL.CullStyle.CULL_STYLE_NOTHING)
+        self._renderParams.cullStyle = \
+            (UsdImagingGL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
+               if self._dataModel.viewSettings.cullBackfaces
+               else UsdImagingGL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = self._dataModel.viewSettings.displayPrimId
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
@@ -1789,7 +1795,7 @@ class StageView(QtOpenGL.QGLWidget):
         # Hydra Enabled (Top Right)
         hydraMode = "Disabled"
 
-        if UsdImagingGL.GL.IsHydraEnabled():
+        if UsdImagingGL.Engine.IsHydraEnabled():
             hydraMode = self._rendererDisplayName
             if not hydraMode:
                 hydraMode = "Enabled"
@@ -2013,9 +2019,10 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy
         self._renderParams.showRender = self._dataModel.viewSettings.displayRender
         self._renderParams.forceRefresh = self._forceRefresh
-        self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
-                                               if self._dataModel.viewSettings.cullBackfaces
-                                               else UsdImagingGL.GL.CullStyle.CULL_STYLE_NOTHING)
+        self._renderParams.cullStyle = \
+            (UsdImagingGL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
+                   if self._dataModel.viewSettings.cullBackfaces
+                   else UsdImagingGL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = True
         self._renderParams.enableSampleAlphaToCoverage = False
