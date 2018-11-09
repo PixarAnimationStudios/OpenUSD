@@ -266,7 +266,9 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
 
-        discoveryPlugins.emplace_back(pluginFactory->New());
+        if (TF_VERIFY(pluginFactory)) {
+            discoveryPlugins.emplace_back(pluginFactory->New());
+        }
     }
 
     // Add the discovery plugins.
@@ -674,7 +676,9 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
 
-        _discoveryPlugins.emplace_back(pluginFactory->New());
+        if (TF_VERIFY(pluginFactory)) {
+            _discoveryPlugins.emplace_back(pluginFactory->New());
+        }
     }
 }
 
@@ -691,6 +695,10 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
     for (const TfType& parserPluginType : parserPluginTypes) {
         NdrParserPluginFactoryBase* pluginFactory =
             parserPluginType.GetFactory<NdrParserPluginFactoryBase>();
+
+        if (!TF_VERIFY(pluginFactory)) {
+            continue;
+        }
 
         NdrParserPlugin* parserPlugin = pluginFactory->New();
         _parserPlugins.emplace_back(parserPlugin);
