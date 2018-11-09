@@ -381,29 +381,44 @@ UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
 bool
 UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
 {
+    SdfLayerRefPtr layer;
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
-        mStage = UsdStage::Open(SdfLayer::FindOrOpen(filename), resolverCtx);
-        if (!mStage) {
+        layer = SdfLayer::FindOrOpen(filename);
+        if (!layer) {
             TF_RUNTIME_ERROR(
-                    "Failed to open stage file '%s'", filename.c_str());
+                    "Failed to open layer '%s' for append", filename.c_str());
             return false;
         }
     } else {
         // If we're exporting over a file that was previously imported, there
         // may still be stages in the stage cache that have that file as a root
-        // layer. Creating a new stage with that file will fail because the
-        // layer already exists in the layer registry, so we try to clear the
-        // layer from the registry by erasing any stages in the stage cache
-        // with that root layer.
+        // layer. Overwriting that layer will trigger potentially-unnecessary
+        // recomposition on those stages, so we try to clear the layer from the
+        // registry by erasing any stages in the stage cache with that root
+        // layer.
         UsdMayaStageCache::EraseAllStagesWithRootLayerPath(filename);
 
-        mStage = UsdStage::CreateNew(filename, resolverCtx);
-        if (!mStage) {
+        if (SdfLayerRefPtr existingLayer = SdfLayer::Find(filename)) {
+            TF_STATUS(
+                    "Writing to already-open layer '%s'", filename.c_str());
+            existingLayer->Clear();
+            layer = existingLayer;
+        }
+        else {
+            layer = SdfLayer::CreateNew(filename);
+        }
+        if (!layer) {
             TF_RUNTIME_ERROR(
-                    "Failed to create stage file '%s'", filename.c_str());
+                    "Failed to create layer '%s'", filename.c_str());
             return false;
         }
+    }
+
+    mStage = UsdStage::Open(layer, resolverCtx);
+    if (!mStage) {
+        TF_RUNTIME_ERROR("Error opening stage for '%s'", filename.c_str());
+        return false;
     }
 
     if (!mArgs.parentScope.IsEmpty()) {

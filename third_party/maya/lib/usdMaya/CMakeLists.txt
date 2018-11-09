@@ -164,6 +164,7 @@ pxr_test_scripts(
         testenv/testUsdExportLocator.py
         testenv/testUsdExportMesh.py
         testenv/testUsdExportNurbsCurve.py
+        testenv/testUsdExportOpenLayer.py
         testenv/testUsdExportOverImport.py
         testenv/testUsdExportPackage.py
         testenv/testUsdExportParentScope.py
@@ -410,6 +411,16 @@ pxr_register_test(testUsdExportNurbsCurve
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportNurbsCurve"
     TESTENV testUsdExportNurbsCurve
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_register_test(testUsdExportOpenLayer
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportOpenLayer"
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

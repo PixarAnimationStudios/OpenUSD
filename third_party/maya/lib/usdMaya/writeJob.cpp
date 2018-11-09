@@ -252,8 +252,7 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         _packageName = std::string();
     }
 
-    TF_STATUS("Creating stage file '%s'", _fileName.c_str());
-
+    TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
     if (mJobCtx.mArgs.renderLayerMode ==
             UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
