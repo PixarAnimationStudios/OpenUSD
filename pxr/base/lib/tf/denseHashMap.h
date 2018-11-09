@@ -105,6 +105,7 @@ private:
         }
 
         void swap(_InternalValueType &rhs) {
+            using std::swap;
 
             // We do this in order to take advantage of a potentially fast
             // swap implementation.
@@ -116,7 +117,7 @@ private:
             rhs._value.first.Key::~Key();
             new (const_cast<Key *>(&rhs._value.first)) Key(tmp);
 
-            std::swap(_value.second, rhs._value.second);
+            swap(_value.second, rhs._value.second);
         }
 
     private:
@@ -450,7 +451,7 @@ public:
             typename _Vector::iterator vi = iter._GetUnderlyingIterator();
     
             // ... move the last element into the erased placed.
-            std::swap(*vi, _vec().back());
+            vi->swap(_vec().back());
     
             // ... and update the moved element's index.
             if (_h)
