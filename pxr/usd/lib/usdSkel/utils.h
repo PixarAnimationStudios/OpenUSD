@@ -322,15 +322,15 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
 USDSKEL_API
 bool
 UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
-               const GfMatrix4d* jointXforms,
-               size_t numJoints,
-               const int* jointIndices,
-               const float* jointWeights,
-               size_t numInfluences,
-               int numInfluencesPerPoint,
-               GfVec3f* points,
-               size_t numPoints,
-               bool forceSerial=false);
+                     const GfMatrix4d* jointXforms,
+                     size_t numJoints,
+                     const int* jointIndices,
+                     const float* jointWeights,
+                     size_t numInfluences,
+                     int numInfluencesPerPoint,
+                     GfVec3f* points,
+                     size_t numPoints,
+                     bool forceSerial=false);
 
 
 /// Skin a transform using linear blend skinning (LBS).
@@ -363,10 +363,13 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 /// over \p interval.
 /// This is intended to serve as a complete reference implementation,
 /// providing a ground truth for testing and validation purposes.
-/// Since baking the effect of skinning will undo any IO gains that skeletal
-/// posing provides, this method should not be used outside the context of
-/// testing. This method should only be used for testing or for transmitting
-/// animation to an application that does not understand UsdSkel skinning.
+///
+/// \warning Since baking the effect of skinning will undo the IO gains that
+/// deferred skeletal posing provides, this method should not be used except
+/// for testing. It also has been written with an emphasis on correctness rather
+/// than performance, and is not expected to scale. Usage should be limited to
+/// testing and towards conversion when transmitting the resulting of skinning
+/// to an application that does not have an equivalent skinning representation.
 USDSKEL_API
 bool
 UsdSkelBakeSkinning(const UsdSkelRoot& root,

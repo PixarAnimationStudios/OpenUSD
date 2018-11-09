@@ -1,6 +1,6 @@
 /*!
 
-\page UsdSkel_API_Intro UsdSkel API Introduction 
+\page UsdSkel_API_Intro API Introduction 
 
 This page gives a brief introduction to using the UsdSkel API to read
 skel data encoded in USD.
@@ -694,9 +694,10 @@ posed primitives into normal geometry caches, with no special skeletal
 behaviors.
 
 UsdSkelBakeSkinning is intended both to serve as a reference implementation
-for skinning, and to help facilitate testing. Note that it is meant only
-for testing, and emphasizes correctness over performance. It should not be
-used in performance-sensitive contexts.
+for skinning, and to help facilitate testing.
+\warning UsdSkelBakeSkinning is intended for testing and debugging, and
+emphasizes correctness over performance. It should not be used in
+performance-sensitive contexts.
 
 Skinning can be baked on a stage as follows:
 

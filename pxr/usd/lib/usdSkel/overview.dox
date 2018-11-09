@@ -18,6 +18,7 @@ an introduction key schemas and API concepts.
 
 - \subpage UsdSkel_Intro
   - \ref UsdSkel_ScopeAndIntent
+      - \ref UsdSkel_Motivation
       - \ref UsdSkel_IsNot
   - \ref UsdSkel_Term
   - \ref UsdSkel_SkinnablePrims
@@ -36,9 +37,9 @@ an introduction key schemas and API concepts.
   - \ref UsdSkel_API_JointHierarchy
   - \ref UsdSkel_API_SkeletonBindings
   - \ref UsdSkel_API_DiscoveringBindings
-  - \ref UsdSkel_API_ExtractingJointInfluences
+  - \ref UsdSkel_API_SkinningQuery
 - \subpage UsdSkel_Schemas
-  - \ref UsdSkel_Schemas_Overview
+  - \ref UsdSkel_Schemas
   - \ref UsdSkel_JointOrder
   - \ref UsdSkel_SkelRoot
   - \ref UsdSkel_Skeleton
@@ -48,8 +49,6 @@ an introduction key schemas and API concepts.
   - \ref UsdSkel_BlendShape
   - \ref UsdSkel_BindingAPI
     - \ref UsdSkel_BindingAPI_Skeletons
-    - \ref UsdSkel_BindingAPI_JointInfluences
-    - \ref UsdSkel_BindingAPI_RigidDeformations
     - \ref UsdSkel_BindingAPI_StoringInfluences
     - \ref UsdSkel_BindingAPI_BlendShapes
 - \subpage UsdSkel_Instancing
