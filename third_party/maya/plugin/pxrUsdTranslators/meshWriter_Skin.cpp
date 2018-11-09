@@ -37,6 +37,8 @@
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/utils.h"
 
+#include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MDoubleArray.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
@@ -253,7 +255,7 @@ _WarnForPostDeformationTransform(const SdfPath& path,
                                  const MFnSkinCluster& skinCluster)
 {
     MStatus status;
-    
+
     MMatrix deformedMeshWorldXf = deformedMeshDag.inclusiveMatrix(&status);
     if (!status)
         return;
@@ -261,7 +263,7 @@ _WarnForPostDeformationTransform(const SdfPath& path,
     MMatrix bindPreMatrix;
     if (UsdMayaUtil::getPlugMatrix(
             skinCluster, "bindPreMatrix", &bindPreMatrix)) {
-        
+
         if (!GfIsClose(GfMatrix4d(deformedMeshWorldXf.matrix),
                        GfMatrix4d(bindPreMatrix.matrix), 1e-5)) {
             TF_WARN("Mesh <%s> appears to have a non-identity post-deformation "

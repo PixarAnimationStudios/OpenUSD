@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
 
 #include "usdMaya/adaptor.h"
@@ -30,6 +31,7 @@
 #include "usdMaya/writeJobContext.h"
 #include "usdMaya/writeUtil.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
@@ -43,12 +45,14 @@
 #include "pxr/usd/usdUtils/sparseValueWriter.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 
@@ -66,6 +70,49 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 static
+MDagPath
+_GetDagPath(const MFnDependencyNode& depNodeFn, const bool reportError = true)
+{
+    try {
+        const MFnDagNode& dagNodeFn =
+            dynamic_cast<const MFnDagNode&>(depNodeFn);
+
+        MStatus status;
+        const MDagPath dagPath = dagNodeFn.dagPath(&status);
+        if (status == MS::kSuccess) {
+            const bool dagPathIsValid = dagPath.isValid(&status);
+            if (status == MS::kSuccess && dagPathIsValid) {
+                return dagPath;
+            }
+        }
+
+        if (reportError) {
+            TF_CODING_ERROR(
+                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
+                "constructed using an MDagPath.",
+                dagNodeFn.fullPathName().asChar());
+        }
+    }
+    catch (const std::bad_cast& e) {
+        // This is not a DAG node, so it can't have a DAG path.
+    }
+
+    return MDagPath();
+}
+
+static
+UsdMayaUtil::MDagPathMap<SdfPath>
+_GetDagPathMap(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath)
+{
+    const MDagPath dagPath = _GetDagPath(depNodeFn, /* reportError = */ false);
+    if (dagPath.isValid()) {
+        return UsdMayaUtil::MDagPathMap<SdfPath>({{dagPath, usdPath}});
+    }
+
+    return UsdMayaUtil::MDagPathMap<SdfPath>({});
+}
+
+static
 bool
 _IsAnimated(const UsdMayaJobExportArgs& args, const MObject& obj)
 {
@@ -77,30 +124,16 @@ _IsAnimated(const UsdMayaJobExportArgs& args, const MObject& obj)
 }
 
 UsdMayaPrimWriter::UsdMayaPrimWriter(
-        const MDagPath& dagPath,
+        const MFnDependencyNode& depNodeFn,
         const SdfPath& usdPath,
         UsdMayaWriteJobContext& jobCtx) :
     _writeJobCtx(jobCtx),
-    _dagPath(dagPath),
-    _mayaObject(dagPath.node()),
+    _dagPath(_GetDagPath(depNodeFn)),
+    _mayaObject(depNodeFn.object()),
     _usdPath(usdPath),
-    _baseDagToUsdPaths({{dagPath, usdPath}}),
+    _baseDagToUsdPaths(_GetDagPathMap(depNodeFn, usdPath)),
     _exportVisibility(jobCtx.GetArgs().exportVisibility),
-    _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), dagPath.node()))
-{
-}
-
-UsdMayaPrimWriter::UsdMayaPrimWriter(
-        const MObject& dgNode,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    _writeJobCtx(jobCtx),
-    _dagPath(),
-    _mayaObject(dgNode),
-    _usdPath(usdPath),
-    _baseDagToUsdPaths({}),
-    _exportVisibility(jobCtx.GetArgs().exportVisibility),
-    _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), dgNode))
+    _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), depNodeFn.object()))
 {
 }
 

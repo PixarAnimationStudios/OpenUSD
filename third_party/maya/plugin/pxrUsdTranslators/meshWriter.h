@@ -24,44 +24,56 @@
 #ifndef PXRUSDTRANSLATORS_MESH_WRITER_H
 #define PXRUSDTRANSLATORS_MESH_WRITER_H
 
-#include "usdMaya/primWriter.h"
+/// \file pxrUsdTranslators/meshWriter.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/primWriter.h"
 
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
-#include <maya/MDagPath.h>
-#include <maya/MDagPathArray.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
 #include <maya/MString.h>
 
+#include <set>
+#include <string>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-class UsdGeomMesh;
-class UsdGeomGprim;
 
 
 /// Exports Maya mesh objects (MFnMesh)as UsdGeomMesh prims, taking into account
 /// subd/poly, skinning, reference objects, UVs, and color sets.
 class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
 {
-  public:
-    PxrUsdTranslators_MeshWriter(const MDagPath & iDag,
-                   const SdfPath& uPath,
-                   UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_MeshWriter(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
+            UsdMayaWriteJobContext& jobCtx);
 
-    void Write(const UsdTimeCode &usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
     bool ExportsGprims() const override;
 
     void PostExport() override;
 
-  protected:
-    bool writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema);
+protected:
+    bool writeMeshAttrs(const UsdTimeCode& usdTime, UsdGeomMesh& primSchema);
 
-  private:
+private:
     bool isMeshValid();
-    void assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &primSchema);
+    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn, UsdGeomMesh& primSchema);
 
     /// Writes skeleton skinning data for the mesh if it has skin clusters.
     /// This method will internally determine, based on the job export args,
@@ -75,71 +87,75 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
     MObject writeSkinningData(UsdGeomMesh& primSchema);
 
     bool _GetMeshUVSetData(
-        const MFnMesh& mesh,
-        const MString& uvSetName,
-        VtArray<GfVec2f>* uvArray,
-        TfToken* interpolation,
-        VtArray<int>* assignmentIndices);
+            const MFnMesh& mesh,
+            const MString& uvSetName,
+            VtArray<GfVec2f>* uvArray,
+            TfToken* interpolation,
+            VtArray<int>* assignmentIndices);
 
     bool _GetMeshColorSetData(
-        MFnMesh& mesh,
-        const MString& colorSet,
-        bool isDisplayColor,
-        const VtArray<GfVec3f>& shadersRGBData,
-        const VtArray<float>& shadersAlphaData,
-        const VtArray<int>& shadersAssignmentIndices,
-        VtArray<GfVec3f>* colorSetRGBData,
-        VtArray<float>* colorSetAlphaData,
-        TfToken* interpolation,
-        VtArray<int>* colorSetAssignmentIndices,
-        MFnMesh::MColorRepresentation* colorSetRep,
-        bool* clamped);
+            MFnMesh& mesh,
+            const MString& colorSet,
+            bool isDisplayColor,
+            const VtArray<GfVec3f>& shadersRGBData,
+            const VtArray<float>& shadersAlphaData,
+            const VtArray<int>& shadersAssignmentIndices,
+            VtArray<GfVec3f>* colorSetRGBData,
+            VtArray<float>* colorSetAlphaData,
+            TfToken* interpolation,
+            VtArray<int>* colorSetAssignmentIndices,
+            MFnMesh::MColorRepresentation* colorSetRep,
+            bool* clamped);
 
-    bool _createAlphaPrimVar(UsdGeomGprim &primSchema,
-                             const TfToken& name,
-                             const UsdTimeCode& usdTime,
-                             const VtArray<float>& data,
-                             const TfToken& interpolation,
-                             const VtArray<int>& assignmentIndices,
-                             bool clamped);
+    bool _createAlphaPrimVar(
+            UsdGeomGprim& primSchema,
+            const TfToken& name,
+            const UsdTimeCode& usdTime,
+            const VtArray<float>& data,
+            const TfToken& interpolation,
+            const VtArray<int>& assignmentIndices,
+            bool clamped);
 
-    bool _createRGBPrimVar(UsdGeomGprim &primSchema,
-                           const TfToken& name,
-                           const UsdTimeCode& usdTime,
-                           const VtArray<GfVec3f>& data,
-                           const TfToken& interpolation,
-                           const VtArray<int>& assignmentIndices,
-                           bool clamped);
+    bool _createRGBPrimVar(
+            UsdGeomGprim& primSchema,
+            const TfToken& name,
+            const UsdTimeCode& usdTime,
+            const VtArray<GfVec3f>& data,
+            const TfToken& interpolation,
+            const VtArray<int>& assignmentIndices,
+            bool clamped);
 
-    bool _createRGBAPrimVar(UsdGeomGprim &primSchema,
-                            const TfToken& name,
-                            const UsdTimeCode& usdTime,
-                            const VtArray<GfVec3f>& rgbData,
-                            const VtArray<float>& alphaData,
-                            const TfToken& interpolation,
-                            const VtArray<int>& assignmentIndices,
-                            bool clamped);
+    bool _createRGBAPrimVar(
+            UsdGeomGprim& primSchema,
+            const TfToken& name,
+            const UsdTimeCode& usdTime,
+            const VtArray<GfVec3f>& rgbData,
+            const VtArray<float>& alphaData,
+            const TfToken& interpolation,
+            const VtArray<int>& assignmentIndices,
+            bool clamped);
 
-    bool _createUVPrimVar(UsdGeomGprim &primSchema,
-                          const TfToken& name,
-                          const UsdTimeCode& usdTime,
-                          const VtArray<GfVec2f>& data,
-                          const TfToken& interpolation,
-                          const VtArray<int>& assignmentIndices);
+    bool _createUVPrimVar(
+            UsdGeomGprim& primSchema,
+            const TfToken& name,
+            const UsdTimeCode& usdTime,
+            const VtArray<GfVec2f>& data,
+            const TfToken& interpolation,
+            const VtArray<int>& assignmentIndices);
 
     /// Adds displayColor and displayOpacity primvars using the given color,
     /// alpha, and assignment data if the \p primSchema does not already have
     /// authored opinions for them.
     bool _addDisplayPrimvars(
-        UsdGeomGprim &primSchema,
-        const UsdTimeCode& usdTime,
-        const MFnMesh::MColorRepresentation colorRep,
-        const VtArray<GfVec3f>& RGBData,
-        const VtArray<float>& AlphaData,
-        const TfToken& interpolation,
-        const VtArray<int>& assignmentIndices,
-        const bool clamped,
-        const bool authored);
+            UsdGeomGprim& primSchema,
+            const UsdTimeCode& usdTime,
+            const MFnMesh::MColorRepresentation colorRep,
+            const VtArray<GfVec3f>& RGBData,
+            const VtArray<float>& AlphaData,
+            const TfToken& interpolation,
+            const VtArray<int>& assignmentIndices,
+            const bool clamped,
+            const bool authored);
 
     /// Sets the primvar \p primvar at time \p usdTime using the given
     /// \p indices (can be empty) and \p values.
@@ -195,5 +211,6 @@ class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

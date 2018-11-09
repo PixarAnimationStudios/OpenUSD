@@ -21,12 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primWriterRegistry.h"
 
 #include "usdMaya/debugCodes.h"
 #include "usdMaya/functorPrimWriter.h"
 #include "usdMaya/registryHelper.h"
 
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
@@ -56,7 +59,8 @@ UsdMayaPrimWriterRegistry::Register(
         UsdMayaPrimWriterRegistry::WriterFactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-        "Registering UsdMayaPrimWriter for maya type %s.\n", mayaTypeName.c_str());
+        "Registering UsdMayaPrimWriter for maya type %s.\n",
+        mayaTypeName.c_str());
 
     std::pair< _Registry::iterator, bool> insertStatus =
         _reg.insert(std::make_pair(mayaTypeName, fn));
@@ -102,13 +106,13 @@ UsdMayaPrimWriterRegistry::Find(const std::string& mayaTypeName)
     // the registry in case we encounter it again.
     if (!TfMapLookup(_reg, mayaTypeName, &ret)) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-                "No usdMaya writer plugin for maya type %s. No maya plugin found.\n",
-                mayaTypeName.c_str());
+            "No usdMaya writer plugin for maya type %s. No maya plugin found.\n",
+            mayaTypeName.c_str());
         _reg[mayaTypeName] = nullptr;
     }
+
     return ret;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

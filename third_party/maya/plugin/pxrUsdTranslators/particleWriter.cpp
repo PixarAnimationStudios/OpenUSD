@@ -21,37 +21,49 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
+#include "pxr/pxr.h"
 #include "pxrUsdTranslators/particleWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/transformWriter.h"
+#include "usdMaya/writeJobContext.h"
 
-#include "pxr/usd/usdGeom/points.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/points.h"
 
-#include <maya/MFnParticleSystem.h>
-#include <maya/MVectorArray.h>
 #include <maya/MAnimControl.h>
+#include <maya/MDoubleArray.h>
 #include <maya/MFnAttribute.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnParticleSystem.h>
+#include <maya/MIntArray.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+#include <maya/MVectorArray.h>
 
-#include <type_traits>
-#include <memory>
 #include <limits>
+#include <memory>
 #include <set>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 PXRUSDMAYA_REGISTER_WRITER(particle, PxrUsdTranslators_ParticleWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(particle, UsdGeomPoints);
 
 PXRUSDMAYA_REGISTER_WRITER(nParticle, PxrUsdTranslators_ParticleWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nParticle, UsdGeomPoints);
+
 
 namespace {
     template <typename T>
@@ -121,7 +133,7 @@ namespace {
     }
 
     template <typename T>
-    inline void _addAttr(UsdGeomPoints& points, const TfToken& name, 
+    inline void _addAttr(UsdGeomPoints& points, const TfToken& name,
                          const SdfValueTypeName& typeName,
                          const VtArray<T>& a, const UsdTimeCode& usdTime,
                          UsdUtilsSparseValueWriter *valueWriter) {
@@ -137,12 +149,12 @@ namespace {
     const TfToken _massName("mass");
 
     template <typename T>
-    void _addAttrVec(UsdGeomPoints& points, const SdfValueTypeName& typeName, 
+    void _addAttrVec(UsdGeomPoints& points, const SdfValueTypeName& typeName,
                      const _strVecPairVec<T>& a,
                      const UsdTimeCode& usdTime,
                      UsdUtilsSparseValueWriter *valueWriter) {
         for (const auto& v : a) {
-            _addAttr(points, v.first, typeName, *v.second, usdTime, 
+            _addAttr(points, v.first, typeName, *v.second, usdTime,
                      valueWriter);
         }
     }
@@ -180,11 +192,14 @@ namespace {
 }
 
 PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
-    const MDagPath & iDag,
-    const SdfPath& uPath,
-    UsdMayaWriteJobContext& jobCtx)
-    : UsdMayaTransformWriter(iDag, uPath, jobCtx),
-      mInitialFrameDone(false) {
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        UsdMayaWriteJobContext& jobCtx) :
+    UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
+    mInitialFrameDone(false)
+{
+    TF_AXIOM(GetDagPath().isValid());
+
     auto primSchema = UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
     _usdPrim = primSchema.GetPrim();
@@ -193,22 +208,28 @@ PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
     initializeUserAttributes();
 }
 
-void PxrUsdTranslators_ParticleWriter::Write(const UsdTimeCode &usdTime) {
+/* virtual */
+void
+PxrUsdTranslators_ParticleWriter::Write(const UsdTimeCode& usdTime)
+{
     UsdMayaTransformWriter::Write(usdTime);
 
     UsdGeomPoints primSchema(_usdPrim);
     writeParams(usdTime, primSchema);
 }
 
-void PxrUsdTranslators_ParticleWriter::writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points) {
+void
+PxrUsdTranslators_ParticleWriter::writeParams(
+        const UsdTimeCode& usdTime,
+        UsdGeomPoints& points)
+{
     // XXX: Check this properly, static particles are uncommon, but used.
     if (usdTime.IsDefault()) {
         return;
     }
 
-    const auto particleNode = GetDagPath().node();
-    MFnParticleSystem particleSys(particleNode);
-    MFnParticleSystem deformedParticleSys(particleNode);
+    MFnParticleSystem particleSys(GetDagPath());
+    MFnParticleSystem deformedParticleSys(GetDagPath());
 
     if (particleSys.isDeformedParticleShape()) {
         const auto origObj = particleSys.originalParticleShape();
@@ -218,6 +239,7 @@ void PxrUsdTranslators_ParticleWriter::writeParams(const UsdTimeCode& usdTime, U
         deformedParticleSys.setObject(defObj);
     }
 
+    const auto particleNode = GetMayaObject();
     if (particleNode.apiType() != MFn::kNParticle) {
         auto currentTime = MAnimControl::currentTime();
         if (mInitialFrameDone) {
@@ -339,13 +361,15 @@ void PxrUsdTranslators_ParticleWriter::writeParams(const UsdTimeCode& usdTime, U
                 _GetSparseValueWriter());
     _addAttrVec(points, SdfValueTypeNames->FloatArray, floats, usdTime,
                 _GetSparseValueWriter());
-    _addAttrVec(points, SdfValueTypeNames->IntArray, ints, usdTime, 
+    _addAttrVec(points, SdfValueTypeNames->IntArray, ints, usdTime,
                 _GetSparseValueWriter());
 }
 
-void PxrUsdTranslators_ParticleWriter::initializeUserAttributes() {
-    const auto particleNode = GetDagPath().node();
-    MFnParticleSystem particleSys(particleNode);
+void
+PxrUsdTranslators_ParticleWriter::initializeUserAttributes()
+{
+    const auto particleNode = GetMayaObject();
+    MFnParticleSystem particleSys(GetDagPath());
 
     const auto attributeCount = particleSys.attributeCount();
 
@@ -373,5 +397,6 @@ void PxrUsdTranslators_ParticleWriter::initializeUserAttributes() {
         }
     }
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

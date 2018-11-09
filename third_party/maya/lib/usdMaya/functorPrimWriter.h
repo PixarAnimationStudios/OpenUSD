@@ -21,24 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_FUNCTORPRIMWRITER_H
-#define PXRUSDMAYA_FUNCTORPRIMWRITER_H
+#ifndef PXRUSDMAYA_FUNCTOR_PRIM_WRITER_H
+#define PXRUSDMAYA_FUNCTOR_PRIM_WRITER_H
 
 /// \file usdMaya/functorPrimWriter.h
 
-#include "usdMaya/api.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
-#include "usdMaya/primWriterRegistry.h"
+#include "pxr/pxr.h"
 #include "usdMaya/transformWriter.h"
 
-#include "pxr/pxr.h"
+#include "usdMaya/primWriter.h"
+#include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/writeJobContext.h"
 
-#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+
+#include <maya/MFnDependencyNode.h>
 
 #include <functional>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdMaya_FunctorPrimWriter
 /// \brief This class is scaffolding to hold bare prim writer functions and
@@ -50,21 +54,21 @@ class UsdMaya_FunctorPrimWriter final : public UsdMayaTransformWriter
 {
 public:
     UsdMaya_FunctorPrimWriter(
-            const MDagPath& iDag,
-            const SdfPath& uPath,
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx,
             UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
     ~UsdMaya_FunctorPrimWriter() override;
 
-    void Write(const UsdTimeCode &usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
     bool ExportsGprims() const override;
-    bool ShouldPruneChildren() const override;    
+    bool ShouldPruneChildren() const override;
     const SdfPathVector& GetModelPaths() const override;
 
     static UsdMayaPrimWriterSharedPtr Create(
-            const MDagPath& dag,
-            const SdfPath& path,
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx,
             UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
@@ -78,6 +82,8 @@ private:
     SdfPathVector _modelPaths;
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

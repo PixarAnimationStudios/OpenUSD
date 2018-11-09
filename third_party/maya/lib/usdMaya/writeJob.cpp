@@ -376,7 +376,8 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
+            const MFnDagNode dagNodeFn(curDagPath);
+            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(dagNodeFn);
 
             if (primWriter) {
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);
@@ -576,7 +577,7 @@ UsdMaya_WriteJob::_FinishWriting()
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
 
     // In the usdz case, the layer at _fileName was just a temp file, so
-    // clean it up now. Do this after mJobCtx.mStage is reset to ensure 
+    // clean it up now. Do this after mJobCtx.mStage is reset to ensure
     // there are no outstanding handles to the file, which will cause file
     // access issues on Windows.
     if (!_packageName.empty()) {

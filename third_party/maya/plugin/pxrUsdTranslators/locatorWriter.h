@@ -24,19 +24,16 @@
 #ifndef PXRUSDTRANSLATORS_LOCATOR_WRITER_H
 #define PXRUSDTRANSLATORS_LOCATOR_WRITER_H
 
-/// \file locatorWriter.h
+/// \file pxrUsdTranslators/locatorWriter.h
 
 #include "pxr/pxr.h"
-
 #include "usdMaya/primWriter.h"
+
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
 
-#include <maya/MDagPath.h>
-
-#include <memory>
+#include <maya/MFnDependencyNode.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -57,8 +54,8 @@ class PxrUsdTranslators_LocatorWriter : public UsdMayaPrimWriter
 {
 public:
     PxrUsdTranslators_LocatorWriter(
-            const MDagPath& iDag,
-            const SdfPath& uPath,
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx);
 };
 

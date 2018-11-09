@@ -41,6 +41,7 @@
 #include "pxr/usd/usdUtils/sparseValueWriter.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 
 #include <memory>
@@ -57,22 +58,22 @@ class UsdMayaWriteJobContext;
 ///
 /// Note that this class can be used to write USD prims for both DG and DAG
 /// Maya nodes. For DAG nodes, an MDagPath is required to uniquely identify
-/// instances in the DAG, so the writer should be constructed using an
-/// MDagPath. For DG nodes, the MObject constructor must be used.
+/// instances in the DAG, so the writer should be created using an
+/// MFnDagNode (or one of its derived classes) that was constructed using an
+/// MDagPath, *not* an MObject.
 class UsdMayaPrimWriter
 {
 public:
-    /// Constructs a prim writer for writing a Maya DAG node.
+    /// Constructs a prim writer for writing a Maya DG or DAG node.
+    ///
+    /// Note that if the Maya node is a DAG node, this must be passed an
+    /// MFnDagNode (or one of its derived classes) that was constructed with
+    /// an MDagPath to ensure that instancing is handled correctly. An error
+    /// will be issued if the constructor receives an MFnDagNode *not*
+    /// constructed with an MDagPath.
     PXRUSDMAYA_API
     UsdMayaPrimWriter(
-            const MDagPath& dagPath,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx);
-
-    /// Constructs a prim writer for writing a Maya DG node.
-    PXRUSDMAYA_API
-    UsdMayaPrimWriter(
-            const MObject& dgNode,
+            const MFnDependencyNode& depNodeFn,
             const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx);
 
@@ -228,8 +229,8 @@ private:
     /// and transform.
     bool _IsMergedShape() const;
 
-    /// The MDagPath for the Maya node being written, valid only when the prim
-    /// writer is constructed with an MDagPath.
+    /// The MDagPath for the Maya node being written, valid only for DAG node
+    /// prim writers.
     const MDagPath _dagPath;
 
     /// The MObject for the Maya node being written, valid for both DAG and DG

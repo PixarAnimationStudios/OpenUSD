@@ -25,32 +25,43 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/writeJobContext.h"
 #include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 #include "usdMaya/writeUtil.h"
 
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include "pxr/usd/usdGeom/xformOp.h"
 
 #include <maya/MAnimUtil.h>
-#include <maya/MDataHandle.h>
+#include <maya/MDagPath.h>
 #include <maya/MEulerRotation.h>
 #include <maya/MFnArrayAttrsData.h>
-#include <maya/MItDag.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MMatrix.h>
 
+#include <vector>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 PXRUSDMAYA_REGISTER_WRITER(instancer, PxrUsdTranslators_InstancerWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(instancer, UsdGeomPointInstancer);
 
 TF_DEFINE_PRIVATE_TOKENS(
-    _tokens, 
+    _tokens,
     (Prototypes)
     (instancerTranslate)
 );
+
 
 namespace {
 
@@ -61,7 +72,8 @@ static constexpr double _EPSILON = 1e-3;
 static
 bool
 _AreTranslateOpsOpposites(
-    const UsdGeomXformOp& first, const UsdGeomXformOp& second)
+        const UsdGeomXformOp& first,
+        const UsdGeomXformOp& second)
 {
     if (first.GetPrecision() != second.GetPrecision()) {
         return false;
@@ -129,7 +141,7 @@ _CleanUpRedundantTranslateOps(UsdGeomXformable& xformable)
                 // If the instancerTranslate and translate were the only
                 // xformOps in the xformOpOrder, then remove the xformOpOrder
                 // scene description completely.
-                // Otherwise, just edit the xformOpOrder to remove these ops. 
+                // Otherwise, just edit the xformOpOrder to remove these ops.
                 if (ops.size() == 2 && !resetsXformStack) {
                     prim.RemoveProperty(
                             xformable.GetXformOpOrderAttr().GetName());
@@ -149,8 +161,8 @@ _CleanUpRedundantTranslateOps(UsdGeomXformable& xformable)
 static
 bool
 _GetTransformedOriginInLocalSpace(
-    const MDagPath& transformDagPath,
-    GfVec3d* transformedOrigin)
+        const MDagPath& transformDagPath,
+        GfVec3d* transformedOrigin)
 {
     if (transformDagPath.hasFn(MFn::kTransform)) {
         MFnTransform fnXform(transformDagPath);
@@ -164,14 +176,17 @@ _GetTransformedOriginInLocalSpace(
 
 } // anonymous namespace
 
-PxrUsdTranslators_InstancerWriter::PxrUsdTranslators_InstancerWriter(const MDagPath & iDag,
-    const SdfPath& uPath,
-    UsdMayaWriteJobContext& jobCtx)
-    : UsdMayaTransformWriter(iDag, uPath, jobCtx),
-      _numPrototypes(0)
+PxrUsdTranslators_InstancerWriter::PxrUsdTranslators_InstancerWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        UsdMayaWriteJobContext& jobCtx) :
+    UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
+    _numPrototypes(0)
 {
+    TF_AXIOM(GetDagPath().isValid());
+
     UsdGeomPointInstancer primSchema =
-            UsdGeomPointInstancer::Define(GetUsdStage(), GetUsdPath());
+        UsdGeomPointInstancer::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
     _usdPrim = primSchema.GetPrim();
     TF_AXIOM(_usdPrim);
@@ -184,7 +199,7 @@ PxrUsdTranslators_InstancerWriter::PxrUsdTranslators_InstancerWriter(const MDagP
 
 /* virtual */
 void
-PxrUsdTranslators_InstancerWriter::Write(const UsdTimeCode &usdTime)
+PxrUsdTranslators_InstancerWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaTransformWriter::Write(usdTime);
 
@@ -199,8 +214,8 @@ PxrUsdTranslators_InstancerWriter::Write(const UsdTimeCode &usdTime)
 /// would cause correctness problems.)
 bool
 PxrUsdTranslators_InstancerWriter::_NeedsExtraInstancerTranslate(
-    const MDagPath& prototypeDagPath,
-    bool* instancerTranslateAnimated) const
+        const MDagPath& prototypeDagPath,
+        bool* instancerTranslateAnimated) const
 {
     // XXX: Maybe we could be smarter here and figure out if the animation
     // affects instancerTranslate?
@@ -225,7 +240,8 @@ PxrUsdTranslators_InstancerWriter::_NeedsExtraInstancerTranslate(
 
 bool
 PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
-    const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer)
+        const UsdTimeCode& usdTime,
+        const UsdGeomPointInstancer& instancer)
 {
     MStatus status = MS::kSuccess;
     MFnDagNode dagNode(GetDagPath(), &status);
@@ -403,6 +419,7 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
     return true;
 }
 
+/* virtual */
 void
 PxrUsdTranslators_InstancerWriter::PostExport()
 {
@@ -420,16 +437,19 @@ PxrUsdTranslators_InstancerWriter::PostExport()
     }
 }
 
+/* virtual */
 bool
 PxrUsdTranslators_InstancerWriter::ShouldPruneChildren() const
 {
     return true;
 }
 
+/* virtual */
 const SdfPathVector&
 PxrUsdTranslators_InstancerWriter::GetModelPaths() const
 {
     return _modelPaths;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
