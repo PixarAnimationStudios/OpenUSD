@@ -82,6 +82,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportVisibility) \
     (kind) \
     (materialCollectionsPath) \
+    (materialsScopeName) \
     (melPerFrameCallback) \
     (melPostCallback) \
     (mergeTransformAndShape) \
@@ -96,6 +97,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (verbose) \
     /* Special "none" token */ \
     (none) \
+    /* Default name for parent prim of exported materials */ \
+    ((DefaultMaterialsScopeName, "Materials")) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \
@@ -130,6 +133,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     PXRUSDMAYA_API,
     PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS);
 
+
 struct UsdMayaJobExportArgs
 {
     const TfToken compatibility;
@@ -150,6 +154,7 @@ struct UsdMayaJobExportArgs
     const TfToken exportSkin;
     const bool exportVisibility;
     const SdfPath materialCollectionsPath;
+    const TfToken materialsScopeName;
     const bool mergeTransformAndShape;
     const bool normalizeNurbs;
     const bool stripNamespaces;

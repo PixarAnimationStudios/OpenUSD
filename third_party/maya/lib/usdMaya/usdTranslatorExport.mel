@@ -128,6 +128,8 @@ global proc int usdTranslatorExport (string $parent,
             menuItem -l $niceName -ann $modeName;
         }
 
+        textFieldGrp -l "Materials Scope Name:" materialsScopeNameField;
+
         checkBox -l "Export displayColor primvar" exportDisplayColorCheckBox;
 
         checkBox -l "Make References Instanceable"      exportRefsAsInstanceableCheckBox;
@@ -205,6 +207,8 @@ global proc int usdTranslatorExport (string $parent,
                 tokenize($optionList[$index], "=", $optionBreakDown);
                 if ($optionBreakDown[0] == "shadingMode") {
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
+                } else if ($optionBreakDown[0] == "materialsScopeName") {
+                    usdTranslatorExport_SetTextField($optionBreakDown[1], "materialsScopeNameField");
                 } else if ($optionBreakDown[0] == "exportDisplayColor") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
                 } else if ($optionBreakDown[0] == "exportRefsAsInstanceable") {
@@ -271,6 +275,7 @@ global proc int usdTranslatorExport (string $parent,
     } else if ($action == "query") {
     
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
+        $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialsScopeName", "materialsScopeNameField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportRefsAsInstanceable", "exportRefsAsInstanceableCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");

@@ -91,7 +91,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         material = UsdShade.Material.GetBoundMaterial(cubePrim)
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
-        self.assertEqual(materialPath, '/RedCube/Looks/RedLambertSG')
+        self.assertEqual(materialPath, '/RedCube/Materials/RedLambertSG')
 
         materialInputs = material.GetInputs()
         self.assertEqual(len(materialInputs), 3)

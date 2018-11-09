@@ -568,6 +568,7 @@ pxr_register_test(testUsdExportShadingInstanced
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+        PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1
 )
 
 pxr_install_test_dir(
@@ -583,6 +584,7 @@ pxr_register_test(testUsdExportShadingModeDisplayColor
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+        PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1
 )
 
 pxr_install_test_dir(
@@ -598,6 +600,7 @@ pxr_register_test(testUsdExportShadingModePxrRis
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+        PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1
 )
 
 pxr_install_test_dir(

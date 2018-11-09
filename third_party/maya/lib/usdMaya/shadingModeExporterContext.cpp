@@ -31,7 +31,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
-
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -294,6 +293,7 @@ static
 UsdPrim
 _GetMaterialParent(
         const UsdStageRefPtr& stage,
+        const TfToken& materialsScopeName,
         const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
 {
     SdfPath commonAncestor;
@@ -321,7 +321,8 @@ _GetMaterialParent(
     while (!shaderExportLocation.IsRootPrimPath()) {
         shaderExportLocation = shaderExportLocation.GetParentPath();
     }
-    shaderExportLocation = shaderExportLocation.AppendChild(TfToken("Looks"));
+
+    shaderExportLocation = shaderExportLocation.AppendChild(materialsScopeName);
 
     return UsdGeomScope::Define(stage, shaderExportLocation).GetPrim();
 }
@@ -397,7 +398,10 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 
     materialName = UsdMayaUtil::SanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
-    if (UsdPrim materialParent = _GetMaterialParent(stage, assignmentsToBind)) {
+    if (UsdPrim materialParent = _GetMaterialParent(
+            stage,
+            _exportParams.materialsScopeName,
+            assignmentsToBind)) {
         SdfPath materialPath = materialParent.GetPath().AppendChild(
                 TfToken(materialName));
         UsdShadeMaterial material = UsdShadeMaterial::Define(

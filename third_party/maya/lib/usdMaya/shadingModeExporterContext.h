@@ -68,6 +68,10 @@ struct UsdMayaExportParams
     /// Modified root path.
     SdfPath overrideRootPath;
 
+    /// This is the name of the USD prim under which material prims will be
+    /// authored.
+    TfToken materialsScopeName;
+
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
     /// geometry that's bound to the various shading group sets in maya.
@@ -77,7 +81,8 @@ struct UsdMayaExportParams
     /// exported.  If \p bindableRoots is empty, it will export all.
     UsdMayaUtil::MDagPathSet bindableRoots;
 
-    /// Sets up the parentScope for creating materials.
+    /// This is the path of the USD prim under which *all* prims will be
+    /// authored.
     SdfPath parentScope;
 };
 

@@ -430,6 +430,7 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     exportParams.parentScope = mJobCtx.mArgs.parentScope;
 
     // Writing Materials/Shading
+    exportParams.materialsScopeName = mJobCtx.mArgs.materialsScopeName;
     exportParams.materialCollectionsPath =
             mJobCtx.mArgs.exportMaterialCollections ?
             mJobCtx.mArgs.materialCollectionsPath :

@@ -24,16 +24,19 @@
 #include "pxr/pxr.h"
 #include "usdMaya/writeUtil.h"
 
-#include "usdMaya/colorSpace.h"
-#include "usdMaya/translatorUtil.h"
 #include "usdMaya/adaptor.h"
+#include "usdMaya/colorSpace.h"
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/userTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/rotation.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
-#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/inherits.h"
@@ -74,14 +77,18 @@
 #include <string>
 #include <vector>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 TF_DEFINE_ENV_SETTING(
-        PIXMAYA_WRITE_UV_AS_FLOAT2, true,
-        "Set to true to write uv sets as Float2Array types "
-        " and set to false to write Texture Coordinate value types "
-        "(TexCoord2h, TexCoord2f, TexCoord2d, TexCoord3h, "
-        " TexCoord3f, TexCoord3d and their associated Array types)");
+    PIXMAYA_WRITE_UV_AS_FLOAT2,
+    true,
+    "Set to true to write uv sets as Float2Array types and set to false to "
+    "write Texture Coordinate value types (TexCoord2h, TexCoord2f, "
+    "TexCoord2d, TexCoord3h, TexCoord3f, TexCoord3d and their associated "
+    "Array types)");
+
 
 static
 bool
@@ -1285,6 +1292,18 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     return true;
 }
 
+/* static */
+TfToken
+UsdMayaWriteUtil::GetMaterialsScopeName()
+{
+    const UsdMayaJobExportArgs& exportArgs =
+        UsdMayaJobExportArgs::CreateFromDictionary(
+            UsdMayaJobExportArgs::GetDefaultDictionary(),
+            {});
+
+    return exportArgs.materialsScopeName;
+}
+
 bool
 UsdMayaWriteUtil::ReadMayaAttribute(
         const MFnDependencyNode& depNode,
@@ -1489,5 +1508,5 @@ UsdMayaWriteUtil::GetTimeSamples(
     return samples;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

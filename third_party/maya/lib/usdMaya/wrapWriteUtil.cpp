@@ -61,5 +61,7 @@ void wrapWriteUtil()
         .staticmethod("WriteUVAsFloat2")
         .def("GetVtValue", _GetVtValue)
         .staticmethod("GetVtValue")
+        .def("GetMaterialsScopeName", This::GetMaterialsScopeName)
+        .staticmethod("GetMaterialsScopeName")
     ;
 }
