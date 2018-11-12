@@ -266,7 +266,7 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
         vec4 Plight = lightSource[i].position;
 
         vec3 l = (Plight.w == 0.0)
-                    ? normalize(Plight.xyz)
+                    ? normalize(-Plight.xyz)
                     : normalize(Plight - Peye).xyz;
 
         vec3 h = normalize(l + vec3(0,0,1));    // directional viewer

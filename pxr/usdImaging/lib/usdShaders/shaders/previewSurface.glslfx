@@ -162,7 +162,7 @@ evaluateLights(vec3 emissive, float occlusion, float ior,
         // Calculate necessary vector information for lighting
         vec4 Plight = lightSource[i].position;
         vec3 l = (Plight.w == 0.0)
-                    ? normalize(Plight.xyz)
+                    ? normalize(-Plight.xyz)
                     : normalize(Plight - Peye).xyz;
         vec3 h = normalize( e + l );
         float NdotL = max(0.0, dot(n, l));
