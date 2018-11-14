@@ -74,8 +74,9 @@ public:
     void Clear();
 
 private:
-    SdfPathVector _ids;
-    size_t        _sortedCount;
+    SdfPathVector           _ids;
+    size_t                  _sortedCount;
+    ptrdiff_t               _afterLastDeletePoint;
 
     void _InsertSort();
     void _FullSort();
