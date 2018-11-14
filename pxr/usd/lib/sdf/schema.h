@@ -305,6 +305,7 @@ public:
     /// for this schema. It does not imply that the value is valid for
     /// a particular field -- the field's validation function must be
     /// used for that.
+    SDF_API
     SdfAllowed IsValidValue(const VtValue& value) const;
 
     /// Returns all registered type names.

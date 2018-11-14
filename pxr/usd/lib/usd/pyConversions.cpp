@@ -87,36 +87,45 @@ UsdPythonToMetadataValue(
 {
     using namespace boost::python;
 
-    VtValue fallback;
-    if (!SdfSchema::GetInstance().IsRegistered(key, &fallback)) {
+    SdfSchema const &schema = SdfSchema::GetInstance();
+
+    SdfSchema::FieldDefinition const *fieldDef = schema.GetFieldDefinition(key);
+
+    if (!fieldDef) {
         TF_CODING_ERROR("Unregistered metadata key: %s", key.GetText());
         return false;
     }
-    if (!keyPath.IsEmpty() && fallback.IsHolding<VtDictionary>()) {
-        // Extract fallback element from fallback dict if present.
-        if (VtValue const *fb = fallback.UncheckedGet<VtDictionary>().
-            GetValueAtPath(keyPath.GetString())) {
-            fallback = *fb;
-        } else {
-            fallback = VtValue();
-        }
-    }
+
     VtValue value = extract<VtValue>(pyVal.Get())();
+
+    // Empty values are always considered valid.
     if (value.IsEmpty()) {
         *result = value;
         return true;
     }
+
+    // Attempt to obtain a fallback value.
+    VtValue fallback = fieldDef->GetFallbackValue();
+
+    if (!keyPath.IsEmpty() && fallback.IsHolding<VtDictionary>()) {
+        if (!fieldDef->IsValidMapValue(value)) {
+            TfPyThrowValueError(
+                TfStringPrintf(
+                    "Invalid value type for dictionary key-path '%s:%s': '%s'.",
+                    key.GetString().c_str(),
+                    keyPath.GetText(),
+                    TfPyRepr(pyVal.Get()).c_str()));
+        }
+        // Clear out the fallback here, since we allow any scene desc type in
+        // dicts.
+        fallback = VtValue();
+    }
+
     // We have to handle a few things as special cases to disambiguate
     // types from Python.
     if (!fallback.IsEmpty()) {
-        if (fallback.IsHolding<SdfPath>()) {
-            value = extract<SdfPath>(pyVal.Get())();
-        }
-        else if (fallback.IsHolding<TfTokenVector>()) {
+        if (fallback.IsHolding<TfTokenVector>()) {
             value = extract<TfTokenVector>(pyVal.Get())();
-        }
-        else if (fallback.IsHolding<SdfVariantSelectionMap>()) {
-            value = extract<SdfVariantSelectionMap>(pyVal.Get())();
         }
         else if (fallback.IsHolding< std::vector<std::string> >()) {
             extract<std::vector<std::string> > getVecString(pyVal.Get());
@@ -132,13 +141,24 @@ UsdPythonToMetadataValue(
             value.CastToTypeOf(fallback);
         }
     }
-    if (value.IsEmpty()) {
+    // If we failed to produce a value, or if we don't have a fallback and the
+    // value we do have is not valid for either the field definition or the
+    // schema, then complain.
+    if (value.IsEmpty() ||
+        (fallback.IsEmpty() &&
+         (!fieldDef->IsValidValue(value) || !schema.IsValidValue(value)))) {
+        VtValue origValue = extract<VtValue>(pyVal.Get())();
         TfPyThrowValueError(
             TfStringPrintf(
-                "Invalid type for key '%s'. Expected '%s', got '%s'",
-                key.GetString().c_str(),
-                fallback.GetType().GetTypeName().c_str(),
-                TfPyRepr(pyVal.Get()).c_str()));
+                "Invalid value '%s' (type '%s') for key '%s%s'.%s",
+                TfPyRepr(pyVal.Get()).c_str(),
+                origValue.GetTypeName().c_str(),
+                key.GetText(),
+                keyPath.IsEmpty() ? "" :
+                TfStringPrintf(":%s", keyPath.GetText()).c_str(),
+                fallback.IsEmpty() ? "" :
+                TfStringPrintf(" Expected type '%s'", fallback.GetType().
+                               GetTypeName().c_str()).c_str()));
     }
     result->Swap(value);
     return true;
