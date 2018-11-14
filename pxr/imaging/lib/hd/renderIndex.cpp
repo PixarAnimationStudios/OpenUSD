@@ -328,17 +328,20 @@ HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
                                     SdfPath const& taskId,
                                     HdTaskSharedPtr const& task)
 {
-    if (taskId == SdfPath())
+    if (taskId == SdfPath()) {
         return;
+    }
     _tracker.TaskInserted(taskId);
-    _taskMap.insert(std::make_pair(taskId, task));
+    _taskMap.emplace(taskId, _TaskInfo{delegate, task});
 }
 
 HdTaskSharedPtr const&
 HdRenderIndex::GetTask(SdfPath const& id) const {
     _TaskMap::const_iterator it = _taskMap.find(id);
-    if (it != _taskMap.end())
-        return it->second;
+    if (it != _taskMap.end()) {
+        return it->second.task;
+    }
+
     static HdTaskSharedPtr EMPTY;
     return EMPTY;
 }
@@ -350,8 +353,9 @@ HdRenderIndex::RemoveTask(SdfPath const& id)
     HF_MALLOC_TAG_FUNCTION();
 
     _TaskMap::iterator it = _taskMap.find(id);
-    if (it == _taskMap.end())
+    if (it == _taskMap.end()) {
         return;
+    }
 
     _tracker.TaskRemoved(id);
     _taskMap.erase(it);
@@ -368,24 +372,16 @@ HdRenderIndex::_RemoveTaskSubtree(const SdfPath &root,
     _TaskMap::iterator it = _taskMap.begin();
     while (it != _taskMap.end()) {
         const SdfPath &id = it->first;
-        const HdTaskSharedPtr &task = it->second;
+        const _TaskInfo &taskInfo = it->second;
 
-        _TaskMap::iterator nextIt = it;
-        ++nextIt;
+        if ((taskInfo.sceneDelegate == sceneDelegate) &&
+            (id.HasPrefix(root))) {
+            _tracker.TaskRemoved(id);
 
-        // Yuck!!!
-        const boost::shared_ptr<HdSceneTask> sceneTask =
-                                 boost::dynamic_pointer_cast<HdSceneTask>(task);
-
-        if (sceneTask) {
-            if ((sceneTask->GetDelegate() == sceneDelegate) &&
-                (id.HasPrefix(root))) {
-                _tracker.TaskRemoved(id);
-
-                _taskMap.erase(it);
-            }
+            it = _taskMap.erase(it);
+        } else {
+            ++it;
         }
-        it = nextIt;
     }
 }
 
