@@ -281,7 +281,8 @@ PxrUsdKatanaReadPointInstancer(
             &xformSamples,
             sampleTimes,
             UsdTimeCode(currentTime),
-            UsdGeomPointInstancer::IncludeProtoXform);
+            UsdGeomPointInstancer::IncludeProtoXform,
+            UsdGeomPointInstancer::IgnoreMask);
     const size_t numXformSamples = xformSamples.size();
 
     if (numXformSamples == 0) {
