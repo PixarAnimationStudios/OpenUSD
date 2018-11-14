@@ -1013,7 +1013,7 @@ UsdMayaUtil::CompressFaceVaryingPrimvarIndices(
 }
 
 bool
-UsdMayaUtil::IsAuthored(MPlug& plug)
+UsdMayaUtil::IsAuthored(const MPlug& plug)
 {
     MStatus status;
 
@@ -1026,8 +1026,12 @@ UsdMayaUtil::IsAuthored(MPlug& plug)
         return true;
     }
 
+    // MPlug::getSetAttrCmds() is currently not declared const, so we have to
+    // make a copy of plug here.
+    MPlug plugCopy(plug);
+
     MStringArray setAttrCmds;
-    status = plug.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
+    status = plugCopy.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     for (unsigned int i = 0u; i < setAttrCmds.length(); ++i) {
