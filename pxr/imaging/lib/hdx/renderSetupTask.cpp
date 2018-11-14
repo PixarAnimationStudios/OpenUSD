@@ -48,11 +48,13 @@ HdStShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
+    , _renderPassState()
     , _colorRenderPassShader()
     , _idRenderPassShader()
     , _viewport()
     , _cameraId()
-    , _renderTags()    
+    , _renderTags()
+    , _aovBindings()
 {
     _colorRenderPassShader.reset(
         new HdStRenderPassShader(HdxPackageRenderPassShader()));
@@ -63,15 +65,8 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     _renderPassState = index.GetRenderDelegate()->CreateRenderPassState();
 }
 
-void
-HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
+HdxRenderSetupTask::~HdxRenderSetupTask()
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // set raster state to TaskContext
-    (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
-    (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
 }
 
 void
@@ -96,6 +91,18 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
     SyncCamera();
     SyncRenderPassState();
 }
+
+void
+HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // set raster state to TaskContext
+    (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
+    (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
+}
+
 
 void
 HdxRenderSetupTask::SyncRenderPassState()

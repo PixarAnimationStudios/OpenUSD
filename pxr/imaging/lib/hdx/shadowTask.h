@@ -54,7 +54,7 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 
-struct HdxShadowTaskParams : public HdTaskParams {
+struct HdxShadowTaskParams {
     HdxShadowTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
@@ -104,14 +104,17 @@ public:
     HDX_API
     HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxShadowTask();
 
+protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void _Sync(HdTaskContext*   ctx) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void _Execute(HdTaskContext* ctx) override;
 
 private:
     void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
@@ -126,6 +129,10 @@ private:
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
     HdxShadowTaskParams _params;
+
+    HdxShadowTask() = delete;
+    HdxShadowTask(const HdxShadowTask &) = delete;
+    HdxShadowTask &operator =(const HdxShadowTask &) = delete;
 };
 
 // VtValue requirements

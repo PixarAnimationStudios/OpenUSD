@@ -81,11 +81,20 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
  , _currentDrawTargetSetVersion(0)
  , _renderPassesInfo()
  , _renderPasses()
+ , _overrideColor()
+ , _wireframeColor()
+ , _enableLighting(false)
+ , _alphaThreshold(0.0f)
  , _depthBiasUseDefault(true)
  , _depthBiasEnable(false)
  , _depthBiasConstantFactor(0.0f)
  , _depthBiasSlopeFactor(1.0f)
  , _depthFunc(HdCmpFuncLEqual)
+ , _cullStyle(HdCullStyleBackUnlessDoubleSided)
+{
+}
+
+HdxDrawTargetTask::~HdxDrawTargetTask()
 {
 }
 

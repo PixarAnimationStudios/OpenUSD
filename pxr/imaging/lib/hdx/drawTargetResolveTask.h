@@ -25,6 +25,7 @@
 #define HDX_DRAW_TARGET_TASK_RESOLVE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/task.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,9 +38,11 @@ public:
 
 protected:
     /// Sync the render pass resources
+    HDX_API
     virtual void _Sync(HdTaskContext* ctx);
 
     /// Execute render pass task
+    HDX_API
     virtual void _Execute(HdTaskContext* ctx);
 
 private:

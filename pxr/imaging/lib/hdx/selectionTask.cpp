@@ -46,20 +46,15 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     : HdSceneTask(delegate, id)
     , _lastVersion(-1)
     , _hasSelection(false)
+    , _params({false, GfVec4f(), GfVec4f()})
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
     , _selPointColorsBar(nullptr)
 {
-    _params = {false, GfVec4f(), GfVec4f()};
 }
 
-void
-HdxSelectionTask::_Execute(HdTaskContext* ctx)
+HdxSelectionTask::~HdxSelectionTask()
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // Note that selectionTask comes after renderTask.
 }
 
 void
@@ -172,6 +167,16 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         (*ctx)[HdxTokens->selectionPointColors] = VtValue();
     }
 }
+
+void
+HdxSelectionTask::_Execute(HdTaskContext* ctx)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // Note that selectionTask comes after renderTask.
+}
+
 
 // -------------------------------------------------------------------------- //
 // VtValue requirements

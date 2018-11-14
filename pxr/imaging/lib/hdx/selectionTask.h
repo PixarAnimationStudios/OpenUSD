@@ -62,14 +62,19 @@ public:
     HDX_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxSelectionTask();
 
+
+protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void _Sync(HdTaskContext*   ctx) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void _Execute(HdTaskContext* ctx) override;
+
 
 private:
     int _lastVersion;
@@ -78,6 +83,10 @@ private:
     HdBufferArrayRangeSharedPtr _selOffsetBar;
     HdBufferArrayRangeSharedPtr _selUniformBar;
     HdBufferArrayRangeSharedPtr _selPointColorsBar;
+
+    HdxSelectionTask() = delete;
+    HdxSelectionTask(const HdxSelectionTask &) = delete;
+    HdxSelectionTask &operator =(const HdxSelectionTask &) = delete;
 };
 
 // VtValue requirements

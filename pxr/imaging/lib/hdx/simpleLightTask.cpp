@@ -68,36 +68,9 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     _shadows = TfCreateRefPtr(new GlfSimpleShadowArray(_defaultShadowRes, 0));
 }
 
-void
-HdxSimpleLightTask::_Execute(HdTaskContext* ctx)
+HdxSimpleLightTask::~HdxSimpleLightTask()
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-}
 
-size_t
-HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
-                   std::vector<TfToken> const &lightTypes, 
-                   SdfPathVector const &lightIncludePaths,
-                   SdfPathVector const &lightExcludePaths,
-                   std::map<TfToken, SdfPathVector> *lights)
-{
-    size_t count = 0;
-    TF_FOR_ALL(it, lightTypes) {
-        if (renderIndex.IsSprimTypeSupported(*it)) {
-            // XXX: This is inefficient, need to be optimized
-            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(*it, 
-                SdfPath::AbsoluteRootPath());
-
-            SdfPathVector lightsLocal;
-            HdPrimGather gather;
-            gather.Filter(sprimPaths, lightIncludePaths, lightExcludePaths,
-                          &lightsLocal);
-            (*lights)[*it] = lightsLocal;
-            count += lightsLocal.size();
-        }
-    }
-    return count;
 }
 
 void
@@ -304,6 +277,39 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     }
     lightingContext->SetShadows(_shadows);
 }
+
+void
+HdxSimpleLightTask::_Execute(HdTaskContext* ctx)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+}
+
+size_t
+HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
+                   std::vector<TfToken> const &lightTypes,
+                   SdfPathVector const &lightIncludePaths,
+                   SdfPathVector const &lightExcludePaths,
+                   std::map<TfToken, SdfPathVector> *lights)
+{
+    size_t count = 0;
+    TF_FOR_ALL(it, lightTypes) {
+        if (renderIndex.IsSprimTypeSupported(*it)) {
+            // XXX: This is inefficient, need to be optimized
+            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(*it,
+                SdfPath::AbsoluteRootPath());
+
+            SdfPathVector lightsLocal;
+            HdPrimGather gather;
+            gather.Filter(sprimPaths, lightIncludePaths, lightExcludePaths,
+                          &lightsLocal);
+            (*lights)[*it] = lightsLocal;
+            count += lightsLocal.size();
+        }
+    }
+    return count;
+}
+
 
 // -------------------------------------------------------------------------- //
 // VtValue requirements

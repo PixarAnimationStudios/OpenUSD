@@ -64,6 +64,10 @@ public:
     HDX_API
     HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id);
 
+    HDX_API
+    virtual ~HdxRenderSetupTask();
+
+
     // APIs used from HdxRenderTask to manage the sync process.
     HDX_API
     void SyncParams(HdxRenderTaskParams const &params);
@@ -82,13 +86,14 @@ public:
     }
 
 protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdTaskContext* ctx);
+
     /// Execute render pass task
     HDX_API
     virtual void _Execute(HdTaskContext* ctx);
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;
@@ -105,13 +110,17 @@ private:
 
     void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
                                  HdStRenderPassState *renderPassState);
+
+    HdxRenderSetupTask() = delete;
+    HdxRenderSetupTask(const HdxRenderSetupTask &) = delete;
+    HdxRenderSetupTask &operator =(const HdxRenderSetupTask &) = delete;
 };
 
 /// \class HdxRenderTaskParams
 ///
 /// RenderTask parameters (renderpass state).
 ///
-struct HdxRenderTaskParams : public HdTaskParams
+struct HdxRenderTaskParams
 {
     HdxRenderTaskParams()
         : overrideColor(0.0)

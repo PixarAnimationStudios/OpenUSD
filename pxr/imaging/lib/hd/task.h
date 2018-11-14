@@ -48,21 +48,25 @@ typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef boost::shared_ptr<class HdSceneTask> HdSceneTaskSharedPtr;
 typedef std::vector<HdSceneTaskSharedPtr> HdSceneTaskSharedPtrVector;
 
-// We want to use token as a key not std::string, so use an unordered_map over VtDictionary
-typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor> HdTaskContext;
+// We want to use token as a key not std::string, so use an unordered_map over
+// VtDictionary
+typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
+                                                                  HdTaskContext;
 
 class HdTask {
 public:
     HD_API
     HdTask();
+
     HD_API
     virtual ~HdTask();
 
-    /// Sync the resources. Syncs this task, then child tasks, if applicable.
+    /// Sync Phase:  Obtain task state from Scene delegate based on
+    /// change processing.
     HD_API
     void Sync(HdTaskContext* ctx);
 
-    /// Execute the task. Runs this task, then child tasks, if applicable.
+    /// Execute Phase: Runs the task.
     HD_API
     void Execute(HdTaskContext* ctx);
 
@@ -75,19 +79,23 @@ protected:
     ///
     /// outValue must not be null.
     template <class T>
-    static bool _GetTaskContextData(HdTaskContext const* ctx, TfToken const &id, T *outValue);
-
+    static bool _GetTaskContextData(HdTaskContext const* ctx,
+                                    TfToken const &id,
+                                    T *outValue);
 
     // Protected versions of Sync and Execute are provided for derived classes
     // to override.
-    HD_API
     virtual void _Sync( HdTaskContext* ctx) = 0;
-    HD_API
     virtual void _Execute(HdTaskContext* ctx) = 0;
 
     // _MarkClean is a hook for when Sync() is done running.
     HD_API
     virtual void _MarkClean();
+
+private:
+
+    HdTask(const HdTask &)             = delete;
+    HdTask &operator =(const HdTask &) = delete;
 };
 
 // Inline template body
@@ -190,11 +198,6 @@ HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
 
     return true;
 }
-
-// Task parameters for scene based synchronization
-struct HdTaskParams {
-};
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
