@@ -40,7 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bSpline)                                   \
     (camera)                                    \
     (catmullRom)                                \
-    (children)                                  \
     (color)                                     \
     (collection)                                \
     (computeShader)                             \

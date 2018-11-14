@@ -228,11 +228,6 @@ void HdEmbree_TestGLDrawing::InitTest()
                                        : HdReprTokens->hull))));
     }
 
-    // Tasks can have child tasks that get scheduled together.
-    // We don't use this here.
-    _sceneDelegate->UpdateTask(renderTask, HdTokens->children,
-            VtValue(SdfPathVector()));
-
     if (_instance) {
         // Instanced scene. Add test geometry:
         // - Proto cube.

@@ -45,29 +45,17 @@ void
 HdTask::Execute(HdTaskContext* ctx)
 {
     _Execute(ctx);
-    TF_FOR_ALL(task, _children) {
-        (*task)->Execute(ctx);
-    }
 }
 
 void
 HdTask::Sync(HdTaskContext* ctx)
 {
     _Sync(ctx);
-    _SyncChildren(ctx, &_children);
-    TF_FOR_ALL(task, _children) {
-        (*task)->Sync(ctx);
-    }
     _MarkClean();
 }
 
 void
 HdTask::_MarkClean()
-{
-}
-
-void
-HdTask::_SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children)
 {
 }
 
@@ -87,35 +75,6 @@ HdSceneTask::_MarkClean()
     // This may not be sufficient, for exmaple if we want to incrementally
     // clean dirty bits.
     _delegate->GetRenderIndex().GetChangeTracker().MarkTaskClean(_id);
-}
-
-void
-HdSceneTask::_SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children)
-{
-    // TODO: CYCLE DETECTION!
-    //
-    HdDirtyBits bits =
-        _delegate->GetRenderIndex().GetChangeTracker().GetTaskDirtyBits(_id);
-
-    if (bits & HdChangeTracker::DirtyChildren) {
-        VtValue v = _delegate->Get(_id, HdTokens->children);
-        if (!TF_VERIFY(v.IsHolding<SdfPathVector>())) {
-            return;
-        }
-
-        SdfPathVector childIds = v.UncheckedGet<SdfPathVector>();
-
-        children->clear();
-        children->reserve(childIds.size());
-
-        TF_FOR_ALL(i, childIds) {
-            HdTaskSharedPtr const& task = _delegate->GetRenderIndex().GetTask(*i);
-            if (!TF_VERIFY(task)) {
-                continue;
-            }
-            children->push_back(task);
-        }
-    }
 }
 
 HdDirtyBits

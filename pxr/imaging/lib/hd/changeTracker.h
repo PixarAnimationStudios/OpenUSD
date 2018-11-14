@@ -94,9 +94,8 @@ public:
     enum NonRprimDirtyBits : HdDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
-        DirtyChildren         = 1 << 2,
-        DirtyParams           = 1 << 3,
-        DirtyCollection       = 1 << 4,
+        DirtyParams           = 1 << 2,
+        DirtyCollection       = 1 << 3,
     };
 
     HD_API

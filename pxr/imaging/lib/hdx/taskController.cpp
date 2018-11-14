@@ -158,8 +158,6 @@ HdxTaskController::_CreateRenderTask()
 
     _delegate.SetParameter(_renderTaskId, HdTokens->params,
         renderParams);
-    _delegate.SetParameter(_renderTaskId, HdTokens->children,
-        SdfPathVector());
     _delegate.SetParameter(_renderTaskId, HdTokens->collection,
         collection);
 }
@@ -180,8 +178,6 @@ HdxTaskController::_CreateSelectionTask()
 
     _delegate.SetParameter(_selectionTaskId, HdTokens->params,
         selectionParams);
-    _delegate.SetParameter(_selectionTaskId, HdTokens->children,
-        SdfPathVector());
 }
 
 void
@@ -199,8 +195,6 @@ HdxTaskController::_CreateLightingTask()
 
     _delegate.SetParameter(_simpleLightTaskId, HdTokens->params,
         simpleLightParams);
-    _delegate.SetParameter(_simpleLightTaskId, HdTokens->children,
-        SdfPathVector());
 }
 
 void
@@ -214,7 +208,6 @@ HdxTaskController::_CreateShadowTask()
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
     _delegate.SetParameter(_shadowTaskId, HdTokens->params, shadowParams);
-    _delegate.SetParameter(_shadowTaskId, HdTokens->children, SdfPathVector());
 }
 
 void
@@ -231,8 +224,6 @@ HdxTaskController::_CreateColorizeTask()
 
     _delegate.SetParameter(_colorizeTaskId, HdTokens->params,
         taskParams);
-    _delegate.SetParameter(_colorizeTaskId, HdTokens->children,
-        SdfPathVector());
 }
 
 HdxTaskController::~HdxTaskController()

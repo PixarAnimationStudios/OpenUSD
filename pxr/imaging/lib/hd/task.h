@@ -88,13 +88,6 @@ protected:
     // _MarkClean is a hook for when Sync() is done running.
     HD_API
     virtual void _MarkClean();
-
-    // Child task API: _SyncChildren is responsible for populating _children.
-    HD_API
-    virtual void _SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children);
-
-private:
-    HdTaskSharedPtrVector _children;
 };
 
 // Inline template body
@@ -151,8 +144,6 @@ protected:
 
     HD_API
     virtual void _MarkClean();
-    HD_API
-    virtual void _SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children);
 
     /// Obtains the set of dirty bits for the task.
     HD_API
