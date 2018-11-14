@@ -647,13 +647,13 @@ pxr_register_test(testUsdExportUVSets
 )
 
 pxr_install_test_dir(
-    SRC testenv/UsdExportFloatUVSetsTest
-    DEST testUsdExportFloatUVSets
+    SRC testenv/UsdExportUVSetsFloatTest
+    DEST testUsdExportUVSetsFloat
 )
-pxr_register_test(testUsdExportFloatUVSets
+pxr_register_test(testUsdExportUVSetsFloat
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportUVSets"
-    TESTENV testUsdExportFloatUVSets
+    TESTENV testUsdExportUVSetsFloat
     ENV
         PIXMAYA_WRITE_UV_AS_FLOAT2=1
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
@@ -861,13 +861,13 @@ pxr_register_test(testUsdImportUVSets
 )
 
 pxr_install_test_dir(
-    SRC testenv/UsdImportFloatUVSetsTest
-    DEST testUsdImportFloatUVSets
+    SRC testenv/UsdImportUVSetsFloatTest
+    DEST testUsdImportUVSetsFloat
 )
-pxr_register_test(testUsdImportFloatUVSets
+pxr_register_test(testUsdImportUVSetsFloat
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImportUVSets"
-    TESTENV testUsdImportFloatUVSets
+    TESTENV testUsdImportUVSetsFloat
     ENV
         PIXMAYA_READ_FLOAT2_AS_UV=1
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin

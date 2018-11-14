@@ -80,7 +80,7 @@ class testUsdExportUVSets(unittest.TestCase):
             cmds.file(os.path.abspath('UsdExportUVSetsTest.ma'), open=True,
                        force=True)
         else:
-            cmds.file(os.path.abspath('UsdExportFloatUVSetsTest.ma'), open=True,
+            cmds.file(os.path.abspath('UsdExportUVSetsTest_Float.ma'), open=True,
                        force=True)
 
         # Make some live edits to the box with weird UVs for the
