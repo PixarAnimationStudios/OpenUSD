@@ -180,6 +180,7 @@ pxr_test_scripts(
         testenv/testUsdExportShadingModePxrRis.py
         testenv/testUsdExportSkeleton.py
         testenv/testUsdExportUVSets.py
+        testenv/testUsdExportVisibilityDefault.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportCamera.py
         testenv/testUsdImportColorSets.py
@@ -654,6 +655,22 @@ pxr_register_test(testUsdExportUVSetsFloat
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportUVSets"
     TESTENV testUsdExportUVSetsFloat
+    ENV
+        PIXMAYA_WRITE_UV_AS_FLOAT2=1
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportVisibilityDefaultTest
+    DEST testUsdExportVisibilityDefault
+)
+pxr_register_test(testUsdExportVisibilityDefault
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportVisibilityDefault"
+    TESTENV testUsdExportVisibilityDefault
     ENV
         PIXMAYA_WRITE_UV_AS_FLOAT2=1
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin

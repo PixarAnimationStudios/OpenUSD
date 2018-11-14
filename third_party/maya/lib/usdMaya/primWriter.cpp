@@ -220,7 +220,10 @@ UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
             isVisAnimated = isVisAnimated || parentIsVisAnimated;
         }
 
-        if (usdTime.IsDefault() != isVisAnimated) {
+        // We write out the current visibility value to the default, regardless
+        // if it is animated or not.  If we're not writing to default, we only
+        // write visibility if it's animated.
+        if (usdTime.IsDefault() || isVisAnimated) {
             const TfToken& visibilityTok =
                 (isVisible ?
                     UsdGeomTokens->inherited :
