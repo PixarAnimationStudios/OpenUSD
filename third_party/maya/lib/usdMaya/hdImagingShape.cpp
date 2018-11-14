@@ -175,7 +175,8 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
 
     // Set the do not write flag, set its UUID, and hide it in the outliner.
     // Don't lock the transform, because that causes problems reordering root
-    // nodes. If there is an error, let Maya report it but keep going.
+    // nodes. Do lock all the attributes on the transform to limit possible
+    // shenanigans. If there is an error, let Maya report it but keep going.
     MFnDependencyNode depNodeFn(hdImagingTransformObj, &status);
     CHECK_MSTATUS(status);
 
@@ -186,6 +187,12 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
     CHECK_MSTATUS(status);
 
     UsdMayaUtil::SetHiddenInOutliner(depNodeFn, true);
+
+    for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
+        const MObject attribute = depNodeFn.attribute(i);
+        MPlug plug = depNodeFn.findPlug(attribute, true);
+        plug.setLocked(true);
+    }
 
     // Create the HdImagingShape.
     if (!UsdMayaTranslatorUtil::CreateNode(
