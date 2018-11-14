@@ -274,6 +274,12 @@ class VtArray : public Vt_ArrayBase {
         other._data = nullptr;
     }
 
+    /// Initialize array from the contents of a \p initializerList.
+    VtArray(std::initializer_list<ELEM> initializerList)
+        : VtArray() {
+        assign(initializerList);
+    }
+
     /// Copy assign from \p other.  This array shares underlying data with
     /// \p other.
     VtArray &operator=(VtArray const &other) {
@@ -293,6 +299,12 @@ class VtArray : public Vt_ArrayBase {
         static_cast<Vt_ArrayBase &>(*this) = std::move(other);
         _data = other._data;
         other._data = nullptr;
+        return *this;
+    }
+
+    /// Replace current array contents with those in \p initializerList 
+    VtArray &operator=(std::initializer_list<ELEM> initializerList) {
+        this->assign(initializerList.begin(), initializerList.end());
         return *this;
     }
 
@@ -497,7 +509,7 @@ class VtArray : public Vt_ArrayBase {
         }
         // Adjust size.
         _shapeData.totalSize = newSize;
-    }        
+    }
 
     /// Equivalent to resize(0).
     void clear() {
@@ -537,6 +549,15 @@ class VtArray : public Vt_ArrayBase {
     void assign(size_t n, const value_type &fill) {
         resize(n);
         std::fill(begin(), end(), fill);
+    }
+
+    /// Assign array contents via intializer list
+    /// Equivalent to:
+    /// \code
+    /// array.assign(list.begin(), list.end());
+    /// \endcode
+    void assign(std::initializer_list<ELEM> initializerList) {
+	assign(initializerList.begin(), initializerList.end());
     }
 
     /// Swap the contents of this array with \p other.
