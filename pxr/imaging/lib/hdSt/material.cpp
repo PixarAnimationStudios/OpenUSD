@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -122,10 +123,14 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
 {
+    TF_DEBUG(HDST_MATERIAL_ADDED).Msg("HdStMaterial Created: %s\n",
+                                      id.GetText());
 }
 
 HdStMaterial::~HdStMaterial()
 {
+    TF_DEBUG(HDST_MATERIAL_REMOVED).Msg("HdStMaterial Removed: %s\n",
+                                        GetId().GetText());
 }
 
 /* virtual */
