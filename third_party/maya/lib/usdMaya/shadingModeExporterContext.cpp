@@ -23,7 +23,9 @@
 //
 #include "usdMaya/shadingModeExporterContext.h"
 
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -60,7 +62,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_EXPORT_OLD_STYLE_FACESETS, false,
+TF_DEFINE_ENV_SETTING(
+    PIXMAYA_EXPORT_OLD_STYLE_FACESETS,
+    false,
     "Whether maya/usdExport should create face-set bindings encoded in the "
     "old-style, using UsdGeomFaceSetAPI.");
 
@@ -74,23 +78,22 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
         const MObject& shadingEngine,
-        const UsdStageRefPtr& stage,
-        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-        const UsdMayaExportParams& exportParams) :
+        UsdMayaWriteJobContext& writeJobContext,
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap) :
     _shadingEngine(shadingEngine),
-    _stage(stage),
+    _stage(writeJobContext.GetUsdStage()),
     _dagPathToUsdMap(dagPathToUsdMap),
-    _exportParams(exportParams),
+    _writeJobContext(writeJobContext),
     _surfaceShaderPlugName(_tokens->surfaceShader),
     _volumeShaderPlugName(_tokens->volumeShader),
     _displacementShaderPlugName(_tokens->displacementShader)
 {
-    if (exportParams.bindableRoots.empty()) {
+    if (GetExportArgs().dagPaths.empty()) {
         // if none specified, push back '/' which encompasses all
         _bindableRoots.insert(SdfPath::AbsoluteRootPath());
     }
     else {
-        TF_FOR_ALL(bindableRootIter, exportParams.bindableRoots) {
+        TF_FOR_ALL(bindableRootIter, GetExportArgs().dagPaths) {
             const MDagPath& bindableRootDagPath = *bindableRootIter;
 
             auto iter = _dagPathToUsdMap.find(bindableRootDagPath);
@@ -98,11 +101,15 @@ UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
                 // Geometry w/ this material bound doesn't seem to exist in USD.
                 continue;
             }
+
             SdfPath usdPath = iter->second;
 
-            // If overrideRootPath is not empty, replace the root namespace with it
-            if (!_exportParams.overrideRootPath.IsEmpty() ) {
-                usdPath = usdPath.ReplacePrefix(usdPath.GetPrefixes()[0], _exportParams.overrideRootPath);
+            // If usdModelRootOverridePath is not empty, replace the root
+            // namespace with it.
+            if (!GetExportArgs().usdModelRootOverridePath.IsEmpty()) {
+                usdPath = usdPath.ReplacePrefix(
+                    usdPath.GetPrefixes()[0],
+                    GetExportArgs().usdModelRootOverridePath);
             }
 
             _bindableRoots.insert(usdPath);
@@ -248,38 +255,48 @@ UsdMayaShadingModeExportContext::GetAssignments() const
         }
         SdfPath usdPath = iter->second;
 
-        // If _exportParams.overrideRootPath is not empty, replace the root
-        // namespace with it
-        if (!_exportParams.overrideRootPath.IsEmpty() ) {
-            usdPath = usdPath.ReplacePrefix(usdPath.GetPrefixes()[0], _exportParams.overrideRootPath);
+        // If usdModelRootOverridePath is not empty, replace the
+        // root namespace with it.
+        if (!GetExportArgs().usdModelRootOverridePath.IsEmpty()) {
+            usdPath = usdPath.ReplacePrefix(
+                usdPath.GetPrefixes()[0],
+                GetExportArgs().usdModelRootOverridePath);
         }
 
         // If this path has already been processed, skip it.
-        if (!seenBoundPrimPaths.insert(usdPath).second)
+        if (!seenBoundPrimPaths.insert(usdPath).second) {
             continue;
+        }
 
         // If the bound prim's path is not below a bindable root, skip it.
-        if (SdfPathFindLongestPrefix(_bindableRoots.begin(),
-            _bindableRoots.end(), usdPath) == _bindableRoots.end()) {
+        if (SdfPathFindLongestPrefix(
+                _bindableRoots.begin(),
+                _bindableRoots.end(),
+                usdPath) == _bindableRoots.end()) {
             continue;
         }
 
         MObjectArray sgObjs, compObjs;
         status = dagNode.getConnectedSetsAndMembers(
-                instanceNumber, sgObjs, compObjs, true);
-        if (!status)
+            instanceNumber,
+            sgObjs,
+            compObjs,
+            true);
+        if (status != MS::kSuccess) {
             continue;
+        }
 
-        for (size_t j = 0; j < sgObjs.length(); j++) {
+        for (unsigned int j = 0u; j < sgObjs.length(); ++j) {
             // If the shading group isn't the one we're interested in, skip it.
-            if (sgObjs[j] != _shadingEngine)
+            if (sgObjs[j] != _shadingEngine) {
                 continue;
+            }
 
             VtIntArray faceIndices;
             if (!compObjs[j].isNull()) {
                 MItMeshPolygon faceIt(dagPath, compObjs[j]);
                 faceIndices.reserve(faceIt.count());
-                for ( faceIt.reset() ; !faceIt.isDone() ; faceIt.next() ) {
+                for (faceIt.reset(); !faceIt.isDone(); faceIt.next()) {
                     faceIndices.push_back(faceIt.index());
                 }
             }
@@ -400,7 +417,7 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     UsdStageRefPtr stage = GetUsdStage();
     if (UsdPrim materialParent = _GetMaterialParent(
             stage,
-            _exportParams.materialsScopeName,
+            GetExportArgs().materialsScopeName,
             assignmentsToBind)) {
         SdfPath materialPath = materialParent.GetPath().AppendChild(
                 TfToken(materialName));
@@ -421,7 +438,7 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             // to author the append face sets or create a geom subset, since
             // collection-based bindings won't help us here.
             if (faceIndices.empty()) {
-                if (!_exportParams.exportCollectionBasedBindings) {
+                if (!GetExportArgs().exportCollectionBasedBindings) {
                     if (_IsInstanceProxyPath(stage, boundPrimPath)) {
                         // XXX: If we wanted to, we could try to author the
                         // binding on the parent prim instead if it's an
@@ -458,7 +475,7 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                             faceIndices,
                             /* elementType */ UsdGeomTokens->face);
 
-                if (!_exportParams.exportCollectionBasedBindings) {
+                if (!GetExportArgs().exportCollectionBasedBindings) {
                     material.Bind(faceSubset.GetPrim());
                 }
 
@@ -480,7 +497,7 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 std::string
 UsdMayaShadingModeExportContext::GetStandardAttrName(
         const MPlug& plug,
-        bool allowMultiElementArrays) const
+        const bool allowMultiElementArrays) const
 {
     if (plug.isElement()) {
         MString mayaPlgName = plug.array().partialName(false, false, false, false, false, true);

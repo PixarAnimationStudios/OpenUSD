@@ -26,14 +26,13 @@
 
 /// \file usdMaya/shadingModeExporter.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/util.h"
-
-#include "pxr/pxr.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include <functional>
@@ -53,16 +52,16 @@ public:
 
     PXRUSDMAYA_API
     void DoExport(
-            const UsdStageRefPtr& stage,
-            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-            const UsdMayaExportParams& exportParams);
+            UsdMayaWriteJobContext& writeJobContext,
+            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
 
     /// Called once, before any exports are started.
     ///
-    /// Because it is called before the per-shading-engine loop, the shadingEngine
-    /// in the passed UsdMayaShadingModeExportContext will be a null MObject.
+    /// Because it is called before the per-shading-engine loop, the
+    /// shadingEngine in the passed UsdMayaShadingModeExportContext will be a
+    /// null MObject.
     PXRUSDMAYA_API
-    virtual void PreExport(UsdMayaShadingModeExportContext*  /*context*/) {};
+    virtual void PreExport(UsdMayaShadingModeExportContext* /* context */) {};
 
     /// Called inside of a loop, per-shading-engine
     PXRUSDMAYA_API
@@ -73,11 +72,11 @@ public:
 
     /// Called once, after Export is called for all shading engines.
     ///
-    /// Because it is called after the per-shading-engine loop, the shadingEngine
-    /// in the passed UsdMayaShadingModeExportContext will be a null MObject.
+    /// Because it is called after the per-shading-engine loop, the
+    /// shadingEngine in the passed UsdMayaShadingModeExportContext will be a
+    /// null MObject.
     PXRUSDMAYA_API
-    virtual void PostExport(const UsdMayaShadingModeExportContext&  /*context*/) {};
-
+    virtual void PostExport(const UsdMayaShadingModeExportContext& /* context */) {};
 };
 
 using UsdMayaShadingModeExporterPtr = std::shared_ptr<UsdMayaShadingModeExporter>;

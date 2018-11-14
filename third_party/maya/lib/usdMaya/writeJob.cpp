@@ -419,27 +419,10 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    UsdMayaExportParams exportParams;
-    exportParams.mergeTransformAndShape = mJobCtx.mArgs.mergeTransformAndShape;
-    exportParams.exportCollectionBasedBindings =
-            mJobCtx.mArgs.exportCollectionBasedBindings;
-    exportParams.stripNamespaces = mJobCtx.mArgs.stripNamespaces;
-    exportParams.overrideRootPath = mJobCtx.mArgs.usdModelRootOverridePath;
-    exportParams.bindableRoots = mJobCtx.mArgs.dagPaths;
-    exportParams.parentScope = mJobCtx.mArgs.parentScope;
-
     // Writing Materials/Shading
-    exportParams.materialsScopeName = mJobCtx.mArgs.materialsScopeName;
-    exportParams.materialCollectionsPath =
-            mJobCtx.mArgs.exportMaterialCollections ?
-            mJobCtx.mArgs.materialCollectionsPath :
-            SdfPath::EmptyPath();
-
     UsdMayaTranslatorMaterial::ExportShadingEngines(
-                mJobCtx.mStage,
-                mJobCtx.mArgs.shadingMode,
-                mDagPathToUsdPathMap,
-                exportParams);
+        mJobCtx,
+        mDagPathToUsdPathMap);
 
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
