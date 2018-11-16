@@ -474,29 +474,34 @@ _SetAttribute(const UsdAttribute& usdAttr,
 
 /// Converts a vec from display to linear color if its role is color.
 template <typename T>
-static VtValue
+static
+VtValue
 _ConvertVec(
+        const T& val,
         const TfToken& role,
-        const T& val) {
-    return VtValue(role == SdfValueRoleNames->Color
-            ? UsdMayaColorSpace::ConvertMayaToLinear(val)
-            : val);
+        const bool linearizeColors) {
+    return VtValue(
+        ((role == SdfValueRoleNames->Color) && linearizeColors) ?
+            UsdMayaColorSpace::ConvertMayaToLinear(val) :
+            val);
 }
 
 VtValue
 UsdMayaWriteUtil::GetVtValue(
         const MPlug& attrPlug,
-        const SdfValueTypeName& typeName)
+        const SdfValueTypeName& typeName,
+        const bool linearizeColors)
 {
     const TfType type = typeName.GetType();
     const TfToken role = typeName.GetRole();;
-    return GetVtValue(attrPlug, type, role);
+    return GetVtValue(attrPlug, type, role, linearizeColors);
 }
 VtValue
 UsdMayaWriteUtil::GetVtValue(
         const MPlug& attrPlug,
         const TfType& type,
-        const TfToken& role)
+        const TfToken& role,
+        const bool linearizeColors)
 {
     // We perform a similar set of type-infererence acrobatics here as we do up
     // above in GetUsdTypeName(). See the comments there for more detail on a
@@ -769,7 +774,10 @@ UsdMayaWriteUtil::GetVtValue(
                 float tmp1, tmp2, tmp3;
                 MFnNumericData numericDataFn(attrPlug.asMObject());
                 numericDataFn.getData(tmp1, tmp2, tmp3);
-                return _ConvertVec(role, GfVec3f(tmp1, tmp2, tmp3));
+                return _ConvertVec(
+                    GfVec3f(tmp1, tmp2, tmp3),
+                    role,
+                    linearizeColors);
             }
             break;
         }
@@ -798,10 +806,15 @@ UsdMayaWriteUtil::GetVtValue(
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3);
             if (type.IsA<GfVec3f>()) {
-                return _ConvertVec(role,
-                        GfVec3f((float)tmp1, (float)tmp2, (float)tmp3));
+                return _ConvertVec(
+                    GfVec3f((float)tmp1, (float)tmp2, (float)tmp3),
+                    role,
+                    linearizeColors);
             } else if (type.IsA<GfVec3d>()) {
-                return _ConvertVec(role, GfVec3d(tmp1, tmp2, tmp3));
+                return _ConvertVec(
+                    GfVec3d(tmp1, tmp2, tmp3),
+                    role,
+                    linearizeColors);
             }
             break;
         }
@@ -810,13 +823,15 @@ UsdMayaWriteUtil::GetVtValue(
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3, tmp4);
             if (type.IsA<GfVec4f>()) {
-                return _ConvertVec(role,
-                        GfVec4f((float)tmp1,
-                                (float)tmp2,
-                                (float)tmp3,
-                                (float)tmp4));
+                return _ConvertVec(
+                    GfVec4f((float)tmp1, (float)tmp2, (float)tmp3, (float)tmp4),
+                    role,
+                    linearizeColors);
             } else if (type.IsA<GfVec4d>()) {
-                return _ConvertVec(role, GfVec4d(tmp1, tmp2, tmp3, tmp4));
+                return _ConvertVec(
+                    GfVec4d(tmp1, tmp2, tmp3, tmp4),
+                    role,
+                    linearizeColors);
             } else if (type.IsA<GfQuatf>()) {
                 float re = tmp1;
                 GfVec3f im(tmp2, tmp3, tmp4);
