@@ -55,6 +55,11 @@ typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
 
 class HdTask {
 public:
+    /// Construct a new task.
+    /// If the task is going to be added to the render index, id
+    /// should be an absolute scene path.
+    /// If the task isn't going to be added to the render index
+    /// an empty path should be used for id.
     HD_API
     HdTask(SdfPath const& id);
 
@@ -89,10 +94,6 @@ protected:
     // to override.
     virtual void _Sync( HdTaskContext* ctx) = 0;
     virtual void _Execute(HdTaskContext* ctx) = 0;
-
-    // _MarkClean is a hook for when Sync() is done running.
-    HD_API
-    virtual void _MarkClean();
 
 private:
     SdfPath _id;
@@ -152,9 +153,6 @@ protected:
         HdDirtyBits bits;
         int         collectionVersion;
     };
-
-    HD_API
-    virtual void _MarkClean();
 
     /// Obtains the set of dirty bits for the task.
     HD_API

@@ -52,12 +52,6 @@ void
 HdTask::Sync(HdTaskContext* ctx)
 {
     _Sync(ctx);
-    _MarkClean();
-}
-
-void
-HdTask::_MarkClean()
-{
 }
 
 // -------------------------------------------------------------------------- //
@@ -68,14 +62,6 @@ HdSceneTask::HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id)
  : HdTask(id)
  , _delegate(delegate)
 {
-}
-
-void
-HdSceneTask::_MarkClean()
-{
-    // This may not be sufficient, for exmaple if we want to incrementally
-    // clean dirty bits.
-    _delegate->GetRenderIndex().GetChangeTracker().MarkTaskClean(GetId());
 }
 
 HdDirtyBits

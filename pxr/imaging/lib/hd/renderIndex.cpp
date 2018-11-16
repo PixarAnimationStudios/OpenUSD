@@ -984,7 +984,35 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         if (!TF_VERIFY(*it)) {
             continue;
         }
-        (*it)->Sync(taskContext);
+
+        SdfPath taskId = (*it)->GetId();
+
+        // Is this a tracked task?
+        _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
+        if (taskMapIt != _taskMap.end()) {
+            _TaskInfo &taskInfo = taskMapIt->second;
+
+            // If in the task is in the render index, then we have to
+            // possibility that the task pass in points to a
+            // different instance than the one stored in the render index
+            // even though they have the same id.
+            //
+            // For consistency, we always use the registered task in the
+            // render index for a given id, as that is the one the state is
+            // tracked for.
+            //
+            // However, this is still a weird situation, so report the
+            // issue as a verify so it can be addressed.
+            TF_VERIFY(taskInfo.task == (*it));
+
+            taskInfo.task->Sync(taskContext);
+
+            _tracker.MarkTaskClean(taskId);
+
+        } else {
+            // This is an untracked task, never added to the render index.
+            (*it)->Sync(taskContext);
+        }
     }
 
     // Merge IDs using the slow SdfPath less-than so that all delegate IDs group
