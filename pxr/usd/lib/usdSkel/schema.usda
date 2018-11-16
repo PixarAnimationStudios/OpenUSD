@@ -141,7 +141,7 @@ class PackedJointAnimation "PackedJointAnimation" (
 {
 }
 
-class "BindingAPI" (
+class "SkelBindingAPI" (
     inherits = </APISchemaBase>
     doc = """Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want
@@ -151,6 +151,7 @@ class "BindingAPI" (
     documentation for more about bindings and how they apply in a scene graph.
     """
     customData = {
+        string className = "BindingAPI"
         string extraIncludes = """
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdSkel/skeleton.h" """

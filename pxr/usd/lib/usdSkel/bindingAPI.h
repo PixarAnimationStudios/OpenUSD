@@ -50,7 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// BINDINGAPI                                                                 //
+// SKELBINDINGAPI                                                             //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdSkelBindingAPI
@@ -114,7 +114,7 @@ public:
 
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "BindingAPI" to the 
+    /// This information is stored by adding "SkelBindingAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
     /// \return A valid UsdSkelBindingAPI object is returned upon success. 

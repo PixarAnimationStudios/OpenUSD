@@ -41,7 +41,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (BindingAPI)
+    (SkelBindingAPI)
 );
 
 /* virtual */
@@ -71,7 +71,7 @@ UsdSkelBindingAPI
 UsdSkelBindingAPI::Apply(const UsdPrim &prim)
 {
     return UsdAPISchemaBase::_ApplyAPISchema<UsdSkelBindingAPI>(
-            prim, _schemaTokens->BindingAPI);
+            prim, _schemaTokens->SkelBindingAPI);
 }
 
 /* static */
@@ -316,7 +316,6 @@ UsdSkelBindingAPI::CreateJointWeightsPrimvar(bool constant,
 }
 
 
-
 bool
 UsdSkelBindingAPI::SetRigidJointInfluence(int jointIndex, float weight) const
 {
@@ -325,17 +324,32 @@ UsdSkelBindingAPI::SetRigidJointInfluence(int jointIndex, float weight) const
     UsdGeomPrimvar jointWeightsPv =
         CreateJointWeightsPrimvar(/*constant*/ true, /*elementSize*/ 1);
 
-    VtIntArray indices(1);
-    indices[0] = jointIndex;
+    if (jointIndex < 0) {
+        TF_WARN("Invalid jointIndex '%d'", jointIndex);
+        return false;
+    }
 
-    VtFloatArray weights(1);
-    weights[0] = weight;
-    
-    return jointIndicesPv.Set(indices) && jointWeightsPv.Set(weights);
+    return jointIndicesPv.Set(VtIntArray(1, jointIndex)) &&
+           jointWeightsPv.Set(VtFloatArray(1, weight));
 }
 
 
 namespace {
+
+
+bool
+_HasInactiveAncestor(const UsdStagePtr& stage, const SdfPath& path)
+{
+    if (path.IsAbsolutePath() && path.IsPrimPath()) {
+        for (SdfPath p = path.GetParentPath();
+             p != SdfPath::AbsoluteRootPath(); p = p.GetParentPath()) {
+            if (UsdPrim prim = stage->GetPrimAtPath(p)) {
+                return !prim.IsActive();
+            }
+        }
+    }
+    return false;
+}
 
 
 /// Return the a resolved prim for a target in \p targets.
@@ -349,11 +363,18 @@ _GetFirstTargetPrimForRel(const UsdRelationship& rel,
                     "Only the first will be used.",
                     rel.GetPath().GetText());
         }
-        if (UsdPrim prim = rel.GetStage()->GetPrimAtPath(targets.front()))
+        const SdfPath& target = targets.front();
+        if (UsdPrim prim = rel.GetStage()->GetPrimAtPath(target))
             return prim;
 
-        TF_WARN("%s -- Invalid target <%s>.",
-                rel.GetPath().GetText(), targets.front().GetText());
+        // Should throw a warning about an invalid target.
+        // However, we may not be able to access the prim because one of its
+        // ancestors may be inactive. If so, failing to retrieve the prim is
+        // expected, so we should avoid warning spam.
+        if (!_HasInactiveAncestor(rel.GetStage(), target)) {
+            TF_WARN("%s -- Invalid target <%s>.",
+                    rel.GetPath().GetText(), target.GetText());
+        }
     }
     return UsdPrim();
 }
@@ -396,8 +417,7 @@ UsdSkelBindingAPI::GetInheritedSkeleton() const
 {
     UsdSkelSkeleton skel;
 
-    UsdPrim p = GetPrim();
-    if (p) {
+    if (UsdPrim p = GetPrim()) {
         for( ; !p.IsPseudoRoot(); p = p.GetParent()) {
             if (UsdSkelBindingAPI(p).GetSkeleton(&skel)) {
                 return skel;
@@ -443,8 +463,7 @@ UsdSkelBindingAPI::GetInheritedAnimationSource() const
 {
     UsdPrim animPrim;
 
-    UsdPrim p = GetPrim();
-    if (p) {
+    if (UsdPrim p = GetPrim()) {
         for( ; !p.IsPseudoRoot(); p = p.GetParent()) {
             if (UsdSkelBindingAPI(p).GetAnimationSource(&animPrim)) {
                 return animPrim;
@@ -453,7 +472,6 @@ UsdSkelBindingAPI::GetInheritedAnimationSource() const
     }
     return animPrim;
 }
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
