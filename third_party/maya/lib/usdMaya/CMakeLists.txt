@@ -53,6 +53,7 @@ pxr_shared_library(${PXR_PACKAGE}
         query
         readUtil
         roundTripUtil
+        shaderWriter
         shadingModeExporter
         shadingModeExporterContext
         shadingModeImporter
@@ -113,6 +114,7 @@ pxr_shared_library(${PXR_PACKAGE}
     CPPFILES
         shadingModeDisplayColor.cpp
         shadingModePxrRis.cpp
+        shadingModeUseRegistry.cpp
         translatorMesh_PrimVars.cpp
         translatorMesh_SubDiv.cpp
         translatorXformable_decompose.cpp

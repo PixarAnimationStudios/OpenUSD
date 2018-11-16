@@ -4,22 +4,22 @@ global proc usdTranslatorExport_AnimationCB() {
         checkBox -e -vis true eulerFilterCheckBox;
         intFieldGrp -e -vis true startTimeField;
         intFieldGrp -e -vis true endTimeField;
-        floatFieldGrp -e -vis true frameStrideField; 
+        floatFieldGrp -e -vis true frameStrideField;
         button -e -vis true animRangeButton;
     } else {
         checkBox -e -vis false eulerFilterCheckBox;
         intFieldGrp -e -vis false startTimeField;
         intFieldGrp -e -vis false endTimeField;
-        floatFieldGrp -e -vis false frameStrideField; 
+        floatFieldGrp -e -vis false frameStrideField;
         button -e -vis false animRangeButton;
     }
 }
 
 global proc usdTranslatorExport_AnimationRangeCB() {
-	int $startTime = `playbackOptions -q -animationStartTime`;
-	int $endTime = `playbackOptions -q -animationEndTime`;
-	intFieldGrp -e -v1 $startTime startTimeField;
-	intFieldGrp -e -v1 $endTime endTimeField;
+    int $startTime = `playbackOptions -q -animationStartTime`;
+    int $endTime = `playbackOptions -q -animationEndTime`;
+    intFieldGrp -e -v1 $startTime startTimeField;
+    intFieldGrp -e -v1 $endTime endTimeField;
 }
 
 
@@ -82,7 +82,7 @@ global proc string usdTranslatorExport_AppendFromTextField(string $currentOption
 global proc int usdTranslatorExport (string $parent,
                                      string $action,
                                      string $initialSettings,
-                                     string $resultCallback ) 
+                                     string $resultCallback )
 //
 //  Description:
 //    This script posts the USDExport file translator options.
@@ -97,7 +97,7 @@ global proc int usdTranslatorExport (string $parent,
 //        "query" - construct the options string and pass it to the resultCallback.
 //        "post" - post all the elf controls.
 //    $initialSettings - the current options string in effect at the time this script is invoked.
-//    $resultCallback - This is the proc to be called with the result string. 
+//    $resultCallback - This is the proc to be called with the result string.
 //            resultCallback ( string $optionsString )
 //
 //    Returns:
@@ -110,11 +110,11 @@ global proc int usdTranslatorExport (string $parent,
     string $optionList[];
     string $optionBreakDown[];
     int $index;
-        
+
     if ($action == "post") {
         setParent $parent;
 
-        columnLayout -adj true usdOptsCol;       
+        columnLayout -adj true usdOptsCol;
 
         string $exporters[] = `usdListShadingModes -export`;
         optionMenuGrp -l "Shading Mode:" shadingModePopup;
@@ -124,6 +124,8 @@ global proc int usdTranslatorExport (string $parent,
                 $niceName = "Material Colors";
             } else if ($modeName == "pxrRis") {
                 $niceName = "RfM Shaders";
+            } else if ($modeName == "useRegistry") {
+                $niceName = "Use Translator Registry";
             }
             menuItem -l $niceName -ann $modeName;
         }
@@ -138,7 +140,7 @@ global proc int usdTranslatorExport (string $parent,
         textFieldGrp -l "Material collections path:" materialCollectionsPathField;
 
         checkBox -l "Export collection-based material bindings" exportCollectionBasedBindingsCheckBox;
-        
+
         checkBox -l "Export UVs" exportUVsCheckBox;
 
         checkBox -l "Export ColorSets" exportColorSetsCheckBox;
@@ -154,7 +156,7 @@ global proc int usdTranslatorExport (string $parent,
             -annotation ("Do not export nodes of this type, or their children;\n" +
                          "specify multiple types by separating with comma: 'constraint,place3dTexture'")
             filterTypesTextField;
-         
+
         checkBox -l "Export all cameras" defaultCamerasCheckBox;
 
         textFieldGrp -l "Parent Scope:" parentScopeField;
@@ -171,11 +173,11 @@ global proc int usdTranslatorExport (string $parent,
         checkBox -l "Merge Transform and Shape Nodes" mergeTransformAndShapeCheckBox;
         checkBox -l "Export Instances" exportInstancesCheckBox;
 
-	    optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
-	        menuItem -l "Polygonal Mesh" -ann "none";
-	        menuItem -l "Bilinear SubDiv" -ann "bilinear";
-	        menuItem -l "CatmullClark SDiv" -ann "catmullClark";
-	        menuItem -l "Loop SDiv" -ann "loop";
+        optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
+            menuItem -l "Polygonal Mesh" -ann "none";
+            menuItem -l "Bilinear SubDiv" -ann "bilinear";
+            menuItem -l "CatmullClark SDiv" -ann "catmullClark";
+            menuItem -l "Loop SDiv" -ann "loop";
 
         optionMenuGrp -l "Export Skeletons:" exportSkelsPopup;
             menuItem -l "None" -ann "none";
@@ -198,7 +200,7 @@ global proc int usdTranslatorExport (string $parent,
         button -l "Use Animation Range" -command ("usdTranslatorExport_AnimationRangeCB") animRangeButton;
 
         setParent $parent;
-        
+
         // Now set to current settings.
         $currentOptions = $initialSettings;
         if (size($currentOptions) > 0) {
@@ -264,16 +266,16 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
                 } else if ($optionBreakDown[0] == "compatibility") {
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "compatibilityPopup");
-                } 
+                }
             }
         }
         // Set visibility for anim widgets
         usdTranslatorExport_AnimationCB();
-        
+
         $bResult = 1;
-    
+
     } else if ($action == "query") {
-    
+
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialsScopeName", "materialsScopeNameField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
@@ -302,7 +304,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "compatibility", "compatibilityPopup");
-                
+
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
 
