@@ -45,7 +45,7 @@ TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_BUFFER, false,
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
-                      "Use GL mult draw indirect extention");
+                      "Use GL multi draw indirect extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
@@ -108,8 +108,6 @@ GlfContextCaps::GetInstance()
 void
 GlfContextCaps::_LoadCaps()
 {
-    // XXX: consider to move this class into glf
-
     // note that this function is called without GL context, in some unit tests.
 
     arrayTexturesEnabled         = false;
