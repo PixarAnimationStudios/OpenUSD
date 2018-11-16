@@ -21,6 +21,7 @@
                         "mayaPlugin": "pxrUsdTranslators",
                         "providesTranslator": [
                             "camera",
+                            "file",
                             "instancer",
                             "joint",
                             "locator",

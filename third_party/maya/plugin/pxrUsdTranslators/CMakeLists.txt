@@ -6,9 +6,12 @@ pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         arch
         gf
+        kind
+        sdf
         tf
         usd
         usdGeom
+        usdImaging
         usdMaya
         usdShade
         usdSkel
@@ -22,6 +25,7 @@ pxr_plugin(${PXR_PACKAGE}
 
     PRIVATE_CLASSES
         cameraWriter
+        fileTextureWriter
         instancerWriter
         jointWriter
         locatorWriter
