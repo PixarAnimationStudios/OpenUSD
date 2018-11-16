@@ -194,7 +194,17 @@ _TranslatePathsAndEditRelocates(
     SdfPath oldParentPath = _TranslatePathAndTargetPaths(node, *oldNodePath);
     SdfPath newParentPath = _TranslatePathAndTargetPaths(node, *newNodePath);
 
-    // Check if there are relocations that need fixing.
+    // Check if there are relocations that need fixing. Since relocates only
+    // target prims, we can bail out early if the translated path isn't a
+    // prim path. Note that we just check oldNodePath, since newNodePath may
+    // be empty if the namespace edit is a deletion.
+    const bool mayAffectRelocates = oldNodePath->IsPrimPath();
+    if (!mayAffectRelocates) {
+        *oldNodePath = oldParentPath;
+        *newNodePath = newParentPath;
+        return;
+    }
+
     //
     // At this point, if oldParentPath and newParentPath refer to a 
     // relocated prim or a descendant of a relocated prim, they will have 
@@ -802,8 +812,8 @@ PcpComputeNamespaceEdits(
         if (!node.GetParentNode()) {
             if (!_IsInvalidEdit(oldNodePath, newNodePath)) {
                 TF_DEBUG(PCP_NAMESPACE_EDIT)
-                    .Msg("  - adding cacheSite for %s\n",
-                         node.GetPath().GetText());
+                    .Msg("  - adding cacheSite <%s> -> <%s>\n",
+                         oldNodePath.GetText(), newNodePath.GetText());
                 result.cacheSites.resize(result.cacheSites.size() + 1);
                 CacheSite& cacheSite = result.cacheSites.back();
                 cacheSite.cacheIndex = cacheIndex;
