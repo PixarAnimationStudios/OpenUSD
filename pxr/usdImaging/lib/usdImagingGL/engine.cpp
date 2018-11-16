@@ -897,7 +897,8 @@ class _DebugGroupTaskWrapper : public HdTask {
     const HdTaskSharedPtr _task;
     public:
     _DebugGroupTaskWrapper(const HdTaskSharedPtr task)
-        : _task(task)
+        : HdTask(SdfPath::EmptyPath())
+        , _task(task)
     {
 
     }

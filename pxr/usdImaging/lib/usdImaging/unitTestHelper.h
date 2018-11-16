@@ -60,7 +60,7 @@ class UsdImaging_DrawTask final : public HdTask
 public:
     UsdImaging_DrawTask(HdRenderPassSharedPtr const &renderPass,
                         HdRenderPassStateSharedPtr const &renderPassState)
-        : HdTask()
+        : HdTask(SdfPath::EmptyPath())
         , _renderPass(renderPass)
         , _renderPassState(renderPassState)
     {

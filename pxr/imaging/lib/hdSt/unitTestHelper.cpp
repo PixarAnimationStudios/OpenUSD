@@ -57,7 +57,7 @@ class HdSt_DrawTask final : public HdTask
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
                   HdStRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     {
@@ -81,6 +81,10 @@ protected:
 private:
     HdRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;
+
+    HdSt_DrawTask() = delete;
+    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
+    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
 };
 
 template <typename T>

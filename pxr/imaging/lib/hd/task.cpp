@@ -33,7 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // HdTask Definitions 
 // -------------------------------------------------------------------------- //
 
-HdTask::HdTask()
+HdTask::HdTask(SdfPath const& id)
+ : _id(id)
 {
 }
 
@@ -64,8 +65,8 @@ HdTask::_MarkClean()
 // -------------------------------------------------------------------------- //
 
 HdSceneTask::HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : _delegate(delegate)
-    , _id(id)
+ : HdTask(id)
+ , _delegate(delegate)
 {
 }
 
@@ -74,7 +75,7 @@ HdSceneTask::_MarkClean()
 {
     // This may not be sufficient, for exmaple if we want to incrementally
     // clean dirty bits.
-    _delegate->GetRenderIndex().GetChangeTracker().MarkTaskClean(_id);
+    _delegate->GetRenderIndex().GetChangeTracker().MarkTaskClean(GetId());
 }
 
 HdDirtyBits

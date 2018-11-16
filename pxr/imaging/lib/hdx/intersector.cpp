@@ -249,7 +249,7 @@ public:
     HdxIntersector_DrawTask(HdRenderPassSharedPtr const &renderPass,
                 HdRenderPassStateSharedPtr const &renderPassState,
                 TfTokenVector const &renderTags)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     , _renderTags(renderTags)

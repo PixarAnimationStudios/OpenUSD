@@ -56,7 +56,7 @@ typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
 class HdTask {
 public:
     HD_API
-    HdTask();
+    HdTask(SdfPath const& id);
 
     HD_API
     virtual ~HdTask();
@@ -69,6 +69,8 @@ public:
     /// Execute Phase: Runs the task.
     HD_API
     void Execute(HdTaskContext* ctx);
+
+    SdfPath const& GetId() const { return _id; }
 
 protected:
     /// Extracts a typed value out of the task context at the given id.
@@ -93,7 +95,9 @@ protected:
     virtual void _MarkClean();
 
 private:
+    SdfPath _id;
 
+    HdTask()                           = delete;
     HdTask(const HdTask &)             = delete;
     HdTask &operator =(const HdTask &) = delete;
 };
@@ -140,7 +144,6 @@ public:
     HD_API
     HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    SdfPath const&         GetId()       const { return _id; }
     HdSceneDelegate*       GetDelegate()       { return _delegate; }
 
 protected:
@@ -177,7 +180,6 @@ protected:
 
 private:
     HdSceneDelegate* _delegate;
-    SdfPath _id;
 };
 
 template <class T> bool
