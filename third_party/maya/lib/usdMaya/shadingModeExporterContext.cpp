@@ -139,22 +139,41 @@ UsdMayaShadingModeExportContext::SetDisplacementShaderPlugName(
 }
 
 static
+MPlug
+_GetShaderPlugFromShadingEngine(
+        const MObject& shadingEngine,
+        const TfToken& shaderPlugName)
+{
+    MStatus status;
+
+    const MFnDependencyNode seDepNodeFn(shadingEngine, &status);
+    if (status != MS::kSuccess) {
+        return MPlug();
+    }
+
+    const MPlug shaderPlug =
+        seDepNodeFn.findPlug(
+            shaderPlugName.GetText(),
+            /* wantNetworkedPlug = */ true,
+            &status);
+    if (status != MS::kSuccess) {
+        return MPlug();
+    }
+
+    return shaderPlug;
+}
+
+static
 MObject
 _GetShaderFromShadingEngine(
         const MObject& shadingEngine,
         const TfToken& shaderPlugName)
 {
     MStatus status;
-    const MFnDependencyNode seDepNodeFn(shadingEngine, &status);
-    if (status != MS::kSuccess) {
-        return MObject();
-    }
 
-    const MPlug shaderPlug = seDepNodeFn.findPlug(
-        shaderPlugName.GetText(),
-        true,
-        &status);
-    if (status != MS::kSuccess) {
+    const MPlug shaderPlug =
+        _GetShaderPlugFromShadingEngine(shadingEngine, shaderPlugName);
+    if (shaderPlug.isNull()) {
         return MObject();
     }
 
@@ -171,25 +190,52 @@ _GetShaderFromShadingEngine(
     return UsdMayaUtil::GetConnected(shaderPlug).node();
 }
 
+MPlug
+UsdMayaShadingModeExportContext::GetSurfaceShaderPlug() const
+{
+    return _GetShaderPlugFromShadingEngine(
+        _shadingEngine,
+        _surfaceShaderPlugName);
+}
+
 MObject
 UsdMayaShadingModeExportContext::GetSurfaceShader() const
 {
-    return _GetShaderFromShadingEngine(_shadingEngine,
-                                       _surfaceShaderPlugName);
+    return _GetShaderFromShadingEngine(
+        _shadingEngine,
+        _surfaceShaderPlugName);
+}
+
+MPlug
+UsdMayaShadingModeExportContext::GetVolumeShaderPlug() const
+{
+    return _GetShaderPlugFromShadingEngine(
+        _shadingEngine,
+        _volumeShaderPlugName);
 }
 
 MObject
 UsdMayaShadingModeExportContext::GetVolumeShader() const
 {
-    return _GetShaderFromShadingEngine(_shadingEngine,
-                                       _volumeShaderPlugName);
+    return _GetShaderFromShadingEngine(
+        _shadingEngine,
+        _volumeShaderPlugName);
+}
+
+MPlug
+UsdMayaShadingModeExportContext::GetDisplacementShaderPlug() const
+{
+    return _GetShaderPlugFromShadingEngine(
+        _shadingEngine,
+        _displacementShaderPlugName);
 }
 
 MObject
 UsdMayaShadingModeExportContext::GetDisplacementShader() const
 {
-    return _GetShaderFromShadingEngine(_shadingEngine,
-                                       _displacementShaderPlugName);
+    return _GetShaderFromShadingEngine(
+        _shadingEngine,
+        _displacementShaderPlugName);
 }
 
 UsdMayaShadingModeExportContext::AssignmentVector

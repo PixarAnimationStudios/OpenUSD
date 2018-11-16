@@ -89,9 +89,15 @@ public:
     }
 
     PXRUSDMAYA_API
+    MPlug GetSurfaceShaderPlug() const;
+    PXRUSDMAYA_API
     MObject GetSurfaceShader() const;
     PXRUSDMAYA_API
+    MPlug GetVolumeShaderPlug() const;
+    PXRUSDMAYA_API
     MObject GetVolumeShader() const;
+    PXRUSDMAYA_API
+    MPlug GetDisplacementShaderPlug() const;
     PXRUSDMAYA_API
     MObject GetDisplacementShader() const;
 
