@@ -99,7 +99,7 @@ HdxDrawTargetTask::~HdxDrawTargetTask()
 }
 
 void
-HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
+HdxDrawTargetTask::Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -302,7 +302,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
+HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

@@ -65,7 +65,7 @@ HdxShadowTask::~HdxShadowTask()
 }
 
 void
-HdxShadowTask::_Sync(HdTaskContext* ctx)
+HdxShadowTask::Sync(HdTaskContext*   ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -207,7 +207,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxShadowTask::_Execute(HdTaskContext* ctx)
+HdxShadowTask::Execute(HdTaskContext* ctx)
 {
     static const TfTokenVector SHADOW_RENDER_TAGS =
     {

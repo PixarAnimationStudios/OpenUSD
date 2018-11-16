@@ -42,18 +42,6 @@ HdTask::~HdTask()
 {
 }
 
-void
-HdTask::Execute(HdTaskContext* ctx)
-{
-    _Execute(ctx);
-}
-
-void
-HdTask::Sync(HdTaskContext* ctx)
-{
-    _Sync(ctx);
-}
-
 // -------------------------------------------------------------------------- //
 // HdSceneTask Definitions 
 // -------------------------------------------------------------------------- //

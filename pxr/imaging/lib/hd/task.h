@@ -68,12 +68,10 @@ public:
 
     /// Sync Phase:  Obtain task state from Scene delegate based on
     /// change processing.
-    HD_API
-    void Sync(HdTaskContext* ctx);
+    virtual void Sync(HdTaskContext* ctx) = 0;
 
     /// Execute Phase: Runs the task.
-    HD_API
-    void Execute(HdTaskContext* ctx);
+    virtual void Execute(HdTaskContext* ctx) = 0;
 
     SdfPath const& GetId() const { return _id; }
 
@@ -89,11 +87,6 @@ protected:
     static bool _GetTaskContextData(HdTaskContext const* ctx,
                                     TfToken const &id,
                                     T *outValue);
-
-    // Protected versions of Sync and Execute are provided for derived classes
-    // to override.
-    virtual void _Sync( HdTaskContext* ctx) = 0;
-    virtual void _Execute(HdTaskContext* ctx) = 0;
 
 private:
     SdfPath _id;

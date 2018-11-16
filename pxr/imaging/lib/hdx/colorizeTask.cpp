@@ -160,7 +160,7 @@ static _Colorizer _colorizerTable[] = {
 };
 
 void
-HdxColorizeTask::_Sync(HdTaskContext* ctx)
+HdxColorizeTask::Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -204,7 +204,7 @@ HdxColorizeTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxColorizeTask::_Execute(HdTaskContext* ctx)
+HdxColorizeTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

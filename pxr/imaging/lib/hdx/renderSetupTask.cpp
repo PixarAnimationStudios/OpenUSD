@@ -70,7 +70,7 @@ HdxRenderSetupTask::~HdxRenderSetupTask()
 }
 
 void
-HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
+HdxRenderSetupTask::Sync(HdTaskContext*   ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -93,7 +93,7 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
+HdxRenderSetupTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

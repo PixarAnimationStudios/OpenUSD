@@ -58,7 +58,7 @@ HdxSelectionTask::~HdxSelectionTask()
 }
 
 void
-HdxSelectionTask::_Sync(HdTaskContext* ctx)
+HdxSelectionTask::Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
 
@@ -169,7 +169,7 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxSelectionTask::_Execute(HdTaskContext* ctx)
+HdxSelectionTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

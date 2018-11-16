@@ -74,7 +74,7 @@ HdxSimpleLightTask::~HdxSimpleLightTask()
 }
 
 void
-HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
+HdxSimpleLightTask::Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
 
@@ -279,7 +279,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxSimpleLightTask::_Execute(HdTaskContext* ctx)
+HdxSimpleLightTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

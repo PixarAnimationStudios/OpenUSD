@@ -904,7 +904,7 @@ class _DebugGroupTaskWrapper : public HdTask {
     }
 
     void
-    _Execute(HdTaskContext* ctx) override
+    Execute(HdTaskContext* ctx) override
     {
         GlfDebugGroup dbgGroup((ArchGetDemangled(typeid(*_task.get())) +
                 "::Execute").c_str());
@@ -912,7 +912,7 @@ class _DebugGroupTaskWrapper : public HdTask {
     }
 
     void
-    _Sync(HdTaskContext* ctx) override
+    Sync(HdTaskContext* ctx) override
     {
         GlfDebugGroup dbgGroup((ArchGetDemangled(typeid(*_task.get())) +
                 "::Sync").c_str());

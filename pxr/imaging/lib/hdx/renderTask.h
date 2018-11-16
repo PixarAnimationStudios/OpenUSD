@@ -74,14 +74,14 @@ public:
     /// Hooks for progressive rendering (delegated to renderpasses).
     bool IsConverged() const;
 
-protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx) override;
+    virtual void Sync(HdTaskContext* ctx) override;
 
     /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx) override;
+    virtual void Execute(HdTaskContext* ctx) override;
+
 
 private:
     HdRenderPassSharedPtrVector _passes;

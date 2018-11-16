@@ -65,7 +65,7 @@ HdxRenderTask::IsConverged() const
 
 
 void
-HdxRenderTask::_Sync(HdTaskContext* ctx)
+HdxRenderTask::Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
 
@@ -142,7 +142,7 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
 }
 
 void
-HdxRenderTask::_Execute(HdTaskContext* ctx)
+HdxRenderTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

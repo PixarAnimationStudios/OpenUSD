@@ -56,14 +56,13 @@ public:
     /// Hooks for progressive rendering.
     bool IsConverged() const;
 
-protected:
     /// Execute the colorize task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx) override;
+    virtual void Execute(HdTaskContext* ctx) override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx) override;
+    virtual void Sync(HdTaskContext* ctx) override;
 
 private:
     // Incoming data
