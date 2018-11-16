@@ -700,16 +700,14 @@ _GetColorAndTransparencyFromDepNode(
 }
 
 static
-void
+bool
 _getMayaShadersColor(
         const MObjectArray& shaderObjs,
         VtVec3fArray* RGBData,
         VtFloatArray* AlphaData)
 {
-    MStatus status;
-
-    if (shaderObjs.length() == 0) {
-        return;
+    if (shaderObjs.length() == 0u) {
+        return false;
     }
 
     if (RGBData) {
@@ -719,44 +717,44 @@ _getMayaShadersColor(
         AlphaData->resize(shaderObjs.length());
     }
 
-    for (unsigned int i = 0; i < shaderObjs.length(); ++i) {
+    bool gotValues = false;
+
+    for (unsigned int i = 0u; i < shaderObjs.length(); ++i) {
         // Initialize RGB and Alpha to (1,1,1,1)
         if (RGBData) {
-            (*RGBData)[i][0] = 1.0;
-            (*RGBData)[i][1] = 1.0;
-            (*RGBData)[i][2] = 1.0;
+            (*RGBData)[i][0u] = 1.0f;
+            (*RGBData)[i][1u] = 1.0f;
+            (*RGBData)[i][2u] = 1.0f;
         }
         if (AlphaData) {
-            (*AlphaData)[i] = 1.0;
+            (*AlphaData)[i] = 1.0f;
         }
 
         if (shaderObjs[i].isNull()) {
             TF_RUNTIME_ERROR(
-                    "Invalid Maya shader object at index %d. "
-                    "Unable to retrieve shader base color.",
-                    i);
+                "Invalid Maya shader object at index %d. "
+                "Unable to retrieve shader base color.",
+                i);
             continue;
         }
 
-        // first, we assume the shader is a lambert and try that API.  if
-        // not, we try our next best guess.
-        bool gotValues = _GetColorAndTransparencyFromLambert(
+        // First, we assume the shader is a lambert and try that API. If not,
+        // we try our next best guess.
+        const bool gotShaderValues =
+            _GetColorAndTransparencyFromLambert(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : nullptr,
-                AlphaData ?  &(*AlphaData)[i] : nullptr)
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr)
 
             || _GetColorAndTransparencyFromDepNode(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : nullptr,
-                AlphaData ?  &(*AlphaData)[i] : nullptr);
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr);
 
-        if (!gotValues) {
-            TF_RUNTIME_ERROR(
-                    "Failed to get shaders colors at index %d. "
-                    "Unable to retrieve shader base color.",
-                    i);
-        }
+        gotValues |= gotShaderValues;
     }
+
+    return gotValues;
 }
 
 static
