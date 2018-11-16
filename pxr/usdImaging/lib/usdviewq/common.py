@@ -140,32 +140,28 @@ class UIFonts(ConstantGroup):
     # "resolved" prim specifier
     # XXX - the use of weight here may need to be revised depending on font family
     BASE_POINT_SIZE = 10
-    BASE_WEIGHT = 35
     
     ITALIC = QtGui.QFont()
-    ITALIC.setWeight(BASE_WEIGHT)
+    ITALIC.setWeight(QtGui.QFont.Light)
     ITALIC.setItalic(True)
 
     NORMAL = QtGui.QFont()
-    NORMAL.setWeight(BASE_WEIGHT)
+    NORMAL.setWeight(QtGui.QFont.Normal)
 
     BOLD = QtGui.QFont()
-    BOLD.setWeight(BASE_WEIGHT*3)
-
-    BOLD70 = QtGui.QFont()
-    BOLD70.setWeight(BASE_WEIGHT * 2)
+    BOLD.setWeight(QtGui.QFont.Bold)
 
     BOLD_ITALIC = QtGui.QFont()
-    BOLD_ITALIC .setWeight(BASE_WEIGHT*3)
+    BOLD_ITALIC .setWeight(QtGui.QFont.Bold)
     BOLD_ITALIC.setItalic(True)
 
     OVER_PRIM = ITALIC
-    DEFINED_PRIM = BOLD70
+    DEFINED_PRIM = BOLD
     ABSTRACT_PRIM = NORMAL
 
     INHERITED = QtGui.QFont()
     INHERITED.setPointSize(BASE_POINT_SIZE * 0.8)
-    INHERITED.setWeight(BASE_WEIGHT)
+    INHERITED.setWeight(QtGui.QFont.Normal)
     INHERITED.setItalic(True)
 
 class PropertyViewIndex(ConstantGroup):
