@@ -189,7 +189,15 @@ UsdShadeInput
 UsdShadeNodeGraph::CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).CreateInput(name, typeName);
+    // If we're writing the input in the old encoding, prepend the input name 
+    // with "interface:". We do this here because the prim wrapped in this 
+    // NodeGraph object may be untyped, in which case 
+    // UsdShadeConnectableAPI::CreateInput will be unable to prepend the right 
+    // prefix.
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(
+        UsdShadeUtils::WriteNewEncoding() ? name : 
+            TfToken(UsdShadeTokens->interface_.GetString() + name.GetString()), 
+        typeName);
 }
 
 UsdShadeInput
