@@ -121,8 +121,9 @@ void wrapUsdGeomBBoxCache()
 
     class_<BBoxCache>(
         "BBoxCache",
-        init<UsdTimeCode, TfTokenVector, optional<bool> >(
-            (arg("time"), arg("includedPurposes"), arg("useExtentsHint"))))
+        init<UsdTimeCode, TfTokenVector, optional<bool, bool> >(
+            (arg("time"), arg("includedPurposes"),
+             arg("useExtentsHint"), arg("ignoreVisibility"))))
         .def("ComputeWorldBound", &BBoxCache::ComputeWorldBound, arg("prim"))
         .def("ComputeLocalBound", &BBoxCache::ComputeLocalBound, arg("prim"))
         .def("ComputeRelativeBound", &BBoxCache::ComputeRelativeBound, 
