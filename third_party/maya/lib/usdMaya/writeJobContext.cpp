@@ -500,7 +500,7 @@ UsdMayaWriteJobContext::CreatePrimWriter(
                 *this);
         }
     }
-    catch (const std::bad_cast& e) {
+    catch (const std::bad_cast& /* e */) {
         // Since the cast failed, this must be a DG node. usdPath must be
         // supplied for DG nodes.
         if (writePath.IsEmpty()) {

@@ -93,7 +93,7 @@ _GetDagPath(const MFnDependencyNode& depNodeFn, const bool reportError = true)
                 dagNodeFn.fullPathName().asChar());
         }
     }
-    catch (const std::bad_cast& e) {
+    catch (const std::bad_cast& /* e */) {
         // This is not a DAG node, so it can't have a DAG path.
     }
 
