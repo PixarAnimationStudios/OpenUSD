@@ -113,6 +113,122 @@ _buildCustomOslNode(const VOP_Node* vopNode,
     return true;
 }
 
+void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
+{
+    std::string rampName(parm->getToken());
+    bool isDefault = true;
+
+    // Get the multiparm count. This will be divisible by 3 since each
+    // point in the ramp will have a position, value and interp type.
+    const int count = parm->getMultiParmCount() / 3;
+
+    // Begin by extracting the list of positions. Set the list size to
+    // (count + 2) so that an extra end-condition point can be copied
+    // onto each end of the list.
+    VtArray<fpreal> positions(count + 2);
+    for (int i = 0; i < count; i++) {
+        PRM_Parm* position = parm->getMultiParm(i * 3);
+        isDefault = position->isTrueFactoryDefault() && isDefault;
+
+        position->getValue(0, positions[i + 1], 0, SYSgetSTID());
+    }
+
+    // If any positions are not set to factory defaults, store the
+    // whole positions list as a shader input.
+    if (!isDefault) {
+        // Copy first and last positions onto ends of list.
+        positions[0] = positions[1];
+        positions[positions.size() - 1] = positions[positions.size() - 2];
+
+        TfToken positionName(rampName + "_the_key_positions");
+        UsdShadeInput positionsInput =
+            shaderObject.CreateInput(positionName,
+                                     SdfValueTypeNames->DoubleArray);
+        positionsInput.Set(positions);
+    }
+
+    // Next extract the list of values. Again keep track of whether all
+    // the values are set to factory defaults.
+    isDefault = true;
+
+    // The values can either be colors or floats.
+    if (parm->isRampTypeColor()) {
+        // Color type. Set the list size to (count + 2) so that an extra
+        // end-condition value can be copied onto each end of the list.
+        VtArray<GfVec3d> values(count + 2);
+
+        for (int i = 0; i < count; i++) {
+            // The +1 in the getMultiParm index is because the i'th value
+            // parm comes right after the i'th position parm.
+            PRM_Parm* value = parm->getMultiParm((i * 3) + 1);
+            isDefault = value->isTrueFactoryDefault() && isDefault;
+
+            double color[3];
+            value->getValues(0, color, SYSgetSTID());
+            values[i + 1].Set(color);
+        }
+
+        // If any values are not set to factory defaults, store the
+        // whole values list as a shader input.
+        if (!isDefault) {
+            // Copy first and last color values onto ends of list.
+            values[0] = values[1];
+            values[values.size() - 1] = values[values.size() - 2];
+
+            TfToken valueName(rampName + "_the_key_values");
+            UsdShadeInput valuesInput =
+                shaderObject.CreateInput(valueName,
+                                         SdfValueTypeNames->Color3dArray);
+            valuesInput.Set(values);
+        }
+    } else {
+        // Float type. Set the list size to (count + 2) so that an extra
+        // end-condition value can be copied onto each end of the list.
+        VtArray<fpreal> values(count + 2);
+
+        for (int i = 0; i < count; i++) {
+            // The +1 in the getMultiParm index is because the i'th value
+            // parm comes right after the i'th position parm.
+            PRM_Parm* value = parm->getMultiParm((i * 3) + 1);
+            isDefault = value->isTrueFactoryDefault() && isDefault;
+
+            value->getValues(0, &(values[i + 1]), SYSgetSTID());
+        }
+
+        // If any values are not set to factory defaults, store the
+        // whole values list as a shader input.
+        if (!isDefault) {
+            // Copy first and last float values onto ends of list.
+            values[0] = values[1];
+            values[values.size() - 1] = values[values.size() - 2];
+
+            TfToken valueName(rampName + "_the_key_values");
+            UsdShadeInput valuesInput =
+                shaderObject.CreateInput(valueName,
+                                         SdfValueTypeNames->DoubleArray);
+            valuesInput.Set(values);
+        }
+    }
+
+    // Lastly, extract the interp type. Even though there is a separate
+    // interp parm provided with each position and value, the shader only
+    // uses the first. Use a getMultiParm index of 2 because the first
+    // interp parm comes right after the first position and value parms.
+    PRM_Parm* interp = parm->getMultiParm(2);
+
+    // If the parm is not set to its factory default,
+    // store it as a shader input.
+    if (!interp->isTrueFactoryDefault()) {
+        UT_String str;
+        interp->getValue(0, str, 0, true, SYSgetSTID());
+
+        TfToken interpName(rampName + "_the_basis_strings");
+        UsdShadeInput interpInput =
+            shaderObject.CreateInput(interpName, SdfValueTypeNames->String);
+        interpInput.Set(str.toStdString());
+    }
+}
+
 UsdShadeShader
 _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                         UsdStagePtr& stage,
@@ -157,6 +273,15 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
     for (int i=0; i<nodeParams->getEntries(); ++i) {
 
         const PRM_Parm* parm = nodeParams->getParmPtr(i);
+
+        //
+        // Handle ramp parameters as a special-case. (Their multi-parms
+        // need to be processed all together rather than individually).
+        //
+        if (parm->isRampType()) {
+            _buildRampParmInputs(parm, shaderObject);
+            continue;
+        }
 
         int inIdx = vopNode->getInputFromName(parm->getToken());
         bool isConnected = inIdx >= 0
