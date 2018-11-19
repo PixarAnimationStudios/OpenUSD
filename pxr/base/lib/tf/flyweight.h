@@ -33,10 +33,10 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/functional/hash.hpp>
 #include <tbb/concurrent_hash_map.h>
 
 #include <atomic>
+#include <functional>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -358,7 +358,7 @@ public:
 
     /// Return a hash value for this flyweight object.
     size_t Hash() const {
-        return boost::hash<_ElementPairPtr>()(_ptr);
+        return std::hash<_ElementPairPtr>()(_ptr);
     }
 
     /// Hash functor.
