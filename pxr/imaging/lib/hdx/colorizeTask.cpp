@@ -160,7 +160,9 @@ static _Colorizer _colorizerTable[] = {
 };
 
 void
-HdxColorizeTask::Sync(HdTaskContext* ctx)
+HdxColorizeTask::Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -201,6 +203,8 @@ HdxColorizeTask::Sync(HdTaskContext* ctx)
                 TfEnum::GetName(_renderBuffer->GetFormat()).c_str());
         }
     }
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

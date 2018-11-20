@@ -65,7 +65,9 @@ HdxShadowTask::~HdxShadowTask()
 }
 
 void
-HdxShadowTask::Sync(HdTaskContext*   ctx)
+HdxShadowTask::Sync(HdSceneDelegate* delegate,
+                    HdTaskContext* ctx,
+                    HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -81,7 +83,6 @@ HdxShadowTask::Sync(HdTaskContext*   ctx)
 
     GlfSimpleLightVector const glfLights = lightingContext->GetLights();
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
-    HdSceneDelegate *const delegate = GetDelegate();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     _TaskDirtyState dirtyState;
@@ -204,6 +205,8 @@ HdxShadowTask::Sync(HdTaskContext*   ctx)
             renderIndex.GetResourceRegistry());
         _passes[passId]->Sync();
     }
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

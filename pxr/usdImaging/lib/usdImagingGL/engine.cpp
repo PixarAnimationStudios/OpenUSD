@@ -891,37 +891,6 @@ UsdImagingGLEngine::_GetRenderIndex() const
     return _renderIndex;
 }
 
-namespace {
-
-class _DebugGroupTaskWrapper : public HdTask {
-    const HdTaskSharedPtr _task;
-    public:
-    _DebugGroupTaskWrapper(const HdTaskSharedPtr task)
-        : HdTask(SdfPath::EmptyPath())
-        , _task(task)
-    {
-
-    }
-
-    void
-    Execute(HdTaskContext* ctx) override
-    {
-        GlfDebugGroup dbgGroup((ArchGetDemangled(typeid(*_task.get())) +
-                "::Execute").c_str());
-        _task->Execute(ctx);
-    }
-
-    void
-    Sync(HdTaskContext* ctx) override
-    {
-        GlfDebugGroup dbgGroup((ArchGetDemangled(typeid(*_task.get())) +
-                "::Sync").c_str());
-        _task->Sync(ctx);
-    }
-};
-
-};
-
 void 
 UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
 {
@@ -1000,15 +969,7 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
     VtValue renderTags(_renderTags);
     _engine.SetTaskContextData(HdxTokens->renderTags, renderTags);
 
-    HdTaskSharedPtrVector tasks;
-    
-    if (false) {
-        tasks = _taskController->GetTasks();
-    } else {
-        TF_FOR_ALL(it, _taskController->GetTasks()) {
-            tasks.push_back(boost::make_shared<_DebugGroupTaskWrapper>(*it));
-        }
-    }
+    HdTaskSharedPtrVector tasks = _taskController->GetTasks();
     _engine.Execute(*_renderIndex, tasks);
 
     if (isCoreProfileContext) {

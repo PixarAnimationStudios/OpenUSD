@@ -99,7 +99,9 @@ HdxDrawTargetTask::~HdxDrawTargetTask()
 }
 
 void
-HdxDrawTargetTask::Sync(HdTaskContext* ctx)
+HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
+                        HdTaskContext* ctx,
+                        HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -133,7 +135,6 @@ HdxDrawTargetTask::Sync(HdTaskContext* ctx)
         _depthFunc               = params.depthFunc;
     }
 
-    HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
@@ -299,6 +300,8 @@ HdxDrawTargetTask::Sync(HdTaskContext* ctx)
         renderPassState->Sync(renderIndex.GetResourceRegistry());
         renderPass->Sync();
     }
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

@@ -74,7 +74,9 @@ HdxSimpleLightTask::~HdxSimpleLightTask()
 }
 
 void
-HdxSimpleLightTask::Sync(HdTaskContext* ctx)
+HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
+                         HdTaskContext* ctx,
+                         HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
 
@@ -87,7 +89,6 @@ HdxSimpleLightTask::Sync(HdTaskContext* ctx)
     _TaskDirtyState dirtyState;
     _GetTaskDirtyState(HdTokens->geometry, &dirtyState);
 
-    HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     if (dirtyState.bits & HdChangeTracker::DirtyParams) {
@@ -276,6 +277,8 @@ HdxSimpleLightTask::Sync(HdTaskContext* ctx)
         }
     }
     lightingContext->SetShadows(_shadows);
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

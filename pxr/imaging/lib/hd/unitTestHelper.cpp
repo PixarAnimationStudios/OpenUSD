@@ -60,7 +60,9 @@ public:
     {
     }
 
-    virtual void Sync(HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
         _renderPassState->Sync(

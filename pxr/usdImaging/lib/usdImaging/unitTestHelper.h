@@ -66,10 +66,14 @@ public:
     {
     }
 
-    virtual void Sync(HdTaskContext* ctx) override {
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override {
         _renderPass->Sync();
         _renderPassState->Sync(
             _renderPass->GetRenderIndex()->GetResourceRegistry());
+
+        *dirtyBits = HdChangeTracker::Clean;
     }
     virtual void Execute(HdTaskContext* ctx) override {
         _renderPassState->Bind();

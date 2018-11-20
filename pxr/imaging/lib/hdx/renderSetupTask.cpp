@@ -70,7 +70,9 @@ HdxRenderSetupTask::~HdxRenderSetupTask()
 }
 
 void
-HdxRenderSetupTask::Sync(HdTaskContext*   ctx)
+HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
+                         HdTaskContext* ctx,
+                         HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -90,6 +92,8 @@ HdxRenderSetupTask::Sync(HdTaskContext*   ctx)
     SyncAovBindings();
     SyncCamera();
     SyncRenderPassState();
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

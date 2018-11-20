@@ -38,7 +38,9 @@ public:
 
     /// Sync the render pass resources
     HDX_API
-    virtual void Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
 
     /// Execute render pass task
     HDX_API

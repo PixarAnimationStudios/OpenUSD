@@ -58,12 +58,13 @@ HdxSelectionTask::~HdxSelectionTask()
 }
 
 void
-HdxSelectionTask::Sync(HdTaskContext* ctx)
+HdxSelectionTask::Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex& index = delegate->GetRenderIndex();
     HdChangeTracker& changeTracker = index.GetChangeTracker();
     HdDirtyBits bits = changeTracker.GetTaskDirtyBits(id);
@@ -166,6 +167,8 @@ HdxSelectionTask::Sync(HdTaskContext* ctx)
         (*ctx)[HdxTokens->selectionUniforms] = VtValue();
         (*ctx)[HdxTokens->selectionPointColors] = VtValue();
     }
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

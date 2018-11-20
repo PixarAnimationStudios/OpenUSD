@@ -65,7 +65,9 @@ HdxRenderTask::IsConverged() const
 
 
 void
-HdxRenderTask::Sync(HdTaskContext* ctx)
+HdxRenderTask::Sync(HdSceneDelegate* delegate,
+                    HdTaskContext* ctx,
+                    HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
 
@@ -139,6 +141,8 @@ HdxRenderTask::Sync(HdTaskContext* ctx)
         HdRenderPassSharedPtr const &pass = (*it);
         pass->Sync();
     }
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void

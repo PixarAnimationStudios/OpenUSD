@@ -1058,13 +1058,22 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             // issue as a verify so it can be addressed.
             TF_VERIFY(taskInfo.task == (*it));
 
-            taskInfo.task->Sync(taskContext);
+            HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
 
-            _tracker.MarkTaskClean(taskId);
+            taskInfo.task->Sync(taskInfo.sceneDelegate,
+                                taskContext,
+                                &taskDirtyBits);
+
+            _tracker.MarkTaskClean(taskId, taskDirtyBits);
 
         } else {
+            // Dummy dirty bits
+            HdDirtyBits taskDirtyBits = 0;
+
             // This is an untracked task, never added to the render index.
-            (*it)->Sync(taskContext);
+            (*it)->Sync(nullptr,
+                        taskContext,
+                        &taskDirtyBits);
         }
     }
 

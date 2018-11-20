@@ -68,7 +68,9 @@ public:
 
     /// Sync Phase:  Obtain task state from Scene delegate based on
     /// change processing.
-    virtual void Sync(HdTaskContext* ctx) = 0;
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) = 0;
 
     /// Execute Phase: Runs the task.
     virtual void Execute(HdTaskContext* ctx) = 0;
