@@ -90,32 +90,25 @@ public:
 
     /// This function gives an Rprim the chance to set additional dirty bits
     /// based on those set in the change tracker, before passing the dirty bits
-    /// to the scene delegate.  This gives the Rprim an opportunity to specify
-    /// it needs more data to process the requested changes.
+    /// to the scene delegate.
+    /// It calls into _PropagateDirtyBits, which gives the Rprim an opportunity
+    /// to specify the additional data needed to process the requested changes.
     ///
     /// The return value is the new set of dirty bits.
     HD_API
     HdDirtyBits PropagateRprimDirtyBits(HdDirtyBits bits);
 
-    /// Initialize the composite representation of this Rprim, by calling
-    /// _InitRepr with the resolved composite representation.
-    /// This is called prior to syncing the prim, the first time the repr
-    /// selector is used.
-    ///
-    /// colReprSelector holds the individual repr name(s) to initalize, and
-    /// this comes from the application (via the task/renderpass' collection).
-    /// However, the prim has an authored composite representation, which
-    /// is obtained from the scene delegate.  If the forced flag is set,
-    /// the colReprSelector is used, even if there is an authored opinion.
+    /// Initialize the representation of this Rprim by calling _InitRepr.
+    /// This is called prior to dirty bit propagation & sync, the first time the
+    /// repr is used, or when the authored representation is dirty.
     ///
     /// dirtyBits is an in/out value.  It is initialized to the dirty bits
     /// from the change tracker.  InitRepr can then set additional dirty bits
     /// if additional data is required from the scene delegate when this
-    /// repr is synced.  InitRepr occurs before dirty bit propagation.
+    /// repr is synced. 
     HD_API
     void InitRepr(HdSceneDelegate* delegate,
-                  HdReprSelector const& colReprSelector,
-                  bool forced,
+                  TfToken const &reprToken,
                   HdDirtyBits *dirtyBits);
 
     /// Pull invalidated scene data and prepare/update the renderable
@@ -139,32 +132,30 @@ public:
     ///   \param renderParam A render delegate object that holds rendering
     ///                      parameters that scene geometry may use.
     ///   \param dirtyBits A specifier for which scene data has changed.
-    ///   \param colReprSelector A specifier for which composite representation
-    ///                          to draw with, which may come from the app (or)
-    ///                          task's renderpass.
-    ///   \param forcedRepr A specifier for how to resolve repr opinions.
+    ///   \param reprToken The representation that needs to be updated. This is
+    ///                    useful for backends that support multiple display
+    ///                    representations for an rprim. A given representation
+    ///                    may choose to pull on a subset of the dirty state.
     ///   \param dirtyBits On input specifies which state is dirty and can be
     ///                    pulled from the scene delegate.
     ///                    On output specifies which bits are still dirty and
     ///                    were not cleaned by the sync.
-    virtual void Sync(HdSceneDelegate      *delegate,
-                      HdRenderParam        *renderParam,
-                      HdDirtyBits          *dirtyBits,
-                      HdReprSelector const &colReprSelector,
-                      bool                 forcedRepr) = 0;
-
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) = 0;
     // ---------------------------------------------------------------------- //
     /// \name Rprim Hydra Engine API : Execute Phase
     // ---------------------------------------------------------------------- //
 
-    /// Returns the draw items for the resolved composite representation.
+    /// Returns the draw items for the requested repr token, if any.
     /// These draw items should be constructed and cached beforehand by Sync().
-    /// If no draw items exist, or if the resolved repr selector cannot be
-    /// found, nullptr will be returned.
+    /// If no draw items exist, or reprToken cannot be found, nullptr will be
+    /// returned.
+    using HdDrawItemPtrVector = std::vector<HdDrawItem*>;
     HD_API
-    const std::vector<HdDrawItem*>* GetDrawItems(
-                         HdReprSelector const& colReprSelector,
-                         bool forced) const;
+    const HdDrawItemPtrVector*
+    GetDrawItems(TfToken const& reprToken) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Hydra Engine API : Cleanup
@@ -200,6 +191,10 @@ public:
     /// this identifier.
     SdfPath const& GetMaterialId() const { return _materialId; }
 
+    HdReprSelector const& GetReprSelector() const {
+        return _authoredReprSelector;
+    }
+
     /// Returns the render tag associated to this rprim
     inline  TfToken GetRenderTag(HdSceneDelegate* delegate) const;
 
@@ -221,54 +216,47 @@ public:
     /// Is the prim itself visible
     bool IsVisible() const { return _sharedData.visible; }
 
+    HD_API
+    void UpdateReprSelector(HdSceneDelegate* delegate,
+                            HdDirtyBits *dirtyBits);
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Rprim Hydra Engine API : Pre-Sync & Sync-Phase
     // ---------------------------------------------------------------------- //
 
-    // This callback from Rprim gives the prim an opportunity to set
-    // additional dirty bits based on those already set.  This is done
-    // before the dirty bits are passed to the scene delegate, so can be
-    // used to communicate that extra information is needed by the prim to
-    // process the changes.
-    //
-    // The return value is the new set of dirty bits, which replaces the bits
-    // passed in.
-    //
-    // See HdRprim::PropagateRprimDirtyBits()
+    /// This callback from Rprim gives the prim an opportunity to set
+    /// additional dirty bits based on those already set.  This is done
+    /// before the dirty bits are passed to the scene delegate, so can be
+    /// used to communicate that extra information is needed by the prim to
+    /// process the changes.
+    ///
+    /// The return value is the new set of dirty bits, which replaces the bits
+    /// passed in.
+    ///
+    /// See HdRprim::PropagateRprimDirtyBits()
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 
-    // Initialize the given representation of this Rprim.
-    // This is called prior to syncing the prim, the first time the repr
-    // selector is used.
-    //
-    // reprSelector is the name of the resolved compsite repr to initalize.
-    //
-    // dirtyBits is an in/out value.  It is initialized to the dirty bits
-    // from the change tracker.  InitRepr can then set additional dirty bits
-    // if additional data is required from the scene delegate when this
-    // repr is synced.  InitRepr occurs before dirty bit propagation.
-    //
-    // See HdRprim::InitRepr()
-    virtual void _InitRepr(HdReprSelector const &reprSelector,
-                           HdDirtyBits *dirtyBits) = 0;
-
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const& reprSelector,
-                             HdDirtyBits *dirtyBits) = 0;
+    /// Initialize the given representation of this Rprim.
+    /// This is called prior to syncing the prim, the first time the repr
+    /// is used.
+    ///
+    /// reprToken is the name of the representation to initalize.
+    ///
+    /// dirtyBits is an in/out value.  It is initialized to the dirty bits
+    /// from the change tracker.  InitRepr can then set additional dirty bits
+    /// if additional data is required from the scene delegate when this
+    /// repr is synced.  InitRepr occurs before dirty bit propagation.
+    ///
+    /// See HdRprim::InitRepr()
+       virtual void _InitRepr(TfToken const &reprToken,
+                              HdDirtyBits *dirtyBits) = 0;
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Shared API
     // ---------------------------------------------------------------------- //
     HD_API
-    HdReprSharedPtr const & _GetRepr(HdReprSelector const& reprSelector) const;
-
-    HD_API
-    HdReprSelector _GetReprSelector(HdReprSelector const &colReprSelector,
-                                    bool forced) const;
-
-    HD_API
-    void _UpdateReprSelector(HdSceneDelegate* delegate, HdDirtyBits *dirtyBits);
+    HdReprSharedPtr const & _GetRepr(TfToken const &reprToken) const;
 
     HD_API
     void _UpdateVisibility(HdSceneDelegate *sceneDelegate,
@@ -317,21 +305,22 @@ protected:
 
     // total number of reprs is relatively small (less than 5 or so
     // in most case), we use linear container for efficiency.
-    typedef std::vector<std::pair<HdReprSelector, HdReprSharedPtr> >
+    typedef std::vector<std::pair<TfToken, HdReprSharedPtr> >
         _ReprVector;
     _ReprVector _reprs;
 
-    struct _ReprComparator {
-        _ReprComparator(HdReprSelector const &selector) : _selector(selector) {}
-        bool operator() (const std::pair<HdReprSelector, HdReprSharedPtr> &e) const {
-            return _selector == e.first;
+     struct _ReprComparator {
+        _ReprComparator(TfToken const &name) : _name(name) {}
+        bool operator() (const std::pair<TfToken, HdReprSharedPtr> &e) const {
+            return _name == e.first;
         }
     private:
-        HdReprSelector _selector;
+        TfToken _name;
     };
 
+
     // Repr configuration descriptors. All concrete types (HdMesh, HdPoints ..)
-    // have this static map to lookup descriptors for the given reprname.
+    // have this static map to lookup descriptors for the given reprToken.
     //
     // N : # of descriptors for the repr.
     //
@@ -340,16 +329,16 @@ protected:
         typedef std::array<DESC_TYPE, N> DescArray;
         static const int MAX_DESCS = N;
 
-        DescArray Find(TfToken const &reprName) const {
+        DescArray Find(TfToken const &reprToken) const {
             // linear search, we expect only a handful reprs configured.
             TF_FOR_ALL (it, _configs) {
-                if (it->first == reprName) return it->second;
+                if (it->first == reprToken) return it->second;
             }
-            TF_CODING_ERROR("Repr %s not found", reprName.GetText());
+            TF_CODING_ERROR("Repr %s not found", reprToken.GetText());
             return DescArray();
         }
-        void Append(TfToken const &reprName, DescArray descs) {
-            _configs.push_back(std::make_pair(reprName, descs));
+        void Append(TfToken const &reprToken, DescArray descs) {
+            _configs.push_back(std::make_pair(reprToken, descs));
         }
         std::vector<std::pair<TfToken, DescArray> > _configs;
     };

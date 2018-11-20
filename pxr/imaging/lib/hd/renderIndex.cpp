@@ -755,10 +755,6 @@ namespace {
         HdReprSelector reprSelector;
         bool forcedRepr;
 
-        bool operator < (_ReprSpec const &other) const {
-            return reprSelector < other.reprSelector ||
-                (reprSelector == other.reprSelector && (forcedRepr && (!other.forcedRepr)));
-        }
         bool operator == (_ReprSpec const &other) const {
             return  (reprSelector == other.reprSelector) &&
                     (forcedRepr == other.forcedRepr);
@@ -766,6 +762,20 @@ namespace {
     };
 
     typedef std::vector<_ReprSpec> _ReprList;
+
+    static HdReprSelector
+    _GetResolvedReprSelector(HdReprSelector const &rprimReprSelector,
+                             HdReprSelector const &colReprSelector,
+                             bool forceColRepr)
+    {
+        // if not forced, the prim's authored opinion composites over the
+        // collection's repr, otherwise we respect the collection's repr
+        // (used for shadows)
+        if (!forceColRepr) {
+            return rprimReprSelector.CompositeOver(colReprSelector);
+        }
+        return colReprSelector;
+    }
 
     struct _SyncRPrims {
         HdSceneDelegate *_sceneDelegate;
@@ -796,13 +806,30 @@ namespace {
 
                 HdDirtyBits dirtyBits = _r.request.dirtyBits[i];
 
-                TF_FOR_ALL(it, _reprs) {
+                for (const _ReprSpec& spec : _reprs) {
                     if (reprsMask & 1) {
-                        rprim.Sync(_sceneDelegate,
-                                   _renderParam,
-                                   &dirtyBits,
-                                    it->reprSelector,
-                                   it->forcedRepr);
+                        HdReprSelector reprSelector = 
+                            _GetResolvedReprSelector(rprim.GetReprSelector(),
+                                                     spec.reprSelector,
+                                                     spec.forcedRepr);
+
+                        // Call Rprim::Sync(..) on each valid repr of the
+                        // resolved  repr selector.
+                        // The rprim's authored repr selector is
+                        // guaranteed to have been set at this point (via
+                        // InitRepr in the pre-sync)
+                        for (size_t i = 0;
+                             i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
+
+                            if (reprSelector.IsActiveRepr(i)) {
+                                TfToken const& reprToken = reprSelector[i];
+
+                                rprim.Sync(_sceneDelegate,
+                                           _renderParam,
+                                           &dirtyBits,
+                                           reprToken);
+                            }
+                        }
                     }
                     reprsMask >>= 1;
                 }
@@ -811,6 +838,28 @@ namespace {
             }
         }
     };
+
+    static void
+    _InitRprimReprs(HdSceneDelegate *sceneDelegate,
+                    HdReprSelector const& colReprSelector,
+                    bool forceColRepr,
+                    HdRprim *rprim,
+                    HdDirtyBits *dirtyBits)
+    {
+        HdReprSelector reprSelector = _GetResolvedReprSelector(
+                                            rprim->GetReprSelector(),
+                                            colReprSelector,
+                                            forceColRepr);
+
+        for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
+            if (reprSelector.IsActiveRepr(i)) {
+                TfToken const& reprToken = reprSelector[i];
+                rprim->InitRepr(sceneDelegate,
+                                reprToken,
+                                dirtyBits);
+            }
+        }
+    }
 
     static void
     _PreSyncRPrims(HdSceneDelegate *sceneDelegate,
@@ -856,11 +905,15 @@ namespace {
             if ((dirtyBits &
                      (HdChangeTracker::InitRepr | HdChangeTracker::DirtyRepr))
                   != 0) {
-                TF_FOR_ALL(it, reprs) {
+
+                rprim->UpdateReprSelector(sceneDelegate, &dirtyBits);
+
+                for (const _ReprSpec& spec : reprs) {
                     if (reprsMask & 1) {
-                        rprim->InitRepr(sceneDelegate,
-                                        it->reprSelector,
-                                        it->forcedRepr,
+                        _InitRprimReprs(sceneDelegate,
+                                        spec.reprSelector,
+                                        spec.forcedRepr,
+                                        rprim,
                                         &dirtyBits);
                     }
                     reprsMask >>= 1;
@@ -1453,8 +1506,8 @@ HdRenderIndex::_AppendDrawItems(
                 HdRprimCollection const& collection,
                 _ConcurrentDrawItems* result)
 {
-    HdReprSelector const& reprSelector = collection.GetReprSelector();
-    bool forcedRepr = collection.IsForcedRepr();
+    HdReprSelector const& colReprSelector = collection.GetReprSelector();
+    bool forceColRepr = collection.IsForcedRepr();
 
     // Get draw item view for this thread.
     HdDrawItemView &drawItemView = result->local();
@@ -1466,20 +1519,34 @@ HdRenderIndex::_AppendDrawItems(
         _RprimMap::const_iterator it = _rprimMap.find(rprimId);
         if (it != _rprimMap.end()) {
             const _RprimInfo &rprimInfo = it->second;
+            HdRprim *rprim = rprimInfo.rprim;
 
-            // Extract the draw items and assign them to the right command buffer
-            // based on the tag
-            if (const std::vector<HdDrawItem*> *drawItems =
-                          rprimInfo.rprim->GetDrawItems(reprSelector,
-                                                        forcedRepr)) {
+            // Append the draw items for each valid repr in the resolved
+            // composite representation to the right command buffer
+            // based on the tag.
+            const TfToken &rprimTag = rprim->GetRenderTag(
+                                               rprimInfo.sceneDelegate);
 
-                const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(
-                                                       rprimInfo.sceneDelegate);
+            HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
 
-                HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
+            HdReprSelector reprSelector = _GetResolvedReprSelector(
+                                                rprim->GetReprSelector(),
+                                                colReprSelector,
+                                                forceColRepr);
 
-                resultDrawItems.insert( resultDrawItems.end(),
-                                        drawItems->begin(), drawItems->end() );
+            for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
+                if (reprSelector.IsActiveRepr(i)) {
+                    TfToken const& reprToken = reprSelector[i];
+
+                    const HdRprim::HdDrawItemPtrVector* drawItems =
+                        rprim->GetDrawItems(reprToken);
+
+                    TF_VERIFY(drawItems);
+
+                    resultDrawItems.insert( resultDrawItems.end(),
+                                            drawItems->begin(),
+                                            drawItems->end() );
+                }
             }
         }
     }

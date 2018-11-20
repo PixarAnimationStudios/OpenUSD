@@ -108,11 +108,10 @@ HdStMesh::~HdStMesh()
 }
 
 void
-HdStMesh::Sync(HdSceneDelegate      *delegate,
-               HdRenderParam        *renderParam,
-               HdDirtyBits          *dirtyBits,
-               HdReprSelector const &reprSelector,
-               bool                  forcedRepr)
+HdStMesh::Sync(HdSceneDelegate *delegate,
+               HdRenderParam   *renderParam,
+               HdDirtyBits     *dirtyBits,
+               TfToken const   &reprToken)
 {
     TF_UNUSED(renderParam);
 
@@ -121,9 +120,35 @@ HdStMesh::Sync(HdSceneDelegate      *delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    HdReprSelector calcReprSelector = _GetReprSelector(reprSelector, forcedRepr);
-    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
+    // Check if either the material or geometric shaders need updating for
+    // draw items of all the reprs.
+    bool updateMaterialShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId|
+                      HdChangeTracker::NewRepr)) {
+        updateMaterialShader = true;
+    }
 
+    bool updateGeometricShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
+                      HdChangeTracker::DirtyCullStyle|
+                      HdChangeTracker::DirtyDoubleSided|
+                      HdChangeTracker::DirtyMaterialId|
+                      HdChangeTracker::NewRepr)) {
+        updateGeometricShader = true;
+    }
+
+    _UpdateRepr(delegate, reprToken, dirtyBits);
+
+    if (updateMaterialShader || updateGeometricShader) {
+        _UpdateShadersForAllReprs(delegate,
+                                  updateMaterialShader, updateGeometricShader);
+    }
+
+    // This clears all the non-custom dirty bits. This ensures that the rprim
+    // doesn't have pending dirty bits that add it to the dirty list every
+    // frame.
+    // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
+    // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
@@ -1922,21 +1947,21 @@ size_t _GetNumDrawItemsForDesc(const HdMeshReprDesc& reprDesc)
 }
 
 void
-HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
+HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprSelector));
+                                            _ReprComparator(reprToken));
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
-        _reprs.emplace_back(reprSelector, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         // set dirty bit to say we need to sync a new repr (buffer array
         // ranges may change)
         *dirtyBits |= HdChangeTracker::NewRepr;
 
-        _MeshReprConfig::DescArray descs = _GetReprDesc(reprSelector);
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -2008,40 +2033,24 @@ HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
 
 void
 HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                      HdReprSelector const &reprSelector,
+                      TfToken const &reprToken,
                       HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdReprSharedPtr const &curRepr = _GetRepr(reprSelector);
+    HdReprSharedPtr const &curRepr = _GetRepr(reprToken);
     if (!curRepr) {
         return;
     }
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStMesh::GetRepr " << GetId()
-                  << " Repr = " << reprSelector << "\n";
+                  << " Repr = " << reprToken << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // Check if either the material or geometric shaders need updating.
-    bool needsSetMaterialShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId|
-                      HdChangeTracker::NewRepr)) {
-        needsSetMaterialShader = true;
-    }
-
-    bool needsSetGeometricShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
-                      HdChangeTracker::DirtyCullStyle|
-                      HdChangeTracker::DirtyDoubleSided|
-                      HdChangeTracker::DirtyMaterialId|
-                      HdChangeTracker::NewRepr)) {
-        needsSetGeometricShader = true;
-    }
-
-    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprSelector);
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
 
     // Iterate through all reprdescs for the current repr to figure out if any 
     // of them requires smooth normals or flat normals. If either (or both)
@@ -2079,53 +2088,57 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If either the material or geometric shaders need updating, do so.
-    if (needsSetMaterialShader || needsSetGeometricShader) {
-        TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStMesh(%s) - Resetting shaders for all draw items",
-                GetId().GetText());
+    *dirtyBits &= ~HdChangeTracker::NewRepr;
+}
 
-        // Look up the mixin source if necessary. This is a per-rprim glsl
-        // snippet, to be mixed into the surface shader.
-        SdfPath materialId;
-        std::string mixinSource;
-        if (needsSetMaterialShader) {
-            materialId = GetMaterialId();
+void
+HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                    bool updateMaterialShader,
+                                    bool updateGeometricShader)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED).
+        Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.",
+            GetId().GetText());
 
-            TfToken mixinKey =
-                GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
-            mixinSource = _GetMixinShaderSource(mixinKey);
-        }
+    // Look up the mixin source if necessary. This is a per-rprim glsl
+    // snippet, to be mixed into the surface shader.
+    SdfPath materialId;
+    std::string mixinSource;
+    if (updateMaterialShader) {
+        materialId = GetMaterialId();
 
-        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+        TfToken mixinKey =
+            GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
+        mixinSource = _GetMixinShaderSource(mixinKey);
+    }
 
-        for (auto const& reprPair : _reprs) {
-            _MeshReprConfig::DescArray descs = _GetReprDesc(reprPair.first);
-            HdReprSharedPtr repr = reprPair.second;
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-            int drawItemIndex = 0;
-            for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-                size_t numDrawItems = _GetNumDrawItemsForDesc(descs[descIdx]);
-                if (numDrawItems == 0) continue;
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
 
-                for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-                    HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            size_t numDrawItems = _GetNumDrawItemsForDesc(descs[descIdx]);
+            if (numDrawItems == 0) continue;
+
+            for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                     repr->GetDrawItem(drawItemIndex++));
 
-                    if (needsSetMaterialShader) {
-                        drawItem->SetMaterialShaderFromRenderIndex(
-                            renderIndex, materialId, mixinSource);
-                    }
-                    if (needsSetGeometricShader) {
-                        _UpdateDrawItemGeometricShader(sceneDelegate,
-                            drawItem, descs[descIdx], itemId);
-                    }
-                }               
+                if (updateMaterialShader) {
+                    drawItem->SetMaterialShaderFromRenderIndex(
+                        renderIndex, materialId, mixinSource);
+                }
+                if (updateGeometricShader) {
+                    _UpdateDrawItemGeometricShader(sceneDelegate,
+                        drawItem, descs[descIdx], itemId);
+                }
             }
         }
     }
-
-    *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
 HdDirtyBits

@@ -136,8 +136,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 
 void
 HdRprim::InitRepr(HdSceneDelegate* delegate,
-                  HdReprSelector const &colReprSelector,
-                  bool forced,
+                  TfToken const &reprToken,
                   HdDirtyBits *dirtyBits)
 {
     // If _sharedData.instancerLevels == -1, it's uninitialized and we should
@@ -147,28 +146,20 @@ HdRprim::InitRepr(HdSceneDelegate* delegate,
             delegate->GetRenderIndex(), *this);
     }
 
-    _UpdateReprSelector(delegate, dirtyBits);
-    HdReprSelector reprSelector = _GetReprSelector(colReprSelector, forced);
-    _InitRepr(reprSelector, dirtyBits);
-
+    _InitRepr(reprToken, dirtyBits);
 }
 
 // -------------------------------------------------------------------------- //
 ///                 Rprim Hydra Engine API : Execute-Phase
 // -------------------------------------------------------------------------- //
-const std::vector<HdDrawItem*>*
-HdRprim::GetDrawItems(HdReprSelector const &colReprSelector, bool forced) const
+const HdRprim::HdDrawItemPtrVector*
+HdRprim::GetDrawItems(TfToken const& reprToken) const
 {
-    // note: GetDrawItems is called at execute phase.
-    // All required dirtyBits should have cleaned at this point.
-    HdReprSelector reprSelector = _GetReprSelector(colReprSelector, forced);
-    HdReprSharedPtr repr = _GetRepr(reprSelector);
-
+    HdReprSharedPtr repr = _GetRepr(reprToken);
     if (repr) {
-        return &repr->GetDrawItems();
-    } else {
-        return nullptr;
+        return &(repr->GetDrawItems());
     }
+    return nullptr;
 }
 
 // -------------------------------------------------------------------------- //
@@ -195,44 +186,33 @@ HdRprim::IsDirty(HdChangeTracker &changeTracker) const
     return changeTracker.IsRprimDirty(GetId());
 }
 
-// -------------------------------------------------------------------------- //
-///                             Rprim Shared API
-// -------------------------------------------------------------------------- //
-HdReprSharedPtr const &
-HdRprim::_GetRepr(HdReprSelector const &reprSelector) const
-{
-    _ReprVector::const_iterator reprIt =
-        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprSelector));
-    if (reprIt == _reprs.end()) {
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
-                        reprSelector.GetText(), GetId().GetText());
-        static const HdReprSharedPtr ERROR_RETURN;
-        return ERROR_RETURN;
-    }
-    return reprIt->second;
-}
-
-HdReprSelector
-HdRprim::_GetReprSelector(HdReprSelector const &colReprSelector, bool forced) const
-{
-    // if not forced, the prim's authored opinion composites over the
-    // collection's repr, otherwise we respect the collection's repr
-    // (used for shadows)
-    if (!forced) {
-        return _authoredReprSelector.CompositeOver(colReprSelector);
-    }
-    return colReprSelector;
-}
-
 void
-HdRprim::_UpdateReprSelector(HdSceneDelegate* delegate,
-                             HdDirtyBits *dirtyBits)
+HdRprim::UpdateReprSelector(HdSceneDelegate* delegate,
+                            HdDirtyBits *dirtyBits)
 {
     SdfPath const& id = GetId();
     if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
         _authoredReprSelector = delegate->GetReprSelector(id);
         *dirtyBits &= ~HdChangeTracker::DirtyRepr;
     }
+}
+
+// -------------------------------------------------------------------------- //
+///                             Rprim Shared API
+// -------------------------------------------------------------------------- //
+HdReprSharedPtr const &
+HdRprim::_GetRepr(TfToken const &reprToken) const
+{
+    _ReprVector::const_iterator reprIt =
+        std::find_if(_reprs.begin(), _reprs.end(),
+                     _ReprComparator(reprToken));
+    if (reprIt == _reprs.end()) {
+        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
+                        reprToken.GetText(), GetId().GetText());
+        static const HdReprSharedPtr ERROR_RETURN;
+        return ERROR_RETURN;
+    }
+    return reprIt->second;
 }
 
 void

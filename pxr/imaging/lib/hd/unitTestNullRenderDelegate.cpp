@@ -219,11 +219,10 @@ public:
 
     virtual ~Hd_NullRprim() = default;
 
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      HdReprSelector const& reprSelector,
-                      bool             forcedRepr) override
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) override
     {
         *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
     }
@@ -241,20 +240,16 @@ public:
         return bits;
     }
 
-    virtual void _InitRepr(HdReprSelector const &reprSelector,
+
+protected:
+    virtual void _InitRepr(TfToken const &reprToken,
                            HdDirtyBits *dirtyBits) override
     {
         _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                                _ReprComparator(reprSelector));
+                                                _ReprComparator(reprToken));
         if (it == _reprs.end()) {
-            _reprs.emplace_back(reprSelector, HdReprSharedPtr());
+            _reprs.emplace_back(reprToken, HdReprSharedPtr());
         }
-    }
-
-protected:
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const &reprSelector,
-                             HdDirtyBits *dirtyBits) override  {
     }
 
 private:

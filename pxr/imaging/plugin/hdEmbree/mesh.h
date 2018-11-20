@@ -86,12 +86,6 @@ public:
     ///   \return The initial dirty state this mesh wants to query.
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Release any resources this class is holding onto: in this case,
-    /// destroy the geometry object in the embree scene graph.
-    ///   \param renderParam An HdEmbreeRenderParam object containing top-level
-    ///                      embree state.
-    virtual void Finalize(HdRenderParam *renderParam) override;
-
     /// Pull invalidated scene data and prepare/update the renderable
     /// representation.
     ///
@@ -115,25 +109,34 @@ public:
     ///   \param renderParam An HdEmbreeRenderParam object containing top-level
     ///                      embree state.
     ///   \param dirtyBits A specifier for which scene data has changed.
-    ///   \param reprName A specifier for which representation to draw with.
-    ///   \param forcedRepr A specifier for how to resolve reprName opinions.
+    ///   \param reprToken A specifier for which representation to draw with.
     ///
-    virtual void Sync(HdSceneDelegate   *sceneDelegate,
-                      HdRenderParam     *renderParam,
-                      HdDirtyBits       *dirtyBits,
-                      HdReprSelector const &reprToken,
-                      bool               forcedRepr) override;
+    virtual void Sync(HdSceneDelegate* sceneDelegate,
+                      HdRenderParam*   renderParam,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const    &reprToken) override;
+
+    /// Release any resources this class is holding onto: in this case,
+    /// destroy the geometry object in the embree scene graph.
+    ///   \param renderParam An HdEmbreeRenderParam object containing top-level
+    ///                      embree state.
+    virtual void Finalize(HdRenderParam *renderParam) override;
 
 protected:
-    // Update the named repr object for this Rprim. Repr objects are
-    // created to support specific reprName tokens, and contain a list of
-    // HdDrawItems to be passed to the renderpass (via the renderpass calling
-    // HdRenderIndex::GetDrawItems()). Draw items contain prim data to be
-    // rendered, but HdEmbreeMesh bypasses them for now, so this function is
-    // a no-op.
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const &reprToken,
-                             HdDirtyBits *dirtyBits) override;
+    // Initialize the given representation of this Rprim.
+    // This is called prior to syncing the prim, the first time the repr
+    // is used.
+    //
+    // reprToken is the name of the repr to initalize.
+    //
+    // dirtyBits is an in/out value.  It is initialized to the dirty bits
+    // from the change tracker.  InitRepr can then set additional dirty bits
+    // if additional data is required from the scene delegate when this
+    // repr is synced.  InitRepr occurs before dirty bit propagation.
+    //
+    // See HdRprim::InitRepr()
+    virtual void _InitRepr(TfToken const &reprToken,
+                           HdDirtyBits *dirtyBits) override;
 
     // This callback from Rprim gives the prim an opportunity to set
     // additional dirty bits based on those already set.  This is done
@@ -146,22 +149,6 @@ protected:
     //
     // See HdRprim::PropagateRprimDirtyBits()
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-
-    // Initialize the given representation of this Rprim.
-    // This is called prior to syncing the prim, the first time the repr
-    // is used.
-    //
-    // reprName is the name of the repr to initalize.  HdRprim has already
-    // resolved the reprName to its final value.
-    //
-    // dirtyBits is an in/out value.  It is initialized to the dirty bits
-    // from the change tracker.  InitRepr can then set additional dirty bits
-    // if additional data is required from the scene delegate when this
-    // repr is synced.  InitRepr occurs before dirty bit propagation.
-    //
-    // See HdRprim::InitRepr()
-    virtual void _InitRepr(HdReprSelector const &reprToken,
-                           HdDirtyBits *dirtyBits) override;
 
 private:
     // Helper functions for getting the prototype and instance contexts.

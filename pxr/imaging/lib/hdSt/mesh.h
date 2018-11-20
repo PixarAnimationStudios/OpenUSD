@@ -66,12 +66,12 @@ public:
     virtual ~HdStMesh();
 
     HDST_API
-    virtual void Sync(HdSceneDelegate   *delegate,
-                      HdRenderParam     *renderParam,
-                      HdDirtyBits       *dirtyBits,
-                      HdReprSelector const &reprToken,
-                      bool               forcedRepr) override;
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) override;
 
+    HDST_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// Topology (member) getter
@@ -83,9 +83,16 @@ public:
     static bool IsEnabledPackedNormals();
 
 protected:
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const &reprToken,
-                             HdDirtyBits *dirtyBitsState) override;
+    HDST_API
+    virtual void _InitRepr(TfToken const &reprToken,
+                           HdDirtyBits *dirtyBits) override;
+
+    HDST_API
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+
+    void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     TfToken const &reprToken,
+                     HdDirtyBits *dirtyBitsState);
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
@@ -114,6 +121,10 @@ protected:
                                         HdStDrawItem *drawItem,
                                         const HdMeshReprDesc &desc,
                                         size_t drawItemIdForDesc);
+
+    void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                   bool updateMaterialShader,
+                                   bool updateGeometricShader);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdStDrawItem *drawItem,
@@ -146,11 +157,6 @@ protected:
                                   HdBufferSourceSharedPtr const &points);
 
     int _GetRefineLevelForDesc(const HdMeshReprDesc &desc) const;
-
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-
-    virtual void _InitRepr(HdReprSelector const &reprToken,
-                           HdDirtyBits *dirtyBits) override;
 
     HdType _GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const;
 
