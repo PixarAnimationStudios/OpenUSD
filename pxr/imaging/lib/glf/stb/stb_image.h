@@ -4971,9 +4971,6 @@ static void *stbi__do_png(stbi__png *p, int *x, int *y, int *n, int req_comp, st
           else
               pxr__associate_alpha16((stbi__uint16 *) result, *x, *y, p->s->img_n);
       }
-
-      // XXX PIXAR: Note this currently does not take into account the gamma 
-      // value in this file.
    }
    STBI_FREE(p->out);      p->out      = NULL;
    STBI_FREE(p->expanded); p->expanded = NULL;
