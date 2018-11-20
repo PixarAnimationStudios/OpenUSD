@@ -4823,7 +4823,7 @@ static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp)
             if (first) return stbi__err("first not IHDR", "Corrupt PNG");
             if (4 != c.length) return stbi__err("invalid gAMA","Corrupt PNG");
             z->gamma = stbi__get32be(s) / 100000.0f;
-         break;
+            break;
          }
 
          case STBI__PNG_TYPE('I','D','A','T'): {

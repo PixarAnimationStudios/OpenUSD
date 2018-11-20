@@ -98,14 +98,14 @@ private:
                    StorageSpec const & storage);
         
     std::string _filename;
-    int _width = 0;
-    int _height = 0;
-    float _gamma = 0.0f;
+    int _width;
+    int _height;
+    float _gamma;
     
     //GL_UNSIGNED_BYTE, GL_FLOAT
     GLenum _outputType; 
     
-    int _nchannels = 0;
+    int _nchannels;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -186,6 +186,11 @@ Glf_StbImage::_GetInfoFromStorageSpec(GlfImage::StorageSpec const & storage)
 }
 
 Glf_StbImage::Glf_StbImage()
+    : _width(0)
+    , _height(0)
+    , _gamma(0.0f)
+    , _nchannels(0)
+
 {
 }
 
