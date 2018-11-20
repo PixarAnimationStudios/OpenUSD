@@ -75,6 +75,17 @@ GfVec4h GfApplyGamma(const GfVec4h &v, double g) {
                    v[3]);
 }
 
+float GfApplyGamma(const float &v, double g)
+{
+    return pow(v, g);
+}
+
+unsigned char GfApplyGamma(const unsigned char &v, double g)
+{
+    return (unsigned char) (pow((v / 255.0), g) * 255);
+}
+
+
 template <class T>
 static T Gf_ConvertLinearToDisplay(const T& v) {
     return GfApplyGamma(v,1.0/_DisplayGamma);
@@ -91,11 +102,16 @@ GfVec3h GfConvertLinearToDisplay(const GfVec3h &v) { return Gf_ConvertLinearToDi
 GfVec4f GfConvertLinearToDisplay(const GfVec4f &v) { return Gf_ConvertLinearToDisplay(v); }
 GfVec4d GfConvertLinearToDisplay(const GfVec4d &v) { return Gf_ConvertLinearToDisplay(v); }
 GfVec4h GfConvertLinearToDisplay(const GfVec4h &v) { return Gf_ConvertLinearToDisplay(v); }
+float GfConvertLinearToDisplay(const float &v)   { return Gf_ConvertLinearToDisplay(v); }
+unsigned char GfConvertLinearToDisplay(const unsigned char &v) { return Gf_ConvertLinearToDisplay(v); }
+
 GfVec3f GfConvertDisplayToLinear(const GfVec3f &v) { return Gf_ConvertDisplayToLinear(v); }
 GfVec3d GfConvertDisplayToLinear(const GfVec3d &v) { return Gf_ConvertDisplayToLinear(v); }
 GfVec3h GfConvertDisplayToLinear(const GfVec3h &v) { return Gf_ConvertDisplayToLinear(v); }
 GfVec4f GfConvertDisplayToLinear(const GfVec4f &v) { return Gf_ConvertDisplayToLinear(v); }
 GfVec4d GfConvertDisplayToLinear(const GfVec4d &v) { return Gf_ConvertDisplayToLinear(v); }
 GfVec4h GfConvertDisplayToLinear(const GfVec4h &v) { return Gf_ConvertDisplayToLinear(v); }
+float GfConvertDisplayToLinear(const float &v)   { return Gf_ConvertDisplayToLinear(v); }
+unsigned char GfConvertDisplayToLinear(const unsigned char &v) { return Gf_ConvertDisplayToLinear(v); }
 
 PXR_NAMESPACE_CLOSE_SCOPE
