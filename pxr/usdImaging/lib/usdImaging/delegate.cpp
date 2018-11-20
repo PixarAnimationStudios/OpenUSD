@@ -1304,7 +1304,15 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
         // may or may not find an associated primInfo for every prim in
         // affectedPrims. If we find no primInfo, the prim that was previously
         // affected by this refresh no longer exists and can be ignored.
+        //
+        // It is also possible that we find a primInfo, but the prim it refers
+        // to has been deleted from the stage and is no longer valid. Such a
+        // prim may end up in the affectedPrims during the refresh of a
+        // collection that previously pointed directly to a prim that has
+        // been deleted. The primInfo for this prim will still be in the index
+        // because we haven't had the index process removals yet.
         if (primInfo != nullptr &&
+            primInfo->usdPrim.IsValid() &&
             TF_VERIFY(primInfo->adapter, "%s", affectedPrimPath.GetText())) {
             _AdapterSharedPtr &adapter = primInfo->adapter;
 
