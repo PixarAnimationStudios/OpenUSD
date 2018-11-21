@@ -46,18 +46,16 @@ function(_copy_headers LIBRARY_NAME)
         foreach (f ${_args_FILES})
             set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
             set(outfile "${header_dest_dir}/${f}")
-            list(APPEND files_copied ${outfile})
+            get_filename_component(dir_to_create "${outfile}" DIRECTORY)
             add_custom_command(
                 OUTPUT ${outfile}
-                COMMAND
-                    "${PYTHON_EXECUTABLE}"
-                    "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.py"
-                    "${infile}"
-                    "${outfile}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
+                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
                 MAIN_DEPENDENCY "${infile}"
                 COMMENT "Copying ${f} ..."
                 VERBATIM
-        )
+            )
+            list(APPEND files_copied ${outfile})
         endforeach()
     endif()
 
@@ -106,7 +104,7 @@ endfunction() # _plugInfo_subst
 function(_pxrDoxyConfig_subst)
     configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile.in
                    ${CMAKE_BINARY_DIR}/Doxyfile
-    )  
+    )
 endfunction()
 
 # Install compiled python files alongside the python object,
@@ -128,7 +126,7 @@ function(_install_python LIBRARY_NAME)
     set(files_copied "")
     foreach(file ${ip_FILES})
         set(filesToInstall "")
-        set(installDest 
+        set(installDest
             "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}")
 
         # Only attempt to compile .py files. Files like plugInfo.json may also
@@ -165,7 +163,7 @@ function(_install_python LIBRARY_NAME)
             message(FATAL_ERROR "Cannot have non-Python file ${file} in PYTHON_FILES.")
         endif()
 
-        # Note that we always install under lib/python/pxr, even if we are in 
+        # Note that we always install under lib/python/pxr, even if we are in
         # the third_party project. This means the import will always look like
         # 'from pxr import X'. We need to do this per-loop iteration because
         # the installDest may be different due to the presence of subdirs.
@@ -205,7 +203,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     _get_resources_dir(${pluginInstallPrefix} ${NAME} resourcesPath)
 
     foreach(resourceFile ${ARGN})
-        # A resource file may be specified like <src file>:<dst file> to 
+        # A resource file may be specified like <src file>:<dst file> to
         # indicate that it should be installed to a different location in
         # the resources area. Check if this is the case.
         string(REPLACE ":" ";" resourceFile "${resourceFile}")
@@ -222,7 +220,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
 
         get_filename_component(dirPath ${resourceDestFile} PATH)
         get_filename_component(destFileName ${resourceDestFile} NAME)
-        
+
         # plugInfo.json go through an initial template substitution step files
         # install it from the binary (gen) directory specified by the full
         # path. Otherwise, use the original relative path which is relative to
@@ -320,15 +318,15 @@ function(_get_install_dir path out)
 endfunction() # get_install_dir
 
 function(_get_resources_dir_name output)
-    set(${output} 
-        resources 
+    set(${output}
+        resources
         PARENT_SCOPE)
 endfunction() # _get_resources_dir_name
 
 function(_get_resources_dir pluginsPrefix pluginName output)
     _get_resources_dir_name(resourcesDir)
-    set(${output} 
-        ${pluginsPrefix}/${pluginName}/${resourcesDir} 
+    set(${output}
+        ${pluginsPrefix}/${pluginName}/${resourcesDir}
         PARENT_SCOPE)
 endfunction() # _get_resources_dir
 
@@ -643,7 +641,7 @@ function(_pxr_install_rpath rpathRef NAME)
     endforeach()
 
     set_target_properties(${NAME}
-        PROPERTIES 
+        PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
             INSTALL_RPATH "${final}"
     )
@@ -913,7 +911,7 @@ function(_pxr_python_module NAME)
     # Install .ui files.
     if (args_PYSIDE_UI_FILES)
         _install_pyside_ui_files(${LIBRARY_NAME} ${args_PYSIDE_UI_FILES})
-    endif()        
+    endif()
 
     # If no C++ files then we're done.
     if (NOT args_CPPFILES)
@@ -935,7 +933,7 @@ function(_pxr_python_module NAME)
 
     # Convert the name of the library into the python module name
     # , e.g. _tf.so -> Tf. This is later used to determine the eventual
-    # install location as well as for inclusion into the __init__.py's 
+    # install location as well as for inclusion into the __init__.py's
     # __all__ list.
     _get_python_module_name(${LIBRARY_NAME} pyModuleName)
 
@@ -945,7 +943,7 @@ function(_pxr_python_module NAME)
     )
 
     # Always install under the 'pxr' module, rather than base on the
-    # project name. This makes importing consistent, e.g. 
+    # project name. This makes importing consistent, e.g.
     # 'from pxr import X'. Additionally, python libraries always install
     # into the default lib install, not into the third_party subdirectory
     # or similar.
@@ -1027,7 +1025,7 @@ function(_pxr_python_module NAME)
         LIBRARY DESTINATION ${libInstallPrefix}
         RUNTIME DESTINATION ${libInstallPrefix}
     )
-    
+
     if(NOT "${PXR_PREFIX}" STREQUAL "")
         if(args_PRECOMPILED_HEADERS)
             _pxr_enable_precompiled_header(${LIBRARY_NAME}
@@ -1190,7 +1188,7 @@ function(_pxr_library NAME)
     #
     # If we're building a monolithic library or individual static libraries,
     # these libraries are not separately loadable at runtime. In these cases,
-    # we don't need to specify the library's location, so we leave 
+    # we don't need to specify the library's location, so we leave
     # pluginToLibraryPath empty.
     if(";${PXR_CORE_LIBS};" MATCHES ";${NAME};")
         if (NOT _building_monolithic AND NOT args_TYPE STREQUAL "STATIC")
