@@ -42,6 +42,8 @@
 
 #include <boost/tuple/tuple.hpp>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cout;

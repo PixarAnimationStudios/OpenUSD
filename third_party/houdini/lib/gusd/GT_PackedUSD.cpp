@@ -52,6 +52,7 @@
 #include <pxr/usd/usdGeom/xformCache.h>
 
 #include <unordered_map>
+#include <iostream>
 
 using std::cout;
 using std::cerr;

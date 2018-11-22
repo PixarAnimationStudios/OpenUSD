@@ -40,6 +40,8 @@
 #include <GT/GT_DAConstant.h>
 #include <GT/GT_DAConstantValue.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cerr;

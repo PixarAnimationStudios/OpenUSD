@@ -45,6 +45,8 @@
 #include <SYS/SYS_Version.h>
 #include <UT/UT_HDKVersion.h>
 
+#include <iostream>
+
 // 0x100501BE corresponds to 16.5.446.
 #if SYS_VERSION_FULL_INT >= 0x100501BE
 #include <GT/GT_PackedAlembic.h>

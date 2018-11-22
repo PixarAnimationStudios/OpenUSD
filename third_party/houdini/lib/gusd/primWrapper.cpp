@@ -37,6 +37,8 @@
 #include <GT/GT_DABool.h>
 #include <SYS/SYS_Version.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cout;
