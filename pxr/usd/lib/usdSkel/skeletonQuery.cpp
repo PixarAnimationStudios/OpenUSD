@@ -227,14 +227,7 @@ bool
 UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtMatrix4dArray* xforms,
                                                  UsdTimeCode time) const
 {
-    if(!_animQuery) {
-        // All transforms would be identity.
-        xforms->assign(_definition->GetTopology().GetNumJoints(),
-                       GfMatrix4d(1));
-        return true;
-    }
-
-    if(_ComputeJointSkelTransforms(xforms, time, /*rest*/ false)) {
+    if (ComputeJointSkelTransforms(xforms, time)) {
 
         // XXX: Since this is a fairly frequent computation request,
         // skel-space inverse rest transforms are cached on-demand
