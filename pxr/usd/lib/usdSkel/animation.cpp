@@ -249,3 +249,43 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdSkel/utils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdSkelAnimation::GetTransforms(VtMatrix4dArray* xforms, UsdTimeCode time) const
+{
+    VtVec3fArray translations;
+    if (GetTranslationsAttr().Get(&translations, time)) {
+        VtQuatfArray rotations;
+        if (GetRotationsAttr().Get(&rotations, time)) {
+            VtVec3hArray scales;
+            if (GetScalesAttr().Get(&scales, time)) {
+                return UsdSkelMakeTransforms(translations, rotations,
+                                             scales, xforms);
+            }
+        }
+    }
+    return false;
+}
+
+
+bool
+UsdSkelAnimation::SetTransforms(const VtMatrix4dArray& xforms,
+                                UsdTimeCode time) const
+{
+    VtVec3fArray translations;
+    VtQuatfArray rotations;
+    VtVec3hArray scales;
+    if (UsdSkelDecomposeTransforms(xforms, &translations,
+                                   &rotations, &scales)) {
+        return GetTranslationsAttr().Set(translations, time) &
+               GetRotationsAttr().Set(rotations, time) &
+               GetScalesAttr().Set(scales, time);
+    }
+    return false;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

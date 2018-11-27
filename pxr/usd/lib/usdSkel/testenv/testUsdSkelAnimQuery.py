@@ -81,10 +81,7 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
                           for _ in xrange(numFrames)]
 
         for frame,xforms in enumerate(xformsPerFrame):
-            t,r,s = UsdSkel.DecomposeTransforms(Vt.Matrix4dArray(xforms))
-            anim.GetTranslationsAttr().Set(t, frame)
-            anim.GetRotationsAttr().Set(r, frame)
-            anim.GetScalesAttr().Set(s, frame)
+            anim.SetTransforms(Vt.Matrix4dArray(xforms), frame)
 
         weightsPerFrame = [[random.random() for _ in xrange(len(blendshapes))]
                            for _ in xrange(numFrames)]
@@ -108,6 +105,9 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         for frame,xforms in enumerate(xformsPerFrame):
 
             computedXforms = query.ComputeJointLocalTransforms(frame)
+            self.assertArrayIsClose(computedXforms, xforms)
+
+            computedXforms = anim.GetTransforms(frame)
             self.assertArrayIsClose(computedXforms, xforms)
 
         for frame,weights in enumerate(weightsPerFrame):
