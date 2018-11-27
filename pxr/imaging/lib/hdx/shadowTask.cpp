@@ -91,7 +91,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     const bool dirtyParams = dirtyState.bits & HdChangeTracker::DirtyParams;
     if (dirtyParams) {
         // Extract the new shadow task params from exec
-        if (!_GetSceneDelegateValue(HdTokens->params, &_params)) {
+        if (!_GetTaskParams(delegate, &_params)) {
             return;
         }
     }

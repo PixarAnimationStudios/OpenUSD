@@ -73,7 +73,7 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
 
     bool paramsChanged = bits & HdChangeTracker::DirtyParams;
     if (paramsChanged) {
-        _GetSceneDelegateValue(HdTokens->params, &_params);
+        _GetTaskParams(delegate, &_params);
     }
 
     HdxSelectionTrackerSharedPtr sel;

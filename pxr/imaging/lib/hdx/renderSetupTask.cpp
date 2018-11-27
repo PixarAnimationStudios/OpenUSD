@@ -82,7 +82,7 @@ HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
     if (bits & HdChangeTracker::DirtyParams) {
         HdxRenderTaskParams params;
 
-        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetTaskParams(delegate, &params)) {
             return;
         }
 

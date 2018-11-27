@@ -93,7 +93,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     if (dirtyState.bits & HdChangeTracker::DirtyParams) {
         HdxSimpleLightTaskParams params;
-        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetTaskParams(delegate, &params)) {
             return;
         }
 

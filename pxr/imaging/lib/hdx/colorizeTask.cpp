@@ -173,7 +173,7 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
     if (bits & HdChangeTracker::DirtyParams) {
         HdxColorizeTaskParams params;
 
-        if (_GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (_GetTaskParams(delegate, &params)) {
             _aovName = params.aovName;
             _renderBufferId = params.renderBuffer;
             validate = true;

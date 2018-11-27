@@ -114,7 +114,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     if (bits & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;
 
-        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetTaskParams(delegate, &params)) {
             return;
         }
 

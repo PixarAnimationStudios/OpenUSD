@@ -87,8 +87,19 @@ protected:
     /// outValue must not be null.
     template <class T>
     static bool _GetTaskContextData(HdTaskContext const* ctx,
-                                    TfToken const &id,
-                                    T *outValue);
+                                    TfToken const& id,
+                                    T* outValue);
+
+    /// Extracts a typed value out of the task context at the given id.
+    /// If the id is missing or of the wrong type, the code will
+    /// throw a verify error, return false and outValue will be unmodified.
+    /// in case of success, the return value is true and the value is
+    /// copied into outValue.
+    ///
+    /// outValue must not be null.
+    template <class T>
+    bool _GetTaskParams(HdSceneDelegate* delegate,
+                        T* outValue);
 
 private:
     SdfPath _id;
@@ -99,7 +110,8 @@ private:
 };
 
 // Inline template body
-template <class T> bool
+template <class T>
+bool
 HdTask::_GetTaskContextData(HdTaskContext const* ctx,
                             TfToken const& id,
                             T* outValue)
@@ -118,7 +130,29 @@ HdTask::_GetTaskContextData(HdTaskContext const* ctx,
 
     const VtValue &valueVt = (valueIt->second);
     if (!valueVt.IsHolding<T>()) {
-        TF_CODING_ERROR("Token %s in task context is of mismatched type", id.GetText());
+        TF_CODING_ERROR("Token %s in task context is of mismatched type",
+                        id.GetText());
+        return false;
+    }
+
+    *outValue = valueVt.UncheckedGet<T>();
+
+    return true;
+}
+
+template <class T>
+bool
+HdTask::_GetTaskParams(HdSceneDelegate* delegate,
+                       T*               outValue)
+{
+    TF_DEV_AXIOM(outValue != nullptr);
+
+    SdfPath const& taskId = GetId();
+
+    VtValue valueVt = delegate->Get(taskId, HdTokens->params);
+    if (!valueVt.IsHolding<T>()) {
+        TF_CODING_ERROR("Task params for %s is of unexpected type",
+                        taskId.GetText());
         return false;
     }
 
@@ -143,6 +177,7 @@ public:
     HdSceneDelegate*       GetDelegate()       { return _delegate; }
 
 protected:
+
     struct _TaskDirtyState
     {
         HdDirtyBits bits;
@@ -162,38 +197,9 @@ protected:
     HD_API
     void _GetTaskDirtyState(TfToken const& collectionId, _TaskDirtyState *dirtyState);
 
-    /// Extracts a typed value out of the task context at the given id.
-    /// If the id is missing or of the wrong type, the code will
-    /// throw a verify error, return false and outValue will be unmodified.
-    /// in case of success, the return value is true and the value is
-    /// copied into outValue.
-    ///
-    /// outValue must not be null.
-    template <class T> bool _GetSceneDelegateValue(TfToken const&valueId, T* outValue);
-
 private:
     HdSceneDelegate* _delegate;
 };
-
-template <class T> bool
-HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
-{
-    TF_DEV_AXIOM(outValue != nullptr);
-
-    SdfPath const& taskId = GetId();
-    HdSceneDelegate* delegate = GetDelegate();
-
-    VtValue valueVt = delegate->Get(taskId, valueId);
-    if (!valueVt.IsHolding<T>()) {
-        TF_CODING_ERROR("Token %s from scene delegate is of mismatched type", valueId.GetText());
-        return false;
-    }
-
-    *outValue = valueVt.UncheckedGet<T>();
-
-    return true;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_TASK_H
