@@ -85,10 +85,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
-    _TaskDirtyState dirtyState;
-    _GetTaskDirtyState(HdTokens->geometry, &dirtyState);
-
-    const bool dirtyParams = dirtyState.bits & HdChangeTracker::DirtyParams;
+    const bool dirtyParams = (*dirtyBits) & HdChangeTracker::DirtyParams;
     if (dirtyParams) {
         // Extract the new shadow task params from exec
         if (!_GetTaskParams(delegate, &_params)) {

@@ -95,6 +95,9 @@ private:
     // Viewer's Render Style
     HdCullStyle _cullStyle;
 
+    // Alpha sample alpha to coverage
+    bool _enableSampleAlphaToCoverage;
+
     HdxDrawTargetTask()                                      = delete;
     HdxDrawTargetTask(const HdxDrawTargetTask &)             = delete;
     HdxDrawTargetTask &operator =(const HdxDrawTargetTask &) = delete;

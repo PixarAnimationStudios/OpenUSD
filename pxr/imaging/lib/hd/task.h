@@ -173,32 +173,6 @@ class HdSceneTask : public HdTask {
 public:
     HD_API
     HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id);
-
-    HdSceneDelegate*       GetDelegate()       { return _delegate; }
-
-protected:
-
-    struct _TaskDirtyState
-    {
-        HdDirtyBits bits;
-        int         collectionVersion;
-    };
-
-    /// Obtains the set of dirty bits for the task.
-    HD_API
-    HdDirtyBits _GetTaskDirtyBits();
-
-    /// Obtains the set of dirty bits of the task
-    /// and also returns the current collection version number for the
-    /// given collectionId.
-    /// Both results are returned in the dirtyState parameter.
-    ///
-    /// dirtyState must not be null
-    HD_API
-    void _GetTaskDirtyState(TfToken const& collectionId, _TaskDirtyState *dirtyState);
-
-private:
-    HdSceneDelegate* _delegate;
 };
 PXR_NAMESPACE_CLOSE_SCOPE
 

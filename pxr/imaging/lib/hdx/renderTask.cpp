@@ -66,17 +66,17 @@ HdxRenderTask::IsConverged() const
 
 void
 HdxRenderTask::Sync(HdSceneDelegate* delegate,
-                    HdTaskContext* ctx,
-                    HdDirtyBits* dirtyBits)
+                    HdTaskContext*   ctx,
+                    HdDirtyBits*     dirtyBits)
 {
     HD_TRACE_FUNCTION();
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
+    HdDirtyBits bits = *dirtyBits;
 
     if (bits & HdChangeTracker::DirtyCollection) {
 
         HdRprimCollectionVector collections;
-        VtValue val = GetDelegate()->Get(GetId(), HdTokens->collection);
+        VtValue val = delegate->Get(GetId(), HdTokens->collection);
 
         if (val.IsHolding<HdRprimCollection>()) {
             collections.push_back(val.UncheckedGet<HdRprimCollection>());
@@ -95,7 +95,7 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
         } else {
             // reconstruct render passes.
             _passes.clear();
-            HdRenderIndex &index = GetDelegate()->GetRenderIndex();
+            HdRenderIndex &index = delegate->GetRenderIndex();
             TF_FOR_ALL(it, collections) {
                 _passes.push_back(HdRenderPassSharedPtr(
                     index.GetRenderDelegate()->CreateRenderPass(&index, *it)));
@@ -109,7 +109,9 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
 
         // if HdxRenderTaskParams is set on this task, create an
         // HdxRenderSetupTask to unpack them internally.
-        VtValue valueVt = GetDelegate()->Get(GetId(), HdTokens->params);
+        //
+        // As params is optional, the base class helpper can't be used.
+        VtValue valueVt = delegate->Get(GetId(), HdTokens->params);
         if (valueVt.IsHolding<HdxRenderTaskParams>()) {
             params = valueVt.UncheckedGet<HdxRenderTaskParams>();
 
@@ -119,10 +121,10 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
                 // this setup task isn't indexed, so there's no concern
                 // about name conflicts.
                 _setupTask.reset(
-                    new HdxRenderSetupTask(GetDelegate(), GetId()));
+                    new HdxRenderSetupTask(delegate, GetId()));
             }
 
-            _setupTask->SyncParams(params);
+            _setupTask->SyncParams(delegate, params);
 
         } else {
             // If params are not set, expect the renderpass state to be passed
@@ -131,9 +133,9 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
     }
 
     if (_setupTask) {
-        _setupTask->SyncAovBindings();
-        _setupTask->SyncCamera();
-        _setupTask->SyncRenderPassState();
+        _setupTask->SyncAovBindings(delegate);
+        _setupTask->SyncCamera(delegate);
+        _setupTask->SyncRenderPassState(delegate);
     }
 
     // sync render passes

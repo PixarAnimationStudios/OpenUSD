@@ -91,6 +91,7 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
  , _depthBiasSlopeFactor(1.0f)
  , _depthFunc(HdCmpFuncLEqual)
  , _cullStyle(HdCullStyleBackUnlessDoubleSided)
+ , _enableSampleAlphaToCoverage(true)
 {
 }
 
@@ -109,9 +110,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("GlimRg", __ARCH_PRETTY_FUNCTION__);
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
-    if (bits & HdChangeTracker::DirtyParams) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;
 
         if (!_GetTaskParams(delegate, &params)) {
@@ -301,6 +300,20 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         renderPass->Sync();
     }
 
+    // XXX: Long-term Alpha to Coverage will be a render style on the
+    // task.  However, as there isn't a fallback we current force it
+    // enabled, unless a client chooses to manage the setting itself
+    // (aka usdImaging).
+
+    // XXX: When rendering draw targets we need alpha to coverage
+    // at least until we support a transparency pass
+    _enableSampleAlphaToCoverage = true;
+    if (delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
+        if (TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
+            _enableSampleAlphaToCoverage = false;
+        }
+    }
+
     *dirtyBits = HdChangeTracker::Clean;
 }
 
@@ -323,18 +336,16 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 
     // XXX: Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
-    // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
+    // enabled, unless a client chooses to manage the setting itself
+    // (aka usdImaging).
 
     // XXX: When rendering draw targets we need alpha to coverage
     // at least until we support a transparency pass
-    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-    if (GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
-        if (!TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
-            glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        } else {
-            glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        }
+    if (_enableSampleAlphaToCoverage) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    } else {
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
 
     glEnable(GL_PROGRAM_POINT_SIZE);

@@ -167,10 +167,8 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
     bool validate = false;
-    if (bits & HdChangeTracker::DirtyParams) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxColorizeTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
@@ -180,7 +178,7 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
-    HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     _renderBuffer = static_cast<HdRenderBuffer*>(
         renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer, _renderBufferId));
 

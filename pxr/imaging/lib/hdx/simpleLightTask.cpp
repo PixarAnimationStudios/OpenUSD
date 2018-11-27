@@ -86,12 +86,10 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     (*ctx)[HdxTokens->lightingShader] =
         boost::dynamic_pointer_cast<HdStLightingShader>(_lightingShader);
 
-    _TaskDirtyState dirtyState;
-    _GetTaskDirtyState(HdTokens->geometry, &dirtyState);
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
-    if (dirtyState.bits & HdChangeTracker::DirtyParams) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxSimpleLightTaskParams params;
         if (!_GetTaskParams(delegate, &params)) {
             return;

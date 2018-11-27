@@ -48,31 +48,7 @@ HdTask::~HdTask()
 
 HdSceneTask::HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id)
  : HdTask(id)
- , _delegate(delegate)
 {
-}
-
-HdDirtyBits
-HdSceneTask::_GetTaskDirtyBits()
-{
-    SdfPath const& id = GetId();
-    HdSceneDelegate* delegate = GetDelegate();
-    HdChangeTracker& changeTracker = delegate->GetRenderIndex().GetChangeTracker();
-
-    return changeTracker.GetTaskDirtyBits(id);
-}
-
-void
-HdSceneTask::_GetTaskDirtyState(TfToken const& collectionId, _TaskDirtyState* dirtyState)
-{
-    TF_DEV_AXIOM(dirtyState != nullptr);
-
-    SdfPath const& id = GetId();
-    HdSceneDelegate* delegate = GetDelegate();
-    HdChangeTracker& changeTracker = delegate->GetRenderIndex().GetChangeTracker();
-
-    dirtyState->bits              = changeTracker.GetTaskDirtyBits(id);
-    dirtyState->collectionVersion = changeTracker.GetCollectionVersion(collectionId);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

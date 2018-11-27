@@ -77,21 +77,19 @@ HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
-    if (bits & HdChangeTracker::DirtyParams) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxRenderTaskParams params;
 
         if (!_GetTaskParams(delegate, &params)) {
             return;
         }
 
-        SyncParams(params);
+        SyncParams(delegate, params);
     }
 
-    SyncAovBindings();
-    SyncCamera();
-    SyncRenderPassState();
+    SyncAovBindings(delegate);
+    SyncCamera(delegate);
+    SyncRenderPassState(delegate);
 
     *dirtyBits = HdChangeTracker::Clean;
 }
@@ -109,10 +107,10 @@ HdxRenderSetupTask::Execute(HdTaskContext* ctx)
 
 
 void
-HdxRenderSetupTask::SyncRenderPassState()
+HdxRenderSetupTask::SyncRenderPassState(HdSceneDelegate* delegate)
 {
     _renderPassState->Sync(
-        GetDelegate()->GetRenderIndex().GetResourceRegistry());
+        delegate->GetRenderIndex().GetResourceRegistry());
 }
 
 void
@@ -135,7 +133,8 @@ HdxRenderSetupTask::_SetHdStRenderPassState(HdxRenderTaskParams const &params,
 }
 
 void
-HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
+HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
+                               HdxRenderTaskParams const &params)
 {
     _renderPassState->SetOverrideColor(params.overrideColor);
     _renderPassState->SetWireframeColor(params.wireframeColor);
@@ -175,7 +174,7 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
     // task.  However, as there isn't a fallback we current force it
     // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
     _renderPassState->SetAlphaToCoverageUseDefault(
-        GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
+        delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
     _renderPassState->SetAlphaToCoverageEnabled(
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
@@ -191,11 +190,11 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
 }
 
 void
-HdxRenderSetupTask::SyncAovBindings()
+HdxRenderSetupTask::SyncAovBindings(HdSceneDelegate* delegate)
 {
     // Walk the aov bindings, resolving the render index references as they're
     // encountered.
-    const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdRenderPassAovBindingVector aovBindings = _aovBindings;
     for (size_t i = 0; i < aovBindings.size(); ++i)
     {
@@ -209,9 +208,9 @@ HdxRenderSetupTask::SyncAovBindings()
 }
 
 void
-HdxRenderSetupTask::SyncCamera()
+HdxRenderSetupTask::SyncCamera(HdSceneDelegate* delegate)
 {
-    const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 
