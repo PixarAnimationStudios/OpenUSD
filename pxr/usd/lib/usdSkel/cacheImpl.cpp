@@ -127,32 +127,6 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelDefinition(const UsdPrim& prim)
 }
 
 
-namespace {
-
-
-/// Return the a resolved prim for a target in \p targets.
-UsdPrim
-_GetFirstTarget(const UsdRelationship& rel, const SdfPathVector& targets)
-{
-    if(targets.size() > 0) {
-        if(targets.size() > 1) {
-            TF_WARN("%s -- relationship has more than one target. "
-                    "Only the first will be used.",
-                    rel.GetPath().GetText());
-        }
-        if(UsdPrim prim = rel.GetStage()->GetPrimAtPath(targets.front()))
-            return prim;
-        
-        TF_WARN("%s -- Invalid target <%s>.",
-                rel.GetPath().GetText(), targets.front().GetText());
-    }
-    return UsdPrim();
-}
-
-
-} // namespace
-
-
 UsdSkelSkeletonQuery
 UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelQuery(const UsdPrim& prim)
 {
