@@ -62,6 +62,8 @@ void wrapUsdSkelTopology()
         .def(init<VtTokenArray>())
 
         .def("GetParent", &This::GetParent)
+
+        .def("IsRoot", &This::IsRoot)
         
         .def("GetParentIndices", &This::GetParentIndices,
              return_value_policy<return_by_value>())
@@ -70,6 +72,6 @@ void wrapUsdSkelTopology()
 
         .def("__len__", &This::GetNumJoints)
 
-        .def("Validate", &This::Validate)
+        .def("Validate", &_Validate)
         ;
 }
