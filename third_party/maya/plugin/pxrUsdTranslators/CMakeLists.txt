@@ -11,7 +11,6 @@ pxr_plugin(${PXR_PACKAGE}
         tf
         usd
         usdGeom
-        usdImaging
         usdMaya
         usdShade
         usdSkel

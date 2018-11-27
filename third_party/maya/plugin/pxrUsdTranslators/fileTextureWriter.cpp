@@ -43,7 +43,6 @@
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdUtils/pipeline.h"
-#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -72,6 +71,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outColor)
     (wrapU)
     (wrapV)
+
+    // XXX: We duplicate these tokens here rather than create a dependency on
+    // usdImaging in case the plugin is being built with imaging disabled.
+    // If/when they move out of usdImaging to a place that is always available,
+    // they should be pulled from there instead.
+    (UsdUVTexture)
+    (UsdPrimvarReader_float2)
 
     // UsdPrimvarReader_float2 Prim Name
     ((PrimvarReaderShaderName, "TexCoordReader"))
@@ -111,7 +117,7 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(texShaderSchema);
 
-    texShaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdUVTexture));
+    texShaderSchema.CreateIdAttr(VtValue(_tokens->UsdUVTexture));
 
     _usdPrim = texShaderSchema.GetPrim();
     TF_AXIOM(_usdPrim);
@@ -128,7 +134,7 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         UsdShadeShader::Define(GetUsdStage(), primvarReaderShaderPath);
 
     primvarReaderShaderSchema.CreateIdAttr(
-        VtValue(UsdImagingTokens->UsdPrimvarReader_float2));
+        VtValue(_tokens->UsdPrimvarReader_float2));
 
     // XXX: We'll eventually need to to determine which UV set to use if we're
     // not using the default (i.e. "map1" in Maya -> "st" in USD).
