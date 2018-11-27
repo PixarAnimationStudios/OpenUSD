@@ -44,6 +44,10 @@ HdxDrawTargetResolveTask::HdxDrawTargetResolveTask(HdSceneDelegate* delegate,
 {
 }
 
+HdxDrawTargetResolveTask::~HdxDrawTargetResolveTask()
+{
+}
+
 void
 HdxDrawTargetResolveTask::Sync(HdSceneDelegate* delegate,
                                HdTaskContext* ctx,

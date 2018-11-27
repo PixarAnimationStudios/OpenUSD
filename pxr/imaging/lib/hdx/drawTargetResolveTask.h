@@ -33,8 +33,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdxDrawTargetResolveTask  : public HdSceneTask {
 public:
+    HDX_API
     HdxDrawTargetResolveTask(HdSceneDelegate* delegate, SdfPath const& id);
-    virtual ~HdxDrawTargetResolveTask() = default;
+
+    HDX_API
+    virtual ~HdxDrawTargetResolveTask();
 
     /// Sync the render pass resources
     HDX_API

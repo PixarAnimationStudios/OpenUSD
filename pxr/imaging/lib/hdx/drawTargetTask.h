@@ -49,6 +49,8 @@ class HdxDrawTargetTask  : public HdSceneTask {
 public:
     HDX_API
     HdxDrawTargetTask(HdSceneDelegate* delegate, SdfPath const& id);
+
+    HDX_API
     virtual ~HdxDrawTargetTask();
 
     /// Sync the render pass resources
