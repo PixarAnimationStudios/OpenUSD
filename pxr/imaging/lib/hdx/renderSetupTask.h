@@ -59,7 +59,7 @@ class HdStRenderPassState;
 /// create a render setup task internally.  See the HdxRenderTask documentation
 /// for details.
 ///
-class HdxRenderSetupTask : public HdSceneTask {
+class HdxRenderSetupTask : public HdTask {
 public:
     HDX_API
     HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id);
@@ -112,6 +112,9 @@ private:
 
     void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
                                  HdStRenderPassState *renderPassState);
+
+    HdRenderPassStateSharedPtr &_GetRenderPassState(HdSceneDelegate* delegate);
+
 
     HdxRenderSetupTask() = delete;
     HdxRenderSetupTask(const HdxRenderSetupTask &) = delete;

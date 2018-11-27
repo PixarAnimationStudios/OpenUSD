@@ -53,7 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStShaderCodeSharedPtr HdxShadowTask::_overrideShader;
 
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdSceneTask(delegate, id)
+    : HdTask(id)
     , _passes()
     , _renderPassStates()
     , _params()

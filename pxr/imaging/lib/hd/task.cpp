@@ -42,14 +42,5 @@ HdTask::~HdTask()
 {
 }
 
-// -------------------------------------------------------------------------- //
-// HdSceneTask Definitions 
-// -------------------------------------------------------------------------- //
-
-HdSceneTask::HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id)
- : HdTask(id)
-{
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

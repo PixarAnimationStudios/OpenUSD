@@ -77,7 +77,7 @@ HdxDrawTargetTask_GetResolvedDepthFunc(HdCompareFunction depthFunc,
 
 HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
- : HdSceneTask(delegate, id)
+ : HdTask(id)
  , _currentDrawTargetSetVersion(0)
  , _renderPassesInfo()
  , _renderPasses()

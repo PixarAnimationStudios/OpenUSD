@@ -51,7 +51,7 @@ static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
 // -------------------------------------------------------------------------- //
 
 HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdSceneTask(delegate, id) 
+    : HdTask(id) 
     , _cameraId()
     , _lightIds()
     , _lightIncludePaths()

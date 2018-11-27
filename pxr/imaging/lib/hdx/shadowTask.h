@@ -99,7 +99,7 @@ struct HdxShadowTaskParams {
 ///
 /// A task for generating shadow maps.
 ///
-class HdxShadowTask : public HdSceneTask {
+class HdxShadowTask : public HdTask {
 public:
     HDX_API
     HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);

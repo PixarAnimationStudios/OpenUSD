@@ -43,7 +43,7 @@ typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 
 HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
                                    SdfPath const& id)
-    : HdSceneTask(delegate, id)
+    : HdTask(id)
     , _lastVersion(-1)
     , _hasSelection(false)
     , _params({false, GfVec4f(), GfVec4f()})

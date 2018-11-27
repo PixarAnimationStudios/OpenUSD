@@ -53,7 +53,7 @@ typedef boost::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixCompu
 TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 
 
-class HdxSimpleLightTask : public HdSceneTask {
+class HdxSimpleLightTask : public HdTask {
 public:
     HDX_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);

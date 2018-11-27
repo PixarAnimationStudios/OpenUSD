@@ -44,7 +44,7 @@ class HdRenderBuffer;
 /// GL buffer, possibly with a "colorizing" step (for example, mapping
 /// normals to RGB, or texture coords to RG).
 ///
-class HdxColorizeTask : public HdSceneTask
+class HdxColorizeTask : public HdTask
 {
 public:
     HDX_API

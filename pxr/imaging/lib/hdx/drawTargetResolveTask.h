@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdxDrawTargetResolveTask  : public HdSceneTask {
+class HdxDrawTargetResolveTask  : public HdTask {
 public:
     HDX_API
     HdxDrawTargetResolveTask(HdSceneDelegate* delegate, SdfPath const& id);

@@ -161,19 +161,6 @@ HdTask::_GetTaskParams(HdSceneDelegate* delegate,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-
-/// \class HdSceneTask
-///
-/// An HdTask that lives in the RenderIndex and is backed by a SceneDelegate.
-/// The default sync
-///
-class HdSceneTask : public HdTask {
-public:
-    HD_API
-    HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id);
-};
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_TASK_H

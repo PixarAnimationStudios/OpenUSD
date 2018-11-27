@@ -62,7 +62,7 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 /// setup task you run before the render task, you can change the render
 /// parameters without incurring a hydra sync or rebuilding any resources.
 ///
-class HdxRenderTask : public HdSceneTask 
+class HdxRenderTask : public HdTask
 {
 public:
     HDX_API

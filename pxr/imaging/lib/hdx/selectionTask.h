@@ -57,7 +57,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 /// extract those buffers and bind them into the current render pass shader to
 /// enable selection highlighting.
 ///
-class HdxSelectionTask : public HdSceneTask {
+class HdxSelectionTask : public HdTask {
 public:
     HDX_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
