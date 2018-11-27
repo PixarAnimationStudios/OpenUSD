@@ -98,6 +98,18 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    VtMatrix4dArray* jointLocalXforms,
                                    const GfMatrix4d* rootInverseXform=nullptr);
 
+/// \overload
+/// Convenience overload that computes inverse transforms internally.
+/// If the inverse of \p xforms are needed elsewhere, it is more efficine to
+/// use the form of this method that takes inverse transforms as an argument,
+/// and compute the inverse transforms separately.
+USDSKEL_API
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   const VtMatrix4dArray& xforms,
+                                   VtMatrix4dArray* jointLocalXforms,
+                                   const GfMatrix4d* rootInverseXform=nullptr);
+
 
 /// \overload
 USDSKEL_API
