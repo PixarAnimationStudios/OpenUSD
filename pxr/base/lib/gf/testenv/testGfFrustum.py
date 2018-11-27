@@ -154,13 +154,13 @@ class TestGfFrustum(unittest.TestCase):
         f = Gf.Frustum()
         self.assertEqual(f.ComputeViewDirection(), Gf.Vec3d(0,0,-1))
         m = Gf.Matrix4d().SetRotate(Gf.Rotation(Gf.Vec3d(1, 1, 1), 30))
-        self.assertTrue(Gf.IsClose(Gf.Frustum().Transform(m).ComputeViewDirection(), \
+        self.assertTrue(Gf.IsClose(Gf.Frustum().Transform(m).ComputeViewDirection(),
             Gf.Vec3d(-0.333333, 0.244017, -0.910684), 0.0001))
 
         f = Gf.Frustum()
         self.assertEqual(f.ComputeUpVector(), Gf.Vec3d(0,1,0))
         m = Gf.Matrix4d().SetRotate(Gf.Rotation(Gf.Vec3d(1, 1, 1), 30))
-        self.assertTrue(Gf.IsClose(Gf.Frustum().Transform(m).ComputeUpVector(), \
+        self.assertTrue(Gf.IsClose(Gf.Frustum().Transform(m).ComputeUpVector(),
             Gf.Vec3d(-0.244017, 0.910684, 0.333333), 0.0001))
 
     def test_ComputeViewFrame(self):
@@ -277,14 +277,14 @@ class TestGfFrustum(unittest.TestCase):
         self.assertFalse(Gf.Frustum().Intersects(Gf.Vec3d(), Gf.Vec3d(1,1,1), Gf.Vec3d(0,0,1)))
         self.assertTrue(Gf.Frustum().Intersects(Gf.Vec3d(), Gf.Vec3d(-1,-1,-1), Gf.Vec3d(0,0,1)))
 
-        self.assertFalse(Gf.Frustum().Intersects(Gf.Vec3d(0, 100, -100), \
-                                        Gf.Vec3d(-100,-100,100), \
+        self.assertFalse(Gf.Frustum().Intersects(Gf.Vec3d(0, 100, -100),
+                                        Gf.Vec3d(-100,-100,100),
                                         Gf.Vec3d(100,-100,100)))
-        self.assertTrue(Gf.Frustum().Intersects(Gf.Vec3d(0, 10, 100), \
-                                    Gf.Vec3d(-100,-10,-10), \
+        self.assertTrue(Gf.Frustum().Intersects(Gf.Vec3d(0, 10, 100),
+                                    Gf.Vec3d(-100,-10,-10),
                                     Gf.Vec3d(100,-10,-10)))
-        self.assertTrue(Gf.Frustum().Intersects(Gf.Vec3d(0, 1, 1), \
-                                    Gf.Vec3d(50,0,-50), \
+        self.assertTrue(Gf.Frustum().Intersects(Gf.Vec3d(0, 1, 1),
+                                    Gf.Vec3d(50,0,-50),
                                     Gf.Vec3d(-50,0,-50)))
 
         self.assertTrue(Gf.Frustum().Intersects(Gf.Vec3d(), Gf.Vec3d(-1,-1,-1), Gf.Vec3d(0,0,1)))

@@ -375,9 +375,9 @@ class TreeItemEditor(QFrame):
 
             dstItems = []
             for row, srcItem in enumerate(variants):
-                dstItem = VariantInfo(srcItem._name,\
-                                      srcItem._choices,\
-                                      srcItem._initialSelection,\
+                dstItem = VariantInfo(srcItem._name,
+                                      srcItem._choices,
+                                      srcItem._initialSelection,
                                       bool(self._checkBoxes[row].checkState()))
                 if dstItem._enabled:
                     dstItem._currentSelection =\
@@ -431,7 +431,7 @@ class TreeItemDelegate(QStyledItemDelegate):
         width = 0
         if index.column() == COL_NAME:
             (style, opt) = self.SetupStyleOption(option, index)
-            margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin,\
+            margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin,
                                        opt, opt.widget) + 1
             width = QFontMetrics(opt.font).width(opt.text) + margin
         return QSize(width, TreeItemEditor.ItemHeight(index))
@@ -529,7 +529,7 @@ class TreeView(QFrame):
         self.switchShowVariants.stateChanged.connect(self.ShowVariants)
 
         self.activeNodeMenu = ActiveNodeMenu(self)
-        self.activeNodeMenu.activeNodeChanged.connect(\
+        self.activeNodeMenu.activeNodeChanged.connect(
             self.OnActiveNodeChanged)
 
         toolbarLayout = QHBoxLayout()
@@ -562,9 +562,9 @@ class TreeView(QFrame):
         self.view.installEventFilter(self)
 
         self.view.setAlternatingRowColors(True)
-        self.view.verticalScrollBar().valueChanged.connect(\
+        self.view.verticalScrollBar().valueChanged.connect(
             self.view.updateGeometries)
-        self.view.horizontalScrollBar().valueChanged.connect(\
+        self.view.horizontalScrollBar().valueChanged.connect(
             self.view.updateGeometries)
 
         self.view.expanded.connect(self.OnExpanded)
@@ -630,7 +630,7 @@ class TreeView(QFrame):
 
         # Exit early if there are no nodes selected OR if there is only one
         # node selected and it matches activeNodeMenu's "Last Selected" node.
-        if len(selectedNodes) == 0 or (len(selectedNodes) == 1 and\
+        if len(selectedNodes) == 0 or (len(selectedNodes) == 1 and
             selectedNodes[0].path() == self.activeNodeMenu.GetLastSelected()):
             return
 
@@ -670,11 +670,11 @@ class TreeView(QFrame):
         try:
             node = model.GetNode()
             if node is not None:
-                node.removeEventCallback(\
+                node.removeEventCallback(
                     (hou.nodeEventType.BeingDeleted,), self.OnNodeDeleted)
-                node.removeEventCallback(\
+                node.removeEventCallback(
                     (hou.nodeEventType.NameChanged,), self.OnNodeRenamed)
-                node.removeEventCallback(\
+                node.removeEventCallback(
                     (hou.nodeEventType.ParmTupleChanged,), self.OnParmChanged)
 
         except RuntimeError:
@@ -700,11 +700,11 @@ class TreeView(QFrame):
         expandState = ''
         node = model.GetNode()
         if node is not None:
-            node.addEventCallback(\
+            node.addEventCallback(
                 (hou.nodeEventType.BeingDeleted,), self.OnNodeDeleted)
-            node.addEventCallback(\
+            node.addEventCallback(
                 (hou.nodeEventType.NameChanged,), self.OnNodeRenamed)
-            node.addEventCallback(\
+            node.addEventCallback(
                 (hou.nodeEventType.ParmTupleChanged,), self.OnParmChanged)
 
             expandState = node.parm(TreeModel.parmUiExpandState).eval()
@@ -887,7 +887,7 @@ class TreeView(QFrame):
                 self.view.expand(parent)
                 if first:
                     first = False
-                    self.view.scrollTo(index,\
+                    self.view.scrollTo(index,
                                        QAbstractItemView.PositionAtCenter)
                 index = parent
                 parent = index.parent()

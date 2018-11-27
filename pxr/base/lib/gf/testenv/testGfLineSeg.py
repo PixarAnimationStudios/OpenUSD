@@ -41,7 +41,7 @@ class TestGfLineSeg(unittest.TestCase):
         l = Gf.LineSeg(Gf.Vec3d(1,2,3), Gf.Vec3d(2,3,4))
         self.assertTrue(l.GetPoint(0) == Gf.Vec3d(1,2,3) and \
             l.direction == (Gf.Vec3d(2,3,4) - Gf.Vec3d(1,2,3)).GetNormalized() and \
-            l.length == Gf.GetLength(Gf.Vec3d(2,3,4)-Gf.Vec3d(1,2,3)), \
+            l.length == Gf.GetLength(Gf.Vec3d(2,3,4)-Gf.Vec3d(1,2,3)),
             err("initializing constructor"))
         
         l = Gf.LineSeg(Gf.Vec3d(0,0,0), Gf.Vec3d(0,1,0))

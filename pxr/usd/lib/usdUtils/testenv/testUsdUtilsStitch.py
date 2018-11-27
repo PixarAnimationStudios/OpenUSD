@@ -83,13 +83,13 @@ class TestUsdUtilsStitch(unittest.TestCase):
         hasStartTimeCode = self.layers[1].startTimeCode != None or \
                            self.layers[2].startTimeCode != None
         
-        self.assertTrue(((hasFps and self.layers[0].framesPerSecond != None) or \
+        self.assertTrue(((hasFps and self.layers[0].framesPerSecond != None) or
                          (not hasFps)), 'Missing fps')
         self.assertTrue((hasFramePrec and self.layers[0].framePrecision != None) or \
                         (not hasFramePrec), 'Missing fps')
-        self.assertTrue(((hasStartTimeCode and self.layers[0].startTimeCode != None) or \
+        self.assertTrue(((hasStartTimeCode and self.layers[0].startTimeCode != None) or
                          (not hasStartTimeCode)), 'Missing fps')
-        self.assertTrue(((hasEndTimeCode and self.layers[0].endTimeCode != None) or \
+        self.assertTrue(((hasEndTimeCode and self.layers[0].endTimeCode != None) or
                          (not hasEndTimeCode)), 'Missing fps')
  
     def test_ValidFileCreation(self):

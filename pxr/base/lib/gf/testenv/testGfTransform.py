@@ -50,12 +50,12 @@ class TestGfBBox3d(unittest.TestCase):
         self.assertTrue(Gf.IsClose(tm[0],m[0],tol) and \
             Gf.IsClose(tm[1],m[1],tol) and \
             Gf.IsClose(tm[2],m[2],tol) and \
-            Gf.IsClose(tm[3],m[3],tol),    \
+            Gf.IsClose(tm[3],m[3],tol),
             err("GfTransform(GfMatrix4d) constructor"))
 
     def test_Properties(self):
         t = Gf.Transform()
-        t.Set(Gf.Vec3d(2,3,4), Gf.Rotation(Gf.Vec3d(1,0,0), 90), \
+        t.Set(Gf.Vec3d(2,3,4), Gf.Rotation(Gf.Vec3d(1,0,0), 90),
             Gf.Vec3d(1,2,3), Gf.Vec3d(), Gf.Rotation(Gf.Vec3d(1,1,1), 30))
         self.assertTrue(t.translation == Gf.Vec3d(2,3,4) and \
             t.rotation == Gf.Rotation(Gf.Vec3d(1,0,0), 90) and \
@@ -74,7 +74,7 @@ class TestGfBBox3d(unittest.TestCase):
         self.assertEqual(t.SetMatrix(Gf.Matrix4d(1)).GetMatrix(), Gf.Matrix4d(1), err("Get/SetMatrix"))
 
         t = Gf.Transform()
-        t.Set(Gf.Vec3d(4,5,6), Gf.Rotation(Gf.Vec3d(1,0,0), 90), Gf.Vec3d(1,2,3), \
+        t.Set(Gf.Vec3d(4,5,6), Gf.Rotation(Gf.Vec3d(1,0,0), 90), Gf.Vec3d(1,2,3),
             Gf.Vec3d(2,3,4), Gf.Rotation(Gf.Vec3d(1,1,1), 30))
         self.assertEqual(eval(repr(t)), t)
         m = t.GetMatrix()

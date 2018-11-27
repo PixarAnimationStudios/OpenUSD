@@ -241,7 +241,7 @@ class TestSdfTypes(unittest.TestCase):
     # old type names.
     def test_ValueTypeNameBackwardsCompatibility(self):
         layer = Sdf.Layer.CreateAnonymous()
-        layer.ImportFromString(\
+        layer.ImportFromString(
     """#sdf 1.4.32
     
     def "OldAttrTest"

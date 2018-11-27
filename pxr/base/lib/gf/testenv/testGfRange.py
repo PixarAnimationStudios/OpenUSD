@@ -212,8 +212,8 @@ class TestGfRange(unittest.TestCase):
             self.assertTrue(len(str(Range())))
 
         # now test GetCorner and GetQuadrant for Gf.Range2f and Gf.Range2d
-        Ranges = [(Gf.Range2f, Gf.Vec2f), \
-                (Gf.Range2d, Gf.Vec2d)]
+        Ranges = [(Gf.Range2f, Gf.Vec2f),
+                  (Gf.Range2d, Gf.Vec2d)]
 
         for Range, Value in Ranges:
             rf = Range.unitSquare
@@ -243,8 +243,8 @@ class TestGfRange(unittest.TestCase):
             print >>sys.stderr, '=== End of expected errors ==='
 
         # now test GetCorner and GetOctant for Gf.Range3f and Gf.Range3d
-        Ranges = [(Gf.Range3f, Gf.Vec3f), \
-                (Gf.Range3d, Gf.Vec3d)]
+        Ranges = [(Gf.Range3f, Gf.Vec3f),
+                  (Gf.Range3d, Gf.Vec3d)]
 
         for Range, Value in Ranges:
             rf = Range.unitCube

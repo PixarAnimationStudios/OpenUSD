@@ -25,7 +25,7 @@
 import argparse, os, sys
 from pxr import UsdUtils, Sdf, Tf 
 
-parser = argparse.ArgumentParser( \
+parser = argparse.ArgumentParser(
             prog=os.path.basename(sys.argv[0]),
             description='Stitch multiple usd file(s) together '
                         'into one using value clips. '

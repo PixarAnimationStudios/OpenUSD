@@ -85,7 +85,7 @@ class TestGfPlane(unittest.TestCase):
             err("GetDistance"))
 
         p = Gf.Plane(Gf.Vec3d(1,1,1), 0)
-        self.assertTrue(Gf.IsClose(p.GetDistance(Gf.Vec3d(0,0,0)), 0, 0.00001), \
+        self.assertTrue(Gf.IsClose(p.GetDistance(Gf.Vec3d(0,0,0)), 0, 0.00001),
             err("GetDistance"))
 
 

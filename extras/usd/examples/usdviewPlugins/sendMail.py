@@ -262,7 +262,7 @@ def _FillDataFromDialog(dialog, fields, imagetype):
 
 def _ValidMailInfo(mailInfo):
     '''This method asserts that the fields are non empty.'''
-    return (mailInfo.sender  and \
-            mailInfo.sendee  and \
-            mailInfo.subject and \
+    return (mailInfo.sender  and
+            mailInfo.sendee  and
+            mailInfo.subject and
             mailInfo.body    )
