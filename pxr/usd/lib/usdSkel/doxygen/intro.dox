@@ -149,10 +149,10 @@ Where _skelLocalToWorldTransform_ is the world space transform of the Skeleton
 primtiive.
     
 
-<b>Computing a Posed Point</b>
+\section UsdSkel_PointSkinning Skinning a Point (Linear Blend Skinning)
 
-In linear blend skinning, the _Skeleton Space_ position of a skinned point is
-computed as:
+Using the terminology established above, in linear blend skinning,
+the _Skeleton Space_ position of a skinned point is computed as:
 
 \code
     skelSpacePoint = geomBindTransform.Transform(localSpacePoint)

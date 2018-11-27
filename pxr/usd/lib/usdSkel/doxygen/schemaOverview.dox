@@ -429,4 +429,9 @@ skinning.
 
 If left undefined, the geom bind transform is assumed to be the identity.
 
+It is often the case that a skinned primitive will also have a transform authored
+using the typical UsdGeomXformable API, in addition to the geomBindTransform.
+If that is the case, the geomBindTransform is still the only transform used for
+skinning.
+
 */

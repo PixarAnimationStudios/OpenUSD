@@ -254,7 +254,7 @@ There are a couple reasons why data is separated in this manner:
   for describing the animation of a Skeleton. For example, it is possible
   to define a "blender" animation type that encodes the blending of animation.
 - It is possible to apply different animations to _instanced assets_.
-  \sa UsdSkel_Instancing
+  \sa \ref UsdSkel_Instancing
 
 \section UsdSkel_BlendShape Blend Shape Schema
 
@@ -478,6 +478,109 @@ the animation at `</Anim1>`, and one at `</A/C>`, referencing the animation
 at `</Anim2>`. The _skel:animationSource_ relationship at `</A/B>` has no
 effect.
 
+\subsection UsdSkel_BindingAPI_JointInfluences BindingAPI: Joint Influences
+
+Joint influences for skinning points are defined by setting the
+_primvars:skel:jointIndices_ and _primvars:skel:jointWeights_ 
+<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Primvar">primvars</a>,
+using the UsdSkelBindingAPI. The _jointIndices_ primvar provides an array giving
+the joint index of an influence, while the _jointWeights_ primvar provides a
+weight value corresponding to each of those indices.
+
+Above, since `</MeshA>` does not specify a _skel:joints_ ordering of its own,
+the joint indices refer to the ordering of the bound Skeleton, and so the joint
+indices refer to joints `A/B` and `A`, respectively. However, `</MeshB>`
+specifies a `skel:joints` property that gives an alternate joint ordering.
+Using that, the indices of `</MeshB>` refer to joints `A/B/C` and `A/B`,
+in that order.
+
+In the common case, the joint influence primvars are configured with _vertex_
+interpolation, and define a fixed number of contiguous influences per point.
+The primvar's _elementSize_ defines the fixed number of influences for each
+point.
+
+_elementSize_ of the primvar. I.e.,
+\f[
+    \begin{bmatrix}
+        w(point_0,influence_0) & w(point_0,influence_1) & \dots & w(point_0,influnce_M) \\
+        w(point_1,influence_1) & \dots & & w(point_1,influence_M) \\
+        \vdots \\
+        w(point_N,influence_0) & \dots & & w(point_N,influence_M)
+    \end{bmatrix} \\
+    \text{where:} \\
+    \begin{align*}
+        w(i,j)   &= \text{weight value of the } j\text{'th influence of point } i \\
+        M        &= \text{primvar elementSize} \\
+        N        &= \text{number of points}
+    \end{align*}
+\f]
+
+If a point has fewer influences than are needed for other points, the unused
+array elements of that point should be filled with 0, both for joint indices
+and for weights.
+
+See 
+    \ref UsdGeomPrimvar for more information on the meaning of primvar interpolation
+and elementSize.
+
+No restrictions are placed on the _elementSize_ when defining joint influences.
+Because such a limit may vary among different DCC applications, we feel that
+it is inappropriate to hard-code any such restrictions at the file storage
+level. Instead, for clients that require a strict limit on the number of
+influences per point, UsdSkel provides helper method,
+\ref UsdSkelResizeInfluences, that can be used to enforce such limits
+within each client, as necessary.
+
+See the \ref UsdSkel_CE_Skinning "skinning coding examples" for an example
+of how resolved joint influences may be read.
+
+The interpolation, element size and the size of the stored arrays must be
+consistent across both the _joindIndices_ and _jointWeights_ primvars.
+
+Aside from _vertex_ interpolation, the only other valid primvar interpolation
+for joint influences is _constant_ interpolation, which is used in defining
+rigid deformations. It is considered an error to apply any other type
+of interpolation.
+
+
+\subsection UsdSkel_BindingAPI_RigidDeformations BindingAPI: Rigid Deformations
+
+In addition to defining influences that vary per point, joint influences may
+also be defined with _constant_ interpolation. In this form, the _jointIndices_
+and _jointWeights_ arrays define a set of influences that apply the same way
+to all points.
+Constant joint influences are supported both as a form of storage optimization,
+as well as for the sake of encoding _rigid deformations_. By identifying
+rigid deformations, some clients may be able to retain instancing properties
+that would otherwise be lost by skinning, by affecting only the transform of
+an instance rather than the deforming points of that instance.
+
+For example:
+
+\code
+def "MeshA" {
+    int[] primvars:skel:jointIndices = [0] (interpolation = "constant")
+    float[] primvars:skel:jointWeights = [1] (interpolation = "constant")
+}
+
+def "MeshB" {
+    int[] primvars:skel:jointIndices = [0,1] (interpolation = "constant")
+    float[] primvars:skel:jointWeights = [0.5,0.5] (interpolation = "constant")
+}
+\endcode
+
+In the example above, `</MeshA>` can be seen as being ridigly constrained to
+infuence 0. `</MeshB>` is rigidly deformed, but it's also important to note
+that even though it is rigidly deformed, it is still influenced by more
+than one joint.
+
+It is not expected that all applications know how to deal with rigid
+deformations. For applications that don't understand them, UsdSkel provides
+the helper methods UsdSkelSkinningQuery::ComputeVaryingJointInfluences and
+\ref UsdSkelExpandConstantInfluencesToVarying, which both provide a means of
+querying rigid deformations as if they had been encoded with per-point
+influences.
+
 \subsection UsdSkel_BindingAPI_StoringInfluences BindingAPI: Storing Influences
 
 To ensure correct skinning, joint influences should be normalized when they
@@ -492,6 +595,24 @@ smallest. The \ref UsdSkelSortInfluences utility can be used to do so.
 UsdSkel does not currently *require* sorted joint influences, but may later
 add such restrictions, since they enable some skinning optimizations, such as 
 allowing a skinning kernel to exit from a point-deformation loop early.
+
+\subsection UsdSkel_BindingAPI_GeomBindTransform BindingAPI: GeomBindTransform
+
+For skinning to apply correctly, the constant _primvars:skel:geomBindTransform_ 
+<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Primvar">primvar</a>
+should be authored on each skinnable primitive, using the UsdSkelBindingAPI.
+This primvar stores the world space transform of a skinned primitive at bind
+time. When skinning is applied, points of each skinnable primitive are
+trasnformed by their _geomBindTransform_ into bind space, after which
+joint transforms are applied, placing the result in either _skeleton space_
+or _world space_.
+
+When a primitive is skinned, any transform on the prim authored by way of the
+typical UsdGeomXformable schema has **no effect** on the rendered results.
+Skinned geometry primitives are rendered in _skeleton space_, rather than
+being transformed back into local gprim space. This avoids double-transform
+problems that can otherwise occur, for example, if an ancestor of both a
+skinnable primitive and its driving Skeleton is moved.
 
 \subsection UsdSkel_BindingAPI_BlendShapes BindingAPI: Binding Blend Shapes
 
