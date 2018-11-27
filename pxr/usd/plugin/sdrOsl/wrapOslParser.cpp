@@ -56,8 +56,5 @@ void wrapOslParser()
         .def("Parse", &_Parse, return_value_policy<manage_new_object>())
         .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
         .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
-        .add_property("DiscoveryTypes",
-            make_getter(&This::DiscoveryTypes, copyRefPolicy))
-        .def_readonly("SourceType", &This::SourceType.GetString())
         ;
 }
