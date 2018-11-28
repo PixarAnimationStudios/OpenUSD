@@ -258,6 +258,7 @@ private:
 ///
 class SdfAttributeViewPredicate : public SdfGenericSpecViewPredicate {
 public:
+    SDF_API
     SdfAttributeViewPredicate();
 };
 
@@ -267,6 +268,7 @@ public:
 ///
 class SdfRelationshipViewPredicate : public SdfGenericSpecViewPredicate {
 public:
+    SDF_API
     SdfRelationshipViewPredicate();
 };
 
