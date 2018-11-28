@@ -46,7 +46,7 @@ function(_copy_headers LIBRARY_NAME)
         foreach (f ${_args_FILES})
             set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
             set(outfile "${header_dest_dir}/${f}")
-            get_filename_component(dir_to_create "${outfile}" DIRECTORY)
+            get_filename_component(dir_to_create "${outfile}" PATH)
             add_custom_command(
                 OUTPUT ${outfile}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
