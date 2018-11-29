@@ -278,7 +278,7 @@ PxrUsdKatanaReadPrimPrmanStatements(
     }
 
     // XXX:
-    // Should we have subclasses (e.g., PxrUsdKatanaUtils::HairmanContext), add to or modify
+    // Should we have subclasses add to or modify
     // this builder instead of setting attributes.NAMESPACE.ATTRNAME for each
     // new attr?  Are there performance implications?
     FnKat::GroupAttribute attributesGroup = attrsBuilder.build();
