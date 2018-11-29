@@ -45,6 +45,18 @@ namespace {
         bool operator()(const PcpMapFunction::PathPair &lhs,
                         const PcpMapFunction::PathPair &rhs) {
             SdfPath::FastLessThan less;
+            // We need to ensure that "root identity" elements appear first
+            // ('/' -> '/') so we special-case those.
+            SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
+            if (lhs == rhs) {
+                return false;
+            }
+            if (lhs.first == absRoot && lhs.second == absRoot) {
+                return true;
+            }
+            if (rhs.first == absRoot && rhs.second == absRoot) {
+                return false;
+            }
             return less(lhs.first, rhs.first) ||
                 (lhs.first == rhs.first && less(lhs.second, rhs.second));
         }
@@ -418,6 +430,18 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
             }
         }
     }
+    // If inner has a root identity, map that too.
+    if (inner.HasRootIdentity()) {
+        PathPair pair;
+        pair.first = SdfPath::AbsoluteRootPath();
+        pair.second = MapSourceToTarget(SdfPath::AbsoluteRootPath());
+        if (!pair.second.IsEmpty()) {
+            if (std::find(scratchBegin, scratch, pair) == scratch) {
+                *scratch++ = std::move(pair);
+            }
+        }
+    }
+                                               
 
     // Apply the inverse of inner to the domain of this function.
     const _Data& data_outer = _data;
@@ -429,9 +453,19 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
             }
         }
     }
+    // If outer has a root identity, map that too.
+    if (HasRootIdentity()) {
+        PathPair pair;
+        pair.first = inner.MapTargetToSource(SdfPath::AbsoluteRootPath());
+        pair.second = SdfPath::AbsoluteRootPath();
+        if (!pair.first.IsEmpty()) {
+            if (std::find(scratchBegin, scratch, pair) == scratch) {
+                *scratch++ = std::move(pair);
+            }
+        }
+    }
 
-    bool hasRootIdentity = HasRootIdentity() && inner.HasRootIdentity();
-    hasRootIdentity |= _Canonicalize(scratchBegin, scratch);
+    bool hasRootIdentity = _Canonicalize(scratchBegin, scratch);
     return PcpMapFunction(scratchBegin, scratch,
                           _offset * inner._offset, hasRootIdentity);
 }
