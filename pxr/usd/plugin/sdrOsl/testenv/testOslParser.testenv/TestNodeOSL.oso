@@ -19,6 +19,7 @@ param	float	inputStruct.foo	0		%meta{string,page,"inputs2"}  %read{2147483647,-1
 param	string	inputAssetIdentifier	""		%meta{string,page,"inputs2"} %meta{string,widget,"assetIdInput"}  %read{2147483647,-1} %write{2147483647,-1}
 param	string	primvarNamingProperty	""		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
 param	int	invalidPrimvarNamingProperty	0		%meta{string,widget,"number"} %meta{string,page,"inputs2"} %meta{string,help,"Invalid because a primvar naming property must have a string type"}  %read{2147483647,-1} %write{2147483647,-1}
+param	string[4]	inputStrArray	"test" "string" "array" "values"		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
 oparam	float	resultF	0		%meta{string,widget,"null"} %meta{string,page,"results"}  %read{2147483647,-1} %write{2147483647,-1}
 oparam	float[2]	resultF2	1 2		%meta{string,widget,"null"} %meta{string,page,"results"}  %read{2147483647,-1} %write{2147483647,-1}
 oparam	float[3]	resultF3	1 2 3		%meta{string,widget,"null"} %meta{string,page,"results"}  %read{2147483647,-1} %write{2147483647,-1}
