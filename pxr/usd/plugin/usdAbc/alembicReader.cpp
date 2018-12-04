@@ -3324,15 +3324,15 @@ _ReadCurves(_PrimReaderContext* context)
 
     // The rest depend on the type.
     if (sample.getType() != kVariableOrder) {
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->basis,
             SdfValueTypeNames->Token,
             _CopySynthetic(_ConvertCurveBasis(sample.getBasis())));
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->type,
             SdfValueTypeNames->Token,
             _CopySynthetic(_ConvertCurveType(sample.getType())));
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->wrap,
             SdfValueTypeNames->Token,
             _CopySynthetic(_ConvertCurveWrap(sample.getWrap())));
