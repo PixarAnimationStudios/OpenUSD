@@ -157,37 +157,69 @@ _GatherShadingParameters(
 
         // We do not try to extract presentation metadata from parameters -
         // only material interface attributes should bother recording such.
-        UsdShadeConnectableAPI source;
-        TfToken outputName;
-        UsdShadeAttributeType sourceType;
 
-        if (UsdShadeConnectableAPI::GetConnectedSource(shaderInput, 
-                &source, &outputName, &sourceType))
-        {
-            if (sourceType == UsdShadeAttributeType::Output) {
+        // We can have multiple incoming connection, we get a whole set of paths
+        SdfPathVector sourcePaths;
+        if (UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
+                shaderInput, &sourcePaths)) {
+
+            bool multipleConnections = sourcePaths.size() > 1;
+
+            // Check the relationship(s) representing this connection to see if
+            // the targets come from a base material. If so, ignore them.
+            bool createConnections =
+                    flatten ||
+                    !UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
+                            shaderInput);
+
+            int connectionIdx = 0;
+            for (const SdfPath& sourcePath : sourcePaths) {
+
+                // We only care about connections to output properties
+                if (not sourcePath.IsPropertyPath())
+                    continue;
+
+                UsdShadeConnectableAPI source =
+                        UsdShadeConnectableAPI::Get(prim.GetStage(),
+                                                    sourcePath.GetPrimPath());
+                if (not static_cast<bool>(source))
+                    continue;
+
+                TfToken sourceName;
+                UsdShadeAttributeType sourceType;
+                std::tie(sourceName, sourceType) =
+                        UsdShadeUtils::GetBaseNameAndType(
+                                sourcePath.GetNameToken());
+
+                if (sourceType != UsdShadeAttributeType::Output)
+                    continue;
+
                 std::string targetHandle = _CreateShadingNode(
-                        source.GetPrim(), 
+                        source.GetPrim(),
                         currentTime,
-                        nodesBuilder, 
+                        nodesBuilder,
                         interfaceBuilder,
                         targetName,
                         flatten);
 
-                // Check the relationship representing this connection
-                // to see if the targets come from a base material.
-                // Ignore them if so.
-                
-
-                if (flatten || 
-                    !UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
-                            shaderInput)) {
+                if (createConnections) {
                     // These targets are local, so include them.
+                    string connAttrName = inputId;
+
+                    // In the case of multiple input connections for array
+                    // types, we append a ":idx" to the name
+                    if (multipleConnections) {
+                        connAttrName += ":" + std::to_string(connectionIdx);
+                        connectionIdx++;
+                    }
+
                     connectionsBuilder.set(
-                        inputId, 
+                        connAttrName,
                         FnKat::StringAttribute(
-                            outputName.GetString() + "@" + targetHandle));
+                            sourceName.GetString() + "@" + targetHandle));
                 }
             }
+
         }
 
         // produce the value here and let katana handle the connection part
