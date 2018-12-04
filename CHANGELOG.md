@@ -1,5 +1,131 @@
 # Change Log
 
+## [19.01] - 2018-12-14
+
+### Added
+USD:
+- usdresolve utility for checking the results of asset resolution at the 
+  command line. (PR #609)
+- SdfFileFormat::FindAllFileFormats and FindAllFileFormatExtensions
+  for querying available file formats. (PR #532)
+- Option to UsdGeomBBoxCache to ignore visibility.
+
+Imaging:
+- Render settings API to HdRenderDelegate. ("Enable Tiny Prim Culling" is the
+  first example for Hydra GL)
+- Support for UDIM textures in Hydra GL. (PR #597)
+- Blending controls to HdRenderPassState for initial transparency support in
+  Hydra GL.
+- Ability to specify backend when starting usdview via "--renderer" parameter.
+- Optional "Draw Mode" column to prim browser in usdview that provides control
+  of model draw modes. (texture cards, bbox, etc.)
+
+Houdini plugin:
+- Optional layer scale, layer offset, and target prim parameters to the
+  USD Reference ROP.
+- Option on USD Output ROP to use or ignore obj-level transforms.
+- Support for exporting ramp parameters in OSL shader networks.
+
+Katana plugin:
+- "info.usd.outputSession" attribute authored by PxrUsdIn. This is a sibling
+  to "info.usd.session" but is not affected by the translation of PxrUsdIn's
+  old "variants" parameter into session data. It acts as a more stable session 
+  cache key for external apps to use.
+- "forceArrayForSingleValue" parameter that allows PxrUsdInAttributeSet to
+  author 1-length arrays.
+
+Maya plugin:
+- Support for instancing USD reference assemblies in instancers.
+
+### Changed
+Build:
+- Symbols for wrapping functions are no longer exported from modules
+  to avoid issues with using RTLD_GLOBAL in Python. (Issue #641)
+- Updated minimum required version of GLEW to 2.0.0.
+
+USD:
+- Numerous fixes and cleanup changes throughout to improve performance, 
+  remove dead code, convert code to more modern patterns, and remove 
+  unneeded uses of boost.
+- Replaced safe-bool idiom with explicit bool operator in several places.
+- Improved performance of setting and erasing time samples in .usda 
+  layers from linear complexity to logarithmic.
+- Improved error messages when attempting to read a .usdz files using
+  compression or encryption.
+- Various improvements to UsdSkel documentation and API.
+- Changed scene description name for UsdSkelBindingAPI from "BindingAPI"
+  to "SkelBindingAPI" to distinguish it from other binding API schemas.
+
+Imaging:
+- Several improvements to the handling of AOVs in Hydra.
+- Simplified class hierarchy in usdImagingGL. The primary API entry point
+  is now UsdImagingGLEngine.
+- Better performance for animated textures and large numbers of invisible
+  prims in Hydra.
+- Optimized batch removal of prims in Hydra and UsdImaging.
+- Better handling of edits made in the interpreter in usdview.
+- Mesh normals are suppressed when the subdivision scheme is something
+  other than "none".
+- The default stb-based image reader now extracts gamma information from
+  .png images.
+- Functionality specific to the prim browser in usdview have been moved
+  to a browser-specific menu bar with "Navigation" and "Show" menus.
+- Property browser in usdview now shows resolved material bindings and
+  inherited primvars.
+
+ Maya plugin:
+- The name of the scope for exported material prims can now be customized 
+  in the UI or via the "materialsScopeName" parameter to usdExport. The 
+  default scope name is "Looks", matching the previous behavior.
+- Refactoring and cleanup in preparation for shading export support.
+
+### Removed
+Build:
+- Build-time dependency on Python. (Issue #605, PR #615)
+
+Imaging:
+- HdSceneTask in favor of HdTask.
+- UsdImagingGL and UsdImagingGLHdEngine.
+
+### Fixed
+USD:
+- Incorrect composition error in cases involving internal sub-root references 
+  and variants. (Issue #677)
+- Regression that caused prims to sometimes be composed incorrectly.
+- Missing symbol exports that could cause build errors on Windows. 
+  (PR #623, Issue #703, #704, #705)
+- Incorrect type validation and conversion when authoring metadata via Python
+  that could lead to invalid scene description. (Issue #529)
+- Various issues in usdzip and related usdUtils API when processing references 
+  for packaging into a .usdz file.
+
+Imaging:
+- Batch aggregation for prims with face-varying primvars.
+- Drawing coord initialization of instance primvar slots.
+- Deep batch validation only happens when needed, improving performance.
+- Crash in cases where a prim is removed from a stage and a collection
+  targeting that prim is updated in the same round of changes. (PR #685)
+- Crash when reading half-float .exr images in the OpenImageIO plugin.
+  (Issue #581)
+- Incorrect handling of edits to material bindings.
+
+Houdini plugin:
+- Issue where visibility and purpose attributes weren't properly inherited 
+  on import. (Issue #649)
+- Crash when running ginfo on a USD file. (Issue #673, PR #674)
+- Issue where imported string attribute values could be incorrect. (Issue #653)
+
+Katana plugin:
+- Issues with reading UsdGeomPointInstancers
+  - Regression in instance transform computation with masked instances.
+  - Prototype transforms are cleared out on the Katana side since they are
+    folded in when computing instance transforms.
+
+Maya plugin:
+- Reference assemblies weren't being drawn in "playback" representation.
+  (Issue #675)
+- Issue where HdImagingShape prevented nodes from being reordered.
+
 ## [18.11] - 2018-10-10
 
 ### Added
