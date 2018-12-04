@@ -125,12 +125,12 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
     // Begin by extracting the list of positions. Set the list size to
     // (count + 2) so that an extra end-condition point can be copied
     // onto each end of the list.
-    VtArray<fpreal> positions(count + 2);
+    VtArray<fpreal32> positions(count + 2);
     for (int i = 0; i < count; i++) {
         PRM_Parm* position = parm->getMultiParm(i * 3);
         isDefault = position->isTrueFactoryDefault() && isDefault;
 
-        position->getValue(0, positions[i + 1], 0, SYSgetSTID());
+        position->getValues(0, &(positions[i + 1]), SYSgetSTID());
     }
 
     // If any positions are not set to factory defaults, store the
@@ -143,7 +143,7 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
         TfToken positionName(rampName + "_the_key_positions");
         UsdShadeInput positionsInput =
             shaderObject.CreateInput(positionName,
-                                     SdfValueTypeNames->DoubleArray);
+                                     SdfValueTypeNames->FloatArray);
         positionsInput.Set(positions);
     }
 
@@ -155,7 +155,7 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
     if (parm->isRampTypeColor()) {
         // Color type. Set the list size to (count + 2) so that an extra
         // end-condition value can be copied onto each end of the list.
-        VtArray<GfVec3d> values(count + 2);
+        VtArray<GfVec3f> values(count + 2);
 
         for (int i = 0; i < count; i++) {
             // The +1 in the getMultiParm index is because the i'th value
@@ -163,7 +163,7 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
             PRM_Parm* value = parm->getMultiParm((i * 3) + 1);
             isDefault = value->isTrueFactoryDefault() && isDefault;
 
-            double color[3];
+            fpreal32 color[3];
             value->getValues(0, color, SYSgetSTID());
             values[i + 1].Set(color);
         }
@@ -178,13 +178,13 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
             TfToken valueName(rampName + "_the_key_values");
             UsdShadeInput valuesInput =
                 shaderObject.CreateInput(valueName,
-                                         SdfValueTypeNames->Color3dArray);
+                                         SdfValueTypeNames->Color3fArray);
             valuesInput.Set(values);
         }
     } else {
         // Float type. Set the list size to (count + 2) so that an extra
         // end-condition value can be copied onto each end of the list.
-        VtArray<fpreal> values(count + 2);
+        VtArray<fpreal32> values(count + 2);
 
         for (int i = 0; i < count; i++) {
             // The +1 in the getMultiParm index is because the i'th value
@@ -205,7 +205,7 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
             TfToken valueName(rampName + "_the_key_values");
             UsdShadeInput valuesInput =
                 shaderObject.CreateInput(valueName,
-                                         SdfValueTypeNames->DoubleArray);
+                                         SdfValueTypeNames->FloatArray);
             valuesInput.Set(values);
         }
     }
@@ -385,13 +385,13 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
 
                 UsdShadeInput shadeInput 
                     = shaderObject.CreateInput(TfToken(parm->getToken()),
-                                            SdfValueTypeNames->Color3d);
+                                            SdfValueTypeNames->Color3f);
                 parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
-                    double color[3];   
+                    fpreal32 color[3];   
                     parm->getValues(0, color, SYSgetSTID());
-                    shadeInput.Set(GfVec3d(color));
+                    shadeInput.Set(GfVec3f(color));
                 }
             }
             else if (strcmp(type, "normal") == 0 ||
@@ -399,13 +399,13 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
 
                 UsdShadeInput shadeInput 
                     = shaderObject.CreateInput(TfToken(parm->getToken()),
-                                            SdfValueTypeNames->Normal3d);
+                                            SdfValueTypeNames->Normal3f);
                 parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
-                    double normal[3];   
+                    fpreal32 normal[3];   
                     parm->getValues(0, normal, SYSgetSTID());
-                    shadeInput.Set(GfVec3d(normal));
+                    shadeInput.Set(GfVec3f(normal));
                 }
             }
             else if (strcmp(type, "point") == 0 ||
@@ -413,13 +413,13 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
 
                 UsdShadeInput shadeInput 
                     = shaderObject.CreateInput(TfToken(parm->getToken()),
-                                            SdfValueTypeNames->Point3d);
+                                            SdfValueTypeNames->Point3f);
                 parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
-                    double point[3];   
+                    fpreal32 point[3];   
                     parm->getValues(0, point, SYSgetSTID());
-                    shadeInput.Set(GfVec3d(point));
+                    shadeInput.Set(GfVec3f(point));
                 }
             }
             else if (strcmp(type, "vector") == 0 ||
@@ -427,13 +427,13 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
 
                 UsdShadeInput shadeInput 
                     = shaderObject.CreateInput(TfToken(parm->getToken()),
-                                            SdfValueTypeNames->Vector3d);
+                                            SdfValueTypeNames->Vector3f);
                 parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
-                    double vector[3];   
+                    fpreal32 vector[3];   
                     parm->getValues(0, vector, SYSgetSTID());
-                    shadeInput.Set(GfVec3d(vector));
+                    shadeInput.Set(GfVec3f(vector));
                 }
             }
         }
