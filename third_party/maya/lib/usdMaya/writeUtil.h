@@ -245,7 +245,7 @@ struct UsdMayaWriteUtil
     /// Get the name of the USD prim under which exported materials are
     /// authored.
     ///
-    /// By default, this scope is named "Materials", but it can be configured
+    /// By default, this scope is named "Looks", but it can be configured
     /// in the UsdMaya metadata of a plugInfo.json file like so:
     /// 
     /// "UsdMaya": {

@@ -55,7 +55,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         usdFilePath = os.path.abspath('RedCube.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='displayColor')
+            shadingMode='displayColor', materialsScopeName='Materials')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 

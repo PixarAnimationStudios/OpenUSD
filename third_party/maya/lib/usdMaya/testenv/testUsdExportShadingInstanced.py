@@ -47,6 +47,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
                 shadingMode='displayColor', exportInstances=True,
+                materialsScopeName='Materials',
                 exportCollectionBasedBindings=True,
                 exportMaterialCollections=True,
                 materialCollectionsPath="/World")
@@ -61,6 +62,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
                 shadingMode='displayColor', exportInstances=True,
+                materialsScopeName='Materials',
                 exportCollectionBasedBindings=True,
                 exportMaterialCollections=True,
                 materialCollectionsPath="/World")
