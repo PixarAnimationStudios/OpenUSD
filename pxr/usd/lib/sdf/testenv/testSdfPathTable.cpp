@@ -229,6 +229,19 @@ static void DoUnitTest()
     table.erase(table.find(SdfPath("/")));
     TF_AXIOM(table.empty());
     TF_AXIOM(table.size() == 0);
+
+    // build a table and then clear it in parallel
+    for (char ch='a'; ch<='z'; ++ch) {
+        std::string value(1, ch);
+        for (char n='0'; n<='9'; ++n) {
+            char p[] = { '/', ch, n, '/', ch, n, '/', ch, n, '/', ch, n, '\0' };
+            table.insert({SdfPath(p), value});
+        }
+    }
+    TF_AXIOM(table.size() == 1+26*10*4);
+    table.ClearInParallel();
+    TF_AXIOM(table.empty());
+    TF_AXIOM(table.size() == 0);
 }
 
 
