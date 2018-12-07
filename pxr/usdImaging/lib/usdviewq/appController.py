@@ -2267,13 +2267,19 @@ class AppController(QtCore.QObject):
             t.PrintTime('tear down the UI')
 
     def _openFile(self):
-        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self._mainWindow, "Select file",".")
+        extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
+        fileFilter = "USD Compatible Files (" + " ".join("*." + e for e in extensions) + ")" 
+        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
+            self._mainWindow,
+            caption="Select file",
+            dir=".",
+            filter=fileFilter,
+            selectedFilter=fileFilter)
+
         if len(filename) > 0:
-
             self._parserData.usdFile = str(filename)
-            self._reopenStage()
-
             self._mainWindow.setWindowTitle(filename)
+            self._reopenStage()
 
     def _getSaveFileName(self, caption, recommendedFilename):
         (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(
@@ -2355,6 +2361,9 @@ class AppController(QtCore.QObject):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
+            # Pause the stage view while we update
+            self._stageView.setUpdatesEnabled(False)
+
             # Clear out any Usd objects that may become invalid.
             self._dataModel.selection.clear()
             self._currentSpec = None
@@ -2377,6 +2386,7 @@ class AppController(QtCore.QObject):
 
             self._stepSizeChanged()
             self._stepSizeChanged()
+            self._stageView.setUpdatesEnabled(True)
         except Exception as err:
             self.statusMessage('Error occurred reopening Stage: %s' % err)
             traceback.print_exc()
