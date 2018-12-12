@@ -26,6 +26,7 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/debugCodes.h"
+#include "pxrUsdMayaGL/instancerImager.h"
 #include "pxrUsdMayaGL/userData.h"
 
 #include "usdMaya/hdImagingShape.h"
@@ -62,6 +63,7 @@ PxrMayaHdImagingShapeDrawOverride::creator(const MObject& obj)
 /* virtual */
 PxrMayaHdImagingShapeDrawOverride::~PxrMayaHdImagingShapeDrawOverride()
 {
+    UsdMayaGL_InstancerImager::GetInstance().RemoveShapeAdapters(/*vp2*/ true);
 }
 
 /* virtual */
@@ -128,7 +130,7 @@ MUserData*
 PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */,
-        const MHWRender::MFrameContext& /* frameContext */,
+        const MHWRender::MFrameContext& frameContext,
         MUserData* oldData)
 {
     const PxrMayaHdImagingShape* imagingShape =
@@ -140,6 +142,10 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "PxrMayaHdImagingShapeDrawOverride::prepareForDraw(), objPath: %s\n",
         objPath.fullPathName().asChar());
+
+    // Sync any instancers that need Hydra drawing.
+    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(
+            frameContext.getDisplayStyle());
 
     PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
     if (!newData) {

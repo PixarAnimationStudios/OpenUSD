@@ -25,11 +25,16 @@
 #include "pxrUsdTranslators/nurbsCurveWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/writeJobContext.h"
 
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
-#include "pxr/usd/usd/stage.h"
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
@@ -38,16 +43,22 @@
 
 #include <numeric>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 PXRUSDMAYA_REGISTER_WRITER(nurbsCurve, PxrUsdTranslators_NurbsCurveWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsCurve, UsdGeomNurbsCurves);
 
-PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(const MDagPath & iDag,
-                                           const SdfPath& uPath,
-                                           UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(iDag, uPath, jobCtx)
+
+PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        UsdMayaWriteJobContext& jobCtx) :
+    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
+    TF_AXIOM(GetDagPath().isValid());
+
     UsdGeomNurbsCurves primSchema =
         UsdGeomNurbsCurves::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
@@ -55,7 +66,9 @@ PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(const MDa
     TF_AXIOM(_usdPrim);
 }
 
-void PxrUsdTranslators_NurbsCurveWriter::Write(const UsdTimeCode& usdTime)
+/* virtual */
+void
+PxrUsdTranslators_NurbsCurveWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaPrimWriter::Write(usdTime);
 
@@ -63,16 +76,17 @@ void PxrUsdTranslators_NurbsCurveWriter::Write(const UsdTimeCode& usdTime)
     writeNurbsCurveAttrs(usdTime, primSchema);
 }
 
-bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
-    const UsdTimeCode &usdTime,
-    UsdGeomNurbsCurves &primSchema)
+bool
+PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
+        const UsdTimeCode& usdTime,
+        UsdGeomNurbsCurves& primSchema)
 {
     MStatus status = MS::kSuccess;
 
     // Return if usdTime does not match if shape is animated
     if (usdTime.IsDefault() == _HasAnimCurves() ) {
         // skip shape as the usdTime does not match if shape isAnimated value
-        return true; 
+        return true;
     }
 
     MFnDependencyNode fnDepNode(GetDagPath().node(), &status);
@@ -85,7 +99,7 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
                 GetDagPath().fullPathName().asChar());
         return false;
     }
-    
+
     // How to repeat the end knots.
     bool wrap = false;
     MFnNurbsCurve::Form form(curveFn.form());
@@ -171,8 +185,8 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
 
     // Curve
     // not animatable
-    _SetAttribute(primSchema.GetOrderAttr(), curveOrder); 
-    _SetAttribute(primSchema.GetCurveVertexCountsAttr(), &curveVertexCounts); 
+    _SetAttribute(primSchema.GetOrderAttr(), curveOrder);
+    _SetAttribute(primSchema.GetCurveVertexCountsAttr(), &curveVertexCounts);
     _SetAttribute(primSchema.GetWidthsAttr(), &curveWidths);
 
     _SetAttribute(primSchema.GetKnotsAttr(), &curveKnots); // not animatable
@@ -184,12 +198,12 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     return true;
 }
 
+/* virtual */
 bool
 PxrUsdTranslators_NurbsCurveWriter::ExportsGprims() const
 {
     return true;
 }
-    
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

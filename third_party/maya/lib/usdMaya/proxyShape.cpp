@@ -27,6 +27,7 @@
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/stageData.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
@@ -220,7 +221,8 @@ UsdMayaProxyShape::initialize()
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
-    numericAttrFn.setStorable(false); // not written to the file
+    numericAttrFn.setChannelBox(true);
+    numericAttrFn.setStorable(false);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(complexityAttr);
@@ -650,7 +652,7 @@ MBoundingBox
 UsdMayaProxyShape::boundingBox() const
 {
     if (_useFastPlayback) {
-        return MBoundingBox();
+        return UsdMayaUtil::GetInfiniteBoundingBox();
     }
 
     MStatus status;

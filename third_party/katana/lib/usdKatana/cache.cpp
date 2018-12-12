@@ -28,7 +28,7 @@
 
 #include "pxr/usd/ar/resolver.h"
 
-#include "pxr/usdImaging/usdImagingGL/gl.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usd/sdf/layer.h"
@@ -801,7 +801,7 @@ void UsdKatanaCache::FlushStage(const UsdStageRefPtr & stage)
 }
 
 
-UsdImagingGLSharedPtr const& 
+UsdImagingGLEngineSharedPtr const& 
 UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                             UsdPrim const& root,
                             std::string const& sessionKey)
@@ -860,8 +860,8 @@ UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
     SdfPathVector excludedPaths;
     std::pair<_RendererCache::iterator,bool> res  = 
         _rendererCache.insert(std::make_pair(key, 
-                   UsdImagingGLSharedPtr(new UsdImagingGL(root.GetPath(), 
-                                                          excludedPaths))));
+           UsdImagingGLEngineSharedPtr(new UsdImagingGLEngine(root.GetPath(), 
+                                                             excludedPaths))));
     return res.first->second;
 }
 

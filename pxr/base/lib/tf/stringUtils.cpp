@@ -832,6 +832,33 @@ TfStringify(float val)
     return std::string(buffer);
 }
 
+bool
+TfDoubleToString(
+    double val, char* buffer, int bufferSize, bool emitTrailingZero)
+{
+    if (bufferSize < 25) {
+        return false;
+    }
+    using DSC = pxr_double_conversion::DoubleToStringConverter;
+    int flags = DSC::NO_FLAGS;
+    if (emitTrailingZero) {
+        flags = DSC::EMIT_TRAILING_DECIMAL_POINT
+            | DSC::EMIT_TRAILING_ZERO_AFTER_POINT;
+    }
+    const DSC conv(
+        flags,
+        "inf", 
+        "nan",
+        'e',
+        /* decimal_in_shortest_low */ -6,
+        /* decimal_in_shortest_high */ 15,
+        /* max_leading_padding_zeroes_in_precision_mode */ 0,
+        /* max_trailing_padding_zeroes_in_precision_mode */ 0);
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
+    // This should only fail if we provide an insufficient buffer.
+    return conv.ToShortest(val, &builder);
+}
+
 std::string
 TfStringify(double val)
 {

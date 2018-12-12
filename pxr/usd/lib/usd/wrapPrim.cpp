@@ -52,19 +52,6 @@ using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool 
-Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
-{
-    return prim._IsA(schemaType, /*validateSchema=*/true);
-}
-
-bool 
-Usd_PrimHasAPI(const UsdPrim& prim, const TfType& schemaType, 
-               const TfToken &instanceName)
-{
-    return prim._HasAPI(schemaType, /*validateSchema=*/true, instanceName);
-}
-
 const PcpPrimIndex &
 Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
 {
@@ -241,9 +228,13 @@ void wrapUsdPrim()
 
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
 
-        .def("IsA", &Usd_PrimIsA, arg("schemaType"))
-        .def("HasAPI", &Usd_PrimHasAPI, 
-             (arg("schemaType"), arg("instanceName")=TfToken()))
+        .def("IsA",
+            (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
+            arg("schemaType"))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaType"), arg("instanceName")=TfToken()))
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 

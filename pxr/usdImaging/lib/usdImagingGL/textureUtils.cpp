@@ -25,12 +25,15 @@
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/textureUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/imaging/glf/ptexTexture.h"
+#include "pxr/imaging/glf/udimTexture.h"
 #include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/glf/textureRegistry.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -47,9 +50,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
 
-static HdWrap _GetWrap(UsdPrim const &usdPrim, const TfToken &wrapAttr)
+HdWrap 
+_GetWrap(UsdPrim const &usdPrim, 
+    HdTextureType textureType, 
+    const TfToken &wrapAttr)
 {
+    // A Udim always uses black wrap
+    if (textureType == HdTextureType::Udim) {
+        return HdWrapBlack;
+    }
+
     // The fallback, when the prim has no opinion is to use the metadata on
     // the texture.
     TfToken usdWrap = UsdHydraTokens->useMetadata;
@@ -114,17 +126,20 @@ static HdWrap _GetWrap(UsdPrim const &usdPrim, const TfToken &wrapAttr)
     return hdWrap;
 }
 
-static HdWrap _GetWrapS(UsdPrim const &usdPrim)
+HdWrap
+_GetWrapS(UsdPrim const &usdPrim, HdTextureType textureType)
 {
-    return _GetWrap(usdPrim, UsdHydraTokens->wrapS);
+    return _GetWrap(usdPrim, textureType, UsdHydraTokens->wrapS);
 }
 
-static HdWrap _GetWrapT(UsdPrim const &usdPrim)
+HdWrap
+_GetWrapT(UsdPrim const &usdPrim, HdTextureType textureType)
 {
-    return _GetWrap(usdPrim, UsdHydraTokens->wrapT);
+    return _GetWrap(usdPrim, textureType, UsdHydraTokens->wrapT);
 }
 
-static HdMinFilter _GetMinFilter(UsdPrim const &usdPrim)
+HdMinFilter
+_GetMinFilter(UsdPrim const &usdPrim)
 {
     // XXX: This default value should come from the registry
     TfToken minFilter("linear");
@@ -147,7 +162,8 @@ static HdMinFilter _GetMinFilter(UsdPrim const &usdPrim)
     return minFilterHd;
 }
 
-static HdMagFilter _GetMagFilter(UsdPrim const &usdPrim)
+HdMagFilter
+_GetMagFilter(UsdPrim const &usdPrim)
 {
     // XXX: This default value should come from the registry
     TfToken magFilter("linear");
@@ -162,7 +178,8 @@ static HdMagFilter _GetMagFilter(UsdPrim const &usdPrim)
     return magFilterHd;
 }
 
-static float _GetMemoryLimit(UsdPrim const &usdPrim)
+float
+_GetMemoryLimit(UsdPrim const &usdPrim)
 {
     // XXX: This default value should come from the registry
     float memoryLimit = 0.0f;
@@ -174,7 +191,6 @@ static float _GetMemoryLimit(UsdPrim const &usdPrim)
     return memoryLimit;
 }
 
-static
 GlfImage::ImageOriginLocation
 UsdImagingGL_ComputeTextureOrigin(UsdPrim const& usdPrim)
 {
@@ -195,20 +211,95 @@ UsdImagingGL_ComputeTextureOrigin(UsdPrim const& usdPrim)
     return origin;
 }
 
+class UdimTextureFactory : public GlfTextureFactoryBase {
+public:
+    UdimTextureFactory(
+        const SdfLayerHandle& layerHandle)
+        : _layerHandle(layerHandle) { }
+
+    virtual GlfTextureRefPtr New(
+        TfToken const& texturePath,
+        GlfImage::ImageOriginLocation originLocation =
+        GlfImage::OriginUpperLeft) const override {
+        const GlfContextCaps& caps = GlfContextCaps::GetInstance();
+        return GlfUdimTexture::New(
+            texturePath, originLocation, UsdImaging_GetUdimTiles(
+                texturePath, caps.maxArrayTextureLayers, _layerHandle));
+    }
+
+    virtual GlfTextureRefPtr New(
+        TfTokenVector const& texturePaths,
+        GlfImage::ImageOriginLocation originLocation =
+        GlfImage::OriginUpperLeft) const override {
+        return nullptr;
+    }
+private:
+    const SdfLayerHandle& _layerHandle;
+};
+
+// We need to find the first layer that changes the value
+// of the parameter and anchor relative paths to that.
+SdfLayerHandle 
+_FindLayerHandle(const UsdAttribute& attr, const UsdTimeCode& time) {
+    for (const auto& spec: attr.GetPropertyStack(time)) {
+        if (spec->HasDefaultValue() ||
+            spec->GetLayer()->GetNumTimeSamplesForPath(
+                spec->GetPath()) > 0) {
+            return spec->GetLayer();
+        }
+    }
+    return {};
+}
+
+UsdAttribute 
+_GetTextureResourceAttr(UsdPrim const &shaderPrim, 
+                        SdfPath const &fileInputPath)
+{
+    UsdAttribute attr = shaderPrim.GetAttribute(fileInputPath.GetNameToken());
+    if (!attr) {
+        return attr;
+    }
+
+    UsdShadeInput attrInput(attr);
+    if (!attrInput) {
+        return attr;
+    }
+
+    // If the texture 'file' input is connected to an interface input on a 
+    // node-graph, then read from the connection source instead.
+    UsdShadeConnectableAPI source;
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    if (attrInput.GetConnectedSource(&source, &sourceName, &sourceType) && 
+        sourceType == UsdShadeAttributeType::Input && 
+        source.IsNodeGraph()) {
+        if (UsdShadeInput sourceInput = source.GetInput(sourceName)) {
+            return sourceInput.GetAttr();
+        }
+    }
+
+    return attr;
+}
+
+}
+
 HdTextureResource::ID
 UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
                                   SdfPath const& usdPath,
                                   UsdTimeCode time,
                                   size_t salt)
 {
-    if (!TF_VERIFY(usdPrim))
+    if (!TF_VERIFY(usdPrim)) {
         return HdTextureResource::ID(-1);
-    if (!TF_VERIFY(usdPath != SdfPath()))
+    }
+    if (!TF_VERIFY(usdPath != SdfPath())) {
         return HdTextureResource::ID(-1);
+    }
 
     // If the texture name attribute doesn't exist, it might be badly specified
     // in scene data.
-    UsdAttribute attr = usdPrim.GetAttribute(usdPath.GetNameToken());
+    UsdAttribute attr = _GetTextureResourceAttr(usdPrim, usdPath);
+
     SdfAssetPath asset;
     if (!attr || !attr.Get(&asset, time)) {
         TF_WARN("Unable to find texture attribute <%s> in scene data",
@@ -216,23 +307,47 @@ UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
         return HdTextureResource::ID(-1);
     }
 
+    HdTextureType textureType = HdTextureType::Uv;
     TfToken filePath = TfToken(asset.GetResolvedPath());
-    // Fallback to the literal path if it couldn't be resolved.
-    if (filePath.IsEmpty()) {
+
+    if (!filePath.IsEmpty()) {
+        // If the resolved path contains a correct path, then we are 
+        // dealing with a ptex or uv textures.
+        if (GlfIsSupportedPtexTexture(filePath)) {
+            textureType = HdTextureType::Ptex;
+        } else {
+            textureType = HdTextureType::Uv;
+        }
+    } else {
+        // If the path couldn't be resolved, then it might be a Udim as they 
+        // contain special characters in the path to identify them <Udim>.
+        // Another option is that the path is just wrong and it can not be
+        // resolved.
         filePath = TfToken(asset.GetAssetPath());
-    }
-
-    const bool isPtex = GlfIsSupportedPtexTexture(filePath);
-
-    if (asset.GetResolvedPath().empty()) {
-        if (isPtex) {
-            TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback " 
-                    "textures are not supported for ptex", 
+        if (GlfIsSupportedUdimTexture(filePath)) {
+            const GlfContextCaps& caps = GlfContextCaps::GetInstance();
+            if (!UsdImaging_UdimTilesExist(filePath, caps.maxArrayTextureLayers,
+                _FindLayerHandle(attr, time))) {
+                TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback "
+                        "textures are not supported for udim",
+                        filePath.GetText(), usdPath.GetText());
+                return HdTextureResource::ID(-1);
+            }
+            if (!caps.arrayTexturesEnabled) {
+                TF_WARN("OpenGL context does not support array textures, "
+                        "skipping UDIM Texture %s with path %s.",
+                        filePath.GetText(), usdPath.GetText());
+                return HdTextureResource::ID(-1);
+            }
+            textureType = HdTextureType::Udim;
+        } else if (GlfIsSupportedPtexTexture(filePath)) {
+            TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback "
+                    "textures are not supported for ptex",
                     filePath.GetText(), usdPath.GetText());
             return HdTextureResource::ID(-1);
         } else {
-            TF_WARN("Unable to find Texture '%s' with path '%s'. A black " 
-                    "texture will be substituted in its place.", 
+            TF_WARN("Unable to find Texture '%s' with path '%s'. A black "
+                    "texture will be substituted in its place.",
                     filePath.GetText(), usdPath.GetText());
             return HdTextureResource::ID(-1);
         }
@@ -245,8 +360,8 @@ UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
     size_t hash = asset.GetHash();
 
     // Hash in wrapping and filtering metadata.
-    HdWrap wrapS = _GetWrapS(usdPrim);
-    HdWrap wrapT = _GetWrapT(usdPrim);
+    HdWrap wrapS = _GetWrapS(usdPrim, textureType);
+    HdWrap wrapT = _GetWrapT(usdPrim, textureType);
     HdMinFilter minFilter = _GetMinFilter(usdPrim);
     HdMagFilter magFilter = _GetMagFilter(usdPrim);
     float memoryLimit = _GetMemoryLimit(usdPrim);
@@ -275,50 +390,68 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     if (!TF_VERIFY(usdPath != SdfPath()))
         return HdTextureResourceSharedPtr();
 
-    UsdAttribute attr = usdPrim.GetAttribute(usdPath.GetNameToken());
+    UsdAttribute attr = _GetTextureResourceAttr(usdPrim, usdPath);
     SdfAssetPath asset;
     if (!TF_VERIFY(attr) || !TF_VERIFY(attr.Get(&asset, time))) {
         return HdTextureResourceSharedPtr();
     }
 
+    HdTextureType textureType = HdTextureType::Uv;
+
     TfToken filePath = TfToken(asset.GetResolvedPath());
-    // Fallback to the literal path if it couldn't be resolved.
+    // If the path can't be resolved, it's either an UDIM texture
+    // or the texture doesn't exists and we can to exit early.
     if (filePath.IsEmpty()) {
         filePath = TfToken(asset.GetAssetPath());
+        if (GlfIsSupportedUdimTexture(filePath)) {
+            textureType = HdTextureType::Udim;
+        } else {
+            TF_DEBUG(USDIMAGING_TEXTURES).Msg(
+                "File does not exist, returning nullptr");
+            TF_WARN("Unable to find Texture '%s' with path '%s'.",
+                    filePath.GetText(), usdPath.GetText());
+            return {};
+        }
+    } else {
+        if (GlfIsSupportedPtexTexture(filePath)) {
+            textureType = HdTextureType::Ptex;
+        }
     }
 
     GlfImage::ImageOriginLocation origin =
             UsdImagingGL_ComputeTextureOrigin(usdPrim);
 
-    const bool isPtex = GlfIsSupportedPtexTexture(filePath);
-
-    HdWrap wrapS = _GetWrapS(usdPrim);
-    HdWrap wrapT = _GetWrapT(usdPrim);
+    HdWrap wrapS = _GetWrapS(usdPrim, textureType);
+    HdWrap wrapT = _GetWrapT(usdPrim, textureType);
     HdMinFilter minFilter = _GetMinFilter(usdPrim);
     HdMagFilter magFilter = _GetMagFilter(usdPrim);
     float memoryLimit = _GetMemoryLimit(usdPrim);
 
     TF_DEBUG(USDIMAGING_TEXTURES).Msg(
-            "Loading texture: id(%s), isPtex(%s)\n",
+            "Loading texture: id(%s), type(%s)\n",
             usdPath.GetText(),
-            isPtex ? "true" : "false");
+            textureType == HdTextureType::Uv ? "Uv" :
+            textureType == HdTextureType::Ptex ? "Ptex" : "Udim");
  
-    if (asset.GetResolvedPath().empty()) {
-        TF_DEBUG(USDIMAGING_TEXTURES).Msg(
-                "File does not exist, returning nullptr");
-        TF_WARN("Unable to find Texture '%s' with path '%s'.", 
-            filePath.GetText(), usdPath.GetText());
-        return HdTextureResourceSharedPtr();
-    }
-
     HdTextureResourceSharedPtr texResource;
     TfStopwatch timer;
     timer.Start();
-    GlfTextureHandleRefPtr texture =
-        GlfTextureRegistry::GetInstance().GetTextureHandle(filePath, origin);
+    // Udim's can't be loaded through like other textures, because
+    // we can't select the right factory based on the file type.
+    // We also need to pass the layer context to the factory,
+    // so each file gets resolved properly.
+    GlfTextureHandleRefPtr texture;
+    if (textureType == HdTextureType::Udim) {
+        UdimTextureFactory factory(_FindLayerHandle(attr, time));
+        texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
+            filePath, origin, &factory);
+    } else {
+        texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
+            filePath, origin);
+    }
 
     texResource = HdTextureResourceSharedPtr(
-        new HdStSimpleTextureResource(texture, isPtex, wrapS, wrapT,
+        new HdStSimpleTextureResource(texture, textureType, wrapS, wrapT,
                                       minFilter, magFilter, memoryLimit));
     timer.Stop();
 

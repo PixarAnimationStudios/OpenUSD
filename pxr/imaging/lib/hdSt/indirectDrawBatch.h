@@ -70,7 +70,11 @@ public:
         HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     HDST_API
-    virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance) override;
+    virtual void DrawItemInstanceChanged(
+        HdStDrawItemInstance const* instance) override;
+
+    HDST_API
+    virtual void SetEnableTinyPrimCulling(bool tinyPrimCulling) override;
 
     /// Returns whether to do frustum culling on the GPU
     HDST_API
@@ -80,11 +84,6 @@ public:
     /// Disabled by default, since there is some performance penalty.
     HDST_API
     static bool IsEnabledGPUCountVisibleInstances();
-
-    /// Returns whether to cull tiny prims (in screen space) during GPU culling 
-    /// Enabled by default.
-    HDST_API
-    static bool IsEnabledGPUTinyPrimCulling();
 
     /// Returns whether to do per-instance culling on the GPU
     HDST_API
@@ -96,15 +95,15 @@ protected:
 
 private:
     void _ValidateCompatibility(
-            HdStBufferArrayRangeGLSharedPtr const& constantBar,
-            HdStBufferArrayRangeGLSharedPtr const& indexBar,
-            HdStBufferArrayRangeGLSharedPtr const& topologyVisibilityBar,
-            HdStBufferArrayRangeGLSharedPtr const& elementBar,
-            HdStBufferArrayRangeGLSharedPtr const& fvarBar,
-            HdStBufferArrayRangeGLSharedPtr const& vertexBar,
-            int instancerNumLevels,
-            HdStBufferArrayRangeGLSharedPtr const& instanceIndexBar,
-            std::vector<HdStBufferArrayRangeGLSharedPtr> const& instanceBars) const;
+        HdStBufferArrayRangeGLSharedPtr const& constantBar,
+        HdStBufferArrayRangeGLSharedPtr const& indexBar,
+        HdStBufferArrayRangeGLSharedPtr const& topologyVisibilityBar,
+        HdStBufferArrayRangeGLSharedPtr const& elementBar,
+        HdStBufferArrayRangeGLSharedPtr const& fvarBar,
+        HdStBufferArrayRangeGLSharedPtr const& vertexBar,
+        int instancerNumLevels,
+        HdStBufferArrayRangeGLSharedPtr const& instanceIndexBar,
+        std::vector<HdStBufferArrayRangeGLSharedPtr> const& instanceBars) const;
 
     // Culling requires custom resource binding.
     class _CullingProgram : public _DrawingProgram {
@@ -133,14 +132,15 @@ private:
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCulling(HdStDrawItem const *item,
-                            HdStRenderPassStateSharedPtr const &renderPassState,
-                            HdStResourceRegistrySharedPtr const &resourceRegistry);
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCullingXFB(HdStDrawItem const *item,
-                               HdStRenderPassStateSharedPtr const &renderPassState,
-                               HdStResourceRegistrySharedPtr const &resourceRegistry);
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _BeginGPUCountVisibleInstances(HdStResourceRegistrySharedPtr const &resourceRegistry);
+    void _BeginGPUCountVisibleInstances(
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     // GLsync is not defined in gl.h. It's defined in spec as an opaque pointer:
     typedef struct __GLsync *GLsync;
@@ -160,7 +160,8 @@ private:
     size_t _numTotalElements;
 
     _CullingProgram _cullingProgram;
-    bool _lastTinyPrimCulling;
+    bool _useTinyPrimCulling;
+    bool _dirtyCullingProgram;
 
     bool _useDrawArrays;
     bool _useInstancing;

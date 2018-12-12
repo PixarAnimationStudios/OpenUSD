@@ -134,7 +134,6 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         taskParams.viewport = GfVec4f(_viewport);
         taskParams.enableShadows = _lightingContext->GetUseShadows();
         cache[HdTokens->params] = VtValue(taskParams);
-        cache[HdTokens->children] = VtValue(SdfPathVector());
     }
 
     // Shadow task.
@@ -145,7 +144,6 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         taskParams.camera = _cameraId;
         taskParams.viewport = _viewport;
         cache[HdTokens->params] = VtValue(taskParams);
-        cache[HdTokens->children] = VtValue(SdfPathVector());
     }
 }
 
@@ -410,17 +408,12 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // Set the parameters that are constant for all draws.
         renderSetupTaskParams.enableIdRender = false;
         renderSetupTaskParams.alphaThreshold = 0.1f;
-        renderSetupTaskParams.tessLevel = 32.0f;
-        const float tinyThreshold = 0.9f;
-        renderSetupTaskParams.drawingRange = GfVec2f(tinyThreshold, -1.0f);
         renderSetupTaskParams.enableSceneMaterials = true;
         renderSetupTaskParams.depthBiasUseDefault = true;
         renderSetupTaskParams.depthFunc = HdCmpFuncLess;
-        renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
 
         _ValueCache& cache = _valueCacheMap[renderSetupTaskId];
         cache[HdTokens->params] = VtValue(renderSetupTaskParams);
-        cache[HdTokens->children] = VtValue(SdfPathVector());
         cache[HdTokens->collection] = VtValue();
 
         _renderSetupTaskIdMap[hash] = renderSetupTaskId;
@@ -440,7 +433,6 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // render params are on the render setup task instead.
         _ValueCache& cache = _valueCacheMap[renderTaskId];
         cache[HdTokens->params] = VtValue();
-        cache[HdTokens->children] = VtValue(SdfPathVector());
         cache[HdTokens->collection] = VtValue();
 
         _renderTaskIdMap[hash] = renderTaskId;
@@ -466,7 +458,6 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
 
         _ValueCache& cache = _valueCacheMap[selectionTaskId];
         cache[HdTokens->params] = VtValue(selectionTaskParams);
-        cache[HdTokens->children] = VtValue(SdfPathVector());
         cache[HdTokens->collection] = VtValue();
 
         _selectionTaskIdMap[hash] = selectionTaskId;

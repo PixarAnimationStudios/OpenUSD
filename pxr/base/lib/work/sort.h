@@ -27,7 +27,7 @@
 /// \file work/sort.h
 #include "pxr/base/work/threadLimits.h"
 
-#include <tbb/tbb.h>
+#include <tbb/parallel_sort.h>
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE

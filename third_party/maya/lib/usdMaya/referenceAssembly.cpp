@@ -25,6 +25,7 @@
 
 #include "usdMaya/editUtil.h"
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/notice.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/readJob.h"
@@ -32,6 +33,7 @@
 #include "usdMaya/stageData.h"
 
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -50,6 +52,7 @@
 #include <maya/MFileIO.h>
 #include <maya/MFnAssembly.h>
 #include <maya/MFnCompoundAttribute.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
@@ -156,7 +159,9 @@ UsdMayaReferenceAssembly::initialize()
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
-    numericAttrFn.setStorable(false); // not written to the file
+    numericAttrFn.setChannelBox(true);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setAffectsAppearance(true);
     status = addAttribute(complexityAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -276,6 +281,8 @@ UsdMayaReferenceAssembly::UsdMayaReferenceAssembly() :
     _inSetInternalValue(false),
     _hasEdits(false)
 {
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaReferenceAssembly>();
+
     //
     // REMINDER: Also update usdMaya.mel:usdMaya_UsdMayaReferenceAssembly_listRepTypes()
     //           if adding a new Representation
@@ -534,6 +541,35 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     return MS::kSuccess;
 }
 
+MStatus
+UsdMayaReferenceAssembly::connectionMade(
+        const MPlug& plug,
+        const MPlug& otherPlug,
+        bool asSrc)
+{
+    if (asSrc && otherPlug.node().hasFn(MFn::kInstancer)) {
+        const MObject assembly = plug.node();
+        const MObject instancer = otherPlug.node();
+        UsdMayaAssemblyConnectedToInstancerNotice(assembly, instancer).Send();
+    }
+    return MPxAssembly::connectionMade(plug, otherPlug, asSrc);
+}
+
+MStatus
+UsdMayaReferenceAssembly::connectionBroken(
+        const MPlug& plug,
+        const MPlug& otherPlug,
+        bool asSrc)
+{
+    if (asSrc && otherPlug.node().hasFn(MFn::kInstancer)) {
+        const MObject assembly = plug.node();
+        const MObject instancer = otherPlug.node();
+        UsdMayaAssemblyDisconnectedFromInstancerNotice(assembly, instancer)
+                .Send();
+    }
+    return MPxAssembly::connectionBroken(plug, otherPlug, asSrc);
+}
+
 MStatus UsdMayaReferenceAssembly::compute(const MPlug& aPlug,
                              MDataBlock& dataBlock)
 {
@@ -607,7 +643,8 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
     return varSetNames;
 }
 
-MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
+MStatus
+UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
@@ -645,16 +682,16 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         UsdStageRefPtr usdStage;
         SdfPath        primPath;
 
-        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-            MFnDependencyNode depNodeFn(thisMObject());
+        MFnDagNode dagNodeFn(thisMObject());
 
+        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
             std::map<std::string, std::string> varSels;
             TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
-            const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
+            const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(dagNodeFn);
             TF_FOR_ALL(variantSet, varSetNamesForCache) {
                 MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
                 variantSetPlugName += variantSet->c_str();
-                MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
+                MPlug varSetPlg = dagNodeFn.findPlug(variantSetPlugName, true);
                 if (!varSetPlg.isNull()) {
                     MString varSetVal = varSetPlg.asString();
                     if (varSetVal.length() > 0) {
@@ -664,7 +701,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             }
 
             TfToken drawMode;
-            MPlug drawModePlug = depNodeFn.findPlug(drawModeAttr, true);
+            MPlug drawModePlug = dagNodeFn.findPlug(drawModeAttr, true);
             if (!drawModePlug.isNull()) {
                 drawMode = TfToken(drawModePlug.asString().asChar());
             }
@@ -713,8 +750,9 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         // provide Maya with a sane result (an empty UsdMayaStageData).
         if (!fileString.empty() && !usdStage) {
             TF_RUNTIME_ERROR(
-                    "Could not open stage with root layer '%s'",
-                    fileString.c_str());
+                "Could not open USD stage with root layer '%s' for assembly %s",
+                fileString.c_str(),
+                dagNodeFn.fullPathName().asChar());
         }
 
         // Create the output outData ========
@@ -744,9 +782,8 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
     return MS::kSuccess;
 }
 
-
-
-MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
+MStatus
+UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 

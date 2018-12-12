@@ -53,26 +53,23 @@ typedef boost::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixCompu
 TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 
 
-class HdxSimpleLightTask : public HdSceneTask {
+class HdxSimpleLightTask : public HdTask {
 public:
     HDX_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxSimpleLightTask();
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
 
-private:
-    size_t _AppendLightsOfType(HdRenderIndex &renderIndex,
-                               std::vector<TfToken> const &lightTypes, 
-                               SdfPathVector const &lightIncludePaths,
-                               SdfPathVector const &lightExcludePaths,
-                               std::map<TfToken, SdfPathVector> *lights);
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
 
 private:
     SdfPath _cameraId;
@@ -95,6 +92,16 @@ private:
     // the render graph.  Maybe long-term these could be change-tracked.
     GlfSimpleShadowArrayRefPtr _shadows;
     GlfSimpleLightVector _glfSimpleLights;
+
+    size_t _AppendLightsOfType(HdRenderIndex &renderIndex,
+                               std::vector<TfToken> const &lightTypes,
+                               SdfPathVector const &lightIncludePaths,
+                               SdfPathVector const &lightExcludePaths,
+                               std::map<TfToken, SdfPathVector> *lights);
+
+    HdxSimpleLightTask() = delete;
+    HdxSimpleLightTask(const HdxSimpleLightTask &) = delete;
+    HdxSimpleLightTask &operator =(const HdxSimpleLightTask &) = delete;
 };
 
 struct HdxSimpleLightTaskParams {

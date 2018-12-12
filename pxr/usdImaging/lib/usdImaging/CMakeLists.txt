@@ -60,6 +60,7 @@ pxr_library(usdImaging
         rectLightAdapter
         sphereAdapter
         sphereLightAdapter
+        textureUtils
         volumeAdapter
 
     PUBLIC_HEADERS

@@ -165,7 +165,8 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
             FnLogWarn(std::string("Cannot compose ") + 
                 _prim.GetPath().GetString());
 
-        _params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+        _params.cullStyle = 
+            UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
 
         _renderer = UsdKatanaCache::GetInstance()
                                   .GetRenderer(_stage, _prim, sessionKey);
@@ -230,22 +231,23 @@ USDVMP::draw(FnKat::ViewerModifierInput& input)
         // Determine the approrpiate draw mode based on the styling options.
         if ( drawSmooth ) {
             if (_GetProxyOverlayMode() == _tokens->wireframe) {
-                _params.drawMode = UsdImagingGL::DRAW_WIREFRAME_ON_SURFACE;
+                _params.drawMode = 
+                    UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
             } else {
-                _params.drawMode = UsdImagingGL::DRAW_SHADED_SMOOTH;
+                _params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
             }
         }
         if ( drawWireframe ) {
-            _params.drawMode = UsdImagingGL::DRAW_WIREFRAME;
+            _params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
         }
         if ( drawPoints ) { 
             // TODO: support draw points
-            _params.drawMode = UsdImagingGL::DRAW_POINTS;
+            _params.drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
         }
 
         // If this gprim is selected setup drawmode and selection color.
         if ( isSelected ) {
-            _params.drawMode = UsdImagingGL::DRAW_GEOM_SMOOTH;
+            _params.drawMode = UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH;
             _params.overrideColor = GfVec4f(0.0f, 1.0f, 1.0f, 1.0f);
             glColor4fv(_params.overrideColor.GetArray());
         }
@@ -285,7 +287,7 @@ USDVMP::draw(FnKat::ViewerModifierInput& input)
             }
             // Using DRAW_GEOM_ONLY will disable lighting and make
             // sure we are rendering a solid color
-            _params.drawMode = UsdImagingGL::DRAW_GEOM_ONLY;
+            _params.drawMode = UsdImagingGLDrawMode::DRAW_GEOM_ONLY;
         }
 
         // Save and restore shader settings around render call

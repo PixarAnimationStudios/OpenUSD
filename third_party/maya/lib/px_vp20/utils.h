@@ -30,14 +30,18 @@
 #include "px_vp20/api.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDrawContext.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
+
+#include <ostream>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -76,6 +80,17 @@ class px_vp20Utils
                 const MMatrix& worldViewMat,
                 const MMatrix& projectionMat);
 
+        /// Helper to draw multiple wireframe boxes, where \p cubeXforms is a
+        /// list of transforms to apply to the unit cube centered around the
+        /// origin.  Those transforms will all be concatenated with the 
+        /// \p worldViewMat and \p projectionMat.
+        PX_VP20_API
+        static bool RenderWireCubes(
+                const std::vector<GfMatrix4f>& cubeXforms,
+                const GfVec4f& color,
+                const GfMatrix4d& worldViewMat,
+                const GfMatrix4d& projectionMat);
+
         /// Gets the view and projection matrices based on a particular
         /// selection in the given draw context.
         PX_VP20_API
@@ -84,6 +99,23 @@ class px_vp20Utils
                 const MHWRender::MDrawContext& context,
                 GfMatrix4d& viewMatrix,
                 GfMatrix4d& projectionMatrix);
+
+        /// Outputs a human-readable form of the given \p displayStyle to
+        /// \p stream for debugging.
+        ///
+        /// \p displayStyle should be a bitwise combination of
+        /// MHWRender::MFrameContext::DisplayStyle values.
+        PX_VP20_API
+        static void OutputDisplayStyleToStream(
+                const unsigned int displayStyle,
+                std::ostream& stream);
+
+        /// Outputs a human-readable form of the given \p displayStatus to
+        /// \p stream for debugging.
+        PX_VP20_API
+        static void OutputDisplayStatusToStream(
+                const MHWRender::DisplayStatus displayStatus,
+                std::ostream& stream);
 
     private:
         px_vp20Utils() = delete;

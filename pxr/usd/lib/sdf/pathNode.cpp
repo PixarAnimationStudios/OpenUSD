@@ -352,7 +352,7 @@ Sdf_PathNode::RemoveCommonSuffix(
     const Sdf_PathNode* aScan = boost::get_pointer(a);
     const Sdf_PathNode* bScan = boost::get_pointer(b);
     while (aScan->GetElementCount() > 1 && bScan->GetElementCount() > 1) {
-        if (!aScan->Compare<_Equal>(*bScan)) {
+        if (!aScan->Compare<_EqualElement>(*bScan)) {
             return std::make_pair(Sdf_PathNodeConstRefPtr(aScan),
                                   Sdf_PathNodeConstRefPtr(bScan));
         }
@@ -365,7 +365,7 @@ Sdf_PathNode::RemoveCommonSuffix(
     if (!stopAtRootPrim &&
         aScan->GetElementCount() >= 1 &&
         bScan->GetElementCount() >= 1 &&
-        aScan->Compare<_Equal>(*bScan)) {
+        aScan->Compare<_EqualElement>(*bScan)) {
         return std::make_pair(aScan->GetParentNode(), bScan->GetParentNode());
     }
     else {
@@ -410,8 +410,6 @@ Sdf_PathNode::_CreatePathToken() const
     if (this == boost::get_pointer(Sdf_PathNode::GetRelativeRootNode())) {
         return SdfPathTokens->relativeRoot;
     }
-
-    // XXX: re-implement recursively with ostringstream
 
     const Sdf_PathNode * const root = (IsAbsolutePath() ? 
                 boost::get_pointer(Sdf_PathNode::GetAbsoluteRootNode()) : 

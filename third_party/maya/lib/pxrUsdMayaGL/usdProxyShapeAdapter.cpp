@@ -31,22 +31,24 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
-#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
@@ -66,20 +68,22 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    ((RenderGuidesTag, "render"))
-);
-
-
 /* virtual */
 bool
-PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(
-    const MSelectionList& isolatedObjects)
+PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
 {
     bool isVisible;
-    if (!_GetVisibility(_shapeDagPath, isolatedObjects, &isVisible)) {
+
+    /// Note that M3dView::pluginObjectDisplay() is unfortunately not declared
+    /// const, so we have to cast away the const-ness here.
+    M3dView* nonConstView = const_cast<M3dView*>(view);
+
+    if (nonConstView &&
+            !nonConstView->pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+        // USD proxy shapes are being filtered from this view, so don't bother
+        // checking any other visibility state.
+        isVisible = false;
+    } else if (!_GetVisibility(_shapeDagPath, view, &isVisible)) {
         return false;
     }
 
@@ -127,10 +131,11 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
-    UsdMayaProxyShape* usdProxyShape = 
+    UsdMayaProxyShape* usdProxyShape =
             UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
-        TF_WARN("Failed to get UsdMayaProxyShape for '%s'",
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "Failed to get UsdMayaProxyShape for '%s'\n",
                 shapeDagPath.fullPathName().asChar());
         return false;
     }
@@ -147,7 +152,9 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
                                                &timeCode,
                                                &showGuides,
                                                &showRenderGuides)) {
-        TF_WARN("Failed to get render attributes for UsdMayaProxyShape.");
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "Failed to get render attributes for UsdMayaProxyShape '%s'\n",
+                shapeDagPath.fullPathName().asChar());
         return false;
     }
 
@@ -182,7 +189,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         renderTags.push_back(HdTokens->guide);
     }
     if (showRenderGuides) {
-        renderTags.push_back(_tokens->RenderGuidesTag);
+        renderTags.push_back(UsdGeomTokens->render);
     }
 
     if (_rprimCollection.GetRenderTags() != renderTags) {
@@ -210,70 +217,41 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Will only react if time actually changes.
     _delegate->SetTime(timeCode);
 
-    _drawShape = true;
-    _drawBoundingBox =
-        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
+    unsigned int reprDisplayStyle = displayStyle;
 
     MColor mayaWireframeColor;
-    const bool needsWire = _GetWireframeColor(displayStyle,
-                                              displayStatus,
-                                              _shapeDagPath,
-                                              &mayaWireframeColor);
-    if (needsWire) {
+    const bool useWireframeColor =
+        _GetWireframeColor(
+            displayStyle,
+            displayStatus,
+            _shapeDagPath,
+            &mayaWireframeColor);
+    if (useWireframeColor) {
         _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
                                                mayaWireframeColor.g,
                                                mayaWireframeColor.b,
-                                               1.0f);
+                                               mayaWireframeColor.a);
+
+        // Add in kWireFrame to the display style we'll use to determine the
+        // repr selector (e.g. so that we draw the wireframe over the shaded
+        // geometry for selected objects).
+        reprDisplayStyle |= MHWRender::MFrameContext::DisplayStyle::kWireFrame;
     }
 
-    HdReprSelector reprSelector;
+    HdReprSelector reprSelector =
+        GetReprSelectorForDisplayState(
+            reprDisplayStyle,
+            displayStatus);
 
-    // Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for
-    // whatever reason...
-    const bool flatShaded =
-#if MAYA_API_VERSION >= 201600
-        displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
-#else
-        false;
-#endif
+    _drawShape = reprSelector.AnyActiveRepr();
+    _drawBoundingBox =
+        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
-    if (flatShaded) {
-        if (needsWire) {
-            reprSelector = HdReprSelector(HdReprTokens->wireOnSurf);
-        } else {
-            reprSelector = HdReprSelector(HdReprTokens->hull);
-        }
-    }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
-    {
-        if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
-            reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
-        } else {
-            reprSelector = HdReprSelector(HdReprTokens->refined);
-        }
-    }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
-    {
-        reprSelector = HdReprSelector(HdReprTokens->refinedWire);
+    // If the repr selector specifies a wireframe-only repr, then disable
+    // lighting.
+    if (reprSelector.Contains(HdReprTokens->wire) ||
+            reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;
-    }
-    else if (displayStyle == 128) 
-    {
-        // If you have the uv editor open,  it uses that frame context when
-        // doing prepareForDraw(), and there it has a displayStyle == 128.
-        //
-        // We shouldn't be using this during prepareForDraw() because if
-        // you have multiple viewports, each with different drawStyles,
-        // we'd only get one prepareForDraw.  This sort of state should be
-        // read in Render().
-        //
-        // For now, to prevent it from completely disappearing, we just
-        // treat it similarly to Gouraud shading.
-        reprSelector = HdReprSelector(HdReprTokens->refined);
-    }
-    else
-    {
-        _drawShape = false;
     }
 
     if (_delegate->GetRootVisibility() != _drawShape) {
@@ -293,8 +271,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
             _rprimCollection.GetName());
     }
 
-    // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
-    // for whatever reason...
+    // The kBackfaceCulling display style was introduced in Maya 2016 SP2.
     HdCullStyle cullStyle = HdCullStyleNothing;
 #if MAYA_API_VERSION >= 201603
     if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {

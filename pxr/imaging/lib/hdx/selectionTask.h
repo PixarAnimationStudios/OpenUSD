@@ -57,19 +57,24 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 /// extract those buffers and bind them into the current render pass shader to
 /// enable selection highlighting.
 ///
-class HdxSelectionTask : public HdSceneTask {
+class HdxSelectionTask : public HdTask {
 public:
     HDX_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxSelectionTask();
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
+
 
 private:
     int _lastVersion;
@@ -78,6 +83,10 @@ private:
     HdBufferArrayRangeSharedPtr _selOffsetBar;
     HdBufferArrayRangeSharedPtr _selUniformBar;
     HdBufferArrayRangeSharedPtr _selPointColorsBar;
+
+    HdxSelectionTask() = delete;
+    HdxSelectionTask(const HdxSelectionTask &) = delete;
+    HdxSelectionTask &operator =(const HdxSelectionTask &) = delete;
 };
 
 // VtValue requirements

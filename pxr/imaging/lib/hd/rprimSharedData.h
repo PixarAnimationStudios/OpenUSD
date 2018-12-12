@@ -52,17 +52,16 @@ struct HdRprimSharedData {
     HdRprimSharedData(int barContainerSize)
         : barContainer(barContainerSize)
         , bounds()
-        , hasInstancer(false)
+        , instancerLevels(-1)
         , visible(true)
         , rprimID()
     { }
 
     HdRprimSharedData(int barContainerSize,
-                      bool hasInstancer,
                       bool visible)
         : barContainer(barContainerSize)
         , bounds()
-        , hasInstancer(hasInstancer)
+        , instancerLevels(-1)
         , visible(visible)
         , rprimID()
     { }
@@ -73,8 +72,8 @@ struct HdRprimSharedData {
     // Used for CPU frustum culling.
     GfBBox3d bounds;
 
-    // True if the rprim is an instance prototype.
-    bool hasInstancer;
+    // The number of levels of instancing applied to this rprim.
+    int instancerLevels;
 
     // Used for authored/delegate visibility.
     bool visible;

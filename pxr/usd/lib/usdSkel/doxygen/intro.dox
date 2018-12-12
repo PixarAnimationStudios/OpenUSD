@@ -10,8 +10,38 @@ for the performant, scalable interchange of large-scale crowds. This encoding
 supports both interchanging skinnable rigs, as well as the interchange of
 skeletal control rigs on their own.
 
-\subsection UsdSkel_IsNot What UsdSkel Is Not
+\subsection UsdSkel_Motivation Motivation & Trade-Offs
 
+UsdSkel was designed with the goal in mind of both being able to represent
+small numbers of characters, while also being efficient enough to be able to
+scale up to encoding crowds, consisting of hundreds of thousands of agents.
+
+Towards this end, some expressibility trade-offs have been made in the name
+of scalability:
+
+1. In order to enable UsdSkel to efficiently encode very large numbers of
+   characters, joint animations are stored using a compact, vectorized encoding
+   on each Skeleton. This avoids both excess prim and property bloat, while also
+   greatly improving both read and write performance. Although these factors are
+   negligible on a small number of characters, this provides _substantial_
+   performance improvements when interchanging large numbers of characters.
+
+   As a consequence of this, although UsdSkel allows a sparse skeletal animation
+   to be defined, sparse *layering* of joint transforms is not supported. Sparse
+   animation-layering capabilities may eventually be introduced as part of an
+   encoding of animation blending.
+
+2. UsdSkel leverages <a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Instancing">scene graph instancing</a>
+   to describe _rest state_ instancing, by which the rest state of
+   characters may be shared across multiple instances of a character, each of
+   which has been assigned a unique animation -- *without deinstancing*.
+   This is a critical encoding feature for dealing with large numbers of
+   characters. For the sake of enabling this feature, the encoding of a skeleton
+   has been broken into two parts: The \ref UsdSkel_Skeleton "Skeleton" itself,
+   and an \ref UsdSkel_SkelAnimation "Animation" associated with that skeleton.
+
+\subsection UsdSkel_IsNot What UsdSkel Is Not
+ 
 UsdSkel does *not* signal an intent to provide general rigging and execution
 behaviors as core USD features. We strongly believe that such features are
 beyond the scope of USD's core concerns.
@@ -61,7 +91,7 @@ considered by UsdSkel to be a valid *candidate* for skinning. The utility method
 
 When clients iterate over the set of skinnable primitives -- for example,
 when traversing the skinning targets of a UsdSkelBinding -- it is the client's
-responsibility to check prim types to determine whether or not they know to
+responsibility to check prim types to determine whether or not they know how to
 skin each candidate primitive.
 
 \section UsdSkel_TransformSpaces Transforms and Transform Spaces
@@ -119,10 +149,10 @@ Where _skelLocalToWorldTransform_ is the world space transform of the Skeleton
 primtiive.
     
 
-<b>Computing a Posed Point</b>
+\section UsdSkel_PointSkinning Skinning a Point (Linear Blend Skinning)
 
-In linear blend skinning, the _Skeleton Space_ position of a skinned point is
-computed as:
+Using the terminology established above, in linear blend skinning,
+the _Skeleton Space_ position of a skinned point is computed as:
 
 \code
     skelSpacePoint = geomBindTransform.Transform(localSpacePoint)

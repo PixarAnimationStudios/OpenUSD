@@ -241,6 +241,10 @@ public:
     /// leading dot character.
     SDF_API static std::string GetFileExtension(const std::string& s);
 
+    /// Returns a set containing the extension(s) corresponding to 
+    /// all registered file formats.
+    SDF_API static std::set<std::string> FindAllFileFormatExtensions();
+
     /// Returns the file format instance with the specified \p formatId
     /// identifier. If a format with a matching identifier is not found, this
     /// returns a null file format pointer.

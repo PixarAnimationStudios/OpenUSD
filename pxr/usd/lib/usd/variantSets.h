@@ -166,7 +166,7 @@ public:
     /// Is this UsdVariantSet object usable?  If not, calling any of
     /// its other methods is likely to crash.
     bool IsValid() const {
-        return _prim;
+        return static_cast<bool>(_prim);
     }
 
     /// Equivalent to IsValid().

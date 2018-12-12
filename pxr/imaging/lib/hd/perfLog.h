@@ -190,8 +190,8 @@ public:
 
 private:
     friend class TfSingleton<HdPerfLog>;
-    HdPerfLog();
-    ~HdPerfLog();
+    HD_API HdPerfLog();
+    HD_API ~HdPerfLog();
 
     // Tracks number of hits and misses and provides some convenience API.
     class _CacheEntry {

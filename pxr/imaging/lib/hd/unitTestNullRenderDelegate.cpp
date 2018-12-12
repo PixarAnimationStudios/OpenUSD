@@ -45,8 +45,11 @@ public:
     {
     public:
         _BufferArray(TfToken const &role,
-                     HdBufferSpecVector const &bufferSpecs) 
-            : HdBufferArray(role, TfToken("perfToken")),
+                     HdBufferSpecVector const &bufferSpecs,
+                     HdBufferArrayUsageHint usageHint)
+            : HdBufferArray(role,
+                            TfToken("perfToken"),
+                            usageHint),
             _bufferSpecs(bufferSpecs)
         {}
 
@@ -146,6 +149,12 @@ public:
         virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const {
         }
 
+        virtual HdBufferArrayUsageHint GetUsageHint() const {
+            return _bufferArray->GetUsageHint();
+        }
+
+    protected:
+
         virtual const void *_GetAggregation() const {
             return _bufferArray;
         }
@@ -159,10 +168,11 @@ public:
     
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs) override
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) override
     {
         return boost::make_shared<Hd_NullStrategy::_BufferArray>(
-                role, bufferSpecs);
+                role, bufferSpecs, usageHint);
     }
 
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange() override
@@ -171,7 +181,8 @@ public:
     }
 
     virtual AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const override
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const override
     {
         // Always returns different value
         static std::atomic_uint id(0);
@@ -208,11 +219,10 @@ public:
 
     virtual ~Hd_NullRprim() = default;
 
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      HdReprSelector const& reprSelector,
-                      bool             forcedRepr) override
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) override
     {
         *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
     }
@@ -230,20 +240,16 @@ public:
         return bits;
     }
 
-    virtual void _InitRepr(HdReprSelector const &reprSelector,
+
+protected:
+    virtual void _InitRepr(TfToken const &reprToken,
                            HdDirtyBits *dirtyBits) override
     {
         _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                                _ReprComparator(reprSelector));
+                                                _ReprComparator(reprToken));
         if (it == _reprs.end()) {
-            _reprs.emplace_back(reprSelector, HdReprSharedPtr());
+            _reprs.emplace_back(reprToken, HdReprSharedPtr());
         }
-    }
-
-protected:
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const &reprSelector,
-                             HdDirtyBits *dirtyBits) override  {
     }
 
 private:

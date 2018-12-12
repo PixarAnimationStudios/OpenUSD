@@ -68,6 +68,7 @@ public:
     bool operator<(const PcpSite &rhs) const;
 
     struct Hash {
+        PCP_API
         size_t operator()(const PcpSite &) const;
     };
 };
@@ -82,15 +83,20 @@ public:
     PcpLayerStackRefPtr layerStack;
     SdfPath path;
 
+    PCP_API
     PcpLayerStackSite();
 
+    PCP_API
     PcpLayerStackSite( const PcpLayerStackRefPtr &, const SdfPath & path );
 
+    PCP_API
     bool operator==(const PcpLayerStackSite &rhs) const;
-    
+
+    PCP_API
     bool operator<(const PcpLayerStackSite &rhs) const;
 
     struct Hash {
+        PCP_API
         size_t operator()(const PcpLayerStackSite &) const;
     };
 };

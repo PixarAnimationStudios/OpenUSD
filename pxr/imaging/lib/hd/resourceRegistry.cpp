@@ -62,56 +62,68 @@ HdResourceRegistry::~HdResourceRegistry()
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::AllocateNonUniformBufferArrayRange(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return _nonUniformBufferArrayRegistry.AllocateRange(
                                     _nonUniformAggregationStrategy.get(),
                                     role,
-                                    bufferSpecs);
+                                    bufferSpecs,
+                                    usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
+    usageHint.bits.immutable = 1;
+
     return _nonUniformImmutableBufferArrayRegistry.AllocateRange(
                                 _nonUniformImmutableAggregationStrategy.get(),
                                 role,
-                                bufferSpecs);
+                                bufferSpecs,
+                                usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::AllocateUniformBufferArrayRange(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return _uniformUboBufferArrayRegistry.AllocateRange(
                                     _uniformUboAggregationStrategy.get(),
                                     role,
-                                    bufferSpecs);
+                                    bufferSpecs,
+                                    usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::AllocateShaderStorageBufferArrayRange(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return _uniformSsboBufferArrayRegistry.AllocateRange(
                                     _uniformSsboAggregationStrategy.get(),
                                     role,
-                                    bufferSpecs);
+                                    bufferSpecs,
+                                    usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::AllocateSingleBufferArrayRange(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return _singleBufferArrayRegistry.AllocateRange(
                                     _singleAggregationStrategy.get(),
                                     role,
-                                    bufferSpecs);
+                                    bufferSpecs,
+                                    usageHint);
 }
 
 void

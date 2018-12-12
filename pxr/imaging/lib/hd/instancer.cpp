@@ -22,9 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprim.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 HdInstancer::HdInstancer(HdSceneDelegate* delegate,
                          SdfPath const& id,
@@ -35,6 +36,26 @@ HdInstancer::HdInstancer(HdSceneDelegate* delegate,
 {
 }
 
+/* static */
+int
+HdInstancer::GetInstancerNumLevels(HdRenderIndex& index,
+                                   HdRprim const& rprim)
+{
+    // Walk up the instancing hierarchy to figure out how many levels of
+    // instancing the passed-in rprim has.
+
+    int instancerLevels = 0;
+    SdfPath parent = rprim.GetInstancerId();
+    HdInstancer *instancer = nullptr;
+    while (!parent.IsEmpty()) {
+        instancerLevels++;
+        instancer = index.GetInstancer(parent);
+        TF_VERIFY(instancer);
+        parent = instancer ? instancer->GetParentId()
+            : SdfPath::EmptyPath();
+    }
+    return instancerLevels;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

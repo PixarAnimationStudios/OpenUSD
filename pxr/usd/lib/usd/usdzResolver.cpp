@@ -226,6 +226,21 @@ Usd_UsdzResolver::OpenAsset(
     }
 
     const UsdZipFile::FileInfo info = iter.GetFileInfo();
+
+    if (info.compressionMethod != 0) {
+        TF_RUNTIME_ERROR(
+            "Cannot open %s in %s: compressed files are not supported",
+            packagedPath.c_str(), packagePath.c_str());
+        return nullptr;
+    }
+
+    if (info.encrypted) {
+        TF_RUNTIME_ERROR(
+            "Cannot open %s in %s: encrypted files are not supported",
+            packagedPath.c_str(), packagePath.c_str());
+        return nullptr;
+    }
+
     return std::shared_ptr<ArAsset>(
         new _Asset(
             std::move(asset), std::move(zipFile),

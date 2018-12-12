@@ -35,7 +35,6 @@
 
 #include <boost/mpl/vector.hpp>
 #include <boost/operators.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <iosfwd>
 #include <memory>

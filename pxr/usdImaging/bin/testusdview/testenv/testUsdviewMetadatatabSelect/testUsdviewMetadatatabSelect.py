@@ -27,7 +27,7 @@ def _testSelectionChangeScrollPosition(appController):
     # tab view does not affect the current scroll position in 
     # the property view
     propView = appController._ui.propertyView
-    inspectorView = appController._ui.attributeInspector
+    inspectorView = appController._ui.propertyInspector
 
     initialScroll = propView.verticalScrollBar().value()
 
@@ -52,7 +52,7 @@ def _testSelectionChangeScrollPosition(appController):
     assert propView.verticalScrollBar().value() == initialScroll 
 
 def _testBasic(appController):
-    inspectorView = appController._ui.attributeInspector
+    inspectorView = appController._ui.propertyInspector
     
     inspectorView.setCurrentIndex(0)
     appController._mainWindow.repaint()

@@ -53,21 +53,22 @@ class Hd_TestTask final : public HdTask
 public:
     Hd_TestTask(HdRenderPassSharedPtr const &renderPass,
                 HdRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     {
     }
 
-protected:
-    virtual void _Sync( HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
         _renderPassState->Sync(
             _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState);

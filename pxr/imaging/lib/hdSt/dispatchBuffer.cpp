@@ -113,6 +113,11 @@ public:
         return 1;
     }
 
+    /// Returns the usage hint from the underlying buffer array
+    virtual HdBufferArrayUsageHint GetUsageHint() const override {
+        return _buffer->GetUsageHint();
+    }
+
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
     virtual HdStBufferResourceGLSharedPtr GetResource() const {
@@ -156,7 +161,9 @@ private:
 
 HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
                                    unsigned int commandNumUints)
-    : HdBufferArray(role, TfToken()), _count(count), _commandNumUints(commandNumUints)
+ : HdBufferArray(role, TfToken(), HdBufferArrayUsageHint())
+ , _count(count)
+ , _commandNumUints(commandNumUints)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

@@ -43,6 +43,7 @@
 #include "pxr/usd/usd/timeCode.h"
 
 #include <maya/MArgDatabase.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
@@ -51,6 +52,7 @@
 #include <maya/MFnNumericData.h>
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -58,6 +60,8 @@
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 
@@ -76,11 +80,37 @@ struct _CmpDag
     }
 };
 
+/// Set of DAG paths.
+/// Warning: MDagPaths refer to specific objects, so the internal fullPathName
+/// may change over time. Only use this class if you can guarantee that DAG
+/// nodes won't be renamed or reparented while class instances are alive.
+/// Otherwise, you may see inconsistent results.
 using MDagPathSet = std::set<MDagPath, _CmpDag>;
 
+/// Mapping of DAG paths to an arbitrary type.
+/// Warning: MDagPaths refer to specific objects, so the internal fullPathName
+/// may change over time. Only use this class if you can guarantee that DAG
+/// nodes won't be renamed or reparented while class instances are alive.
+/// Otherwise, you may see inconsistent results.
 template <typename V>
 using MDagPathMap = std::map<MDagPath, V, _CmpDag>;
 
+struct _HashObjectHandle
+{
+    unsigned long operator()(const MObjectHandle& handle) const
+    {
+        return handle.hashCode();
+    }
+};
+
+/// Unordered set of Maya object handles.
+using MObjectHandleUnorderedSet =
+        std::unordered_set<MObjectHandle, _HashObjectHandle>;
+
+/// Unordered mapping of Maya object handles to an arbitrary type.
+template <typename V>
+using MObjectHandleUnorderedMap =
+        std::unordered_map<MObjectHandle, V, _HashObjectHandle>;
 
 /// RAII-style helper for destructing an MDataHandle obtained from a plug
 /// once it goes out of scope.
@@ -90,7 +120,9 @@ class MDataHandleHolder : public TfRefBase
     MDataHandle _dataHandle;
 
 public:
+    PXRUSDMAYA_API
     static TfRefPtr<MDataHandleHolder> New(const MPlug& plug);
+    PXRUSDMAYA_API
     MDataHandle GetDataHandle() { return _dataHandle; }
 
 private:
@@ -138,6 +170,19 @@ ConvertCMToMM(const double cm)
     return cm * MillimetersPerCentimeter;
 }
 
+/// Get the full name of the Maya node \p mayaNode.
+///
+/// If \p mayaNode refers to a DAG node (i.e. supports the MFnDagNode function
+/// set), then the name returned will be the DAG node's full path name.
+///
+/// If \p mayaNode refers to a DG node (i.e. supports the MFnDependencyNode
+/// function set), then the name returned will be the DG node's absolute name.
+///
+/// If \p mayaNode is not one of these or if an error is encountered, an
+/// empty string will be returned.
+PXRUSDMAYA_API
+std::string GetMayaNodeName(const MObject& mayaNode);
+
 /// Gets the Maya MObject for the node named \p nodeName.
 PXRUSDMAYA_API
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
@@ -176,9 +221,9 @@ bool isAncestorDescendentRelationship(
 PXRUSDMAYA_API
 int getSampledType(const MPlug& iPlug, const bool includeConnectedChildren);
 
-// determine if a Maya Object is animated or not
+/// Determine if the Maya object \p mayaObject is animated or not
 PXRUSDMAYA_API
-bool isAnimated(MObject& object, const bool checkParent = false);
+bool isAnimated(const MObject& mayaObject, const bool checkParent = false);
 
 // Determine if a specific Maya plug is animated or not.
 PXRUSDMAYA_API
@@ -295,11 +340,8 @@ void CompressFaceVaryingPrimvarIndices(
 /// default (or since being brought in from a reference for plugs on nodes from
 /// referenced files), or if the plug has a connection. Otherwise, it is
 /// considered unauthored.
-///
-/// Note that MPlug::getSetAttrCmds() is currently not declared const, so
-/// IsAuthored() here must take a non-const MPlug.
 PXRUSDMAYA_API
-bool IsAuthored(MPlug& plug);
+bool IsAuthored(const MPlug& plug);
 
 PXRUSDMAYA_API
 MPlug GetConnected(const MPlug& plug);
@@ -352,7 +394,7 @@ bool getPlugValue(
     }
 
     if (isAnimated) {
-        *isAnimated = plg.isDestination();
+        *isAnimated = isPlugAnimated(plg);
     }
 
     return plg.getValue(*val);
@@ -427,6 +469,9 @@ TfRefPtr<MDataHandleHolder> GetPlugDataHandle(const MPlug& plug);
 PXRUSDMAYA_API
 bool SetNotes(MFnDependencyNode& depNode, const std::string& notes);
 
+PXRUSDMAYA_API
+bool SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden);
+
 /// Reads values from the given \p argData into a VtDictionary, using the
 /// \p guideDict to figure out which keys and what type of values should be read
 /// from \p argData.
@@ -464,6 +509,9 @@ PXRUSDMAYA_API
 bool FindAncestorSceneAssembly(
         const MDagPath& dagPath,
         MDagPath* assemblyPath = nullptr);
+
+PXRUSDMAYA_API
+MBoundingBox GetInfiniteBoundingBox();
 
 } // namespace UsdMayaUtil
 

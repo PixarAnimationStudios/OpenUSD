@@ -41,6 +41,8 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_PRIMVAR_ROLE_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdAovTokens, HD_AOV_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_RENDER_SETTINGS_TOKENS);
+
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)
 {
     return TfToken(

@@ -28,16 +28,17 @@
 #include "usdMaya/shadingModeImporter.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
-
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/subset.h"
@@ -61,7 +62,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_IMPORT_OLD_STYLE_FACESETS, true,
+TF_DEFINE_ENV_SETTING(
+    PIXMAYA_IMPORT_OLD_STYLE_FACESETS,
+    true,
     "Whether maya/usdImport should transfer face-set bindings encoded in the "
     "old-style, using UsdGeomFaceSetAPI.");
 
@@ -388,11 +391,11 @@ UsdMayaTranslatorMaterial::AssignMaterial(
 /* static */
 void
 UsdMayaTranslatorMaterial::ExportShadingEngines(
-        const UsdStageRefPtr& stage,
-        const TfToken& shadingMode,
-        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-        const UsdMayaExportParams &exportParams)
+        UsdMayaWriteJobContext& writeJobContext,
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
 {
+    const TfToken& shadingMode = writeJobContext.GetArgs().shadingMode;
+
     if (shadingMode == UsdMayaShadingModeTokens->none) {
         return;
     }
@@ -400,7 +403,7 @@ UsdMayaTranslatorMaterial::ExportShadingEngines(
     if (auto exporterCreator =
             UsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
         if (auto exporter = exporterCreator()) {
-            exporter->DoExport(stage, dagPathToUsdMap, exportParams);
+            exporter->DoExport(writeJobContext, dagPathToUsdMap);
         }
     }
     else {

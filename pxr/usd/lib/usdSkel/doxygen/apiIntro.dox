@@ -1,6 +1,6 @@
 /*!
 
-\page UsdSkel_API_Intro UsdSkel API Introduction 
+\page UsdSkel_API_Intro API Introduction 
 
 This page gives a brief introduction to using the UsdSkel API to read
 skel data encoded in USD.
@@ -694,9 +694,10 @@ posed primitives into normal geometry caches, with no special skeletal
 behaviors.
 
 UsdSkelBakeSkinning is intended both to serve as a reference implementation
-for skinning, and to help facilitate testing. Note that it is meant only
-for testing, and emphasizes correctness over performance. It should not be
-used in performance-sensitive contexts.
+for skinning, and to help facilitate testing.
+\warning UsdSkelBakeSkinning is intended for testing and debugging, and
+emphasizes correctness over performance. It should not be used in
+performance-sensitive contexts.
 
 Skinning can be baked on a stage as follows:
 
@@ -711,5 +712,414 @@ stage->Save();
 UsdSkel.BakeSkinning(stage.Traverse());
 stage.Save();
 \endcode
+
+
+\section UsdSkel_API_WritingSkels Writing Skeletons
+
+The following code demonstarates full USD/UsdSkel API, showing how an animated
+Skeleton might be authored by a DCC application. It is not meant to be a
+definitive example on the *right* way to author a Skeleton, but merely serves
+as a simple example to start from.
+
+For simplicity, this example focuses solely on encoding a Skeleton, and does
+not including bindings for skinnable primitives.
+
+As with previous examples, we begin wtih complete code, and then break it
+down into its component parts.
+
+- C++:
+\code{.cpp}
+bool
+WriteAnimatedSkel(
+    const UsdStagePtr& stage,
+    const SdfPath& skelPath,
+    const SdfPathVector& jointPaths,
+    const std::vector<GfMatrix4d>& rootTransformsPerFrame,
+    const std::vector<VtMatrix4dArray>& jointWorldSpaceTransformsPerFrame,
+    const std::vector<UsdTimeCode>& times,
+    const VtMatrix4dArray& bindTransforms,
+    const VtMatrix4dArray* restTransforms=nullptr)
+{
+    if (rootTransformsPerFrame.size() != times.size())
+        return false;
+    if (jointWorldSpaceTransformsPerFrame.size() != times.size())
+        return false;
+    if (bindTransforms.size() != jointPaths.size())
+        return false;
+
+    UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelPath);
+    if (!skel) {
+        TF_WARN("Failed creating a Skeleton prim at <%s>.", skelPath.GetText());
+        return false;
+    }
+
+    const size_t numJoints = jointPaths.size();
+
+    UsdSkelTopology topo(jointPaths);
+    std::string reason;
+    if (!topo.Validate(&reason)) {
+        TF_WARN("Invalid topology: %s", reason.c_str());
+        return false;
+    }
+
+    VtTokenArray jointTokens(numJoints);
+    for (size_t i = 0; i < jointPaths.size(); ++i) {
+        jointTokens[i] = TfToken(jointPaths[i].GetString());
+    }
+    skel.GetJointsAttr().Set(jointTokens);
+
+    skel.GetBindTransformsAttr().Set(bindTransforms);
+
+    if (restTransforms && restTransforms->size() == numJoints) {
+        skel.GetRestTransformsAttr().Set(*restTransforms);
+    }
+
+    UsdAttribute rootTransformAttr = skel.MakeMatrixXform();
+    for (size_t i = 0; i < times.size(); ++i) {
+        rootTransformAttr.Set(rootTransformsPerFrame[i], times[i]);
+    }
+
+    UsdSkelAnimation anim = UsdSkelAnimation::Define(
+        stage, skelPath.AppendChild(TfToken("Anim")));
+
+    UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(skel.GetPrim());
+    binding.CreateSkeletonRel().SetTargets(
+        SdfPathVector({anim.GetPrim().GetPath()}));
+
+    anim.GetJointsAttr().Set(jointTokens);
+    
+    // Set root transforms and joint transforms per frame.
+    for (size_t i = 0; i < times.size(); ++i) {
+        const GfMatrix4d& rootTransform = rootTransformsPerFrame[i];
+        const VtMatrix4dArray& jointWorldSpaceTransforms =
+            jointWorldSpaceTransformsPerFrame[i];
+        
+        if (jointWorldSpaceTransforms.size() == numJoints) {
+            
+            VtMatrix4dArray jointLocalSpaceTransforms;
+            if (UsdSkelComputeJointLocalTransforms(
+                    topo, jointWorldSpaceTransforms,
+                    &jointLocalSpaceTransforms,
+                    &rootTransform)) {
+
+                anim.SetTransforms(jointLocalSpaceTransforms, times[i]);
+            }
+        }
+    }
+
+    // Don't forget to call Save() on the stage!
+    return true;
+\endcode
+
+- Python:
+\code{.py}
+def WriteAnimatedSkel(stage, skelPath, jointPaths,
+                      rootTransformsPerFrame,
+                      jointWorldSpaceTransformsPerFrame,
+                      times, bindTransforms, restTransforms=None):
+    if not len(rootTransformsPerFrame) == len(times):
+        return False
+    if not len(jointWorldSpaceTransformsPerFrame) == len(times):
+        return False
+    if not len(bindTransforms) == len(jointPaths):
+        return False
+
+    skel = UsdSkel.Skeleton.Define(stage, skelPath)
+    if not skel:
+        Tf.Warn("Failed defining a Skeleton at <%s>.", skelPath)
+        return False
+
+    numJoints = len(jointPaths)
+
+    topo = UsdSkel.Topology(jointPaths)
+    valid,whyNot = topo.Validate()
+    if not valid:
+        Tf.Warn("Invalid topology: %s"%reason)
+        return False
+
+    jointTokens = Vt.TokenArray([jointPath.pathString for jointPath in jointPaths])
+    skel.GetJointsAttr().Set(jointTokens)
+
+    skel.GetBindTransformsAttr().Set(bindTransforms)
+
+    if restTransforms and len(restTransforms) == numJoints:
+        skel.GetRestTransformsAttr().Set(restTransforms)
+
+    rootTransformAttr = skel.MakeMatrixXform()
+    for i,time in enumerate(times):
+        rootTransformAttr.Set(rootTransformsPerFrame[i], time)
+
+    anim = UsdSkel.Animation.Define(stage, skelPath.AppendChild("Anim"))
+
+    binding = UsdSkel.BindingAPI.Apply(skel.GetPrim())
+    binding.CreateSkeletonRel().SetTargets([anim.GetPrim().GetPath()])
+
+    anim.GetJointsAttr().Set(jointTokens)
+
+    for i,time in enumerate(times):
+        rootTransform = rootTransformsPerFrame[i]
+        jointWorldSpaceTransforms = jointWorldSpaceTransformsPerFrame[i]
+        
+        if len(jointWorldSpaceTransforms) == numJoints:
+            
+            jointLocalSpaceTransforms =\
+                UsdSkel.ComputeJointLocalTransforms(
+                    topo, jointWorldSpaceTransforms, rootTransform)
+
+            if jointLocalSpaceTransforms:
+                anim.SetTransforms(jointLocalSpaceTransforms, time)
+
+    # Don't forget to call Save() on the stage!
+    return True
+\endcode
+
+
+- C++:
+\code{.cpp}
+    if (rootTransformsPerFrame.size() != times.size())
+        return false;
+    if (jointWorldSpaceTransformsPerFrame.size() != times.size())
+        return false;
+    if (bindTransforms.size() != jointPaths.size())
+        return false;
+\endcode
+
+- Python:
+\code{.py}
+    if not len(rootTransformsPerFrame) == len(times):
+        return False
+    if not len(jointWorldSpaceTransformsPerFrame) == len(times):
+        return False
+    if not len(bindTransforms) == len(jointPaths):
+        return False
+\endcode
+
+For this method, we expect _rootTransformsPerFrame_ to be an array holding
+a GfMatrix4d for each time in _times_.
+Similarly, _jointWorldSpaceTransformsPerFrame_ holds a VtMatrix4dArray for
+each time in _times_, providing the full set of joint transforms for the
+corresponding time.
+Finally, the _jointPaths_ input is an array of SdfPath objects giving the
+path of each joint, and establishing the \ref UsdSkel_JointOrder of the
+skeleton. The required bindTransforms array must be the same size.
+
+A more complete implementation would provide useful warning messages, rather
+than simply returning _false_.
+
+
+- C++:
+\code{.cpp}
+    UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelPath);
+    if (!skel) {
+        TF_WARN("Failed creating a Skeleton prim at <%s>.", skelPath.GetText());
+        return false;
+    }
+\endcode
+
+- Python:
+\code{.py}
+    skel = UsdSkel.Skeleton.Define(stage, skelPath)
+    if not skel:
+        Tf.Warn("Failed defining a Skeleton at <%s>.", skelPath)
+        return False
+\endcode
+
+We start by defining a Skeleton primitive on the stage at the given path.
+It is good practice to check that the resulting prim is valid. Some reasons
+why we may be unable to create the prim include:
+- The provided _skelPath_ is not a valid, absolute prim path.
+- An ancestor of the prim at _skelPath_ is already inactive on the stage.
+  It is not possible to acquire a UsdPrim for a descendant of an inactive prim.
+
+A more complete implementation would likely at least validate that the
+ _skelPath_ is not invalid.
+
+- C++:
+\code{.cpp}
+    UsdSkelTopology topo(jointPaths);
+    std::string reason;
+    if (!topo.Validate(&reason)) {
+        TF_WARN("Invalid topology: %s", reason.c_str());
+        return false;
+    }
+\endcode
+
+- Python:
+\code{.py}
+    topo = UsdSkel.Topology(jointPaths)
+    valid,whyNot = topo.Validate()
+    if not valid:
+        Tf.Warn("Invalid topology: %s"%reason)
+        return False
+\endcode
+
+The input _jointPaths_ specify the topology of the Skeleton. We construct
+a UsdSkelTopology object at this point primarily for use in subsequent
+transform computations. But this is also a good point to verify that our
+topology is valid.
+
+- C++:
+\code{.cpp}
+    VtTokenArray jointTokens(numJoints);
+    for (size_t i = 0; i < jointPaths.size(); ++i) {
+        jointTokens[i] = TfToken(jointPaths[i].GetString());
+    }
+    skel.GetJointsAttr().Set(jointTokens);
+\endcode
+
+- Python:
+\code{.py}
+    jointTokens = Vt.TokenArray([jointPath.pathString for jointPath in jointPaths])
+    skel.GetJointsAttr().Set(jointTokens)
+\endcode
+
+The actual joint topology is stored on the Skeleton primitive as an array of
+tokens (VtTokenArray). We convert the input paths to tokens, and write the
+result to the Skeleton.
+
+- C++:
+\code{.cpp}
+    skel.GetBindTransformsAttr().Set(bindTransforms);
+
+    if (restTransforms && restTransforms->size() == numJoints) {
+        skel.GetRestTransformsAttr().Set(*restTransforms);
+    }
+\endcode
+
+- Python:
+\code{.py}
+    skel.GetBindTransformsAttr().Set(bindTransforms)
+
+    if restTransforms and len(restTransforms) == numJoints:
+        skel.GetRestTransformsAttr().Set(restTransforms)
+\endcode
+
+Here we author the _bindTransforms_ property of the Skeleton.
+The _restTransforms_ property has been treated as optional. But if
+_restTransforms_ are not authored, then a UsdSkelAnimation must be bound
+to the Skeleton (which we will do shortly), and that animation must include
+the full set of joints. See \ref UsdSkel_BindingAPI_Skeletons
+for more information on binding animations.
+
+- C++:
+\code{.cpp}
+    UsdAttribute rootTransformAttr = skel.MakeMatrixXform();
+    for (size_t i = 0; i < times.size(); ++i) {
+        rootTransformAttr.Set(rootTransformsPerFrame[i], times[i]);
+    }
+\endcode
+
+- Python:
+\code{.py}
+    rootTransformAttr = skel.MakeMatrixXform()
+    for i,time in enumerate(times):
+        rootTransformAttr.Set(rootTransformsPerFrame[i], time)
+\endcode
+
+This demonstrates use of UsdGeomXformable API (a base class of UsdSkelSkeleton)
+for applying transforms on primitives.
+For this example, the root transform has been written out directly on the
+Skeleton. In actual production cases, it is not uncommon for the full root
+transform to instead be set on an ancestor of the Skeleton.
+
+- C++:
+\code{.cpp}
+    UsdSkelAnimation anim = UsdSkelAnimation::Define(
+        stage, skelPath.AppendChild(TfToken("Anim")));
+\endcode
+
+- Python:
+\code{.py}
+    anim = UsdSkel.Animation.Define(stage, skelPath.AppendChild("Anim"))
+\endcode
+
+For reasons that are covered in-depth \ref UsdSkel_SkelAnimation "elsewhere",
+a Skeleton's joint animations are encoded on a separate primitive.
+
+Note that *where* on the stage we choose to place the UsdSkelAnimation primitive
+really only starts to matter when using \ref UsdSkel_Instancing "instancing." In
+the simple case of encoding a small number of skeletons, adding the animation
+as a child of the Skeleton, as above, is the most straight-forward approach. But
+when defining skeletons that take advantage of instancing, a SkelAnimation will
+not be a descendant of the Skeleton.
+
+- C++:
+\code{.cpp}
+    UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(skel.GetPrim());
+    binding.CreateSkeletonRel().SetTargets(
+        SdfPathVector({anim.GetPrim().GetPath()}));
+\endcode
+
+- Python:
+\code{.py}
+    binding = UsdSkel.BindingAPI.Apply(skel.GetPrim())
+    binding.CreateSkeletonRel().SetTargets([anim.GetPrim().GetPath()])
+\endcode
+
+Here we apply the UsdSkelBindingAPI to the Skeleton, and use it to bind the
+animation directly to the Skeleton.
+In more complex \ref UsdSkel_Instancing "instancing" scenarios, we might
+instead choose to bind the animation to an ancestor of the Skeleton.
+
+- C++:
+\code{.cpp}
+    anim.GetJointsAttr().Set(jointTokens);
+\endcode
+
+- Python:
+\code{.py}
+    anim.GetJointsAttr().Set(jointTokens)
+\endcode
+
+Previously, we stored _jointTokens_ on the Skeleton, to encode topology.
+When creating a UsdSkelAnimation, we need to once again store the joint
+tokens. The _jointTokens_ set on the animation define the
+\ref UsdSkel_JointOrder of the animation. In this case, the joint order of the
+animation is identical to that of the Skeleton, but note that that need not be
+the case (for example, if the Skeleton includes joints for fingers, our
+animation could exclude the fingers).
+
+
+- C++:
+\code{.cpp}
+            VtMatrix4dArray jointLocalSpaceTransforms;
+            if (UsdSkelComputeJointLocalTransforms(
+                    topo, jointWorldSpaceTransforms,
+                    &jointLocalSpaceTransforms,
+                    &rootTransform)) {
+\endcode
+
+- Python:
+\code{.py}
+            jointLocalSpaceTransforms =\
+                UsdSkel.ComputeJointLocalTransforms(
+                    topo, jointWorldSpaceTransforms,
+                    rootTransform)
+\endcode
+
+This method has been written to allow joint transforms to be provided in
+world space, because it is often easier for applications to reliably translate
+world space transform, rather than local transforms -- for example, because an
+application may need to skip intermediate joints, or because an application may
+have weird transform inheritance rules (oddities abound related to inheritance
+of *scale*!).
+Previously we created a UsdSkelTopology object, primarily so that it can
+be used at this point to convert world space joint transforms into
+local space, as required by the UsdSkelAnimation schema.
+
+Of course, if it is easy for an application to provide transforms directly
+in local space, this conversion would be unnecessary.
+
+- C++:
+\code{.cpp}
+                anim.SetTransforms(jointLocalSpaceTransforms, times[i]);
+\endcode
+
+- Python:
+\code{.py}
+                anim.SetTransforms(jointLocalSpaceTransforms, time)
+\endcode
+
+Finally, we write joint transforms on the UsdSkelAnimation primitive.
 
 */

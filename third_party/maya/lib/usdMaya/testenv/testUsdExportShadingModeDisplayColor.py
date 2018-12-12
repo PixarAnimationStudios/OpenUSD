@@ -55,7 +55,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         usdFilePath = os.path.abspath('RedCube.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='displayColor')
+            shadingMode='displayColor', materialsScopeName='Materials')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -91,7 +91,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         material = UsdShade.Material.GetBoundMaterial(cubePrim)
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
-        self.assertEqual(materialPath, '/RedCube/Looks/RedLambertSG')
+        self.assertEqual(materialPath, '/RedCube/Materials/RedLambertSG')
 
         materialInputs = material.GetInputs()
         self.assertEqual(len(materialInputs), 3)

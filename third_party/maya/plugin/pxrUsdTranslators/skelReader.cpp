@@ -34,8 +34,6 @@
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/skinningQuery.h"
 
-#include <boost/unordered_map.hpp>
-
 #include <maya/MObject.h>
 
 

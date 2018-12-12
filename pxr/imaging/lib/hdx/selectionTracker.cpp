@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <limits>
 #include <iomanip>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

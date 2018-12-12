@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hdEmbree/renderDelegate.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,12 +38,13 @@ HdEmbreeRenderPass::HdEmbreeRenderPass(HdRenderIndex *index,
     , _renderThread(renderThread)
     , _renderer(renderer)
     , _sceneVersion(sceneVersion)
-    , _lastRenderedVersion(0)
+    , _lastSceneVersion(0)
+    , _lastSettingsVersion(0)
     , _width(0)
     , _height(0)
     , _viewMatrix(1.0f) // == identity
     , _projMatrix(1.0f) // == identity
-    , _attachments()
+    , _aovBindings()
     , _colorBuffer(SdfPath::EmptyPath())
     , _depthBuffer(SdfPath::EmptyPath())
     , _converged(false)
@@ -59,17 +61,17 @@ HdEmbreeRenderPass::~HdEmbreeRenderPass()
 bool
 HdEmbreeRenderPass::IsConverged() const
 {
-    // If the attachments array is empty, the render thread is rendering into
+    // If the aov binding array is empty, the render thread is rendering into
     // _colorBuffer and _depthBuffer.  _converged is set to their convergence
     // state just before blit, so use that as our answer.
-    if (_attachments.size() == 0) {
+    if (_aovBindings.size() == 0) {
         return _converged;
     }
 
     // Otherwise, check the convergence of all attachments.
-    for (size_t i = 0; i < _attachments.size(); ++i) {
-        if ((_attachments[i].renderBuffer != nullptr) &&
-            !_attachments[i].renderBuffer->IsConverged()) {
+    for (size_t i = 0; i < _aovBindings.size(); ++i) {
+        if (_aovBindings[i].renderBuffer &&
+            !_aovBindings[i].renderBuffer->IsConverged()) {
             return false;
         }
     }
@@ -86,9 +88,38 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // Determine whether the scene has changed since the last time we rendered.
     bool needStartRender = false;
     int currentSceneVersion = _sceneVersion->load();
-    if (_lastRenderedVersion != currentSceneVersion) {
+    if (_lastSceneVersion != currentSceneVersion) {
         needStartRender = true;
-        _lastRenderedVersion = currentSceneVersion;
+        _lastSceneVersion = currentSceneVersion;
+    }
+
+    // Likewise the render settings.
+    HdRenderDelegate *renderDelegate = GetRenderIndex()->GetRenderDelegate();
+    int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
+    if (_lastSettingsVersion != currentSettingsVersion) {
+        _renderThread->StopRender();
+        _lastSettingsVersion = currentSettingsVersion;
+
+        _renderer->SetSamplesToConvergence(
+            renderDelegate->GetRenderSetting<int>(
+                HdRenderSettingsTokens->convergedSamplesPerPixel, 1));
+
+        bool enableAmbientOcclusion =
+            renderDelegate->GetRenderSetting<bool>(
+                HdEmbreeRenderSettingsTokens->enableAmbientOcclusion, false);
+        if (enableAmbientOcclusion) {
+            _renderer->SetAmbientOcclusionSamples(
+                renderDelegate->GetRenderSetting<int>(
+                    HdEmbreeRenderSettingsTokens->ambientOcclusionSamples, 0));
+        } else {
+            _renderer->SetAmbientOcclusionSamples(0);
+        }
+
+        _renderer->SetEnableSceneColors(
+            renderDelegate->GetRenderSetting<bool>(
+                HdEmbreeRenderSettingsTokens->enableSceneColors, true));
+
+        needStartRender = true;
     }
 
     GfVec4f vp = renderPassState->GetViewport();
@@ -119,57 +150,60 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         needStartRender = true;
     }
 
-    // Determine whether we need to update the renderer attachments.
+    // Determine whether we need to update the renderer AOV bindings.
     //
-    // It's possible for the passed in attachments to be empty, but that's
+    // It's possible for the passed in bindings to be empty, but that's
     // never a legal state for the renderer, so if that's the case we add
-    // a color attachment that we can blit to the GL framebuffer. In order
-    // to check whether we need to add this color attachment, we check both
-    // the passed in attachments and also whether the renderer currently has
-    // bound attachments.
-    HdRenderPassAttachmentVector attachments =
-        renderPassState->GetAttachments();
-    if (_attachments != attachments || _renderer->GetAttachments().empty()) {
-        _attachments = attachments;
+    // a color and depth aov that we can blit to the GL framebuffer.
+    //
+    // If the renderer AOV bindings are empty, force a bindings update so that
+    // we always get a chance to add color/depth on the first time through.
+    HdRenderPassAovBindingVector aovBindings =
+        renderPassState->GetAovBindings();
+    if (_aovBindings != aovBindings || _renderer->GetAovBindings().empty()) {
+        _aovBindings = aovBindings;
 
         _renderThread->StopRender();
-        if (attachments.size() == 0) {
+        if (aovBindings.size() == 0) {
             // No attachment means we should render to the GL framebuffer
-            HdRenderPassAttachment cbAttach;
-            cbAttach.aovName = HdAovTokens->color;
-            cbAttach.renderBuffer = &_colorBuffer;
-            cbAttach.clearValue =
+            HdRenderPassAovBinding colorAov;
+            colorAov.aovName = HdAovTokens->color;
+            colorAov.renderBuffer = &_colorBuffer;
+            colorAov.clearValue =
                 VtValue(GfVec4f(0.0707f, 0.0707f, 0.0707f, 1.0f));
-            attachments.push_back(cbAttach);
-            HdRenderPassAttachment dbAttach;
-            dbAttach.aovName = HdAovTokens->depth;
-            dbAttach.renderBuffer = &_depthBuffer;
-            dbAttach.clearValue =
-                VtValue(1.0f);
-            attachments.push_back(dbAttach);
+            aovBindings.push_back(colorAov);
+            HdRenderPassAovBinding depthAov;
+            depthAov.aovName = HdAovTokens->depth;
+            depthAov.renderBuffer = &_depthBuffer;
+            depthAov.clearValue = VtValue(1.0f);
+            aovBindings.push_back(depthAov);
         }
-        _renderer->SetAttachments(attachments);
-        // In general, the render thread clears attachments, but make sure
+        _renderer->SetAovBindings(aovBindings);
+        // In general, the render thread clears aov bindings, but make sure
         // they are cleared initially on this thread.
         _renderer->Clear();
         needStartRender = true;
     }
 
-    // If there are no attachments, we should blit our local color buffer to
+    // If there are no AOVs specified, we should blit our local color buffer to
     // the GL framebuffer.
-    if (_attachments.size() == 0) {
+    if (_aovBindings.size() == 0) {
         _converged = _colorBuffer.IsConverged() && _depthBuffer.IsConverged();
-        _colorBuffer.Resolve();
-        uint8_t *cdata = _colorBuffer.Map();
-        if (cdata) {
-            _compositor.UpdateColor(_width, _height, cdata);
-            _colorBuffer.Unmap();
-        }
-        _depthBuffer.Resolve();
-        uint8_t *ddata = _depthBuffer.Map();
-        if (ddata) {
-            _compositor.UpdateDepth(_width, _height, ddata);
-            _depthBuffer.Unmap();
+        // To reduce flickering, don't update the compositor until every pixel
+        // has a sample (as determined by depth buffer convergence).
+        if (_depthBuffer.IsConverged()) {
+            _colorBuffer.Resolve();
+            uint8_t *cdata = _colorBuffer.Map();
+            if (cdata) {
+                _compositor.UpdateColor(_width, _height, cdata);
+                _colorBuffer.Unmap();
+            }
+            _depthBuffer.Resolve();
+            uint8_t *ddata = _depthBuffer.Map();
+            if (ddata) {
+                _compositor.UpdateDepth(_width, _height, ddata);
+                _depthBuffer.Unmap();
+            }
         }
         _compositor.Draw();
     }
@@ -177,7 +211,7 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // Only start a new render if something in the scene has changed.
     if (needStartRender) {
         _converged = false;
-        _renderer->MarkAttachmentsUnconverged();
+        _renderer->MarkAovBuffersUnconverged();
         _renderThread->StartRender();
     }
 }

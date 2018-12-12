@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Sdf, UsdImagingGL
+from pxr import Sdf
 
 # Remove any unwanted visuals from the view and set complexity.
 def _modifySettings(appController):

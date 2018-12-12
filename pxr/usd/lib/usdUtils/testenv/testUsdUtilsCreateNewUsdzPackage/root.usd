@@ -10,6 +10,7 @@
 
 over "foo" (
     assetInfo = {
+        asset identifier = @root.usd@
         asset meta_a = @./meta_a.usd@
         asset[] meta_b = [@./meta_b.usd@, @./meta_c.usd@]
     }

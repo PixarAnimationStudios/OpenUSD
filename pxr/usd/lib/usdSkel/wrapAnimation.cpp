@@ -192,7 +192,24 @@ void wrapUsdSkelAnimation()
 
 namespace {
 
+VtMatrix4dArray
+_GetTransforms(const UsdSkelAnimation& self, UsdTimeCode time)
+{
+    VtMatrix4dArray xforms;
+    self.GetTransforms(&xforms, time);
+    return xforms;
+}
+
+
 WRAP_CUSTOM {
+    using This = UsdSkelAnimation;
+
+    _class
+        .def("GetTransforms", &_GetTransforms,
+             (arg("time")=UsdTimeCode::Default()))
+        .def("SetTransforms", &This::SetTransforms,
+             (arg("xforms"), arg("time")=UsdTimeCode::Default()))
+        ;
 }
 
 }

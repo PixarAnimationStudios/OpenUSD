@@ -95,6 +95,19 @@ _ParallelForN(size_t count, bool forceSerial, Fn&& callback)
 } // namespace
 
 
+void
+_InvertTransforms(GfMatrix4d* xforms, size_t count)
+{
+    _ParallelForN(count, false,
+                  [xforms](size_t start, size_t end)
+                  { 
+                      for (size_t i = start; i < end; ++i) {
+                          xforms[i] = xforms[i].GetInverse();
+                      }
+                  });
+}
+
+
 bool
 UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
                              const GfMatrix4d* jointLocalXforms,
@@ -211,6 +224,19 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
         }
     }
     return true;
+}
+
+
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   const VtMatrix4dArray& xforms,
+                                   VtMatrix4dArray* jointLocalXforms,
+                                   const GfMatrix4d* rootInverseXform)
+{
+    VtMatrix4dArray inverseXforms(xforms);
+    _InvertTransforms(inverseXforms.data(), xforms.size());
+    return UsdSkelComputeJointLocalTransforms(
+        topology, xforms, inverseXforms, jointLocalXforms, rootInverseXform);
 }
 
 
@@ -1137,8 +1163,8 @@ _GetWorldTransformTimeSamples(const UsdPrim& prim,
 }
 
 
-/// Populate \p times with time samples in the range (rangeStart, rangeEnd).
-/// The samples are added based on the expected sampling rate for playback;
+/// Populate \p times with time samples in the range [rangeStart, rangeEnd].
+/// The samples are added based on the expected sampling rate for playback.
 /// I.e., the exact set of time codes that we expect to be queried when
 /// the stage is played back at its configured
 /// timeCodesPerSecond/framesPerSecond.
@@ -1170,9 +1196,10 @@ _GetScenePlaybackTimeCodesInRange(const UsdStagePtr& stage,
     double start = std::min(rangeStart, std::min(stageStart, stageEnd));
     double end = std::max(rangeEnd, std::max(stageEnd, stageStart));
 
-    // Fit the bounding time codes t of this start,end region,
+    // Fit the bounding time codes of this start,end region,
     // where t = start+playbackTimeStep*I, I being an integer.
-    int64_t frameOffsetToStart = std::floor((stageStart-start)/playbackTimeStep);
+    int64_t frameOffsetToStart =
+        std::floor((stageStart-start)/playbackTimeStep);
     start = stageStart + playbackTimeStep*frameOffsetToStart;
     int64_t frameOffsetToEnd = std::floor((stageEnd-end)/playbackTimeStep);
     end = stageEnd + playbackTimeStep*frameOffsetToEnd;
@@ -1235,7 +1262,7 @@ _GetSkinningTimeSamples(const UsdPrim& prim,
     // meshes at every time ordinate at which the unbaked meshes would have
     // been viewed.
 
-    // Joint transforms only interpolate in between different time samples
+    // Joint transforms only interpolate inbetween different time samples
     // at which they're authored, so we can limit our sampling range to
     // the min,max range of the samples queried above.
     if (times->size() < 2) {
@@ -1308,7 +1335,8 @@ _BakeSkinnedPoints(const UsdPrim& prim,
         VtMatrix4dArray xforms;
         if(!skelQuery.ComputeSkinningTransforms(&xforms, time)) {
             TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
-                "[UsdSkelBakeSkinning]   Failed computing skinning transforms\n");
+                "[UsdSkelBakeSkinning]   Failed computing "
+                "skinning transforms\n");
             return false;
         }
 

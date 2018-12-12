@@ -25,22 +25,29 @@
 #define HDX_DRAW_TARGET_TASK_RESOLVE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/task.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdxDrawTargetResolveTask  : public HdSceneTask {
+class HdxDrawTargetResolveTask  : public HdTask {
 public:
+    HDX_API
     HdxDrawTargetResolveTask(HdSceneDelegate* delegate, SdfPath const& id);
-    virtual ~HdxDrawTargetResolveTask() = default;
 
-protected:
+    HDX_API
+    virtual ~HdxDrawTargetResolveTask();
+
     /// Sync the render pass resources
-    virtual void _Sync(HdTaskContext* ctx);
+    HDX_API
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
 
     /// Execute render pass task
-    virtual void _Execute(HdTaskContext* ctx);
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx);
 
 private:
 

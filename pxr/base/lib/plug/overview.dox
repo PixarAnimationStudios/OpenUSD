@@ -7,21 +7,34 @@
 
 
 \section Overview
-Provides generic interface classes to implement a plug-in framework.  The
-PlugPlugin class defines the interface to plug-in modules.  The PlugRegistry
-class defines a mechanism for registering plug-in modules and provides an
-interface for abstract plug-in base classes from which you instantiate concrete
-plug-in subclasses.
+
+Provides a plug-in framework implementation.  The PlugPlugin class defines the
+interface to plug-in modules.  The PlugRegistry class defines a mechanism for
+discovering and registering plug-in modules both automatically upon first use
+and manually at run-time by client calls to PlugRegistry::RegisterPlugins.
+PlugRegistry sends the PlugNotice::DidRegisterPlugins notice when new plug-ins
+are registered (both when Plug is first used and again for subsequent calls to
+PlugRegistry::RegisterPlugins).
+
+PlugRegistry also provides a mechanism to find TfType objects for types defined
+in plug-ins, then find the plug-ins that provide those types, and read metadata
+related to those plug-ins and the contained types, and load the plug-ins.
 
 The PlugPlugin class contains properties that indicate whether or not a plug-in
-is currently loaded and whether a plug-in is a Python module or not.  It also
-includes functions that return a plug-in's name, location in the file system,
-the names of its base classes, its metadata, and any existing dependencies.
+is currently loaded and whether a plug-in is a Python module or a C++ shared
+library.  It also includes functions that return a plug-in's name, location in
+the file system, the names of its base classes, its metadata, and any existing
+dependencies.
 
-The PlugRegistry class includes methods that provides a way of registering
-plug-ins with the system by providing one or more paths to plugInfo.json
-files.  Other methods provide different ways to get references to registered
-plug-ins and get metadata for plug-ins.
+\section Plug_Discovery Plug-In Discovery & Registration
+
+The PlugRegistry class discovers plug-ins both on first use and in response to
+calls to PlugRegistry::RegisterPlugins.  This means that plugin-dependent code
+should listen to the PlugNotice::DidRegisterPlugins notification in order to
+update appropriately if new plugins are registered during the course of a
+running program.
+
+\section Usage
 
 For information on how to add concrete plug-in types to applications like
 Presto, see the API documentation for the libraries that implement functionality
@@ -29,9 +42,9 @@ for those types of components.  For example, the Mf library includes functions
 for registering prim plug-ins; the Wd library includes functions for registering
 GUI components such as editor plug-ins.
 
-\section Plugin Metadata
+\section Plug-In Metadata
 
-Plugins are found and described using plugInfo.json files that may be read
+Plug-ins are found and described using plugInfo.json files that may be read
 without loading the plugin.  The structure of a plugInfo.json file is described
 in detail in the \ref plug_plugInfo "PlugRegistry class".
 

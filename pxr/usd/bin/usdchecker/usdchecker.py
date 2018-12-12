@@ -56,7 +56,7 @@ def main():
     parser = argparse.ArgumentParser(description='Utility for checking the '
         'compliance of a given USD stage or a USDZ package.')
 
-    parser.add_argument('inputFile', type=str, 
+    parser.add_argument('inputFile', type=str, nargs='?', 
                         help='Name of the input file to inspect.')
     parser.add_argument('-s', '--skipVariants', dest='skipVariants',
                         action='store_true', help='If specified, only the prims'
@@ -80,7 +80,7 @@ def main():
                         'to ensure that these constraints are met.')
     parser.add_argument('-d', '--dumpRules', dest='dumpRules', 
                         action='store_true', help='Dump the enumerated set of '
-                        'rules being checked.')
+                        'rules being checked for the given set of options.')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='Enable verbose output mode.')
 
@@ -92,8 +92,15 @@ def main():
             skipARKitRootLayerCheck=False, rootPackageOnly=args.rootPackageOnly, 
             skipVariants=args.skipVariants, verbose=args.verbose)
 
+    if not args.dumpRules and not args.inputFile:
+        parser.error("Either an inputFile or the --dumpRules option must be"
+                     "specified.")
+
     if args.dumpRules:
         checker.DumpRules()
+        # If there's no input file to check, exit after dumping the rules.
+        if args.inputFile is None:
+            return 0
 
     checker.CheckCompliance(inputFile)
 

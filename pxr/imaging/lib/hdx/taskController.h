@@ -49,16 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // XXX: This API is transitional. At the least, render/picking/selection
 // APIs should be decoupled.
 
-/// Task set tokens:
-/// - "colorRender" is the set of tasks needed to render to a color buffer.
-/// - "idRender" is the set of tasks needed to render an id buffer, indicating
-///              what object is at each pixel.
-#define HDX_TASK_SET_TOKENS                    \
-    (colorRender)                              \
-    (idRender)
-
-TF_DECLARE_PUBLIC_TOKENS(HdxTaskSetTokens, HDX_API, HDX_TASK_SET_TOKENS);
-
 /// Intersection mode tokens, mapped to HdxIntersector API.
 /// Note: "nearest" hitmode may be considerably more efficient.
 /// - "nearest" returns the nearest single hit point.
@@ -95,14 +85,13 @@ public:
     /// -------------------------------------------------------
     /// Execution API
 
-    /// Obtain the set of tasks managed by the task controller
-    /// suitable for execution. Currently supported tasksets:
-    /// HdxTaskSet->render
-    /// HdxTaskSet->idRender
+    /// Obtain the set of tasks managed by the task controller,
+    /// for execution. The tasks returned will be different based on
+    /// current renderer state.
     ///
-    /// A vector of zero length indicates the specified taskSet is unsupported.
+    /// A vector of zero length indicates error.
     HDX_API
-    HdTaskSharedPtrVector const &GetTasks(TfToken const& taskSet);
+    HdTaskSharedPtrVector const &GetTasks();
 
     /// -------------------------------------------------------
     /// Rendering API
@@ -236,7 +225,7 @@ private:
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.
     void _CreateCamera();
-    void _CreateRenderTasks();
+    void _CreateRenderTask();
     void _CreateSelectionTask();
     void _CreateLightingTask();
     void _CreateShadowTask();
@@ -296,13 +285,7 @@ private:
     _Delegate _delegate;
 
     // Generated tasks.
-    //
-    // _renderTaskId and _idRenderTaskId are both of type HdxRenderTask.
-    // The reason we have two around is so that they can have parallel sets of
-    // HdxRenderTaskParams; if there were only one render task, we'd thrash the
-    // params switching between id and color render.
     SdfPath _renderTaskId;
-    SdfPath _idRenderTaskId;
     SdfPath _selectionTaskId;
     SdfPath _simpleLightTaskId;
     SdfPath _shadowTaskId;

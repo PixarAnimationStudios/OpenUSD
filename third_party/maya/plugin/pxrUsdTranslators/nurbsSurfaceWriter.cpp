@@ -21,38 +21,51 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
 #include "pxrUsdTranslators/nurbsSurfaceWriter.h"
 
 #include "usdMaya/adaptor.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/writeJobContext.h"
 #include "usdMaya/writeUtil.h"
 
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/nurbsPatch.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 #include "pxr/usd/usdGeom/pointBased.h"
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNurbsSurface.h>
 #include <maya/MFnNurbsCurve.h>
-#include <maya/MTrimBoundaryArray.h>
 #include <maya/MPointArray.h>
+#include <maya/MTrimBoundaryArray.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 PXRUSDMAYA_REGISTER_WRITER(nurbsSurface, PxrUsdTranslators_NurbsSurfaceWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsSurface, UsdGeomNurbsPatch);
 
+
 PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
-        const MDagPath & iDag,
-        const SdfPath& uPath,
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
         UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(iDag, uPath, jobCtx)
+    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
+    TF_AXIOM(GetDagPath().isValid());
+
     UsdGeomNurbsPatch primSchema =
         UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
@@ -60,13 +73,14 @@ PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
     TF_AXIOM(_usdPrim);
 }
 
-static void
+static
+void
 _FixNormalizedKnotRange(
-    VtArray <double> & knots,
-    const unsigned int numKnots,
-    const unsigned int degree,
-    const double startVal,
-    const double endVal)
+        VtArray<double>& knots,
+        const unsigned int numKnots,
+        const unsigned int degree,
+        const double startVal,
+        const double endVal)
 {
     // ensure we've produced valid knot ranges; the data coming
     // from Maya is fine but sometimes rounding errors in the normalization
@@ -92,8 +106,9 @@ _FixNormalizedKnotRange(
     }
 }
 
-//virtual 
-void PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
+/* virtual */
+void
+PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
 {
     UsdMayaPrimWriter::Write(usdTimeCode);
 
@@ -101,17 +116,17 @@ void PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
     writeNurbsSurfaceAttrs(usdTimeCode, primSchema);
 }
 
-// virtual
-bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
-    const UsdTimeCode &usdTimeCode,
-    UsdGeomNurbsPatch &primSchema)
+bool
+PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
+        const UsdTimeCode& usdTimeCode,
+        UsdGeomNurbsPatch& primSchema)
 {
     MStatus status = MS::kSuccess;
 
     // Return if usdTimeCode does not match if shape is animated
     if (usdTimeCode.IsDefault() == _HasAnimCurves() ) {
         // skip shape as the usdTimeCode does not match if shape isAnimated value
-        return true; 
+        return true;
     }
 
     MFnNurbsSurface nurbs(GetDagPath(), &status);
@@ -121,7 +136,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 GetDagPath().fullPathName().asChar());
         return false;
     }
-    
+
     // Gather GPrim DisplayColor/DisplayOpacity
     // We use the same code used for gathering shader data on a mesh
     // but we pass 0 for the numfaces argument since there is no per face
@@ -146,7 +161,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                     dispColor.SetIndices(assignmentIndices);
                 }
             }
-            if (AlphaData.size() > 0 && 
+            if (AlphaData.size() > 0 &&
                 !GfIsClose(AlphaData[0], 1.0, 1e-9)) {
                 UsdGeomPrimvar dispOpacity = primSchema.CreateDisplayOpacityPrimvar();
                 if (interpolation != dispOpacity.GetInterpolation()) {
@@ -174,7 +189,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     nurbs.getKnotsInU(knotsInU);
     MDoubleArray knotsInV;
     nurbs.getKnotsInV(knotsInV);
-    
+
     // determine range
     double startU, endU, startV, endV;
     nurbs.getKnotDomain(startU, endU, startV, endV);
@@ -199,7 +214,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     GfVec2d uRange, vRange;
     uRange[0]=startU; uRange[1]=endU;
     vRange[0]=startV; vRange[1]=endV;
-    
+
     // pad the start and end with a knot on each side, since thats what
     // most apps, like Houdini and Renderman want these two extra knots
     VtArray<double> sampKnotsInU(numKnotsInU+2);
@@ -208,7 +223,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     for (unsigned int i = 0; i < numKnotsInU; i++) {
         sampKnotsInU[i+1]=(double)((knotsInU[i]-uOffset)*uScale);
     }
-    
+
     for (unsigned int i = 0; i < numKnotsInV; i++) {
         sampKnotsInV[i+1]=(double)((knotsInV[i]-vOffset)*vScale);
     }
@@ -220,10 +235,10 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
 
     sampKnotsInU[0] = (2.0 * sampKnotsInU[1] - sampKnotsInU[2]);
-    sampKnotsInU[numKnotsInU+1] = (2.0 * sampKnotsInU[numKnotsInU] - 
+    sampKnotsInU[numKnotsInU+1] = (2.0 * sampKnotsInU[numKnotsInU] -
                                         sampKnotsInU[numKnotsInU-1]);
     sampKnotsInV[0] = (2.0 * sampKnotsInV[1] - sampKnotsInV[2]);
-    sampKnotsInV[numKnotsInV+1] = (2.0 * sampKnotsInV[numKnotsInV] - 
+    sampKnotsInV[numKnotsInV+1] = (2.0 * sampKnotsInV[numKnotsInV] -
                                         sampKnotsInV[numKnotsInV-1]);
 
     MPointArray cvArray;
@@ -249,14 +264,14 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     for (int v = 0; v < numCVsInV; v++) {
         for (int u = 0; u < numCVsInU; u++) {
             int index = u * numCVsInV + v;
-            
+
             // Extract CV location and weight
             sampPos[cvIndex].Set(cvArray[index].x, cvArray[index].y, cvArray[index].z);
             sampPosWeights[cvIndex] = cvArray[index].w;
             if (!GfIsClose(cvArray[index].w, 1.0, 1e-9)) {
                 setWeights = true;
             }
-            
+
             // Compute uniform ST values if stValues can hold it
             // No need to check for nurbsTexCoordParam yet since we only
             // support uniform in the code
@@ -265,11 +280,11 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 float tValue = static_cast<float>(v)/static_cast<float>(numCVsInV-1);
                 stValues[cvIndex] = GfVec2f(sValue, tValue);
             }
-            
+
             cvIndex++;
         }
     }
-    
+
     // Set Gprim Attributes
     // Compute the extent using the CVs.
     VtArray<GfVec3f> extent(2);
@@ -292,11 +307,11 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
     // If stValues vector has vertex data, create and assign st
     if (stValues.size() == static_cast<size_t>(numCVsInU * numCVsInV)) {
-        SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?  
+        SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?
             (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray);
-        UsdGeomPrimvar uvSet = 
+        UsdGeomPrimvar uvSet =
             primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),
-                                     uvValueType, 
+                                     uvValueType,
                                      UsdGeomTokens->vertex);
         _SetAttribute(uvSet.GetAttr(), &stValues);
     }
@@ -310,7 +325,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->periodic);
         break;
         default:
-            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->open);        
+            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->open);
     }
     switch (nurbs.formInV()) {
         case MFnNurbsSurface::kClosed:
@@ -320,7 +335,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->periodic);
         break;
         default:
-            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->open);        
+            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->open);
     }
 
     // If not trimmed surface, you are done
@@ -359,7 +374,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         // if the 3rd argument is set to be true, return the 2D curve
         nurbs.getTrimBoundaries(result, i, true);
         unsigned int numBoundaries = result.length();
-                
+
         for (unsigned int j = 0; j < numBoundaries; j++)
         {
             /*
@@ -372,7 +387,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 default: break;
             }
             */
-            
+
             MObjectArray boundary = result[j];
             unsigned int numTrimCurve = boundary.length();
             trimNumCurves.push_back(numTrimCurve);
@@ -400,7 +415,7 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                     // WE DIFFER FROM ALEMBIC WRITER, WE DON'T FLIP V
                     for (int l = 0; l < numCVs; l++)
                     {
-                        GfVec3d point;                        
+                        GfVec3d point;
 
                         point[0]=(double)((cvArray[l].x-uOffset)*uScale);
                         point[1]=(double)((cvArray[l].y-vOffset)*vScale);
@@ -436,23 +451,23 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         } // for j
     } // for i
 
-    _SetAttribute(primSchema.GetTrimCurveCountsAttr(), &trimNumCurves);    
-    _SetAttribute(primSchema.GetTrimCurveOrdersAttr(), &trimOrder);    
-    _SetAttribute(primSchema.GetTrimCurveVertexCountsAttr(), &trimNumPos);    
-    _SetAttribute(primSchema.GetTrimCurveKnotsAttr(), &trimKnot);    
-    _SetAttribute(primSchema.GetTrimCurveRangesAttr(), &trimRange);    
-    _SetAttribute(primSchema.GetTrimCurvePointsAttr(), &trimPoint);    
+    _SetAttribute(primSchema.GetTrimCurveCountsAttr(), &trimNumCurves);
+    _SetAttribute(primSchema.GetTrimCurveOrdersAttr(), &trimOrder);
+    _SetAttribute(primSchema.GetTrimCurveVertexCountsAttr(), &trimNumPos);
+    _SetAttribute(primSchema.GetTrimCurveKnotsAttr(), &trimKnot);
+    _SetAttribute(primSchema.GetTrimCurveRangesAttr(), &trimRange);
+    _SetAttribute(primSchema.GetTrimCurvePointsAttr(), &trimPoint);
 
     // NO NON TRIM CODE HERE SINCE WE RETURN EARLIER IF NOT TRIMMED
     return true;
 }
 
+/* virtual */
 bool
 PxrUsdTranslators_NurbsSurfaceWriter::ExportsGprims() const
 {
     return true;
 }
-    
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

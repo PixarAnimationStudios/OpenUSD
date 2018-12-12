@@ -51,7 +51,7 @@ static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
 // -------------------------------------------------------------------------- //
 
 HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdSceneTask(delegate, id) 
+    : HdTask(id) 
     , _cameraId()
     , _lightIds()
     , _lightIncludePaths()
@@ -68,40 +68,15 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     _shadows = TfCreateRefPtr(new GlfSimpleShadowArray(_defaultShadowRes, 0));
 }
 
-void
-HdxSimpleLightTask::_Execute(HdTaskContext* ctx)
+HdxSimpleLightTask::~HdxSimpleLightTask()
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-}
 
-size_t
-HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
-                   std::vector<TfToken> const &lightTypes, 
-                   SdfPathVector const &lightIncludePaths,
-                   SdfPathVector const &lightExcludePaths,
-                   std::map<TfToken, SdfPathVector> *lights)
-{
-    size_t count = 0;
-    TF_FOR_ALL(it, lightTypes) {
-        if (renderIndex.IsSprimTypeSupported(*it)) {
-            // XXX: This is inefficient, need to be optimized
-            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(*it, 
-                SdfPath::AbsoluteRootPath());
-
-            SdfPathVector lightsLocal;
-            HdPrimGather gather;
-            gather.Filter(sprimPaths, lightIncludePaths, lightExcludePaths,
-                          &lightsLocal);
-            (*lights)[*it] = lightsLocal;
-            count += lightsLocal.size();
-        }
-    }
-    return count;
 }
 
 void
-HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
+HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
+                         HdTaskContext* ctx,
+                         HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
 
@@ -111,15 +86,12 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     (*ctx)[HdxTokens->lightingShader] =
         boost::dynamic_pointer_cast<HdStLightingShader>(_lightingShader);
 
-    _TaskDirtyState dirtyState;
-    _GetTaskDirtyState(HdTokens->geometry, &dirtyState);
 
-    HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
-    if (dirtyState.bits & HdChangeTracker::DirtyParams) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxSimpleLightTaskParams params;
-        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetTaskParams(delegate, &params)) {
             return;
         }
 
@@ -303,7 +275,42 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         }
     }
     lightingContext->SetShadows(_shadows);
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
+
+void
+HdxSimpleLightTask::Execute(HdTaskContext* ctx)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+}
+
+size_t
+HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
+                   std::vector<TfToken> const &lightTypes,
+                   SdfPathVector const &lightIncludePaths,
+                   SdfPathVector const &lightExcludePaths,
+                   std::map<TfToken, SdfPathVector> *lights)
+{
+    size_t count = 0;
+    TF_FOR_ALL(it, lightTypes) {
+        if (renderIndex.IsSprimTypeSupported(*it)) {
+            // XXX: This is inefficient, need to be optimized
+            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(*it,
+                SdfPath::AbsoluteRootPath());
+
+            SdfPathVector lightsLocal;
+            HdPrimGather gather;
+            gather.Filter(sprimPaths, lightIncludePaths, lightExcludePaths,
+                          &lightsLocal);
+            (*lights)[*it] = lightsLocal;
+            count += lightsLocal.size();
+        }
+    }
+    return count;
+}
+
 
 // -------------------------------------------------------------------------- //
 // VtValue requirements

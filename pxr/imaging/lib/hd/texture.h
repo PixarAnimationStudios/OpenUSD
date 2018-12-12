@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -85,10 +86,10 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Texture API
     // ---------------------------------------------------------------------- //
-    
-    /// Returns true if the texture should be interpreted as a PTex texture.
+
+    /// Returns the type of the texture.
     HD_API
-    bool IsPtex() const;
+    virtual HdTextureType GetTextureType() const;
 
     /// Returns true if mipmaps should be generated when loading.
     HD_API

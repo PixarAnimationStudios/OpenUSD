@@ -31,7 +31,7 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/reduce.h"
 
-#include <tbb/tbb.h>
+#include <tbb/enumerable_thread_specific.h>
 #include <vector>
 #include <algorithm>
 

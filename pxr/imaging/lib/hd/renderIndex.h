@@ -125,14 +125,7 @@ public:
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
     HD_API
-    static HdRenderIndex* New(HdRenderDelegate *renderDelegate) {
-        if (renderDelegate == nullptr) {
-            TF_CODING_ERROR(
-                "Null Render Delegate provided to create render index");
-            return nullptr;
-        }
-        return new HdRenderIndex(renderDelegate);
-    }
+    static HdRenderIndex* New(HdRenderDelegate *renderDelegate);
 
     HD_API
     ~HdRenderIndex();
@@ -419,7 +412,12 @@ private:
         HdRprim         *rprim;
     };
 
-    typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
+    struct _TaskInfo {
+        HdSceneDelegate *sceneDelegate;
+        HdTaskSharedPtr  task;
+    };
+
+    typedef std::unordered_map<SdfPath, _TaskInfo, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
 

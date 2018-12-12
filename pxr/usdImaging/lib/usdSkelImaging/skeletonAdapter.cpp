@@ -424,11 +424,36 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputeTopologyAndRestState()
     VtMatrix4dArray xforms; 
     skelQuery.GetJointWorldBindTransforms(&xforms);
 
+    _numJoints = xforms.size();
+
     UsdSkelImagingComputeBonePoints(skelQuery.GetTopology(), xforms,
                                     numPoints, &_boneMeshPoints);
 
     UsdSkelImagingComputeBoneJointIndices(skelQuery.GetTopology(),
                                           &_boneMeshJointIndices, numPoints);
+
+    // Transform points by their inverse bind transforms. This puts bone points
+    // in the right space so that when we compute bone points on frame changes,
+    // we only need to consider joint transforms (and can disregard bind
+    // transforms). This is only possible since each point of the mesh is 
+    // influenced by only one joint.
+    if (TF_VERIFY(_boneMeshPoints.size() == _boneMeshJointIndices.size())) {
+
+        for (auto& xf : xforms) {
+            xf = xf.GetInverse();
+        }
+
+        const GfMatrix4d* invBindXforms = xforms.cdata();
+        const int* jointIndices = _boneMeshJointIndices.cdata();
+        GfVec3f* points = _boneMeshPoints.data();
+        for (size_t i = 0; i < _boneMeshPoints.size(); ++i) {
+            int jointIdx = jointIndices[i];
+            TF_DEV_AXIOM(jointIdx >= 0 &&
+                         static_cast<size_t>(jointIdx) < xforms.size());
+            points[i] = invBindXforms[jointIdx].Transform(points[i]);
+        }
+    }
+
     return meshTopology;
 }
 
@@ -437,39 +462,35 @@ VtVec3fArray
 UsdSkelImagingSkeletonAdapter::_SkelData::ComputePoints(
     UsdTimeCode time) const
 {
-    VtVec3fArray skinnedPoints(_boneMeshPoints);
-
+    // Initial bone points were stored pre-transformed by the *inverse* world
+    // bind transforms. To correctly position/orient them, we simply need to
+    // transform each bone point by the corresponding skel-space joint
+    // transform.
     VtMatrix4dArray xforms;
-    if(skelQuery.ComputeSkinningTransforms(&xforms, time)) {
+    if (skelQuery.ComputeJointSkelTransforms(&xforms, time)) {
+        if (xforms.size() != _numJoints) {
+            TF_WARN("Size of computed xforms [%zu] != expected num "
+                    "joints [%zu].", xforms.size(), _numJoints);
+            return _boneMeshPoints;
+        }
 
         if(TF_VERIFY(_boneMeshPoints.size() == _boneMeshJointIndices.size())) {
 
-            // This is a simplified form of UsdSkelSkinPointsLBS,
-            // We make the following simplifications:
-            // - numInfluencesPerPoint = 1
-            // - all weight values are 1
+            VtVec3fArray skinnedPoints(_boneMeshPoints);
 
             const int* jointIndices = _boneMeshJointIndices.cdata();
             const GfMatrix4d* jointXforms = xforms.cdata();
-
             GfVec3f* points = skinnedPoints.data();
+
             for(size_t pi = 0; pi < skinnedPoints.size(); ++pi) {
                 int jointIdx = jointIndices[pi];
 
-                if(jointIdx >= 0 &&
-                   static_cast<size_t>(jointIdx) < xforms.size()) {
+                TF_DEV_AXIOM(jointIdx >= 0 &&
+                             static_cast<size_t>(jointIdx) < xforms.size());
 
-                    // XXX: Joint transforms in UsdSkel are required to be
-                    // affine, so this is safe!
-                    points[pi] =
-                        jointXforms[jointIdx].TransformAffine(points[pi]);
-                } else {
-                    TF_WARN("Out of range joint index %d at index %zu"
-                            " (num joints = %zu).",
-                            jointIdx, pi, xforms.size());
-                    // Fallback to the rest points
-                    return _boneMeshPoints;
-                }
+                // XXX: Joint transforms in UsdSkel are required to be
+                // affine, so this is safe!
+                points[pi] = jointXforms[jointIdx].TransformAffine(points[pi]);
             }
             return skinnedPoints;
         }

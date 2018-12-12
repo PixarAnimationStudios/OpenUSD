@@ -45,37 +45,50 @@ namespace {
         bool operator()(const PcpMapFunction::PathPair &lhs,
                         const PcpMapFunction::PathPair &rhs) {
             SdfPath::FastLessThan less;
+            // We need to ensure that "root identity" elements appear first
+            // ('/' -> '/') so we special-case those.
+            SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
+            if (lhs == rhs) {
+                return false;
+            }
+            if (lhs.first == absRoot && lhs.second == absRoot) {
+                return true;
+            }
+            if (rhs.first == absRoot && rhs.second == absRoot) {
+                return false;
+            }
             return less(lhs.first, rhs.first) ||
                 (lhs.first == rhs.first && less(lhs.second, rhs.second));
         }
     };
 };
 
-PcpMapFunction::PcpMapFunction(const PathPairVector &sourceToTarget,
+PcpMapFunction::PcpMapFunction(PathPair const *begin,
+                               PathPair const *end,
                                SdfLayerOffset offset,
                                bool hasRootIdentity)
-    : _data(sourceToTarget, hasRootIdentity)
+    : _data(begin, end, hasRootIdentity)
     , _offset(offset)
 {
 }
 
-// Canonicalize a PathMap by removing all redundant entries.  Redundant entries
-// are those which can be removed without changing the semantics of the
-// correspondence.  Return true if there's a root identity mapping ('/' -> '/').
-// It will not appear in the resulting \p vec.
+// Canonicalize pairs in-place by removing all redundant entries.  Redundant
+// entries are those which can be removed without changing the semantics of the
+// correspondence.  Note that this function modifies both the content of `begin`
+// and `end` as well as the *value* of `begin` and `end` to produce the
+// resulting range.  Return true if there's a root identity mapping ('/' ->
+// '/').  It will not appear in the resulting \p vec.
+template <class PairIter>
 static bool
-_Canonicalize(PcpMapFunction::PathPairVector *vec)
+_Canonicalize(PairIter &begin, PairIter &end)
 {
     TRACE_FUNCTION();
 
-    for (PcpMapFunction::PathPairVector::iterator i = vec->begin();
-         i != vec->end(); /* increment below */)
-    {
+    for (PairIter i = begin; i != end; /* increment below */) {
         bool redundant = false;
 
         // Check for trivial dupes before doing further work.
-        for (PcpMapFunction::PathPairVector::iterator j = vec->begin();
-             j != i; ++j) {
+        for (PairIter j = begin; j != i; ++j) {
             if (*i == *j) {
                 redundant = true;
                 break;
@@ -84,8 +97,7 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
 
         // Find the closest enclosing mapping.  If the trailing name
         // components do not match, this pair cannot be redundant.
-        if (!redundant &&
-            i->first.GetNameToken() == i->second.GetNameToken()) {
+        if (!redundant && i->first.GetNameToken() == i->second.GetNameToken()) {
             // The tail component matches.  Walk up the prefixes.
             for (SdfPath source = i->first, target = i->second;
                  !source.IsEmpty() && !target.IsEmpty()
@@ -94,8 +106,7 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
                  target = target.GetParentPath())
             {
                 // Check for a redundant mapping.
-                for (PcpMapFunction::PathPairVector::iterator j = vec->begin();
-                     j != vec->end(); ++j)
+                for (PairIter j = begin; j != end; ++j)
                 {
                     // *j makes *i redundant if *j maps source to target.
                     if (i != j && j->first == source && j->second == target) {
@@ -119,21 +130,21 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
 
         if (redundant) {
             // Entries are not sorted yet so swap to back for O(1) erase.
-            std::swap(*i, vec->back());
-            vec->erase(vec->end()-1);
+            std::swap(*i, *(end-1));
+            --end;
         } else {
             ++i;
         }
     }
 
     // Final sort to canonical order.
-    std::sort(vec->begin(), vec->end(), _PathPairOrder());
+    std::sort(begin, end, _PathPairOrder());
 
     bool hasRootIdentity = false;
-    if (!vec->empty()) {
+    if (begin != end) {
         auto const &absroot = SdfPath::AbsoluteRootPath();
-        if (vec->front().first == absroot && vec->front().second == absroot) {
-            vec->erase(vec->begin());
+        if (begin->first == absroot && begin->second == absroot) {
+            ++begin;
             hasRootIdentity = true;
         }
     }
@@ -194,8 +205,9 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
     }
 
     PathPairVector vec(sourceToTarget.begin(), sourceToTarget.end());
-    bool hasRootIdentity = _Canonicalize(&vec);
-    return PcpMapFunction(vec, offset, hasRootIdentity);
+    PathPair *begin = vec.data(), *end = vec.data() + vec.size();
+    bool hasRootIdentity = _Canonicalize(begin, end);
+    return PcpMapFunction(begin, end, offset, hasRootIdentity);
 }    
 
 bool
@@ -222,7 +234,7 @@ TF_MAKE_STATIC_DATA(PcpMapFunction::PathMap, _identityPathMap)
 {
     const SdfPath & absoluteRootPath = SdfPath::AbsoluteRootPath();
     _identityPathMap->insert(
-                             std::make_pair(absoluteRootPath, absoluteRootPath));
+        std::make_pair(absoluteRootPath, absoluteRootPath));
 }
 
 const PcpMapFunction::PathMap &
@@ -387,41 +399,75 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     if (inner.IsIdentity())
         return *this;
 
-    // The composition of this function over inner is the result
-    // of first applying inner, then this function.  Build a list
-    // of all of the (source,target) path pairs that result.
-    std::vector<PathPair> pairs;
-
     // A 100k random test subset from a production
     // shot show a mean result size of 1.906050;
     // typically a root identity + other path pair.
-    pairs.reserve(2);
+    constexpr int NumLocalPairs = 4;
+
+    PathPair localSpace[NumLocalPairs];
+    std::vector<PathPair> remoteSpace;
+    PathPair *scratchBegin = localSpace;
+    int maxRequiredPairs =
+        inner._data.numPairs + int(inner._data.hasRootIdentity) +
+        _data.numPairs + int(_data.hasRootIdentity);
+    if (maxRequiredPairs > NumLocalPairs) {
+        remoteSpace.resize(maxRequiredPairs);
+        scratchBegin = remoteSpace.data();
+    }
+    PathPair *scratch = scratchBegin;
+
+    // The composition of this function over inner is the result
+    // of first applying inner, then this function.  Build a list
+    // of all of the (source,target) path pairs that result.
 
     // Apply outer function to the output range of inner.
     const _Data& data_inner = inner._data;
     for (PathPair pair: data_inner) {
         pair.second = MapSourceToTarget(pair.second);
         if (!pair.second.IsEmpty()) {
-            if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
-                pairs.push_back(std::move(pair));
+            if (std::find(scratchBegin, scratch, pair) == scratch) {
+                *scratch++ = std::move(pair);
             }
         }
     }
+    // If inner has a root identity, map that too.
+    if (inner.HasRootIdentity()) {
+        PathPair pair;
+        pair.first = SdfPath::AbsoluteRootPath();
+        pair.second = MapSourceToTarget(SdfPath::AbsoluteRootPath());
+        if (!pair.second.IsEmpty()) {
+            if (std::find(scratchBegin, scratch, pair) == scratch) {
+                *scratch++ = std::move(pair);
+            }
+        }
+    }
+                                               
 
     // Apply the inverse of inner to the domain of this function.
     const _Data& data_outer = _data;
     for (PathPair pair: data_outer) {
         pair.first = inner.MapTargetToSource(pair.first);
         if (!pair.first.IsEmpty()) {
-            if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
-                pairs.push_back(std::move(pair));
+            if (std::find(scratchBegin, scratch, pair) == scratch) {
+                *scratch++ = std::move(pair);
+            }
+        }
+    }
+    // If outer has a root identity, map that too.
+    if (HasRootIdentity()) {
+        PathPair pair;
+        pair.first = inner.MapTargetToSource(SdfPath::AbsoluteRootPath());
+        pair.second = SdfPath::AbsoluteRootPath();
+        if (!pair.first.IsEmpty()) {
+            if (std::find(scratchBegin, scratch, pair) == scratch) {
+                *scratch++ = std::move(pair);
             }
         }
     }
 
-    bool hasRootIdentity = HasRootIdentity() && inner.HasRootIdentity();
-    hasRootIdentity |= _Canonicalize(&pairs);
-    return PcpMapFunction(pairs, _offset * inner._offset, hasRootIdentity);
+    bool hasRootIdentity = _Canonicalize(scratchBegin, scratch);
+    return PcpMapFunction(scratchBegin, scratch,
+                          _offset * inner._offset, hasRootIdentity);
 }
 
 PcpMapFunction
@@ -434,8 +480,11 @@ PcpMapFunction::GetInverse() const
     for (PathPair const &pair: _data) {
         targetToSource.emplace_back(pair.second, pair.first);
     }
+    PathPair const
+        *begin = targetToSource.data(),
+        *end = targetToSource.data() + targetToSource.size();
     return PcpMapFunction(
-        targetToSource, _offset.GetInverse(), _data.hasRootIdentity);
+        begin, end, _offset.GetInverse(), _data.hasRootIdentity);
 }
 
 PcpMapFunction::PathMap

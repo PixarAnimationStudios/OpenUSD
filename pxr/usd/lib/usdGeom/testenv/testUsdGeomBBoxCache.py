@@ -402,6 +402,15 @@ def TestIgnoredPrims():
     abstractPrim = stage.GetPrimAtPath("/_class_UnitCube")
     assert bboxCache.ComputeWorldBound(abstractPrim).GetRange().IsEmpty()
 
+def TestIgnoreVisibility():
+    stage = Usd.Stage.Open("animVis.usda")
+    bboxCache = UsdGeom.BBoxCache(Usd.TimeCode(0.0),
+                                  includedPurposes=[UsdGeom.Tokens.default_],
+                                  useExtentsHint=True,
+                                  ignoreVisibility=True)
+    pseudoRoot = stage.GetPrimAtPath("/")
+    assert not bboxCache.ComputeWorldBound(pseudoRoot).GetRange().IsEmpty()
+    
 def TestBug125048():
     stage = Usd.Stage.Open("testBug125048.usda")
     bboxCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), 
@@ -435,7 +444,8 @@ if __name__ == "__main__":
     TestExtentCalculation()
     TestUnloadedExtentsHints()
     TestIgnoredPrims()
-
+    TestIgnoreVisibility()
+    
     # Turn off debug symbol for these regression tests.
     Tf.Debug.SetDebugSymbolsByName("USDGEOM_BBOX", 0)
     TestBug113044()

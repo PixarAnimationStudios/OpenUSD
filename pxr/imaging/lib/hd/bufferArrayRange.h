@@ -30,14 +30,13 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/bufferArray.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class HdBufferArray;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
@@ -99,6 +98,9 @@ public:
     /// Returns the max number of elements
     virtual size_t GetMaxNumElements() const = 0;
 
+    /// Gets the usage hint on the underlying buffer array
+    virtual HdBufferArrayUsageHint GetUsageHint() const = 0;
+
     /// Sets the buffer array associated with this buffer;
     virtual void SetBufferArray(HdBufferArray *bufferArray) = 0;
 
@@ -110,8 +112,7 @@ public:
         return (other && (_GetAggregation() == other->_GetAggregation()));
     }
 
-    /// Sets the bufferSpecs for all resources.
-    HD_API
+    /// Gets the bufferSpecs for all resources.
     virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const = 0;
 
 protected:

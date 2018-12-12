@@ -29,6 +29,8 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void

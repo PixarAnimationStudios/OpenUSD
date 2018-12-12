@@ -62,8 +62,8 @@ UsdMayaGLHdRenderer::CheckRendererSetup(
         _renderedPrim = usdPrim;
         _excludePrimPaths = excludePaths;
 
-        _renderer.reset(new UsdImagingGL(_renderedPrim.GetPath(),
-                                         _excludePrimPaths));
+        _renderer.reset(new UsdImagingGLEngine(_renderedPrim.GetPath(),
+                                               _excludePrimPaths));
     }
 }
 
@@ -134,7 +134,7 @@ void UsdMayaGLHdRenderer::GenerateDefaultVp2DrawRequests(
 void UsdMayaGLHdRenderer::RenderVp2(
     const RequestDataArray &requests,
     const MHWRender::MDrawContext& context,
-    UsdImagingGL::RenderParams params) const
+    UsdImagingGLRenderParams params) const
 {
     using namespace MHWRender;
 
@@ -204,10 +204,12 @@ void UsdMayaGLHdRenderer::RenderVp2(
         case UsdMayaGLHdRenderer::DRAW_WIREFRAME:
         case UsdMayaGLHdRenderer::DRAW_POINTS: {
 
-            params.drawMode = request.drawRequest.token() == UsdMayaGLHdRenderer::DRAW_WIREFRAME ? UsdImagingGL::DRAW_WIREFRAME :
-                UsdImagingGL::DRAW_POINTS;
+            params.drawMode = request.drawRequest.token() == 
+                UsdMayaGLHdRenderer::DRAW_WIREFRAME ? 
+                    UsdImagingGLDrawMode::DRAW_WIREFRAME :
+                    UsdImagingGLDrawMode::DRAW_POINTS;
             params.enableLighting = false;
-            params.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
+            params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
 
             params.overrideColor = request.fWireframeColor;
 
@@ -220,10 +222,13 @@ void UsdMayaGLHdRenderer::RenderVp2(
         case UsdMayaGLHdRenderer::DRAW_SHADED_SMOOTH: {
 
 
-            params.drawMode = ((request.drawRequest.token() == UsdMayaGLHdRenderer::DRAW_SHADED_FLAT) ?
-                UsdImagingGL::DRAW_GEOM_FLAT : UsdImagingGL::DRAW_GEOM_SMOOTH);
+            params.drawMode = ((request.drawRequest.token() == 
+                    UsdMayaGLHdRenderer::DRAW_SHADED_FLAT) ?
+                        UsdImagingGLDrawMode::DRAW_GEOM_FLAT : 
+                        UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH);
             params.enableLighting = true;
-            params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+            params.cullStyle = 
+                UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
 
             _renderer->Render(_renderedPrim, params);
 
@@ -252,7 +257,7 @@ void
 UsdMayaGLHdRenderer::Render(
         const MDrawRequest& request,
         M3dView& view,
-        UsdImagingGL::RenderParams params) const
+        UsdImagingGLRenderParams params) const
 {
     if (!_renderedPrim.IsValid()) {
         return;
@@ -288,8 +293,9 @@ UsdMayaGLHdRenderer::Render(
         case DRAW_POINTS: {
 
 
-            params.drawMode = drawMode == DRAW_WIREFRAME ? UsdImagingGL::DRAW_WIREFRAME :
-                                                                   UsdImagingGL::DRAW_POINTS;
+            params.drawMode = drawMode == DRAW_WIREFRAME ? 
+                UsdImagingGLDrawMode::DRAW_WIREFRAME : 
+                UsdImagingGLDrawMode::DRAW_POINTS;
             params.enableLighting = false;
             glGetFloatv(GL_CURRENT_COLOR, &params.overrideColor[0]);
 
@@ -309,7 +315,8 @@ UsdMayaGLHdRenderer::Render(
 
 
             params.drawMode = drawMode == DRAW_SHADED_FLAT ?
-                UsdImagingGL::DRAW_SHADED_FLAT : UsdImagingGL::DRAW_SHADED_SMOOTH;
+                UsdImagingGLDrawMode::DRAW_SHADED_FLAT : 
+                UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
 
             _renderer->Render(_renderedPrim, params);
 
@@ -351,7 +358,7 @@ UsdMayaGLHdRenderer::Render(
 bool
 UsdMayaGLHdRenderer::TestIntersection(
         MSelectInfo& selectInfo,
-        UsdImagingGL::RenderParams params,
+        UsdImagingGLRenderParams params,
         GfVec3d* hitPoint) const
 {
     // Guard against user clicking in viewer before renderer is setup
@@ -370,7 +377,7 @@ UsdMayaGLHdRenderer::TestIntersection(
         viewMatrix,
         projectionMatrix);
 
-    params.drawMode = UsdImagingGL::DRAW_GEOM_ONLY;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_GEOM_ONLY;
 
     return _renderer->TestIntersection(viewMatrix,
                                        projectionMatrix,

@@ -354,6 +354,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 _GetSurfaceShaderSource();
             valueCache->GetDisplacementShaderSource(cachePath) =
                 std::string();
+            valueCache->GetMaterialMetadata(cachePath) =
+                                                VtValue(VtDictionary());
         }
 
         // DirtyParams indicates we should return material bindings;
@@ -396,7 +398,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     params.push_back(HdMaterialParam(
                                 HdMaterialParam::ParamTypeTexture,
                                 textureNames[i], fallback,
-                                attr.GetPath(), samplerParams, false));
+                                attr.GetPath(), samplerParams,
+                                HdTextureType::Uv));
                 }
             }
             valueCache->GetMaterialParams(cachePath) = params;

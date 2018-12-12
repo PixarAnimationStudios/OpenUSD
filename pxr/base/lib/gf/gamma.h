@@ -67,6 +67,14 @@ GfVec4d GfApplyGamma(const GfVec4d &v, double gamma);
 GF_API
 GfVec4h GfApplyGamma(const GfVec4h &v, double gamma);
 
+/// Return a new float raised to the power \p gamma
+GF_API
+float GfApplyGamma(const float &v, double gamma);
+
+/// Return a new char raised to the power \p gamma
+GF_API
+unsigned char GfApplyGamma(const unsigned char &v, double gamma);
+
 /// Return the system display gamma
 GF_API
 double GfGetDisplayGamma();
@@ -79,6 +87,8 @@ GF_API GfVec3h GfConvertLinearToDisplay(const GfVec3h &v);
 GF_API GfVec4f GfConvertLinearToDisplay(const GfVec4f &v);
 GF_API GfVec4d GfConvertLinearToDisplay(const GfVec4d &v);
 GF_API GfVec4h GfConvertLinearToDisplay(const GfVec4h &v);
+GF_API float GfConvertLinearToDisplay(const float &v);
+GF_API unsigned char GfConvertLinearToDisplay(const unsigned char &v);
 
 /// Given a vec, \p v, representing an RGB(A) color in the system's display
 /// gamma space, return an energy-linear vec of the same type.
@@ -88,6 +98,8 @@ GF_API GfVec3h GfConvertDisplayToLinear(const GfVec3h &v);
 GF_API GfVec4f GfConvertDisplayToLinear(const GfVec4f &v);
 GF_API GfVec4d GfConvertDisplayToLinear(const GfVec4d &v);
 GF_API GfVec4h GfConvertDisplayToLinear(const GfVec4h &v);
+GF_API float GfConvertDisplayToLinear(const float &v);
+GF_API unsigned char GfConvertDisplayToLinear(const unsigned char &v);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

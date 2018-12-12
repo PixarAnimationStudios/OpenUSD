@@ -589,17 +589,19 @@ public:
     /// Otherwise, its computed model:drawMode is that of its closest ancestor
     /// with an authored model:drawMode.
     ///
-    /// This function should be considered a reference implementation for
-    /// correctness. <b>If called on each prim in the context of a traversal
-    /// we will perform massive overcomputation, because sibling prims share
-    /// sub-problems in the query that can be efficiently cached, but are not
-    /// (cannot be) by this simple implementation.</b> If you have control of
-    /// your traversal, it will be far more efficient to manage model:drawMode
-    /// on a stack as you traverse.
-    ///
+    /// If this function is being called in a traversal context to compute 
+    /// the draw mode of an entire hierarchy of prims, it would be beneficial
+    /// to cache and pass in the computed parent draw-mode via the 
+    /// \p parentDrawMode parameter. This avoids repeated upward traversal to 
+    /// look for ancestor opinions.
+    /// 
+    /// When \p parentDrawMode is empty (or unspecified), this function does 
+    /// an upward traversal to find the closest ancestor with an authored 
+    /// model:drawMode.
+    /// 
     /// \sa GetModelDrawModeAttr()
     USDGEOM_API
-    TfToken ComputeModelDrawMode() const;
+    TfToken ComputeModelDrawMode(const TfToken &parentDrawMode=TfToken()) const;
 };
 
 

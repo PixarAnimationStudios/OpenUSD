@@ -98,7 +98,8 @@ public:
     /// Returns the number of nested levels of instance primvars.
     HD_API
     int GetInstancePrimvarNumLevels() const {
-        return _drawingCoord.GetInstancePrimvarNumLevels();
+        TF_VERIFY(_sharedData->instancerLevels != -1);
+        return _sharedData->instancerLevels;
     }
 
     /// Returns a BufferRange of instance-Primvars at \p level
@@ -170,7 +171,10 @@ public:
 
     /// Returns true if the drawItem has instancer.
     HD_API
-    bool HasInstancer() const { return _sharedData->hasInstancer; }
+    bool HasInstancer() const {
+        TF_VERIFY(_sharedData->instancerLevels != -1);
+        return (_sharedData->instancerLevels > 0);
+    }
 
     /// Returns the hash of the versions of underlying buffers. When the
     /// hash changes, it means the drawing coord might have been reassigned,

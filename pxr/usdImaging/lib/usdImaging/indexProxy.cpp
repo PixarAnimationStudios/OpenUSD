@@ -257,68 +257,86 @@ UsdImagingIndexProxy::IsBprimTypeSupported(TfToken const& typeId) const
 void
 UsdImagingIndexProxy::_ProcessRemovals()
 {
+    TRACE_FUNCTION();
     HdRenderIndex& index = _delegate->GetRenderIndex();
     
-    TF_FOR_ALL(it, _rprimsToRemove) {
-        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Rprim] <%s>\n",
-                                it->GetText());
+    {
+        TRACE_FUNCTION_SCOPE("Rprims");
+        TF_FOR_ALL(it, _rprimsToRemove) {
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Rprim] <%s>\n",
+                                    it->GetText());
 
-        index.RemoveRprim(_delegate->GetPathForIndex(*it));
+            index.RemoveRprim(_delegate->GetPathForIndex(*it));
+        }
+        _rprimsToRemove.clear();
+
     }
-    _rprimsToRemove.clear();
 
-    TF_FOR_ALL(it, _instancersToRemove) {
-        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Instancer] <%s>\n",
-                                it->GetText());
+    {
+        TRACE_FUNCTION_SCOPE("instancers");
+        TF_FOR_ALL(it, _instancersToRemove) {
 
-        _delegate->_instancerPrimPaths.erase(*it);
-        index.RemoveInstancer(_delegate->GetPathForIndex(*it));
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Instancer] <%s>\n",
+                                    it->GetText());
+
+            _delegate->_instancerPrimPaths.erase(*it);
+            index.RemoveInstancer(_delegate->GetPathForIndex(*it));
+        }
+        _instancersToRemove.clear();
     }
-    _instancersToRemove.clear();
 
-    TF_FOR_ALL(it, _sprimsToRemove) {
-        const TfToken &primType  = it->primType;
-        const SdfPath &cachePath = it->cachePath;
+    {
+        TRACE_FUNCTION_SCOPE("sprims");
+        TF_FOR_ALL(it, _sprimsToRemove) {
+            const TfToken &primType  = it->primType;
+            const SdfPath &cachePath = it->cachePath;
 
-        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Sprim] <%s>\n",
-                                         cachePath.GetText());
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Sprim] <%s>\n",
+                                             cachePath.GetText());
 
-        index.RemoveSprim(primType,
-                          _delegate->GetPathForIndex(cachePath));
+            index.RemoveSprim(primType,
+                              _delegate->GetPathForIndex(cachePath));
+        }
+        _sprimsToRemove.clear();
     }
-    _sprimsToRemove.clear();
 
-    TF_FOR_ALL(it, _bprimsToRemove) {
-        const TfToken &primType  = it->primType;
-        const SdfPath &cachePath = it->cachePath;
+    {
+        TRACE_FUNCTION_SCOPE("bprims");
+        TF_FOR_ALL(it, _bprimsToRemove) {
+            const TfToken &primType  = it->primType;
+            const SdfPath &cachePath = it->cachePath;
 
-        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Bprim] <%s>\n",
-                                         cachePath.GetText());
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Bprim] <%s>\n",
+                                             cachePath.GetText());
 
-        index.RemoveBprim(primType,
-                          _delegate->GetPathForIndex(cachePath));
+            index.RemoveBprim(primType,
+                              _delegate->GetPathForIndex(cachePath));
+        }
+        _bprimsToRemove.clear();
     }
-    _bprimsToRemove.clear();
 
-    TF_FOR_ALL(it, _primInfoToRemove) {
-        SdfPath cachePath = *it;
+    {
+        TRACE_FUNCTION_SCOPE("primInfo");
+        TF_FOR_ALL(it, _primInfoToRemove) {
+            SdfPath cachePath = *it;
 
-        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove PrimInfo] <%s>\n",
-                                         cachePath.GetText());
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove PrimInfo] <%s>\n",
+                                             cachePath.GetText());
 
 
-        _delegate->_valueCache.Clear(cachePath);
-        _delegate->_refineLevelMap.erase(cachePath);
-        _delegate->_pickablesMap.erase(cachePath);
+            _delegate->_valueCache.Clear(cachePath);
+            _delegate->_refineLevelMap.erase(cachePath);
+            _delegate->_pickablesMap.erase(cachePath);
 
-        _delegate->_primInfoMap.erase(cachePath);
-        _delegate->_usdIds.Remove(cachePath);
+            _delegate->_primInfoMap.erase(cachePath);
+            _delegate->_usdIds.Remove(cachePath);
 
-        SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
-        _delegate->_cache2indexPath.erase(cachePath);
-        _delegate->_index2cachePath.erase(indexPath);
+            SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+            _delegate->_cache2indexPath.erase(cachePath);
+            _delegate->_index2cachePath.erase(indexPath);
+        }
+        _primInfoToRemove.clear();
     }
-    _primInfoToRemove.clear();
 }
 
 void

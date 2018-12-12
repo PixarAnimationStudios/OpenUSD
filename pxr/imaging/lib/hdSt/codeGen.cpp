@@ -251,6 +251,11 @@ _GetPackedTypeDefinitions()
            "int hd_int_get(ivec2 v)        { return v.x; }\n"
            "int hd_int_get(ivec3 v)        { return v.x; }\n"
            "int hd_int_get(ivec4 v)        { return v.x; }\n"
+        // udim helper function
+            "vec3 hd_sample_udim(vec2 v) {\n"
+            "vec2 vf = floor(v);\n"
+            "return vec3(v.x - vf.x, v.y - vf.y, clamp(vf.x, 0.0, 10.0) + 10.0 * vf.y);\n"
+            "}\n"
 
         // -------------------------------------------------------------------
         // Packed HdType implementation.
@@ -418,6 +423,10 @@ namespace {
         case HdBinding::BINDLESS_SSBO_RANGE:
         case HdBinding::TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
+        case HdBinding::TEXTURE_UDIM_ARRAY:
+        case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
+        case HdBinding::TEXTURE_UDIM_LAYOUT:
+        case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
         case HdBinding::TEXTURE_PTEX_TEXEL:
         case HdBinding::TEXTURE_PTEX_LAYOUT:
             if (caps.explicitUniformLocation) {
@@ -667,23 +676,25 @@ HdSt_CodeGen::Compile()
             _procGS << "vec4 GetPatchCoord(int index);\n"
                     << "void ProcessPrimvars(int index) {\n"
                     << "   vec2 localST = GetPatchCoord(index).xy;\n";
-            break;            
+            break;
         }
 
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
         {
             // quad interpolation
             _procGS  << "void ProcessPrimvars(int index) {\n"
-                     << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,1))[index];\n";
-            break;            
+                     << "   vec2 lut[4] = vec2[4](vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,1));\n"
+                     << "   vec2 localST = lut[index];\n";
+            break;
         }
 
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         {
             // barycentric interpolation
              _procGS  << "void ProcessPrimvars(int index) {\n"
-                      << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(0,1))[index];\n";
-            break;            
+                      << "   vec2 lut[3] = vec2[3](vec2(0,0), vec2(1,0), vec2(0,1));\n"
+                      << "   vec2 localST = lut[index];\n";
+            break;
         }
 
         default: // points, basis curves
@@ -1064,6 +1075,14 @@ static void _EmitDeclaration(std::stringstream &str,
     case HdBinding::TEXTURE_2D:
     case HdBinding::BINDLESS_TEXTURE_2D:
         str << "uniform sampler2D " << name << ";\n";
+        break;
+    case HdBinding::TEXTURE_UDIM_ARRAY:
+    case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
+        str << "uniform sampler2DArray " << name.GetText() << "_Images;\n";
+        break;
+    case HdBinding::TEXTURE_UDIM_LAYOUT:
+    case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
+        str << "uniform sampler1D " << name.GetText() << "_Layout;\n";
         break;
     case HdBinding::TEXTURE_PTEX_TEXEL:
         str << "uniform sampler2DArray " << name << "_Data;\n";
@@ -2669,6 +2688,92 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "vec2(0.0, 0.0)";
             }
             accessors << "); }\n";
+        } else if (bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
+            // a function returning sampler2DArray is allowed in 430 or later
+            if (caps.glslVersion >= 430) {
+                accessors
+                    << "sampler2DArray\n"
+                    << "HdGetSampler_" << it->second.name << "() {\n"
+                    << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+                    << "  return sampler2DArray(shaderData[shaderCoord]."
+                    << it->second.name << ");\n"
+                    << "  }\n";
+            }
+            accessors
+                << it->second.dataType
+                << " HdGet_" << it->second.name << "()" << " {\n"
+                << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n";
+
+            if (!it->second.inPrimvars.empty()) {
+                accessors
+                    << "#if defined(HD_HAS_"
+                    << it->second.inPrimvars[0] << ")\n"
+                    << "  vec3 c = hd_sample_udim(HdGet_"
+                    << it->second.inPrimvars[0] << "().xy);\n"
+                    << "  c.z = texelFetch(sampler1D(shaderData[shaderCoord]."
+                    << it->second.name << "_layout), int(c.z), 0).x - 1;\n"
+                    << "#else\n"
+                    << "  vec3 c = vec3(0.0, 0.0, 0.0);\n"
+                    << "#endif\n";
+            } else {
+                accessors
+                    << "  vec3 c = vec3(0.0, 0.0, 0.0);\n";
+            }
+            accessors
+                << "if (c.z < -0.5) { return vec4(0, 0, 0, 0)" << swizzle
+                << "; } else { \n"
+                << "  return texture(sampler2DArray(shaderData[shaderCoord]."
+                << it->second.name << "), c)" << swizzle << ";}\n}\n";
+        } else if (bindingType == HdBinding::TEXTURE_UDIM_ARRAY) {
+            declarations
+                << LayoutQualifier(it->first)
+                << "uniform sampler2DArray sampler2dArray_"
+                << it->second.name << ";\n";
+
+            if (caps.glslVersion >= 430) {
+                accessors
+                    << "sampler2DArray\n"
+                    << "HdGetSampler_" << it->second.name << "() {\n"
+                    << "  return sampler2dArray_" << it->second.name << ";"
+                    << "}\n";
+            }
+            // vec4 HdGet_name(vec2 coord) { vec3 c = hd_sample_udim(coord);
+            // c.z = texelFetch(sampler1d_name_layout, int(c.z), 0).x - 1;
+            // if (c.z < -0.5) { return vec4(0, 0, 0, 0).xyz; } else {
+            // return texture(sampler2dArray_name, c).xyz;}}
+            accessors
+                << it->second.dataType
+                << " HdGet_" << it->second.name
+                << "(vec2 coord) { vec3 c = hd_sample_udim(coord);\n"
+                << "  c.z = texelFetch(sampler1d_" << it->second.name
+                << "_layout" << ", int(c.z), 0).x - 1;\n"
+                << "if (c.z < -0.5) { return vec4(0, 0, 0, 0)"
+                << swizzle << "; } else {\n"
+                << "  return texture(sampler2dArray_"
+                << it->second.name << ", c)" << swizzle << ";}}\n";
+            // vec4 HdGet_name() { return HdGet_name(HdGet_st().xy); }
+            accessors
+                << it->second.dataType
+                << " HdGet_" << it->second.name
+                << "() { return HdGet_" << it->second.name << "(";
+            if (!it->second.inPrimvars.empty()) {
+                accessors
+                    << "\n"
+                    << "#if defined(HD_HAS_"
+                    << it->second.inPrimvars[0] << ")\n"
+                    << "HdGet_" << it->second.inPrimvars[0] << "().xy\n"
+                    << "#else\n"
+                    << "vec2(0.0, 0.0)\n"
+                    << "#endif\n";
+            } else {
+                accessors
+                    << "vec2(0.0, 0.0)";
+            }
+            accessors << "); }\n";
+        } else if (bindingType == HdBinding::TEXTURE_UDIM_LAYOUT) {
+            declarations
+                << LayoutQualifier(it->first)
+                << "uniform sampler1D sampler1d_" << it->second.name << ";\n";
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
             accessors
                 << _GetUnpackedType(it->second.dataType, false)

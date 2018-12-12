@@ -29,6 +29,7 @@
 #include "pxr/base/tf/type.h"
 
 #include <boost/make_shared.hpp>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,12 +53,29 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderParam::~HdRenderParam() = default;
 HdRenderDelegate::~HdRenderDelegate() = default;
 
+HdRenderDelegate::HdRenderDelegate()
+    : _settingsMap(), _settingsVersion(1)
+{
+}
+
+HdRenderDelegate::HdRenderDelegate(HdRenderSettingsMap const& settingsMap)
+    : _settingsMap(), _settingsVersion(1)
+{
+    _settingsMap = settingsMap;
+    if (TfDebug::IsEnabled(HD_RENDER_SETTINGS)) {
+        std::cout << "Initial Render Settings" << std::endl;
+        for (auto const& pair : _settingsMap) {
+            std::cout << "\t[" << pair.first << "] = " << pair.second
+                      << std::endl;
+        }
+    }
+}
+
 HdRenderPassStateSharedPtr
 HdRenderDelegate::CreateRenderPassState() const
 {
     return boost::make_shared<HdRenderPassState>();
 }
-
 
 TfToken
 HdRenderDelegate::GetMaterialBindingPurpose() const
@@ -81,6 +99,56 @@ HdAovDescriptor
 HdRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
     return HdAovDescriptor();
+}
+
+HdRenderSettingDescriptorList
+HdRenderDelegate::GetRenderSettingDescriptors() const
+{
+    return HdRenderSettingDescriptorList();
+}
+
+void
+HdRenderDelegate::SetRenderSetting(TfToken const& key, VtValue const& value)
+{
+    _settingsMap[key] = value;
+    _settingsVersion++;
+
+    if (TfDebug::IsEnabled(HD_RENDER_SETTINGS)) {
+        std::cout << "Render Setting [" << key << "] = " << value << std::endl;
+    }
+}
+
+VtValue
+HdRenderDelegate::GetRenderSetting(TfToken const& key) const
+{
+    auto it = _settingsMap.find(key);
+    if (it != _settingsMap.end()) {
+        return it->second;
+    }
+
+    if (TfDebug::IsEnabled(HD_RENDER_SETTINGS)) {
+        std::cout << "Render setting not found for key [" << key << "]"
+                  << std::endl;
+    }
+    return VtValue();
+}
+
+unsigned int
+HdRenderDelegate::GetRenderSettingsVersion() const
+{
+    return _settingsVersion;
+}
+
+void
+HdRenderDelegate::_PopulateDefaultSettings(
+    HdRenderSettingDescriptorList const& defaultSettings)
+{
+    for (size_t i = 0; i < defaultSettings.size(); ++i) {
+        if (_settingsMap.count(defaultSettings[i].key) == 0) {
+            _settingsMap[defaultSettings[i].key] =
+                defaultSettings[i].defaultValue;
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,6 +27,7 @@
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
+#include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/stage.h"
@@ -77,46 +78,53 @@ TF_DEFINE_PRIVATE_TOKENS(
     (root)
 );
 
-/*static*/
-UsdviewqUtils::PrimInfo
-UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
+UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
 {
-    PrimInfo info;
-
-    info.hasCompositionArcs = (prim.HasAuthoredReferences()    ||
-                               prim.HasPayload()               ||
-                               prim.HasAuthoredInherits()      ||
-                               prim.HasAuthoredSpecializes()   ||
-                               prim.HasVariantSets());
-    info.isActive = prim.IsActive();
+    hasCompositionArcs = (prim.HasAuthoredReferences()    ||
+                          prim.HasPayload()               ||
+                          prim.HasAuthoredInherits()      ||
+                          prim.HasAuthoredSpecializes()   ||
+                          prim.HasVariantSets());
+    isActive = prim.IsActive();
     UsdGeomImageable img(prim);
-    info.isImageable = static_cast<bool>(img);
-    info.isDefined = prim.IsDefined();
-    info.isAbstract = prim.IsAbstract();
+    isImageable = static_cast<bool>(img);
+    isDefined = prim.IsDefined();
+    isAbstract = prim.IsAbstract();
+
     // isInMaster is meant to guide UI to consider the prim's "source",
     // so even if the prim is a proxy prim, then unlike the core 
     // UsdPrim.IsInMaster(), we want to consider it as coming from a master
     // to make it visually distinctive.  If in future we need to decouple
     // the two concepts we can, but we're sensitive here to python marshalling
     // costs.
-    info.isInMaster = prim.IsInMaster() || prim.IsInstanceProxy();
-    info.isInstance = prim.IsInstance();
-    info.isVisibilityInherited = false;
+    isInMaster = prim.IsInMaster() || prim.IsInstanceProxy();
+
+    supportsDrawMode = isActive && isDefined && 
+        !isInMaster && prim.GetPath() != SdfPath::AbsoluteRootPath() &&
+        UsdModelAPI(prim).IsModel();
+
+    isInstance = prim.IsInstance();
+    isVisibilityInherited = false;
     if (img){
         UsdAttributeQuery query(img.GetVisibilityAttr());
         TfToken visibility = UsdGeomTokens->inherited;
         query.Get(&visibility, time);
-        info.isVisibilityInherited = (visibility == UsdGeomTokens->inherited);
-        info.visVaries = query.ValueMightBeTimeVarying();
+        isVisibilityInherited = (visibility == UsdGeomTokens->inherited);
+        visVaries = query.ValueMightBeTimeVarying();
     }
 
     if (prim.GetParent())
-        info.name = prim.GetName().GetString();
+        name = prim.GetName().GetString();
     else
-        info.name = _tokens->root.GetString();
-    info.typeName = prim.GetTypeName().GetString();
-    
-    return info;
+        name = _tokens->root.GetString();
+    typeName = prim.GetTypeName().GetString();
+}
+
+/*static*/
+UsdviewqUtils::PrimInfo
+UsdviewqUtils::GetPrimInfo(const UsdPrim &prim, const UsdTimeCode time)
+{
+    return PrimInfo(prim, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -25,30 +25,38 @@
 #include "pxrUsdTranslators/cameraWriter.h"
 
 #include "usdMaya/adaptor.h"
-#include "usdMaya/jobArgs.h"
+#include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/gf/vec2f.h"
-#include "pxr/usd/usd/stage.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
-#include <maya/MDagPath.h>
 #include <maya/MFnCamera.h>
+#include <maya/MFnDependencyNode.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 PXRUSDMAYA_REGISTER_WRITER(camera, PxrUsdTranslators_CameraWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(camera, UsdGeomCamera);
 
+
 PxrUsdTranslators_CameraWriter::PxrUsdTranslators_CameraWriter(
-    const MDagPath & iDag,
-    const SdfPath& uPath,
-    UsdMayaWriteJobContext& jobCtx)
-    : UsdMayaPrimWriter(iDag, uPath, jobCtx) 
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        UsdMayaWriteJobContext& jobCtx) :
+    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
+    TF_AXIOM(GetDagPath().isValid());
+
     UsdGeomCamera primSchema =
         UsdGeomCamera::Define(GetUsdStage(), GetUsdPath());
     TF_AXIOM(primSchema);
@@ -85,8 +93,8 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime
     // Using SetFromCamera() would stomp them with a single "transform" xformOp.
 
     if (camFn.isOrtho()) {
-        _SetAttribute(primSchema.GetProjectionAttr(), 
-                      UsdGeomTokens->orthographic, 
+        _SetAttribute(primSchema.GetProjectionAttr(),
+                      UsdGeomTokens->orthographic,
                       usdTime);
 
         // Contrary to the documentation, Maya actually stores the orthographic
@@ -96,14 +104,14 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime
         // It doesn't seem to be possible to specify a non-square orthographic
         // camera in Maya, and aspect ratio, lens squeeze ratio, and film
         // offset have no effect.
-        _SetAttribute(primSchema.GetHorizontalApertureAttr(), 
+        _SetAttribute(primSchema.GetHorizontalApertureAttr(),
                       static_cast<float>(orthoWidth), usdTime);
 
-        _SetAttribute(primSchema.GetVerticalApertureAttr(), 
+        _SetAttribute(primSchema.GetVerticalApertureAttr(),
                       static_cast<float>(orthoWidth),
                       usdTime);
     } else {
-        _SetAttribute(primSchema.GetProjectionAttr(), 
+        _SetAttribute(primSchema.GetProjectionAttr(),
                       UsdGeomTokens->perspective, usdTime);
 
         // Lens squeeze ratio applies horizontally only.
@@ -119,30 +127,30 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime
         const double verticalApertureOffset = UsdMayaUtil::ConvertInchesToMM(
             (camFn.shakeEnabled() ? camFn.verticalFilmOffset() + camFn.verticalShake() : camFn.verticalFilmOffset()));
 
-        _SetAttribute(primSchema.GetHorizontalApertureAttr(), 
+        _SetAttribute(primSchema.GetHorizontalApertureAttr(),
                       static_cast<float>(horizontalAperture), usdTime);
 
-        _SetAttribute(primSchema.GetVerticalApertureAttr(), 
+        _SetAttribute(primSchema.GetVerticalApertureAttr(),
                       static_cast<float>(verticalAperture), usdTime);
 
-        _SetAttribute(primSchema.GetHorizontalApertureOffsetAttr(), 
+        _SetAttribute(primSchema.GetHorizontalApertureOffsetAttr(),
                       static_cast<float>(horizontalApertureOffset), usdTime);
 
-        _SetAttribute(primSchema.GetVerticalApertureOffsetAttr(), 
+        _SetAttribute(primSchema.GetVerticalApertureOffsetAttr(),
                       static_cast<float>(verticalApertureOffset), usdTime);
     }
 
     // Set the lens parameters.
-    _SetAttribute(primSchema.GetFocalLengthAttr(), 
+    _SetAttribute(primSchema.GetFocalLengthAttr(),
                   static_cast<float>(camFn.focalLength()), usdTime);
 
     // Always export focus distance and fStop regardless of what
     // camFn.isDepthOfField() says. Downstream tools can choose to ignore or
     // override them.
-    _SetAttribute(primSchema.GetFocusDistanceAttr(), 
+    _SetAttribute(primSchema.GetFocusDistanceAttr(),
                   static_cast<float>(camFn.focusDistance()), usdTime);
 
-    _SetAttribute(primSchema.GetFStopAttr(), 
+    _SetAttribute(primSchema.GetFStopAttr(),
                   static_cast<float>(camFn.fStop()), usdTime);
 
     // Set the clipping planes.
@@ -153,5 +161,5 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime
     return true;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

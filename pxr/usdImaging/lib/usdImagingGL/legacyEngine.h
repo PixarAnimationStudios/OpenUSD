@@ -21,12 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGINGGL_REFENGINE_H
-#define USDIMAGINGGL_REFENGINE_H
+#ifndef USDIMAGINGGL_LEGACY_ENGINE_H
+#define USDIMAGINGGL_LEGACY_ENGINE_H
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/api.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+
+#include "pxr/usdImaging/usdImagingGL/renderParams.h"
+
+#include "pxr/imaging/glf/drawTarget.h"
+#include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/glf/simpleMaterial.h"
 
 #include "pxr/imaging/garch/gl.h"
 
@@ -38,41 +44,61 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
+#include <boost/unordered_map.hpp>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DECLARE_WEAK_PTRS(UsdImagingGLRefEngine);
+TF_DECLARE_WEAK_PTRS(UsdImagingGLLegacyEngine);
 
-class UsdImagingGLRefEngine : public UsdImagingGLEngine, public TfWeakBase {
-    typedef UsdImagingGLRefEngine This;
+class UsdImagingGLLegacyEngine : public TfWeakBase 
+{
+
+    typedef UsdImagingGLLegacyEngine This;
+
 public:
 
     USDIMAGINGGL_API
-    UsdImagingGLRefEngine(const SdfPathVector& excludedPaths);
+    UsdImagingGLLegacyEngine(const SdfPathVector& excludedPaths);
 
     USDIMAGINGGL_API
-    ~UsdImagingGLRefEngine();
+    ~UsdImagingGLLegacyEngine();
 
     // Entry point for kicking off a render
     USDIMAGINGGL_API
-    virtual void Render(const UsdPrim& root, RenderParams params);
+    void Render(const UsdPrim& root, 
+                const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
-    virtual void SetCameraState(const GfMatrix4d& viewMatrix,
-                                const GfMatrix4d& projectionMatrix,
-                                const GfVec4d& viewport);
+    void SetCameraState(const GfMatrix4d& viewMatrix,
+                        const GfMatrix4d& projectionMatrix,
+                        const GfVec4d& viewport);
 
     /// Set lighting state
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightVector const &lights,
-                                  GlfSimpleMaterial const &material,
-                                  GfVec4f const &sceneAmbient);
+    void SetLightingState(GlfSimpleLightVector const &lights,
+                          GlfSimpleMaterial const &material,
+                          GfVec4f const &sceneAmbient);
 
     USDIMAGINGGL_API
-    virtual void InvalidateBuffers();
+    void InvalidateBuffers();
 
     USDIMAGINGGL_API
-    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+    SdfPath GetRprimPathFromPrimId(int primId) const;
+
+    USDIMAGINGGL_API
+    bool TestIntersection(
+        const GfMatrix4d &viewMatrix,
+        const GfMatrix4d &projectionMatrix,
+        const GfMatrix4d &worldToLocalSpace,
+        const UsdPrim& root,
+        const UsdImagingGLRenderParams& params,
+        GfVec3d *outHitPoint,
+        SdfPath *outHitPrimPath = NULL,
+        SdfPath *outInstancerPath = NULL,
+        int *outHitInstanceIndex = NULL,
+        int *outHitElementIndex = NULL);
 
 private:
     bool _SupportsPrimitiveRestartIndex();
@@ -131,7 +157,7 @@ private:
                            UsdStageWeakPtr const& sender);
 
 private:
-    RenderParams _params;
+    UsdImagingGLRenderParams _params;
 
     GfMatrix4d _ctm;
 
@@ -229,9 +255,12 @@ private:
 
     // For changes from UsdStage.
     TfNotice::Key _objectsChangedNoticeKey;
+
+    typedef boost::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr> _DrawTargetPerContextMap;
+    _DrawTargetPerContextMap _drawTargets;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGINGGL_REFENGINE_H
+#endif // USDIMAGINGGL_LEGACY_ENGINE_H

@@ -26,6 +26,7 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/debugCodes.h"
+#include "pxrUsdMayaGL/instancerImager.h"
 #include "pxrUsdMayaGL/userData.h"
 
 #include "usdMaya/hdImagingShape.h"
@@ -70,6 +71,10 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
         "PxrMayaHdImagingShapeUI::getDrawRequests(), shapeDagPath: %s\n",
         shapeDagPath.fullPathName().asChar());
 
+    // Sync any instancers that need Hydra drawing.
+    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(
+            drawInfo.displayStyle());
+
     // The legacy viewport never has an old MUserData we can reuse. It also
     // does not manage the data allocated in the MDrawData object, so the batch
     // renderer deletes the MUserData object at the end of a legacy viewport
@@ -107,6 +112,7 @@ PxrMayaHdImagingShapeUI::PxrMayaHdImagingShapeUI() : MPxSurfaceShapeUI()
 /* virtual */
 PxrMayaHdImagingShapeUI::~PxrMayaHdImagingShapeUI()
 {
+    UsdMayaGL_InstancerImager::GetInstance().RemoveShapeAdapters(/*vp2*/ false);
 }
 
 

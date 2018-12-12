@@ -151,7 +151,7 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
 
         // allocate interleaved buffer
         _renderPassStateBar = resourceRegistry->AllocateUniformBufferArrayRange(
-            HdTokens->drawingShader, bufferSpecs);
+            HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
@@ -280,6 +280,10 @@ void
 HdStRenderPassState::Bind()
 {
     GLF_GROUP_FUNCTION();
+
+    if (!glBlendColor) {
+        return;
+    }
     
     // XXX: this states set will be refactored as hdstream PSO.
     
@@ -325,6 +329,25 @@ HdStRenderPassState::Bind()
         glLineWidth(_lineWidth);
     }
 
+    // Blending
+    if (_blendEnabled) {
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(
+                HdStGLConversions::GetGlBlendOp(_blendColorOp),
+                HdStGLConversions::GetGlBlendOp(_blendAlphaOp));
+        glBlendFuncSeparate(
+                HdStGLConversions::GetGlBlendFactor(_blendColorSrcFactor),
+                HdStGLConversions::GetGlBlendFactor(_blendColorDstFactor),
+                HdStGLConversions::GetGlBlendFactor(_blendAlphaSrcFactor),
+                HdStGLConversions::GetGlBlendFactor(_blendAlphaDstFactor));
+        glBlendColor(_blendConstantColor[0],
+                     _blendConstantColor[1],
+                     _blendConstantColor[2],
+                     _blendConstantColor[3]);
+    } else {
+        glDisable(GL_BLEND);
+    }
+
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -361,6 +384,10 @@ HdStRenderPassState::Unbind()
     GLF_GROUP_FUNCTION();
     // restore back to the GL defaults
 
+    if (!glBlendColor) {
+        return;
+    }
+
     glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_PROGRAM_POINT_SIZE);
@@ -368,6 +395,11 @@ HdStRenderPassState::Unbind()
     glDepthFunc(GL_LESS);
     glPolygonOffset(0, 0);
     glLineWidth(1.0f);
+
+    glDisable(GL_BLEND);
+    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+    glBlendColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
         glDisable(GL_CLIP_DISTANCE0 + i);

@@ -41,9 +41,9 @@
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
-#include <maya/MDagPath.h>
 #include <maya/MFnArrayAttrsData.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
@@ -59,11 +59,11 @@ struct UsdMayaWriteUtil
     /// \name Helpers for writing USD
     /// \{
 
-    /// Returns whether the environment setting for writing the TexCoord 
+    /// Returns whether the environment setting for writing the TexCoord
     /// types is set to true
     PXRUSDMAYA_API
     static bool WriteUVAsFloat2();
-    
+
     /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
     /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
     /// contain double data will return the appropriate float-based type.
@@ -125,18 +125,30 @@ struct UsdMayaWriteUtil
 
     /// Given an \p attrPlug, reads its value and returns it as a wrapped
     /// VtValue. The type of the value is determined by consulting the given
-    /// \p typeName; if the value cannot be converted into a \p typeName, then
-    /// returns an empty VtValue.
+    /// \p typeName. If the value cannot be converted into a \p typeName, then
+    /// an empty VtValue is returned.
+    ///
+    /// For type names with color roles, the value read from Maya will be
+    /// converted to a linear color value if \p linearizeColors is true.
     PXRUSDMAYA_API
     static VtValue GetVtValue(
             const MPlug& attrPlug,
-            const SdfValueTypeName& typeName);
+            const SdfValueTypeName& typeName,
+            const bool linearizeColors = true);
 
+    /// Given an \p attrPlug, reads its value and returns it as a wrapped
+    /// VtValue. The type of the value is determined by consulting the given
+    /// \p type. If the value cannot be converted into a \p typeName, then an
+    /// empty VtValue is returned.
+    ///
+    /// For types with color roles, the value read from Maya will be converted
+    /// to a linear color value if \p linearizeColors is true.
     PXRUSDMAYA_API
     static VtValue GetVtValue(
             const MPlug& attrPlug,
             const TfType& type,
-            const TfToken& role);
+            const TfToken& role,
+            const bool linearizeColors = true);
 
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.
@@ -151,12 +163,12 @@ struct UsdMayaWriteUtil
             const UsdTimeCode& usdTime,
             UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
-    /// Given a Maya node at \p dagPath, inspect it for attributes tagged by
+    /// Given a Maya node \p mayaNode, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time
     /// \p usdTime.
     PXRUSDMAYA_API
     static bool WriteUserExportedAttributes(
-            const MDagPath& dagPath,
+            const MObject& mayaNode,
             const UsdPrim& usdPrim,
             const UsdTimeCode& usdTime,
             UsdUtilsSparseValueWriter *valueWriter=nullptr);
@@ -230,6 +242,25 @@ struct UsdMayaWriteUtil
             const UsdTimeCode& usdTime,
             UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
+    /// Get the name of the USD prim under which exported materials are
+    /// authored.
+    ///
+    /// By default, this scope is named "Looks", but it can be configured
+    /// in the UsdMaya metadata of a plugInfo.json file like so:
+    /// 
+    /// "UsdMaya": {
+    ///     "UsdExport": {
+    ///         "materialsScopeName": "SomeScopeName"
+    ///     }
+    /// }
+    ///
+    /// Note that this name can also be specified as a parameter during export
+    /// and the value returned by this function will not account for that. In
+    /// that case, the value should be read from the export args for that
+    /// particular export instead.
+    PXRUSDMAYA_API
+    static TfToken GetMaterialsScopeName();
+
     /// \}
 
     /// \name Helpers for reading Maya data
@@ -239,34 +270,34 @@ struct UsdMayaWriteUtil
     PXRUSDMAYA_API
     static bool ReadMayaAttribute(
             const MFnDependencyNode& depNode,
-            const MString& name, 
+            const MString& name,
             std::string* val);
 
     PXRUSDMAYA_API
     static bool ReadMayaAttribute(
             const MFnDependencyNode& depNode,
-            const MString& name, 
+            const MString& name,
             std::vector<std::string>* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     PXRUSDMAYA_API
     static bool ReadMayaAttribute(
             const MFnDependencyNode& depNode,
-            const MString& name, 
+            const MString& name,
             VtIntArray* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     PXRUSDMAYA_API
     static bool ReadMayaAttribute(
             const MFnDependencyNode& depNode,
-            const MString& name, 
+            const MString& name,
             VtFloatArray* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     PXRUSDMAYA_API
     static bool ReadMayaAttribute(
             const MFnDependencyNode& depNode,
-            const MString& name, 
+            const MString& name,
             VtVec3fArray* val);
     /// \}
 
@@ -286,7 +317,7 @@ struct UsdMayaWriteUtil
     /// \p stride is not greater than 0.
     /// Warns if any \p subframeOffsets fall outside of the open interval
     /// (-\p stride, +\p stride), but returns a valid result in that case,
-    /// ensuring that the returned list is sorted. 
+    /// ensuring that the returned list is sorted.
     ///
     /// Example: frameRange = [1, 5], subframeOffsets = {0.0, 0.9}, stride = 2.0
     ///     This gives the time samples [1, 1.9, 3, 3.9, 5, 5.9].

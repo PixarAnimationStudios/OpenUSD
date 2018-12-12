@@ -30,8 +30,10 @@
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/imaging/glf/ptexTexture.h"
+#include "pxr/imaging/glf/udimTexture.h"
 
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -348,9 +350,12 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
         std::string surfaceSource;
         std::string displacementSource;
 
+        VtDictionary surfaceMetadata;
+
         if (surfaceShaderPrim) {
             surfaceSource = _GetShaderSource(surfaceShaderPrim,
-                                             _tokens->surfaceShader);
+                                             _tokens->surfaceShader,
+                                             &surfaceMetadata);
         }
 
         if (displacementShaderPrim) {
@@ -360,7 +365,10 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
 
         // DirtySurfaceShader triggers a refresh of both shader sources.
         valueCache->GetSurfaceShaderSource(cachePath) = surfaceSource;
-        valueCache->GetDisplacementShaderSource(cachePath) = displacementSource;
+        valueCache->GetDisplacementShaderSource(cachePath) =
+                                                        displacementSource;
+        valueCache->GetMaterialMetadata(cachePath) =
+                                            VtValue(surfaceMetadata);
 
         // Extract the primvars
         valueCache->GetMaterialPrimvars(cachePath) = primvars;
@@ -438,11 +446,15 @@ UsdImagingGLHydraMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
 std::string
 UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
     UsdPrim const& shaderPrim, 
-    TfToken const& shaderType) const
+    TfToken const& shaderType,
+    VtDictionary * metadataOut) const
 {
-    auto getGLSLFXSource = [&shaderType](const GlfGLSLFX &gfx) {
+    auto getGLSLFXSource = [&shaderType, &metadataOut](const GlfGLSLFX &gfx) {
         if (!gfx.IsValid()){
             return std::string();
+        }
+        if (metadataOut) {
+            *metadataOut = gfx.GetMetadata();
         }
         if (shaderType == _tokens->surfaceShader){
             return gfx.GetSurfaceSource();
@@ -672,7 +684,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
         VtValue fallbackValue;
         SdfPath connection;
         TfTokenVector samplerCoords;
-        bool isPtex = false;
+        HdTextureType textureType = HdTextureType::Uv;
         TfToken t;
 
         if (!TF_VERIFY(attr.Get(&fallbackValue),
@@ -692,10 +704,10 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
                 "\t\tFound texture: <%s>\n", connection.GetText());
 
             SdfAssetPath ap;
-            texAttr.Get(&ap, UsdTimeCode::Default());
+            texAttr.Get(&ap, UsdTimeCode::EarliestTime());
 
-            isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
-            if (isPtex) {
+            if (GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()))) {
+                textureType = HdTextureType::Ptex;
                 t = UsdImagingTokens->ptexFaceIndex;
                 // Allow the client to override this name
                 texAttr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t);
@@ -712,6 +724,9 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
                     "\t\t\tFound primvar: <%s>\n", t.GetText());
 
             } else {
+                if (GlfIsSupportedUdimTexture(TfToken(ap.GetAssetPath()))) {
+                    textureType = HdTextureType::Udim;
+                }
                 texAttr.GetMetadata(UsdImagingTokens->uvPrimvar, &t);
                 primvars->push_back(t);
                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
@@ -730,7 +745,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
             TF_DEBUG(USDIMAGING_SHADERS).Msg(
                 "\t\tFound primvar: <%s>\n", connection.GetText());
 
-            if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::Default()))) {
+            if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::EarliestTime()))) {
                 primvars->push_back(t);
                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
                     "\t\t\tFound primvar: <%s>\n", t.GetText());
@@ -746,7 +761,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
                                                   fallbackValue,
                                                   connection,
                                                   samplerCoords,
-                                                  isPtex));
+                                                  textureType));
     }
 }
 
@@ -770,7 +785,7 @@ private:
         SdfPath _connection;
         SdfPath _connectionPrimvar;
         TfTokenVector _samplerCoords;
-        bool _isPtex;
+        HdTextureType _textureType;
     };
     std::vector<_MaterialParam> _params;
 
@@ -909,7 +924,7 @@ _ShaderNetworkWalker::_ShaderNetworkWalker(
     for(_MaterialParam const & param : _params) {
         materialParams->emplace_back(param._paramType,
                 param._name, param._fallbackValue,
-                param._connection, param._samplerCoords, param._isPtex);
+                param._connection, param._samplerCoords, param._textureType);
     }
 }
 
@@ -945,7 +960,7 @@ _ShaderNetworkWalker::_ProcessRootNode(
                     inputConn,/*_connection*/
                     SdfPath(), /*_connectionPrimvar*/
                     TfTokenVector(), /*_samplerCoords*/
-                    false /*_isPtex*/};
+                    HdTextureType::Uv /*_textureType*/};
             _params.push_back(matParam);
             TF_DEBUG(USDIMAGING_SHADERS).Msg(
                 "\t\tAdding attribute <%s> with connection <%s>%s.\n", 
@@ -982,7 +997,7 @@ _ShaderNetworkWalker::_ProcessRootNode(
                     inputConn,/*_connection*/
                     SdfPath(), /*_connectionPrimvar*/
                     TfTokenVector(), /*_samplerCoords*/
-                    false /*_isPtex*/};
+                    HdTextureType::Uv /*_textureType*/};
             _params.push_back(matParam);
 
             TF_DEBUG(USDIMAGING_SHADERS).Msg(
@@ -1002,6 +1017,12 @@ _ShaderNetworkWalker::_ProcessTextureNode(
     SdfPathVector *textureIDs,
     TfTokenVector *primvars) 
 {
+    HdTextureType textureType = HdTextureType::Uv;
+
+    if (sdrNode && sdrNode->GetMetadata().count(_tokens->isPtex)) {
+        textureType = HdTextureType::Ptex;
+    }
+
     // Extract the filename property from the shader node and store 
     // the path in the textureIDs array.
     SdfPath connection;
@@ -1016,7 +1037,17 @@ _ShaderNetworkWalker::_ProcessTextureNode(
                 assetIdentifierPropertyNames.size());
         }
         const auto &input = shader.GetInput(assetIdentifierPropertyNames[0]);
-        connection = input.GetAttr().GetPath();
+        if (input) {
+            connection = input.GetAttr().GetPath();
+            if (textureType != HdTextureType::Ptex) {
+                SdfAssetPath ap;
+                if (input.GetAttr().Get(&ap, UsdTimeCode::EarliestTime())) {
+                    if (GlfIsSupportedUdimTexture(TfToken(ap.GetAssetPath()))) {
+                        textureType = HdTextureType::Udim;
+                    }
+                }
+            }
+        }
     } else {
         if (assetIdentifierPropertyNames.size() > 1) {
             TF_WARN("Found texture node <%s> with no "
@@ -1035,12 +1066,9 @@ _ShaderNetworkWalker::_ProcessTextureNode(
             "\t\tFound texture: <%s>\n", connection.GetText());
     }
 
-    bool isPtex = sdrNode && sdrNode->GetMetadata().count(
-            _tokens->isPtex);
-
     SdfPath connectionPrimvar;
     VtValue fallback = _GetFallbackValue(shader, sdrNode);
-    if (isPtex) {
+    if (textureType == HdTextureType::Ptex) {
         for (auto const & primvarInputName : 
                 sdrNode->GetAdditionalPrimvarProperties()) {
             _ProcessPrimvarInput(primvarInputName, shader, 
@@ -1056,8 +1084,8 @@ _ShaderNetworkWalker::_ProcessTextureNode(
             // "texcoord" to any node that can produce a surface-varying output.
             if (primvarInput.GetConnectedSource(&_source, &_sourceName, 
                         &_sourceType) && 
-                    _GetShaderRole(_source) == SdrNodeRole->Primvar &&
-                    _sourceType == UsdShadeAttributeType::Output) {
+                    _sourceType == UsdShadeAttributeType::Output &&
+                    _GetShaderRole(_source) == SdrNodeRole->Primvar) {
                 connectionPrimvar = _source.GetPath();
             }
         }
@@ -1066,7 +1094,7 @@ _ShaderNetworkWalker::_ProcessTextureNode(
     for(auto &p : _params) {
         if (p._connection == shader.GetPath()) {
             p._paramType = HdMaterialParam::ParamTypeTexture;
-            p._isPtex = isPtex;
+            p._textureType = textureType;
             p._connectionPrimvar = connectionPrimvar;
             p._connection = connection;
             if (!fallback.IsEmpty()) {
@@ -1138,7 +1166,7 @@ std::string
 _ShaderNetworkWalker::_GetShaderRole(const UsdShadeShader &shader)
 {
     TfToken id;
-    if (shader.GetShaderId(&id) && !id.IsEmpty()) {
+    if (shader && shader.GetShaderId(&id) && !id.IsEmpty()) {
         auto &shaderReg = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr sdrNode = 
                 shaderReg.GetShaderNodeByIdentifierAndType(id, 
@@ -1191,7 +1219,7 @@ _ShaderNetworkWalker::_GetFallbackValue(
             if (usdShadeInput) {
                 // "fallback" input should have interfaceOnly connectability. 
                 if (usdShadeInput.GetConnectedSource(&_source, &_sourceName, 
-                        &_sourceType)) {         
+                        &_sourceType)) {
                     // XXX: Fallback should be connectable to an output, but 
                     // HdSt does not support this!
                     if (UsdShadeInput connectedInput = _source.GetInput(

@@ -28,6 +28,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <boost/foreach.hpp>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

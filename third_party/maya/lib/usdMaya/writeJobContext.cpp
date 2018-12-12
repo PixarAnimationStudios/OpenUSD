@@ -21,28 +21,48 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/writeJobContext.h"
 
 #include "usdMaya/instancedNodeWriter.h"
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/primWriter.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/skelBindingsProcessor.h"
 #include "usdMaya/stageCache.h"
 #include "usdMaya/transformWriter.h"
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/xform.h"
 
+#include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MFn.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MItDag.h>
+#include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MPxNode.h>
 
 #include <sstream>
 #include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,22 +74,26 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Shape)
 );
 
+
 namespace {
-    inline SdfPath
-    _GetRootOverridePath(
-        const UsdMayaJobExportArgs& args,
-        const SdfPath& path)
-    {
-        if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
-            return path.ReplacePrefix(
-                    path.GetPrefixes()[0],
-                    args.usdModelRootOverridePath);
-        }
-        return path;
+
+inline
+SdfPath
+_GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
+{
+    if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
+        return path.ReplacePrefix(
+            path.GetPrefixes()[0],
+            args.usdModelRootOverridePath);
     }
 
-    const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
+    return path;
 }
+
+const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
+
+} // anonymous namespace
+
 
 UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
     : mArgs(args),
@@ -95,6 +119,12 @@ bool
 UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
     if (!mArgs.mergeTransformAndShape) {
+        return false;
+    }
+
+    MStatus status;
+    const bool isDagPathValid = path.isValid(&status);
+    if (status != MS::kSuccess || !isDagPathValid) {
         return false;
     }
 
@@ -353,29 +383,44 @@ UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
 bool
 UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
 {
+    SdfLayerRefPtr layer;
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
-        mStage = UsdStage::Open(SdfLayer::FindOrOpen(filename), resolverCtx);
-        if (!mStage) {
+        layer = SdfLayer::FindOrOpen(filename);
+        if (!layer) {
             TF_RUNTIME_ERROR(
-                    "Failed to open stage file '%s'", filename.c_str());
+                    "Failed to open layer '%s' for append", filename.c_str());
             return false;
         }
     } else {
         // If we're exporting over a file that was previously imported, there
         // may still be stages in the stage cache that have that file as a root
-        // layer. Creating a new stage with that file will fail because the
-        // layer already exists in the layer registry, so we try to clear the
-        // layer from the registry by erasing any stages in the stage cache
-        // with that root layer.
+        // layer. Overwriting that layer will trigger potentially-unnecessary
+        // recomposition on those stages, so we try to clear the layer from the
+        // registry by erasing any stages in the stage cache with that root
+        // layer.
         UsdMayaStageCache::EraseAllStagesWithRootLayerPath(filename);
 
-        mStage = UsdStage::CreateNew(filename, resolverCtx);
-        if (!mStage) {
+        if (SdfLayerRefPtr existingLayer = SdfLayer::Find(filename)) {
+            TF_STATUS(
+                    "Writing to already-open layer '%s'", filename.c_str());
+            existingLayer->Clear();
+            layer = existingLayer;
+        }
+        else {
+            layer = SdfLayer::CreateNew(filename);
+        }
+        if (!layer) {
             TF_RUNTIME_ERROR(
-                    "Failed to create stage file '%s'", filename.c_str());
+                    "Failed to create layer '%s'", filename.c_str());
             return false;
         }
+    }
+
+    mStage = UsdStage::Open(layer, resolverCtx);
+    if (!mStage) {
+        TF_RUNTIME_ERROR("Error opening stage for '%s'", filename.c_str());
+        return false;
     }
 
     if (!mArgs.parentScope.IsEmpty()) {
@@ -417,42 +462,68 @@ UsdMayaWriteJobContext::_PostProcess()
 
 UsdMayaPrimWriterSharedPtr
 UsdMayaWriteJobContext::CreatePrimWriter(
-    const MDagPath& curDag,
-    const SdfPath& usdPath,
-    const bool forceUninstance)
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        const bool forceUninstance)
 {
-    if (curDag.length() == 0) {
-        // This is the world root node. It can't have a prim writer.
-        return nullptr;
+    SdfPath writePath = usdPath;
+
+    try {
+        const MFnDagNode& dagNodeFn =
+            dynamic_cast<const MFnDagNode&>(depNodeFn);
+
+        MStatus status;
+        const MDagPath dagPath = dagNodeFn.dagPath(&status);
+        if (status != MS::kSuccess || !dagPath.isValid()) {
+            TF_CODING_ERROR(
+                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
+                "constructed using an MDagPath.",
+                dagNodeFn.fullPathName().asChar());
+            return nullptr;
+        }
+
+        if (dagPath.length() == 0u) {
+            // This is the world root node. It can't have a prim writer.
+            return nullptr;
+        }
+
+        if (writePath.IsEmpty()) {
+            writePath = ConvertDagToUsdPath(dagPath);
+        }
+
+        const bool instanced = dagNodeFn.isInstanced(/* indirect = */ false);
+        if (mArgs.exportInstances && instanced && !forceUninstance) {
+            // Deal with instances -- we use a special internal writer for them.
+            return std::make_shared<UsdMaya_InstancedNodeWriter>(
+                dagNodeFn,
+                writePath,
+                *this);
+        }
+    }
+    catch (const std::bad_cast& /* e */) {
+        // Since the cast failed, this must be a DG node. usdPath must be
+        // supplied for DG nodes.
+        if (writePath.IsEmpty()) {
+            TF_CODING_ERROR(
+                "No usdPath supplied for DG node '%s'.",
+                UsdMayaUtil::GetMayaNodeName(depNodeFn.object()).c_str());
+            return nullptr;
+        }
     }
 
-    MObject ob = curDag.node();
-    const SdfPath writePath = usdPath.IsEmpty()
-            ? ConvertDagToUsdPath(curDag)
-            : usdPath;
-
-    MFnDagNode dagNode(curDag);
-    const bool instanced = dagNode.isInstanced(/*indirect*/ false);
-
-    if (mArgs.exportInstances && instanced && !forceUninstance) {
-        // Deal with instances -- we use a special internal writer for them.
-        return std::make_shared<UsdMaya_InstancedNodeWriter>(
-                curDag, writePath, *this);
-    }
-    else {
-        // Deal with non-instances. Try to look up a writer plugin.
-        // We search through the node's type ancestors, working backwards until
-        // we find a prim writer plugin.
-        MFnDependencyNode depNodeFn(ob);
-        std::string mayaTypeName(depNodeFn.typeName().asChar());
-        if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
-                _FindWriter(mayaTypeName)) {
-            if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(
-                    curDag, writePath, *this)) {
-                // We found a registered user prim writer that handles this node
-                // type, so return now.
-                return primPtr;
-            }
+    // This is either a DG node or a non-instanced DAG node, so try to look up
+    // a writer plugin. We search through the node's type ancestors, working
+    // backwards until we find a prim writer plugin.
+    const std::string mayaTypeName(depNodeFn.typeName().asChar());
+    if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
+            _FindWriter(mayaTypeName)) {
+        if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(
+                depNodeFn,
+                writePath,
+                *this)) {
+            // We found a registered user prim writer that handles this node
+            // type, so return now.
+            return primPtr;
         }
     }
 
@@ -487,11 +558,11 @@ UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
 
 void
 UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
-    const MDagPath& rootDag,
-    const SdfPath& rootUsdPath,
-    const bool forceUninstance,
-    const bool exportRootVisibility,
-    std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut)
+        const MDagPath& rootDag,
+        const SdfPath& rootUsdPath,
+        const bool forceUninstance,
+        const bool exportRootVisibility,
+        std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut)
 {
     if (!primWritersOut) {
         TF_CODING_ERROR("primWritersOut is null");
@@ -532,11 +603,13 @@ UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
             curActualUsdPath = rootUsdPath.AppendPath(curRelPath);
         }
 
+        const MFnDagNode dagNodeFn(curDagPath);
+
         // Currently, forceUninstance only applies to the root DAG path but not
         // to descendant nodes (i.e. nested instancing will always occur).
         // Its purpose is to allow us to do the actual write of the master.
         UsdMayaPrimWriterSharedPtr writer = this->CreatePrimWriter(
-                curDagPath,
+                dagNodeFn,
                 curActualUsdPath,
                 curDagPath == rootDag ? forceUninstance : false);
         if (!writer) {

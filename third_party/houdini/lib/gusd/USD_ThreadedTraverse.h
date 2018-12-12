@@ -139,7 +139,8 @@ struct TraverseTaskT : public UT_Task
     TraverseTaskT(const UsdPrim& prim,  exint idx, UsdTimeCode time,
                   GusdPurposeSet purposes,
                   TaskData& data, const Visitor& visitor, bool skipPrim)
-        :  UT_Task(), _prim(prim), _idx(idx), _time(time), _purposes(purposes), _data(data),
+        :  UT_Task(), _prim(prim), _idx(idx), _time(time),
+           _purposes(purposes), _data(data),
            _visited(false), _visitor(visitor), _skipPrim(skipPrim) {}
 
     virtual UT_Task*    run();
@@ -151,7 +152,7 @@ private:
     GusdPurposeSet  _purposes;
     TaskData&       _data;
     bool            _visited;
-    const Visitor&  _visitor;
+    Visitor         _visitor;
     bool            _skipPrim;
 };
 
@@ -228,7 +229,8 @@ ParallelFindPrims(const UsdPrim& root,
     bool skipPrim = skipRoot || root.GetPath() == SdfPath::AbsoluteRootPath();
     auto& task =
         *new(UT_Task::allocate_root())
-        TraverseTaskT<Visitor>(root, -1, time, purposes, data, visitor, skipPrim);
+        TraverseTaskT<Visitor>(root, -1, time, purposes,
+                               data, visitor, skipPrim);
     UT_Task::spawnRootAndWait(task);
     
     if(UTgetInterrupt()->opInterrupt())

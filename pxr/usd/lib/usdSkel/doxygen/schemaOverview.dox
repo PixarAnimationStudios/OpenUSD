@@ -1,11 +1,12 @@
 /*!
 
-\page UsdSkel_SchemaOverview Schema Overview
+\page UsdSkel_SchemaOverview Schema Intro By Example
 
 This page provides an overview of the UsdSkel schemas, using example
 scene description. The examples here only deal with the scene description
-itself. For coding examples, see the \ref UsdSkel_API_Overview "API Overview"
-page.
+itself. For coding examples, see the \ref UsdSkel_API_Intro "API Introduction"
+page. For a more an more in-depth look at the schemas themselves, see the
+\ref UsdSkel_Schemas page.
 
 \section UsdSkel_SchemaOverview_SkinningAnArm Skinning an Arm
 
@@ -111,6 +112,8 @@ primitive. This serves two purposes:
   efficiently culling objects that are not visibile in camera without paying
   the cost of computing skinning.
 
+\sa \ref UsdSkel_SkelRoot
+
 \subsection UsdSkel_SchemaOverview_DefiningSkeletons Skinning an Arm: Defining a Skeleton
 
 \code
@@ -122,7 +125,7 @@ def Skeleton "Skel" {
 
 
 A Skeleton encodes a joint hierarchy. The actual joints and their parent<->child
-relationships are encoded in a compact, vectorized token arrays. Each token in
+relationships are encoded in a compact, vectorized token array. Each token in
 the array is the token-valued form of a relative path to that joint. The paths
 follow the same syntax rules are other prim paths and in USD, and may be
 constructed using the `SdfPath` API.
@@ -187,20 +190,18 @@ def Skeleton "Skel" {
 }
 \endcode
 
-The _restTransforms_ property of a Skeleton provides the *local space* transform
-of each joint at bind time, and as with _bindTransforms_, is ordered according
-to the order of the _joints_ attribute.
+The _restTransforms_ property of a Skeleton provides *local space* rest
+transforms of each joint, which serve as a fallback values for joints that
+have not been overridden by an animation. As with _bindTransforms_, the
+_restTransforms_ are ordered according to the order of the _joints_ attribute.
 
-Rest transforms provide fallback values for joint transforms when joints are not
-being driven by an animation.
+The _restTransforms_ may be considered optional, but if left unspecified,
+the Skeleton must be bound to a *complete*, non-sparse animation.
+It is common for the _restTransforms_ to be refer to the same pose as the
+_bindTransforms_, only in joint-local space, rather than world space, but this
+is not requried.
 
-This encoding may seem redundant at first: It might appear that it would be
-possible to derive _restTransforms_ from the _bindTransforms_, and vice versa.
-However, neither of these transform arrays provide any information about
-bind-time transforms of the primitives that live *above* the joint hierarchy.
-It's only true that one set of transforms can be computed from the other when
-all ancestor primitives above the joint hierarchy have identity transforms
-at bind-time.
+\sa \ref UsdSkel_Skeleton
 
 \subsection UsdSkel_SchemaOverview_SkelAnimations Skinning an Arm: Skel Animations
 
@@ -239,12 +240,12 @@ def SkelAnimation "Anim" {
 
 Currently, UsdSkel encodes joint animations as arrays of translation, rotation
 and scale components. The encoding is vectorized for scalability reasons, and
-with consideration for the encoding of large-scale crowds. It is broken into
+with consideration for IO performance on large-scale crowds. It is broken into
 these separate components primarily for the sake interpolation, but this also
 has storage benefits -- such as enabling separate run-length encoding for
 different components. For example, if only the rotations are changing over time,
 as is often the case, then we need only store animated values for those
-rotations.
+rotations, and need not store unique scale/translation samples per frame.
 
 These transform components combine to describe the *local space* transforms
 of a set of joints. Helper methods UsdSkelDecomposeTransforms() and
@@ -258,6 +259,8 @@ Still, it is at least _recommended_ that users make an effort to stick to purely
 orthonormal transforms: Many applications do not support non-uniform joint
 scaling, so translating non-orthonormal transforms to other packages may be
 problematic.
+
+\sa \ref UsdSkel_SkelAnimation
 
 <b>Binding An Animation To A Skeleton</b>
 
@@ -292,6 +295,7 @@ means by which UsdSkel allows _instanced_ primitives to be driven by
 different joint animations. The \ref UsdSkel_Instancing "instancing" section
 goes into this in more detail.
 
+\sa \ref UsdSkel_BindingAPI
 
 \subsection UsdSkel_SchemaOverview_BindingSkeletons Skinning an Arm: Binding Skeletons to Prims
 
@@ -329,7 +333,8 @@ or on their descendants.
 This example shows the common case of mesh skinning, but UsdSkel's skinning is
 not restricted to only meshes.
 
-\sa \ref UsdSkel_SkinnablePrims
+\sa \ref UsdSkel_BindingAPI
+    \ref UsdSkel_SkinnablePrims
 
 \subsection UsdSkel_SchemaOverview_JointInfluences Skinning an Arm: Joint Influences
 
@@ -423,5 +428,10 @@ The points of the skinned primitive are transformed by the geomBindTransform pri
 skinning.
 
 If left undefined, the geom bind transform is assumed to be the identity.
+
+It is often the case that a skinned primitive will also have a transform authored
+using the typical UsdGeomXformable API, in addition to the geomBindTransform.
+If that is the case, the geomBindTransform is still the only transform used for
+skinning.
 
 */

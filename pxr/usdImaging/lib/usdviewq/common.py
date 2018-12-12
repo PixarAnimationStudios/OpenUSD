@@ -139,19 +139,30 @@ class UIFonts(ConstantGroup):
     # Font constants.  We use font in the prim browser to distinguish
     # "resolved" prim specifier
     # XXX - the use of weight here may need to be revised depending on font family
+    BASE_POINT_SIZE = 10
+    
     ITALIC = QtGui.QFont()
-    ITALIC.setWeight(35)
+    ITALIC.setWeight(QtGui.QFont.Light)
     ITALIC.setItalic(True)
-    OVER_PRIM = ITALIC
-
-    BOLD = QtGui.QFont()
-    BOLD.setWeight(90)
-    DEFINED_PRIM = BOLD
-    DEFINED_PRIM.setWeight(75)
 
     NORMAL = QtGui.QFont()
-    NORMAL.setWeight(35)
+    NORMAL.setWeight(QtGui.QFont.Normal)
+
+    BOLD = QtGui.QFont()
+    BOLD.setWeight(QtGui.QFont.Bold)
+
+    BOLD_ITALIC = QtGui.QFont()
+    BOLD_ITALIC .setWeight(QtGui.QFont.Bold)
+    BOLD_ITALIC.setItalic(True)
+
+    OVER_PRIM = ITALIC
+    DEFINED_PRIM = BOLD
     ABSTRACT_PRIM = NORMAL
+
+    INHERITED = QtGui.QFont()
+    INHERITED.setPointSize(BASE_POINT_SIZE * 0.8)
+    INHERITED.setWeight(QtGui.QFont.Normal)
+    INHERITED.setItalic(True)
 
 class PropertyViewIndex(ConstantGroup):
     TYPE, NAME, VALUE = range(3)
@@ -236,7 +247,8 @@ def _PropTreeWidgetGetRole(tw):
 
 def PropTreeWidgetTypeIsRel(tw):
     role = _PropTreeWidgetGetRole(tw)
-    return role in (PropertyViewDataRoles.RELATIONSHIP, PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
+    return role in (PropertyViewDataRoles.RELATIONSHIP,
+                    PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
 
 def _UpdateLabelText(text, substring, mode):
     return text.replace(substring, '<'+mode+'>'+substring+'</'+mode+'>')
@@ -298,19 +310,18 @@ def GetShortString(prop, frame):
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
-def GetAttributeStatus(attribute, frame):
-
+def _GetAttributeStatus(attribute, frame):
     return attribute.GetResolveInfo(frame).GetSource()
 
 # Return a Font corresponding to certain attribute properties.
 # Currently this only applies italicization on interpolated time samples.
-def GetAttributeTextFont(attribute, frame):
-    # Early-out for CustomAttributes and Relationships
-    if not isinstance(attribute, Usd.Attribute):
+def GetPropertyTextFont(prop, frame):
+    if not isinstance(prop, Usd.Attribute):
+        # Early-out for non-attribute properties.
         return None
 
     frameVal = frame.GetValue()
-    bracketing = attribute.GetBracketingTimeSamples(frameVal)
+    bracketing = prop.GetBracketingTimeSamples(frameVal)
 
     # Note that some attributes return an empty tuple, some None, from
     # GetBracketingTimeSamples(), but all will be fed into this function.
@@ -320,10 +331,10 @@ def GetAttributeTextFont(attribute, frame):
     return None
 
 # Helper function that takes attribute status and returns the display color
-def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
+def GetPropertyColor(prop, frame, hasValue=None, hasAuthoredValue=None,
                       valueIsDefault=None):
-    # Early-out for CustomAttributes and Relationships
-    if not isinstance(attribute, Usd.Attribute):
+    if not isinstance(prop, Usd.Attribute):
+        # Early-out for non-attribute properties.
         return UIBaseColors.RED.color()
 
     statusToColor = {Usd.ResolveInfoSourceFallback   : UIPropertyValueSourceColors.FALLBACK,
@@ -332,7 +343,7 @@ def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
                      Usd.ResolveInfoSourceTimeSamples: UIPropertyValueSourceColors.TIME_SAMPLE,
                      Usd.ResolveInfoSourceNone       : UIPropertyValueSourceColors.NONE}
 
-    valueSource = GetAttributeStatus(attribute, frame)
+    valueSource = _GetAttributeStatus(prop, frame)
 
     return statusToColor[valueSource].color()
 

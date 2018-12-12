@@ -84,6 +84,14 @@ TestNumbers()
     sstr << TfStreamFloat(0.84066f);
     TF_AXIOM(float(TfStringToDouble(sstr.str())) == 0.84066f);
 
+    constexpr int bufferSize = 25;
+    char buffer[bufferSize];
+    TF_AXIOM(
+        TfDoubleToString(-1.1111111111111113e-308, buffer, bufferSize, true));
+    TF_AXIOM(strcmp(buffer, "-1.1111111111111113e-308") == 0);
+    TF_AXIOM(
+        !TfDoubleToString(-1.1111111111111113e-308, buffer, 24, true));
+
     return true;
 }
 

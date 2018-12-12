@@ -72,74 +72,13 @@ public:
     HD_API
     virtual ~HdRprim();
 
-    /// Returns the identifier of this Rprim. This is both used in the
-    /// RenderIndex and the SceneDelegate and acts as the associative key for
-    /// the Rprim in both contexts.
-    SdfPath const& GetId() const { return _sharedData.rprimID; }
-
-    /// Update objects representation based on dirty bits.
-    /// @param[in, out]  dirtyBits: On input specifies which state is
-    ///                             is dirty and can be pulled from the scene
-    ///                             delegate.
-    ///                             On output specifies which bits are still
-    ///                             dirty and were not cleaned by the sync.
-    ///
-    virtual void Sync(HdSceneDelegate      *delegate,
-                      HdRenderParam        *renderParam,
-                      HdDirtyBits          *dirtyBits,
-                      HdReprSelector const &reprSelector,
-                      bool                  forcedRepr) = 0;
-
-    /// Finalizes object resources. This function might not delete resources,
-    /// but it should deal with resource ownership so that the rprim is deletable.
-    HD_API
-    virtual void Finalize(HdRenderParam *renderParam);
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim Hydra Engine API : Pre-Sync & Sync-Phase
+    // ---------------------------------------------------------------------- //
 
     /// Returns the set of dirty bits that should be
     /// added to the change tracker for this prim, when this prim is inserted.
     virtual HdDirtyBits GetInitialDirtyBitsMask() const = 0;
-
-    // ---------------------------------------------------------------------- //
-    /// \name Rprim-specific API
-    // ---------------------------------------------------------------------- //
-
-    /// Returns the draw items for the requested reprName, if any.
-    /// These draw items should be constructed and cached beforehand by Sync().
-    /// If no draw items exist, or reprName cannot be found, nullptr
-    /// will be returned.
-    HD_API
-    const std::vector<HdDrawItem*>* GetDrawItems(
-                         HdReprSelector const& reprSelector,
-                         bool forced) const;
-
-    /// Returns the render tag associated to this rprim
-    HD_API
-    TfToken GetRenderTag(HdSceneDelegate* delegate) const;
-
-    /// Returns the identifier of the instancer (if any) for this Rprim. If this
-    /// Rprim is not instanced, an empty SdfPath will be returned.
-    SdfPath const& GetInstancerId() const { return _instancerId; }
-
-    /// Returns the path of the material to which this Rprim is bound. The
-    /// material object itself can be fetched from the RenderIndex using
-    /// this identifier.
-    SdfPath const& GetMaterialId() const {
-        return _materialId;
-    }
-
-    /// Returns true if any dirty flags are set for this rprim.
-    HD_API
-    bool IsDirty(HdChangeTracker &changeTracker) const;
-
-    /// Set the unique instance id
-    HD_API
-    void SetPrimId(int32_t primId);
-
-    /// Return the unique instance id
-    int32_t GetPrimId() const { return _primId; };
-
-    /// Is the prim itself visible
-    bool IsVisible() const { return _sharedData.visible; }
 
     /// This function gives an Rprim the chance to "early exit" from dirty
     /// bit propagation, delegate sync and rprim sync altogether. It is
@@ -151,57 +90,182 @@ public:
 
     /// This function gives an Rprim the chance to set additional dirty bits
     /// based on those set in the change tracker, before passing the dirty bits
-    /// to the scene delegate.  This gives the Rprim an opportunity to specify
-    /// it needs more data to process the requested changes.
+    /// to the scene delegate.
+    /// It calls into _PropagateDirtyBits, which gives the Rprim an opportunity
+    /// to specify the additional data needed to process the requested changes.
     ///
     /// The return value is the new set of dirty bits.
     HD_API
     HdDirtyBits PropagateRprimDirtyBits(HdDirtyBits bits);
 
+    /// Initialize the representation of this Rprim by calling _InitRepr.
+    /// This is called prior to dirty bit propagation & sync, the first time the
+    /// repr is used, or when the authored representation is dirty.
+    ///
+    /// dirtyBits is an in/out value.  It is initialized to the dirty bits
+    /// from the change tracker.  InitRepr can then set additional dirty bits
+    /// if additional data is required from the scene delegate when this
+    /// repr is synced. 
+    HD_API
+    void InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &reprToken,
+                  HdDirtyBits *dirtyBits);
+
+    /// Pull invalidated scene data and prepare/update the renderable
+    /// representation.
+    ///
+    /// This function is told which scene data to pull through the
+    /// dirtyBits parameter. The first time it's called, dirtyBits comes
+    /// from _GetInitialDirtyBits(), which provides initial dirty state,
+    /// but after that it's driven by invalidation tracking in the scene
+    /// delegate.
+    ///
+    /// The contract for this function is that the prim can only pull on scene
+    /// delegate buffers that are marked dirty. Scene delegates can and do
+    /// implement just-in-time data schemes that mean that pulling on clean
+    /// data will be at best incorrect, and at worst a crash.
+    ///
+    /// This function is called in parallel from worker threads, so it needs
+    /// to be threadsafe; calls into HdSceneDelegate are ok.
+    ///
+    ///   \param sceneDelegate The data source for this geometry item.
+    ///   \param renderParam A render delegate object that holds rendering
+    ///                      parameters that scene geometry may use.
+    ///   \param dirtyBits A specifier for which scene data has changed.
+    ///   \param reprToken The representation that needs to be updated. This is
+    ///                    useful for backends that support multiple display
+    ///                    representations for an rprim. A given representation
+    ///                    may choose to pull on a subset of the dirty state.
+    ///   \param dirtyBits On input specifies which state is dirty and can be
+    ///                    pulled from the scene delegate.
+    ///                    On output specifies which bits are still dirty and
+    ///                    were not cleaned by the sync.
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) = 0;
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim Hydra Engine API : Execute Phase
+    // ---------------------------------------------------------------------- //
+
+    /// Returns the draw items for the requested repr token, if any.
+    /// These draw items should be constructed and cached beforehand by Sync().
+    /// If no draw items exist, or reprToken cannot be found, nullptr will be
+    /// returned.
+    using HdDrawItemPtrVector = std::vector<HdDrawItem*>;
+    HD_API
+    const HdDrawItemPtrVector*
+    GetDrawItems(TfToken const& reprToken) const;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim Hydra Engine API : Cleanup
+    // ---------------------------------------------------------------------- //
+    /// Finalizes object resources. This function might not delete resources,
+    /// but it should deal with resource ownership so that the rprim is
+    /// deletable.
+    HD_API
+    virtual void Finalize(HdRenderParam *renderParam);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim Data API
+    // ---------------------------------------------------------------------- //
+
+    /// Returns the identifier of this Rprim. This is both used in the
+    /// RenderIndex and the SceneDelegate and acts as the associative key for
+    /// the Rprim in both contexts.
+    SdfPath const& GetId() const { return _sharedData.rprimID; }
+
+    /// Return the unique instance id
+    int32_t GetPrimId() const { return _primId; };
+
+    /// Set the unique instance id
+    HD_API
+    void SetPrimId(int32_t primId);
+
+    /// Returns the identifier of the instancer (if any) for this Rprim. If this
+    /// Rprim is not instanced, an empty SdfPath will be returned.
+    SdfPath const& GetInstancerId() const { return _instancerId; }
+
+    /// Returns the path of the material to which this Rprim is bound. The
+    /// material object itself can be fetched from the RenderIndex using
+    /// this identifier.
+    SdfPath const& GetMaterialId() const { return _materialId; }
+
+    HdReprSelector const& GetReprSelector() const {
+        return _authoredReprSelector;
+    }
+
+    /// Returns the render tag associated to this rprim
+    inline  TfToken GetRenderTag(HdSceneDelegate* delegate) const;
+
+    /// Returns the bounds of the rprim in local, untransformed space.
+    inline GfRange3d GetExtent(HdSceneDelegate* delegate) const;
+
+    /// Primvar Query
+    inline HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(HdSceneDelegate* delegate,
+                          HdInterpolation interpolation) const;
+
+    inline VtValue
+    GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const;
+
+    /// Returns true if any dirty flags are set for this rprim.
+    HD_API
+    bool IsDirty(HdChangeTracker &changeTracker) const;
+
+    /// Is the prim itself visible
+    bool IsVisible() const { return _sharedData.visible; }
+
+    HD_API
+    void UpdateReprSelector(HdSceneDelegate* delegate,
+                            HdDirtyBits *dirtyBits);
+
+protected:
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim Hydra Engine API : Pre-Sync & Sync-Phase
+    // ---------------------------------------------------------------------- //
+
+    /// This callback from Rprim gives the prim an opportunity to set
+    /// additional dirty bits based on those already set.  This is done
+    /// before the dirty bits are passed to the scene delegate, so can be
+    /// used to communicate that extra information is needed by the prim to
+    /// process the changes.
+    ///
+    /// The return value is the new set of dirty bits, which replaces the bits
+    /// passed in.
+    ///
+    /// See HdRprim::PropagateRprimDirtyBits()
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
+
     /// Initialize the given representation of this Rprim.
     /// This is called prior to syncing the prim, the first time the repr
     /// is used.
     ///
-    /// defaultReprName is the name of the repr to initalize.  However, this
-    /// can be overridden by the prim itself with an authored repr, which
-    /// is obtained from the scene delegate.  If the forced flag is set
-    /// the defaultReprName should be used, even if there is an authored repr.
+    /// reprToken is the name of the representation to initalize.
     ///
     /// dirtyBits is an in/out value.  It is initialized to the dirty bits
     /// from the change tracker.  InitRepr can then set additional dirty bits
     /// if additional data is required from the scene delegate when this
     /// repr is synced.  InitRepr occurs before dirty bit propagation.
-    HD_API
-    void InitRepr(HdSceneDelegate* delegate,
-                  HdReprSelector const& defaultReprSelector,
-                  bool forced,
-                  HdDirtyBits *dirtyBits);
-
-
-
-    /// Returns the bounds of the rprim in local, untransformed space.
-    inline GfRange3d GetExtent(HdSceneDelegate* delegate) const;
-
     ///
-    /// Primvar Query
-    ///
-    inline HdPrimvarDescriptorVector
-    GetPrimvarDescriptors(HdSceneDelegate* delegate,
-                          HdInterpolation interpolation) const;
+    /// See HdRprim::InitRepr()
+       virtual void _InitRepr(TfToken const &reprToken,
+                              HdDirtyBits *dirtyBits) = 0;
 
-    inline VtValue GetPrimvar(HdSceneDelegate* delegate, const TfToken &name)  const;
-
-protected:
+    // ---------------------------------------------------------------------- //
+    /// \name Rprim Shared API
+    // ---------------------------------------------------------------------- //
     HD_API
-    HdReprSharedPtr const & _GetRepr(HdReprSelector const& reprSelector) const;
-
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const& reprSelector,
-                             HdDirtyBits *dirtyBits) = 0;
+    HdReprSharedPtr const & _GetRepr(TfToken const &reprToken) const;
 
     HD_API
     void _UpdateVisibility(HdSceneDelegate *sceneDelegate,
                            HdDirtyBits *dirtyBits);
+
+    /// Sets a new material binding to be used by this rprim
+    HD_API
+    void _SetMaterialId(HdChangeTracker &changeTracker,
+                        SdfPath const& materialId);
 
     /// note: constant range has to be shared across reprs (smooth, refined),
     /// since we're tracking dirtiness in a single bit (e.g. DirtyTransform)
@@ -225,23 +289,6 @@ protected:
                       HdBufferSourceVector const &sources,
                       HdComputationVector const &computations) const;
 
-    HD_API
-    HdReprSelector _GetReprSelector(HdReprSelector const &defaultReprSelector,
-                                    bool forced) const;
-
-    HD_API
-    void _UpdateReprSelector(HdSceneDelegate* delegate, HdDirtyBits *dirtyBits);
-
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
-
-    virtual void _InitRepr(HdReprSelector const &reprSelector,
-                           HdDirtyBits *dirtyBits) = 0;
-
-    /// Sets a new material binding to be used by this rprim
-    HD_API
-    void _SetMaterialId(HdChangeTracker &changeTracker,
-                        SdfPath const& materialId);
-
 private:
     SdfPath _instancerId;
     SdfPath _materialId;
@@ -258,21 +305,22 @@ protected:
 
     // total number of reprs is relatively small (less than 5 or so
     // in most case), we use linear container for efficiency.
-    typedef std::vector<std::pair<HdReprSelector, HdReprSharedPtr> >
+    typedef std::vector<std::pair<TfToken, HdReprSharedPtr> >
         _ReprVector;
     _ReprVector _reprs;
 
-    struct _ReprComparator {
-        _ReprComparator(HdReprSelector const &selector) : _selector(selector) {}
-        bool operator() (const std::pair<HdReprSelector, HdReprSharedPtr> &e) const {
-            return _selector == e.first;
+     struct _ReprComparator {
+        _ReprComparator(TfToken const &name) : _name(name) {}
+        bool operator() (const std::pair<TfToken, HdReprSharedPtr> &e) const {
+            return _name == e.first;
         }
     private:
-        HdReprSelector _selector;
+        TfToken _name;
     };
 
+
     // Repr configuration descriptors. All concrete types (HdMesh, HdPoints ..)
-    // have this static map to lookup descriptors for the given reprname.
+    // have this static map to lookup descriptors for the given reprToken.
     //
     // N : # of descriptors for the repr.
     //
@@ -281,16 +329,16 @@ protected:
         typedef std::array<DESC_TYPE, N> DescArray;
         static const int MAX_DESCS = N;
 
-        DescArray Find(TfToken const &reprName) const {
+        DescArray Find(TfToken const &reprToken) const {
             // linear search, we expect only a handful reprs configured.
             TF_FOR_ALL (it, _configs) {
-                if (it->first == reprName) return it->second;
+                if (it->first == reprToken) return it->second;
             }
-            TF_CODING_ERROR("Repr %s not found", reprName.GetText());
+            TF_CODING_ERROR("Repr %s not found", reprToken.GetText());
             return DescArray();
         }
-        void Append(TfToken const &reprName, DescArray descs) {
-            _configs.push_back(std::make_pair(reprName, descs));
+        void Append(TfToken const &reprToken, DescArray descs) {
+            _configs.push_back(std::make_pair(reprToken, descs));
         }
         std::vector<std::pair<TfToken, DescArray> > _configs;
     };
@@ -301,6 +349,11 @@ protected:
 //
 // Delegate API Wrappers
 //
+TfToken
+HdRprim::GetRenderTag(HdSceneDelegate* delegate) const
+{
+    return delegate->GetRenderTag(GetId());
+}
 
 GfRange3d
 HdRprim::GetExtent(HdSceneDelegate* delegate) const
@@ -320,7 +373,6 @@ HdRprim::GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const
 {
     return delegate->Get(GetId(), name);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

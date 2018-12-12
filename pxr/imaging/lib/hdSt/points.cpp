@@ -43,6 +43,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/base/vt/value.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStPoints::HdStPoints(SdfPath const& id,
@@ -58,11 +60,10 @@ HdStPoints::~HdStPoints()
 }
 
 void
-HdStPoints::Sync(HdSceneDelegate      *delegate,
-                 HdRenderParam        *renderParam,
-                 HdDirtyBits          *dirtyBits,
-                 HdReprSelector const &reprSelector,
-                 bool                  forcedRepr)
+HdStPoints::Sync(HdSceneDelegate *delegate,
+                 HdRenderParam   *renderParam,
+                 HdDirtyBits     *dirtyBits,
+                 TfToken const   &reprToken)
 {
     TF_UNUSED(renderParam);
 
@@ -71,10 +72,13 @@ HdStPoints::Sync(HdSceneDelegate      *delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    HdReprSelector calcReprSelector = _GetReprSelector(
-            reprSelector, forcedRepr);
-    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
+    _UpdateRepr(delegate, reprToken, dirtyBits);
 
+    // This clears all the non-custom dirty bits. This ensures that the rprim
+    // doesn't have pending dirty bits that add it to the dirty list every
+    // frame.
+    // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
+    // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
@@ -106,8 +110,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
             sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
         if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(drawItem, &_sharedData,
-                dirtyBits, InstancePrimvar);
+            instancer->PopulateDrawItem(drawItem, &_sharedData, *dirtyBits);
         }
     }
 
@@ -130,15 +133,14 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                        HdReprSelector const &reprToken,
+                        TfToken const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // XXX: We only support smoothHull for now
-    _PointsReprConfig::DescArray descs = _GetReprDesc(
-            HdReprSelector(HdReprTokens->smoothHull));
+    _PointsReprConfig::DescArray descs = _GetReprDesc(HdReprTokens->smoothHull);
     HdReprSharedPtr const &curRepr = _smoothHullRepr;
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
@@ -229,7 +231,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
 
@@ -281,8 +283,7 @@ HdStPoints::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 void
-HdStPoints::_InitRepr(HdReprSelector const &reprToken,
-                      HdDirtyBits *dirtyBits)
+HdStPoints::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
     // We only support smoothHull for now, everything else points to it.
     // TODO: Handle other styles
@@ -297,7 +298,12 @@ HdStPoints::_InitRepr(HdReprSelector const &reprToken,
 
             if (desc.geomStyle != HdPointsGeomStyleInvalid) {
                 HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+                HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 _smoothHullRepr->AddDrawItem(drawItem);
+
+                // Set up drawing coord instance primvars.
+                drawingCoord->SetInstancePrimvarBaseIndex(
+                    HdStPoints::InstancePrimvar);
             }
         }
     }
@@ -308,7 +314,7 @@ HdStPoints::_InitRepr(HdReprSelector const &reprToken,
     if (isNew) {
         // add new repr
         it = _reprs.insert(_reprs.end(),
-            std::make_pair(reprToken, _smoothHullRepr));
+                std::make_pair(reprToken, _smoothHullRepr));
     }
 }
 

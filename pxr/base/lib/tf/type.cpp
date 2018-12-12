@@ -55,6 +55,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <vector>
 
 #include <thread>
@@ -134,7 +135,7 @@ struct TfType::_TypeInfo : boost::noncopyable
     // entries in our baseTypes, although that is not enforced.
     vector<pair<std::type_info const *, TfType::_CastFunction> > castFuncs;
 
-    boost::scoped_ptr<DerivedByNameCache> derivedByNameCache;
+    std::unique_ptr<DerivedByNameCache> derivedByNameCache;
 
     // Traits about the static type.
     bool isPodType;

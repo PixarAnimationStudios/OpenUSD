@@ -42,6 +42,7 @@
 #include <maya/MAnimUtil.h>
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
@@ -63,6 +64,7 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -76,6 +78,37 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+
+std::string
+UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
+{
+    MString nodeName;
+    MStatus status;
+
+    // All DAG nodes are also DG nodes, so try it as a DG node first.
+    const MFnDependencyNode depNodeFn(mayaNode, &status);
+    if (status == MS::kSuccess) {
+#if MAYA_API_VERSION >= 20180000
+        const MString depName = depNodeFn.absoluteName(&status);
+#else
+        const MString depName = depNodeFn.name(&status);
+#endif
+        if (status == MS::kSuccess) {
+            nodeName = depName;
+        }
+    }
+
+    // Overwrite the DG name if we find that it's a DAG node.
+    const MFnDagNode dagNodeFn(mayaNode, &status);
+    if (status == MS::kSuccess) {
+        const MString dagName = dagNodeFn.fullPathName(&status);
+        if (status == MS::kSuccess) {
+            nodeName = dagName;
+        }
+    }
+
+    return nodeName.asChar();
+}
 
 MStatus
 UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
@@ -295,35 +328,38 @@ UsdMayaUtil::getSampledType(
 
 // does this cover all cases?
 bool
-UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
+UsdMayaUtil::isAnimated(const MObject& mayaObject, const bool checkParent)
 {
-    MStatus stat;
+    // MItDependencyGraph takes a non-const MObject as a constructor parameter,
+    // so we have to make a copy of mayaObject here.
+    MObject mayaObjectCopy(mayaObject);
+
+    MStatus status;
     MItDependencyGraph iter(
-        object,
+        mayaObjectCopy,
         MFn::kInvalid,
         MItDependencyGraph::kUpstream,
         MItDependencyGraph::kDepthFirst,
         MItDependencyGraph::kNodeLevel,
-        &stat);
-
-    if (stat!= MS::kSuccess)
-    {
-        TF_RUNTIME_ERROR("Unable to create DG iterator");
+        &status);
+    if (status != MS::kSuccess) {
+        TF_RUNTIME_ERROR(
+            "Unable to create DG iterator for Maya node '%s'",
+            GetMayaNodeName(mayaObject).c_str());
     }
 
     // MAnimUtil::isAnimated(node) will search the history of the node
     // for any animation curve nodes. It will return true for those nodes
     // that have animation curve in their history.
     // The average time complexity is O(n^2) where n is the number of history
-    // nodes. But we can improve the best case by split the loop into two.
+    // nodes. But we can improve the best case by splitting the loop into two.
     std::vector<MObject> nodesToCheckAnimCurve;
 
-    for (; !iter.isDone(); iter.next())
-    {
+    for (; !iter.isDone(); iter.next()) {
         MObject node = iter.thisNode();
 
         if (node.hasFn(MFn::kPluginDependNode) ||
-                node.hasFn( MFn::kConstraint ) ||
+                node.hasFn(MFn::kConstraint) ||
                 node.hasFn(MFn::kPointConstraint) ||
                 node.hasFn(MFn::kAimConstraint) ||
                 node.hasFn(MFn::kOrientConstraint) ||
@@ -347,11 +383,9 @@ UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
             return true;
         }
 
-        if (node.hasFn(MFn::kExpression))
-        {
-            MFnExpression fn(node, &stat);
-            if (stat == MS::kSuccess && fn.isAnimated())
-            {
+        if (node.hasFn(MFn::kExpression)) {
+            MFnExpression fn(node, &status);
+            if (status == MS::kSuccess && fn.isAnimated()) {
                 return true;
             }
         }
@@ -359,10 +393,8 @@ UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
         nodesToCheckAnimCurve.push_back(node);
     }
 
-    for (auto& node : nodesToCheckAnimCurve)
-    {
-        if (MAnimUtil::isAnimated(node, checkParent))
-        {
+    for (const MObject& node : nodesToCheckAnimCurve) {
+        if (MAnimUtil::isAnimated(node, checkParent)) {
             return true;
         }
     }
@@ -376,7 +408,7 @@ UsdMayaUtil::isPlugAnimated(const MPlug& plug)
     if (plug.isNull()) {
         return false;
     }
-    if (plug.isKeyable() && MAnimUtil::isAnimated(plug)) {
+    if (MAnimUtil::isAnimated(plug)) {
         return true;
     }
     if (plug.isDestination()) {
@@ -668,16 +700,14 @@ _GetColorAndTransparencyFromDepNode(
 }
 
 static
-void
+bool
 _getMayaShadersColor(
         const MObjectArray& shaderObjs,
         VtVec3fArray* RGBData,
         VtFloatArray* AlphaData)
 {
-    MStatus status;
-
-    if (shaderObjs.length() == 0) {
-        return;
+    if (shaderObjs.length() == 0u) {
+        return false;
     }
 
     if (RGBData) {
@@ -687,44 +717,44 @@ _getMayaShadersColor(
         AlphaData->resize(shaderObjs.length());
     }
 
-    for (unsigned int i = 0; i < shaderObjs.length(); ++i) {
+    bool gotValues = false;
+
+    for (unsigned int i = 0u; i < shaderObjs.length(); ++i) {
         // Initialize RGB and Alpha to (1,1,1,1)
         if (RGBData) {
-            (*RGBData)[i][0] = 1.0;
-            (*RGBData)[i][1] = 1.0;
-            (*RGBData)[i][2] = 1.0;
+            (*RGBData)[i][0u] = 1.0f;
+            (*RGBData)[i][1u] = 1.0f;
+            (*RGBData)[i][2u] = 1.0f;
         }
         if (AlphaData) {
-            (*AlphaData)[i] = 1.0;
+            (*AlphaData)[i] = 1.0f;
         }
 
         if (shaderObjs[i].isNull()) {
             TF_RUNTIME_ERROR(
-                    "Invalid Maya shader object at index %d. "
-                    "Unable to retrieve shader base color.",
-                    i);
+                "Invalid Maya shader object at index %d. "
+                "Unable to retrieve shader base color.",
+                i);
             continue;
         }
 
-        // first, we assume the shader is a lambert and try that API.  if
-        // not, we try our next best guess.
-        bool gotValues = _GetColorAndTransparencyFromLambert(
+        // First, we assume the shader is a lambert and try that API. If not,
+        // we try our next best guess.
+        const bool gotShaderValues =
+            _GetColorAndTransparencyFromLambert(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : nullptr,
-                AlphaData ?  &(*AlphaData)[i] : nullptr)
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr)
 
             || _GetColorAndTransparencyFromDepNode(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : nullptr,
-                AlphaData ?  &(*AlphaData)[i] : nullptr);
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr);
 
-        if (!gotValues) {
-            TF_RUNTIME_ERROR(
-                    "Failed to get shaders colors at index %d. "
-                    "Unable to retrieve shader base color.",
-                    i);
-        }
+        gotValues |= gotShaderValues;
     }
+
+    return gotValues;
 }
 
 static
@@ -981,7 +1011,7 @@ UsdMayaUtil::CompressFaceVaryingPrimvarIndices(
 }
 
 bool
-UsdMayaUtil::IsAuthored(MPlug& plug)
+UsdMayaUtil::IsAuthored(const MPlug& plug)
 {
     MStatus status;
 
@@ -994,8 +1024,12 @@ UsdMayaUtil::IsAuthored(MPlug& plug)
         return true;
     }
 
+    // MPlug::getSetAttrCmds() is currently not declared const, so we have to
+    // make a copy of plug here.
+    MPlug plugCopy(plug);
+
     MStringArray setAttrCmds;
-    status = plug.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
+    status = plugCopy.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     for (unsigned int i = 0u; i < setAttrCmds.length(); ++i) {
@@ -1237,6 +1271,11 @@ UsdMayaUtil::setPlugValue(
     }
     else if (val.IsHolding<bool>()) {
         status = attrPlug.setBool(val.UncheckedGet<bool>());
+    }
+    else if (val.IsHolding<SdfAssetPath>()) {
+        // Assume that Ar and Maya will resolve paths the same.  This the best
+        // we can do w.r.t. to round-tripping.
+        status = attrPlug.setString(val.UncheckedGet<SdfAssetPath>().GetAssetPath().c_str());
     }
     else if (val.IsHolding<std::string>()) {
         status = attrPlug.setString(val.UncheckedGet<std::string>().c_str());
@@ -1564,6 +1603,17 @@ UsdMayaUtil::SetNotes(
     return true;
 }
 
+bool
+UsdMayaUtil::SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden)
+{
+    MPlug plug = depNode.findPlug("hiddenInOutliner", true);
+    if (!plug.isNull()) {
+        plug.setBool(hidden);
+        return true;
+    }
+    return false;
+}
+
 UsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
         const MPlug& plug,
         MDataHandle dataHandle) :
@@ -1793,4 +1843,11 @@ UsdMayaUtil::FindAncestorSceneAssembly(
         currentPath.pop();
     }
     return false;
+}
+
+MBoundingBox
+UsdMayaUtil::GetInfiniteBoundingBox()
+{
+    constexpr double inf = std::numeric_limits<double>::infinity();
+    return MBoundingBox(MPoint(-inf, -inf, -inf), MPoint(inf, inf, inf));
 }

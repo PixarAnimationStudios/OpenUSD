@@ -249,22 +249,23 @@ public:
     HdxIntersector_DrawTask(HdRenderPassSharedPtr const &renderPass,
                 HdRenderPassStateSharedPtr const &renderPassState,
                 TfTokenVector const &renderTags)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     , _renderTags(renderTags)
     {
     }
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
         _renderPassState->Sync(
             _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    virtual void Execute(HdTaskContext* ctx) override
     {
         // Try to extract render tags from the context in case
         // there are render tags passed to the graph that 
@@ -298,6 +299,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                       HdxIntersector::Result* result)
 {
     TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // XXX: Check if we're using the stream render delegate. The current
     // implementation needs to be extended to be truly backend agnostic.
@@ -698,16 +700,49 @@ HdxIntersector::Result::_GetHash(int index) const
 }
 
 bool
-HdxIntersector::Result::_IsPrimIdValid(int index) const
+HdxIntersector::Result::_IsIdValid(unsigned char const* ids, int index) const
 {
-    unsigned char const* primIds = _primIds.get();
-
     // The ID buffer is a pointer to unsigned char; since ID's are 4 byte ints,
     // stride by 4 while indexing into it.
-    int primId = HdxIntersector::DecodeIDRenderColor(&primIds[index * 4]);
+    int id = HdxIntersector::DecodeIDRenderColor(&ids[index * 4]);
     // All color channels are cleared to 1, so when cast as int, an unwritten
     // pixel is encoded as -1. See HdxIntersector::HdxIntersectorQuery(..)
-    return (primId != -1);
+    return (id != -1);
+}
+
+bool
+HdxIntersector::Result::_IsPrimIdValid(int index) const
+{
+    return _IsIdValid(_primIds.get(), index);
+}
+
+bool
+HdxIntersector::Result::_IsEdgeIdValid(int index) const
+{
+    return _IsIdValid(_edgeIds.get(), index);
+}
+
+bool
+HdxIntersector::Result::_IsPointIdValid(int index) const
+{
+    return _IsIdValid(_pointIds.get(), index);
+}
+
+bool
+HdxIntersector::Result::_IsValidHit(int index) const
+{
+    // Inspect the id buffers to determine if the pixel index is a valid hit
+    // by accounting for the pick target when picking points and edges.
+    // This allows the hit(s) returned to be relevant.
+    bool validPrim = _IsPrimIdValid(index);
+    bool invalidTargetEdgePick =
+        (_params.pickTarget == PickEdges) && !_IsEdgeIdValid(index);
+    bool invalidTargetPointPick =
+        (_params.pickTarget == PickPoints) && !_IsPointIdValid(index);
+
+    return validPrim
+           && !invalidTargetEdgePick
+           && !invalidTargetPointPick;
 }
 
 bool
@@ -733,7 +768,7 @@ HdxIntersector::Result::ResolveNearestToCamera(HdxIntersector::Hit* hit) const
     // of the ID buffers)
     for (int y=0, i=0; y < height; y++) {
         for (int x=0; x < width; x++, i++) {
-            if (_IsPrimIdValid(i) && depths[i] < zMin) {
+            if (_IsValidHit(i) && depths[i] < zMin) {
                 xMin = x;
                 yMin = y;
                 zMin = depths[i];
@@ -777,7 +812,7 @@ HdxIntersector::Result::ResolveNearestToCenter(HdxIntersector::Hit* hit) const
         for (int xx = x; xx < width-x; xx++) {
             for (int yy = y; yy < height-y; yy++) {
                 int index = xx + yy*width;
-                if (_IsPrimIdValid(index)) {
+                if (_IsValidHit(index)) {
                     return _ResolveHit(index, index%width, index/width,
                                        depths[index], hit);
                 }
@@ -806,7 +841,7 @@ HdxIntersector::Result::ResolveAll(HdxIntersector::HitVector* allHits) const
     int hitCount = 0;
     for (int y=0, i=0; y < height; y++) {
         for (int x=0; x < width; x++, i++) {
-            if (!_IsPrimIdValid(i)) continue;
+            if (!_IsValidHit(i)) continue;
 
             Hit hit;
             if (_ResolveHit(i, x, y, depths[i], &hit)) {
@@ -836,7 +871,7 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
         HD_TRACE_SCOPE("unique indices");
         size_t previousHash = 0;
         for (int i = 0; i < width * height; ++i) {
-            if (!_IsPrimIdValid(i)) continue;
+            if (!_IsValidHit(i)) continue;
            
             size_t hash = _GetHash(i);
             // As an optimization, keep track of the previous hash value and

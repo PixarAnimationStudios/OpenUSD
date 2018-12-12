@@ -54,7 +54,7 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 
-struct HdxShadowTaskParams : public HdTaskParams {
+struct HdxShadowTaskParams {
     HdxShadowTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
@@ -62,14 +62,11 @@ struct HdxShadowTaskParams : public HdTaskParams {
         , enableIdRender(false)
         , enableSceneMaterials(true)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.0, -1.0)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , complexity(HdComplexityLow)
         , camera()
         , viewport(0.0)
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
@@ -83,14 +80,11 @@ struct HdxShadowTaskParams : public HdTaskParams {
     bool enableIdRender;
     bool enableSceneMaterials;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
     bool  depthBiasEnable;
     float depthBiasConstantFactor;
     float depthBiasSlopeFactor;
     HdCompareFunction depthFunc;
     HdCullStyle cullStyle;
-    HdComplexity complexity;
 
     // RenderPassState index objects
     SdfPath camera;
@@ -105,19 +99,23 @@ struct HdxShadowTaskParams : public HdTaskParams {
 ///
 /// A task for generating shadow maps.
 ///
-class HdxShadowTask : public HdSceneTask {
+class HdxShadowTask : public HdTask {
 public:
     HDX_API
     HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxShadowTask();
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
 
 private:
     void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
@@ -132,6 +130,10 @@ private:
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
     HdxShadowTaskParams _params;
+
+    HdxShadowTask() = delete;
+    HdxShadowTask(const HdxShadowTask &) = delete;
+    HdxShadowTask &operator =(const HdxShadowTask &) = delete;
 };
 
 // VtValue requirements

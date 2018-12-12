@@ -280,7 +280,9 @@ PxrUsdKatanaReadPointInstancer(
     instancer.ComputeInstanceTransformsAtTimes(
             &xformSamples,
             sampleTimes,
-            UsdTimeCode(currentTime));
+            UsdTimeCode(currentTime),
+            UsdGeomPointInstancer::IncludeProtoXform,
+            UsdGeomPointInstancer::IgnoreMask);
     const size_t numXformSamples = xformSamples.size();
 
     if (numXformSamples == 0) {
@@ -490,12 +492,32 @@ PxrUsdKatanaReadPointInstancer(
             sourcesBldr.setAttrAtLocation(relBuildPath,
                     "usdPrimName", FnKat::StringAttribute("geo"));
 
+            // Build an AttributeSet op that will delete the prototype's
+            // transform, since we've already folded it into the instance
+            // transforms via IncludeProtoXform.
+            //
+            FnGeolibServices::AttributeSetOpArgsBuilder asb;
+            asb.deleteAttr("xform");
+
             if (protoPath.GetString() != buildPath)
             {
                 // Finish generating the full path to the prototype.
                 //
                 fullProtoPath = fullProtoPath + "/geo" + pystring::replace(
                         protoPath.GetString(), buildPath, "");
+
+                asb.setLocationPaths(fullProtoPath);
+                sourcesBldr.addSubOpAtLocation(
+                        relBuildPath + "/geo" + pystring::replace(
+                                protoPath.GetString(), buildPath, ""),
+                        "AttributeSet", asb.build());
+            }
+            else
+            {
+                asb.setLocationPaths(fullProtoPath + "/geo");
+                sourcesBldr.addSubOpAtLocation(
+                        relBuildPath + "/geo",
+                        "AttributeSet", asb.build());
             }
 
             // Create a mapping that will link the instance's index to its

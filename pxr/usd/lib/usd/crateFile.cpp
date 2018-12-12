@@ -1400,7 +1400,7 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
     inline ValueRep Pack(_Writer writer, T const &val) {
         // See if we can inline the value -- we might be able to if there's some
         // encoding that can exactly represent it in 4 bytes.
-        uint32_t ival;
+        uint32_t ival = 0;
         if (_EncodeInline(val, &ival)) {
             auto ret = ValueRepFor<T>(ival);
             ret.SetIsInlined();

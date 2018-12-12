@@ -90,6 +90,9 @@ public:
     /// Returns -1 for joints with no parent (roots).
     inline int GetParent(size_t index) const;
 
+    /// Returns true if the \p index'th joint is a root joint.
+    inline bool IsRoot(size_t index) const;
+
     bool operator==(const UsdSkelTopology& o) const;
 
     bool operator!=(const UsdSkelTopology& o) const {
@@ -121,6 +124,13 @@ UsdSkelTopology::GetParent(size_t index) const
 {
     TF_DEV_AXIOM(index < _parentIndices.size());
     return _parentIndicesData[index];
+}
+
+
+bool
+UsdSkelTopology::IsRoot(size_t index) const
+{
+    return GetParent(index) < 0;
 }
 
 

@@ -28,5 +28,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( GL );
+    TF_WRAP( Engine );
+    TF_WRAP( RenderParams );
+    TF_WRAP( RendererSettings );
 }

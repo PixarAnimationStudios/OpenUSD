@@ -26,14 +26,14 @@
 
 /// \file usdMaya/shadingModeExporterContext.h
 
-#include "usdMaya/api.h"
-#include "usdMaya/util.h"
-
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
-
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -49,50 +49,29 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct UsdMayaExportParams
-{
-    /// Whether the transform node and the shape node must be merged into
-    /// a single node in the output USD.
-    bool mergeTransformAndShape=true;
-
-    /// If set to false, then direct per-gprim bindings are exported.
-    /// If set to true and if \p materialCollectionsPath is non-empty, then
-    /// material-collections are created and bindings are made to the
-    /// collections at \p materialCollectionsPath, instead of direct
-    /// per-gprim bindings.
-    bool exportCollectionBasedBindings=false;
-
-    /// Stripping namespaces.
-    bool stripNamespaces=false;
-
-    /// Modified root path.
-    SdfPath overrideRootPath;
-
-    /// If this is not empty, then a set of collections are exported on the
-    /// prim pointed to by the path, each representing the collection of
-    /// geometry that's bound to the various shading group sets in maya.
-    SdfPath materialCollectionsPath;
-
-    /// Shaders that are bound to prims under \p bindableRoot paths will get
-    /// exported.  If \p bindableRoots is empty, it will export all.
-    UsdMayaUtil::MDagPathSet bindableRoots;
-
-    /// Sets up the parentScope for creating materials.
-    SdfPath parentScope;
-};
-
-
 class UsdMayaShadingModeExportContext
 {
 public:
-    void SetShadingEngine(const MObject& shadingEngine) { _shadingEngine = shadingEngine; }
+    void SetShadingEngine(const MObject& shadingEngine) {
+        _shadingEngine = shadingEngine;
+    }
     MObject GetShadingEngine() const { return _shadingEngine; }
+
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
+
+    UsdMayaWriteJobContext& GetWriteJobContext() const {
+        return _writeJobContext;
+    }
+
+    const UsdMayaJobExportArgs& GetExportArgs() const {
+        return _writeJobContext.GetArgs();
+    }
+
     bool GetMergeTransformAndShape() const {
-        return _exportParams.mergeTransformAndShape;
+        return GetExportArgs().mergeTransformAndShape;
     }
     const SdfPath& GetOverrideRootPath() const {
-        return _exportParams.overrideRootPath;
+        return GetExportArgs().usdModelRootOverridePath;
     }
     const SdfPathSet& GetBindableRoots() const {
         return _bindableRoots;
@@ -105,13 +84,20 @@ public:
     PXRUSDMAYA_API
     void SetDisplacementShaderPlugName(const TfToken& displacementShaderPlugName);
 
-    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const
-    { return _dagPathToUsdMap; }
+    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const {
+        return _dagPathToUsdMap;
+    }
 
+    PXRUSDMAYA_API
+    MPlug GetSurfaceShaderPlug() const;
     PXRUSDMAYA_API
     MObject GetSurfaceShader() const;
     PXRUSDMAYA_API
+    MPlug GetVolumeShaderPlug() const;
+    PXRUSDMAYA_API
     MObject GetVolumeShader() const;
+    PXRUSDMAYA_API
+    MPlug GetDisplacementShaderPlug() const;
     PXRUSDMAYA_API
     MObject GetDisplacementShader() const;
 
@@ -141,7 +127,7 @@ public:
     UsdPrim MakeStandardMaterialPrim(
             const AssignmentVector& assignmentsToBind,
             const std::string& name=std::string(),
-            SdfPathSet * const boundPrimPaths=nullptr) const;
+            SdfPathSet* const boundPrimPaths=nullptr) const;
 
     /// Use this function to get a "standard" usd attr name for \p attrPlug.
     /// The definition of "standard" may depend on arguments passed to the
@@ -155,24 +141,25 @@ public:
     PXRUSDMAYA_API
     std::string GetStandardAttrName(
             const MPlug& attrPlug,
-            bool allowMultiElementArrays) const;
+            const bool allowMultiElementArrays) const;
 
     PXRUSDMAYA_API
     UsdMayaShadingModeExportContext(
             const MObject& shadingEngine,
-            const UsdStageRefPtr& stage,
-            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-            const UsdMayaExportParams &exportParams);
+            UsdMayaWriteJobContext& writeJobContext,
+            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
+
 private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
     const UsdMayaUtil::MDagPathMap<SdfPath>& _dagPathToUsdMap;
-    const UsdMayaExportParams &_exportParams;
+    UsdMayaWriteJobContext& _writeJobContext;
     TfToken _surfaceShaderPlugName;
     TfToken _volumeShaderPlugName;
     TfToken _displacementShaderPlugName;
 
-    // Bindable roots stored as an SdfPathSet.
+    /// Shaders that are bound to prims under \p _bindableRoot paths will get
+    /// exported. If \p bindableRoots is empty, it will export all.
     SdfPathSet _bindableRoots;
 };
 

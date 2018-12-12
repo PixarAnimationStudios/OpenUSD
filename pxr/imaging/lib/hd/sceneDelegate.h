@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/materialParam.h"
@@ -241,23 +242,6 @@ struct HdExtComputationOutputDescriptor {
 
 typedef std::vector<HdExtComputationOutputDescriptor>
         HdExtComputationOutputDescriptorVector;
-
-/// \struct HdRenderBufferDescriptor
-///
-/// Describes the allocation structure of a render buffer bprim.
-struct HdRenderBufferDescriptor {
-    GfVec3i dimensions;
-    HdFormat format;
-    bool multiSampled;
-
-    bool operator==(HdRenderBufferDescriptor const& rhs) const {
-        return dimensions == rhs.dimensions &&
-               format == rhs.format && multiSampled == rhs.multiSampled;
-    }
-    bool operator!=(HdRenderBufferDescriptor const& rhs) const {
-        return !(*this == rhs);
-    }
-};
 
 /// \struct HdVolumeFieldDescriptor
 ///

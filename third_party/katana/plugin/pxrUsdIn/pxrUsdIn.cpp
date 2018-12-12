@@ -216,6 +216,7 @@ public:
             lightListEditor.Build();
             
             interface.setAttr("info.usdOpArgs", opArgs);
+            interface.setAttr("info.usd.outputSession", usdInArgs->GetSessionAttr());
         }
         
         if (FnAttribute::IntAttribute(
@@ -227,6 +228,9 @@ public:
                 .build();
             
             interface.setAttr("info.usdOpArgs", opArgs);
+            interface.setAttr("info.usd.outputSession", usdInArgs->GetSessionAttr());
+
+
         }
         
         
@@ -393,6 +397,40 @@ public:
             PxrUsdKatanaAttrMap attrs;
             PxrUsdKatanaReadBlindData(UsdKatanaBlindDataObject(prim), attrs);
             attrs.toInterface(interface);
+
+            //
+            // Execute any ops contained within the staticScene args.
+            //
+
+            FnKat::GroupAttribute opGroups = opArgs.getChildByName("staticScene.x");
+            if (opGroups.isValid())
+            {
+                for (int childindex = 0; childindex < opGroups.getNumberOfChildren();
+                        ++childindex)
+                {
+                    FnKat::GroupAttribute entry =
+                            opGroups.getChildByIndex(childindex);
+
+                    if (!entry.isValid())
+                    {
+                        continue;
+                    }
+
+                    FnKat::StringAttribute subOpType =
+                            entry.getChildByName("opType");
+
+                    FnKat::GroupAttribute subOpArgs =
+                            entry.getChildByName("opArgs");
+
+                    if (!subOpType.isValid() || !subOpArgs.isValid())
+                    {
+                        continue;
+                    }
+
+                    interface.execOp(subOpType.getValue("", false), subOpArgs);
+                }
+            }
+
         }   // if (prim.GetPath() != SdfPath::AbsoluteRootPath())
         
         bool skipAllChildren = FnKat::IntAttribute(
@@ -639,7 +677,11 @@ public:
                 interface.createChild(
                         childName,
                         "",
-                        opArgs,
+                        FnKat::GroupBuilder()
+                            .update(opArgs)
+                            .set("staticScene", opArgs.getChildByName(
+                                "staticScene.c." + childName))
+                            .build(),
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                                 child, usdInArgs,
@@ -1201,9 +1243,9 @@ public:
                 ab.isolatePath = primPath;
 
                 // If the child we are making has intermediate children,
-                // send those along so they have the option of executing
-                // us again. This currently happens only with the children
-                // of Looks groups.
+                // send those along. This currently happens with point
+                // instancer prototypes and the children of Looks groups.
+                //
                 FnKat::GroupAttribute childrenGroup =
                         staticScene.getChildByName("c." + nameToUse);
 

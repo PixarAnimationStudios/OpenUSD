@@ -179,7 +179,7 @@ public:
     // Return the stringified path to this node as a TfToken.
     SDF_API
     const TfToken &GetPathToken() const;
-    
+
     // Lexicographic ordering for Compare().
     struct LessThan {
         template <class T>
@@ -210,22 +210,11 @@ protected:
         , _containsTargetPath(nodeType == TargetNode ||
                               nodeType == MapperNode ||
                               parent->_containsTargetPath)
-        , _hasToken(false) {}
+        , _hasToken(false)
+        {}
     
     // This constructor is used only to create the two special root nodes.
-    Sdf_PathNode(bool isAbsolute);
-
-    // Used only by subclass constructors that are used by FindOrCreate to 
-    // construct a candidate node to search for an existing equivalent 
-    // node.
-    Sdf_PathNode(NodeType nodeType) 
-        : _refCount(0)
-        , _elementCount(0)
-        , _nodeType(nodeType)
-        , _isAbsolute(true) // <- doesn't matter
-        , _containsPrimVariantSelection(nodeType == PrimVariantSelectionNode)
-        , _containsTargetPath(nodeType == TargetNode || nodeType == MapperNode)
-        , _hasToken(false) {}
+    explicit Sdf_PathNode(bool isAbsolute);
 
     ~Sdf_PathNode() {
         if (_hasToken)
@@ -243,29 +232,10 @@ protected:
     // Helper for dtor, removes this path node's token from the token table.
     SDF_API void _RemovePathTokenFromTable() const;
 
-    struct _Equal {
-        inline bool operator()(NodeType a, NodeType b) const {
-            // Yes, less than.  This is used by Compare() to check if two
-            // nodes have the same type.
-            return a < b;
-        }
-        inline bool operator()(bool a, bool b) const {
+    struct _EqualElement {
+        template <class T>
+        inline bool operator()(T const &a, T const &b) const {
             return a == b;
-        }
-        inline bool operator()(void* a, void* b) const {
-            return a == b;
-        }
-        inline bool operator()(TfToken const &a, TfToken const &b) const {
-            return a == b;
-        }
-        inline bool operator()(SdfPath const &a, SdfPath const &b) const {
-            return a == b;
-        }
-        inline bool operator()(
-            Sdf_PathNode::VariantSelectionType const &a,
-            Sdf_PathNode::VariantSelectionType const &b) const {
-            const _Equal& comp = *this;
-            return comp(a.first, b.first) && comp(a.second, b.second);
         }
     };
 
@@ -594,12 +564,13 @@ Sdf_PathNode::Compare(const Sdf_PathNode &rhs) const
     // based on the type-specific content.
     // Names are compared lexicographically.
 
-    // Compare types.
-    NodeType nodeType = GetNodeType();
-    if (Comp()(nodeType, rhs.GetNodeType()))
-        return true;
-    if (Comp()(rhs.GetNodeType(), nodeType))
-        return false;
+    // Compare types.  If node types are different use Comp() on them, otherwise
+    // continue to node-specific comparisons.
+
+    NodeType nodeType = GetNodeType(), rhsNodeType = rhs.GetNodeType();
+    if (nodeType != rhsNodeType) {
+        return Comp()(nodeType, rhsNodeType);
+    }
 
     // Types are the same.  Avoid virtual function calls for performance.
     switch (nodeType) {

@@ -33,10 +33,18 @@
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/registry.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(
+    PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY, 0,
+    "The auto-discovery of discovery plugins in ndr can be skipped. "
+    "This is used mostly for testing purposes.");
+
+
 
 namespace {
 
@@ -266,7 +274,9 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
 
-        discoveryPlugins.emplace_back(pluginFactory->New());
+        if (TF_VERIFY(pluginFactory)) {
+            discoveryPlugins.emplace_back(pluginFactory->New());
+        }
     }
 
     // Add the discovery plugins.
@@ -659,7 +669,7 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 {
     // The auto-discovery of discovery plugins can be skipped. This is mostly
     // for testing purposes.
-    if (getenv("PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY")) {
+    if (TfGetEnvSetting(PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY)) {
         return;
     }
 
@@ -674,7 +684,9 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
 
-        _discoveryPlugins.emplace_back(pluginFactory->New());
+        if (TF_VERIFY(pluginFactory)) {
+            _discoveryPlugins.emplace_back(pluginFactory->New());
+        }
     }
 }
 
@@ -691,6 +703,10 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
     for (const TfType& parserPluginType : parserPluginTypes) {
         NdrParserPluginFactoryBase* pluginFactory =
             parserPluginType.GetFactory<NdrParserPluginFactoryBase>();
+
+        if (!TF_VERIFY(pluginFactory)) {
+            continue;
+        }
 
         NdrParserPlugin* parserPlugin = pluginFactory->New();
         _parserPlugins.emplace_back(parserPlugin);

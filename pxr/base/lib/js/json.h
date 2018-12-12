@@ -75,9 +75,14 @@ std::string JsWriteToString(const JsValue& value);
 ///
 class JsWriter {
 public:
+    enum class Style {
+        Compact,
+        Pretty
+    };
+
     /// Constructor. The lifetime of the /p ostr parameter is assumed to be
     /// longer than the JsWriter instance.
-    JS_API JsWriter(std::ostream& ostr);
+    JS_API JsWriter(std::ostream& ostr, Style style = Style::Compact);
 
     /// Destructor.
     JS_API ~JsWriter();
@@ -222,6 +227,8 @@ private:
     std::unique_ptr<_Impl> _impl;
 };
 
+/// Write a json value.
+JS_API void JsWriteValue(JsWriter* writer, const JsValue& value);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

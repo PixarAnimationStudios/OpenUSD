@@ -24,6 +24,8 @@
 #include "pxr/imaging/hd/sortedIds.h"
 #include "pxr/imaging/hd/perfLog.h"
 
+static const ptrdiff_t INVALID_DELETE_POINT = -1;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 //
@@ -37,6 +39,7 @@ static const size_t SORTED_PERCENT = 90;
 Hd_SortedIds::Hd_SortedIds()
  : _ids()
  , _sortedCount(0)
+ , _afterLastDeletePoint(INVALID_DELETE_POINT)
 {
 
 }
@@ -44,7 +47,9 @@ Hd_SortedIds::Hd_SortedIds()
 Hd_SortedIds::Hd_SortedIds(Hd_SortedIds &&other)
  : _ids(std::move(other._ids))
  , _sortedCount(other._sortedCount)
+ , _afterLastDeletePoint(other._afterLastDeletePoint)
 {
+
 }
 
 const SdfPathVector &
@@ -58,6 +63,7 @@ void
 Hd_SortedIds::Insert(const SdfPath &id)
 {
     _ids.push_back(id);
+    _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
 
 void
@@ -74,18 +80,61 @@ Hd_SortedIds::Remove(const SdfPath &id)
     //
     // However, this means that the list is now unsorted in mass removal.
     // In order to use the binary search, we need a sorted list, but sorting
-    // again would be too expensive in this case, so if the list is not sorted
-    // fallback to a linear search for the id to be removed.
+    // again would be too expensive in this case.
+    //
+    // We still need to optimize for batch deletions.  Typically these
+    // will be a sort list where the path to delete will be the next one
+    // in the list after the path just deleted.
+    //
+    // If it is not that path, then check to see if it is in the sorted
+    // portion.  If it is not in the sorted portion, do a linear search
+    // through the unsorted portion.
 
-    SdfPathVector::iterator idToRemove;
-    if (_sortedCount == _ids.size()) {
-        // Sorted, so use binary search
-        idToRemove = std::lower_bound(_ids.begin(),
-                                      _ids.end(),
-                                      id);
-    } else {
-        // Unsorted, so use linear search
-        idToRemove = std::find(_ids.begin(),
+    // Try last removal point
+    SdfPathVector::iterator idToRemove = _ids.end();
+
+    if (_afterLastDeletePoint != INVALID_DELETE_POINT) {
+        if (_ids[_afterLastDeletePoint] == id) {
+            idToRemove = _ids.begin() + _afterLastDeletePoint;
+        }
+    }
+
+    // See if we can binary search sorted portion
+    if (idToRemove == _ids.end()) {
+        if (_sortedCount > 0) {
+            // Check to see if id is somewhere within the sorted range
+            if (id <= _ids[_sortedCount - 1]) {
+
+                SdfPathVector::iterator endSortedElements =
+                                                    _ids.begin() + _sortedCount;
+                idToRemove = std::lower_bound(_ids.begin(),
+                                              endSortedElements,
+                                              id);
+
+                if (idToRemove != endSortedElements) {
+                    // Id could actually exist in the unsorted part
+                    // because of an insert.
+                    // Lower bound will then return an iterator to
+                    // the element after where id should be.
+                    if (*idToRemove != id) {
+                        idToRemove = _ids.end();
+                    }
+                } else {
+                    // We checked that id should be in the sorted range
+                    // so lower_bound should return an iterator between
+                    // begin and endSortedElements - 1.
+                    TF_CODING_ERROR("Id (%s) greater than all items in "
+                                    " sorted list",
+                                    id.GetText());
+                    idToRemove = _ids.end();
+                }
+            }
+        }
+    }
+
+    // If all else fail, linear search through unsorted portion
+    if (idToRemove == _ids.end()) {
+        idToRemove = std::find(_ids.begin() + _sortedCount,
                                _ids.end(),
                                id);
     }
@@ -95,9 +144,16 @@ Hd_SortedIds::Remove(const SdfPath &id)
             SdfPathVector::iterator lastElement = _ids.end();
             --lastElement;
 
-            std::iter_swap(idToRemove, lastElement);
+            if (idToRemove != lastElement) {
+                std::iter_swap(idToRemove, lastElement);
 
-            _ids.pop_back();
+                _ids.pop_back();
+                _afterLastDeletePoint = idToRemove - _ids.begin();
+                ++_afterLastDeletePoint;
+            } else {
+                _ids.pop_back();
+                _afterLastDeletePoint = INVALID_DELETE_POINT;
+            }
 
             // As we've moved an element from the end into the middle
             // the list is now only sorted up to the place where the element
@@ -133,6 +189,7 @@ void Hd_SortedIds::RemoveRange(size_t start, size_t end)
 
     _ids.erase(itStart, itEnd);
     _sortedCount -= numToRemove;
+    _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
 
 void
@@ -140,6 +197,7 @@ Hd_SortedIds::Clear()
 {
     _ids.clear();
     _sortedCount = 0;
+    _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
 
 void
@@ -185,6 +243,7 @@ Hd_SortedIds::_Sort()
     }
 
     _sortedCount = numIds;
+    _afterLastDeletePoint = INVALID_DELETE_POINT;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

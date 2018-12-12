@@ -16,7 +16,7 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
-pxr_library(hdStream
+pxr_plugin(hdStream
     LIBRARIES
         plug
         tf

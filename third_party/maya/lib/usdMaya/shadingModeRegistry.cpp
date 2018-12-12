@@ -53,9 +53,18 @@ UsdMayaShadingModeRegistry::RegisterExporter(
         const std::string& name,
         UsdMayaShadingModeExporterCreator fn)
 {
+    const TfToken nameToken(name);
     std::pair<_ExportRegistry::const_iterator, bool> insertStatus =
         _exportReg.insert(
-            std::make_pair(TfToken(name), fn));
+            std::make_pair(nameToken, fn));
+    if (insertStatus.second) {
+        UsdMaya_RegistryHelper::AddUnloader([nameToken]() {
+            _exportReg.erase(nameToken);
+        });
+    }
+    else {
+        TF_CODING_ERROR("Multiple shading exporters named '%s'", name.c_str());
+    }
     return insertStatus.second;
 }
 
@@ -76,9 +85,18 @@ UsdMayaShadingModeRegistry::RegisterImporter(
         const std::string& name,
         UsdMayaShadingModeImporter fn)
 {
+    const TfToken nameToken(name);
     std::pair<_ImportRegistry::const_iterator, bool> insertStatus =
         _importReg.insert(
-            std::make_pair(TfToken(name), fn));
+            std::make_pair(nameToken, fn));
+    if (insertStatus.second) {
+        UsdMaya_RegistryHelper::AddUnloader([nameToken]() {
+            _importReg.erase(nameToken);
+        });
+    }
+    else {
+        TF_CODING_ERROR("Multiple shading importers named '%s'", name.c_str());
+    }
     return insertStatus.second;
 }
 

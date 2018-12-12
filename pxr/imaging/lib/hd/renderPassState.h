@@ -37,6 +37,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -45,47 +46,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-
-class HdRenderBuffer;
-
-/// \class HdRenderPassAttachment
-///
-/// The renderpass attachment represents a binding of some output of the
-/// rendering process to an output buffer.
-struct HdRenderPassAttachment {
-
-    HdRenderPassAttachment()
-        : renderBuffer(nullptr) {}
-
-    /// The identifier of the renderer output to be consumed. This should take
-    /// a value from HdAovTokens.
-    HdAovIdentifier aovName;
-
-    /// The render buffer to be bound to the above terminal output.
-    ///
-    /// From the app or scene, this can be specified as either a pointer or
-    /// a path to a renderbuffer in the render index. If both are specified,
-    /// the pointer is used preferentially.
-    ///
-    /// The attachments in HdRenderPassState should be resolved, so that
-    /// downstream users only need to worry about the pointer.
-    ///
-    /// Note: hydra never takes ownership of the renderBuffer, but assumes it
-    /// will be alive until the end of the renderpass, or whenever the buffer
-    /// is marked converged, whichever is later.
-    HdRenderBuffer *renderBuffer;
-
-    /// The render buffer to be bound to the above terminal output.
-    SdfPath renderBufferId;
-
-    /// The clear value to apply to the bound render buffer, before rendering.
-    /// The type of "clearValue" should match the type of the bound buffer.
-    /// If clearValue is empty, it indicates no clear should be performed.
-    VtValue clearValue;
-};
-
-typedef std::vector<HdRenderPassAttachment>
-    HdRenderPassAttachmentVector;
 
 /// \class HdRenderPassState
 ///
@@ -135,9 +95,9 @@ public:
 
     // Set the attachments for this renderpass to render into.
     HD_API
-    void SetAttachments(HdRenderPassAttachmentVector const &attachments);
+    void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
     HD_API
-    HdRenderPassAttachmentVector const& GetAttachments() const;
+    HdRenderPassAovBindingVector const& GetAovBindings() const;
 
     /// Set an override color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
@@ -237,6 +197,25 @@ public:
     float GetLineWidth() const { return _lineWidth; }
     
     HD_API
+    void SetBlend(HdBlendOp colorOp,
+                  HdBlendFactor colorSrcFactor,
+                  HdBlendFactor colorDstFactor,
+                  HdBlendOp alphaOp,
+                  HdBlendFactor alphaSrcFactor,
+                  HdBlendFactor alphaDstFactor);
+    HdBlendOp GetBlendColorOp() { return _blendColorOp; }
+    HdBlendFactor GetBlendColorSrcFactor() { return _blendColorSrcFactor; }
+    HdBlendFactor GetBlendColorDstFactor() { return _blendColorDstFactor; }
+    HdBlendOp GetBlendAlphaOp() { return _blendAlphaOp; }
+    HdBlendFactor GetBlendAlphaSrcFactor() { return _blendAlphaSrcFactor; }
+    HdBlendFactor GetBlendAlphaDstFactor() { return _blendAlphaDstFactor; }
+    HD_API
+    void SetBlendConstantColor(GfVec4f const & color);
+    const GfVec4f& GetBlendConstantColor() const { return _blendConstantColor; }
+    HD_API
+    void SetBlendEnabled(bool enabled);
+
+    HD_API
     void SetAlphaToCoverageUseDefault(bool useDefault);
     bool GetAlphaToCoverageUseDefault() const { return _alphaToCoverageUseDefault; }
 
@@ -309,6 +288,16 @@ protected:
     // Line width
     float _lineWidth;
     
+    // Blending
+    HdBlendOp _blendColorOp;
+    HdBlendFactor _blendColorSrcFactor;
+    HdBlendFactor _blendColorDstFactor;
+    HdBlendOp _blendAlphaOp;
+    HdBlendFactor _blendAlphaSrcFactor;
+    HdBlendFactor _blendAlphaDstFactor;
+    GfVec4f _blendConstantColor;
+    bool _blendEnabled;
+
     // alpha to coverage
     bool _alphaToCoverageUseDefault;
     bool _alphaToCoverageEnabled;
@@ -318,19 +307,8 @@ protected:
 
     ClipPlanesVector _clipPlanes;
 
-    HdRenderPassAttachmentVector _attachments;
+    HdRenderPassAovBindingVector _aovBindings;
 };
-
-// VtValue requirements for HdRenderPassAttachment
-HD_API
-std::ostream& operator<<(std::ostream& out,
-    const HdRenderPassAttachment& desc);
-HD_API
-bool operator==(const HdRenderPassAttachment& lhs,
-    const HdRenderPassAttachment& rhs);
-HD_API
-bool operator!=(const HdRenderPassAttachment& lhs,
-    const HdRenderPassAttachment& rhs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

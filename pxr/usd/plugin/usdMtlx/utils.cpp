@@ -35,6 +35,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 #include <MaterialXFormat/XmlIo.h>
@@ -173,8 +174,8 @@ _GetUsdValue(const std::string& valueString, const std::string& type)
 NdrStringVec
 UsdMtlxGetSearchPathsFromEnvVar(const char* name)
 {
-    const char* paths = getenv(name);
-    return paths ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) : NdrStringVec();
+    const std::string paths = TfGetenv(name);
+    return !paths.empty() ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) : NdrStringVec();
 }
 
 NdrStringVec

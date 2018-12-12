@@ -50,6 +50,10 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_unordered_set.h>
+#include <tbb/parallel_sort.h>
+
 #include <algorithm>
 #include <functional>
 #include <vector>
@@ -99,6 +103,12 @@ UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
     return !typeName.empty() &&
         PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).
         IsA(schemaType);
+}
+
+bool
+UsdPrim::IsA(const TfType& schemaType) const
+{
+    return _IsA(schemaType, true);
 }
 
 bool
@@ -210,6 +220,11 @@ UsdPrim::_HasAPI(
     return false;
 }
 
+bool
+UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const{
+    return _HasAPI(schemaType, true, instanceName);
+}
+
 std::vector<UsdProperty>
 UsdPrim::_MakeProperties(const TfTokenVector &names) const
 {
@@ -286,7 +301,7 @@ UsdPrim::GetProperty(const TfToken &propName) const
 bool
 UsdPrim::HasProperty(const TfToken &propName) const 
 {
-    return GetProperty(propName);
+    return static_cast<bool>(GetProperty(propName));
 }
 
 TfTokenVector
@@ -586,7 +601,7 @@ UsdPrim::GetAttribute(const TfToken& attrName) const
 bool
 UsdPrim::HasAttribute(const TfToken& attrName) const
 {
-    return GetAttribute(attrName);
+    return static_cast<bool>(GetAttribute(attrName));
 }
 
 UsdRelationship
@@ -645,7 +660,7 @@ UsdPrim::GetRelationship(const TfToken& relName) const
 bool
 UsdPrim::HasRelationship(const TfToken& relName) const
 {
-    return GetRelationship(relName);
+    return static_cast<bool>(GetRelationship(relName));
 } 
 
 template <class PropertyType, class Derived>

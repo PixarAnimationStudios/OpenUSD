@@ -24,31 +24,42 @@
 #ifndef PXRUSDTRANSLATORS_CAMERA_WRITER_H
 #define PXRUSDTRANSLATORS_CAMERA_WRITER_H
 
+/// \file pxrUsdTranslators/cameraWriter.h
+
 #include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
+
 #include "usdMaya/writeJobContext.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/camera.h"
+
+#include <maya/MFnDependencyNode.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdGeomCamera;
-
 /// Exports Maya cameras to UsdGeomCamera.
 class PxrUsdTranslators_CameraWriter : public UsdMayaPrimWriter
 {
-  public:
-    PxrUsdTranslators_CameraWriter(
-        const MDagPath& iDag,
-        const SdfPath& uPath,
-        UsdMayaWriteJobContext& jobCtx);
+    public:
+        PxrUsdTranslators_CameraWriter(
+                const MFnDependencyNode& depNodeFn,
+                const SdfPath& usdPath,
+                UsdMayaWriteJobContext& jobCtx);
 
-    void Write(const UsdTimeCode &usdTime) override;
-    
-  protected:
-    bool writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamera &primSchema);
+        void Write(const UsdTimeCode& usdTime) override;
+
+    protected:
+        bool writeCameraAttrs(
+                const UsdTimeCode& usdTime,
+                UsdGeomCamera& primSchema);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

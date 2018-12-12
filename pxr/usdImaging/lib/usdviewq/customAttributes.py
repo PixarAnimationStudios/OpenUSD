@@ -22,14 +22,16 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from pxr import Usd, UsdGeom, UsdShade
 from constantGroup import ConstantGroup
 
 
 class ComputedPropertyNames(ConstantGroup):
     """Names of all available computed properties."""
-    WORLD_BBOX = "World Bounding Box"
-    LOCAL_WORLD_XFORM = "Local to World Xform"
-
+    WORLD_BBOX              = "World Bounding Box"
+    LOCAL_WORLD_XFORM       = "Local to World Xform"
+    RESOLVED_PREVIEW_MATERIAL = "Resolved Preview Material"
+    RESOLVED_FULL_MATERIAL = "Resolved Full Material"
 
 #
 # Edit the following to alter the set of custom attributes.
@@ -38,8 +40,18 @@ class ComputedPropertyNames(ConstantGroup):
 # defined below.
 #
 def _GetCustomAttributes(currentPrim, rootDataModel):
-    return [BoundingBoxAttribute(currentPrim, rootDataModel),
-               LocalToWorldXformAttribute(currentPrim, rootDataModel)]
+    customAttrs = []
+    currentPrimIsImageable = currentPrim.IsA(UsdGeom.Imageable)
+    
+    if currentPrimIsImageable or not currentPrim.IsA(Usd.Typed):
+        customAttrs.append(BoundingBoxAttribute(currentPrim, rootDataModel))
+    
+    if currentPrimIsImageable:
+        customAttrs.extend([LocalToWorldXformAttribute(currentPrim, 
+                                                       rootDataModel),
+                            ResolvedPreviewMaterial(currentPrim, rootDataModel),
+                            ResolvedFullMaterial(currentPrim, rootDataModel)])
+    return customAttrs
 
 #
 # The base class for per-prim custom attributes.
@@ -81,7 +93,7 @@ class BoundingBoxAttribute(CustomAttribute):
     def Get(self, frame):
         try:
             bbox = self._rootDataModel.computeWorldBound(self._currentPrim)
-
+            bbox = bbox.ComputeAlignedRange()
         except RuntimeError, err:
             bbox = "Invalid: " + str(err)
 
@@ -105,6 +117,39 @@ class LocalToWorldXformAttribute(CustomAttribute):
 
         return pwt
 
+class ResolvedBoundMaterial(CustomAttribute):
+    def __init__(self, currentPrim, rootDataModel, purpose):
+        CustomAttribute.__init__(self, currentPrim, rootDataModel)
+        self._purpose = purpose
+
+    def GetName(self):
+        if self._purpose == UsdShade.Tokens.full:
+            return ComputedPropertyNames.RESOLVED_FULL_MATERIAL
+        elif self._purpose == UsdShade.Tokens.preview:
+            return ComputedPropertyNames.RESOLVED_PREVIEW_MATERIAL
+        else:
+            raise ValueError("Invalid purpose '{}'.".format(self._purpose))
+
+    def Get(self, frame):
+        try:
+            (boundMaterial, bindingRel) = \
+                self._rootDataModel.computeBoundMaterial(self._currentPrim, 
+                        self._purpose)
+            boundMatPath = boundMaterial.GetPrim().GetPath() if boundMaterial \
+                else "<unbound>"
+        except RuntimeError, err:
+            boundMatPath = "Invalid: " + str(err)
+        return boundMatPath
+
+class ResolvedFullMaterial(ResolvedBoundMaterial):
+    def __init__(self, currentPrim, rootDataModel):
+        ResolvedBoundMaterial.__init__(self, currentPrim, rootDataModel, 
+                UsdShade.Tokens.full)
+
+class ResolvedPreviewMaterial(ResolvedBoundMaterial):
+    def __init__(self, currentPrim, rootDataModel):
+        ResolvedBoundMaterial.__init__(self, currentPrim, rootDataModel, 
+                UsdShade.Tokens.preview)
 
 class ComputedPropertyFactory:
     """Creates computed properties."""
@@ -120,6 +165,10 @@ class ComputedPropertyFactory:
             return BoundingBoxAttribute(prim, self._rootDataModel)
         elif propName == ComputedPropertyNames.LOCAL_WORLD_XFORM:
             return LocalToWorldXformAttribute(prim, self._rootDataModel)
+        elif propName == ComputedPropertyNames.RESOLVED_FULL_MATERIAL:
+            return ResolvedFullMaterial(prim, self._rootDataModel)
+        elif propName == ComputedPropertyNames.RESOLVED_PREVIEW_MATERIAL:
+            return ResolvedPreviewMaterial(prim, self._rootDataModel)
         else:
             raise ValueError("Cannot create computed property '{}'.".format(
                 propName))

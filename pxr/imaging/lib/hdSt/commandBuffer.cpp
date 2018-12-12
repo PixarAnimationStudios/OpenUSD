@@ -43,6 +43,8 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <tbb/enumerable_thread_specific.h>
+
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -82,8 +84,8 @@ HdStCommandBuffer::PrepareDraw(
 {
     HD_TRACE_FUNCTION();
 
-    TF_FOR_ALL(batchIt, _drawBatches) {
-        (*batchIt)->PrepareDraw(renderPassState, resourceRegistry);
+    for (auto const& batch : _drawBatches) {
+        batch->PrepareDraw(renderPassState, resourceRegistry);
     }
 }
 
@@ -105,8 +107,8 @@ HdStCommandBuffer::ExecuteDraw(
     //
     // draw batches
     //
-    TF_FOR_ALL(batchIt, _drawBatches) {
-        (*batchIt)->ExecuteDraw(renderPassState, resourceRegistry);
+    for (auto const& batch : _drawBatches) {
+        batch->ExecuteDraw(renderPassState, resourceRegistry);
     }
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 
@@ -296,10 +298,18 @@ HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
     }
 
     _visibleSize = 0;
-    TF_FOR_ALL(dIt, _drawItemInstances) {
-        if (dIt->IsVisible()) {
+    for (auto const& instance : _drawItemInstances) {
+        if (instance.IsVisible()) {
             ++_visibleSize;
         }
+    }
+}
+
+void
+HdStCommandBuffer::SetEnableTinyPrimCulling(bool tinyPrimCulling)
+{
+    for(auto const& batch : _drawBatches) {
+        batch->SetEnableTinyPrimCulling(tinyPrimCulling);
     }
 }
 

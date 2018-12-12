@@ -887,10 +887,14 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         usdAttr = m_usdMesh.GetNormalsAttr();
         if( updateAttributeFromGTPrim( attrOwner, "N",
                                        houAttr, usdAttr, geoTime ) ) {
-            if(GT_OWNER_VERTEX == attrOwner) {
+            if (GT_OWNER_CONSTANT == attrOwner) {
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+            } else if(GT_OWNER_PRIMITIVE == attrOwner) {
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->uniform);
+            } else if(GT_OWNER_VERTEX == attrOwner) {
                 m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
             } else {
-                 m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->varying);
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->varying);
             }
         }
 

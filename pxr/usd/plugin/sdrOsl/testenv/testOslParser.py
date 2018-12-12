@@ -46,7 +46,7 @@ class TestShaderNode(unittest.TestCase):
             "oso",           # Discovery type (extension)
             "OSL",           # Source type
             cls.URI,         # URI
-            cls.URI,          # Resolved URI
+            cls.URI,         # Resolved URI
             sourceCode=cls.sourceCode,
             metadata=cls.metadata,
             blindData=cls.blindData
@@ -71,7 +71,7 @@ class TestShaderNode(unittest.TestCase):
         assert self.node.GetSourceCode() == self.sourceCode
 
         utils.TestBasicNode(self.node,
-                            SdrOsl.OslParser.SourceType,
+                            "OSL",
                             self.URI)
 
     def test_ShaderSpecific(self):

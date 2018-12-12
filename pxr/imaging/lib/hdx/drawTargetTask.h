@@ -45,20 +45,23 @@ typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShader
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
 
-class HdxDrawTargetTask  : public HdSceneTask {
+class HdxDrawTargetTask  : public HdTask {
 public:
     HDX_API
     HdxDrawTargetTask(HdSceneDelegate* delegate, SdfPath const& id);
-    virtual ~HdxDrawTargetTask() = default;
 
-protected:
+    HDX_API
+    virtual ~HdxDrawTargetTask();
+
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
 
     /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual void Execute(HdTaskContext* ctx) override;
 
 private:
     struct RenderPassInfo {
@@ -82,9 +85,6 @@ private:
     GfVec4f _wireframeColor;
     bool _enableLighting;
     float _alphaThreshold;
-    float _tessLevel;
-    GfVec2f _drawingRange;
-
 
     /// Polygon Offset State
     bool _depthBiasUseDefault;
@@ -96,11 +96,9 @@ private:
 
     // Viewer's Render Style
     HdCullStyle _cullStyle;
-    HdGeomStyle _geomStyle;
-    HdComplexity _complexity;
-    bool _hullVisibility;
-    bool _surfaceVisibility;
 
+    // Alpha sample alpha to coverage
+    bool _enableSampleAlphaToCoverage;
 
     HdxDrawTargetTask()                                      = delete;
     HdxDrawTargetTask(const HdxDrawTargetTask &)             = delete;
@@ -114,18 +112,12 @@ struct HdxDrawTargetTaskParams
         , wireframeColor(0.0)
         , enableLighting(false)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.9, -1.0)
         , depthBiasUseDefault(true)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , geomStyle(HdGeomStylePolygons)
-        , complexity(HdComplexityLow)
-        , hullVisibility(false)
-        , surfaceVisibility(true)
         {}
 
 //    ClipPlanesVector clipPlanes;
@@ -133,8 +125,6 @@ struct HdxDrawTargetTaskParams
     GfVec4f wireframeColor;
     bool enableLighting;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
 
     // Depth Bias Raster State
     // When use default is true - state
@@ -151,11 +141,6 @@ struct HdxDrawTargetTaskParams
 
     // Viewer's Render Style
     HdCullStyle cullStyle;
-    HdGeomStyle geomStyle;
-    HdComplexity complexity;
-    bool hullVisibility;
-    bool surfaceVisibility;
-
 };
 
 // VtValue requirements

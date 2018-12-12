@@ -82,6 +82,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportVisibility) \
     (kind) \
     (materialCollectionsPath) \
+    (materialsScopeName) \
     (melPerFrameCallback) \
     (melPostCallback) \
     (mergeTransformAndShape) \
@@ -96,6 +97,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (verbose) \
     /* Special "none" token */ \
     (none) \
+    /* Default name for parent prim of exported materials */ \
+    ((DefaultMaterialsScopeName, "Looks")) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \
@@ -130,12 +133,19 @@ TF_DECLARE_PUBLIC_TOKENS(
     PXRUSDMAYA_API,
     PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS);
 
+
 struct UsdMayaJobExportArgs
 {
     const TfToken compatibility;
     const TfToken defaultMeshScheme;
     const bool eulerFilter;
     const bool excludeInvisible;
+
+    /// If set to false, then direct per-gprim bindings are exported.
+    /// If set to true and if \p materialCollectionsPath is non-empty, then
+    /// material-collections are created and bindings are made to the
+    /// collections at \p materialCollectionsPath, instead of direct
+    /// per-gprim bindings.
     const bool exportCollectionBasedBindings;
     const bool exportColorSets;
     const bool exportDefaultCameras;
@@ -149,10 +159,24 @@ struct UsdMayaJobExportArgs
     const TfToken exportSkels;
     const TfToken exportSkin;
     const bool exportVisibility;
+
+    /// If this is not empty, then a set of collections are exported on the
+    /// prim pointed to by the path, each representing the collection of
+    /// geometry that's bound to the various shading group sets in Maya.
     const SdfPath materialCollectionsPath;
+
+    /// This is the name of the USD prim under which material prims will be
+    /// authored.
+    const TfToken materialsScopeName;
+
+    /// Whether the transform node and the shape node must be merged into
+    /// a single node in the output USD.
     const bool mergeTransformAndShape;
     const bool normalizeNurbs;
     const bool stripNamespaces;
+
+    /// This is the path of the USD prim under which *all* prims will be
+    /// authored.
     const SdfPath parentScope;
     const TfToken renderLayerMode;
     const TfToken rootKind;
@@ -162,7 +186,7 @@ struct UsdMayaJobExportArgs
     typedef std::map<std::string, std::string> ChaserArgs;
     const std::vector<std::string> chaserNames;
     const std::map< std::string, ChaserArgs > allChaserArgs;
-    
+
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
     const std::string pythonPerFrameCallback;

@@ -58,6 +58,7 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MGlobal.h>
 
 #include <vector>
 
@@ -72,15 +73,42 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
 
-    // XXX: In RenderMan 22, these look like "rman__surface", and are added via
-    // extension attribute.
-    ((RmanSurfaceShaderPlugName, "surfaceShader"))
+    ((RmanPlugPreferenceName, "rfmShadingEngineUsePrmanPlugs"))
+
     ((RmanVolumeShaderPlugName, "volumeShader"))
-    ((RmanDisplacementShaderPlugName, "displacementShader"))
 );
 
 
 namespace {
+
+struct _ShadingPlugs {
+    const TfToken surface;
+    const TfToken displacement;
+};
+
+static const _ShadingPlugs _RmanPlugs { 
+    TfToken("rman__surface"), 
+    TfToken("rman__displacement") 
+};
+
+static const _ShadingPlugs _MayaPlugs { 
+    TfToken("surfaceShader"), 
+    TfToken("displacementShader") 
+};
+
+static 
+_ShadingPlugs
+_GetShadingPlugs()
+{
+    // Check for rfmShadingEngineUseRmanPlugs preference
+    // If set to 1, use rman__surface and rman__displacement plug names
+    // Otherwise, fallback to Maya's surfaceShader and displacementShader
+    bool exists = false;
+    int useRmanPlugs = MGlobal::optionVarIntValue(
+            _tokens->RmanPlugPreferenceName.GetText(), &exists);
+    return (exists && useRmanPlugs) ? _RmanPlugs : _MayaPlugs;
+}
+
 class PxrRisShadingModeExporter : public UsdMayaShadingModeExporter {
 public:
     PxrRisShadingModeExporter() {}
@@ -89,9 +117,11 @@ private:
     void
     PreExport(UsdMayaShadingModeExportContext* context) override
     {
-        context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
         context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
-        context->SetDisplacementShaderPlugName(_tokens->RmanDisplacementShaderPlugName);
+
+        const auto shadingPlugs = _GetShadingPlugs();
+        context->SetSurfaceShaderPlugName(shadingPlugs.surface);
+        context->SetDisplacementShaderPlugName(shadingPlugs.displacement);
     }
 
     TfToken
@@ -508,9 +538,11 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
     // RenderMan for Maya wants the shader nodes to get hooked into the shading
     // group via its own plugs.
-    context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
     context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
-    context->SetDisplacementShaderPlugName(_tokens->RmanDisplacementShaderPlugName);
+
+    const auto shadingPlugs = _GetShadingPlugs();
+    context->SetSurfaceShaderPlugName(shadingPlugs.surface);
+    context->SetDisplacementShaderPlugName(shadingPlugs.displacement);
 
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?

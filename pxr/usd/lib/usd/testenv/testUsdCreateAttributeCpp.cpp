@@ -39,6 +39,8 @@
 #include <Python.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void

@@ -435,5 +435,11 @@ UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
     return false;
 }
 
+TfType
+UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
+    return (*_schemaBaseType).FindDerivedByName(typeName);
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

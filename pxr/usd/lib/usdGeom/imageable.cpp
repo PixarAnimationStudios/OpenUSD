@@ -177,8 +177,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include <boost/assign/list_of.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
@@ -261,11 +259,11 @@ UsdGeomImageable::HasInheritedPrimvar(const TfToken &name) const
 const TfTokenVector &
 UsdGeomImageable::GetOrderedPurposeTokens()
 {
-    static const TfTokenVector purposeTokens = boost::assign::list_of
-        (UsdGeomTokens->default_)
-        (UsdGeomTokens->render)
-        (UsdGeomTokens->proxy)
-        (UsdGeomTokens->guide);
+    static const TfTokenVector purposeTokens = {
+        UsdGeomTokens->default_,
+        UsdGeomTokens->render,
+        UsdGeomTokens->proxy,
+        UsdGeomTokens->guide };
 
     return purposeTokens;
 }
@@ -321,14 +319,15 @@ static void
 _SetVisibility(const UsdGeomImageable &imageable, const TfToken &visState, 
                const UsdTimeCode &time)
 {
-   imageable.CreateVisibilityAttr().Set(visState, time);
+    imageable.CreateVisibilityAttr().Set(visState, time);
 }
 
 // Returns true if the imageable has its visibility set to 'invisible' at the 
 // given time. It also sets the visibility to inherited before returning.
 static 
 bool
-_SetInheritedIfInvisible(const UsdGeomImageable &imageable, const UsdTimeCode &time)
+_SetInheritedIfInvisible(const UsdGeomImageable &imageable,
+                         const UsdTimeCode &time)
 {
     TfToken vis;
     if (imageable.GetVisibilityAttr().Get(&vis, time)) {
@@ -342,7 +341,8 @@ _SetInheritedIfInvisible(const UsdGeomImageable &imageable, const UsdTimeCode &t
 
 static
 void
-_MakeVisible(const UsdPrim &prim, UsdTimeCode const &time, bool *hasInvisibleAncestor)
+_MakeVisible(const UsdPrim &prim, UsdTimeCode const &time,
+             bool *hasInvisibleAncestor)
 {
     if (UsdPrim parent = prim.GetParent()) {
         _MakeVisible(parent, time, hasInvisibleAncestor);
@@ -356,10 +356,7 @@ _MakeVisible(const UsdPrim &prim, UsdTimeCode const &time, bool *hasInvisibleAnc
                 *hasInvisibleAncestor = true;
 
                 // Invis all siblings of prim.
-                UsdPrim::SiblingRange children = parent.GetAllChildren();
-                TF_FOR_ALL(childIt, children) {
-                    const UsdPrim &childPrim = *childIt;
-                    
+                for (const UsdPrim &childPrim : parent.GetAllChildren()) {
                     if (childPrim != prim) {
                         UsdGeomImageable imageableChild(childPrim);
                         if (imageableChild) {

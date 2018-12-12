@@ -364,6 +364,10 @@ public:
     USDIMAGING_API
     virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId) override;
 
+    USDIMAGING_API
+    virtual VtDictionary
+    GetMaterialMetadata(SdfPath const &materialId) override;
+
     // Instance path resolution
 
     /// Returns the path of the instance prim corresponding to the

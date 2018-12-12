@@ -27,19 +27,16 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/tokens.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
-#include "pxr/base/tf/hashmap.h"
 
 #include <algorithm>
-#include <functional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -633,7 +630,7 @@ public:
     /// Equality operator.
     /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
-        return (_pathNode == rhs._pathNode);
+        return _pathNode == rhs._pathNode;
     }
 
     /// Comparison operator.
@@ -660,7 +657,8 @@ public:
         return Hash()(*this);
     }
 
-    // For ordered maps
+    // For cases where an unspecified total order that is not stable from
+    // run-to-run is needed.
     struct FastLessThan {
         bool operator()(const SdfPath& a, const SdfPath& b) const {
             return a._pathNode < b._pathNode;
@@ -709,11 +707,6 @@ private:
 
     // Helper used by the string path elem constructors.
     void _InitWithString(const std::string &path);
-
-    // Helper for ReplacePrefix().
-    SdfPath
-    _ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                   bool fixTargetPaths) const;
 
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool

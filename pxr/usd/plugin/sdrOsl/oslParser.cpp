@@ -57,9 +57,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "OSL"))
 );
 
-// Static member initialization
-const NdrTokenVec& SdrOslParserPlugin::DiscoveryTypes = {_tokens->discoveryType};
-const TfToken& SdrOslParserPlugin::SourceType = _tokens->sourceType;
+const NdrTokenVec& 
+SdrOslParserPlugin::GetDiscoveryTypes() const
+{
+    static const NdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+    return _DiscoveryTypes;
+}
+
+const TfToken& 
+SdrOslParserPlugin::GetSourceType() const
+{
+    return _tokens->sourceType;
+}
 
 SdrOslParserPlugin::SdrOslParserPlugin()
 {

@@ -160,7 +160,7 @@ doSoftCopy() const
 bool 
 GusdPackedUsdWrapper::isValid() const
 {
-    return m_primRef;
+    return static_cast<bool>(m_primRef);
 }
 
 // Recursively looks for ancestor path one below the root (ie "/<some prim>")

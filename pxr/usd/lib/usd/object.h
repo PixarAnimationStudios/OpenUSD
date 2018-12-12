@@ -118,20 +118,17 @@ UsdIsConcrete(UsdObjType type) {
 /// section Usd_UsdObject_Lifetime Lifetime Management and Object Validity
 ///
 /// Every derived class of UsdObject supports explicit detection of object
-/// validity through an \em unspecified-bool-type operator 
-/// (i.e. safe bool conversion), so client code should always be able use
-/// objects safely, even across edits to the owning UsdStage.  UsdObject
-/// classes also perform some level of validity checking upon every use, in
-/// order to facilitate debugging of unsafe code, although we reserve the right
-/// to activate that behavior only in debug builds, if it becomes compelling
-/// to do so for performance reasons.  This per-use checking will cause a
-/// fatal error upon failing the inline validity check, with an error message
-/// describing the namespace location of the dereferenced object on its
+/// validity through an \em explicit-bool operator, so client code should always 
+/// be able use objects safely, even across edits to the owning UsdStage. 
+/// UsdObject classes also perform some level of validity checking upon every 
+/// use, in order to facilitate debugging of unsafe code, although we reserve 
+/// the right to activate that behavior only in debug builds, if it becomes 
+/// compelling to do so for performance reasons.  This per-use checking will 
+/// cause a fatal error upon failing the inline validity check, with an error 
+/// message describing the namespace location of the dereferenced object on its
 /// owning UsdStage.
 ///
 class UsdObject {
-    typedef const TfToken UsdObject::*_UnspecifiedBoolType;
-
 public:
     /// Default constructor produces an invalid object.
     UsdObject() : _type(UsdTypeObject) {}
@@ -154,14 +151,10 @@ public:
              specType == SdfSpecTypeRelationship);
     }
 
-#ifdef doxygen
-    /// Safe bool-conversion operator.  Equivalent to IsValid().
-    operator unspecified-bool-type() const();
-#else
-    operator _UnspecifiedBoolType() const {
-        return IsValid() ? &UsdObject::_propName : NULL;
+    /// Returns \c true if this object is valid, \c false otherwise.
+    explicit operator bool() const {
+        return IsValid();
     }
-#endif // doxygen
 
 public:
 

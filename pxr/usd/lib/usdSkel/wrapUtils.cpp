@@ -69,6 +69,23 @@ _ComputeJointLocalTransforms(const UsdSkelTopology& topology,
 
 
 VtMatrix4dArray
+_ComputeJointLocalTransforms_NoInvXforms(const UsdSkelTopology& topology,
+                                         const VtMatrix4dArray& xforms,
+                                         const object& rootInverseXformObj)
+{
+    VtMatrix4dArray jointLocalXforms;
+    if (rootInverseXformObj) {
+        GfMatrix4d rootInverseXform = extract<GfMatrix4d>(rootInverseXformObj);
+        UsdSkelComputeJointLocalTransforms(topology, xforms, &jointLocalXforms,
+                                           &rootInverseXform);
+    } else {
+        UsdSkelComputeJointLocalTransforms(topology, xforms, &jointLocalXforms);
+    }
+    return jointLocalXforms;
+}
+
+
+VtMatrix4dArray
 _ConcatJointTransforms(const UsdSkelTopology& topology,
                        const VtMatrix4dArray& jointLocalXforms,
                        const object& rootXformObj)
@@ -239,6 +256,11 @@ void wrapUsdSkelUtils()
 
     def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
         (arg("topology"), arg("xforms"), arg("inverseXforms"),
+         arg("rootInverseXform")=object()));
+
+    def("ComputeJointLocalTransforms",
+        &_ComputeJointLocalTransforms_NoInvXforms,
+        (arg("topology"), arg("xforms"),
          arg("rootInverseXform")=object()));
 
     def("ConcatJointTransforms", &_ConcatJointTransforms,

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hdEmbree/renderer.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <mutex>
 #include <embree2/rtcore.h>
@@ -35,6 +36,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdEmbreeRenderParam;
+
+#define HDEMBREE_RENDER_SETTINGS_TOKENS \
+    (enableAmbientOcclusion)            \
+    (enableSceneColors)                 \
+    (ambientOcclusionSamples)
+
+// Also: HdRenderSettingsTokens->convergedSamplesPerPixel
+
+TF_DECLARE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_TOKENS);
 
 ///
 /// \class HdEmbreeRenderDelegate
@@ -75,6 +85,10 @@ public:
     /// Render delegate constructor. This method creates the RTC device and
     /// scene, and links embree error handling to hydra error handling.
     HdEmbreeRenderDelegate();
+    /// Render delegate constructor. This method creates the RTC device and
+    /// scene, and links embree error ahndling to hydra error handling.
+    /// It also populates initial render settings.
+    HdEmbreeRenderDelegate(HdRenderSettingsMap const& settingsMap);
     /// Render delegate destructor. This method destroys the RTC device and
     /// scene.
     virtual ~HdEmbreeRenderDelegate();
@@ -95,6 +109,13 @@ public:
 
     /// Returns the HdResourceRegistry instance used by this render delegate.
     virtual HdResourceRegistrySharedPtr GetResourceRegistry() const override;
+
+    /// Returns a list of user-configurable render settings.
+    /// This is a reflection API for the render settings dictionary; it need
+    /// not be exhaustive, but can be used for populating application settings
+    /// UI.
+    virtual HdRenderSettingDescriptorList
+        GetRenderSettingDescriptors() const override;
 
     /// Create a renderpass. Hydra renderpasses are responsible for drawing
     /// a subset of the scene (specified by the "collection" parameter) to the
@@ -222,6 +243,9 @@ private:
     HdEmbreeRenderDelegate(const HdEmbreeRenderDelegate &)             = delete;
     HdEmbreeRenderDelegate &operator =(const HdEmbreeRenderDelegate &) = delete;
 
+    // Embree initialization routine.
+    void _Initialize();
+
     // Handle for an embree "device", or library state.
     RTCDevice _rtcDevice;
 
@@ -242,6 +266,9 @@ private:
 
     // An embree renderer object, to perform the actual raytracing.
     HdEmbreeRenderer _renderer;
+
+    // A list of render setting exports.
+    HdRenderSettingDescriptorList _settingDescriptors;
 
     // A callback that interprets embree error codes and injects them into
     // the hydra logging system.

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSpec.h"
+#include "pxr/imaging/hd/bufferArray.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
@@ -55,7 +56,8 @@ public:
     /// Factory for creating HdBufferArray
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs) = 0;
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) = 0;
 
     /// Factory for creating HdBufferArrayRange
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange() = 0;
@@ -63,7 +65,8 @@ public:
 
     /// Returns id for given bufferSpecs to be used for aggregation
     virtual AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const = 0;
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const = 0;
 
     /// Returns the buffer specs from a given buffer array
     virtual HdBufferSpecVector GetBufferSpecs(

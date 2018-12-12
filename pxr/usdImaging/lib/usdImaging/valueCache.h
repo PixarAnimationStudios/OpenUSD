@@ -168,6 +168,10 @@ public:
             static TfToken attr("displacementShaderSource");
             return Key(path, attr);
         }
+        static Key MaterialMetadata(SdfPath const& path) {
+            static TfToken attr("materialMetadata");
+            return Key(path, attr);
+        }
         static Key MaterialParams(SdfPath const& path) {
             static TfToken attr("surfaceShaderParams");
             return Key(path, attr);
@@ -323,6 +327,7 @@ public:
         // XXX: Shader API will be deprecated soon.
         _Erase<std::string>(Key::SurfaceShaderSource(path));
         _Erase<std::string>(Key::DisplacementShaderSource(path));
+        _Erase<VtValue>(Key::MaterialMetadata(path));
         HdMaterialParamVector shaderVars;
         if (FindMaterialParams(path, &shaderVars)) {
             TF_FOR_ALL(pvIt, shaderVars) {
@@ -396,6 +401,9 @@ public:
     std::string& GetDisplacementShaderSource(SdfPath const& path) const {
         return _Get<std::string>(Key::DisplacementShaderSource(path));
     }
+    VtValue& GetMaterialMetadata(SdfPath const& path) const {
+        return _Get<VtValue>(Key::MaterialMetadata(path));
+    }
     HdMaterialParamVector& GetMaterialParams(SdfPath const& path) const {
         return _Get<HdMaterialParamVector>(Key::MaterialParams(path));
     }
@@ -467,6 +475,9 @@ public:
     bool FindDisplacementShaderSource(SdfPath const& path, std::string* value) const {
         return _Find(Key::DisplacementShaderSource(path), value);
     }
+    bool FindMaterialMetadata(SdfPath const& path, VtValue* value) const {
+        return _Find(Key::MaterialMetadata(path), value);
+    }
     bool FindMaterialParams(SdfPath const& path, HdMaterialParamVector* value) const {
         return _Find(Key::MaterialParams(path), value);
     }
@@ -537,6 +548,9 @@ public:
     }
     bool ExtractDisplacementShaderSource(SdfPath const& path, std::string* value) {
         return _Extract(Key::DisplacementShaderSource(path), value);
+    }
+    bool ExtractMaterialMetadata(SdfPath const& path, VtValue* value) {
+        return _Extract(Key::MaterialMetadata(path), value);
     }
     bool ExtractMaterialParams(SdfPath const& path, HdMaterialParamVector* value) {
         return _Extract(Key::MaterialParams(path), value);

@@ -2,7 +2,7 @@
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
     customLayerData = {
-        string[] appliedAPISchemas = ["BindingAPI"]
+        string[] appliedAPISchemas = ["SkelBindingAPI"]
         string[] multipleApplyAPISchemas = []
     }
 )
@@ -315,7 +315,7 @@ class PackedJointAnimation "PackedJointAnimation" (
     )
 }
 
-class "BindingAPI" (
+class "SkelBindingAPI" (
     doc = '''Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want
     to be skeletally deformed.

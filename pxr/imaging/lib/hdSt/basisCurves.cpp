@@ -51,6 +51,8 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/vt/value.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
@@ -71,11 +73,10 @@ HdStBasisCurves::~HdStBasisCurves()
 }
 
 void
-HdStBasisCurves::Sync(HdSceneDelegate      *delegate,
-                      HdRenderParam        *renderParam,
-                      HdDirtyBits          *dirtyBits,
-                      HdReprSelector const &reprSelector,
-                      bool                  forcedRepr)
+HdStBasisCurves::Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken)
 {
     TF_UNUSED(renderParam);
 
@@ -84,10 +85,33 @@ HdStBasisCurves::Sync(HdSceneDelegate      *delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    HdReprSelector calcReprSelector = 
-            _GetReprSelector(reprSelector, forcedRepr);
-    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
+    // Check if either the material or geometric shaders need updating for
+    // draw items of all the reprs.
+    bool updateMaterialShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId |
+                      HdChangeTracker::NewRepr)) {
+        updateMaterialShader = true;
+    }
 
+    bool updateGeometricShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle |
+                      HdChangeTracker::DirtyMaterialId |
+                      HdChangeTracker::NewRepr)) {
+        updateGeometricShader = true;
+    }
+
+    _UpdateRepr(delegate, reprToken, dirtyBits);
+
+    if (updateMaterialShader || updateGeometricShader) {
+        _UpdateShadersForAllReprs(delegate,
+                                  updateMaterialShader, updateGeometricShader);
+    }
+
+    // This clears all the non-custom dirty bits. This ensures that the rprim
+    // doesn't have pending dirty bits that add it to the dirty list every
+    // frame.
+    // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
+    // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
@@ -116,8 +140,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
             sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
         if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(drawItem, &_sharedData,
-                dirtyBits, InstancePrimvar);
+            instancer->PopulateDrawItem(drawItem, &_sharedData, *dirtyBits);
         }
     }
 
@@ -261,8 +284,7 @@ HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 void
-HdStBasisCurves::_InitRepr(HdReprSelector const &reprToken,
-                        HdDirtyBits *dirtyBits)
+HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprToken));
@@ -285,10 +307,10 @@ HdStBasisCurves::_InitRepr(HdReprSelector const &reprToken,
             }
 
             HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+            HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
             repr->AddDrawItem(drawItem);
             if (desc.geomStyle == HdBasisCurvesGeomStyleWire) {
                 // Why does geom style require this change?
-                HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 drawingCoord->SetTopologyIndex(HdStBasisCurves::HullTopology);
                 if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
                     _customDirtyBitsInUse |= DirtyHullIndices;
@@ -300,13 +322,17 @@ HdStBasisCurves::_InitRepr(HdReprSelector const &reprToken,
                     *dirtyBits |= DirtyIndices;
                 }
             }
+
+            // Set up drawing coord instance primvars.
+            drawingCoord->SetInstancePrimvarBaseIndex(
+                HdStBasisCurves::InstancePrimvar);
         }
     }
 }
 
 void
 HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             HdReprSelector const &reprToken,
+                             TfToken const &reprToken,
                              HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
@@ -328,20 +354,6 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // Check if either the material or geometric shaders need updating.
-    bool needsSetMaterialShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId |
-                      HdChangeTracker::NewRepr)) {
-        needsSetMaterialShader = true;
-    }
-
-    bool needsSetGeometricShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle |
-                      HdChangeTracker::DirtyMaterialId |
-                      HdChangeTracker::NewRepr)) {
-        needsSetGeometricShader = true;
-    }
-
     _BasisCurvesReprConfig::DescArray const &reprDescs = 
         _GetReprDesc(reprToken);
 
@@ -360,44 +372,49 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If either the material or geometric shaders need updating, do so.
-    if (needsSetMaterialShader || needsSetGeometricShader) {
-        TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStBasisCurves(%s) - Resetting shaders for all draw items",
-                GetId().GetText());
 
-        SdfPath materialId;
-        if (needsSetMaterialShader) {
-            materialId = GetMaterialId();
-        }
+    *dirtyBits &= ~HdChangeTracker::NewRepr;
+}
 
-        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+void
+HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                           bool updateMaterialShader,
+                                           bool updateGeometricShader)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED).
+        Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.",
+            GetId().GetText());
 
-        TF_FOR_ALL (it, _reprs) {
-            _BasisCurvesReprConfig::DescArray const &descs =
-                _GetReprDesc(it->first);
-            HdReprSharedPtr repr = it->second;
-            int drawItemIndex = 0;
-            for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-                if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
-                    continue;
-                }
-                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
-                    repr->GetDrawItem(drawItemIndex++));
+    SdfPath materialId;
+    if (updateMaterialShader) {
+        materialId = GetMaterialId();
+    }
 
-                if (needsSetMaterialShader) {
-                    drawItem->SetMaterialShaderFromRenderIndex(
-                        renderIndex, materialId);
-                }
-                if (needsSetGeometricShader) {
-                    _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
-                        descs[descIdx]);
-                }
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _BasisCurvesReprConfig::DescArray const &descs =
+            _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
+                continue;
+            }
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+
+            if (updateMaterialShader) {
+                drawItem->SetMaterialShaderFromRenderIndex(
+                    renderIndex, materialId);
+            }
+            if (updateGeometricShader) {
+                _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
+                    descs[descIdx]);
             }
         }
     }
-
-    *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
 void
@@ -497,7 +514,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             // allocate new range
             HdBufferArrayRangeSharedPtr range
                 = resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->topology, bufferSpecs);
+                    HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
             // add sources to update queue
             resourceRegistry->AddSources(range, sources);
@@ -636,7 +653,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
     }
@@ -701,7 +718,7 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     }

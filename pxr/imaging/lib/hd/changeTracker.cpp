@@ -29,6 +29,7 @@
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/stackTrace.h"
 
 #include <iostream>
 #include <sstream>
@@ -109,8 +110,14 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     _IDStateMap::iterator it = _rprimState.find(id);
-    if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText()))
+    if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText())) {
         return;
+    }
+
+    // Early out if no new bits are being set.
+    if ((bits & (~it->second)) == 0) {
+        return;
+    }
 
     // used ensure the repr has been created. don't touch changeCount
     if (bits == HdChangeTracker::InitRepr) {
@@ -121,6 +128,10 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     // set Varying bit if it's not set
     HdDirtyBits oldBits = it->second;
     if ((oldBits & HdChangeTracker::Varying) == 0) {
+        TF_DEBUG(HD_VARYING_STATE).Msg("New Varying State %s: %s\n",
+                                       id.GetText(),
+                                       StringifyDirtyBits(bits).c_str());
+
         // varying state changed.
         bits |= HdChangeTracker::Varying;
         ++_varyingStateVersion;
@@ -152,6 +163,24 @@ HdChangeTracker::ResetVaryingState()
     TF_FOR_ALL (it, _rprimState) {
         it->second &= ~Varying;
     }
+}
+
+void
+HdChangeTracker::ResetRprimVaryingState(SdfPath const& id)
+{
+    TF_DEBUG(HD_VARYING_STATE).Msg("Resetting Rprim Varying State: %s\n",
+                                   id.GetText());
+
+    _IDStateMap::iterator it = _rprimState.find(id);
+    if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText())) {
+        return;
+    }
+
+    // Don't update varying state or change count as we don't want to
+    // cause re-evaluation of the varying state now, but
+    // want to pick up the possible change on the next iteration.
+
+    it->second &= ~Varying;
 }
 
 void
@@ -645,15 +674,51 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
         return;
     }
 
-    // As an optimization, assume we're always changing the varying state.
-    bits |= HdChangeTracker::Varying;
-    ++_varyingStateVersion;
+    //
+    // This function runs similar to calling MarkRprimDirty on every prim.
+    // First it checks to see if the request will set any new dirty bits that
+    // are not already set on the prim.  If there are, it will set the new bits
+    // as see if the prim is in the varying state.  If it is not it will
+    // transition the prim to varying.
+    //
+    // If any prim was transitioned to varying then the varying state version
+    // counter is incremented.
+    //
+    // This complexity is due to some important optimizations.
+    // The main case is dealing with invisible prims, but equally applies
+    // to other cases where dirty bits don't get cleaned during sync.
+    //
+    // For these cases, we want to avoid having the prim in the dirty list
+    // as there would be no work for it to do.  This is done by clearing the
+    // varying flag.  On the flip-side, we want to avoid thrashing the varying
+    // state, so that if the prim has an attribute that is varying, but
+    // it doesn't get cleared, we don't want to set varying on that prim
+    // every frame.
+    //
+
+    bool varyingStateUpdated = false;
 
     for (_IDStateMap::iterator it  = _rprimState.begin();
                                it != _rprimState.end(); ++it) {
-        it->second |= bits;
+
+        HdDirtyBits &rprimDirtyBits = it->second;
+
+        if ((bits & (~rprimDirtyBits)) != 0) {
+            rprimDirtyBits |= bits;
+
+            if ((rprimDirtyBits & HdChangeTracker::Varying) == 0) {
+                rprimDirtyBits |= HdChangeTracker::Varying;
+                varyingStateUpdated = true;
+            }
+        }
     }
 
+    if (varyingStateUpdated) {
+        ++_varyingStateVersion;
+    }
+
+    // These counters get updated every time, even if no prims
+    // have moved into the dirty state.
     ++_changeCount;
     if (bits & DirtyVisibility) {
         ++_visChangeCount;
@@ -733,6 +798,9 @@ void
 HdChangeTracker::MarkAllCollectionsDirty()
 {
     HD_TRACE_FUNCTION();
+    if (TfDebug::IsEnabled(HD_DIRTY_ALL_COLLECTIONS)) {
+        TfPrintStackTrace(std::cout, __ARCH_PRETTY_FUNCTION__);
+    }
 
     ++_indexVersion;
     ++_varyingStateVersion;

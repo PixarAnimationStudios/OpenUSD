@@ -64,6 +64,7 @@
 
 #include "pxr/base/vt/value.h"
 
+#include <iostream>
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -96,6 +97,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _sceneNormals(false)
     , _flatNormals(false)
     , _pointsVisibilityAuthored(false)
+    , _hasVaryingTopology(false)
 {
     /*NOTHING*/
 }
@@ -106,11 +108,10 @@ HdStMesh::~HdStMesh()
 }
 
 void
-HdStMesh::Sync(HdSceneDelegate      *delegate,
-               HdRenderParam        *renderParam,
-               HdDirtyBits          *dirtyBits,
-               HdReprSelector const &reprSelector,
-               bool                  forcedRepr)
+HdStMesh::Sync(HdSceneDelegate *delegate,
+               HdRenderParam   *renderParam,
+               HdDirtyBits     *dirtyBits,
+               TfToken const   &reprToken)
 {
     TF_UNUSED(renderParam);
 
@@ -119,9 +120,35 @@ HdStMesh::Sync(HdSceneDelegate      *delegate,
                        delegate->GetMaterialId(GetId()));
     }
 
-    HdReprSelector calcReprSelector = _GetReprSelector(reprSelector, forcedRepr);
-    _UpdateRepr(delegate, calcReprSelector, dirtyBits);
+    // Check if either the material or geometric shaders need updating for
+    // draw items of all the reprs.
+    bool updateMaterialShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId|
+                      HdChangeTracker::NewRepr)) {
+        updateMaterialShader = true;
+    }
 
+    bool updateGeometricShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
+                      HdChangeTracker::DirtyCullStyle|
+                      HdChangeTracker::DirtyDoubleSided|
+                      HdChangeTracker::DirtyMaterialId|
+                      HdChangeTracker::NewRepr)) {
+        updateGeometricShader = true;
+    }
+
+    _UpdateRepr(delegate, reprToken, dirtyBits);
+
+    if (updateMaterialShader || updateGeometricShader) {
+        _UpdateShadersForAllReprs(delegate,
+                                  updateMaterialShader, updateGeometricShader);
+    }
+
+    // This clears all the non-custom dirty bits. This ensures that the rprim
+    // doesn't have pending dirty bits that add it to the dirty list every
+    // frame.
+    // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
+    // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
@@ -369,10 +396,17 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             HdBufferSpecVector bufferSpecs;
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+            // Set up the usage hints to mark topology as varying if
+            // there is a previously set range
+            HdBufferArrayUsageHint usageHint;
+            usageHint.value = 0;
+            usageHint.bits.sizeVarying =
+                                 ((bool)(drawItem->GetTopologyRange())) ? 1 : 0;
+
             // allocate new range
             HdBufferArrayRangeSharedPtr range =
                 resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->topology, bufferSpecs);
+                    HdTokens->topology, bufferSpecs, usageHint);
 
             // add sources to update queue
             resourceRegistry->AddSources(range, sources);
@@ -380,23 +414,37 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             // save new range to registry
             rangeInstance.SetValue(range);
         }
-        
-        if (drawItem->GetTopologyRange() &&
-            drawItem->GetTopologyRange() != rangeInstance.GetValue()) {
+
+        // If we are updating an existing topology, notify downstream
+        // systems of the change
+        HdBufferArrayRangeSharedPtr orgRange = drawItem->GetTopologyRange();
+        HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+
+        if (newRange != orgRange) {
             // If this is a varying topology (we already have one and we're
             // going to replace it), ensure we update the draw batches and
             // garbage collect the old buffer.
-            sceneDelegate->GetRenderIndex().GetChangeTracker()
-                .SetGarbageCollectionNeeded();
-            sceneDelegate->GetRenderIndex().GetChangeTracker()
-                .MarkBatchesDirty();
+            if (orgRange) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .SetGarbageCollectionNeeded();
+
+                // Setup a flag to say this prims topology is varying.
+                _hasVaryingTopology = true;
+            }
+
+            // Check to see if the new BAR is associated with a different
+            // buffer array.
+            if (!newRange->IsAggregatedWith(orgRange)) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .MarkBatchesDirty();
+            }
         }
 
         // TODO: reuse same range for varying topology
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
             rangeInstance.GetValue());
-    }
+    }  // Release regLock
 }
 
 static HdBufferSourceSharedPtr
@@ -481,7 +529,9 @@ HdStMesh::_PopulateTopologyVisibility(
     if (!tvBAR || barNeedsReallocation) {
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->topologyVisibility, bufferSpecs);
+                HdTokens->topologyVisibility,
+                bufferSpecs,
+                HdBufferArrayUsageHint());
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetTopologyVisibilityIndex(), range);
 
@@ -534,7 +584,7 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
 
             HdBufferArrayRangeSharedPtr adjRange =
                 resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->topology, bufferSpecs);
+                    HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
             adjacency->SetAdjacencyRange(adjRange);
             resourceRegistry->AddSource(adjRange,
@@ -994,24 +1044,50 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         } else {
             range = resourceRegistry->AllocateNonUniformBufferArrayRange(
-                                              HdTokens->primvar, bufferSpecs);
+                      HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         }
 
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
 
     } else {
+        HdBufferArrayRangeSharedPtr range = bar;
+
+        // Get the hint for the previous range
+        HdBufferArrayUsageHint orgHint = range->GetUsageHint();
+
+        //
+        // Compute the new usage hints for the range, using the
+        // the  original hints to prevent ping-ponging between states.
+        HdBufferArrayUsageHint usageHint;
+        usageHint.value = orgHint.value;
+
+
+        // Set up the usage hints to mark the primvars as size varying if
+        // there is a varying topology and it will contain a differing number
+        // of elements.
+        //
+        // We can't compare the points size as computations such as refinement
+        // may expand the number of elements in the BAR from the topologies
+        // number of points.
+        //
+        // If the primvars are size varying, it also doesn't make sense for
+        // them to be immutable anymore, so clear the immutable flag.
+        if (_hasVaryingTopology) {
+            usageHint.bits.immutable   = 0;
+            usageHint.bits.sizeVarying = 1;
+        }
+
         // already have a valid range, but the new repr may have
         // added additional items (smooth normals) or we may be transitioning
         // to unpacked normals
         bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
                      (useSmoothNormals != _smoothNormals) ||
-                     (usePackedSmoothNormals != _packedSmoothNormals);
-
-        HdBufferArrayRangeSharedPtr range = bar;
+                     (usePackedSmoothNormals != _packedSmoothNormals) ||
+                     (orgHint.value != usageHint.value);
 
         if (bar->IsImmutable() && _IsEnabledSharedVertexPrimvar()) {
-            if (isNew) {
+            if (isNew && usageHint.bits.immutable) {
                 // see if we can share an immutable buffer primvar range
                 // include our existing sharing id so that we can take
                 // into account previously committed sources along
@@ -1036,14 +1112,21 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             } else {
                 // something is going to change and the existing bar
                 // is immutable, migrate to a mutable buffer array
+                usageHint.bits.immutable = 0;
                 _vertexPrimvarId = 0;
                 range = resourceRegistry->MergeNonUniformBufferArrayRange(
-                            HdTokens->primvar, bufferSpecs, bar);
+                            HdTokens->primvar,
+                            bufferSpecs,
+                            usageHint,
+                            bar);
             }
         } else if (isNew) {
             // the range was created by other repr. check compatibility.
             range = resourceRegistry->MergeNonUniformBufferArrayRange(
-                                           HdTokens->primvar, bufferSpecs, bar);
+                                           HdTokens->primvar,
+                                           bufferSpecs,
+                                           usageHint,
+                                           bar);
         }
 
         if (range != bar) {
@@ -1052,9 +1135,13 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
             // If buffer migration actually happens, the old buffer will no
             // longer be needed, and GC is required to reclaim the memory.
-            // We also need to trigger a batch rebuild.
             renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
-            renderIndex.GetChangeTracker().MarkBatchesDirty();
+
+            // Check to see if the new BAR is associated with a different
+            // buffer array.
+            if (!range->IsAggregatedWith(bar)) {
+                renderIndex.GetChangeTracker().MarkBatchesDirty();
+            }
         }
     }
 
@@ -1173,7 +1260,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetFaceVaryingPrimvarIndex(), range);
     }
@@ -1299,7 +1386,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     if ((!bar) || (!bar->IsValid())) {
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     } else {
@@ -1311,7 +1398,10 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         if (isNew) {
             HdBufferArrayRangeSharedPtr range =
                 resourceRegistry->MergeNonUniformBufferArrayRange(
-                    HdTokens->primvar, bufferSpecs, bar);
+                    HdTokens->primvar,
+                    bufferSpecs,
+                    HdBufferArrayUsageHint(),
+                    bar);
 
             if (range != bar) {
                 _sharedData.barContainer.Set(
@@ -1473,11 +1563,14 @@ HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
         if (existing) {
             range = resourceRegistry->
                 MergeNonUniformImmutableBufferArrayRange(
-                    HdTokens->primvar, bufferSpecs, existing);
+                    HdTokens->primvar,
+                    bufferSpecs,
+                    HdBufferArrayUsageHint(),
+                    existing);
         } else {
             range = resourceRegistry->
                 AllocateNonUniformImmutableBufferArrayRange(
-                    HdTokens->primvar, bufferSpecs);
+                    HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         }
         barInstance.SetValue(range);
     } else {
@@ -1579,8 +1672,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
             sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
         if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(drawItem, &_sharedData,
-                dirtyBits, InstancePrimvar);
+            instancer->PopulateDrawItem(drawItem, &_sharedData, *dirtyBits);
         }
     }
 
@@ -1755,10 +1847,14 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     TF_VERIFY(geomShader);
 
-    drawItem->SetGeometricShader(geomShader);
+    if (geomShader != drawItem->GetGeometricShader())
+    {
+        drawItem->SetGeometricShader(geomShader);
 
-    // The batches need to be validated and rebuilt if necessary.
-    renderIndex.GetChangeTracker().MarkBatchesDirty();
+        // If the gometric shader changes, we need to do a deep validation of
+        // batches, so they can be rebuilt if necessary.
+        renderIndex.GetChangeTracker().MarkBatchesDirty();
+    }
 }
 
 // virtual
@@ -1851,21 +1947,21 @@ size_t _GetNumDrawItemsForDesc(const HdMeshReprDesc& reprDesc)
 }
 
 void
-HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
+HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprSelector));
+                                            _ReprComparator(reprToken));
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
-        _reprs.emplace_back(reprSelector, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         // set dirty bit to say we need to sync a new repr (buffer array
         // ranges may change)
         *dirtyBits |= HdChangeTracker::NewRepr;
 
-        _MeshReprConfig::DescArray descs = _GetReprDesc(reprSelector);
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -1914,6 +2010,10 @@ HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
                     }
                 }
                 }
+
+                // Set up drawing coord instance primvars.
+                drawingCoord->SetInstancePrimvarBaseIndex(
+                    HdStMesh::InstancePrimvar);
             } // for each draw item
 
             if (desc.flatShadingEnabled) {
@@ -1933,40 +2033,24 @@ HdStMesh::_InitRepr(HdReprSelector const &reprSelector, HdDirtyBits *dirtyBits)
 
 void
 HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
-                      HdReprSelector const &reprSelector,
+                      TfToken const &reprToken,
                       HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdReprSharedPtr const &curRepr = _GetRepr(reprSelector);
+    HdReprSharedPtr const &curRepr = _GetRepr(reprToken);
     if (!curRepr) {
         return;
     }
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStMesh::GetRepr " << GetId()
-                  << " Repr = " << reprSelector << "\n";
+                  << " Repr = " << reprToken << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // Check if either the material or geometric shaders need updating.
-    bool needsSetMaterialShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId|
-                      HdChangeTracker::NewRepr)) {
-        needsSetMaterialShader = true;
-    }
-
-    bool needsSetGeometricShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
-                      HdChangeTracker::DirtyCullStyle|
-                      HdChangeTracker::DirtyDoubleSided|
-                      HdChangeTracker::DirtyMaterialId|
-                      HdChangeTracker::NewRepr)) {
-        needsSetGeometricShader = true;
-    }
-
-    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprSelector);
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
 
     // Iterate through all reprdescs for the current repr to figure out if any 
     // of them requires smooth normals or flat normals. If either (or both)
@@ -2004,53 +2088,57 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If either the material or geometric shaders need updating, do so.
-    if (needsSetMaterialShader || needsSetGeometricShader) {
-        TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStMesh(%s) - Resetting shaders for all draw items",
-                GetId().GetText());
+    *dirtyBits &= ~HdChangeTracker::NewRepr;
+}
 
-        // Look up the mixin source if necessary. This is a per-rprim glsl
-        // snippet, to be mixed into the surface shader.
-        SdfPath materialId;
-        std::string mixinSource;
-        if (needsSetMaterialShader) {
-            materialId = GetMaterialId();
+void
+HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                    bool updateMaterialShader,
+                                    bool updateGeometricShader)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED).
+        Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.",
+            GetId().GetText());
 
-            TfToken mixinKey =
-                GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
-            mixinSource = _GetMixinShaderSource(mixinKey);
-        }
+    // Look up the mixin source if necessary. This is a per-rprim glsl
+    // snippet, to be mixed into the surface shader.
+    SdfPath materialId;
+    std::string mixinSource;
+    if (updateMaterialShader) {
+        materialId = GetMaterialId();
 
-        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+        TfToken mixinKey =
+            GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
+        mixinSource = _GetMixinShaderSource(mixinKey);
+    }
 
-        for (auto const& reprPair : _reprs) {
-            _MeshReprConfig::DescArray descs = _GetReprDesc(reprPair.first);
-            HdReprSharedPtr repr = reprPair.second;
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-            int drawItemIndex = 0;
-            for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-                size_t numDrawItems = _GetNumDrawItemsForDesc(descs[descIdx]);
-                if (numDrawItems == 0) continue;
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
 
-                for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-                    HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            size_t numDrawItems = _GetNumDrawItemsForDesc(descs[descIdx]);
+            if (numDrawItems == 0) continue;
+
+            for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                     repr->GetDrawItem(drawItemIndex++));
 
-                    if (needsSetMaterialShader) {
-                        drawItem->SetMaterialShaderFromRenderIndex(
-                            renderIndex, materialId, mixinSource);
-                    }
-                    if (needsSetGeometricShader) {
-                        _UpdateDrawItemGeometricShader(sceneDelegate,
-                            drawItem, descs[descIdx], itemId);
-                    }
-                }               
+                if (updateMaterialShader) {
+                    drawItem->SetMaterialShaderFromRenderIndex(
+                        renderIndex, materialId, mixinSource);
+                }
+                if (updateGeometricShader) {
+                    _UpdateDrawItemGeometricShader(sceneDelegate,
+                        drawItem, descs[descIdx], itemId);
+                }
             }
         }
     }
-
-    *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
 HdDirtyBits

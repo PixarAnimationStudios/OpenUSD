@@ -1182,23 +1182,12 @@ _HasAncestorCycle(
     const PcpLayerStackSite& parentNodeSite,
     const PcpLayerStackSite& childNodeSite )
 {
-    if (parentNodeSite.layerStack != childNodeSite.layerStack)
-        return false;
-
-    if (parentNodeSite.path.HasPrefix(childNodeSite.path))
-        return true;
-
-    if (childNodeSite.path.HasPrefix(parentNodeSite.path)) {
-        if (childNodeSite.path.IsPrimVariantSelectionPath()) {
-            // Variant selection arcs do not represent cycles, because
-            // we do not look for ancestral opinions above variant
-            // selection sites.  See Pcp_BuildPrimIndex.
-            return false;
-        }
-        return true;
-    }
-
-    return false;
+    // For example, a cycle exists if in the same layer stack 
+    // the prim at /A/B adds a child arc to /A or the prim at 
+    // /A adds a child arc to /A/B.
+    return parentNodeSite.layerStack == childNodeSite.layerStack
+        && (parentNodeSite.path.HasPrefix(childNodeSite.path)
+            || childNodeSite.path.HasPrefix(parentNodeSite.path));
 }
 
 static bool
@@ -1244,6 +1233,15 @@ _CheckForCycle(
             // Do not count this as a cycle.
             return PcpErrorArcCyclePtr();
         }
+    }
+
+    // Don't check for cycles for variant arcs, since these just
+    // represent the selection of a particular branch of scene
+    // description. For example, adding a variant selection child
+    // /A{v=sel} to parent /A is not a cycle, even though the child
+    // path is prefixed by the parent.
+    if (arcType == PcpArcTypeVariant) {
+        return PcpErrorArcCyclePtr();
     }
 
     // We compare the targeted site to each previously-visited site: 

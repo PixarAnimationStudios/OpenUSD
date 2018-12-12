@@ -153,6 +153,7 @@ private:
         // TODO: Dedupe this infromation across UsdSkelSkeleton instances.
         VtVec3fArray    _boneMeshPoints;
         VtIntArray      _boneMeshJointIndices;
+        size_t          _numJoints;
     };
 
     _SkelData*  _GetSkelData(const SdfPath& cachePath) const;

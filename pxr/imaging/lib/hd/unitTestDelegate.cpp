@@ -515,8 +515,6 @@ HdUnitTestDelegate::UpdateTask(SdfPath const &id,
        tracker.MarkTaskDirty(id, HdChangeTracker::DirtyParams);
    } else if (key == HdTokens->collection) {
        tracker.MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
-   } else if (key == HdTokens->children) {
-       tracker.MarkTaskDirty(id, HdChangeTracker::DirtyChildren);
    } else {
        TF_CODING_ERROR("Unknown key %s", key.GetText());
    }

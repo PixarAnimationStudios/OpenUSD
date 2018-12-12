@@ -32,35 +32,40 @@
 #include "pxr/base/tf/token.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
 #include <string>
+#include <vector>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+
 namespace {
 
-static std::vector<UsdMayaUserTaggedAttribute>
-_GetUserTaggedAttributesForNode(
-        const std::string& dagString)
+static
+std::vector<UsdMayaUserTaggedAttribute>
+_GetUserTaggedAttributesForNode(const std::string& nodeName)
 {
-    std::vector<UsdMayaUserTaggedAttribute> wrappedAttrs;
+    MObject mayaNode;
+    MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, mayaNode);
+    CHECK_MSTATUS_AND_RETURN(
+        status,
+        std::vector<UsdMayaUserTaggedAttribute>());
 
-    MDagPath dagPath;
-    MStatus status = UsdMayaUtil::GetDagPathByName(dagString,
-                                                      dagPath);
-    CHECK_MSTATUS_AND_RETURN(status, wrappedAttrs);
-
-    return UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
-            dagPath);
+    return UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(mayaNode);
 }
 
-} // anonymous namespace 
+} // anonymous namespace
 
-void wrapUserTaggedAttribute() {
+
+void wrapUserTaggedAttribute()
+{
     using namespace boost::python;
 
     TF_PY_WRAP_PUBLIC_TOKENS("UserTaggedAttributeTokens",

@@ -77,20 +77,32 @@ HdxDrawTargetTask_GetResolvedDepthFunc(HdCompareFunction depthFunc,
 
 HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
- : HdSceneTask(delegate, id)
+ : HdTask(id)
  , _currentDrawTargetSetVersion(0)
  , _renderPassesInfo()
  , _renderPasses()
+ , _overrideColor()
+ , _wireframeColor()
+ , _enableLighting(false)
+ , _alphaThreshold(0.0f)
  , _depthBiasUseDefault(true)
  , _depthBiasEnable(false)
  , _depthBiasConstantFactor(0.0f)
  , _depthBiasSlopeFactor(1.0f)
  , _depthFunc(HdCmpFuncLEqual)
+ , _cullStyle(HdCullStyleBackUnlessDoubleSided)
+ , _enableSampleAlphaToCoverage(true)
+{
+}
+
+HdxDrawTargetTask::~HdxDrawTargetTask()
 {
 }
 
 void
-HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
+HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
+                        HdTaskContext* ctx,
+                        HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -98,12 +110,10 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("GlimRg", __ARCH_PRETTY_FUNCTION__);
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
-    if (bits & HdChangeTracker::DirtyParams) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;
 
-        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetTaskParams(delegate, &params)) {
             return;
         }
 
@@ -113,10 +123,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         _enableLighting          = params.enableLighting;
         _overrideColor           = params.overrideColor;
         _alphaThreshold          = params.alphaThreshold;
-        _tessLevel               = params.tessLevel;
-        _drawingRange            = params.drawingRange;
         _cullStyle               = params.cullStyle;
-
 
         // Depth
         // XXX: Should be in raster state?
@@ -125,15 +132,8 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         _depthBiasConstantFactor = params.depthBiasConstantFactor;
         _depthBiasSlopeFactor    = params.depthBiasSlopeFactor;
         _depthFunc               = params.depthFunc;
-
-        _cullStyle               = params.cullStyle;
-        _geomStyle               = params.geomStyle;
-        _complexity              = params.complexity;
-        _hullVisibility          = params.hullVisibility;
-        _surfaceVisibility       = params.surfaceVisibility;
     }
 
-    HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
@@ -269,8 +269,6 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetWireframeColor(_wireframeColor);
         renderPassState->SetLightingEnabled(_enableLighting);
         renderPassState->SetAlphaThreshold(_alphaThreshold);
-        renderPassState->SetTessLevel(_tessLevel);
-        renderPassState->SetDrawingRange(_drawingRange);
         renderPassState->SetCullStyle(_cullStyle);
         renderPassState->SetDepthFunc(depthFunc);
 
@@ -301,10 +299,26 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->Sync(renderIndex.GetResourceRegistry());
         renderPass->Sync();
     }
+
+    // XXX: Long-term Alpha to Coverage will be a render style on the
+    // task.  However, as there isn't a fallback we current force it
+    // enabled, unless a client chooses to manage the setting itself
+    // (aka usdImaging).
+
+    // XXX: When rendering draw targets we need alpha to coverage
+    // at least until we support a transparency pass
+    _enableSampleAlphaToCoverage = true;
+    if (delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
+        if (TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
+            _enableSampleAlphaToCoverage = false;
+        }
+    }
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void
-HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
+HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -322,18 +336,16 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
 
     // XXX: Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
-    // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
+    // enabled, unless a client chooses to manage the setting itself
+    // (aka usdImaging).
 
     // XXX: When rendering draw targets we need alpha to coverage
     // at least until we support a transparency pass
-    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-    if (GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
-        if (!TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
-            glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        } else {
-            glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        }
+    if (_enableSampleAlphaToCoverage) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    } else {
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
 
     glEnable(GL_PROGRAM_POINT_SIZE);
@@ -375,17 +387,11 @@ std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
         << "         wireframeColor          = " << pv.wireframeColor << "\n"
         << "         enableLighting          = " << pv.enableLighting << "\n"
         << "         alphaThreshold          = " << pv.alphaThreshold << "\n"
-        << "         tessLevel               = " << pv.tessLevel << "\n"
-        << "         drawingRange            = " << pv.drawingRange << "\n"
         << "         depthBiasUseDefault     = " << pv.depthBiasUseDefault << "\n"
         << "         depthBiasEnable         = " << pv.depthBiasEnable << "\n"
         << "         depthBiasConstantFactor = " << pv.depthBiasConstantFactor << "\n"
         << "         depthFunc               = " << pv.depthFunc << "\n"
         << "         cullStyle               = " << pv.cullStyle << "\n"
-        << "         geomStyle               = " << pv.geomStyle << "\n"
-        << "         complexity              = " << pv.complexity << "\n"
-        << "         hullVisibility          = " << pv.hullVisibility << "\n"
-        << "         surfaceVisibility       = " << pv.surfaceVisibility << "\n"
         ;
 
     return out;
@@ -398,18 +404,12 @@ bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParam
         lhs.wireframeColor == rhs.wireframeColor                    &&  
         lhs.enableLighting == rhs.enableLighting                    && 
         lhs.alphaThreshold == rhs.alphaThreshold                    && 
-        lhs.tessLevel == rhs.tessLevel                              && 
-        lhs.drawingRange == rhs.drawingRange                        && 
         lhs.depthBiasUseDefault == rhs.depthBiasUseDefault          && 
         lhs.depthBiasEnable == rhs.depthBiasEnable                  && 
         lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor  && 
         lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor        && 
         lhs.depthFunc == rhs.depthFunc                              && 
-        lhs.cullStyle == rhs.cullStyle                              &&
-        lhs.geomStyle == rhs.geomStyle                              && 
-        lhs.complexity == rhs.complexity                            && 
-        lhs.hullVisibility == rhs.hullVisibility                    && 
-        lhs.surfaceVisibility == rhs.surfaceVisibility;
+        lhs.cullStyle == rhs.cullStyle;
 }
 
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)

@@ -219,6 +219,37 @@ static void testArray() {
         TF_AXIOM(cb._GetShapeData()->otherDims[1] == 2);
         TF_AXIOM(cb._GetShapeData()->otherDims[2] == 0);
     }
+    
+    {
+        // Test initializer lists for VtArrays;
+        VtArray<int> array1({1, 2, 3, 4});
+        TF_AXIOM(array1.size() == 4);
+        TF_AXIOM(array1[0] == 1);
+        TF_AXIOM(array1[1] == 2);
+        TF_AXIOM(array1[2] == 3);
+        TF_AXIOM(array1[3] == 4);
+        array1.assign({5, 6});
+        TF_AXIOM(array1.size() == 2);
+        TF_AXIOM(array1[0] == 5);
+        TF_AXIOM(array1[1] == 6);
+        array1.assign({});
+        TF_AXIOM(array1.size() == 0);
+        array1 = {7, 8, 9};
+        TF_AXIOM(array1.size() == 3);
+        TF_AXIOM(array1[0] == 7);
+        TF_AXIOM(array1[1] == 8);
+        TF_AXIOM(array1[2] == 9);
+        array1 = {};
+        TF_AXIOM(array1.size() == 0);
+        
+        VtArray<int> empty({});
+        TF_AXIOM(empty.size() == 0);
+
+        auto testImplicit = [](const VtArray<int>& array, size_t size) {
+            TF_AXIOM(array.size() == size);
+        };
+        testImplicit({1,2,3}, 3);
+    }
 }
 
 static void testArrayOperators() {

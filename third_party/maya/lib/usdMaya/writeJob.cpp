@@ -69,9 +69,7 @@
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
-
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <maya/MUuid.h>
 
 #include <limits>
 #include <map>
@@ -98,12 +96,13 @@ static
 std::string
 _MakeTmpStageName(const std::string& dir)
 {
-    const std::string uuid =
-            boost::uuids::to_string(boost::uuids::random_generator()());
+    MUuid uuid;
+    uuid.generate();
+
     const std::string fileName =
             TfStringPrintf(
                 "tmp-%s.%s",
-                uuid.c_str(),
+                uuid.asString().asChar(),
                 UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     return TfStringCatPaths(dir, fileName);
 }
@@ -252,8 +251,7 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         _packageName = std::string();
     }
 
-    TF_STATUS("Creating stage file '%s'", _fileName.c_str());
-
+    TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
     if (mJobCtx.mArgs.renderLayerMode ==
             UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
@@ -378,7 +376,8 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
+            const MFnDagNode dagNodeFn(curDagPath);
+            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(dagNodeFn);
 
             if (primWriter) {
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);
@@ -420,26 +419,10 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    UsdMayaExportParams exportParams;
-    exportParams.mergeTransformAndShape = mJobCtx.mArgs.mergeTransformAndShape;
-    exportParams.exportCollectionBasedBindings =
-            mJobCtx.mArgs.exportCollectionBasedBindings;
-    exportParams.stripNamespaces = mJobCtx.mArgs.stripNamespaces;
-    exportParams.overrideRootPath = mJobCtx.mArgs.usdModelRootOverridePath;
-    exportParams.bindableRoots = mJobCtx.mArgs.dagPaths;
-    exportParams.parentScope = mJobCtx.mArgs.parentScope;
-
     // Writing Materials/Shading
-    exportParams.materialCollectionsPath =
-            mJobCtx.mArgs.exportMaterialCollections ?
-            mJobCtx.mArgs.materialCollectionsPath :
-            SdfPath::EmptyPath();
-
     UsdMayaTranslatorMaterial::ExportShadingEngines(
-                mJobCtx.mStage,
-                mJobCtx.mArgs.shadingMode,
-                mDagPathToUsdPathMap,
-                exportParams);
+        mJobCtx,
+        mDagPathToUsdPathMap);
 
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
@@ -577,7 +560,7 @@ UsdMaya_WriteJob::_FinishWriting()
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
 
     // In the usdz case, the layer at _fileName was just a temp file, so
-    // clean it up now. Do this after mJobCtx.mStage is reset to ensure 
+    // clean it up now. Do this after mJobCtx.mStage is reset to ensure
     // there are no outstanding handles to the file, which will cause file
     // access issues on Windows.
     if (!_packageName.empty()) {
