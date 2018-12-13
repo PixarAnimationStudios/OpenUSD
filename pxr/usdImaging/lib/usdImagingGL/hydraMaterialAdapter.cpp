@@ -74,14 +74,6 @@ UsdImagingGLHydraMaterialAdapter::IsSupported(
     return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
-bool
-UsdImagingGLHydraMaterialAdapter::IsPopulatedIndirectly()
-{
-    // Materials are populated as a consequence of populating a prim
-    // which uses the material.
-    return true;
-}
-
 SdfPath
 UsdImagingGLHydraMaterialAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,

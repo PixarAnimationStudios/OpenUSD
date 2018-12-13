@@ -73,6 +73,18 @@ UsdImagingPointInstancerAdapter::~UsdImagingPointInstancerAdapter()
 {
 }
 
+bool
+UsdImagingPointInstancerAdapter::ShouldCullChildren() const
+{
+    return true;
+}
+
+bool
+UsdImagingPointInstancerAdapter::IsInstancerAdapter() const
+{
+    return true;
+}
+
 SdfPath
 UsdImagingPointInstancerAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,
@@ -304,6 +316,17 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 instancerChain));
 
         if (!instanceProxyPrim) {
+            range.set_begin(++iter);
+            continue;
+        }
+
+        // Skip population of non-imageable prims.
+        if (UsdImagingPrimAdapter::ShouldCullSubtree(instanceProxyPrim)) {
+            TF_DEBUG(USDIMAGING_INSTANCER).Msg("[Instance PI] Discovery of new "
+                "prims at or below <%s> pruned by prim type (%s)\n",
+                iter->GetPath().GetText(), iter->GetTypeName().GetText());
+            iter.PruneChildren();
+            range.set_begin(++iter);
             continue;
         }
 
@@ -320,17 +343,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     "In order to instance this prim, put the prim under an "
                     "Xform, and instance the Xform parent.",
                     iter->GetPath().GetText());
+            range.set_begin(++iter);
             continue;
         }
 
         if (adapter) {
-            if (adapter->IsPopulatedIndirectly()) {
-                // If "IsPopulatedIndirectly", don't populate this from
-                // traversal.
-                range.set_begin(++iter);
-                continue;
-            }
-
             primCount++;
 
             //
@@ -376,7 +393,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 protoPath = adapter->Populate(populatePrim, index, &ctx);
             }
 
-            if (adapter->ShouldCullChildren(*iter)) {
+            if (adapter->ShouldCullChildren()) {
                 iter.PruneChildren();
             }
 

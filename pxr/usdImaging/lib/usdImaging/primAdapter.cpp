@@ -72,27 +72,33 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 {
 }
 
+/*static*/
+bool
+UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
+{
+    // Skip population of non-imageable prims during population traversal
+    // (although they can still be populated by reference).
+    return (!prim.IsA<UsdGeomImageable>() && !prim.GetTypeName().IsEmpty());
+}
+
 /*virtual*/
 bool
-UsdImagingPrimAdapter::ShouldCullChildren(UsdPrim const&)
+UsdImagingPrimAdapter::ShouldCullChildren() const
 {
-    // By default, always continue traversal.
     return false;
 }
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::IsInstancerAdapter()
+UsdImagingPrimAdapter::IsInstancerAdapter() const
 {
-    // By default, opt-out of nested-instancing adapter resolution.
     return false;
 }
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::IsPopulatedIndirectly()
+UsdImagingPrimAdapter::CanPopulateMaster() const
 {
-    // By default, do not delay population.
     return false;
 }
 

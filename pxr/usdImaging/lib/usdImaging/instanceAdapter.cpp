@@ -72,6 +72,18 @@ UsdImagingInstanceAdapter::~UsdImagingInstanceAdapter()
 {
 }
 
+bool
+UsdImagingInstanceAdapter::ShouldCullChildren() const
+{
+    return true;
+}
+
+bool
+UsdImagingInstanceAdapter::IsInstancerAdapter() const
+{
+    return true;
+}
+
 SdfPath
 UsdImagingInstanceAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,
@@ -212,9 +224,14 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 continue;
             }
 
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(instanceProxyPrim)) {
+                iter.PruneChildren();
+                continue;
+            }
+
             UsdImagingPrimAdapterSharedPtr const& primAdapter =
                 _GetPrimAdapter(instanceProxyPrim, /*ignoreInstancing=*/ true);
-            if (!primAdapter || primAdapter->IsPopulatedIndirectly()) {
+            if (!primAdapter) {
                 continue;
             }
 
@@ -387,7 +404,7 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
 
     SdfPath protoPath = primAdapter->Populate(prim, index, &ctx);
 
-    if (primAdapter->ShouldCullChildren(prim)) {
+    if (primAdapter->ShouldCullChildren()) {
         it->PruneChildren();
     }
 

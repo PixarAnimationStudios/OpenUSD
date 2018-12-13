@@ -51,14 +51,6 @@ UsdImagingMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
     return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
-bool
-UsdImagingMaterialAdapter::IsPopulatedIndirectly()
-{
-    // Materials are populated as a consequence of populating a prim
-    // which uses the material.
-    return true;
-}
-
 SdfPath
 UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,

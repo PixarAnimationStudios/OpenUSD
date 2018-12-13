@@ -91,6 +91,25 @@ UsdImagingGLDrawModeAdapter::~UsdImagingGLDrawModeAdapter()
 {
 }
 
+bool
+UsdImagingGLDrawModeAdapter::ShouldCullChildren() const
+{
+    return true;
+}
+
+bool
+UsdImagingGLDrawModeAdapter::CanPopulateMaster() const
+{
+    return true;
+}
+
+bool
+UsdImagingGLDrawModeAdapter::IsSupported(
+    UsdImagingIndexProxy const* index) const
+{
+    return true;
+}
+
 SdfPath
 UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
                                     UsdImagingIndexProxy* index,

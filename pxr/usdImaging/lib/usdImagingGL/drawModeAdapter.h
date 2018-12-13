@@ -58,17 +58,15 @@ public:
 
     // If the draw mode adapter is applied to a prim, it cuts off traversal of
     // that prim's subtree.
-    virtual bool ShouldCullChildren(UsdPrim const& prim) override {
-        return true;
-    }
+    virtual bool ShouldCullChildren() const override;
 
     // Because draw mode can change usdImaging topology, we need to handle
     // render index compatibility at a later point than adapter lookup.
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override {
-        return true;
-    }
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
-    virtual bool CanPopulateMaster() override { return true; }
+    // Cards prims can take effect on master prims, so we need to let the
+    // UsdImagingInstanceAdapter know we want special handling.
+    virtual bool CanPopulateMaster() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve

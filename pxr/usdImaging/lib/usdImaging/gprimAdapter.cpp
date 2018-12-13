@@ -113,10 +113,17 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
     UsdPrim materialPrim = usdPrim.GetStage()->GetPrimAtPath(materialPath);
 
     if (materialPrim) {
-       UsdImagingPrimAdapterSharedPtr materialAdapter =
-           index->GetMaterialAdapter(materialPrim);
-        if (materialAdapter) {
-            materialAdapter->Populate(materialPrim, index, nullptr);
+        if (materialPrim.IsA<UsdShadeMaterial>()) {
+            UsdImagingPrimAdapterSharedPtr materialAdapter =
+                index->GetMaterialAdapter(materialPrim);
+            if (materialAdapter) {
+                materialAdapter->Populate(materialPrim, index, nullptr);
+            }
+        } else {
+            TF_WARN("Gprim <%s> has illegal material reference to "
+                    "prim <%s> of type (%s)", usdPrim.GetPath().GetText(),
+                    materialPrim.GetPath().GetText(),
+                    materialPrim.GetTypeName().GetText());
         }
     }
 

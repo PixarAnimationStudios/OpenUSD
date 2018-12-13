@@ -666,12 +666,15 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                             iter->GetPath().GetText());
                 continue;
             }
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(*iter)) {
+                iter.PruneChildren();
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
+                            "due to prim type <%s>\n",
+                            iter->GetPath().GetText(),
+                            iter->GetTypeName().GetText());
+                continue;
+            }
             if (_AdapterSharedPtr adapter = _AdapterLookup(*iter)) {
-                // We delay populating some parts of the scene (e.g. material)
-                // until they are needed by some other prim.
-                if (adapter->IsPopulatedIndirectly()) {
-                    continue;
-                }
                 // Schedule the prim for population and discovery
                 // of material bindings.
                 //
@@ -683,7 +686,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                  bindingDispatcher.Run(wu);
                 
                 leafPaths.push_back(std::make_pair(*iter, adapter));
-                if (adapter->ShouldCullChildren(*iter)) {
+                if (adapter->ShouldCullChildren()) {
                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned "
                                     "children of <%s> due to adapter\n",
                             iter->GetPath().GetText());
@@ -1059,9 +1062,25 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
             // See additional notes around instancerPath use below for why this
             // is needed.
             if (_instancerPrimPaths.find(curPrim.GetPath()) 
-                                                != _instancerPrimPaths.end()) {
+                    != _instancerPrimPaths.end()) {
                 instancerPath = curPrim.GetPath();
                 prunedByParent = true;
+            }
+
+            // Check for type-based pruning opinions.
+            // XXX: If the path-to-resync is a geom subset, that skips regular
+            // type-based pruning. It would be nice to not have to special-case
+            // this...
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(curPrim) &&
+                !(curPrim == prim && prim.IsA<UsdGeomSubset>())) {
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
+                    "Discovery of new prims below <%s> pruned by "
+                    "prim type of <%s>: (%s)\n",
+                    rootPath.GetText(),
+                    curPrim.GetPath().GetText(),
+                    curPrim.GetTypeName().GetText());
+                prunedByParent = true;
+                break;
             }
 
             _PrimInfo *primInfo = GetPrimInfo(curPrim.GetPath());
@@ -1074,7 +1093,7 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                           curPrim.GetPath().GetText())) {
                 _AdapterSharedPtr &adapter = primInfo->adapter;
 
-                if (adapter->ShouldCullChildren(prim)) {
+                if (adapter->ShouldCullChildren()) {
                     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
                            "Discovery of new prims below <%s> pruned by "
                            "adapter of <%s>\n",
@@ -1098,6 +1117,32 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 const UsdPrim &usdPrim = *iter;
                 _PrimInfo *primInfo = GetPrimInfo(usdPrim.GetPath());
 
+                // Special case for adding UsdGeomSubset prims (which do not
+                // get an adapter); resync the containing mesh.
+                if (iter->IsA<UsdGeomSubset>()) {
+                    UsdPrim parentPrim = iter->GetParent();
+                    TF_DEBUG(USDIMAGING_CHANGES)
+                        .Msg("[Resync Prim]: Populating <%s> on behalf "
+                             "of subset <%s>\n",
+                             parentPrim.GetPath().GetText(),
+                             iter->GetPath().GetText());
+                    proxy->Repopulate(parentPrim.GetPath());
+                    iter.PruneChildren();
+                    continue;
+                }
+
+                // Check if this prim (& subtree) should be pruned based on
+                // prim type.
+                if (UsdImagingPrimAdapter::ShouldCullSubtree(usdPrim)) {
+                    iter.PruneChildren();
+                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
+                        "[Re]population of subtree <%s> pruned by prim type "
+                        "(%s)\n",
+                        usdPrim.GetPath().GetText(),
+                        usdPrim.GetTypeName().GetText());
+                    continue;
+                }
+
                 // If this prim in the tree wants to prune children, we must
                 // respect that and ignore any additions under this descendant.
                 if (primInfo != nullptr  &&
@@ -1105,7 +1150,7 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                               usdPrim.GetPath().GetText())) {
                     _AdapterSharedPtr &adapter = primInfo->adapter;
 
-                    if (adapter->ShouldCullChildren(usdPrim)) {
+                    if (adapter->ShouldCullChildren()) {
                         iter.PruneChildren();
                         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
                                 "[Re]population of children of <%s> pruned by "
@@ -1119,25 +1164,9 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // because the prim just came into existence.
                 _AdapterSharedPtr adapter = _AdapterLookup(*iter);
                 if (!adapter) {
-                    // Special case for adding UsdGeomSubset prims
-                    // (which do not get an adapter); resync the
-                    // containing mesh.
-                    if (UsdGeomSubset(*iter)) {
-                        UsdPrim parentPrim = iter->GetParent();
-                        adapter = _AdapterLookup(parentPrim);
-                        TF_DEBUG(USDIMAGING_CHANGES)
-                            .Msg("[Resync Prim]: Populating <%s> on behalf "
-                                 "of subset <%s>\n",
-                                 parentPrim.GetPath().GetText(),
-                                 iter->GetPath().GetText());
-                        proxy->Repopulate(parentPrim.GetPath());
-                        iter.PruneChildren();
-                        continue;
-                    } else {
-                        // This prim has no prim adapter, continue traversing
-                        // descendants.    
-                        continue;
-                    }
+                    // This prim has no prim adapter, continue traversing
+                    // descendants.    
+                    continue;
                 }
 
                 // This prim has an adapter, but wasn't in our adapter map, so

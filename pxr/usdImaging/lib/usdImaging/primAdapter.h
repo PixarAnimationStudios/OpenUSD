@@ -84,29 +84,30 @@ public:
                 UsdImagingIndexProxy* index,
                 UsdImagingInstancerContext const* instancerContext = NULL) = 0;
 
-    // Allows the adapter to prune traversal by culling the children below the
-    // given prim.
+    // Indicates whether population traversal should be pruned based on
+    // prim-specific features (like whether it's imageable).
     USDIMAGING_API
-    virtual bool ShouldCullChildren(UsdPrim const& prim);
+    static bool ShouldCullSubtree(UsdPrim const& prim);
+
+    // Indicates whether population traversal should be pruned based on
+    // adapter-specific features (like whether the adapter is an instance
+    // adapter, and wants to do its own population).
+    USDIMAGING_API
+    virtual bool ShouldCullChildren() const;
 
     // Indicates the adapter is a multiplexing adapter (e.g. PointInstancer),
     // potentially managing its children. This flag is used in nested
     // instancer cases to determine which adapter is assigned to which prim.
     USDIMAGING_API
-    virtual bool IsInstancerAdapter();
+    virtual bool IsInstancerAdapter() const;
 
     // Indicates whether this adapter can populate a master prim. By policy,
     // you can't directly instance a gprim, but you can directly instance proxy
     // objects (like cards). Note: masters don't have attributes, so an adapter
     // opting in here needs to check if prims it's populating are master prims,
     // and if so find a copy of the instancing prim.
-    virtual bool CanPopulateMaster() { return false; }
-
-    // Indicates that this adapter populates the render index only when
-    // directed by the population of another prim, e.g. materials are
-    // populated on behalf of prims which use the material.
     USDIMAGING_API
-    virtual bool IsPopulatedIndirectly();
+    virtual bool CanPopulateMaster() const;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
