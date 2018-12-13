@@ -97,7 +97,7 @@ class testUsdExportCamera(unittest.TestCase):
             self.assertTrue(usdAttr)
 
             if expectedValue is None:
-                self.assertFalse(usdAttr.HasAuthoredValueOpinion())
+                self.assertFalse(usdAttr.HasAuthoredValue())
                 continue
 
             # Validate the attribute value at usdTime
