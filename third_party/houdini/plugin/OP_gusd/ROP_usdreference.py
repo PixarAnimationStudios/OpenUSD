@@ -39,10 +39,11 @@ from pxr import Usd,UsdGeom,UsdUtils,Sdf,Kind
 def insertReference( destFile, path, reffile, primPath=None, offset=0, scale=1 ):
 
     if os.path.exists( destFile ):
-
         stage = Usd.Stage.Open( destFile )
         if not stage:
             soho.error("Could not open USD file: " + destFile)
+
+        frameRange, defaultPrim, firstRoot = getMetaData( reffile )
 
         existingRefPath = None
         returnVal = None
@@ -54,26 +55,31 @@ def insertReference( destFile, path, reffile, primPath=None, offset=0, scale=1 )
         layerOffset = Sdf.LayerOffset(offset, scale)
         if returnVal:
             existingRefPath, existingPrimPath, existingLayerOffset = returnVal
+            keepPrimPath = True
+            if primPath:
+                if primPath != existingPrimPath:
+                    keepPrimPath = False
+            elif defaultPrim and defaultPrim != existingPrimPath:
+                keepPrimPath = False
+            elif firstRoot and firstRoot.pathString  != existingPrimPath:
+                keepPrimPath = False
+
             if ( existingRefPath == path and layerOffset == existingLayerOffset
-                 and existingPrimPath == primPath ):
-                # Our link already exists.
+                 and keepPrimPath ):
+                # Our exact link already exists.
                 sys.exit()
             else:
                 # There is a existing link to our file but we want to rename it,
                 # target a new prim path or add/change the layer offset.
                 # Delete the old link.
-                stage.RemovePrim(existingRefPath)
-
-            # If no provided prim path, use the pre-existing one.
-            if not primPath:
-                primPath = existingPrimPath
-
-        frameRange, defaultPrim, firstRoot = getMetaData( reffile )
-
+                prim = stage.GetPrimAtPath( existingRefPath )
+                refList = prim.GetReferences()
+                existingRef = Sdf.Reference( reffile,
+                                             existingPrimPath,
+                                             layerOffset=existingLayerOffset )
+                refList.RemoveReference(existingRef)
     else:
-
         frameRange, defaultPrim, firstRoot = getMetaData( reffile )
-
         stage = Usd.Stage.CreateNew( destFile )
         if not stage:
             soho.error( "Could not create USD file: " + destFile )
