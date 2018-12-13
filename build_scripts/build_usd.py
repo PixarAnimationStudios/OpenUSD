@@ -494,15 +494,17 @@ def InstallBoost(context, force, buildArgs):
             'threading=multi', 
             'variant=release',
             '--with-atomic',
-            '--with-date_time',
             '--with-program_options',
-            '--with-regex',
-            '--with-system',
-            '--with-thread'
+            '--with-regex'
         ]
 
         if context.buildPython:
             b2_settings.append("--with-python")
+
+        if context.buildKatana or context.buildOIIO:
+            b2_settings.append("--with-date_time")
+            b2_settings.append("--with-system")
+            b2_settings.append("--with-thread")
 
         if context.buildOIIO:
             b2_settings.append("--with-filesystem")
