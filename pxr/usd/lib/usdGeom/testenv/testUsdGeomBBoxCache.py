@@ -438,6 +438,30 @@ def TestBug127801():
     bbox = bboxCache.ComputeUntransformedBound(world)
     assert not bbox.GetRange().IsEmpty()
 
+def TestUsd4957():
+    """ Tests the case in which a prim has an xform directly on it and its
+        bounding box relative to one of its ancestors is computed using
+        ComputeRelativeBound().
+    """
+    s = Usd.Stage.Open("testUSD4957.usda")
+    b = s.GetPrimAtPath("/A/B")
+    c = s.GetPrimAtPath("/A/B/C")
+    bc = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ['default', 'render'])
+    
+    # Call the function being tested
+    relativeBbox = bc.ComputeRelativeBound(c, b)
+    
+    # Compare the result with the bbox of C in its local space
+    cExtent = UsdGeom.Boundable(c).GetExtentAttr().Get()
+    cRange = Gf.Range3d(Gf.Vec3d(cExtent[0]), Gf.Vec3d(cExtent[1]))
+    cLocalXform = UsdGeom.Xformable(c).GetLocalTransformation()
+    cBbox = Gf.BBox3d(cRange, cLocalXform)
+    
+    AssertBBoxesClose(relativeBbox, cBbox,
+                      "ComputeRelativeBound produced a wrong bbox.")
+
+
+
 if __name__ == "__main__":
     Main()
     TestWithInstancing()
@@ -451,4 +475,5 @@ if __name__ == "__main__":
     TestBug113044()
     TestBug125048()
     TestBug127801()
+    TestUsd4957()
 

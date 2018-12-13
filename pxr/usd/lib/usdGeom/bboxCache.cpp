@@ -325,7 +325,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
     GfMatrix4d primCtm = _ctmCache.GetLocalToWorldTransform(prim);
     GfMatrix4d ancestorCtm =
         _ctmCache.GetLocalToWorldTransform(relativeToAncestorPrim);
-    GfMatrix4d relativeCtm = ancestorCtm.GetInverse() * primCtm;
+    GfMatrix4d relativeCtm = primCtm * ancestorCtm.GetInverse();
 
     bbox.Transform(relativeCtm);
 
