@@ -34,6 +34,7 @@ pxr_library(hdx
         drawTargetResolveTask
         intersector
         package
+        progressiveTask
         rendererPlugin
         rendererPluginRegistry
         renderTask

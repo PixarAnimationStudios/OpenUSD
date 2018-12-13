@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxColorizeTask::HdxColorizeTask(HdSceneDelegate* delegate, SdfPath const& id)
- : HdTask(id)
+ : HdxProgressiveTask(id)
  , _aovName()
  , _renderBufferId()
  , _renderBuffer(nullptr)
