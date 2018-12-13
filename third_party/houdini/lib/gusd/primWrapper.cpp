@@ -1043,7 +1043,7 @@ GusdPrimWrapper::loadPrimvars(
         UsdGeomImageable prim = getUsdPrim();
 
         UsdGeomPrimvar colorPrimvar = prim.GetPrimvar(GusdTokens->Cd);
-        if (colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+        if (colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValue()) {
             hasCdPrimvar = true;
         }
 
@@ -1057,7 +1057,7 @@ GusdPrimWrapper::loadPrimvars(
                 // Try to find "displayColor" instead.
                 colorPrimvar = prim.GetPrimvar(UsdGeomTokens->primvarsDisplayColor);
                 if (colorPrimvar &&
-                    colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+                    colorPrimvar.GetAttr().HasAuthoredValue()) {
                     authoredPrimvars.push_back(colorPrimvar);
                 }
             }
