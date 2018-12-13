@@ -260,31 +260,31 @@ class TestUsdCreateProperties(unittest.TestCase):
             
             attr = p.GetAttribute("myAttr")
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
 
             attr.Set("val")
             assert attr.HasValue()
-            assert attr.HasAuthoredValueOpinion()
+            assert attr.HasAuthoredValue()
 
             attr.Clear()
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
 
             attr.Set("val", 1.0)
             assert attr.HasValue()
-            assert attr.HasAuthoredValueOpinion()
+            assert attr.HasAuthoredValue()
 
             attr.ClearAtTime(1.0)
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
             
             attr.Set("val", 1.0)
             assert attr.HasValue()
-            assert attr.HasAuthoredValueOpinion()
+            assert attr.HasAuthoredValue()
 
             attr.Clear()
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
 
             # Verify that an invalid layer in the EditTarget will be caught when
             # calling Clear() through Usd.Attributes

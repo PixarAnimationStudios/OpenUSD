@@ -33,6 +33,31 @@ to create the model hierarchy.
 
 \section Usd_ActiveInactive How "active" Affects Prims on a UsdStage
 
+How does one "delete a prim" in USD?  Considering that any given UsdPrim on a
+UsdStage may be comprised of SdfPrimSpec's from numerous layers, and that one
+or more (typically many) may not be editable by the user who wants to delete
+a prim or subtree rooted at a prim, the "obvious" approach of directly
+editing all of the particpating layers, while *possible*, is not often
+practical or desirable.
+
+Therefore USD provides a "non-destructive" and reversible form of prim
+deletion, which we call **deactivation**.  One deactivates a prim using
+`UsdPrim::SetActive(false)`, which sets the prim metadata *active* to false.
+For any prim on a stage whose *active* metadata resolves to false, we
+consider the prim to be *deactivated*, which has two important consequences:
+
+\li The prim will be excluded from default stage traversals as determined by
+  the \ref UsdPrimDefaultPredicate.  It is important that the deactivated prim
+  still be *present* on the stage, or else we would no longer be able to
+  re-activate the prim; however, we promote \ref UsdPrimDefaultPredicate as the
+  means to visit/process the "important" part of the stage, thus deactivation
+  effectively removes the prim.
+\li All scene description for prims *beneath* the deactivated prim will not be
+  composed - therefore, the deactivated prim will become a leaf node in the
+  scenegraph.  This property makes deactivation a useful tool for reducing
+  scene complexity and cost.
+
+
 \section Usd_Filetypes Ascii, Binary, and Plugin Filetypes
      
 \section Usd_AssetResolution Resolving Asset References

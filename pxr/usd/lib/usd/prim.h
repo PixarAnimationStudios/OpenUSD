@@ -189,21 +189,31 @@ public:
 
     /// Return true if this prim is active, meaning neither it nor any of its
     /// ancestors have active=false.  Return false otherwise.
+    ///
+    /// See \ref Usd_ActiveInactive for what it means for a prim to be active.
     bool IsActive() const { return _Prim()->IsActive(); }
 
     /// Author 'active' metadata for this prim at the current EditTarget.
+    ///
+    /// See \ref Usd_ActiveInactive for the effects of activating or deactivating
+    /// a prim.
     bool SetActive(bool active) const {
         return SetMetadata(SdfFieldKeys->Active, active);
     }
 
     /// Remove the authored 'active' opinion at the current EditTarget.  Do
     /// nothing if there is no authored opinion.
+    ///
+    /// See \ref Usd_ActiveInactive for the effects of activating or deactivating
+    /// a prim.
     bool ClearActive() const {
         return ClearMetadata(SdfFieldKeys->Active);
     }
 
     /// Return true if this prim has an authored opinion for 'active', false
     /// otherwise.
+    ///
+    /// See \ref Usd_ActiveInactive for what it means for a prim to be active.
     bool HasAuthoredActive() const {
         return HasAuthoredMetadata(SdfFieldKeys->Active);
     }

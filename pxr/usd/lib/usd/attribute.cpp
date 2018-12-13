@@ -181,6 +181,14 @@ UsdAttribute::HasAuthoredValueOpinion() const
 }
 
 bool 
+UsdAttribute::HasAuthoredValue() const
+{
+    UsdResolveInfo resolveInfo;
+    _GetStage()->_GetResolveInfo(*this, &resolveInfo);
+    return resolveInfo.HasAuthoredValue();
+}
+
+bool 
 UsdAttribute::HasValue() const
 {
     UsdResolveInfo resolveInfo;

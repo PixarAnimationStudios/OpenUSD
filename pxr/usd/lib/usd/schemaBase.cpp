@@ -98,7 +98,7 @@ UsdSchemaBase::_CreateAttr(TfToken const &attrName,
         UsdAttribute attr = prim.GetAttribute(attrName);
         VtValue  fallback;
         if (defaultValue.IsEmpty() ||
-            (!attr.HasAuthoredValueOpinion()
+            (!attr.HasAuthoredValue()
              && attr.Get(&fallback)
              && fallback == defaultValue)){
             return attr;

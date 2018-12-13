@@ -245,6 +245,12 @@ UsdAttributeQuery::HasAuthoredValueOpinion() const
     return _resolveInfo.HasAuthoredValueOpinion();
 }
 
+bool 
+UsdAttributeQuery::HasAuthoredValue() const
+{
+    return _resolveInfo.HasAuthoredValue();
+}
+
 bool
 UsdAttributeQuery::HasFallbackValue() const
 {
