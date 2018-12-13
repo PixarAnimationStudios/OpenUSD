@@ -775,11 +775,9 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         // to translate namespaced names...
         UsdAttribute blindAttr = kbd.GetKbdAttribute("geometry.arbitrary." + 
                                         primvar->GetPrimvarName().GetString());
-        if (blindAttr) {
-            VtValue vtValue;
-            if (!blindAttr.Get(&vtValue) && blindAttr.HasAuthoredValueOpinion()) {
-                continue;
-            }
+
+        if (blindAttr.GetResolveInfo().ValueIsBlocked()) {
+            continue;
         }
         
         TfToken          name, interpolation;
