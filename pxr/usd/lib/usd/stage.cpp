@@ -2070,6 +2070,8 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
     }
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
