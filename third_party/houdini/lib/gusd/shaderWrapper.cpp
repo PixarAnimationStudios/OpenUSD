@@ -39,8 +39,7 @@
 #include <VOP/VOP_CodeGenerator.h>
 #include <UT/UT_Version.h>
 #include <UT/UT_EnvControl.h>
-
-#include <boost/filesystem.hpp>
+#include <UT/UT_FileUtil.h>
 
 #include <iostream>
 #include <fstream>
@@ -74,11 +73,8 @@ _buildCustomOslNode(const VOP_Node* vopNode,
     shaderName.prepend(shaderOutDir.c_str());
 
     // Create shaderOutDir path directories, if they don't exist.
-    try {
-        boost::filesystem::create_directories(shaderOutDir);
-    } catch (boost::filesystem::filesystem_error &e) {
-        TF_CODING_ERROR("Failed to create dir '%s': %s", shaderOutDir.c_str(),
-                        e.what());
+    if (!UT_FileUtil::makeDirs(shaderOutDir.c_str())) {
+        TF_CODING_ERROR("Failed to create dir '%s'", shaderOutDir.c_str());
         return false;
     }
 
