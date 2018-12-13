@@ -495,7 +495,6 @@ def InstallBoost(context, force, buildArgs):
             'variant=release',
             '--with-atomic',
             '--with-date_time',
-            '--with-filesystem',
             '--with-program_options',
             '--with-regex',
             '--with-system',
@@ -504,6 +503,9 @@ def InstallBoost(context, force, buildArgs):
 
         if context.buildPython:
             b2_settings.append("--with-python")
+
+        if context.buildOIIO:
+            b2_settings.append("--with-filesystem")
 
         if force:
             b2_settings.append("-a")

@@ -45,10 +45,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Boost
     find_package(Boost
         COMPONENTS
-            filesystem
             program_options
             python
-            system
         REQUIRED
     )
 
@@ -60,9 +58,7 @@ else()
     # --Boost
     find_package(Boost
         COMPONENTS
-            filesystem
             program_options
-            system
         REQUIRED
     )
 endif()
