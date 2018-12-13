@@ -95,7 +95,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
     def _HasAuthoredDrawMode(prim):
         modelAPI = UsdGeom.ModelAPI(prim)
         drawModeAttr = modelAPI.GetModelDrawModeAttr()
-        return drawModeAttr and drawModeAttr.HasAuthoredValueOpinion()
+        return drawModeAttr and drawModeAttr.HasAuthoredValue()
 
     def _isComputedDrawModeInherited(self, parentDrawModeIsInherited=None):
         """Returns true if the computed draw mode for this item is inherited 
