@@ -3425,6 +3425,7 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges)
         .Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 const std::vector<std::string>&
