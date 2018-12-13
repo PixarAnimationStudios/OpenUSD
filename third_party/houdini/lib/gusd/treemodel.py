@@ -410,9 +410,14 @@ class TreeModel(QAbstractItemModel):
     def SetImportState(self, item, state):
         # If attempting to unimport an item that has an imported parent,
         # set the item's state to PartiallyChecked instead of Unchecked.
-        if state == Qt.Unchecked:
-            parent = item.parent()
-            if parent is not None and parent.data(COL_IMPORT) != Qt.Unchecked:
+        if state == Qt.Unchecked and item.parent() is not None:
+            parentState = item.parent().data(COL_IMPORT)
+            # (Note it is intentional that the parentState is tested to be
+            # equal to Checked or PartiallyChecked, instead of just testing
+            # that it's *not* equal to Unchecked. This is because when item's
+            # parent is the top-most root item, its data is a header string
+            # instead of a CheckState).
+            if parentState == Qt.Checked or parentState == Qt.PartiallyChecked:
                 state = Qt.PartiallyChecked
 
         item.setData(COL_IMPORT, state)
