@@ -24,26 +24,33 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-
 #include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+TF_DEFINE_ENV_SETTING(
+    USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME,
+    false,
+    "Disables the ability to configure the materials scope name with a "
+    "plugInfo.json value and forces the use of the built-in default instead. "
+    "This is primarily used for unit testing purposes as a way to ignore any "
+    "site-based configuration.");
 
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -304,7 +311,8 @@ TF_MAKE_STATIC_DATA(TfToken, _materialsScopeName)
 TfToken
 UsdUtilsGetMaterialsScopeName(const bool forceDefault)
 {
-    if (forceDefault) {
+    if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME) ||
+            forceDefault) {
         return _tokens->DefaultMaterialsScopeName;
     }
 

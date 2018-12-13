@@ -49,15 +49,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(
-    PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME,
-    false,
-    "Disables the ability to override the materials scope name with a "
-    "parameter and forces the use of the built-in default instead. This is "
-    "primarily used for unit testing purposes as a way to ignore any "
-    "site-based configuration.");
-
-
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaTranslatorTokens,
         PXRUSDMAYA_TRANSLATOR_TOKENS);
 
@@ -227,15 +218,17 @@ static
 TfToken
 _GetMaterialsScopeName(const std::string& materialsScopeName)
 {
-    if (TfGetEnvSetting(PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
-        return UsdUtilsGetMaterialsScopeName(/* forceDefault = */ true);
+    const TfToken defaultMaterialsScopeName = UsdUtilsGetMaterialsScopeName();
+
+    if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
+        // If the env setting is set, make sure we don't allow the materials
+        // scope name to be overridden by a parameter value.
+        return defaultMaterialsScopeName;
     }
 
     if (SdfPath::IsValidIdentifier(materialsScopeName)) {
         return TfToken(materialsScopeName);
     }
-
-    const TfToken defaultMaterialsScopeName = UsdUtilsGetMaterialsScopeName();
 
     TF_CODING_ERROR(
         "'%s' value '%s' is not a valid identifier. Using default "
@@ -478,8 +471,7 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
         d[UsdMayaJobExportArgsTokens->materialsScopeName] =
-                UsdUtilsGetMaterialsScopeName(
-                    TfGetEnvSetting(PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)).GetString();
+                UsdUtilsGetMaterialsScopeName().GetString();
         d[UsdMayaJobExportArgsTokens->melPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->melPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = true;

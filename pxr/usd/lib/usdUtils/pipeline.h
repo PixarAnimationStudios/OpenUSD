@@ -34,14 +34,21 @@
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usdUtils/registeredVariantSet.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/common.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 SDF_DECLARE_HANDLES(SdfLayer);
+
+
+USDUTILS_API
+extern TfEnvSetting<bool> USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME;
+
 
 /// Define the shading pipeline's convention for naming a companion
 /// alpha/opacity attribute and primvarnames given the full name of a
