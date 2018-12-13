@@ -267,11 +267,7 @@ UsdGeomPrimvar::GetIndices(VtIntArray *indices,
 bool 
 UsdGeomPrimvar::IsIndexed() const
 {
-    UsdResolveInfo valueSource = _GetIndicesAttr(/*create*/ false).
-        GetResolveInfo(UsdTimeCode::EarliestTime());
-
-    return (valueSource.HasAuthoredValueOpinion() && 
-            !valueSource.ValueIsBlocked());
+    return _GetIndicesAttr(/*create*/ false).HasAuthoredValue();
 }
 
 bool 

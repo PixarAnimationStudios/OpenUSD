@@ -1197,7 +1197,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // For more information, see bugzilla #115735
 
                 bool primHasAuthoredPoints =
-                    pointBasedObj.GetPointsAttr().HasAuthoredValueOpinion();
+                    pointBasedObj.GetPointsAttr().HasAuthoredValue();
 
                 if (primHasAuthoredPoints) {
                     successGettingExtent = _ComputeExtent(boundableObj, &extent);

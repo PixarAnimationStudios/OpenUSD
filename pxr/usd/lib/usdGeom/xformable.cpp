@@ -173,7 +173,7 @@ UsdGeomXformable::_GetXformOpOrderValue(
         return false;
 
     if (hasAuthoredValue)
-        *hasAuthoredValue = xformOpOrderAttr.HasAuthoredValueOpinion();
+        *hasAuthoredValue = xformOpOrderAttr.HasAuthoredValue();
 
     xformOpOrderAttr.Get(xformOpOrder, UsdTimeCode::Default());
     return true;

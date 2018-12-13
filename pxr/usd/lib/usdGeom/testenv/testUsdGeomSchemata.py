@@ -240,7 +240,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         xform = UsdGeom.Xform.Define(stage, "/Xform")  # direct subclass
         xformOpOrder = xform.GetXformOpOrderAttr()
-        self.assertFalse(xformOpOrder.HasAuthoredValueOpinion())
+        self.assertFalse(xformOpOrder.HasAuthoredValue())
         # xformOpOrder has no fallback value
         self.assertEqual(xformOpOrder.Get(), None)
         self.assertFalse(xformOpOrder.HasFallbackValue())
@@ -252,11 +252,11 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         opOrderVal = ["xformOp:transform"]
         self.assertTrue(xformOpOrderAttr.Set(opOrderVal))
-        self.assertTrue(xformOpOrderAttr.HasAuthoredValueOpinion())
+        self.assertTrue(xformOpOrderAttr.HasAuthoredValue())
 
         self.assertNotEqual(xformOpOrderAttr.Get(), None)
         self.assertTrue(xformOpOrderAttr.Clear())
-        self.assertFalse(xformOpOrderAttr.HasAuthoredValueOpinion())
+        self.assertFalse(xformOpOrderAttr.HasAuthoredValue())
         self.assertEqual(xformOpOrderAttr.Get(), None)
         self.assertFalse(xformOpOrder.HasFallbackValue())
 
@@ -271,14 +271,14 @@ class TestUsdGeomSchemata(unittest.TestCase):
         # scenarios
         # Number 1: Sparse and non-sparse authoring on def'd prim
         mesh.CreateDoubleSidedAttr(False, True)
-        self.assertFalse(mesh.GetDoubleSidedAttr().HasAuthoredValueOpinion())
+        self.assertFalse(mesh.GetDoubleSidedAttr().HasAuthoredValue())
         mesh.CreateDoubleSidedAttr(False, False)
-        self.assertTrue(mesh.GetDoubleSidedAttr().HasAuthoredValueOpinion())
+        self.assertTrue(mesh.GetDoubleSidedAttr().HasAuthoredValue())
 
         # Number 2: Sparse authoring demotes to dense for non-defed prim
         overMesh = UsdGeom.Mesh(stage.OverridePrim('/overMesh'))
         overMesh.CreateDoubleSidedAttr(False, True)
-        self.assertTrue(overMesh.GetDoubleSidedAttr().HasAuthoredValueOpinion())
+        self.assertTrue(overMesh.GetDoubleSidedAttr().HasAuthoredValue())
         self.assertEqual(overMesh.GetDoubleSidedAttr().Get(), False)
         overMesh.CreateDoubleSidedAttr(True, True)
         self.assertEqual(overMesh.GetDoubleSidedAttr().Get(), True)
