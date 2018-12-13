@@ -79,6 +79,14 @@ public:
         return hash;
     }
 
+    /// \class Hash
+    struct Hash
+    {
+        size_t operator()(const SdfAssetPath &ap) const {
+            return ap.GetHash();
+        }
+    };
+
     friend size_t hash_value(const SdfAssetPath &ap) { return ap.GetHash(); }
 
     /// @}
