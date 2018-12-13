@@ -26,7 +26,6 @@ pxr_library(garch
     LIBRARIES
         arch
         tf
-        ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${APPKIT_LIBRARY}
 
