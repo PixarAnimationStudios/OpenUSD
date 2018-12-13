@@ -116,6 +116,25 @@ TfToken UsdUtilsGetPrimaryUVSetName();
 USDUTILS_API
 TfToken UsdUtilsGetPrefName();
 
+/// Get the name of the USD prim under which materials are expected to be
+/// authored.
+///
+/// The scope name can be configured in the metadata of a plugInfo.json file
+/// like so:
+/// \code{json}
+///    "UsdUtilsPipeline": {
+///        "MaterialsScopeName": "SomeScopeName"
+///    }
+/// \endcode
+///
+/// If \p forceDefault is true, any value specified in a plugInfo.json will be
+/// ignored and the built-in default will be returned. This is primarily used
+/// for unit testing purposes as a way to ignore any site-based configuration.
+USDUTILS_API
+TfToken UsdUtilsGetMaterialsScopeName(const bool forceDefault = false);
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* USDUTILS_PIPELINE_H_ */
+
+#endif

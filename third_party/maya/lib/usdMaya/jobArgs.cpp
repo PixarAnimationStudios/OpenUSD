@@ -35,6 +35,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MGlobal.h>
@@ -51,9 +52,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(
     PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME,
     false,
-    "Disables searching through the Plug registry for a plugin that specifies "
-    "the export materials scope name and just uses the default instead. This "
-    "is primarily used for unit testing purposes as a way to ignore any "
+    "Disables the ability to override the materials scope name with a "
+    "parameter and forces the use of the built-in default instead. This is "
+    "primarily used for unit testing purposes as a way to ignore any "
     "site-based configuration.");
 
 
@@ -227,21 +228,23 @@ TfToken
 _GetMaterialsScopeName(const std::string& materialsScopeName)
 {
     if (TfGetEnvSetting(PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)) {
-        return UsdMayaJobExportArgsTokens->DefaultMaterialsScopeName;
+        return UsdUtilsGetMaterialsScopeName(/* forceDefault = */ true);
     }
 
     if (SdfPath::IsValidIdentifier(materialsScopeName)) {
         return TfToken(materialsScopeName);
     }
 
+    const TfToken defaultMaterialsScopeName = UsdUtilsGetMaterialsScopeName();
+
     TF_CODING_ERROR(
         "'%s' value '%s' is not a valid identifier. Using default "
         "value of '%s' instead.",
         UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
         materialsScopeName.c_str(),
-        UsdMayaJobExportArgsTokens->DefaultMaterialsScopeName.GetText());
+        defaultMaterialsScopeName.GetText());
 
-    return UsdMayaJobExportArgsTokens->DefaultMaterialsScopeName;
+    return defaultMaterialsScopeName;
 }
 
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
@@ -475,7 +478,8 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
         d[UsdMayaJobExportArgsTokens->materialsScopeName] =
-                UsdMayaJobExportArgsTokens->DefaultMaterialsScopeName.GetString();
+                UsdUtilsGetMaterialsScopeName(
+                    TfGetEnvSetting(PXRUSDMAYA_FORCE_DEFAULT_MATERIALS_SCOPE_NAME)).GetString();
         d[UsdMayaJobExportArgsTokens->melPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->melPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = true;

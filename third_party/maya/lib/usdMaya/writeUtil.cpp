@@ -26,7 +26,6 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/colorSpace.h"
-#include "usdMaya/jobArgs.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/userTaggedAttribute.h"
 
@@ -1305,18 +1304,6 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     }
 
     return true;
-}
-
-/* static */
-TfToken
-UsdMayaWriteUtil::GetMaterialsScopeName()
-{
-    const UsdMayaJobExportArgs& exportArgs =
-        UsdMayaJobExportArgs::CreateFromDictionary(
-            UsdMayaJobExportArgs::GetDefaultDictionary(),
-            {});
-
-    return exportArgs.materialsScopeName;
 }
 
 bool
