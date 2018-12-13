@@ -153,13 +153,8 @@ initializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     // Attribute Editor Templates
-    // XXX: The try/except here is temporary until we change the Pixar-internal
-    // package name to match the external package name.
     MString attribEditorCmd(
-        "try:\n"
-        "    from pxr.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
-        "except ImportError:\n"
-        "    from pixar.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
+        "from pxr.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
         "AEpxrUsdReferenceAssemblyTemplate.addMelFunctionStubs()");
     status = MGlobal::executePythonCommand(attribEditorCmd);
     CHECK_MSTATUS(status);

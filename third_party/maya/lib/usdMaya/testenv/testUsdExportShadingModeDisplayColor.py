@@ -23,21 +23,18 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
+from pxr import UsdMaya
 
 from pxr import Gf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import UsdShade
 
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
-
 from maya import cmds
 from maya import standalone
+
+import os
+import unittest
 
 
 class testUsdExportShadingModeDisplayColor(unittest.TestCase):

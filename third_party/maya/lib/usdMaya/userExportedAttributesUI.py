@@ -23,17 +23,12 @@
 #
 import json
 
+from pxr import UsdMaya
+
 from pxr import UsdGeom
 
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
-
-from maya import cmds
 from maya import OpenMaya as OM
+from maya import cmds
 from maya.app.general import mayaMixin
 
 # Maya 2017 and later use PyQt5/PySide2 while Maya 2016 and earlier use

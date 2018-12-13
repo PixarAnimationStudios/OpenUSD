@@ -21,17 +21,14 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from pxr import UsdMaya
+
 from maya import cmds
 from maya import mel
 
 import functools
 
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
 
 # ========================================================================
 # CONTEXT MANAGERS

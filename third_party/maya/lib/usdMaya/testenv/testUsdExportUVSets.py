@@ -23,23 +23,20 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
+from pxr import UsdMaya
+
 from pxr import Gf
 from pxr import Sdf
+from pxr import Tf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import Vt
-from pxr import Tf
 
 from maya import cmds
 from maya import standalone
 
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
-
+import os
+import unittest
 
 
 class testUsdExportUVSets(unittest.TestCase):
