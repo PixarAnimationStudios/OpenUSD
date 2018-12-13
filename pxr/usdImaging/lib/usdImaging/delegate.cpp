@@ -761,7 +761,6 @@ UsdImagingDelegate::Populate(std::vector<UsdImagingDelegate*> const& delegates,
         UsdImagingIndexProxy indexProxy(delegates[i], &worker);
         indexProxy.Repopulate(rootPrims[i].GetPath());
 
-        delegates[i]->GetRenderIndex().GetChangeTracker().ResetVaryingState();
         delegates[i]->_Populate(&indexProxy);
     }
 
