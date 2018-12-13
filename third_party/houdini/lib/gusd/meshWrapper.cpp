@@ -46,6 +46,7 @@
 #include <GT/GT_DAConstant.h>
 #include <SYS/SYS_Version.h>
 #include <numeric>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

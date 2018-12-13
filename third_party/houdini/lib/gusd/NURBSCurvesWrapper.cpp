@@ -42,9 +42,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::cerr;
-using std::cout;
-using std::endl;
 using std::map;
 
 namespace {

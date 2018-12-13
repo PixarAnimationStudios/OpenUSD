@@ -33,6 +33,8 @@
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_GEOPrimPacked.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cerr;
