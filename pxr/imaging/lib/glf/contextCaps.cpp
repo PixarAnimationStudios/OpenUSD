@@ -277,7 +277,7 @@ GlfContextCaps::_LoadCaps()
     if (!TfGetEnvSetting(GLF_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
     }
-    if (!TfGetEnvSetting(GLF_ENABLE_DIRECT_STATE_ACCESS)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_DIRECT_STATE_ACCESS) || NULL == glNamedBufferDataEXT) {
         directStateAccessEnabled = false;
     }
     if (!TfGetEnvSetting(GLF_ENABLE_SHADER_DRAW_PARAMETERS)) {
