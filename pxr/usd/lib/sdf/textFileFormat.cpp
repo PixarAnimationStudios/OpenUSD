@@ -34,6 +34,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
@@ -47,6 +48,10 @@ using std::string;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdfTextFileFormatTokens, SDF_TEXT_FILE_FORMAT_TOKENS);
+
+TF_DEFINE_ENV_SETTING(
+    USDA_FILESIZE_WARNING, 0,
+    "Warn when reading an ascii file larger than this number of MB (no warnings if set to 0)");
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
@@ -155,6 +160,13 @@ SdfTextFileFormat::Read(
                          resolvedPath.c_str(),
                          GetFormatId().GetText());
         return false;
+    }
+
+    if (TfGetEnvSetting(USDA_FILESIZE_WARNING) != 0 &&
+        asset->GetSize() > TfGetEnvSetting(USDA_FILESIZE_WARNING) * 1048576) {
+        TF_WARN("Ascii layer %s is %d MB, this should be stored as crate for better USD performance",
+                resolvedPath.c_str(),
+                asset->GetSize() / 1048576);
     }
 
     SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
