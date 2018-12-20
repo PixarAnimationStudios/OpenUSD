@@ -7,7 +7,6 @@ if (NOT ${PXR_ENABLE_GL_SUPPORT})
     return()
 endif()
 
-# Note: both python include directives are included for compatibility.
 pxr_library(usdImagingGL
     LIBRARIES
         gf
@@ -30,14 +29,13 @@ pxr_library(usdImagingGL
         usdImaging
         ar
         ${Boost_PYTHON_LIBRARY}
-        ${PYTHON_LIBRARY}
+        ${PYTHON_LIBRARIES}
         ${OPENGL_gl_LIBRARY}
         ${OPENGL_glu_LIBRARY}
         ${GLEW_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_PATH}
         ${PYTHON_INCLUDE_DIRS}
         ${OPENGL_INCLUDE_DIR}
         ${GLEW_INCLUDE_DIR}
