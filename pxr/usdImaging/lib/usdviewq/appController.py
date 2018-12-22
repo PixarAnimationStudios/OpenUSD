@@ -2268,6 +2268,9 @@ class AppController(QtCore.QObject):
 
     def _openFile(self):
         extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
+        builtInFiles = lambda f: f.startswith(".usd")
+        notBuiltInFiles = lambda f: not f.startswith(".usd")
+        extensions = filter(builtInFiles, extensions) + filter(notBuiltInFiles, extensions)
         fileFilter = "USD Compatible Files (" + " ".join("*." + e for e in extensions) + ")" 
         (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
             self._mainWindow,
