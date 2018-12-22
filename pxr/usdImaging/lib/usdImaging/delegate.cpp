@@ -2351,6 +2351,13 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 vec.push_back(1.0f);
                 value = VtValue(vec);
             }
+        } else if (key == HdTokens->velocities) {
+            _UpdateSingleValue(usdPath,HdChangeTracker::DirtyVelocities);
+            if (!TF_VERIFY(_valueCache.ExtractVelocities(usdPath, &value))){
+                VtFloatArray vec(1);
+                vec.push_back(0.0f);
+                value = VtValue(vec);
+            }
         } else if (key == HdTokens->transform) {
             value = VtValue(
                 UsdImaging_XfStrategy::ComputeTransform(_GetPrim(usdPath), 

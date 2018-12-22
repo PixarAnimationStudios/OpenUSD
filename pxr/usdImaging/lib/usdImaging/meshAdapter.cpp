@@ -119,6 +119,14 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                /*isInherited*/false);
 
+    // Discover time-varying velocities.
+    _IsVarying(prim,
+               UsdGeomTokens->velocities,
+               HdChangeTracker::DirtyVelocities,
+               UsdImagingTokens->usdVaryingPrimvar,
+               timeVaryingBits,
+               /*isInherited*/false);
+
     // Discover time-varying primvars:normals, and if that attribute
     // doesn't exist also check for time-varying normals.
     // Only do this for polygonal meshes.
@@ -277,6 +285,18 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
+    }
+
+    if (requestedBits & HdChangeTracker::DirtyVelocities) {
+        UsdGeomMesh mesh(prim);
+        VtVec3fArray velocities;
+        if (mesh.GetVelocitiesAttr().Get(&velocities, time)) {
+            _MergePrimvar(&primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetVelocities(cachePath) = VtValue(velocities);
+        }
     }
 
     if (requestedBits & HdChangeTracker::DirtyNormals) {

@@ -84,6 +84,14 @@ UsdImagingBasisCurvesAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                /*isInherited*/false);
 
+    // Discover time-varying velocities.
+    _IsVarying(prim,
+               UsdGeomTokens->velocities,
+               HdChangeTracker::DirtyVelocities,
+               UsdImagingTokens->usdVaryingPrimvar,
+               timeVaryingBits,
+               /*isInherited*/false);
+
     // Discover time-varying topology.
     //
     // Note that basis, wrap and type are all uniform attributes, so they can't
@@ -163,6 +171,18 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
                       UsdGeomTokens->points,
                       HdInterpolationVertex,
                       HdPrimvarRoleTokens->point);
+    }
+
+    if (requestedBits & HdChangeTracker::DirtyVelocities) {
+        UsdGeomBasisCurves curves(prim);
+        VtVec3fArray velocities;
+        if (curves.GetVelocitiesAttr().Get(&velocities, time)) {
+            _MergePrimvar(&primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetVelocities(cachePath) = VtValue(velocities);
+        }
     }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {

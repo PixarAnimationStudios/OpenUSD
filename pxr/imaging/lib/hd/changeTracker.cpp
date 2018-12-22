@@ -625,6 +625,7 @@ HdChangeTracker::IsAnyPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const &id)
     bool isDirty = (dirtyBits & (DirtyPoints|
                                  DirtyNormals|
                                  DirtyWidths|
+                                 DirtyVelocities|
                                  DirtyPrimvar)) != 0;
     _LogCacheAccess(HdTokens->primvar, id, !isDirty);
     return isDirty;
@@ -642,6 +643,8 @@ HdChangeTracker::IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
         isDirty = (dirtyBits & DirtyNormals) != 0;
     } else if (name == HdTokens->widths) {
         isDirty = (dirtyBits & DirtyWidths) != 0;
+    } else if (name == HdTokens->velocities) {
+        isDirty = (dirtyBits & DirtyVelocities) != 0;
     } else {
         isDirty = (dirtyBits & DirtyPrimvar) != 0;
     }
@@ -744,6 +747,8 @@ HdChangeTracker::MarkPrimvarDirty(HdDirtyBits *dirtyBits, TfToken const &name)
         setBits = DirtyNormals;
     } else if (name == HdTokens->widths) {
         setBits = DirtyWidths;
+    } else if (name == HdTokens->velocities) {
+        setBits = DirtyVelocities;
     } else {
         setBits = DirtyPrimvar;
     }
@@ -944,6 +949,9 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     }
     if (dirtyBits & DirtyWidths) {
         ss << "Widths ";
+    }
+    if (dirtyBits & DirtyVelocities) {
+        ss << "Velocities ";
     }
     if (dirtyBits & DirtyInstancer) {
         ss << "Instancer ";

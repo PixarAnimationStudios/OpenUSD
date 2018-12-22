@@ -82,6 +82,14 @@ UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                /*isInherited*/false);
 
+    // Discover time-varying velocities.
+    _IsVarying(prim,
+               UsdGeomTokens->velocities,
+               HdChangeTracker::DirtyVelocities,
+               UsdImagingTokens->usdVaryingPrimvar,
+               timeVaryingBits,
+               /*isInherited*/false);
+
     // Check for time-varying primvars:widths, and if that attribute
     // doesn't exist also check for time-varying widths.
     bool widthsExists = false;
@@ -130,6 +138,18 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
+    }
+
+    if (requestedBits & HdChangeTracker::DirtyVelocities) {
+        UsdGeomPoints points(prim);
+        VtVec3fArray velocities;
+        if (points.GetVelocitiesAttr().Get(&velocities, time)) {
+            _MergePrimvar(&primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetVelocities(cachePath) = VtValue(velocities);
+        }
     }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {

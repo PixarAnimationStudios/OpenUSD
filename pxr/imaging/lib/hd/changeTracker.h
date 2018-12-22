@@ -76,17 +76,18 @@ public:
         DirtyCullStyle              = 1 << 13,
         DirtySubdivTags             = 1 << 14,
         DirtyWidths                 = 1 << 15,
-        DirtyInstancer              = 1 << 16,
-        DirtyInstanceIndex          = 1 << 17,
-        DirtyRepr                   = 1 << 18,
-        DirtyRenderTag              = 1 << 19,
-        DirtyComputationPrimvarDesc = 1 << 20,
-        DirtyCategories             = 1 << 21,
-        AllSceneDirtyBits           = ((1<<22) - 1),
+        DirtyVelocities             = 1 << 16,
+        DirtyInstancer              = 1 << 17,
+        DirtyInstanceIndex          = 1 << 18,
+        DirtyRepr                   = 1 << 19,
+        DirtyRenderTag              = 1 << 20,
+        DirtyComputationPrimvarDesc = 1 << 21,
+        DirtyCategories             = 1 << 22,
+        AllSceneDirtyBits           = ((1<<23) - 1),
 
-        NewRepr                     = 1 << 22,
+        NewRepr                     = 1 << 23,
 
-        CustomBitsBegin             = 1 << 23,
+        CustomBitsBegin             = 1 << 24,
         CustomBitsEnd               = 1 << 30,
     };
 
