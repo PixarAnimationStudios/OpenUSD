@@ -370,7 +370,7 @@ GfGetLength({{ VEC }} const &v)
 inline {{ SCL }}
 GfNormalize({{ VEC }} *v, {{ SCL }} eps = {{ EPS }})
 {
-    return v->Normalize();
+    return v->Normalize(eps);
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.
