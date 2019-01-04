@@ -158,7 +158,7 @@ PRM_Template*   _CreateTemplates()
                      &traversalDef, &_CreateTraversalMenu(),
                      0, // range
                      _TraversalChangedCB),
-        PRM_Template(PRM_ORD, 1, &geomTypeName, 0, &geomTypeMenu),
+        PRM_Template(PRM_ORD, 1, &geomTypeName, PRMoneDefaults, &geomTypeMenu),
 
         PRM_Template(PRM_HEADING, 1, &attrsHeadingName, 0),
         PRM_Template(PRM_STRING, 1, &attrsName, 0,
