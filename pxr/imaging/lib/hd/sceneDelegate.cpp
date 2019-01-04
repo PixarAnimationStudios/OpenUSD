@@ -116,7 +116,7 @@ HdSceneDelegate::GetExtent(SdfPath const & id)
 GfMatrix4d
 HdSceneDelegate::GetTransform(SdfPath const & id)
 {
-    return GfMatrix4d();
+    return GfMatrix4d(1);
 }
 
 /*virtual*/
@@ -222,7 +222,7 @@ GfMatrix4d
 HdSceneDelegate::GetInstancerTransform(SdfPath const &instancerId,
                                          SdfPath const &prototypeId)
 {
-    return GfMatrix4d();
+    return GfMatrix4d(1);
 }
 
 /*virtual*/
