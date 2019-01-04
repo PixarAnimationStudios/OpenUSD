@@ -309,7 +309,8 @@ _FindDagPoseMembers(
     MPlugArray inputs;
 
     indices->clear();
-    indices->resize(membersPlug.numElements(), -1);
+    indices->resize(std::min(membersPlug.numElements(),
+                             static_cast<unsigned int>(dagPaths.size())), -1);
 
     for (unsigned int i = 0; i < membersPlug.numElements(); ++i) {
 
