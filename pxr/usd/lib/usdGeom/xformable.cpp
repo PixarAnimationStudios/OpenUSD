@@ -153,10 +153,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((invertPrefix, "!invert!"))
 );
 
-TF_DEFINE_ENV_SETTING(
-    USD_READ_OLD_STYLE_TRANSFORM, false, "Whether xform reading code should "
-        "consider old-style transform attribute values if they're available.");
-
 using std::vector;
 
 TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
@@ -164,16 +160,11 @@ TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
 }
 
 bool 
-UsdGeomXformable::_GetXformOpOrderValue(
-    VtTokenArray *xformOpOrder,
-    bool *hasAuthoredValue) const
+UsdGeomXformable::_GetXformOpOrderValue(VtTokenArray *xformOpOrder) const
 {
     UsdAttribute xformOpOrderAttr = GetXformOpOrderAttr();
     if (!xformOpOrderAttr)
         return false;
-
-    if (hasAuthoredValue)
-        *hasAuthoredValue = xformOpOrderAttr.HasAuthoredValue();
 
     xformOpOrderAttr.Get(xformOpOrder, UsdTimeCode::Default());
     return true;
@@ -458,29 +449,9 @@ UsdGeomXformable::_GetOrderedXformOps(bool *resetsXformStack,
         TF_CODING_ERROR("resetsXformStack is NULL.");
     }
 
-    static bool READ_OLD_STYLE_TRANSFORM =
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM);
-
-    bool xformOpOrderIsAuthored = false;
     VtTokenArray opOrderVec;
-    if (!_GetXformOpOrderValue(
-            &opOrderVec,
-            READ_OLD_STYLE_TRANSFORM ? &xformOpOrderIsAuthored : nullptr)) {
+    if (!_GetXformOpOrderValue(&opOrderVec)) {
         return result;
-    }
-
-    if (!xformOpOrderIsAuthored && READ_OLD_STYLE_TRANSFORM)
-    {
-        // If a transform attribute exists, wrap it in a UsdGeomXformOp and 
-        // return it.
-        if (UsdAttribute transformAttr = _GetTransformAttr()) {
-            UsdGeomXformOp xformOp;
-            xformOp._attr = transformAttr;
-            xformOp._opType = UsdGeomXformOp::TypeTransform;
-            xformOp._isInverseOp = false;
-            result.push_back(xformOp);
-            return result;
-        }
     }
 
     if (opOrderVec.size() == 0) {
@@ -591,11 +562,6 @@ UsdGeomXformable::TransformMightBeTimeVarying() const
         return false;
 
     if (opOrderVec.size() == 0) {
-        // XXX: backwards compatibility
-        if (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-            if (UsdAttribute transformAttr = _GetTransformAttr())
-                return transformAttr.ValueMightBeTimeVarying();
-        }
         return false;
     }
 
@@ -680,14 +646,6 @@ UsdGeomXformable::GetTimeSamplesInInterval(
     const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
         &resetsXformStack);
 
-    // XXX: backwards compatibility
-    if (orderedXformOps.empty() && 
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-                
-        if (UsdAttribute transformAttr = _GetTransformAttr())
-            return transformAttr.GetTimeSamplesInInterval(interval, times);
-    }
-
     return UsdGeomXformable::GetTimeSamplesInInterval(orderedXformOps, interval, 
             times);
 }
@@ -727,14 +685,6 @@ UsdGeomXformable::GetTimeSamples(vector<double> *times) const
     bool resetsXformStack=false;
     const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
         &resetsXformStack);
-
-    // XXX: backwards compatibility
-    if (orderedXformOps.empty() && 
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-                
-        if (UsdAttribute transformAttr = _GetTransformAttr())
-            return transformAttr.GetTimeSamples(times);
-    }
 
     return GetTimeSamples(orderedXformOps, times);
 }
@@ -797,12 +747,6 @@ UsdGeomXformable::GetLocalTransformation(
         return false;
 
     if (opOrderVec.size() == 0) {
-        // XXX: backwards compatibility
-        if (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-            if (UsdAttribute transformAttr = _GetTransformAttr()) {
-                return transformAttr.Get(transform, time);
-            }
-        }
         return true;
     }
     
@@ -916,10 +860,7 @@ UsdGeomXformable::GetLocalTransformation(
 bool 
 UsdGeomXformable::IsTransformationAffectedByAttrNamed(const TfToken &attrName)
 {
-    // XXX: backwards compatibility
-    return (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM) && 
-            attrName == _tokens->transform)        ||
-           attrName == UsdGeomTokens->xformOpOrder ||
+    return attrName == UsdGeomTokens->xformOpOrder ||
            UsdGeomXformOp::IsXformOp(attrName);
 }
 

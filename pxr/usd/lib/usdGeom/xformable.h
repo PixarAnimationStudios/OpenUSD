@@ -835,8 +835,7 @@ private:
     // Extracts the value of the xformOpOrder attribute. Returns false if 
     // the xformOpOrder attribute doesn't exist on the prim (eg. when the prim 
     // type is incompatible or if it's a pure over). 
-    bool _GetXformOpOrderValue(VtTokenArray *xformOpOrder, 
-                               bool *hasAuthoredValue=NULL) const;
+    bool _GetXformOpOrderValue(VtTokenArray *xformOpOrder) const;
 
     // Helper function for getting xformops with or without attribute queries.
     std::vector<UsdGeomXformOp>
