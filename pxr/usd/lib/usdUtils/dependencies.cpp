@@ -128,6 +128,42 @@ public:
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
+        // If this file can be opened on a USD stage or referenced into a USD 
+        // stage via composition, then analyze the file, collect & update all 
+        // references. If not, return early.
+        if (!UsdStage::IsSupportedFile(_filePath)) {
+            return;
+        }
+
+        TRACE_FUNCTION();
+
+        _layer = SdfLayer::FindOrOpen(_filePath);
+        if (!_layer) {
+            TF_WARN("Unable to open layer at path @%s@.", _filePath.c_str());
+            return;
+        }
+
+        _AnalyzeDependencies();
+    }
+
+    // overload version of the above constructor that takes a \c layer instead
+    // of a filePath.
+    _FileAnalyzer(const SdfLayerHandle& layer,
+                  _ReferenceTypesToInclude refTypesToInclude=
+                        _ReferenceTypesToInclude::All,
+                  const RemapAssetPathFunc &remapPathFunc={},
+                  const ProcessAssetPathFunc &processPathFunc={}) : 
+        _layer(layer),
+        _refTypesToInclude(refTypesToInclude),
+        _remapPathFunc(remapPathFunc),
+        _processPathFunc(processPathFunc)
+    {
+        if (!_layer) {
+            return;
+        }
+
+        _filePath = _layer->GetRealPath();
+
         _AnalyzeDependencies();
     }
 
@@ -493,20 +529,7 @@ _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
 void
 _FileAnalyzer::_AnalyzeDependencies()
 {
-    // If this file can be opened on a USD stage or referenced into a USD 
-    // stage via composition, then analyze the file, collect & update all 
-    // references. If not, return early.
-    if (!UsdStage::IsSupportedFile(_filePath)) {
-        return;
-    }
-
     TRACE_FUNCTION();
-
-    _layer = SdfLayer::FindOrOpen(_filePath);
-    if (!_layer) {
-        TF_WARN("Unable to open layer at path @%s@.", _filePath.c_str());
-        return;
-    }
 
     _ProcessSublayers();
 
@@ -1254,6 +1277,21 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
 
     // Return true if one or more layers or assets were added  to the results.
     return !layers->empty() || !assets->empty();
+}
+
+void 
+UsdUtilsModifyAssetPaths(
+        const SdfLayerHandle& layer,
+        const UsdUtilsModifyAssetPathFn& modifyFn)
+{
+    _FileAnalyzer(layer,
+        _ReferenceTypesToInclude::All, 
+        [&modifyFn](const std::string& assetPath, 
+                    const SdfLayerRefPtr& layer, 
+                    bool skipDep) { 
+            return modifyFn(assetPath);
+        }
+    );
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -61,6 +61,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsDependencyExtractor.py 
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py 
+    testenv/testUsdUtilsModifyAssetPaths.py 
     testenv/testUsdUtilsPipeline.py 
     testenv/testUsdUtilsStageCache.py 
     testenv/testUsdUtilsStitchClips.py 
@@ -130,6 +131,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsFlattenLayerStack
     DEST testUsdUtilsFlattenLayerStack_OldOffsets
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsModifyAssetPaths
+    DEST testUsdUtilsModifyAssetPaths
 )
 
 pxr_install_test_dir(
@@ -229,6 +235,13 @@ pxr_register_test(testUsdUtilsFlattenLayerStack_OldOffsets
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack"
     ENV
         USD_USE_INVERSE_LAYER_OFFSET=1
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsModifyAssetPaths
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
+    DIFF_COMPARE modified.usda
     EXPECTED_RETURN_CODE 0
 )
 

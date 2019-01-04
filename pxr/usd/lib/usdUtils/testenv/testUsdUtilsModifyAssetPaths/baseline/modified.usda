@@ -1,0 +1,48 @@
+#usda 1.0
+(
+    subLayers = [
+        @SUCCESS_foo.usd@
+    ]
+)
+
+def Xform "Model" (
+    assetInfo = {
+        asset identifier = @SUCCESS_foo.usd@
+        asset[] payloadAssetDependencies = [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@]
+    }
+    customData = {
+        dictionary d = {
+            asset foo = @SUCCESS_foo.usd@
+        }
+        asset foo = @SUCCESS_foo.usd@
+    }
+    payload = @SUCCESS_foo.usd@</foo>
+    references = [
+        @SUCCESS_foo.usd@</foo>,
+        @SUCCESS_bar.usd@
+    ]
+)
+{
+    asset[] bar = [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@]
+    asset foo = @SUCCESS_foo.usd@
+    asset[] varBar.timeSamples = {
+        1: [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@],
+        2: [@SUCCESS_bar.usd@, @SUCCESS_foo.usd@],
+    }
+    asset varFoo.timeSamples = {
+        1: @SUCCESS_foo.usd@,
+    }
+}
+
+def Xform "Variants" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "render" {
+            asset foo = @SUCCESS_foo.usd@
+
+        }
+    }
+}
+

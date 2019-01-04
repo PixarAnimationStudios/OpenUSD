@@ -135,6 +135,25 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
                                std::vector<std::string> *assets,
                                std::vector<std::string> *unresolvedPaths);
 
+/// Callback that is used to modify asset paths in a layer.  The \c assetPath
+/// will contain the string value that's authored.  The returned value is the
+/// new value that should be authored in the layer.
+using UsdUtilsModifyAssetPathFn = std::function<std::string(
+        const std::string& assetPath)>;
+
+/// Helper function that visits every asset path in \c layer, calls \c modifyFn
+/// and replaces the value with the return value of \c modifyFn.  This modifies
+/// \c layer in place.
+///
+/// This can be useful in preparing a layer for consumption in contexts that do
+/// not have access to the ArResolver for which the layer's asset paths were
+/// authored: we can replace all paths with their fully resolved equivalents,
+/// for example.
+USDUTILS_API
+void UsdUtilsModifyAssetPaths(
+        const SdfLayerHandle& layer,
+        const UsdUtilsModifyAssetPathFn& modifyFn);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDUTILS_DEPENDENCIES_H
