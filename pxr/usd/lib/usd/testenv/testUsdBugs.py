@@ -375,5 +375,39 @@ class TestUsdBugs(unittest.TestCase):
             '/shot/camera/cache/cam/cam_payload')
         self.assertTrue(cameraPayloadPrim.IsValid())
 
+    def test_USD_4936(self):
+        # Test that relationships resolve correctly with nested instancing and
+        # instance proxies within masters.
+        from pxr import Usd, Sdf
+        l1 = Sdf.Layer.CreateAnonymous('.usd')
+        l1.ImportFromString('''#usda 1.0
+            def "W" {
+                def "A" (
+                    instanceable = true
+                    prepend references = </M>
+                )
+                {
+                }
+            }
+
+            def "M" {
+                def "B" (
+                    instanceable = true
+                    prepend references = </M2>
+                )
+                {
+                }
+            }
+
+            def "M2" {
+                rel r = </M2/D>
+                def "D" {
+                }
+            }''')
+        stage = Usd.Stage.Open(l1)
+        wab = stage.GetPrimAtPath('/W/A/B')
+        # prior to fixing this bug, the resulting target would be '/W/A/B/B/D'.
+        self.assertEqual(wab.GetRelationship('r').GetTargets(), [Sdf.Path('/W/A/B/D')])
+
 if __name__ == '__main__':
     unittest.main()
