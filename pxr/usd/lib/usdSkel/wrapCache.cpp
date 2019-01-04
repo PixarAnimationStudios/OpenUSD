@@ -31,6 +31,7 @@
 
 #include "pxr/usd/usd/prim.h"
 
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
@@ -85,7 +86,15 @@ void wrapUsdSkelCache()
         
         .def("GetSkinningQuery", &This::GetSkinningQuery)
 
-        .def("GetAnimQuery", &This::GetAnimQuery, (arg("prim")))
+        .def("GetAnimQuery",
+             (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdPrim&) const)
+             &This::GetAnimQuery,
+             (arg("prim")))
+
+        .def("GetAnimQuery",
+             (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdSkelAnimation&) const)
+             &This::GetAnimQuery,
+             (arg("anim")))
 
         .def("ComputeSkelBindings", &_ComputeSkelBindings,
              return_value_policy<TfPySequenceToList>())

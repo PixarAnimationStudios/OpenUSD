@@ -37,13 +37,12 @@ class TestUsdSkelCache(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
          
         anim = UsdSkel.Animation.Define(stage, "/Anim")
-        
-        assert cache.GetAnimQuery(anim.GetPrim())
 
-        assert not cache.GetAnimQuery(stage.DefinePrim("/Foo"))
-        
-        assert not cache.GetAnimQuery(
-            UsdGeom.Xform.Define(stage, "/Bar").GetPrim())
+        self.assertTrue(cache.GetAnimQuery(anim))
+        # Backwards-compatibility.
+        self.assertTrue(cache.GetAnimQuery(prim=anim.GetPrim()))
+
+        self.assertFalse(cache.GetAnimQuery(UsdSkel.Animation()))
 
         # TODO: Test query of anim behind instancing
 

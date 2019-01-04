@@ -93,7 +93,7 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
 
         cache = UsdSkel.Cache()
 
-        query = cache.GetAnimQuery(anim.GetPrim())
+        query = cache.GetAnimQuery(anim)
 
         self.assertEqual(query.GetPrim(), anim.GetPrim())
         self.assertEqual(query.GetJointOrder(), joints)
