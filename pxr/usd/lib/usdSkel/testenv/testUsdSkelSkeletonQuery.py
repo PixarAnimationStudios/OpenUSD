@@ -152,6 +152,14 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
             computedWorldXforms = query.ComputeJointWorldTransforms(xfCache)
             self.assertArrayIsClose(computedWorldXforms, expectedWorldXforms)
 
+            # Joint rest-relative xforms.
+            expectedRestRelXforms = Vt.Matrix4dArray(
+                [localXf*restXf.GetInverse()
+                 for localXf,restXf in zip(expectedLocalXforms, restXforms)])
+            computedRestRelXforms = query.ComputeJointRestRelativeTransforms(t)
+            self.assertArrayIsClose(computedRestRelXforms,
+                                    expectedRestRelXforms)
+
             #
             # Rest xforms
             #
