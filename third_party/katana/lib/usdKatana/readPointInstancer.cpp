@@ -43,6 +43,8 @@
 
 #include <pystring/pystring.h>
 
+#include "vtKatana/array.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -270,10 +272,9 @@ PxrUsdKatanaReadPointInstancer(
         data.GetMotionSampleTimes(positionsAttr);
     const size_t sampleCount = motionSampleTimes.size();
     std::vector<UsdTimeCode> sampleTimes(sampleCount);
-    for (size_t a = 0; a < sampleCount; ++a)
-    {
-        sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
-    }
+    std::transform(motionSampleTimes.begin(), motionSampleTimes.end(), 
+                   sampleTimes.begin(), [currentTime](double motionSampleTime){
+                        return UsdTimeCode(currentTime + motionSampleTime);});
 
     std::vector<VtArray<GfMatrix4d>> xformSamples(sampleCount);
 
@@ -334,6 +335,8 @@ PxrUsdKatanaReadPointInstancer(
     omitList.reserve(numInstances);
 
     std::map<SdfPath, std::string> protoPathsToKatPaths;
+
+    
 
     for (size_t i = 0; i < numInstances; ++i)
     {
@@ -552,31 +555,21 @@ PxrUsdKatanaReadPointInstancer(
                     FnKat::IntAttribute(&instanceIndices[0],
                             instanceIndices.size(), 1));
 
-    FnKat::DoubleBuilder instanceMatrixBldr(16);
-    for (size_t a = 0; a < numXformSamples; ++a) {
-
-        double relSampleTime = motionSampleTimes[a];
-
-        // Shove samples into the builder at the frame-relative sample time. If
-        // motion is backwards, make sure to reverse time samples.
-        std::vector<double> &matVec = instanceMatrixBldr.get(
-            data.IsMotionBackward()
+    // If motion is backwards, make sure to reverse time samples.
+    std::vector<float> attrSampleTimes(motionSampleTimes.size());
+    std::transform(motionSampleTimes.begin(), motionSampleTimes.end(),
+        attrSampleTimes.begin(), [&data](double relSampleTime){
+            return data.IsMotionBackward()
                 ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
-                : relSampleTime);
-
-        matVec.reserve(16 * numInstances);
-        for (size_t i = 0; i < numInstances; ++i) {
-
-            GfMatrix4d instanceXform = xformSamples[a][i];
-            const double *matArray = instanceXform.GetArray();
-
-            for (int j = 0; j < 16; ++j) {
-                matVec.push_back(matArray[j]);
-            }
-        }
+                : relSampleTime;
+        });
+    if (data.IsMotionBackward()){
+        std::reverse(attrSampleTimes.begin(), attrSampleTimes.end());
+        std::reverse(xformSamples.begin(), xformSamples.end());
     }
+    auto instanceMatrixAttr = VtKatanaMapOrCopy(attrSampleTimes, xformSamples);
     instancesBldr.setAttrAtLocation("instances",
-            "geometry.instanceMatrix", instanceMatrixBldr.build());
+            "geometry.instanceMatrix", instanceMatrixAttr);
 
     if (!omitList.empty())
     {
