@@ -22,9 +22,17 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr.Ndr import _FilesystemDiscoveryPlugin
 import os
 import unittest
+
+# Setup the environment to point to the test nodes. There are .osl
+# files in the search path, but they should not be converted into
+# discovery results because they don't match the allowed extensions.
+# NOTE: these must be set before the library is loaded
+os.environ["PXR_NDR_FS_PLUGIN_SEARCH_PATHS"] = os.getcwd()
+os.environ["PXR_NDR_FS_PLUGIN_ALLOWED_EXTS"] = "oso:args"
+
+from pxr.Ndr import _FilesystemDiscoveryPlugin
 
 class TestNdrFilesystemDiscovery(unittest.TestCase):
     def test_NdrFilesystemDiscovery(self):
@@ -32,14 +40,6 @@ class TestNdrFilesystemDiscovery(unittest.TestCase):
         Ensure the discovery process works correctly, including finding nested
         directories and nodes with the same name.
         """
-
-        searchPath = os.getcwd()
-
-        # Setup the environment to point to the test nodes. There are .osl
-        # files in the search path, but they should not be converted into
-        # discovery results because they don't match the allowed extensions.
-        os.environ["PXR_NDR_FS_PLUGIN_SEARCH_PATHS"] = searchPath
-        os.environ["PXR_NDR_FS_PLUGIN_ALLOWED_EXTS"] = "oso:args"
 
         fsPlugin = _FilesystemDiscoveryPlugin()
         context = _FilesystemDiscoveryPlugin.Context()

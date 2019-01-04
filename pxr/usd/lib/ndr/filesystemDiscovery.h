@@ -43,11 +43,13 @@ TF_DECLARE_WEAK_AND_REF_PTRS(_NdrFilesystemDiscoveryPlugin);
 /// is found, it is turned into a `NdrNodeDiscoveryResult` and will be parsed
 /// into a node when its information is accessed.
 ///
-/// Parameters for this plugin are specified via environment variables:
+/// Parameters for this plugin are specified via environment variables (which
+/// must be set before the library is loaded):
 ///
 /// PXR_NDR_FS_PLUGIN_SEARCH_PATHS - The paths that should be searched,
-/// recursively, for files that represent nodes. Paths should be separated by
-/// a colon.
+/// recursively, for files that represent nodes. Paths should be separated by 
+/// either a ':' or a ';' depending on your platform (it should mimic the PATH 
+/// env var on your platform).  See ARCH_PATH_LIST_SEP.
 ///
 /// PXR_NDR_FS_PLUGIN_ALLOWED_EXTS - The extensions on files that define nodes.
 /// Do not include the leading ".". Extensions should be separated by a colon.
