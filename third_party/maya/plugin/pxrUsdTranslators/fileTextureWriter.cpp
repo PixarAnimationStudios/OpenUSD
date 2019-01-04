@@ -69,6 +69,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (fileTextureName)
     (outAlpha)
     (outColor)
+    (outColorR)
+    (outColorG)
+    (outColorB)
     (wrapU)
     (wrapV)
 
@@ -101,8 +104,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (black)
     (repeat)
 
-    // UsdUVTexture Output Name
+    // UsdUVTexture Output Names
     ((TextureOutputName, "rgba"))
+    ((RedOutputName, "r"))
+    ((GreenOutputName, "g"))
+    ((BlueOutputName, "b"))
+    ((AlphaOutputName, "a"))
 );
 
 
@@ -122,6 +129,8 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
     _usdPrim = texShaderSchema.GetPrim();
     TF_AXIOM(_usdPrim);
 
+    // We always create an rgba output for the shader. Other outputs for
+    // specific components will be created on demand if they have connections.
     texShaderSchema.CreateOutput(
         _tokens->TextureOutputName,
         SdfValueTypeNames->Float4);
@@ -416,15 +425,33 @@ PxrUsdTranslators_FileTextureWriter::GetShadingPropertyNameForMayaAttrName(
     }
 
     TfToken usdAttrName;
+    SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
-    if (mayaAttrName == _tokens->outColor ||
-            mayaAttrName == _tokens->outAlpha) {
+    if (mayaAttrName == _tokens->outColor) {
+        usdAttrName = _tokens->TextureOutputName;
+        usdTypeName = SdfValueTypeNames->Float4;
+    } else if (mayaAttrName == _tokens->outColorR) {
+        usdAttrName = _tokens->RedOutputName;
+    } else if (mayaAttrName == _tokens->outColorG) {
+        usdAttrName = _tokens->GreenOutputName;
+    } else if (mayaAttrName == _tokens->outColorB) {
+        usdAttrName = _tokens->BlueOutputName;
+    } else if (mayaAttrName == _tokens->outAlpha) {
+        usdAttrName = _tokens->AlphaOutputName;
+    }
+
+    if (!usdAttrName.IsEmpty()) {
+        UsdShadeShader shaderSchema(_usdPrim);
+        TF_AXIOM(shaderSchema);
+
+        shaderSchema.CreateOutput(usdAttrName, usdTypeName);
+
         usdAttrName =
             TfToken(
                 TfStringPrintf(
                     "%s%s",
                     UsdShadeTokens->outputs.GetText(),
-                    _tokens->TextureOutputName.GetText()).c_str());
+                    usdAttrName.GetText()).c_str());
     }
 
     return usdAttrName;
