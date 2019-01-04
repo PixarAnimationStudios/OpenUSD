@@ -62,12 +62,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(
-    PIXMAYA_EXPORT_OLD_STYLE_FACESETS,
-    false,
-    "Whether maya/usdExport should create face-set bindings encoded in the "
-    "old-style, using UsdGeomFaceSetAPI.");
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (surfaceShader)
@@ -504,14 +498,6 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                 if (boundPrimPaths) {
                     boundPrimPaths->insert(boundPrimPath);
                 }
-            } else if (TfGetEnvSetting(PIXMAYA_EXPORT_OLD_STYLE_FACESETS)) {
-                UsdPrim boundPrim = _UninstancePrim(
-                        stage, boundPrimPath, "authoring old-style face set");
-                UsdGeomFaceSetAPI faceSet =
-                        material.CreateMaterialFaceSet(boundPrim);
-                faceSet.AppendFaceGroup(faceIndices, materialPath);
-                // XXX: don't bother updating boundPrimPaths in this case as
-                // old style facesets will be deprecated soon.
             } else {
                 UsdPrim boundPrim = _UninstancePrim(
                         stage, boundPrimPath, "authoring per-face materials");

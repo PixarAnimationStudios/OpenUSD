@@ -62,13 +62,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(
-    PIXMAYA_IMPORT_OLD_STYLE_FACESETS,
-    true,
-    "Whether maya/usdImport should transfer face-set bindings encoded in the "
-    "old-style, using UsdGeomFaceSetAPI.");
-
-
 /* static */
 MObject
 UsdMayaTranslatorMaterial::Read(
@@ -179,10 +172,7 @@ UsdMayaTranslatorMaterial::AssignMaterial(
         UsdShadeMaterialBindingAPI(
             primSchema.GetPrim()).GetMaterialBindSubsets();
 
-    const bool hasOldStyleFaceSets =
-        UsdShadeMaterial::HasMaterialFaceSet(primSchema.GetPrim());
-
-    if (faceSubsets.empty() && !hasOldStyleFaceSets) {
+    if (faceSubsets.empty()) {
         MFnSet seFnSet(shadingEngine, &status);
         if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
             status = seFnSet.addMember(shapeObj);
@@ -267,120 +257,6 @@ UsdMayaTranslatorMaterial::AssignMaterial(
                                             indices)) {
                     return false;
                 }
-            }
-        }
-    }
-
-    // Import per-face-set shader bindings.
-    if (TfGetEnvSetting(PIXMAYA_IMPORT_OLD_STYLE_FACESETS) &&
-            hasOldStyleFaceSets) {
-
-        const UsdGeomFaceSetAPI materialFaceSet =
-            UsdShadeMaterial::GetMaterialFaceSet(primSchema.GetPrim());
-
-        SdfPathVector bindingTargets;
-        if (!materialFaceSet.GetBindingTargets(&bindingTargets) ||
-                bindingTargets.empty()) {
-
-            TF_WARN("No bindings found on material faceSet at path <%s>.",
-                    primSchema.GetPath().GetText());
-            // No bindings to export in the material faceSet.
-            return false;
-        }
-
-        std::string reason;
-        if (!materialFaceSet.Validate(&reason)) {
-            TF_WARN("Invalid faceSet data found on <%s>: %s",
-                    primSchema.GetPath().GetText(),
-                    reason.c_str());
-            return false;
-        }
-
-        if (!materialFaceSet.GetIsPartition()) {
-            TF_WARN("Invalid faceSet data found on <%s>: Not a partition.",
-                    primSchema.GetPath().GetText());
-            return false;
-        }
-
-        VtIntArray faceCounts;
-        VtIntArray faceIndices;
-        materialFaceSet.GetFaceCounts(&faceCounts);
-        materialFaceSet.GetFaceIndices(&faceIndices);
-
-        // Check if there are faceIndices that aren't included in the material
-        // face-set.
-        // Note: This won't occur if the shading was originally
-        // authored in maya and exported to the USD that we are importing,
-        // but this is supported by the USD shading model.
-        const UsdGeomMesh mesh(primSchema);
-        if (mesh) {
-            VtIntArray faceVertexCounts;
-            if (mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts)) {
-                const std::set<int> assignedIndices(faceIndices.begin(),
-                                                    faceIndices.end());
-                VtIntArray unassignedIndices;
-                unassignedIndices.reserve(faceVertexCounts.size() -
-                                              faceIndices.size());
-                for (size_t fIdx = 0u; fIdx < faceVertexCounts.size(); ++fIdx) {
-                    if (assignedIndices.count(fIdx) == 0) {
-                        unassignedIndices.push_back(fIdx);
-                    }
-                }
-
-                // Assign the face face indices that aren't in the material
-                // faceSet to the material that the mesh is bound to or
-                // to the initialShadingGroup if it doesn't have a material
-                // binding.
-                if (!unassignedIndices.empty()) {
-                    if (!_AssignMaterialFaceSet(shadingEngine,
-                                                shapeDagPath,
-                                                unassignedIndices)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        int setIndex = 0;
-        int currentFaceIndex = 0;
-        TF_FOR_ALL(bindingTargetsIt, bindingTargets) {
-            const UsdShadeMaterial material(
-                primSchema.GetPrim().GetStage()->GetPrimAtPath(
-                    *bindingTargetsIt));
-
-            MObject faceGroupShadingEngine =
-                UsdMayaTranslatorMaterial::Read(
-                    shadingMode,
-                    material,
-                    UsdGeomGprim(),
-                    context);
-
-            if (faceGroupShadingEngine.isNull()) {
-                status =
-                    UsdMayaUtil::GetMObjectByName(
-                        "initialShadingGroup",
-                        faceGroupShadingEngine);
-                if (status != MS::kSuccess) {
-                    return false;
-                }
-            }
-
-            const int numFaces = faceCounts[setIndex];
-            VtIntArray faceGroupIndices;
-            faceGroupIndices.reserve(numFaces);
-            for (int faceIndex = currentFaceIndex;
-                    faceIndex < currentFaceIndex + numFaces;
-                    ++faceIndex) {
-                faceGroupIndices.push_back(faceIndices[faceIndex]);
-            }
-
-            ++setIndex;
-            currentFaceIndex += numFaces;
-
-            if (!_AssignMaterialFaceSet(faceGroupShadingEngine,
-                                        shapeDagPath,
-                                        faceGroupIndices)) {
-                return false;
             }
         }
     }
