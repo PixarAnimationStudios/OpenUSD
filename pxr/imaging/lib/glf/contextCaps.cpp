@@ -199,7 +199,7 @@ GlfContextCaps::_LoadCaps()
     }
 
     // initialize by individual extension.
-    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentNV) {
+    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentARB) {
         bindlessTextureEnabled = true;
     }
     if (GLEW_NV_shader_buffer_load && glMakeNamedBufferResidentNV) {
