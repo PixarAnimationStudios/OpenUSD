@@ -407,6 +407,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SpecializesAndAncestralArcs.testenv
+    DEST testPcpMuseum_SpecializesAndAncestralArcs
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SubrootReferenceAndClasses.testenv
     DEST testPcpMuseum_SubrootReferenceAndClasses
 )
@@ -931,6 +936,13 @@ pxr_register_test(testPcpMuseum_RelocatePrimsWithSameName
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelocatePrimsWithSameName/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelocatePrimsWithSameName.txt
     DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt 
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SpecializesAndAncestralArcs/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses

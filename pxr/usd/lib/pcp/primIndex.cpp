@@ -2792,8 +2792,8 @@ static bool
 _IsPropagatedSpecializesNode(
     const PcpNodeRef& node)
 {
-    return (PcpIsSpecializesArc(node.GetArcType())      && 
-            node.GetParentNode() == node.GetRootNode()  && 
+    return (PcpIsSpecializesArc(node.GetArcType()) && 
+            node.GetParentNode() == node.GetRootNode() && 
             node.GetSite() == node.GetOriginNode().GetSite());
 }
 
@@ -2810,7 +2810,7 @@ _IsNodeInSubtree(
     return false;
 }
 
-static PcpNodeRef
+static std::pair<PcpNodeRef, bool>
 _PropagateNodeToParent(
     PcpNodeRef parentNode,
     PcpNodeRef srcNode,
@@ -2819,6 +2819,8 @@ _PropagateNodeToParent(
     const PcpNodeRef& srcTreeRoot,
     Pcp_PrimIndexer* indexer)
 {
+    bool createdNewNode = false;
+
     PcpNodeRef newNode;
     if (srcNode.GetParentNode() == parentNode) {
         newNode = srcNode;
@@ -2861,6 +2863,8 @@ _PropagateNodeToParent(
                     /* skipDuplicateNodes = */ false,
                     skipImpliedSpecializes,
                     indexer);
+
+                createdNewNode = static_cast<bool>(newNode);
             }
         }
 
@@ -2877,10 +2881,10 @@ _PropagateNodeToParent(
         }
     }
 
-    return newNode;
+    return {newNode, createdNewNode};
 }
 
-static PcpNodeRef
+static void
 _PropagateSpecializesTreeToRoot(
     PcpPrimIndex* index,
     PcpNodeRef parentNode,
@@ -2895,23 +2899,21 @@ _PropagateSpecializesTreeToRoot(
     // its originating subtree, which will leave it inert.
     const bool skipImpliedSpecializes = true;
 
-    PcpNodeRef newNode = _PropagateNodeToParent(
+    std::pair<PcpNodeRef, bool> newNode = _PropagateNodeToParent(
         parentNode, srcNode,
         skipImpliedSpecializes,
         mapToParent, srcTreeRoot, indexer);
-    if (!newNode) {
-        return newNode;
+    if (!newNode.first) {
+        return;
     }
 
     for (PcpNodeRef childNode : Pcp_GetChildren(srcNode)) {
         if (!PcpIsSpecializesArc(childNode.GetArcType())) {
             _PropagateSpecializesTreeToRoot(
-                index, newNode, childNode, newNode, 
+                index, newNode.first, childNode, newNode.first, 
                 childNode.GetMapToParent(), srcTreeRoot, indexer);
         }
     }
-
-    return newNode;
 }
 
 static void
@@ -2927,8 +2929,8 @@ _FindSpecializesToPropagateToRoot(
     // we can cut off our search for specializes to propagate.
     const PcpNodeRef parentNode = node.GetParentNode();
     const bool nodeIsRelocatesPlaceholder =
-        parentNode != node.GetOriginNode()              && 
-        parentNode.GetArcType() == PcpArcTypeRelocate   && 
+        parentNode != node.GetOriginNode() && 
+        parentNode.GetArcType() == PcpArcTypeRelocate &&
         parentNode.GetSite() == node.GetSite();
     if (nodeIsRelocatesPlaceholder) {
         return;
@@ -2979,16 +2981,38 @@ _PropagateArcsToOrigin(
     // to the root later on.
     const bool skipImpliedSpecializes = false;
 
-    PcpNodeRef newNode = _PropagateNodeToParent(
+    std::pair<PcpNodeRef, bool> newNode = _PropagateNodeToParent(
         parentNode, srcNode, skipImpliedSpecializes,
         mapToParent, srcTreeRoot, indexer);
-    if (!newNode) {
+    if (!newNode.first) {
+        return;
+    }
+
+    // If we've propagated the given srcNode back to a new node 
+    // beneath the origin parentNode, it means srcNode represents a
+    // newly-discovered composition arc at this level of namespace.
+    // Instead of propagating the rest of the subtree beneath srcNode
+    // we mark them as inert and allow composition to recompose the 
+    // subtree beneath the newly-created node. This avoids issues with 
+    // duplicate tasks being queued up for the propagated subtree, 
+    // which would lead to failed verifies later on.
+    // See SpecializesAndAncestralArcs museum case.
+    //
+    // XXX: 
+    // This approach keeps the code simple but does cause us to redo
+    // composition work unnecessarily, since recomposing the subgraph
+    // beneath the newly-created node should yield the same result as
+    // the subgraph beneath srcNode. Ideally, we would remove this
+    // code, propagate the entire subgraph beneath srcNode, but find
+    // some way to avoid enqueing tasks for the propagated nodes.
+    if (newNode.second) {
+        _InertSubtree(srcNode);
         return;
     }
 
     for (PcpNodeRef childNode : Pcp_GetChildren(srcNode)) {
         _PropagateArcsToOrigin(
-            index, newNode, childNode, childNode.GetMapToParent(), 
+            index, newNode.first, childNode, childNode.GetMapToParent(), 
             srcTreeRoot, indexer);
     }
 }
