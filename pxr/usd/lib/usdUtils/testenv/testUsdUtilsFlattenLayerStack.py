@@ -172,5 +172,24 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
         self.assertEqual(list(assetArrayAttr.Get()), 
                          [Sdf.AssetPath(), Sdf.AssetPath()])
 
+    def test_ResolveAssetPathFn(self):
+        src_stage = Usd.Stage.Open('emptyAssetPaths.usda')
+        def replaceWithFoo(layer, s):
+            return 'foo'
+        layer = UsdUtils.FlattenLayerStack(src_stage, 
+                resolveAssetPathFn=replaceWithFoo,
+                tag='resolveAssetPathFn')
+        result_stage = Usd.Stage.Open(layer)
+
+        # verify that we replaced asset paths with "foo"
+
+        prim = result_stage.GetPrimAtPath('/Test')
+        assetAttr = prim.GetAttribute('a')
+        self.assertEqual(assetAttr.Get(), Sdf.AssetPath('foo'))
+
+        assetArrayAttr = prim.GetAttribute('b')
+        self.assertEqual(list(assetArrayAttr.Get()), 
+                         [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
+
 if __name__=="__main__":
     unittest.main()
