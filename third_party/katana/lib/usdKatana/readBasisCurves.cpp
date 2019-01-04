@@ -32,6 +32,8 @@
 #include <FnAttribute/FnDataBuilder.h>
 #include <FnLogging/FnLogging.h>
 
+#include "vtKatana/array.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -43,13 +45,8 @@ _SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
 {
     VtIntArray vtxCts;
     basisCurves.GetCurveVertexCountsAttr().Get(&vtxCts, currentTime);
-    std::vector<int> ctsVec(vtxCts.begin(), vtxCts.end());
-
-    FnKat::IntBuilder numVertsBuilder(1);
-    std::vector<int> &numVerts = numVertsBuilder.get();
-    numVerts = ctsVec;
-
-    attrs.set("geometry.numVertices", numVertsBuilder.build());
+    auto countsAttr = VtKatanaMapOrCopy(vtxCts);
+    attrs.set("geometry.numVertices", countsAttr);
 
     VtFloatArray widths;
     basisCurves.GetWidthsAttr().Get(&widths, currentTime);
@@ -61,10 +58,8 @@ _SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
     }
     else if (numWidths > 1)
     {
-        FnKat::FloatBuilder widthsBuilder(1);
-        widthsBuilder.set(
-            std::vector<float>(widths.begin(), widths.end()));
-        attrs.set("geometry.point.width", widthsBuilder.build());
+        auto widthsAttr = VtKatanaMapOrCopy(widths);
+        attrs.set("geometry.point.width", widthsAttr);
     }
 
     TfToken curveType;

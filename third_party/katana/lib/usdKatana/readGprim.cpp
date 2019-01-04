@@ -34,6 +34,8 @@
 
 #include "pxr/base/gf/gamma.h"
 
+#include "vtKatana/array.h"
+
 #include <FnLogging/FnLogging.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -134,50 +136,42 @@ _ConvertGeomAttr(
     // which case we only output the sample at the curent frame.
     bool varyingTopology = false;
 
-    // Used to compare value sizes to identify varying topology.
-    int arraySize = -1;
-
     const bool isMotionBackward = data.IsMotionBackward();
 
-    FnKat::DataBuilder<T_ATTR> attrBuilder(tupleSize);
-    TF_FOR_ALL(iter, motionSampleTimes)
-    {
-        double relSampleTime = *iter;
+    std::vector<float> times;
+    std::vector<VtArray<T_USD>> values;
+    for (double relSampleTime : motionSampleTimes){
         double time = currentTime + relSampleTime;
 
         // Eval attr.
         VtArray<T_USD> attrArray;
         usdAttr.Get(&attrArray, time);
-
-        if (arraySize == -1) {
-            arraySize = attrArray.size();
-        } else if ( attrArray.size() != static_cast<size_t>(arraySize) ) {
-            // Topology has changed. Don't create this or subsequent samples.
-            varyingTopology = true;
-            break;
+        
+        if (!values.empty()){
+            if (values.front().size() != attrArray.size()){
+                times.clear();
+                values.clear();
+                varyingTopology = true;
+                break;
+	    }
         }
-
-        std::vector<typename T_ATTR::value_type> &attrVec = 
-            attrBuilder.get(isMotionBackward ?
-            PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
-
-        PxrUsdKatanaUtils::ConvertArrayToVector(attrArray, &attrVec);
+        times.push_back(isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+        values.push_back(attrArray);
     }
 
     // Varying topology was found, build for the current frame only.
-    if (varyingTopology)
-    {
-        FnKat::DataBuilder<T_ATTR> defaultBuilder(tupleSize);
+    if (varyingTopology){
         VtArray<T_USD> attrArray;
-
         usdAttr.Get(&attrArray, currentTime);
-        std::vector<typename T_ATTR::value_type> &attrVec = defaultBuilder.get(0);
-        PxrUsdKatanaUtils::ConvertArrayToVector(attrArray, &attrVec);
-        
-        return defaultBuilder.build();
+        return VtKatanaMapOrCopy<T_USD>(attrArray);
     }
-
-    return attrBuilder.build();
+    else{
+        if (isMotionBackward){
+            std::reverse(times.begin(), times.end());
+            std::reverse(values.begin(), values.end());
+        }
+        return VtKatanaMapOrCopy<T_USD>(times, values);
+    }
 }
 
 } // anon namespace

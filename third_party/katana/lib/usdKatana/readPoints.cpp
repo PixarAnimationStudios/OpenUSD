@@ -30,6 +30,8 @@
 
 #include "pxr/usd/usdGeom/points.h"
 
+#include "vtKatana/array.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -41,12 +43,7 @@ _GetWidthAttr(const UsdGeomPoints& points, double currentTime)
     {
         return FnKat::Attribute();
     }
-
-    FnKat::FloatBuilder widthsBuilder(1);
-    widthsBuilder.set(std::vector<float>(widths.begin(), widths.end()));
-
-
-    return widthsBuilder.build();
+    return VtKatanaMapOrCopy(widths);
 }
 
 void
