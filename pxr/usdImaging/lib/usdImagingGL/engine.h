@@ -417,9 +417,6 @@ protected:
     // Data we want to live across render plugin switches:
     GfVec4f _selectionColor;
 
-    // Hold onto viewport dimensions for render delegate creation.
-    GfVec4d _viewport;
-
     SdfPath _rootPath;
     SdfPathVector _excludedPrimPaths;
     SdfPathVector _invisedPrimPaths;
