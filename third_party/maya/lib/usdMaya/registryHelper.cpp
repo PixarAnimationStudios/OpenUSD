@@ -46,6 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (providesTranslator)
     (UsdMaya)
     (ShadingModePlugin)
+    (UserAttributeWriterPlugin)
 );
 
 template <typename T>
@@ -134,7 +135,7 @@ _ProvidesForType(
 }
 
 static bool
-_HasShadingModePlugin(
+_HasPlugin(
     const PlugPluginPtr& plug,
     const std::vector<TfToken>& scope,
     std::string* mayaPluginName)
@@ -151,6 +152,35 @@ _HasShadingModePlugin(
     }
 
     return false;
+}
+
+static void
+_LoadAllPlugins(std::once_flag& once_flag, const std::vector<TfToken>& scope)
+{
+    std::call_once(once_flag, [&scope](){
+        PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
+        std::string mayaPlugin;
+        TF_FOR_ALL(plugIter, plugins) {
+            PlugPluginPtr plug = *plugIter;
+            if (_HasPlugin(plug, scope, &mayaPlugin) && !mayaPlugin.empty()) {
+                TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
+                            "Found usdMaya plugin %s: Loading maya plugin %s.\n", 
+                            plug->GetName().c_str(),
+                            mayaPlugin.c_str());
+                std::string loadPluginCmd = TfStringPrintf(
+                        "loadPlugin -quiet %s", mayaPlugin.c_str());
+                if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                    // Need to ensure Python script modules are loaded
+                    // properly for this library (Maya's loadPlugin will not
+                    // load script modules like TfDlopen would).
+                    TfScriptModuleLoader::GetInstance().LoadModules();
+                } else {
+                    TF_CODING_ERROR("Unable to load mayaplugin %s\n",
+                            mayaPlugin.c_str());
+                }
+            }
+        }
+    });
 }
 
 /* static */
@@ -213,30 +243,15 @@ void
 UsdMaya_RegistryHelper::LoadShadingModePlugins() {
     static std::once_flag _shadingModesLoaded;
     static std::vector<TfToken> scope = {_tokens->UsdMaya, _tokens->ShadingModePlugin};
-    std::call_once(_shadingModesLoaded, [](){        
-        PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
-        std::string mayaPlugin;
-        TF_FOR_ALL(plugIter, plugins) {
-            PlugPluginPtr plug = *plugIter;
-            if (_HasShadingModePlugin(plug, scope, &mayaPlugin) && !mayaPlugin.empty()) {
-                TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-                            "Found usdMaya plugin %s: Loading maya plugin %s.\n", 
-                            plug->GetName().c_str(),
-                            mayaPlugin.c_str());
-                std::string loadPluginCmd = TfStringPrintf(
-                        "loadPlugin -quiet %s", mayaPlugin.c_str());
-                if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
-                    // Need to ensure Python script modules are loaded
-                    // properly for this library (Maya's loadPlugin will not
-                    // load script modules like TfDlopen would).
-                    TfScriptModuleLoader::GetInstance().LoadModules();
-                } else {
-                    TF_CODING_ERROR("Unable to load mayaplugin %s\n",
-                            mayaPlugin.c_str());
-                }
-            }
-        }
-    });
+    _LoadAllPlugins(_shadingModesLoaded, scope);
+}
+
+void
+UsdMaya_RegistryHelper::LoadUserAttributeWriterPlugins()
+{
+    static std::once_flag _userAttributeWritersLoaded;
+    static std::vector<TfToken> scope = {_tokens->UsdMaya, _tokens->UserAttributeWriterPlugin};
+    _LoadAllPlugins(_userAttributeWritersLoaded, scope);
 }
 
 /* static */

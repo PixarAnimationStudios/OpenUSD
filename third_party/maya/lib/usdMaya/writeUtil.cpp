@@ -27,6 +27,7 @@
 #include "usdMaya/adaptor.h"
 #include "usdMaya/colorSpace.h"
 #include "usdMaya/translatorUtil.h"
+#include "usdMaya/userAttributeWriterRegistry.h"
 #include "usdMaya/userTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -973,11 +974,21 @@ UsdMayaWriteUtil::WriteUserExportedAttributes(
                                                                "user",
                                                                translateMayaDoubleToUsdSinglePrecision);
         } else {
-            usdAttr = UsdMayaWriteUtil::GetOrCreateUsdAttr(attrPlug,
-                                                              usdPrim,
-                                                              usdAttrName,
-                                                              true,
-                                                              translateMayaDoubleToUsdSinglePrecision);
+            auto attributeWriter = UsdMayaUserAttributeWriterRegistry::GetWriter(usdAttrType);
+            if (attributeWriter != nullptr) {
+                usdAttr = attributeWriter(attrPlug,
+                                          usdPrim,
+                                          usdAttrName,
+                                          "user",
+                                          translateMayaDoubleToUsdSinglePrecision);
+            } else {
+                usdAttr =
+                    UsdMayaWriteUtil::GetOrCreateUsdAttr(attrPlug,
+                                                         usdPrim,
+                                                         usdAttrName,
+                                                         true,
+                                                         translateMayaDoubleToUsdSinglePrecision);
+            }
         }
 
         if (usdAttr) {

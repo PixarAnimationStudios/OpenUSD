@@ -43,6 +43,7 @@
 #include "usdMaya/stageData.h"
 #include "usdMaya/stageNode.h"
 #include "usdMaya/undoHelperCommand.h"
+#include "usdMaya/listUserAttributeWritersCommand.h"
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnPlugin.h>
@@ -184,6 +185,14 @@ initializePlugin(MObject obj)
     }
 
     status = plugin.registerCommand(
+        "usdListUserAttributeWriters",
+        usdListUserAttributeWriters::creator);
+
+    if (!status) {
+        status.perror("registerCommand usdListUserAttributeWriters");
+    }
+
+    status = plugin.registerCommand(
         "usdUndoHelperCmd",
         UsdMayaUndoHelperCommand::creator,
         UsdMayaUndoHelperCommand::createSyntax);
@@ -239,6 +248,11 @@ uninitializePlugin(MObject obj)
     status = plugin.deregisterCommand("usdListShadingModes");
     if (!status) {
         status.perror("deregisterCommand usdListShadingModes");
+    }
+
+    status = plugin.deregisterCommand("usdListUserAttributeWriters");
+    if (!status) {
+        status.perror("deregisterCommand usdListUserAttributeWriters");
     }
 
     status = plugin.deregisterCommand("usdUndoHelperCmd");

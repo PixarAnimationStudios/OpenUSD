@@ -85,12 +85,10 @@ EXPORTED_ATTRS_MAYA_ATTR_NAME = 'USD_UserExportedAttributesJson'
 
 USD_ATTR_TYPE_USD = 'USD'
 USD_ATTR_TYPE_PRIMVAR = 'primvar'
-USD_ATTR_TYPE_USDRI = 'usdRi'
 
 USD_ATTR_TYPE_OPTIONS = [
     USD_ATTR_TYPE_USD,
-    USD_ATTR_TYPE_PRIMVAR,
-    USD_ATTR_TYPE_USDRI
+    USD_ATTR_TYPE_PRIMVAR
 ]
 
 # The first empty string option here allows the interpolation to be un-specified.
@@ -229,6 +227,8 @@ class ExportedAttribute(object):
     that attribute, such as an alternate attribute name to use in USD.
     """
 
+    userAttributeWriters = None
+
     def __init__(self, mayaAttrName):
         self._mayaAttrName = mayaAttrName
         self._usdAttrType = None
@@ -258,9 +258,8 @@ class ExportedAttribute(object):
     @usdAttrType.setter
     def usdAttrType(self, value):
         exportableAttrTypes = [
-            USD_ATTR_TYPE_PRIMVAR,
-            USD_ATTR_TYPE_USDRI
-        ]
+            USD_ATTR_TYPE_PRIMVAR
+        ] + ExportedAttribute.GetUserAttributeWriters()
         if value not in exportableAttrTypes:
             self._usdAttrType = None
         else:
@@ -328,6 +327,12 @@ class ExportedAttribute(object):
                 self._translateMayaDoubleToUsdSinglePrecision)
 
         return result
+
+    @staticmethod
+    def GetUserAttributeWriters():
+        if ExportedAttribute.userAttributeWriters is None:
+            ExportedAttribute.userAttributeWriters = cmds.usdListUserAttributeWriters() or []
+        return ExportedAttribute.userAttributeWriters
 
     @staticmethod
     def GetExportedAttributesFromNode(nodeName):
@@ -646,7 +651,9 @@ class ExportedAttributesView(QTableView):
         self.setAcceptDrops(True)
 
         self.setItemDelegateForColumn(ExportedAttributesModel.USD_ATTR_TYPE_COLUMN,
-            ExportedAttributesViewItemDelegate(USD_ATTR_TYPE_OPTIONS, self))
+            ExportedAttributesViewItemDelegate(
+                USD_ATTR_TYPE_OPTIONS + ExportedAttribute.GetUserAttributeWriters(),
+                self))
 
         self.setItemDelegateForColumn(ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN,
             ExportedAttributesViewItemDelegate(PRIMVAR_INTERPOLATION_OPTIONS, self))
