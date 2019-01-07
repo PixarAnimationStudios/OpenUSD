@@ -44,7 +44,7 @@ cmake                                       \
 cmake --build . --target install -- -j <NUM_CORES>
 ```
 
-#### On OS X
+#### On macOS
 
 The following will generate an Xcode project that can be used to build USD.
 

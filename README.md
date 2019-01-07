@@ -49,9 +49,9 @@ Dependencies
 | ---- | ------- | :------: |
 | C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
-| [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux), 3.12 (OS X/Windows)    |   |
+| [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux), 3.12 (macOS/Windows)    |   |
 | [Python](https://python.org)                                      | 2.7.5                                  | x |
-| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows VS 2015), 1.65.1 (Windows VS 2017)    |   |
+| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (macOS/Windows VS 2015), 1.65.1 (Windows VS 2017)   |   |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.4 Update 6                           |   |
 
 Additional dependencies are required for the following components. These components
@@ -61,7 +61,7 @@ may be disabled at build-time, for further details see [Advanced Build Configura
 
 | Name | Version | Optional |
 | ---- | ------- | :------: |
-| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)         |   |
+| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/macOS), 3.2.0 (Windows)         |   |
 | [GLEW](http://glew.sourceforge.net/)                              | 2.0.0                                       | x |
 | [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                       |   |
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                      | x |
