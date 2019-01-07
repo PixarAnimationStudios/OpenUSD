@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -99,6 +100,9 @@ _GetTimeSamplesInInterval(const UsdGeomPrimvar &self,
     return result;
 }
 
+static size_t __hash__(const UsdGeomPrimvar &self) { return hash_value(self); }
+
+
 } // anonymous namespace 
 
 void wrapUsdGeomPrimvar()
@@ -107,7 +111,11 @@ void wrapUsdGeomPrimvar()
 
     class_<Primvar>("Primvar")
         .def(init<UsdAttribute>(arg("attr")))
+
+        .def(self == self)
+        .def(self != self)
         .def(!self)
+        .def("__hash__", __hash__)
 
         .def("GetInterpolation", &Primvar::GetInterpolation)
         .def("SetInterpolation", &Primvar::SetInterpolation,
@@ -129,6 +137,8 @@ void wrapUsdGeomPrimvar()
         .def("GetAttr", &Primvar::GetAttr,
              return_value_policy<return_by_value>())
         .def("IsDefined", &Primvar::IsDefined)
+        .def("HasValue", &Primvar::HasValue)
+        .def("HasAuthoredValue", &Primvar::HasAuthoredValue)
         .def("GetName", &Primvar::GetName,
              return_value_policy<return_by_value>())
         .def("GetPrimvarName", &Primvar::GetPrimvarName)
@@ -166,6 +176,9 @@ void wrapUsdGeomPrimvar()
         .def("SetIdTarget", &Primvar::SetIdTarget)
         ;
 
+    TfPyRegisterStlSequencesFromPython<UsdGeomPrimvar>();
+    to_python_converter<std::vector<UsdGeomPrimvar>,
+                        TfPySequenceToPython<std::vector<UsdGeomPrimvar>>>();
     implicitly_convertible<Primvar, UsdAttribute>();
 }
 

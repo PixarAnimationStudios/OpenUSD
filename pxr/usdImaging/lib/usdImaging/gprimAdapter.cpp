@@ -246,26 +246,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         if (_GetMaterialBindingPurpose() == HdTokens->full) {
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
-            // for the list of primvars.
-            UsdGeomPrimvarsAPI primvars(gprim);
-
-            // Local (non-inherited) primvars
-            for (auto const &pv: primvars.GetPrimvars()) {
+            // for the list of primvars.  The inherited primvars from parent
+            // should really be cached and shared...
+            
+            // All primvars returned by plural Find* methods have already
+            // been verified to have some authored value
+            UsdGeomPrimvarsAPI primvars(prim);
+            for (auto const &pv: primvars.FindPrimvarsWithInheritance()) {
                 if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
                     continue;
                 }
                 _ComputeAndMergePrimvar(
                     prim, cachePath, pv, time, valueCache);
             }
-            // Inherited primvars
-            for (auto const &pv: primvars.FindInheritedPrimvars()) {
-                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
-                    continue;
-                }
-                _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, valueCache);
-            }
-
         } else {
 
             if (!usdMaterialPath.IsEmpty()) {
@@ -287,12 +280,11 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                     if (_IsBuiltinPrimvar(pvName)) {
                         continue;
                     }
-                    UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
-                    if (!pv) {
-                        // If not found, try as inherited primvar.
-                        pv = primvars.FindInheritedPrimvar(pvName);
-                    }
-                    if (pv) {
+                    // XXX If we can cache inheritable primvars at each 
+                    // non-leaf prim, then we can use the overload that keeps
+                    // us from needing to search up ancestors.
+                    UsdGeomPrimvar pv = primvars.FindPrimvarWithInheritance(pvName);
+                    if (pv.HasValue()) {
                         _ComputeAndMergePrimvar(
                             prim, cachePath, pv, time, valueCache);
                     }

@@ -358,11 +358,11 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
 
     def test_PrimvarInheritance(self):
         stage = Usd.Stage.CreateInMemory('primvarInheritance.usda')
-        s0 = UsdGeom.Mesh.Define(stage, '/s0')
-        s1 = UsdGeom.Mesh.Define(stage, '/s0/s1')
-        s2 = UsdGeom.Mesh.Define(stage, '/s0/s1/s2')
-        s3 = UsdGeom.Mesh.Define(stage, '/s0/s1/s2/s3')
-        s4 = UsdGeom.Mesh.Define(stage, '/s0/s1/s2/s3/s4')
+        s0 = UsdGeom.Xform.Define(stage, '/s0')
+        s1 = UsdGeom.Xform.Define(stage, '/s0/s1')
+        s2 = UsdGeom.Xform.Define(stage, '/s0/s1/s2')
+        s3 = UsdGeom.Xform.Define(stage, '/s0/s1/s2/s3')
+        s4 = UsdGeom.Mesh.Define(stage,  '/s0/s1/s2/s3/s4')
 
         s0p = UsdGeom.PrimvarsAPI(s0)
         s1p = UsdGeom.PrimvarsAPI(s1)
@@ -385,68 +385,126 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         # u4 overrides u3 on prim s4.
         u4 = s4p.CreatePrimvar('u3', Sdf.ValueTypeNames.Float)
         u4.SetInterpolation(UsdGeom.Tokens.constant)
+
+        # Before setting a value on u4, let's test the various
+        # enumeration methods, since Mesh has 2 builtin primvars
+        self.assertEqual(len(s4p.GetPrimvars()), 3)
+        self.assertEqual(len(s4p.GetAuthoredPrimvars()), 1)
+        self.assertEqual(len(s4p.GetPrimvarsWithValues()), 0)
+        self.assertEqual(len(s4p.GetPrimvarsWithAuthoredValues()), 0)
+        # now set value, and retest
         u4.Set(4)
+        self.assertEqual(len(s4p.GetPrimvars()), 3)
+        self.assertEqual(len(s4p.GetAuthoredPrimvars()), 1)
+        self.assertEqual(len(s4p.GetPrimvarsWithValues()), 1)
+        self.assertEqual(len(s4p.GetPrimvarsWithAuthoredValues()), 1)
 
-        # Test FindInheritedPrimvars().
-        self.assertEqual(len(s0p.FindInheritedPrimvars()), 0)
-        self.assertEqual(len(s1p.FindInheritedPrimvars()), 0)
-        self.assertEqual(len(s2p.FindInheritedPrimvars()), 1)
-        self.assertEqual(len(s3p.FindInheritedPrimvars()), 2)
-        self.assertEqual(len(s4p.FindInheritedPrimvars()), 2)
+        # Test FindInheritablePrimvars().
+        self.assertEqual(len(s0p.FindInheritablePrimvars()), 0)
+        self.assertEqual(len(s1p.FindInheritablePrimvars()), 1)
+        self.assertEqual(len(s2p.FindInheritablePrimvars()), 2)
+        self.assertEqual(len(s3p.FindInheritablePrimvars()), 3)
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 3)
 
-        # Test HasInheritedPrimvar().
+        # Test FindIncrementallyInheritablePrimvars().
+        s2_pvars = s2p.FindInheritablePrimvars()
+        s3_pvars = s3p.FindIncrementallyInheritablePrimvars(s2_pvars)
+        self.assertNotEqual(s2_pvars, s3_pvars)
+        self.assertEqual(len(s3_pvars), 3)
+        # Overriding should still force a new set to be created
+        s4_pvars = s4p.FindIncrementallyInheritablePrimvars(s3_pvars)
+        self.assertNotEqual(s3_pvars, s4_pvars)
+        self.assertEqual(len(s4_pvars), 3)
+        # s5p's result should be empty because it neither adds nor blocks/removes
+        # inherited primvars, indicating we should just use the passed-in set
+        s5 = stage.DefinePrim('/s0/s1/s2/s3/s4/s5')
+        s5p = UsdGeom.PrimvarsAPI(s5)
+        s5_pvars = s5p.FindIncrementallyInheritablePrimvars(s4_pvars)
+        self.assertEqual(s5_pvars, [])
+
+        # Next ensure we can use incrementally computed inheritance to 
+        # compute the full set of primvars
+        s5_full = s5p.FindPrimvarsWithInheritance()
+        self.assertEqual(len(s5_full), 3)
+        s5_incr = s5p.FindPrimvarsWithInheritance(s4_pvars)
+        self.assertEqual(set(s5_full), set(s5_incr))
+       
+
+
+        # Test HasPossiblyInheritedPrimvar().
         # s0
-        self.assertFalse(s0p.HasInheritedPrimvar('u1'))
+        self.assertFalse(s0p.HasPossiblyInheritedPrimvar('u1'))
         # s1
-        self.assertFalse(s1p.HasInheritedPrimvar('u1'))
+        self.assertTrue(s1p.HasPossiblyInheritedPrimvar('u1'))
         # s2
-        self.assertTrue(s2p.HasInheritedPrimvar('u1'))
-        self.assertFalse(s2p.HasInheritedPrimvar('u2'))
+        self.assertTrue(s2p.HasPossiblyInheritedPrimvar('u1'))
+        self.assertTrue(s2p.HasPossiblyInheritedPrimvar('u2'))
         # s3
-        self.assertTrue(s3p.HasInheritedPrimvar('u1'))
-        self.assertTrue(s3p.HasInheritedPrimvar('u2'))
-        self.assertFalse(s3p.HasInheritedPrimvar('u3'))
+        self.assertTrue(s3p.HasPossiblyInheritedPrimvar('u1'))
+        self.assertTrue(s3p.HasPossiblyInheritedPrimvar('u2'))
+        self.assertTrue(s3p.HasPossiblyInheritedPrimvar('u3'))
         # s4
-        self.assertTrue(s4p.HasInheritedPrimvar('u1'))
-        self.assertTrue(s4p.HasInheritedPrimvar('u2'))
-        self.assertFalse(s4p.HasInheritedPrimvar('u3')) # set locally!
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u1'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u2'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u3'))
 
-        # Test FindInheritedPrimvar().
+        # Test FindPrimvarWithInheritance().
         # Confirm that an inherited primvar is bound to the source prim, which
         # may be an ancestor.
-        self.assertFalse(s0p.FindInheritedPrimvar('u1'))
-        self.assertFalse(s1p.FindInheritedPrimvar('u1'))
-        self.assertEqual(s2p.FindInheritedPrimvar('u1').GetAttr().GetPrim(),
+        self.assertFalse(s0p.FindPrimvarWithInheritance('u1'))
+        self.assertEqual(s1p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
                 s1.GetPrim())
-        self.assertEqual(s3p.FindInheritedPrimvar('u1').GetAttr().GetPrim(),
+        self.assertEqual(s2p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
                 s1.GetPrim())
-        self.assertEqual(s4p.FindInheritedPrimvar('u1').GetAttr().GetPrim(),
+        self.assertEqual(s3p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
                 s1.GetPrim())
-        self.assertEqual(s4p.FindInheritedPrimvar('u2').GetAttr().GetPrim(),
+        self.assertEqual(s4p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s4p.FindPrimvarWithInheritance('u2').GetAttr().GetPrim(),
                 s2.GetPrim())
-        # Confirm that if the primvar is overriden locally, it does not
-        # also get found as an inherited primvar.
-        self.assertFalse(s4p.FindInheritedPrimvar('u3'))
-
+        # Confirm that local overrides work
+        self.assertEqual(s4p.FindPrimvarWithInheritance('u3').GetAttr().GetPrim(),
+                s4.GetPrim())
+        # Confirm the override taking pre-computed inheited primvars works
+        u2_straight = s4p.FindPrimvarWithInheritance('u2')
+        u2_incr = s4p.FindPrimvarWithInheritance('u2', s3p.FindInheritablePrimvars())
+        self.assertEqual(u2_straight, u2_incr)
+        
         # Confirm that only constant-interpolation primvars inherit.
-        self.assertEqual(len(s2p.FindInheritedPrimvars()), 1)
-        self.assertTrue(s2p.FindInheritedPrimvar('u1'))
-        self.assertTrue(s2p.HasInheritedPrimvar('u1'))
+        self.assertEqual(len(s2p.FindInheritablePrimvars()), 2)
+        self.assertTrue(s2p.FindPrimvarWithInheritance('u1'))
+        self.assertTrue(s2p.HasPossiblyInheritedPrimvar('u1'))
         u1.SetInterpolation(UsdGeom.Tokens.varying)
-        self.assertEqual(len(s2p.FindInheritedPrimvars()), 0)
-        self.assertFalse(s2p.FindInheritedPrimvar('u1'))
-        self.assertFalse(s2p.HasInheritedPrimvar('u1'))
+        self.assertEqual(len(s2p.FindInheritablePrimvars()), 1)
+        self.assertFalse(s2p.FindPrimvarWithInheritance('u1'))
+        self.assertFalse(s2p.HasPossiblyInheritedPrimvar('u1'))
 
         # Confirm that a non-constant primvar blocks inheritance
         # of ancestral constant primvars of the same name.
-        self.assertEqual(len(s4p.FindInheritedPrimvars()), 1)
-        self.assertTrue(s4p.FindInheritedPrimvar('u2'))
-        self.assertTrue(s4p.HasInheritedPrimvar('u2'))
-        u2_on_s3 = s4p.CreatePrimvar('u2', Sdf.ValueTypeNames.Float)
-        u2.SetInterpolation(UsdGeom.Tokens.varying)
-        self.assertEqual(len(s4p.FindInheritedPrimvars()), 0)
-        self.assertFalse(s4p.FindInheritedPrimvar('u2'))
-        self.assertFalse(s4p.HasInheritedPrimvar('u2'))
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 2)
+        self.assertTrue(s4p.FindPrimvarWithInheritance('u2'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u2'))
+        u2_on_s3 = s3p.CreatePrimvar('u2', Sdf.ValueTypeNames.Float)
+        u2_on_s3.SetInterpolation(UsdGeom.Tokens.varying)
+        u2_on_s3.Set(2.3)
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 1)
+        self.assertFalse(s4p.FindPrimvarWithInheritance('u2'))
+        self.assertFalse(s4p.HasPossiblyInheritedPrimvar('u2'))
+
+        # confirm that if a primvar has no authored value, then it behaves
+        # as if not present on the prim, regardless of its interpolation
+        u2_on_s3.GetAttr().Block()
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 2)
+        self.assertTrue(s4p.FindPrimvarWithInheritance('u2'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u2'))
+
+        # Finally, ensure that builtins like displayColor inherit properly
+        dcp = s1p.CreatePrimvar(UsdGeom.Tokens.primvarsDisplayColor,
+                                Sdf.ValueTypeNames.Color3fArray)
+        dcp.Set([(0.5, 0.5, 0.5)])
+        self.assertEqual(s4p.FindPrimvarWithInheritance(UsdGeom.Tokens.primvarsDisplayColor).GetAttr().GetPrim(),
+                s1.GetPrim())
+
 
 if __name__ == "__main__":
     unittest.main()

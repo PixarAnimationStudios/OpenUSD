@@ -232,12 +232,9 @@ UsdImagingPrimAdapter::SamplePrimvar(
 
     // Try as USD primvar.
     UsdGeomPrimvarsAPI primvars(usdPrim);
-    UsdGeomPrimvar pv = primvars.GetPrimvar(key);
-    if (!pv) {
-        // Try as inherited primvar.
-        pv = primvars.FindInheritedPrimvar(key);
-    }
-    if (pv) {
+    UsdGeomPrimvar pv = primvars.FindPrimvarWithInheritance(key);
+
+    if (pv && pv.HasValue()) {
         if (pv.ValueMightBeTimeVarying()) {
             size_t numSamples = std::min(maxNumSamples,
                                          configuredSampleTimes.size());

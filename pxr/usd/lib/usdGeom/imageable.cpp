@@ -227,20 +227,6 @@ UsdGeomImageable::GetAuthoredPrimvars() const
     return UsdGeomPrimvarsAPI(GetPrim()).GetAuthoredPrimvars();
 }
 
-std::vector<UsdGeomPrimvar>
-UsdGeomImageable::FindInheritedPrimvars() const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).FindInheritedPrimvars();
-}
-
-UsdGeomPrimvar 
-UsdGeomImageable::FindInheritedPrimvar(const TfToken &name) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).FindInheritedPrimvar(name);
-}
-
 bool
 UsdGeomImageable::HasPrimvar(const TfToken &name) const
 {
@@ -248,12 +234,6 @@ UsdGeomImageable::HasPrimvar(const TfToken &name) const
     return UsdGeomPrimvarsAPI(GetPrim()).HasPrimvar(name);
 }
 
-bool
-UsdGeomImageable::HasInheritedPrimvar(const TfToken &name) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).HasInheritedPrimvar(name);
-}
 
 /* static */
 const TfTokenVector &

@@ -3167,8 +3167,10 @@ class AppController(QtCore.QObject):
 
         prim = self._dataModel.selection.getFocusPrim()
         composed = _GetCustomAttributes(prim, self._dataModel)
-        inheritedPrimvars = UsdGeom.PrimvarsAPI(prim).FindInheritedPrimvars() 
+        inheritedPrimvars = UsdGeom.PrimvarsAPI(prim).FindInheritablePrimvars() 
 
+        # There may be overlap between inheritedProps and prim attributes,
+        # but that's OK because propsDict will uniquify them below
         inheritedProps = [primvar.GetAttr() for primvar in inheritedPrimvars]
         props = prim.GetAttributes() + prim.GetRelationships()  + inheritedProps
 
@@ -3374,7 +3376,7 @@ class AppController(QtCore.QObject):
         if not obj:
             # Check if it is an inherited primvar.
             inheritedPrimvar = UsdGeom.PrimvarsAPI(
-                    focusPrim).FindInheritedPrimvar(attrName)
+                    focusPrim).FindPrimvarWithInheritance(attrName)
             if inheritedPrimvar:
                 obj = inheritedPrimvar.GetAttr()
         return obj

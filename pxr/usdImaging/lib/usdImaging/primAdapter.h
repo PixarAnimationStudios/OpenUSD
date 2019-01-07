@@ -496,7 +496,10 @@ protected:
         HdInterpolation interp,
         TfToken const& role = TfToken()) const;
 
-    // Convenience method for computing a primvar.
+    // Convenience method for computing a primvar. THe primvar will only be
+    // added to the list in the valueCache if there is no primvar of the same
+    // name already present.  Thus, "local" primvars should be merged before
+    // inherited primvars.
     USDIMAGING_API
     void _ComputeAndMergePrimvar(UsdPrim const& prim,
                                  SdfPath const& cachePath,

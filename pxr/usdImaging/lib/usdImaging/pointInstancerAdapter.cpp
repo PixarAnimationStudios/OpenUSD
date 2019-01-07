@@ -950,7 +950,8 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             for (auto const &pv: primvars.GetPrimvars()) {
                 TfToken const& interp = pv.GetInterpolation();
                 if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform) {
+                    interp != UsdGeomTokens->uniform &&
+                    pv.HasAuthoredValue()) {
                     HdInterpolation interp = HdInterpolationInstance;
                     _ComputeAndMergePrimvar(
                         prim, cachePath, pv, time, valueCache, &interp);
