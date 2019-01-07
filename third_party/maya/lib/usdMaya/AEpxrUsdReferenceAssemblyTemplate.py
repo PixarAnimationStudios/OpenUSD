@@ -161,12 +161,11 @@ def variantSets_Replace(nodeAttr, new):
 
         omg = cmds.optionMenuGrp(
             label=variantSetName,
-            columnWidth=(2,150),
             enable=variantSettable,
-            extraLabel=variantResolved,
-            )
+            extraLabel=variantResolved)
         for choice in variantSetChoices:
             cmds.menuItem(label=choice)
+
         try:
             cmds.optionMenuGrp(omg, e=True, value=variantOverride)
         except RuntimeError, e:
