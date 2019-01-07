@@ -27,6 +27,25 @@
 sudo: required
 dist: trusty
 
+os:
+    - linux
+    - osx
+
+osx_image: xcode10.1
+
+compiler:
+    - gcc
+    - clang
+
+matrix:
+
+    # On Linux build with gcc and on OSX build with clang
+    exclude:
+        - os: osx
+          compiler: gcc
+        - os: linux
+          compiler: clang
+
 language: cpp
 
 branches:
@@ -35,116 +54,26 @@ branches:
     - dev
 
 before_install:
-  - sudo apt-get -qq update
+  - if [ $TRAVIS_OS_NAME == linux ] ; then
+        sudo apt-get -qq update ;
+    fi
 
 install:
-  ######
-  ### DEPENDENCIES FOR USD CORE
-  #####
-
-  ### boost v1.55
-  ### We install only the packages we need for faster turnaround
-  - sudo apt-get install libboost-python1.55.0 libboost-python1.55-dev
-  - sudo apt-get install libboost-regex1.55.0 libboost-regex1.55-dev
-  - sudo apt-get install libboost-system1.55.0 libboost-system1.55-dev
-  - sudo apt-get install libboost-program-options1.55.0 libboost-program-options1.55-dev
-
-  ### Intel TBB v4.4 update 6
-  - if [ ! -d "$HOME/tbb44_20160803oss/lib" ]; then
-      wget https://github.com/01org/tbb/releases/download/4.4.6/tbb44_20160803oss_lin.tgz -O /tmp/tbb.tgz;
-      tar -xvzf /tmp/tbb.tgz -C $HOME;
-    else
-      echo 'Using cached TBB';
+  - if [ $TRAVIS_OS_NAME == linux ] ; then
+        sudo apt-get install libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev;
+        sudo apt-get install python-pyside pyside-tools ;
+        sudo pip install PyOpenGL ;
+    elif [ $TRAVIS_OS_NAME == osx ] ; then
+        sudo pip install pyside2 ;
+        sudo pip install PyOpenGL ;
     fi
-
-  ### ilmbase and OpenEXR 2.2.0
-  - if [ ! -d "$HOME/openexr/lib" ]; then
-      wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.0.tar.gz -O /tmp/ilmbase.tgz;
-      tar -xvzf /tmp/ilmbase.tgz -C $HOME;
-      pushd $HOME/ilmbase-2.2.0;
-      ./configure --prefix=$HOME/openexr;
-      make && make install;
-      popd;
-      wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.0.tar.gz -O /tmp/openexr.tgz;
-      tar -xvzf /tmp/openexr.tgz -C $HOME;
-      pushd $HOME/openexr-2.2.0;
-      ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
-      make && make install;
-      popd;
-    else
-      echo 'Using cached OpenEXR';
-    fi
-
-  ######
-  ### DEPENDENCIES FOR IMAGING
-  #####
-
-  ### GLEW 1.10.0
-  - sudo apt-get install libglew-dev
-
-  ### OpenSubdiv 3.0.5
-  - sudo apt-get install libxrandr-dev libxcursor-dev libxinerama-dev libglfw-dev
-  - if [ ! -d "$HOME/osd/lib" ]; then
-      wget https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_0_5.tar.gz -O /tmp/osd.tgz;
-      tar -xvzf /tmp/osd.tgz -C $HOME;
-      pushd $HOME/OpenSubdiv-3_0_5;
-      mkdir build && cd build;
-      cmake -DCMAKE_INSTALL_PREFIX=$HOME/osd -DNO_EXAMPLES=1 -DNO_TUTORIALS=1 -DNO_REGRESSION=1 -D NO_MAYA=1 -D NO_PTEX=1 -D NO_DOC=1 -D NO_OMP=1 -D NO_TBB=1 -D NO_CUDA=1 -D NO_OPENCL=1 -D NO_CLEW=1 ..;
-      make && make install;
-      popd;
-    else
-      echo 'Using cached OpenSubdiv';
-    fi
-
-  ### OpenImageIO 1.5.11
-  - sudo apt-get install libboost-filesystem1.55.0 libboost-filesystem1.55-dev
-  - sudo apt-get install libboost-thread1.55.0 libboost-thread1.55-dev
-  - if [ ! -d "$HOME/oiio/lib" ]; then
-      wget https://github.com/OpenImageIO/oiio/archive/Release-1.5.11.tar.gz -O /tmp/oiio.tgz;
-      tar -xvzf /tmp/oiio.tgz -C $HOME;
-      pushd $HOME/oiio-Release-1.5.11;
-      mkdir build && cd build;
-      cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DUSE_PYTHON=OFF -DOIIO_BUILD_TOOLS=OFF -DOIIO_BUILD_TESTS=OFF ..;
-      make && make install;
-      popd;
-    else
-      echo 'Using cached OpenImageIO';
-    fi
-
-  ### Ptex 2.0.30
-  - if [ ! -d "$HOME/ptex/lib" ]; then
-      wget https://github.com/wdas/ptex/archive/v2.0.30.tar.gz -O /tmp/ptex.tgz;
-      tar -xvzf /tmp/ptex.tgz -C $HOME;
-      pushd $HOME/ptex-2.0.30/src;
-      make;
-      mv $HOME/ptex-2.0.30/install/* $HOME/ptex;
-      popd;
-    else
-      echo 'Using cached Ptex';
-    fi
-
-  ######
-  ### DEPENDENCIES FOR USDVIEW
-  #####
-
-  ### PySide 1.2.2
-  - sudo apt-get install python-pyside pyside-tools
-
-  ### PyOpenGL 3.1.0
-  - sudo pip install PyOpenGL
 
 cache:
-  directories:
-    - $HOME/openexr
-    - $HOME/osd
-    - $HOME/oiio
-    - $HOME/ptex
-    - $HOME/tbb43_20141023oss
+    directories:
+        - $HOME/USDgen/src
+
 
 script:
-  - mkdir build && cd build
-  - cmake -DTBB_ROOT_DIR=$HOME/tbb44_20160803oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF -DPXR_BUILD_TESTS=ON ..
-  - echo 'Building with -j4'
-  - make -j4
-  # Default install location is /usr/local; we need sudo access to write there.
-  - sudo make install
+  - mkdir -p $HOME/USDinst
+  - mkdir -p $HOME/USDgen
+  - python build_scripts/build_usd.py -vv --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
