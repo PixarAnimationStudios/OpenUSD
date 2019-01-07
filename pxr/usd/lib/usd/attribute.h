@@ -433,6 +433,7 @@ public:
     /// retrieve resolved asset paths from SdfAssetPath-valued attributes.
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
+        static_assert(!std::is_const<T>::value, "");
         static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         return _Get(value, time);
     }
