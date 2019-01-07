@@ -93,7 +93,9 @@ class AppEventFilter(QtCore.QObject):
                 isinstance(w, QtWidgets.QComboBox) or
                 isinstance(w, QtWidgets.QTextEdit) or
                 isinstance(w, QtWidgets.QAbstractSlider) or
-                isinstance(w, QtWidgets.QAbstractSpinBox))
+                isinstance(w, QtWidgets.QAbstractSpinBox) or
+                isinstance(w, QtWidgets.QWidget) and w.windowModality() in [QtCore.Qt.WindowModal,
+                                                                            QtCore.Qt.ApplicationModal])
             
     def SetFocusFromMousePos(self, backupWidget):
         # It's possible the mouse isn't over any of our windows at the time,
