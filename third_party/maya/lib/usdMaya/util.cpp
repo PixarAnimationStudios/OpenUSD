@@ -1019,8 +1019,11 @@ UsdMayaUtil::IsAuthored(const MPlug& plug)
         return false;
     }
 
-    // Plugs with connections are considered authored.
-    if (plug.isConnected(&status)) {
+    // Plugs that are the destination of a connection are considered authored,
+    // since their value comes from an upstream dependency. If the plug is only
+    // the source of a connection or is not connected at all, it's
+    // authored-ness only depends on its own value, which is checked below.
+    if (plug.isDestination(&status)) {
         return true;
     }
 
