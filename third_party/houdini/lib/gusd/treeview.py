@@ -23,13 +23,9 @@
 #
 import hou
 
-if hou.applicationVersion()[0] >= 16:
-    from PySide2.QtGui import *
-    from PySide2.QtCore import *
-    from PySide2.QtWidgets import *
-else:
-    from PySide.QtGui import *
-    from PySide.QtCore import *
+from hutil.Qt.QtGui import *
+from hutil.Qt.QtCore import *
+from hutil.Qt.QtWidgets import *
 
 import types
 from treemodel import *
