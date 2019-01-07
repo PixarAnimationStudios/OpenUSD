@@ -125,8 +125,21 @@ std::ostream& operator<<(std::ostream &os, const SdfChangeList &cl)
 }
 // CODE_COVERAGE_ON
 
+SdfChangeList::Entry const &
+SdfChangeList::GetEntry( const SdfPath & path ) const
+{
+    TF_AXIOM(path != SdfPath::EmptyPath());
+
+    auto iter = _entries.find(path);
+    if (iter != _entries.end()) {
+        return iter->second;
+    }
+    static Entry defaultEntry;
+    return defaultEntry;
+}
+
 SdfChangeList::Entry&
-SdfChangeList::GetEntry( const SdfPath & path )
+SdfChangeList::_GetEntry( const SdfPath & path )
 {
     TF_AXIOM(path != SdfPath::EmptyPath());
 
@@ -138,19 +151,19 @@ SdfChangeList::GetEntry( const SdfPath & path )
 void
 SdfChangeList::DidReplaceLayerContent()
 {
-    GetEntry(SdfPath::AbsoluteRootPath()).flags.didReplaceContent = true;
+    _GetEntry(SdfPath::AbsoluteRootPath()).flags.didReplaceContent = true;
 }
 
 void
 SdfChangeList::DidReloadLayerContent()
 {
-    GetEntry(SdfPath::AbsoluteRootPath()).flags.didReloadContent = true;
+    _GetEntry(SdfPath::AbsoluteRootPath()).flags.didReloadContent = true;
 }
 
 void 
 SdfChangeList::DidChangeLayerIdentifier(const std::string &oldIdentifier)
 {
-    SdfChangeList::Entry &entry = GetEntry(SdfPath::AbsoluteRootPath());
+    SdfChangeList::Entry &entry = _GetEntry(SdfPath::AbsoluteRootPath());
 
     if (!entry.flags.didChangeIdentifier) {
         entry.flags.didChangeIdentifier = true;
@@ -161,14 +174,14 @@ SdfChangeList::DidChangeLayerIdentifier(const std::string &oldIdentifier)
 void 
 SdfChangeList::DidChangeLayerResolvedPath()
 {
-    GetEntry(SdfPath::AbsoluteRootPath()).flags.didChangeResolvedPath = true;
+    _GetEntry(SdfPath::AbsoluteRootPath()).flags.didChangeResolvedPath = true;
 }
 
 void 
 SdfChangeList::DidChangeSublayerPaths( const std::string &subLayerPath,
                                        SubLayerChangeType changeType )
 {
-    GetEntry(SdfPath::AbsoluteRootPath()).subLayerChanges.push_back(
+    _GetEntry(SdfPath::AbsoluteRootPath()).subLayerChanges.push_back(
         std::make_pair(subLayerPath, changeType) );
 }
 
@@ -177,7 +190,7 @@ SdfChangeList::DidChangeInfo(const SdfPath & path, const TfToken & key,
                              const VtValue & oldVal, const VtValue & newVal)
 {
     std::pair<Entry::InfoChangeMap::iterator, bool> insertStatus = 
-        GetEntry(path).infoChanged.insert(
+        _GetEntry(path).infoChanged.insert(
             std::make_pair(key, Entry::InfoChange()));
 
     Entry::InfoChange& changeEntry = insertStatus.first->second;
@@ -194,7 +207,7 @@ void
 SdfChangeList::DidChangePrimName(const SdfPath & oldPath, 
                                  const SdfPath & newPath)
 {
-    Entry &newEntry = GetEntry(newPath);
+    Entry &newEntry = _GetEntry(newPath);
 
     if (newEntry.flags.didRemoveNonInertPrim) {
         // We've already removed a spec at the target, so we can't simply
@@ -204,7 +217,7 @@ SdfChangeList::DidChangePrimName(const SdfPath & oldPath,
         // this case as though newPath and oldPath were both removed,
         // and a new spec added at newPath.
 
-        Entry &oldEntry = GetEntry(oldPath);
+        Entry &oldEntry = _GetEntry(oldPath);
 
         // Clear out existing edits.
         oldEntry = Entry();
@@ -215,7 +228,7 @@ SdfChangeList::DidChangePrimName(const SdfPath & oldPath,
         newEntry.flags.didAddNonInertPrim = true;
     } else {
         // Transfer accumulated changes about oldPath to apply to newPath.
-        newEntry = GetEntry(oldPath);
+        newEntry = _GetEntry(oldPath);
         _entries.erase(oldPath);
 
         // Indicate that a rename occurred.
@@ -231,56 +244,56 @@ SdfChangeList::DidChangePrimName(const SdfPath & oldPath,
 void
 SdfChangeList::DidChangePrimVariantSets(const SdfPath & primPath)
 {
-    GetEntry(primPath).flags.didChangePrimVariantSets = true;
+    _GetEntry(primPath).flags.didChangePrimVariantSets = true;
 }
 
 void
 SdfChangeList::DidChangePrimInheritPaths(const SdfPath & primPath)
 {
-    GetEntry(primPath).flags.didChangePrimInheritPaths = true;
+    _GetEntry(primPath).flags.didChangePrimInheritPaths = true;
 }
 
 void
 SdfChangeList::DidChangePrimSpecializes(const SdfPath & primPath)
 {
-    GetEntry(primPath).flags.didChangePrimSpecializes = true;
+    _GetEntry(primPath).flags.didChangePrimSpecializes = true;
 }
 
 void
 SdfChangeList::DidChangePrimReferences(const SdfPath & primPath)
 {
-    GetEntry(primPath).flags.didChangePrimReferences = true;
+    _GetEntry(primPath).flags.didChangePrimReferences = true;
 }
 
 void
 SdfChangeList::DidReorderPrims(const SdfPath & parentPath)
 {
-    GetEntry(parentPath).flags.didReorderChildren = true;
+    _GetEntry(parentPath).flags.didReorderChildren = true;
 }
 
 void
 SdfChangeList::DidAddPrim(const SdfPath &path, bool inert)
 {
     if (inert)
-        GetEntry(path).flags.didAddInertPrim = true;
+        _GetEntry(path).flags.didAddInertPrim = true;
     else
-        GetEntry(path).flags.didAddNonInertPrim = true;
+        _GetEntry(path).flags.didAddNonInertPrim = true;
 }
 
 void
 SdfChangeList::DidRemovePrim(const SdfPath &path, bool inert)
 {
     if (inert)
-        GetEntry(path).flags.didRemoveInertPrim = true;
+        _GetEntry(path).flags.didRemoveInertPrim = true;
     else
-        GetEntry(path).flags.didRemoveNonInertPrim = true;
+        _GetEntry(path).flags.didRemoveNonInertPrim = true;
 }
 
 void
 SdfChangeList::DidChangePropertyName(const SdfPath & oldPath,
                                      const SdfPath & newPath)
 {
-    Entry &newEntry = GetEntry(newPath);
+    Entry &newEntry = _GetEntry(newPath);
 
     if (newEntry.flags.didRemoveProperty) {
         // We've already removed a spec at the target, so we can't simply
@@ -290,7 +303,7 @@ SdfChangeList::DidChangePropertyName(const SdfPath & oldPath,
         // this case as though newPath and oldPath were both removed,
         // and a new spec added at newPath.
 
-        Entry &oldEntry = GetEntry(oldPath);
+        Entry &oldEntry = _GetEntry(oldPath);
 
         // Clear out existing edits.
         oldEntry = Entry();
@@ -301,7 +314,7 @@ SdfChangeList::DidChangePropertyName(const SdfPath & oldPath,
         newEntry.flags.didAddProperty = true;
     } else {
         // Transfer accumulated changes about oldPath to apply to newPath.
-        newEntry = GetEntry(oldPath);
+        newEntry = _GetEntry(oldPath);
         _entries.erase(oldPath);
 
         // Indicate that a rename occurred.
@@ -317,61 +330,61 @@ SdfChangeList::DidChangePropertyName(const SdfPath & oldPath,
 void
 SdfChangeList::DidReorderProperties(const SdfPath & parentPath)
 {
-    GetEntry(parentPath).flags.didReorderProperties = true;
+    _GetEntry(parentPath).flags.didReorderProperties = true;
 }
 
 void
 SdfChangeList::DidAddProperty(const SdfPath &path, bool hasOnlyRequiredFields)
 {
     if (hasOnlyRequiredFields)
-        GetEntry(path).flags.didAddPropertyWithOnlyRequiredFields = true;
+        _GetEntry(path).flags.didAddPropertyWithOnlyRequiredFields = true;
     else
-        GetEntry(path).flags.didAddProperty = true;
+        _GetEntry(path).flags.didAddProperty = true;
 }
 
 void
 SdfChangeList::DidRemoveProperty(const SdfPath &path, bool hasOnlyRequiredFields)
 {
     if (hasOnlyRequiredFields)
-        GetEntry(path).flags.didRemovePropertyWithOnlyRequiredFields = true;
+        _GetEntry(path).flags.didRemovePropertyWithOnlyRequiredFields = true;
     else
-        GetEntry(path).flags.didRemoveProperty = true;
+        _GetEntry(path).flags.didRemoveProperty = true;
 }
 
 void
 SdfChangeList::DidChangeAttributeTimeSamples(const SdfPath &attrPath)
 {
-    GetEntry(attrPath).flags.didChangeAttributeTimeSamples = true;
+    _GetEntry(attrPath).flags.didChangeAttributeTimeSamples = true;
 }
 
 void
 SdfChangeList::DidChangeAttributeConnection(const SdfPath &attrPath)
 {
-    GetEntry(attrPath).flags.didChangeAttributeConnection = true;
+    _GetEntry(attrPath).flags.didChangeAttributeConnection = true;
 }
 
 void
 SdfChangeList::DidChangeMapperArgument(const SdfPath &attrPath)
 {
-    GetEntry(attrPath).flags.didChangeMapperArgument = true;
+    _GetEntry(attrPath).flags.didChangeMapperArgument = true;
 }
 
 void
 SdfChangeList::DidChangeRelationshipTargets(const SdfPath &relPath)
 {
-    GetEntry(relPath).flags.didChangeRelationshipTargets = true;
+    _GetEntry(relPath).flags.didChangeRelationshipTargets = true;
 }
 
 void
 SdfChangeList::DidAddTarget(const SdfPath &targetPath)
 {
-    GetEntry(targetPath).flags.didAddTarget = true;
+    _GetEntry(targetPath).flags.didAddTarget = true;
 }
 
 void
 SdfChangeList::DidRemoveTarget(const SdfPath &targetPath)
 {
-    GetEntry(targetPath).flags.didRemoveTarget = true;
+    _GetEntry(targetPath).flags.didRemoveTarget = true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

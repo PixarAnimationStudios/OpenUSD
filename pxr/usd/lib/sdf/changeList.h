@@ -33,6 +33,7 @@
 
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -170,15 +171,17 @@ public:
     };
 
     /// Map of change entries at various paths in a layer.
-    typedef std::map<SdfPath, Entry> EntryList;
+    typedef std::unordered_map<SdfPath, Entry, SdfPath::Hash> EntryList;
 
 public:
     const EntryList & GetEntryList() const { return _entries; }
 
     // Change accessors/mutators
-    Entry& GetEntry( const SdfPath & );
+    Entry const &GetEntry( const SdfPath & ) const;
 
 private:
+    Entry &_GetEntry(SdfPath const &);
+    
     EntryList _entries;
 };
 
