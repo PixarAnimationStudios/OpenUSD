@@ -247,14 +247,14 @@ HdxTaskController::~HdxTaskController()
     }
 }
 
-HdTaskSharedPtrVector const& 
+HdTaskSharedPtrVector const
 HdxTaskController::GetTasks()
 {
-    _tasks.clear();
+    HdTaskSharedPtrVector tasks;
 
     // Light - Only run simpleLightTask if the backend supports simpleLight...
     if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
+        tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
 
         // If shadows are enabled then we add the task to generate the 
         // shadow maps.
@@ -263,12 +263,12 @@ HdxTaskController::GetTasks()
                 _simpleLightTaskId, HdTokens->params);
 
         if (simpleLightParams.enableShadows) {
-            _tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
+            tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
         }
     }
 
     // Render
-    _tasks.push_back(GetRenderIndex()->GetTask(_renderTaskId));
+    tasks.push_back(GetRenderIndex()->GetTask(_renderTaskId));
 
     // Selection highlighting (overlay as long as this isn't an id render).
     const HdxRenderTaskParams& renderTaskParams =
@@ -276,7 +276,7 @@ HdxTaskController::GetTasks()
             _renderTaskId, HdTokens->params);
 
     if (!renderTaskParams.enableIdRender) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
+        tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
     }
 
     if (_renderBufferIds.size() > 0) {
@@ -284,11 +284,11 @@ HdxTaskController::GetTasks()
             _delegate.GetParameter<HdxColorizeTaskParams>(
                     _colorizeTaskId, HdTokens->params);
         if (!colorizeParams.aovName.IsEmpty()) {
-            _tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
+            tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
         }
     }
 
-    return _tasks;
+    return tasks;
 }
 
 SdfPath

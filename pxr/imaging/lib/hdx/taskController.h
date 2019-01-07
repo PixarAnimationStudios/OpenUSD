@@ -91,7 +91,7 @@ public:
     ///
     /// A vector of zero length indicates error.
     HDX_API
-    HdTaskSharedPtrVector const &GetTasks();
+    HdTaskSharedPtrVector const GetTasks();
 
     /// -------------------------------------------------------
     /// Rendering API
@@ -219,7 +219,6 @@ private:
     HdRenderIndex *_index;
     SdfPath const _controllerId;
 
-    HdTaskSharedPtrVector _tasks;
     std::unique_ptr<HdxIntersector> _intersector;
 
     // Create taskController objects. Since the camera is a parameter
