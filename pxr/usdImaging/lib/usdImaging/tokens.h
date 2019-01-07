@@ -47,6 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (usdVaryingWidths)      \
     (usdVaryingNormals)     \
     (usdVaryingXform)       \
+    (usdVaryingTexture)     \
     (bxdf)                  \
     (displacement)          \
     (uvPrimvar)             \
