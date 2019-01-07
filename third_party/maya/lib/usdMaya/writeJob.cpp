@@ -384,23 +384,10 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
                 // Write out data (non-animated/default values).
                 if (const auto& usdPrim = primWriter->GetUsdPrim()) {
-                    if (mJobCtx.mArgs.stripNamespaces) {
-                        auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
-                        if (foundPair != mUsdPathToDagPathMap.end()){
-                            TF_RUNTIME_ERROR(
-                                    "Multiple dag nodes map to the same prim "
-                                    "path after stripping namespaces: %s - %s",
-                                    foundPair->second.fullPathName().asChar(),
-                                    primWriter->GetDagPath().fullPathName()
-                                        .asChar());
-                            return false;
-                        }
-                        // Note that mUsdPathToDagPathMap is _only_ used for
-                        // stripping namespaces, so we only need to populate it
-                        // when stripping namespaces. (This is different from
-                        // mDagPathToUsdPathMap!)
-                        mUsdPathToDagPathMap[usdPrim.GetPath()] =
-                                primWriter->GetDagPath();
+                    if (!_CheckNameClashes(
+                            usdPrim.GetPath(), primWriter->GetDagPath()))
+                    {
+                        return false;
                     }
 
                     primWriter->Write(UsdTimeCode::Default());
@@ -801,6 +788,37 @@ void UsdMaya_WriteJob::_PostCallback()
     }
 }
 
+bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath &path, const MDagPath &dagPath)
+{
+    if (!mJobCtx.mArgs.stripNamespaces) {
+        return true;
+    }
+    auto foundPair = mUsdPathToDagPathMap.find(path);
+    if (foundPair != mUsdPathToDagPathMap.end()){
+        if (mJobCtx.mArgs.mergeTransformAndShape) {
+            // Shape should not conflict with xform
+            MDagPath other = foundPair->second;
+            MDagPath self = dagPath;
+            other.extendToShape();
+            self.extendToShape();
+            if (other == self) {
+                return true;
+            }
+        }
+        TF_RUNTIME_ERROR(
+            "Multiple dag nodes map to the same prim "
+            "path after stripping namespaces: %s - %s",
+            foundPair->second.fullPathName().asChar(),
+            dagPath.fullPathName().asChar());
+        return false;
+    }
+    // Note that mUsdPathToDagPathMap is _only_ used for
+    // stripping namespaces, so we only need to populate it
+    // when stripping namespaces. (This is different from
+    // mDagPathToUsdPathMap!)
+    mUsdPathToDagPathMap[path] = dagPath;
+    return true;
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -181,6 +181,7 @@ pxr_test_scripts(
         testenv/testUsdExportShadingModeDisplayColor.py
         testenv/testUsdExportShadingModePxrRis.py
         testenv/testUsdExportSkeleton.py
+        testenv/testUsdExportStripNamespaces.py
         testenv/testUsdExportUVSets.py
         testenv/testUsdExportVisibilityDefault.py
         testenv/testUsdImportAsAssemblies.py
@@ -623,6 +624,17 @@ pxr_register_test(testUsdExportSkeleton
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportSkeleton"
     TESTENV testUsdExportSkeleton
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_register_test(testUsdExportStripNamespaces
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportStripNamespaces"
+    TESTENV testUsdExportStripNamespaces
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
