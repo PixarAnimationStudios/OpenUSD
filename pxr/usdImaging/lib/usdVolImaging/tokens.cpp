@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,29 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdVolImaging/field3dAssetAdapter.h"
-
 #include "pxr/usdImaging/usdVolImaging/tokens.h"
-
-#include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    typedef UsdImagingField3DAssetAdapter Adapter;
-    TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
-    t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
-}
-
-UsdImagingField3DAssetAdapter::~UsdImagingField3DAssetAdapter() 
-{
-}
-
-TfToken
-UsdImagingField3DAssetAdapter::GetPrimTypeToken() const
-{
-    return UsdVolImagingTokens->field3dAsset;
-}
+TF_DEFINE_PUBLIC_TOKENS(UsdVolImagingTokens, USDVOLIMAGING_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
