@@ -145,14 +145,14 @@ GusdGU_PackedUSD::Build(
     UsdTimeCode             frame, 
     const char*             lod,
     GusdPurposeSet          purposes,
-    const UsdPrim&          prim )
+    const UsdPrim&          prim,
+    const UT_Matrix4D*      xform )
 {   
     auto packedPrim = GU_PrimPacked::build( detail, k_typeName );
     auto impl = UTverify_cast<GusdGU_PackedUSD *>(packedPrim->implementation());
     impl->m_fileName = fileName;
     impl->m_primPath = primPath;
     impl->m_frame = frame;
-    impl->m_usdPrim = prim;
 
     if( prim && !prim.IsA<UsdGeomBoundable>() )
     {
@@ -206,7 +206,15 @@ GusdGU_PackedUSD::Build(
     // It seems that Houdini may reuse memory for packed implementations with
     // out calling the constructor to initialize data. 
     impl->resetCaches();
-    impl->updateTransform();
+
+    // If a UsdPrim was passed in, make sure it is used.
+    impl->m_usdPrim = prim;
+
+    if (xform) {
+        impl->setTransform(*xform);
+    } else {
+        impl->updateTransform();    
+    }
     return packedPrim;
 }
 
@@ -221,7 +229,8 @@ GusdGU_PackedUSD::Build(
     UsdTimeCode             frame, 
     const char*             lod,
     GusdPurposeSet          purposes,
-    const UsdPrim&          prim )
+    const UsdPrim&          prim,
+    const UT_Matrix4D*      xform )
 {   
     auto packedPrim = GU_PrimPacked::build( detail, k_typeName );
     auto impl = UTverify_cast<GusdGU_PackedUSD *>(packedPrim->implementation());
@@ -230,7 +239,6 @@ GusdGU_PackedUSD::Build(
     impl->m_srcPrimPath = srcPrimPath;
     impl->m_index = index;
     impl->m_frame = frame;
-    impl->m_usdPrim = prim;
     if( lod )
     {
 #if SYS_VERSION_FULL_INT < 0x10050000
@@ -244,8 +252,33 @@ GusdGU_PackedUSD::Build(
     // It seems that Houdini may reuse memory for packed implementations with
     // out calling the constructor to initialize data. 
     impl->resetCaches();
-    impl->updateTransform();
+
+    // If a UsdPrim was passed in, make sure it is used.
+    impl->m_usdPrim = prim;
+
+    if (xform) {
+        impl->setTransform(*xform);
+    } else {
+        impl->updateTransform();    
+    }
     return packedPrim;
+}
+
+
+/* static */
+GU_PrimPacked* 
+GusdGU_PackedUSD::Build( 
+    GU_Detail&              detail,
+    const UsdPrim&          prim,
+    UsdTimeCode             frame,
+    const char*             lod,
+    GusdPurposeSet          purposes,
+    const UT_Matrix4D*      xform )
+{
+    // TODO: Should we pull the identifier from the root layer as the file name?
+    return GusdGU_PackedUSD::Build(detail, /*fileName*/ UT_StringHolder(),
+                                   prim.GetPath(), frame, lod,
+                                   purposes, prim, xform);
 }
 
 
@@ -318,13 +351,17 @@ GusdGU_PackedUSD::resetCaches()
 void
 GusdGU_PackedUSD::updateTransform()
 {
-    const UT_Matrix4D& m = getUsdTransform();
+    setTransform(getUsdTransform());
+}
 
+void
+GusdGU_PackedUSD::setTransform( const UT_Matrix4D& mx )
+{
     UT_Vector3D p;
-    m.getTranslates(p);
-
+    mx.getTranslates(p);
+    
     GEO_PrimPacked *prim = getPrim();
-    prim->setLocalTransform(UT_Matrix3D(m));
+    prim->setLocalTransform(UT_Matrix3D(mx));
     prim->setPos3(0, p );
 }
 
