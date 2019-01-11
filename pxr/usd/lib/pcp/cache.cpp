@@ -60,6 +60,7 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <algorithm>
+#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -1604,7 +1605,7 @@ PcpCache::ComputePropertyIndex(const SdfPath & path, PcpErrorVector *allErrors)
 void 
 PcpCache::PrintStatistics() const
 {
-    Pcp_PrintCacheStatistics(this);
+    Pcp_PrintCacheStatistics(this, std::cout);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

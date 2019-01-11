@@ -55,6 +55,7 @@
 #include <boost/functional/hash.hpp>
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <vector>
 
 // Un-comment for extra runtime validation.
@@ -168,7 +169,7 @@ PcpPrimIndex::Swap(PcpPrimIndex& rhs)
 void
 PcpPrimIndex::PrintStatistics() const
 {
-    Pcp_PrintPrimIndexStatistics(*this);
+    Pcp_PrintPrimIndexStatistics(*this, std::cout);
 }
 
 std::string PcpPrimIndex::DumpToString(
