@@ -1717,7 +1717,6 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 
         // add all protos.
         TF_FOR_ALL (it, instancerData->primMap) {
-            SdfPath protoRprim = it->first;
             // convert to indexPath (add prefix)
             SdfPath indexPath = adapter->_GetPathForIndex(it->first);
 
