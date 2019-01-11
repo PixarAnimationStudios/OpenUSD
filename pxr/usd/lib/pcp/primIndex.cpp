@@ -130,9 +130,9 @@ PcpPrimIndex::HasSpecs() const
 }
 
 bool
-PcpPrimIndex::HasPayload() const
+PcpPrimIndex::HasAnyPayloads() const
 {
-    return _graph && _graph->HasPayload();
+    return _graph && _graph->HasPayloads();
 }
 
 bool
@@ -368,8 +368,8 @@ PcpPrimIndexOutputs::Append(const PcpPrimIndexOutputs& childOutputs,
     PcpNodeRef newNode = parent.InsertChildSubgraph(
         childOutputs.primIndex.GetGraph(), arcToParent);
 
-    if (childOutputs.primIndex.GetGraph()->HasPayload()) {
-        parent.GetOwningGraph()->SetHasPayload(true);
+    if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
+        parent.GetOwningGraph()->SetHasPayloads(true);
     }
 
     allErrors.insert(
@@ -3647,7 +3647,7 @@ _EvalNodePayload(
 
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
-    index->GetGraph()->SetHasPayload(true);
+    index->GetGraph()->SetHasPayloads(true);
 
     const PcpPrimIndexInputs::PayloadSet* includedPayloads = 
         indexer->inputs.includedPayloads;
@@ -4351,7 +4351,7 @@ _BuildInitialPrimIndexFromAncestor(
     // later set the flag back to its original value. It would be
     // better to defer setting this bit until we have the final
     // answer.
-    graph->SetHasPayload(false);
+    graph->SetHasPayloads(false);
 
     PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
     _ConvertNodeForChild(rootNode, inputs);

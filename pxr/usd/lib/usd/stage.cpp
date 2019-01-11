@@ -1945,7 +1945,7 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
         if (!prim.IsActive() || prim.IsMaster())
             return;
         
-        if (prim._GetSourcePrimIndex().HasPayload()) {
+        if (prim._GetSourcePrimIndex().HasAnyPayloads()) {
             SdfPath const &payloadIncludePath =
                 prim._GetSourcePrimIndex().GetPath();
             if (!unloadedOnly ||
@@ -1996,7 +1996,7 @@ UsdStage::_DiscoverAncestorPayloads(const SdfPath& rootPath,
         if (!parent.IsActive() || parent.IsMaster())
             continue;
 
-        if (parent._GetSourcePrimIndex().HasPayload()) {
+        if (parent._GetSourcePrimIndex().HasAnyPayloads()) {
             const SdfPath& payloadIncludePath = 
                 parent._GetSourcePrimIndex().GetPath();
             if (!unloadedOnly ||
