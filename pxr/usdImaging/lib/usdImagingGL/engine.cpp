@@ -641,8 +641,10 @@ UsdImagingGLEngine::GetRendererPlugins()
 std::string
 UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar())) {
-        // No renderer support if the legacy implementation is active.
+    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar() || id.IsEmpty())) {
+        // No renderer name is returned if the user requested to disable Hydra, 
+        // or if the machine does not support any of the available renderers 
+        // and it automatically switches to our legacy engine.
         return std::string();
     }
 
