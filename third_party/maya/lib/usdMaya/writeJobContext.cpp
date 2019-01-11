@@ -207,7 +207,9 @@ UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
 UsdMayaWriteJobContext::_ExportAndRefPaths
 UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) const
 {
-    TF_AXIOM(mInstancesPrim);
+    if (!TF_VERIFY(mInstancesPrim)) {
+        return _ExportAndRefPaths();
+    }
 
     std::string fullName;
     if (mArgs.stripNamespaces){
@@ -271,6 +273,11 @@ UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath
                 _GetInstanceMasterPaths(allInstances[0]);
         const SdfPath& exportPath = masterPaths.first;
         const SdfPath& referencePath = masterPaths.second;
+
+        if (exportPath.IsEmpty()) {
+            _objectsToMasterPaths[handle] = _ExportAndRefPaths();
+            return _ExportAndRefPaths();
+        }
 
         // Export the master's hierarchy.
         // Force un-instancing when exporting to avoid an infinite loop (we've

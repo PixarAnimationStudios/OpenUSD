@@ -47,14 +47,26 @@ PxrUsdTranslators_LocatorWriter::PxrUsdTranslators_LocatorWriter(
         UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     UsdGeomXform xformSchema =
         UsdGeomXform::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(xformSchema);
+    if (!TF_VERIFY(
+            xformSchema,
+            "Could not define UsdGeomXform at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 
     _usdPrim = xformSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomXform at path '%s'\n",
+            xformSchema.GetPath().GetText())) {
+        return;
+    }
 }
 
 

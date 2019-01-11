@@ -139,7 +139,9 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx),
     _valid(false)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     const TfToken& exportSkels = _GetExportArgs().exportSkels;
     if (exportSkels != UsdMayaJobExportArgsTokens->auto_ &&
@@ -521,7 +523,9 @@ _GetAnimatedJoints(
         std::vector<MDagPath>* animatedJointPaths,
         bool exportingAnimation)
 {
-    TF_AXIOM(usdJointNames.size() == jointDagPaths.size());
+    if (!TF_VERIFY(usdJointNames.size() == jointDagPaths.size())) {
+        return;
+    }
 
     if (restXforms.size() != usdJointNames.size()) {
         // Either have invalid restXforms or no restXforms at all

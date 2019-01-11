@@ -142,17 +142,29 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
         UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     if (!isMeshValid()) {
         return;
     }
 
-    // Get schema
     UsdGeomMesh primSchema = UsdGeomMesh::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(primSchema);
+    if (!TF_VERIFY(
+            primSchema,
+            "Could not define UsdGeomMesh at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
+
     _usdPrim = primSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomMesh at path '%s'\n",
+            primSchema.GetPath().GetText())) {
+        return;
+    }
 }
 
 /* virtual */

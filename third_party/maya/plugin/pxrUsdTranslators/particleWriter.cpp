@@ -198,12 +198,25 @@ PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
     UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
     mInitialFrameDone(false)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
-    auto primSchema = UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(primSchema);
+    UsdGeomPoints primSchema =
+        UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
+    if (!TF_VERIFY(
+            primSchema,
+            "Could not define UsdGeomPoints at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
     _usdPrim = primSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomPoints at path '%s'\n",
+            primSchema.GetPath().GetText())) {
+        return;
+    }
 
     initializeUserAttributes();
 }

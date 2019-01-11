@@ -55,16 +55,30 @@ PxrUsdTranslators_CameraWriter::PxrUsdTranslators_CameraWriter(
         UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     UsdGeomCamera primSchema =
         UsdGeomCamera::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(primSchema);
+    if (!TF_VERIFY(
+            primSchema,
+            "Could not define UsdGeomCamera at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
     _usdPrim = primSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomCamera at path '%s'\n",
+            primSchema.GetPath().GetText())) {
+        return;
+    }
 }
 
-void PxrUsdTranslators_CameraWriter::Write(const UsdTimeCode& usdTime)
+/* virtual */
+void
+PxrUsdTranslators_CameraWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaPrimWriter::Write(usdTime);
 
@@ -72,7 +86,10 @@ void PxrUsdTranslators_CameraWriter::Write(const UsdTimeCode& usdTime)
     writeCameraAttrs(usdTime, primSchema);
 }
 
-bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamera &primSchema)
+bool
+PxrUsdTranslators_CameraWriter::writeCameraAttrs(
+        const UsdTimeCode& usdTime,
+        UsdGeomCamera& primSchema)
 {
     // Since write() above will take care of any animation on the camera's
     // transform, we only want to proceed here if:

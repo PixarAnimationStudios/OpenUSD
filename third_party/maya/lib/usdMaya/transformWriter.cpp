@@ -123,7 +123,9 @@ UsdMayaTransformWriter::_ComputeXformOps(
         UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
         UsdUtilsSparseValueWriter* valueWriter)
 {
-    TF_AXIOM(previousRotates);
+    if (!TF_VERIFY(previousRotates)) {
+        return;
+    }
 
     // Iterate over each _AnimChannel, retrieve the default value and pull the
     // Maya data if needed. Then store it on the USD Ops

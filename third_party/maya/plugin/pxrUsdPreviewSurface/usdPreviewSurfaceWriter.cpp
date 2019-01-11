@@ -76,12 +76,22 @@ PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
 {
     UsdShadeShader shaderSchema =
         UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(shaderSchema);
+    if (!TF_VERIFY(
+            shaderSchema,
+            "Could not define UsdShadeShader at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 
     shaderSchema.CreateIdAttr(VtValue(_tokens->UsdPreviewSurface));
 
     _usdPrim = shaderSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdShadeShader at path '%s'\n",
+            shaderSchema.GetPath().GetText())) {
+        return;
+    }
 
     // Surface Output
     shaderSchema.CreateOutput(
@@ -179,7 +189,12 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     }
 
     UsdShadeShader shaderSchema(_usdPrim);
-    TF_AXIOM(shaderSchema);
+    if (!TF_VERIFY(
+            shaderSchema,
+            "Could not get UsdShadeShader schema for UsdPrim at path '%s'\n",
+            _usdPrim.GetPath().GetText())) {
+        return;
+    }
 
     // Clearcoat
     _AuthorShaderInputFromShadingNodeAttr(

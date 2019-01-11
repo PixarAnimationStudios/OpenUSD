@@ -788,7 +788,9 @@ PxrUsdTranslators_MeshWriter::_CleanupPrimvars()
 
         // If the unauthoredValueIndex wasn't 0 above, it must be -1 (the
         // fallback value in USD).
-        TF_AXIOM(unauthoredValueIndex == -1);
+        if (!TF_VERIFY(unauthoredValueIndex == -1)) {
+            return;
+        }
 
         // Since the unauthoredValueIndex is -1, we never explicitly set it,
         // meaning that none of the samples contain an unassigned value.

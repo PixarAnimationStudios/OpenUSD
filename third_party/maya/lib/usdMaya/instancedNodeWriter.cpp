@@ -125,10 +125,20 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
     _exportsGprims(false)
 {
     const MDagPath& mayaInstancePath(GetDagPath());
-    TF_AXIOM(mayaInstancePath.isValid());
+    if (!TF_VERIFY(
+            mayaInstancePath.isValid(),
+            "Invalid Maya node path: '%s'\n",
+            mayaInstancePath.fullPathName().asChar())) {
+        return;
+    }
 
     _usdPrim = GetUsdStage()->DefinePrim(usdInstancePath);
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not define UsdPrim at path '%s'\n",
+            usdInstancePath.GetText())) {
+        return;
+    }
 
     _masterPaths = ctx._FindOrCreateInstanceMaster(mayaInstancePath);
 
