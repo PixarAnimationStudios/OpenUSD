@@ -35,6 +35,7 @@
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include <FnAPI/FnAPI.h>
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 #include <FnGeolib/util/Path.h>
 #include <FnLogging/FnLogging.h>
@@ -43,7 +44,9 @@
 
 #include <pystring/pystring.h>
 
+#if KATANA_VERSION_MAJOR >= 3
 #include "vtKatana/array.h"
+#endif // KATANA_VERSION_MAJOR >= 3
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -555,6 +558,7 @@ PxrUsdKatanaReadPointInstancer(
                     FnKat::IntAttribute(&instanceIndices[0],
                             instanceIndices.size(), 1));
 
+#if KATANA_VERSION_MAJOR >= 3
     // If motion is backwards, make sure to reverse time samples.
     std::vector<float> attrSampleTimes(motionSampleTimes.size());
     std::transform(motionSampleTimes.begin(), motionSampleTimes.end(),
@@ -570,6 +574,33 @@ PxrUsdKatanaReadPointInstancer(
     auto instanceMatrixAttr = VtKatanaMapOrCopy(attrSampleTimes, xformSamples);
     instancesBldr.setAttrAtLocation("instances",
             "geometry.instanceMatrix", instanceMatrixAttr);
+#else
+    FnKat::DoubleBuilder instanceMatrixBldr(16);
+    for (size_t a = 0; a < numXformSamples; ++a) {
+
+        double relSampleTime = motionSampleTimes[a];
+
+        // Shove samples into the builder at the frame-relative sample time. If
+        // motion is backwards, make sure to reverse time samples.
+        std::vector<double> &matVec = instanceMatrixBldr.get(
+            data.IsMotionBackward()
+                ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                : relSampleTime);
+
+        matVec.reserve(16 * numInstances);
+        for (size_t i = 0; i < numInstances; ++i) {
+
+            GfMatrix4d instanceXform = xformSamples[a][i];
+            const double *matArray = instanceXform.GetArray();
+
+            for (int j = 0; j < 16; ++j) {
+                matVec.push_back(matArray[j]);
+            }
+        }
+    }
+    instancesBldr.setAttrAtLocation("instances",
+            "geometry.instanceMatrix", instanceMatrixBldr.build());
+#endif // KATANA_VERSION_MAJOR > 3
 
     if (!omitList.empty())
     {

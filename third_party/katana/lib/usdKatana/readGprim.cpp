@@ -34,7 +34,11 @@
 
 #include "pxr/base/gf/gamma.h"
 
+#include <FnAPI/FnAPI.h>
+
+#if KATANA_VERSION_MAJOR >= 3
 #include "vtKatana/array.h"
+#endif // KATANA_VERSION_MAJOR >= 3
 
 #include <FnLogging/FnLogging.h>
 
@@ -118,6 +122,8 @@ PxrUsdKatanaGeomGetWindingOrderAttr(
 
 namespace {
 
+#if KATANA_VERSION_MAJOR >= 3
+
 template <typename T_USD, typename T_ATTR> FnKat::Attribute
 _ConvertGeomAttr(
     const UsdAttribute& usdAttr,
@@ -173,6 +179,74 @@ _ConvertGeomAttr(
         return VtKatanaMapOrCopy<T_USD>(times, values);
     }
 }
+
+#else
+
+template <typename T_USD, typename T_ATTR> FnKat::Attribute
+_ConvertGeomAttr(
+    const UsdAttribute& usdAttr,
+    const int tupleSize,
+    const PxrUsdKatanaUsdInPrivateData& data)
+{
+    if (!usdAttr.HasValue())
+    {
+        return FnKat::Attribute();
+    }
+
+    const double currentTime = data.GetCurrentTime();
+    const std::vector<double>& motionSampleTimes = data.GetMotionSampleTimes(usdAttr);
+
+    // Flag to check if we discovered the topology is varying, in
+    // which case we only output the sample at the curent frame.
+    bool varyingTopology = false;
+
+    // Used to compare value sizes to identify varying topology.
+    int arraySize = -1;
+
+    const bool isMotionBackward = data.IsMotionBackward();
+
+    FnKat::DataBuilder<T_ATTR> attrBuilder(tupleSize);
+    TF_FOR_ALL(iter, motionSampleTimes)
+    {
+        double relSampleTime = *iter;
+        double time = currentTime + relSampleTime;
+
+        // Eval attr.
+        VtArray<T_USD> attrArray;
+        usdAttr.Get(&attrArray, time);
+
+        if (arraySize == -1) {
+            arraySize = attrArray.size();
+        } else if ( attrArray.size() != static_cast<size_t>(arraySize) ) {
+            // Topology has changed. Don't create this or subsequent samples.
+            varyingTopology = true;
+            break;
+        }
+
+        std::vector<typename T_ATTR::value_type> &attrVec = 
+            attrBuilder.get(isMotionBackward ?
+            PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
+        PxrUsdKatanaUtils::ConvertArrayToVector(attrArray, &attrVec);
+    }
+
+    // Varying topology was found, build for the current frame only.
+    if (varyingTopology)
+    {
+        FnKat::DataBuilder<T_ATTR> defaultBuilder(tupleSize);
+        VtArray<T_USD> attrArray;
+
+        usdAttr.Get(&attrArray, currentTime);
+        std::vector<typename T_ATTR::value_type> &attrVec = defaultBuilder.get(0);
+        PxrUsdKatanaUtils::ConvertArrayToVector(attrArray, &attrVec);
+        
+        return defaultBuilder.build();
+    }
+
+    return attrBuilder.build();
+}
+
+#endif // KATANA_VERSION_MAJOR >= 3
 
 } // anon namespace
 
