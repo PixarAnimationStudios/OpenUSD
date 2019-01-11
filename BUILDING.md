@@ -309,7 +309,7 @@ flags:
 | ------------------------------ |-----------------------------------------| ------- |
 | PXR_SET_EXTERNAL_NAMESPACE     | The outer namespace identifier          | ```pxr```     |
 | PXR_SET_INTERNAL_NAMESPACE     | The internal namespace identifier       | ```pxrInternal_v_x_y``` (for version x.y.z) |
-| PXR_ENABLE_NAMESPACES          | Enable namespaces                       | ```OFF```    |
+| PXR_ENABLE_NAMESPACES          | Enable namespaces                       | ```ON```    |
 
 When enabled, there are a set of macros provided in a generated header,
 pxr/pxr.h, which facilitates using namespaces:
