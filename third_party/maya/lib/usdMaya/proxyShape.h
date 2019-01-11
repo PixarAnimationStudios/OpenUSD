@@ -105,9 +105,12 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         PXRUSDMAYA_API
         static MObject outStageDataAttr;
         PXRUSDMAYA_API
-        static MObject displayGuidesAttr;
+        static MObject drawRenderPurposeAttr;
         PXRUSDMAYA_API
-        static MObject displayRenderGuidesAttr;
+        static MObject drawProxyPurposeAttr;
+        PXRUSDMAYA_API
+        static MObject drawGuidePurposeAttr;
+        
         PXRUSDMAYA_API
         static MObject softSelectableAttr;
 
@@ -187,13 +190,9 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
 
         PXRUSDMAYA_API
         int getComplexity() const;
-        PXRUSDMAYA_API
-        UsdTimeCode getTime() const;
 
         PXRUSDMAYA_API
-        bool displayGuides() const;
-        PXRUSDMAYA_API
-        bool displayRenderGuides() const;
+        UsdTimeCode getTime() const;
 
         PXRUSDMAYA_API
         bool GetAllRenderAttributes(
@@ -201,8 +200,9 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
                 SdfPathVector* excludePrimPathsOut,
                 int* complexityOut,
                 UsdTimeCode* timeOut,
-                bool* guidesOut,
-                bool* renderGuidesOut);
+                bool* drawRenderPurpose,
+                bool* drawProxyPurpose,
+                bool* drawGuidePurpose);
 
         PXRUSDMAYA_API
         MStatus setDependentsDirty(
@@ -239,8 +239,12 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
         int _GetComplexity(MDataBlock dataBlock) const;
         UsdTimeCode _GetTime(MDataBlock dataBlock) const;
-        bool _GetDisplayGuides(MDataBlock dataBlock) const;
-        bool _GetDisplayRenderGuides(MDataBlock dataBlock) const;
+
+        bool _GetDrawPurposeToggles(
+                MDataBlock dataBlock,
+                bool* drawRenderPurpose,
+                bool* drawProxyPurpose,
+                bool* drawGuidePurpose) const;
 
         bool _CanBeSoftSelected() const;
 

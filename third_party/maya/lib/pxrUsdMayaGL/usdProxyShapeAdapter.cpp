@@ -144,14 +144,16 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     SdfPathVector excludedPrimPaths;
     int refineLevel;
     UsdTimeCode timeCode;
-    bool showGuides;
-    bool showRenderGuides;
+    bool drawRenderPurpose = false;
+    bool drawProxyPurpose = true;
+    bool drawGuidePurpose = false;
     if (!usdProxyShape->GetAllRenderAttributes(&usdPrim,
                                                &excludedPrimPaths,
                                                &refineLevel,
                                                &timeCode,
-                                               &showGuides,
-                                               &showRenderGuides)) {
+                                               &drawRenderPurpose,
+                                               &drawProxyPurpose,
+                                               &drawGuidePurpose)) {
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
                 "Failed to get render attributes for UsdMayaProxyShape '%s'\n",
                 shapeDagPath.fullPathName().asChar());
@@ -180,16 +182,16 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     PxrMayaHdRenderParams renderParams;
     _renderParams = renderParams;
 
-    // XXX Not yet adding ability to turn off display of proxy geometry, but
-    // we should at some point, as in usdview.
     TfTokenVector renderTags;
     renderTags.push_back(HdTokens->geometry);
-    renderTags.push_back(HdTokens->proxy);
-    if (showGuides) {
-        renderTags.push_back(HdTokens->guide);
-    }
-    if (showRenderGuides) {
+    if (drawRenderPurpose) {
         renderTags.push_back(UsdGeomTokens->render);
+    }
+    if (drawProxyPurpose) {
+        renderTags.push_back(HdTokens->proxy);
+    }
+    if (drawGuidePurpose) {
+        renderTags.push_back(HdTokens->guide);
     }
 
     if (_rprimCollection.GetRenderTags() != renderTags) {
