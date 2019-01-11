@@ -456,7 +456,34 @@ UsdMayaWriteJobContext::_PostProcess()
         if (_objectsToMasterWriters.empty()) {
             mStage->RemovePrim(mInstancesPrim.GetPrimPath());
         } else {
+            // The InstanceSources group should be an over and moved to the
+            // end of the layer.
             mInstancesPrim.SetSpecifier(SdfSpecifierOver);
+
+            // We need to drop down to the Sdf level to reorder root prims.
+            // (Note that we want to change the actual order in the layer, and
+            // not just author a reorder statement.)
+            const SdfPath instancesPrimPath = mInstancesPrim.GetPrimPath();
+            SdfPrimSpecHandleVector newRootPrims;
+            SdfPrimSpecHandle instancesPrimSpec;
+            for (const SdfPrimSpecHandle& rootPrimSpec :
+                    mStage->GetRootLayer()->GetRootPrims()) {
+                if (rootPrimSpec->GetPath() == instancesPrimPath) {
+                    instancesPrimSpec = rootPrimSpec;
+                }
+                else {
+                    newRootPrims.push_back(rootPrimSpec);
+                }
+            }
+            if (instancesPrimSpec) {
+                newRootPrims.push_back(instancesPrimSpec);
+                mStage->GetRootLayer()->SetRootPrims(newRootPrims);
+            }
+            else {
+                TF_CODING_ERROR("Expected to find <%s> in the root prims; "
+                        "was it moved or removed?",
+                        instancesPrimPath.GetText());
+            }
         }
     }
 
