@@ -151,7 +151,6 @@ GlfUdimTexture::GetTextureInfo(bool forceLoad)
         if (!_tiles.empty()) {
             ret["imageFilePath"] = std::get<1>(_tiles.front());
         }
-        ret["referenceCount"] = GetRefCount().Get();
     } else {
         ret["memoryUsed"] = size_t{0};
         ret["width"] = 0;
@@ -159,7 +158,7 @@ GlfUdimTexture::GetTextureInfo(bool forceLoad)
         ret["depth"] = 1;
         ret["format"] = _format;
     }
-    ret["referenceCount"] = GetRefCount().Get();
+    ret["referenceCount"] = GetCurrentCount();
     return ret;
 }
 

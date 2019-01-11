@@ -795,7 +795,7 @@ GlfDrawTarget::Attachment::GetTextureInfo(bool forceLoad)
     info["depth"] = 1;
     info["format"] = (int)_internalFormat;
     info["imageFilePath"] = TfToken("DrawTarget");
-    info["referenceCount"] = GetRefCount().Get();
+    info["referenceCount"] = GetCurrentCount();
     info["numSamples"] = _numSamples;
 
     return info;
