@@ -206,7 +206,7 @@ _DeregisterFragments()
     return MS::kSuccess;
 }
 
-PXRUSDPREVIEWSURFACE_API_H
+PXRUSDPREVIEWSURFACE_API
 MStatus
 initializePlugin(MObject obj)
 {
@@ -237,7 +237,7 @@ initializePlugin(MObject obj)
     return status;
 }
 
-PXRUSDPREVIEWSURFACE_API_H
+PXRUSDPREVIEWSURFACE_API
 MStatus
 uninitializePlugin(MObject obj)
 {
