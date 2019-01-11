@@ -68,6 +68,7 @@ class TestTfType(unittest.TestCase):
         self.assertFalse(self.tUnknown.derivedTypes)
         self.assertFalse(self.tUnknown.IsA(Tf.Type.GetRoot()))
         self.assertEqual(hash(self.tUnknown), hash(Tf.Type.FindByName('bogus')))
+        self.assertFalse(self.tUnknown)
 
     def test_RootType(self):
         self._TestCppType(self.tRoot)
@@ -77,6 +78,7 @@ class TestTfType(unittest.TestCase):
         self.assertGreater(len(self.tRoot.derivedTypes), 1)
         self.assertEqual(hash(self.tRoot), hash(Tf.Type.GetRoot()))
         self.assertNotEqual(hash(self.tRoot), hash(Tf.Type()))
+        self.assertTrue(self.tRoot)
 
     def test_OtherBuiltinTypes(self):
         builtInTypeNames = 'int bool long float double size_t'.split()
@@ -92,6 +94,7 @@ class TestTfType(unittest.TestCase):
             self.assertTrue(t == Tf.Type.FindByName('void') or t.sizeof > 0)
             self.assertEqual(hash(t),hash(Tf.Type.FindByName(typeName)))
             self.assertNotEqual(hash(t), hash(Tf.Type.GetRoot()))
+            self.assertTrue(t)
 
     def test_PurePythonHierarchy(self):
         self.assertFalse(self.tBase.isUnknown)
