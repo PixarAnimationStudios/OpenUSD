@@ -1708,7 +1708,6 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     r.AddType(T("PointIndex", int()).Role(SdfValueRoleNames->PointIndex));
     r.AddType(T("EdgeIndex",  int()).Role(SdfValueRoleNames->EdgeIndex));
     r.AddType(T("FaceIndex",  int()).Role(SdfValueRoleNames->FaceIndex));
-    r.AddType(T("Schema",     TfToken()).Role(SdfValueRoleNames->Schema));
 }
 
 void 
