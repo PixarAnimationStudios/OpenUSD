@@ -91,9 +91,7 @@ class FrameSlider(QtWidgets.QSlider):
         # only invoked when a mouse is pressed down and moved (i.e. dragged or 
         # scrubbed).
         self._scrubbing = True
-        #if not self._updateOnFrameScrub:
-            #return super(FrameSlider, self).mouseMoveEvent(event)
-        self.setValueFromEvent(event, immediate=False)
+        self.setValueFromEvent(event, immediate=self._updateOnFrameScrub)
         event.accept()
 
     def mouseReleaseEvent(self, event):
