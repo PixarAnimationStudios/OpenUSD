@@ -70,6 +70,7 @@
 #include <atomic>
 #include <functional>
 #include <fstream>
+#include <iostream>
 #include <set>
 #include <vector>
 
