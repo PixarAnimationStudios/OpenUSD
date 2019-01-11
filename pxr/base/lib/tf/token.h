@@ -305,6 +305,9 @@ public:
     /// Returns \c true iff this token contains the empty string \c ""
     bool IsEmpty() const { return _rep.GetLiteral() == 0; }
 
+    /// Returns \c true iff this is an immortal token.
+    bool IsImmortal() const { return !_rep->_isCounted; }
+
     /// Stream insertion.
     friend TF_API std::ostream &operator <<(std::ostream &stream, TfToken const&);
 
