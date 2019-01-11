@@ -1,6 +1,16 @@
 # This library builds source files from the Katana installation
 set(PXR_PACKAGE katanaPluginApi)
 
+# Disable all warnings for this library, otherwise strict builds will fail
+# due to warnings from this code, which comes from the Katana installation and
+# which we have no control over.
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
+    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_definitions("-Wno-error")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    add_definitions("/w")
+endif()
+
 file(GLOB cppFiles
     ${KATANA_API_SOURCE_DIR}/FnAsset/client/*.cpp
     ${KATANA_API_SOURCE_DIR}/FnAsset/plugin/*.cpp
