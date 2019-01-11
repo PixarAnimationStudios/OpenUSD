@@ -733,7 +733,9 @@ Gusd_GetTypeFromRole(const TfToken& role)
     } else if (role == SdfValueRoleNames->Color) {
         return GT_TYPE_COLOR;
     } else if (role == SdfValueRoleNames->TextureCoordinate) {
+#if SYS_VERSION_FULL_INT >= 0x10050000
         return GT_TYPE_TEXTURE;
+#endif // SYS_VERSION_FULL_INT >= 0x10050000
     }
     return GT_TYPE_NONE;
 }
