@@ -697,8 +697,6 @@ namespace {
         if (topologyLayer->GetRootPrims().empty()) {
             TF_CODING_ERROR("Failed to generate topology.");
         } else {
-            SdfPrimSpecHandle rootPrim = *topologyLayer->GetRootPrims().begin();
-            SdfPath rootPath = rootPrim->GetPath();
             const std::string topologyId 
                 = _GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
                                              topologyLayer->GetRealPath(),
