@@ -274,25 +274,24 @@ UsdGeomImageable::ComputeVisibility(UsdTimeCode const &time) const
     return _ComputeVisibility(GetPrim(), time);
 }
 
-static
 TfToken
-_ComputePurpose(UsdPrim const &prim, UsdPrim *root=NULL)
+UsdGeomImageable::ComputeVisibility(
+    const TfToken &parentVisibility, 
+    UsdTimeCode const &time) const
 {
-    if (UsdPrim parent = prim.GetParent()){
-        TfToken myPurpose = _ComputePurpose(parent, root);
-        if (myPurpose != UsdGeomTokens->default_)
-            return myPurpose;
-        if (UsdGeomImageable ip = UsdGeomImageable(prim)){
-            ip.GetPurposeAttr().Get(&myPurpose);
-            if (root){
-                *root = prim;
-            }
-        }
-
-        return myPurpose;
+    if (parentVisibility == UsdGeomTokens->invisible) {
+        return UsdGeomTokens->invisible;
     }
 
-    return UsdGeomTokens->default_;
+    TfToken localVis;
+    if (UsdGeomImageable ip = UsdGeomImageable(GetPrim())) {
+        if (ip.GetVisibilityAttr().Get(&localVis, time) && 
+            localVis == UsdGeomTokens->invisible) {
+            return UsdGeomTokens->invisible;
+        }
+    }
+
+    return UsdGeomTokens->inherited;
 }
 
 static void
@@ -368,10 +367,48 @@ UsdGeomImageable::MakeInvisible(const UsdTimeCode &time) const
     }
 }
 
+static
+TfToken
+_ComputePurpose(UsdPrim const &prim, UsdPrim *root=NULL)
+{
+    if (UsdPrim parent = prim.GetParent()){
+        TfToken myPurpose = _ComputePurpose(parent, root);
+        if (myPurpose != UsdGeomTokens->default_)
+            return myPurpose;
+        if (UsdGeomImageable ip = UsdGeomImageable(prim)){
+            ip.GetPurposeAttr().Get(&myPurpose);
+            if (root){
+                *root = prim;
+            }
+        }
+
+        return myPurpose;
+    }
+
+    return UsdGeomTokens->default_;
+}
+
 TfToken
 UsdGeomImageable::ComputePurpose() const
 {
     return _ComputePurpose(GetPrim());
+}
+
+TfToken
+UsdGeomImageable::ComputePurpose(const TfToken &parentPurpose) const
+{
+    if (parentPurpose != UsdGeomTokens->default_) {
+        return parentPurpose;
+    }
+
+    TfToken myPurpose;
+    if (UsdGeomImageable ip = UsdGeomImageable(GetPrim())){
+        if (ip.GetPurposeAttr().Get(&myPurpose)) {
+            return myPurpose;
+        }
+    }
+
+    return parentPurpose;
 }
 
 UsdPrim

@@ -399,6 +399,15 @@ public:
     USDGEOM_API
     TfToken ComputeVisibility(UsdTimeCode const &time = UsdTimeCode::Default()) const;
 
+    /// \overload 
+    /// Calculates the effective visibility of this prim, given the computed 
+    /// visibility of its parent prim at the given \p time.
+    /// 
+    /// \sa GetVisibilityAttr()
+    USDGEOM_API
+    TfToken ComputeVisibility(const TfToken &parentVisibility,
+                              UsdTimeCode const &time = UsdTimeCode::Default()) const;
+
     /// Calculate the effective purpose of this prim, as defined by its
     /// most ancestral authored non-"default" opinion, if any.
     ///
@@ -426,6 +435,14 @@ public:
     /// \sa GetPurposeAttr()
     USDGEOM_API
     TfToken ComputePurpose() const;
+
+    /// \overload 
+    /// Calculates the effective purpose of this prim, given the computed 
+    /// purpose of its parent prim.
+    /// 
+    /// \sa GetPurposeAttr()
+    USDGEOM_API
+    TfToken ComputePurpose(const TfToken &parentPurpose) const;
 
     /// Find the prim whose purpose is \em proxy that serves as the proxy
     /// for this prim, as established by the GetProxyPrimRel(), or an
