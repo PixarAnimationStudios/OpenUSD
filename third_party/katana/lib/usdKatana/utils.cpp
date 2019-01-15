@@ -56,7 +56,7 @@
 
 #include <FnLogging/FnLogging.h>
 
-FnLogSetup("PxrUsdKatanaUtils::SGG");
+FnLogSetup("PxrUsdKatanaUtils");
 
 #include <sstream>
 
