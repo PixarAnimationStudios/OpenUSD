@@ -2178,7 +2178,11 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             << "  if (primitiveEdgeID == -1) {\n"
             << "    return -1;\n"
             << "  }\n"
-            << "  return HdGet_edgeIndices()[abs(primitiveEdgeID)];\n;"
+            << "  "
+            << _GetUnpackedType(_metaData.edgeIndexBinding.dataType, false)
+            << " edgeIndices = HdGet_edgeIndices();\n"
+            << "  int coord = abs(primitiveEdgeID);\n"
+            << "  return edgeIndices[coord];\n"
             << "}\n";
 
         // Primitive EdgeID getter
