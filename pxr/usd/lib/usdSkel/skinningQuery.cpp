@@ -129,12 +129,12 @@ UsdSkelSkinningQuery::GetJointOrder(VtTokenArray* jointOrder) const
     if(jointOrder) {
         if(_jointOrder) {
             *jointOrder = *_jointOrder;
+            return true;
         }
-        return true;
     } else {
         TF_CODING_ERROR("'jointOrder' pointer is null.");
-        return false;
     }
+    return false;
 }
 
 
@@ -273,7 +273,7 @@ UsdSkelSkinningQuery::ComputeSkinnedPoints(const VtMatrix4dArray& xforms,
         // (skel order -> binding order)
         VtMatrix4dArray orderedXforms(xforms);
         if(_mapper) {
-            if(!_mapper->Remap(xforms, &orderedXforms)) {
+            if(!_mapper->RemapTransforms(xforms, &orderedXforms)) {
                 return false;
             }
         }
