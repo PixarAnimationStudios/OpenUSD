@@ -120,6 +120,23 @@ UsdSkelSkeleton::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsel
 }
 
 UsdAttribute
+UsdSkelSkeleton::GetJointNamesAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->jointNames);
+}
+
+UsdAttribute
+UsdSkelSkeleton::CreateJointNamesAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->jointNames,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelSkeleton::GetBindTransformsAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->bindTransforms);
@@ -171,6 +188,7 @@ UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->joints,
+        UsdSkelTokens->jointNames,
         UsdSkelTokens->bindTransforms,
         UsdSkelTokens->restTransforms,
     };

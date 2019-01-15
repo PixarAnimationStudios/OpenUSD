@@ -162,7 +162,8 @@ public:
     /// up the skeleton, and their order. Each token in the array must be valid
     /// when parsed as an SdfPath. The parent-child relationships of the
     /// corresponding paths determine the parent-child relationships of each
-    /// joint.
+    /// joint. It is not required that the name at the end of each path be
+    /// unique, but rather only that the paths themselves be unique.
     ///
     /// \n  C++ Type: VtArray<TfToken>
     /// \n  Usd Type: SdfValueTypeNames->TokenArray
@@ -178,6 +179,29 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDSKEL_API
     UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // JOINTNAMES 
+    // --------------------------------------------------------------------- //
+    /// If authored, provides a unique name per joint. This may be
+    /// optionally set to provide better names when translating to DCC apps 
+    /// that require unique joint names.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointNamesAttr() const;
+
+    /// See GetJointNamesAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointNamesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

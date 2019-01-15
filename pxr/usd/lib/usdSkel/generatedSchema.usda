@@ -138,12 +138,18 @@ class Skeleton "Skeleton" (
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
     )
+    uniform token[] jointNames (
+        doc = """If authored, provides a unique name per joint. This may be
+        optionally set to provide better names when translating to DCC apps 
+        that require unique joint names."""
+    )
     uniform token[] joints (
         doc = """An array of path tokens identifying the set of joints that make
         up the skeleton, and their order. Each token in the array must be valid
         when parsed as an SdfPath. The parent-child relationships of the
         corresponding paths determine the parent-child relationships of each
-        joint."""
+        joint. It is not required that the name at the end of each path be
+        unique, but rather only that the paths themselves be unique."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
