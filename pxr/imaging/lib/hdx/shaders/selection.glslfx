@@ -183,6 +183,7 @@ bool IsInstanceSelected(int offset, out int nextOffset)
 
     #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
     const int INSTANCE_SELOFFSETS_HEADER_SIZE = 2;
+    hd_drawingCoord dc = GetDrawingCoord();
 
     for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
         int min = HdGet_hdxSelectionBuffer(offset  );
@@ -191,8 +192,7 @@ bool IsInstanceSelected(int offset, out int nextOffset)
         // during iteration.
         // note: instanceIndex[0] is instanceID.
         //       instanceIndex for level n is stored at instanceIndex[n+1]
-        int instanceId =
-            GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
+        int instanceId = dc.instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
 
         if (instanceId >= min && instanceId < max) {
             int netIndex = offset + INSTANCE_SELOFFSETS_HEADER_SIZE +
