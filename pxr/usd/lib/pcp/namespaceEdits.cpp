@@ -400,25 +400,27 @@ _AddLayerStackSite(
         newPath = *newNodePath;
     }
 
-    // Add a new layer stack site element at the end.
-    PcpNamespaceEdits::LayerStackSites& layerStackSites = 
-        _GetLayerStackSitesForEdit(result, oldPath, newPath);
+    if (result) {
+        // Add a new layer stack site element at the end.
+        PcpNamespaceEdits::LayerStackSites& layerStackSites = 
+            _GetLayerStackSitesForEdit(result, oldPath, newPath);
 
-    layerStackSites.resize(layerStackSites.size() + 1);
-    PcpNamespaceEdits::LayerStackSite& site = layerStackSites.back();
+        layerStackSites.resize(layerStackSites.size() + 1);
+        PcpNamespaceEdits::LayerStackSite& site = layerStackSites.back();
 
-    // Fill in the site.
-    site.cacheIndex = cacheIndex;
-    site.type       = type;
-    site.sitePath   = sitePath;
-    site.oldPath    = oldPath;
-    site.newPath    = newPath;
-    site.layerStack = node.GetParentNode().GetLayerStack();
+        // Fill in the site.
+        site.cacheIndex = cacheIndex;
+        site.type       = type;
+        site.sitePath   = sitePath;
+        site.oldPath    = oldPath;
+        site.newPath    = newPath;
+        site.layerStack = node.GetParentNode().GetLayerStack();
 
-    TF_DEBUG(PCP_NAMESPACE_EDIT)
-        .Msg("  - adding layer stack edit <%s> -> <%s>\n",
-            site.oldPath.GetText(),
-            site.newPath.GetText());
+        TF_DEBUG(PCP_NAMESPACE_EDIT)
+            .Msg("  - adding layer stack edit <%s> -> <%s>\n",
+                site.oldPath.GetText(),
+                site.newPath.GetText());
+    }
 
     return final;
 }
@@ -783,25 +785,21 @@ PcpComputeNamespaceEdits(
                    node.GetPath().GetText(),
                    oldNodePath.GetText(),
                    newNodePath.GetText());
-            if (sites.insert(node.GetParentNode().GetSite()).second) {
-                // Add site and translate paths to parent node.
-                if (_AddLayerStackSite(&result, node, cacheIndex,
-                                       &oldNodePath, &newNodePath)) {
-                    // Reached a direct arc, so we don't have to continue.
-                    // The composed object will continue to exist at the
-                    // same path, with the arc target updated.
-                    TF_DEBUG(PCP_NAMESPACE_EDIT)
-                        .Msg("  - done!  fixed direct arc.\n");
-                    break;
-                }
-            }
-            else {
+
+            // Add site to result if we haven't handled it before, and 
+            // translate paths to parent node.
+            const bool newSite = 
+                sites.insert(node.GetParentNode().GetSite()).second;
+
+            if (_AddLayerStackSite(
+                    newSite ? &result : nullptr,  
+                    node, cacheIndex, &oldNodePath, &newNodePath)) {
+                // Reached a direct arc, so we don't have to continue.
+                // The composed object will continue to exist at the
+                // same path, with the arc target updated.
                 TF_DEBUG(PCP_NAMESPACE_EDIT)
-                    .Msg("  - adjusted path for relocate\n");
-                // Translate paths to parent node.
-                // Adjust relocates as needed.
-                _TranslatePathsAndEditRelocates(NULL, node, cacheIndex,
-                                                &oldNodePath, &newNodePath);
+                    .Msg("  - done!  fixed direct arc.\n");
+                break;
             }
 
             // Next node.
