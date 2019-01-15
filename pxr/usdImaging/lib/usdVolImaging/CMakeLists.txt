@@ -8,6 +8,10 @@ pxr_library(usdVolImaging
     PUBLIC_CLASSES
         openvdbAssetAdapter
         field3dAssetAdapter
+        tokens
+
+    PUBLIC_HEADERS
+        api.h
 
     RESOURCE_FILES
         plugInfo.json
