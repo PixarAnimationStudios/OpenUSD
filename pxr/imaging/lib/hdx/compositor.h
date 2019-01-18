@@ -71,10 +71,15 @@ public:
     HDX_API
     void UpdateDepth(int width, int height, uint8_t *data);
 
-    /// Draw the color/depth buffers to the currently bound framebuffer.
+    /// Draw the internal color/depth buffers to the bound framebuffer.
     /// This will load the GLSL compositing program on-demand.
     HDX_API
     void Draw();
+
+    /// Draw the provided color/depth buffers to the bound framebuffer.
+    /// This will load the GLSL compositing program on-demand.
+    HDX_API
+    void Draw(GLuint colorId, GLuint depthId, bool remapDepth);
 
 private:
     // Utility function to create a GL texture.
@@ -88,7 +93,7 @@ private:
     GLuint _depthTexture;
 
     HdStGLSLProgramSharedPtr _compositorProgram;
-    GLint _locations[4];
+    GLint _locations[5];
     GLuint _vertexBuffer;
     bool _useDepthProgram;
 };

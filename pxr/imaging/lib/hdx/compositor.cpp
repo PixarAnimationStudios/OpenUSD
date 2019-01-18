@@ -48,6 +48,7 @@ namespace {
         depthIn = 1,
         position = 2,
         uvIn = 3,
+        remapDepthIn = 4
     };
 }
 
@@ -96,6 +97,7 @@ HdxCompositor::_CreateShaderResources(bool useDepthProgram)
     _locations[depthIn]  = glGetUniformLocation(programId, "depthIn");
     _locations[position] = glGetAttribLocation(programId, "position");
     _locations[uvIn]     = glGetAttribLocation(programId, "uvIn");
+    _locations[remapDepthIn] = glGetUniformLocation(programId, "remapDepthIn");
 }
 
 void
@@ -199,11 +201,11 @@ HdxCompositor::UpdateDepth(int width, int height, uint8_t *data)
     GLF_POST_PENDING_GL_ERRORS();
 }
 
-void
-HdxCompositor::Draw()
+void 
+HdxCompositor::Draw(GLuint colorId, GLuint depthId, bool remapDepth)
 {
     // No-op if no color data was specified.
-    if (_colorTexture == 0) {
+    if (colorId == 0) {
         return;
     }
 
@@ -212,7 +214,7 @@ HdxCompositor::Draw()
         _CreateBufferResources();
     }
 
-    bool useDepthProgram = (_depthTexture != 0);
+    bool useDepthProgram = (depthId != 0);
 
     // Load the shader if it hasn't been loaded, or we're changing modes.
     if (!_compositorProgram || _useDepthProgram != useDepthProgram) {
@@ -234,14 +236,16 @@ HdxCompositor::Draw()
     glUseProgram(programId);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _colorTexture);
+    glBindTexture(GL_TEXTURE_2D, colorId);
     glUniform1i(_locations[colorIn], 0);
 
-    if (_depthTexture != 0) {
+    if (depthId != 0) {
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, _depthTexture);
+        glBindTexture(GL_TEXTURE_2D, depthId);
         glUniform1i(_locations[depthIn], 1);
     }
+
+    glUniform1i(_locations[remapDepthIn], (GLint)remapDepth);
 
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(_locations[position], 4, GL_FLOAT, GL_FALSE,
@@ -259,7 +263,7 @@ HdxCompositor::Draw()
 
     glUseProgram(0);
 
-    if (_depthTexture != 0) {
+    if (depthId != 0) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -268,6 +272,14 @@ HdxCompositor::Draw()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     GLF_POST_PENDING_GL_ERRORS();
+}
+
+void
+HdxCompositor::Draw()
+{
+    // we default remapDepth to true because RmMan/Embree give us depth
+    // in the -1, 1 range.
+    Draw(_colorTexture, _depthTexture, /*remapDepth*/ true);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
