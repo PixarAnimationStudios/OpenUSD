@@ -31,7 +31,6 @@ pxr_library(usdGeom
         cube
         curves
         cylinder
-        collectionAPI
         faceSetAPI
         imageable
         gprim
@@ -68,7 +67,6 @@ pxr_library(usdGeom
         wrapCamera.cpp
         wrapConstraintTarget.cpp
         wrapCapsule.cpp
-        wrapCollectionAPI.cpp
         wrapCone.cpp
         wrapCube.cpp
         wrapCurves.cpp
@@ -110,7 +108,6 @@ pxr_test_scripts(
     testenv/testUsdGeomBasisCurves.py
     testenv/testUsdGeomBBoxCache.py
     testenv/testUsdGeomCamera.py
-    testenv/testUsdGeomCollectionAPI.py
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
@@ -173,11 +170,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdGeomCollectionAPI
-    DEST testUsdGeomCollectionAPI
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdGeomConsts
     DEST testUsdGeomConsts
 )
@@ -229,12 +221,6 @@ pxr_register_test(testUsdGeomBBoxCache
 pxr_register_test(testUsdGeomCamera
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCamera"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdGeomCollectionAPI
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCollectionAPI"
     EXPECTED_RETURN_CODE 0
 )
 
