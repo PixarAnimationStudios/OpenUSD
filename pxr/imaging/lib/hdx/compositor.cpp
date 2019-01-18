@@ -52,8 +52,7 @@ namespace {
 }
 
 HdxCompositor::HdxCompositor()
-    : _colorTexture(0), _colorSize(0)
-    , _depthTexture(0), _depthSize(0)
+    : _colorTexture(0), _depthTexture(0)
     , _compositorProgram(), _vertexBuffer(0)
     , _useDepthProgram(false)
 {
@@ -156,12 +155,11 @@ HdxCompositor::UpdateColor(int width, int height, uint8_t *data)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (width == 0 && height == 0) {
+    if (width == 0 || height == 0) {
         if (_colorTexture != 0) {
             glDeleteTextures(1, &_colorTexture);
             _colorTexture = 0;
         }
-        _colorSize = GfVec2i(0,0);
         return;
     }
 
@@ -169,16 +167,8 @@ HdxCompositor::UpdateColor(int width, int height, uint8_t *data)
         _CreateTextureResources(&_colorTexture);
     }
     glBindTexture(GL_TEXTURE_2D, _colorTexture);
-
-    GfVec2i size(width, height);
-    if (size != _colorSize) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, data);
-    } else {
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
-                        GL_UNSIGNED_BYTE, data);
-    }
-    _colorSize = size;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     GLF_POST_PENDING_GL_ERRORS();
@@ -190,12 +180,11 @@ HdxCompositor::UpdateDepth(int width, int height, uint8_t *data)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (width == 0 && height == 0) {
+    if (width == 0 || height == 0) {
         if (_depthTexture != 0) {
             glDeleteTextures(1, &_depthTexture);
             _depthTexture = 0;
         }
-        _depthSize = GfVec2i(0,0);
         return;
     }
 
@@ -203,17 +192,8 @@ HdxCompositor::UpdateDepth(int width, int height, uint8_t *data)
         _CreateTextureResources(&_depthTexture);
     }
     glBindTexture(GL_TEXTURE_2D, _depthTexture);
-
-    GfVec2i size(width, height);
-    if (size != _depthSize) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED,
-                     GL_FLOAT, data);
-    } else {
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RED,
-                        GL_FLOAT, data);
-    }
-    _depthSize = size;
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED,
+                 GL_FLOAT, data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     GLF_POST_PENDING_GL_ERRORS();

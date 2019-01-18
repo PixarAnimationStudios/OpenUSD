@@ -85,10 +85,7 @@ private:
     void _CreateBufferResources();
 
     GLuint _colorTexture;
-    GfVec2i _colorSize;
-
     GLuint _depthTexture;
-    GfVec2i _depthSize;
 
     HdStGLSLProgramSharedPtr _compositorProgram;
     GLint _locations[4];
