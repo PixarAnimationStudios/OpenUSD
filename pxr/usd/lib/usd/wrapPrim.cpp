@@ -357,6 +357,9 @@ void wrapUsdPrim()
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())
         ;
+    
+    to_python_converter<std::vector<UsdPrim>, 
+                        TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
 }
