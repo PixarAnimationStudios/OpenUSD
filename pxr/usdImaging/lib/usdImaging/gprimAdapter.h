@@ -122,6 +122,15 @@ public:
                                    SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Utility methods
+    // ---------------------------------------------------------------------- //
+    /// Give derived classes an opportunity to override how we get points for
+    /// a prim. This is useful for implicit primitives.
+    USDIMAGING_API
+    virtual VtValue GetPoints(UsdPrim const& prim,
+                              SdfPath const& cachePath,
+                              UsdTimeCode time) const;
 
     /// Returns color, opacity, and Usd interpolation token for a given
     /// prim, taking into account surface shader colors and explicitly

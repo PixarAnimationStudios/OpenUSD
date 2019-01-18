@@ -121,17 +121,6 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
 
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
-    VtValue& pointsValues = valueCache->GetPoints(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        _GetPoints(prim, &pointsValues, time);
-        _MergePrimvar(
-            &primvars,
-            HdTokens->points,
-            HdInterpolationVertex,
-            HdPrimvarRoleTokens->point);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         // First check for "primvars:widths"
         UsdGeomPrimvarsAPI primvarsApi(prim);
@@ -157,19 +146,6 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
-
-// -------------------------------------------------------------------------- //
-
-void
-UsdImagingPointsAdapter::_GetPoints(UsdPrim const& prim, 
-                                   VtValue* value, 
-                                   UsdTimeCode time) const
-{
-    HD_TRACE_FUNCTION();
-    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
-        *value = VtVec3fArray();
-    }
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

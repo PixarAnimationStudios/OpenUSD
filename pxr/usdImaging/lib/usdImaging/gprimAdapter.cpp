@@ -217,6 +217,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                    instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
+    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
+
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
+        VtValue& points = valueCache->GetPoints(cachePath);
+        points = GetPoints(prim, cachePath, time);
+
+        // Expose points as a primvar.
+        _MergePrimvar(
+            &primvars,
+            HdTokens->points,
+            HdInterpolationVertex,
+            HdPrimvarRoleTokens->point);
+    }
 
     SdfPath usdMaterialPath;
     if (requestedBits & (HdChangeTracker::DirtyPrimvar |
@@ -238,7 +251,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetColor(cachePath) =
             GetColorAndOpacity(prim, time, &interpToken);
         _MergePrimvar(
-            &valueCache->GetPrimvars(cachePath),
+            &primvars,
             HdTokens->color,
             _UsdToHdInterpolation(interpToken),
             HdPrimvarRoleTokens->color);
@@ -406,6 +419,26 @@ UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
     // Hydra doesn't currently manage detection and propagation of these
     // changes, so we must mark the rprim dirty.
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
+}
+
+/*virtual*/
+VtValue
+UsdImagingGprimAdapter::GetPoints(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  UsdTimeCode time) const
+{
+    TF_UNUSED(cachePath);
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    VtVec3fArray points;
+    if (!prim.GetAttribute(UsdGeomTokens->points).Get(&points, time)) {
+        TF_WARN("Points could not be read from prim: <%s>",
+                prim.GetPath().GetText());
+        points = VtVec3fArray();
+    }
+
+    return VtValue(points);
 }
 
 // -------------------------------------------------------------------------- //
