@@ -130,6 +130,11 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                TfToken const& propertyName)
 {
+    if (propertyName == UsdGeomTokens->visibility) {
+        // Materials aren't affected by visibility
+        return HdChangeTracker::Clean;
+    }
+
     // The only meaningful change is to dirty the computed resource,
     // an HdMaterialNetwork.
     return HdMaterial::DirtyResource;
