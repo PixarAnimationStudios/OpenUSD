@@ -134,6 +134,9 @@ void wrapUsdSkelSkinningQuery()
         .def(!self)
 
         .def("__str__", &This::GetDescription)
+
+        .def("GetPrim", &This::GetPrim,
+             return_value_policy<return_by_value>())
         
         .def("GetNumInfluencesPerComponent",
              &This::GetNumInfluencesPerComponent)
