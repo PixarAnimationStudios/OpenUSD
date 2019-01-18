@@ -1663,8 +1663,8 @@ class StageView(QtOpenGL.QGLWidget):
                     GL.glPolygonOffset( 1.0, 1.0 )
                     GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
 
-                    self.renderSinglePass( renderer.DrawMode.DRAW_GEOM_ONLY,
-                                        False)
+                    self.renderSinglePass( 
+                        UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
 
                     GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
                     GL.glDepthFunc(GL.GL_LEQUAL)
