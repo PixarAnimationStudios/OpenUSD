@@ -76,4 +76,4 @@ cache:
 script:
   - mkdir -p $HOME/USDinst
   - mkdir -p $HOME/USDgen
-  - python build_scripts/build_usd.py -v --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
+  - travis_wait 90 python build_scripts/build_usd.py -v --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
