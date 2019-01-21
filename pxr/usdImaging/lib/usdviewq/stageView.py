@@ -806,6 +806,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     def __init__(self, parent=None, dataModel=None, printTiming=False):
 
+        self._isGLCoreContext = False
         glFormat = QtOpenGL.QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
@@ -813,6 +814,13 @@ class StageView(QtOpenGL.QGLWidget):
             glFormat.setSamples(4)
         # XXX: for OSX (QT5 required)
         # glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
+
+        coreGL = os.getenv("USDVIEW_ENABLE_COREGL", "0")
+        if coreGL == "1":
+            glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
+            glFormat.setVersion(4,1)
+            self._isGLCoreContext = True
+
         super(StageView, self).__init__(glFormat, parent)
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
@@ -1558,8 +1566,9 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnableVertexAttribArray(0)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
 
-        GL.glEnable(GL.GL_LINE_STIPPLE)
-        GL.glLineStipple(2,0xAAAA)
+        if not self._isGLCoreContext:
+            GL.glEnable(GL.GL_LINE_STIPPLE)
+            GL.glLineStipple(2,0xAAAA)
 
         GL.glUseProgram(glslProgram.program)
         matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
@@ -1574,7 +1583,9 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glUseProgram(0)
 
-        GL.glDisable(GL.GL_LINE_STIPPLE)
+        if not self._isGLCoreContext:
+            GL.glDisable(GL.GL_LINE_STIPPLE)
+
         if (self._vao != 0):
             GL.glBindVertexArray(0)
 
