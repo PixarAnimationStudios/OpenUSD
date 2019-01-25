@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -2849,6 +2849,65 @@ struct _CopyFaceVaryingInterpolateBoundary : _CopyGeneric<IInt32Property> {
     }
 };
 
+
+/// Base class to copy attributes of an alembic faceset to a USD GeomSubset
+struct _CopyFaceSetBase {
+    IFaceSet object;
+
+    _CopyFaceSetBase(const IFaceSet& object_) : object(object_) { }
+
+    bool operator()(_IsValidTag) const
+    {
+        return object.valid();
+    }
+
+    const MetaData& operator()(_MetaDataTag) const
+    {
+        return object.getMetaData();
+    }
+
+    _AlembicTimeSamples operator()(_SampleTimesTag) const
+    {
+        return _GetSampleTimes(object);
+    }
+};
+
+/// Class to copy faceset isPartition into the family name
+struct _CopyFaceSetFamilyName : _CopyFaceSetBase {
+    using _CopyFaceSetBase::operator();
+
+    _CopyFaceSetFamilyName(const IFaceSet& object_) 
+        : _CopyFaceSetBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        // Because the absence of the ".facesExclusive" will trigger an
+        // exception in IFaceSetSchema, we need to manually deal with the
+        // default state (and discard the exception thrown erroneously by
+        // getFaceExclusivity()).
+        //
+        // This is a bug in Alembic that has been fixed in Alembic 1.7.2, but 
+        // the mininum required version for USD is 1.5.2. This workaround must 
+        // remain until the required Alembic version is changed for USD.
+        //
+        // The Alembic issue can be tracked here:
+        // https://github.com/alembic/alembic/issues/129
+        bool isPartition = false;
+        try {
+            isPartition = object.getSchema().getFaceExclusivity() == kFaceSetExclusive;
+        }
+        catch(const Alembic::Util::Exception&) {}
+
+        if (isPartition)
+        {
+            return dst.Set(UsdGeomTokens->nonOverlapping);
+        }
+
+        return dst.Set(UsdGeomTokens->unrestricted);
+    }
+};
+
 static
 TfToken
 _ConvertCurveBasis(BasisType value)
@@ -3262,6 +3321,44 @@ _ReadSubD(_PrimReaderContext* context)
 
     // Read texture coordinates
     _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
+}
+
+static
+void
+_ReadFaceSet(_PrimReaderContext* context)
+{
+    typedef IFaceSet Type;
+
+    // Wrap the object.
+    if (!Type::matches(context->GetObject().getHeader())) {
+        // Not of type Type.
+        return;
+    }
+
+    Type object(context->GetObject(), kWrapExisting);
+
+    // Add child properties under schema.
+    context->SetSchema(Type::schema_type::info_type::defaultName());
+
+    // Set prim type.  This depends on the CurveType of the curve.
+    context->GetPrim().typeName = UsdAbcPrimTypeNames->GeomSubset;
+
+    context->AddProperty(
+        UsdGeomTokens->indices,
+        SdfValueTypeNames->IntArray,
+        _CopyGeneric<IInt32ArrayProperty, int>(
+            context->ExtractSchema(".faces")));
+    context->AddUniformProperty(
+        UsdGeomTokens->elementType,
+        SdfValueTypeNames->Token,
+        _CopySynthetic(UsdGeomTokens->face));
+    context->AddUniformProperty(
+        UsdGeomTokens->familyName,
+        SdfValueTypeNames->Token,
+        _CopyFaceSetFamilyName(object));
+
+    // Consume properties implicitly handled above.
+    context->Extract(Type::schema_type::info_type::defaultName());
 }
 
 static
@@ -3802,6 +3899,9 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
         .AppendReader(_ReadArbGeomParams)
         .AppendReader(_ReadUserProperties)
         .AppendReader(_ReadOther)
+        ;
+    schema.AddType(FaceSetSchemaInfo::title())
+        .AppendReader(_ReadFaceSet)
         ;
     schema.AddType(CurvesSchemaInfo::title())
         .AppendReader(_ReadOrientation)
