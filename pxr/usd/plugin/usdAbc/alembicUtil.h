@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -94,6 +94,7 @@ using namespace ::Alembic::Abc;
     (PseudoRoot) \
     (Scope) \
     (Xform) \
+    (GeomSubset)\
     /* end */
 TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
 

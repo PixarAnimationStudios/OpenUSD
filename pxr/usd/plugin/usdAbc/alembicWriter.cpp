@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -1932,7 +1932,6 @@ _CopyPointIds(const VtValue& src)
     return _SampleForAlembic(std::vector<uint64_t>(value.begin(), value.end()));
 }
 
-
 // ----------------------------------------------------------------------------
 
 //
@@ -2887,6 +2886,65 @@ _WritePolyMesh(_PrimWriterContext* context)
         context->AddTimeSampling(context->GetSampleTimesUnion()));
 }
 
+static
+void
+_WriteFaceSet(_PrimWriterContext* context)
+{
+    typedef OFaceSet Type;
+
+    const _WriterSchema& schema = context->GetSchema();
+
+    // Create the object and make it the parent.
+    shared_ptr<Type> object(new Type(context->GetParent(),
+                                     context->GetAlembicPrimName(),
+                                     _GetPrimMetadata(*context)));
+    context->SetParent(object);
+
+    // Collect the properties we need.
+    context->SetSampleTimesUnion(UsdAbc_TimeSamples());
+
+    UsdSamples indices =
+        context->ExtractSamples(UsdGeomTokens->indices,
+                                SdfValueTypeNames->IntArray);
+    UsdSamples familyName =
+        context->ExtractSamples(UsdGeomTokens->familyName,
+                                SdfValueTypeNames->Token);
+
+    // Copy all the samples.
+    typedef Type::schema_type::Sample SampleT;
+    SampleT sample;
+
+    for (double time : context->GetSampleTimesUnion()) {
+        // Build the sample.
+        sample.reset();
+        _SampleForAlembic alembicFaces =
+        _Copy(schema,
+              time, indices,
+              &sample, &SampleT::setFaces);
+
+        // Write the sample.
+        object->getSchema().set(sample);
+    }
+
+    // Face set exclusivity is not a property of the sample. Instead, it's set 
+    // on the object schema and not time sampled.
+    FaceSetExclusivity faceSetExclusivity = kFaceSetNonExclusive;
+    if (!familyName.IsEmpty())
+    {
+        const TfToken& value = familyName.Get(0.0f).UncheckedGet<TfToken>();
+        if (!value.IsEmpty() && 
+            (value == UsdGeomTokens->partition || 
+             value == UsdGeomTokens->nonOverlapping)) {
+            faceSetExclusivity = kFaceSetExclusive;
+        }
+    }
+    object->getSchema().setFaceExclusivity(faceSetExclusivity);
+
+    // Set the time sampling.
+    object->getSchema().setTimeSampling(
+        context->AddTimeSampling(context->GetSampleTimesUnion()));
+}
+
 // As of Alembic-1.5.1, OSubD::schema_type::Sample has a bug:
 // setHoles() actually sets cornerIndices.  The member, m_holes, is
 // protected so we subclass and fix setHoles().
@@ -3471,6 +3529,9 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         .AppendWriter(_WriteArbGeomParams)
         .AppendWriter(_WriteUserProperties)
         .AppendWriter(_WriteOther)
+        ;
+    schema.AddType(UsdAbcPrimTypeNames->GeomSubset)
+        .AppendWriter(_WriteFaceSet)
         ;
 
     // This handles the root.
