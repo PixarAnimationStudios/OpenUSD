@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<materialx version="1.35" cms="ocio" colorspace="lin_rec709">
+<materialx version="1.36" cms="ocio" colorspace="lin_rec709">
   <nodegraph name="nodegraph1" doc="this is a nodegraph" uicolor="1,1,1">
     <image name="img1" type="color3" uicolor="0,0,1">
       <parameter name="file" type="filename" value="layer1.tif" doc="foo" uicolor="0,1,1"/>
@@ -13,7 +13,7 @@
     <mix name="n0" type="color3">
       <input name="fg" type="color3" nodename="img1"/>
       <input name="bg" type="color3" nodename="img2"/>
-      <input name="mask" type="float" nodename="img3"/>
+      <input name="mix" type="float" nodename="img3"/>
     </mix>
     <output name="diffuse" type="color3" nodename="n1" doc="this is an output" xpos="0" ypos="0"/>
   </nodegraph>
@@ -34,7 +34,7 @@
     <mix name="n3" type="color3">
       <input name="fg" type="color3" nodename="img1"/>
       <input name="bg" type="color3" nodename="img2"/>
-      <input name="mask" type="float" nodename="img3"/>
+      <input name="mix" type="float" nodename="img3"/>
     </mix>
     <output name="diffuse" type="color3" nodename="n4"/>
   </nodegraph>
@@ -76,7 +76,7 @@
     <mix name="n8" type="color3">
       <input name="fg" type="color3" nodename="n7"/>
       <input name="bg" type="color3" nodename="n6"/>
-      <input name="mask" type="float" nodename="img3"/>
+      <input name="mix" type="float" nodename="img3"/>
     </mix>
     <texcoord name="t1" type="vector2"/>
     <noise2d name="n9" type="color3">
@@ -122,7 +122,7 @@
   <mix name="n8" type="color3">
     <input name="fg" type="color3" nodename="n7"/>
     <input name="bg" type="color3" nodename="n6"/>
-    <input name="mask" type="float" nodename="img3"/>
+    <input name="mix" type="float" nodename="img3"/>
   </mix>
   <texcoord name="t1" type="vector2"/>
   <multiply name="m1" type="vector2">
