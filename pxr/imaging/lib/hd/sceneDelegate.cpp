@@ -435,6 +435,13 @@ HdSceneDelegate::GetExtComputationPrimvarDescriptors(
     return HdExtComputationPrimvarDescriptorVector();
 }
 
+/*virtual*/
+VtValue
+HdSceneDelegate::GetExtComputationInput(SdfPath const& computationId,
+                                        TfToken const& input)
+{
+    return VtValue();
+}
 
 /*virtual*/
 std::string

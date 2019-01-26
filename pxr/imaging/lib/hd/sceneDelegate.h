@@ -623,6 +623,12 @@ public:
     GetExtComputationPrimvarDescriptors(SdfPath const& id,
                                         HdInterpolation interpolationMode);
 
+    /// Returns a single value for a given computation id and input token.
+    /// The token may be a computation input or a computation config parameter.
+    HD_API
+    virtual VtValue GetExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input);
+
     /// Returns the kernel source assigned to the computation at the path id.
     /// If the string is empty the computation has no GPU kernel and the
     /// CPU callback should be used.
