@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdx/colorizeTask.h"
+#include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
@@ -51,6 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (simpleLightTask)
     (shadowTask)
     (colorizeTask)
+    (colorCorrectionTask)
     (camera)
     (renderBufferDescriptor)
 );
@@ -120,6 +122,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     _CreateLightingTask();
     _CreateShadowTask();
     _CreateColorizeTask();
+    _CreateColorCorrectionTask();
 }
 
 void
@@ -226,6 +229,21 @@ HdxTaskController::_CreateColorizeTask()
         taskParams);
 }
 
+void
+HdxTaskController::_CreateColorCorrectionTask()
+{
+    _colorCorrectionTaskId = GetControllerId().AppendChild(
+        _tokens->colorCorrectionTask);
+
+    HdxColorCorrectionTaskParams taskParams;
+
+    GetRenderIndex()->InsertTask<HdxColorCorrectionTask>(&_delegate,
+        _colorCorrectionTaskId);
+
+    _delegate.SetParameter(_colorCorrectionTaskId, HdTokens->params,
+        taskParams);
+}
+
 HdxTaskController::~HdxTaskController()
 {
     GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
@@ -235,6 +253,7 @@ HdxTaskController::~HdxTaskController()
         _simpleLightTaskId,
         _shadowTaskId,
         _colorizeTaskId,
+        _colorCorrectionTaskId
     };
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         GetRenderIndex()->RemoveTask(tasks[i]);
@@ -286,6 +305,20 @@ HdxTaskController::GetTasks()
         if (!colorizeParams.aovName.IsEmpty()) {
             tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Color-Correction - should be LAST task in the list
+    const HdxColorCorrectionTaskParams& colorCorrectionParams =
+        _delegate.GetParameter<HdxColorCorrectionTaskParams>(
+            _colorCorrectionTaskId, HdTokens->params);
+
+    bool useColorCorrect = colorCorrectionParams.colorCorrectionMode != 
+                           HdColorCorrectionTokens->disabled &&
+                           !colorCorrectionParams.colorCorrectionMode.IsEmpty();
+
+    if (useColorCorrect) {
+        tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
     }
 
     return tasks;
@@ -892,6 +925,21 @@ HdxTaskController::IsConverged() const
     return static_cast<HdxRenderTask*>(
         GetRenderIndex()->GetTask(_renderTaskId).get())
         ->IsConverged();
+}
+
+void 
+HdxTaskController::SetColorCorrectionParams(
+    HdxColorCorrectionTaskParams const& params)
+{
+    HdxColorCorrectionTaskParams oldParams = 
+        _delegate.GetParameter<HdxColorCorrectionTaskParams>(
+            _colorCorrectionTaskId, HdTokens->params);
+
+    if (params != oldParams) {
+        _delegate.SetParameter(_colorCorrectionTaskId, HdTokens->params,params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

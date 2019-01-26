@@ -7,6 +7,12 @@ if (NOT ${PXR_ENABLE_GL_SUPPORT})
     return()
 endif()
 
+set (optionalCppFiles "")
+if (PXR_BUILD_OPENCOLORIO_PLUGIN)
+    list(APPEND optionalLibs ${OCIO_LIBRARIES})
+    list(APPEND optionalIncludeDirs ${OCIO_INCLUDE_DIRS})
+endif()
+
 pxr_library(hdx
     LIBRARIES
         plug
@@ -22,12 +28,15 @@ pxr_library(hdx
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
+        ${optionalLibs}
 
     INCLUDE_DIRS
         ${GLEW_INCLUDE_DIR}
+        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
         colorizeTask
+        colorCorrectionTask
         compositor
         drawTargetRenderPass
         drawTargetTask
@@ -63,6 +72,7 @@ pxr_library(hdx
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/colorCorrection.glslfx
         shaders/fullscreen.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
