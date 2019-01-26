@@ -829,9 +829,6 @@ public:
     static bool IsTransformationAffectedByAttrNamed(const TfToken &attrName);
 
 private:
-    // XXX: Only exists for temporary backwards compatibility.
-    UsdAttribute _GetTransformAttr() const;
-
     // Extracts the value of the xformOpOrder attribute. Returns false if 
     // the xformOpOrder attribute doesn't exist on the prim (eg. when the prim 
     // type is incompatible or if it's a pure over). 

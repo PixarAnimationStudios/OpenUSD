@@ -864,10 +864,4 @@ UsdGeomXformable::IsTransformationAffectedByAttrNamed(const TfToken &attrName)
            UsdGeomXformOp::IsXformOp(attrName);
 }
 
-UsdAttribute
-UsdGeomXformable::_GetTransformAttr() const
-{
-    return GetPrim().GetAttribute(_tokens->transform);
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
