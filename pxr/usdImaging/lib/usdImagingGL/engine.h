@@ -37,9 +37,11 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
+#include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 
+#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
@@ -346,6 +348,27 @@ public:
     void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
+    /// (Optional) Enable the use of an (internal) 16F draw target.
+    /// A 16F or higher framebuffer is needed when color correction is enabled.
+    USDIMAGINGGL_API
+    void SetEnableFloatPointDrawTarget(bool state);
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Color Correction
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Set \p id to one of the HdColorCorrectionTokens.
+    /// \p framebufferResolution should be the size of the bound framebuffer
+    /// that will be color corrected. A 16F framebuffer should be bound when
+    /// using color correction. See SetEnableFloatPointDrawTarget().
+    USDIMAGINGGL_API
+    void SetColorCorrectionSettings(
+        TfToken const& id, 
+        GfVec2i const& framebufferResolution);
+
     /// @}
 
     // ---------------------------------------------------------------------
@@ -397,6 +420,12 @@ protected:
 
     static TfToken _GetDefaultRendererPluginId();
 
+    // Creates and binds the internal draw-target that Hydra draws into.
+    void _BindInternalDrawTarget(UsdImagingGLRenderParams const& params);
+
+    // Restores clients framebuffer and copies our result into their framebuffer
+    void _RestoreClientDrawTarget(UsdImagingGLRenderParams const& params);
+
     HdEngine _engine;
 
     HdRenderIndex *_renderIndex;
@@ -424,6 +453,10 @@ protected:
 
     TfTokenVector _renderTags;
 
+    GfVec4i _restoreViewport;
+    bool _useFloatPointDrawTarget;
+    HdxCompositor _compositor;
+    GlfDrawTargetRefPtr _drawTarget;
 
     // An implementation of much of the engine functionality that doesn't
     // invoke any of the advanced Hydra features.  It is kept around for 
@@ -431,7 +464,6 @@ protected:
     // time we expect this to be null.  When it is not null, none of the other
     // member variables of this class are used.
     std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
-
 };
 
 

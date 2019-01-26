@@ -83,5 +83,8 @@ wrapRenderParams()
         .def_readwrite("enableSceneMaterials", 
             &Params::enableSceneMaterials)
         .def_readwrite("enableUsdDrawModes", &Params::enableUsdDrawModes)
+        .def_readwrite("colorCorrectionMode", &Params::colorCorrectionMode)
+        .def_readwrite("clearColor", &Params::clearColor)
+        .def_readwrite("renderResolution", &Params::renderResolution)
         ;
 }
