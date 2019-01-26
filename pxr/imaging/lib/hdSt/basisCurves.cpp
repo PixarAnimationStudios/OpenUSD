@@ -194,20 +194,42 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
+    TfToken curveType = _topology->GetCurveType();
+    TfToken curveBasis = _topology->GetCurveBasis();
+    bool supportsRefinement = _SupportsRefinement(_refineLevel);
+    if (!supportsRefinement) {
+        // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
+        // when unrefined can be confusing. Should we continue to do this?
+        TF_DEBUG(HD_RPRIM_UPDATED).
+            Msg("HdStBasisCurves(%s) - Downcasting curve type to linear because"
+                " refinement is disabled.\n", GetId().GetText());
+        curveType = HdTokens->linear;
+        curveBasis = TfToken();
+    }
+
     HdSt_BasisCurvesShaderKey::DrawStyle drawStyle = 
         HdSt_BasisCurvesShaderKey::WIRE;
     HdSt_BasisCurvesShaderKey::NormalStyle normalStyle = 
         HdSt_BasisCurvesShaderKey::HAIR;
-
-    TfToken curveType = _topology->GetCurveType();
-    TfToken curveBasis = _topology->GetCurveBasis();
-
-    if (_SupportsRefinement(_refineLevel)){
-        bool supportsWidths = desc.geomStyle == HdBasisCurvesGeomStylePatch &&
-            _SupportsUserWidths(drawItem);
-        if (supportsWidths){
-            bool supportsNormals = _SupportsUserNormals(drawItem);
-            if (supportsNormals){
+    switch (desc.geomStyle) {
+    case HdBasisCurvesGeomStylePoints:
+    {
+        // XXX: Points rendering for basis curves isn't supported yet.
+        drawStyle = HdSt_BasisCurvesShaderKey::WIRE;
+        normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+        break;
+    }
+    case HdBasisCurvesGeomStyleWire:
+    {
+        drawStyle = HdSt_BasisCurvesShaderKey::WIRE;
+        normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+        break;
+    }
+    case HdBasisCurvesGeomStylePatch:
+    {
+        if (_SupportsRefinement(_refineLevel) &&
+            _SupportsUserWidths(drawItem)) {
+            if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
             }
@@ -226,14 +248,13 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                 }
             }
         }
+        break;
     }
-    else{
-        TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStBasisCurves(%s) - Downcasting curve type to linear because refinement is disabled.\n",
-                GetId().GetText());
-        curveType = HdTokens->linear;
-        curveBasis = TfToken();
-
+    default:
+    {
+        TF_CODING_ERROR("Invalid geomstyle in basis curve %s repr desc.",
+                        GetId().GetText());
+    }
     }
 
     TF_DEBUG(HD_RPRIM_UPDATED).
