@@ -682,7 +682,8 @@ PcpErrorInvalidSublayerPath::ToString() const
     return TfStringPrintf("Could not load sublayer @%s@ of layer @%s@%s%s; "
                           "skipping.", 
                           sublayerPath.c_str(), 
-                          layer->GetIdentifier().c_str(),
+                          layer ? layer->GetIdentifier().c_str()
+                                : "<NULL>",
                           messages.empty() ? "" : " -- ",
                           messages.c_str());
 }
