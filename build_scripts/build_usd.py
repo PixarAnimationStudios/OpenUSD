@@ -26,6 +26,7 @@ from distutils.spawn import find_executable
 import argparse
 import contextlib
 import datetime
+import distutils
 import fnmatch
 import glob
 import multiprocessing
@@ -74,17 +75,22 @@ def Linux():
 def MacOS():
     return platform.system() == "Darwin"
 
+def GetCommandOutput(command):
+    """Executes the specified command and returns output or None."""
+    try:
+        return subprocess.check_output(
+            shlex.split(command), stderr=subprocess.STDOUT).strip()
+    except subprocess.CalledProcessError:
+        pass
+    return None
+
 def GetXcodeDeveloperDirectory():
     """Returns the active developer directory as reported by 'xcode-select -p'.
     Returns None if none is set."""
     if not MacOS():
         return None
 
-    try:
-        return subprocess.check_output("xcode-select -p").strip()
-    except subprocess.CalledProcessError:
-        pass
-    return None
+    return GetCommandOutput("xcode-select -p")
 
 def GetVisualStudioCompilerAndVersion():
     """Returns a tuple containing the path to the Visual Studio compiler
@@ -97,11 +103,10 @@ def GetVisualStudioCompilerAndVersion():
     if msvcCompiler:
         match = re.search(
             "Compiler Version (\d+).(\d+).(\d+)", 
-            subprocess.check_output("cl", stderr=subprocess.STDOUT))
+            GetCommandOutput("cl"))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
-
 
 def IsVisualStudio2017OrGreater():
     MSVC_2017_COMPILER_VERSION = (19, 10, 00000)
@@ -111,6 +116,42 @@ def IsVisualStudio2017OrGreater():
         return version >= MSVC_2017_COMPILER_VERSION
     return False
 
+def GetPythonLibraryAndIncludeDir():
+    """Returns tuple containing the path to the Python shared library
+    and include directory corresponding to the version of python on
+    the users PATH. Returns None if either directory could not be
+    determined. This function always returns None on Windows.
+
+    This function is primarily used to determine which version of
+    Python USD should link against when multiple versions are installed.
+    """
+    # We just skip all this on Windows. The call to get_config_var('LIBDIR')
+    # doesn't work on Windows, so we'd have to find some other way to get
+    # the same information. But, users on Windows are unlikely to have 
+    # multiple copies of the same version of Python, so the problem this 
+    # function is intended to solve doesn't arise on that platform.
+    if Windows():
+        return None
+
+    cmd = ("import distutils.sysconfig; "
+           "print distutils.sysconfig.get_python_inc()")
+    pythonIncludeDir = GetCommandOutput("python -c '{}'".format(cmd))
+
+    cmd = ("import distutils.sysconfig; "
+           "print distutils.sysconfig.get_config_var(\"LIBDIR\")")
+    pythonLibPath = GetCommandOutput("python -c '{}'".format(cmd))
+    if pythonLibPath:
+        if MacOS():
+            pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.dylib")
+        elif Linux():
+            pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.so")
+        else:
+            pythonLibPath = None
+
+    if pythonIncludeDir and pythonLibPath:
+        return (pythonLibPath, pythonIncludeDir)
+
+    return None
 
 def GetCPUCount():
     try:
@@ -417,16 +458,10 @@ class PythonDependency(object):
     def Exists(self, context):
         # If one of the modules in our list exists we are good
         for moduleName in self.moduleNames:
-            try:
-                # Eat all output; we just care if the import succeeded or not.
-                subprocess.check_output(shlex.split(
-                    'python -c "import {module}"'.format(module=moduleName)),
-                    stderr=subprocess.STDOUT)
+            cmd = "python -c 'import {module}'".format(module=moduleName)
+            if GetCommandOutput(cmd) != None:
                 return True
-            except subprocess.CalledProcessError:
-                pass
         return False
-
 
 def AnyPythonDependencies(deps):
     return any([type(d) is PythonDependency for d in deps])
@@ -463,8 +498,6 @@ elif Windows():
     if IsVisualStudio2017OrGreater():
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
-
-
 
 def InstallBoost(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
@@ -513,7 +546,6 @@ def InstallBoost(context, force, buildArgs):
             b2_settings.append("-a")
 
         if Windows():
-
             if IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
             else:
@@ -922,6 +954,21 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+
+            # CMake has trouble finding the library and include directories
+            # when there are multiple versions of Python installed. This
+            # can lead to crashes due to USD being linked against one
+            # version of Python but running through some other Python
+            # interpreter version.
+            #
+            # To avoid this, we try to determine these paths from Python
+            # itself rather than rely on CMake's heuristics.
+            pyLibPathAndIncPath = GetPythonLibraryAndIncludeDir()
+            if pyLibPathAndIncPath:
+                extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
+                                 .format(pyLibPath=pyLibPathAndIncPath[0]))
+                extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
+                                 .format(pyIncPath=pyLibPathAndIncPath[1]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
