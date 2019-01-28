@@ -738,41 +738,5 @@ UsdShadeMaterial::GetMaterialBindSubsetsFamilyType(
 {
     return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);
 }
-   
-// --------------------------------------------------------------------- //
-
-/* static */
-UsdGeomFaceSetAPI 
-UsdShadeMaterial::CreateMaterialFaceSet(const UsdPrim &prim)
-{
-    if (HasMaterialFaceSet(prim))
-        return UsdGeomFaceSetAPI(prim, _tokens->material);
-
-    // No face can be bound to more than one Material, hence set isPartition to 
-    // true.
-    UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
-    faceSet.SetIsPartition(true);
-
-    return faceSet;
-}
-
-/* static */
-UsdGeomFaceSetAPI 
-UsdShadeMaterial::GetMaterialFaceSet(const UsdPrim &prim) 
-{
-    if (HasMaterialFaceSet(prim))
-        return UsdGeomFaceSetAPI(prim, _tokens->material);
-
-    return UsdGeomFaceSetAPI();
-}
-
-/* static */
-bool 
-UsdShadeMaterial::HasMaterialFaceSet(const UsdPrim &prim)
-{
-    UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
-    bool isPartition=false;
-    return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
