@@ -94,26 +94,28 @@ def GetXcodeDeveloperDirectory():
 
 def GetVisualStudioCompilerAndVersion():
     """Returns a tuple containing the path to the Visual Studio compiler
-    and a tuple for its version, e.g. (19, 00, 24210). If the compiler is
-    not found, returns None."""
+    and a tuple for its version, e.g. (14, 0). If the compiler is not found
+    or version number cannot be determined, returns None."""
     if not Windows():
         return None
 
     msvcCompiler = find_executable('cl')
     if msvcCompiler:
+        # VisualStudioVersion environment variable should be set by the
+        # Visual Studio Command Prompt.
         match = re.search(
-            "Compiler Version (\d+).(\d+).(\d+)", 
-            GetCommandOutput("cl"))
+            "(\d+).(\d+)", 
+            os.environ.get("VisualStudioVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
 def IsVisualStudio2017OrGreater():
-    MSVC_2017_COMPILER_VERSION = (19, 10, 00000)
+    VISUAL_STUDIO_2017_VERSION = (15, 0)
     msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
     if msvcCompilerAndVersion:
         _, version = msvcCompilerAndVersion
-        return version >= MSVC_2017_COMPILER_VERSION
+        return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
 def GetPythonLibraryAndIncludeDir():
