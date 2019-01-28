@@ -2820,14 +2820,10 @@ UsdImagingDelegate::GetMaterialPrimvars(SdfPath const &materialId)
     }
 
     SdfPath usdPath = GetPathForUsd(materialId);
+    TfTokenVector materialPrimvars;
+    _valueCache.FindMaterialPrimvars(usdPath, &materialPrimvars);
 
-    VtValue vtMaterialPrimvars;
-    if (_valueCache.FindMaterialPrimvars(usdPath, &vtMaterialPrimvars)) {
-        if (vtMaterialPrimvars.IsHolding<TfTokenVector>()) {
-            return vtMaterialPrimvars.Get<TfTokenVector>();
-        }
-    }
-    return TfTokenVector();
+    return materialPrimvars;
 }
 
 VtDictionary
@@ -2868,7 +2864,7 @@ UsdImagingDelegate::GetExtComputationSceneInputNames(
 
     SdfPath usdPath = GetPathForUsd(computationId);
 
-    VtValue inputNames;
+    TfTokenVector inputNames;
     if (!_valueCache.ExtractExtComputationSceneInputNames(
             usdPath, &inputNames)) {
 
@@ -2881,10 +2877,7 @@ UsdImagingDelegate::GetExtComputationSceneInputNames(
                       usdPath, &inputNames));
     }
 
-    if (inputNames.IsHolding<TfTokenVector>()) {
-        return inputNames.UncheckedGet<TfTokenVector>();
-    }
-    return TfTokenVector();
+    return inputNames;
 }
 
 HdExtComputationInputDescriptorVector

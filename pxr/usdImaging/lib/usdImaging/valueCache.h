@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/version.h"
@@ -356,11 +357,32 @@ public:
             _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
         }
 
-        _Erase<VtValue>(Key::ExtComputationSceneInputNames(path));
+        TfTokenVector sceneInputNames;
+        if (FindExtComputationSceneInputNames(path, &sceneInputNames)) {
+            // Add computation "config" params to the list of inputs
+            sceneInputNames.emplace_back(HdTokens->dispatchCount);
+            sceneInputNames.emplace_back(HdTokens->elementCount);
+            for (TfToken const& input : sceneInputNames) {
+                _Erase<VtValue>(Key(path, input));
+            }
+
+            _Erase<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
+        }
+        
+        // Computed inputs are tied to the computation that computes them.
+        // We don't walk the dependency chain to clear them.
         _Erase<HdExtComputationInputDescriptorVector>(
             Key::ExtComputationInputs(path));
-        _Erase<HdExtComputationOutputDescriptorVector>(
-            Key::ExtComputationOutputs(path));
+
+        HdExtComputationOutputDescriptorVector outputDescs;
+        if (FindExtComputationOutputs(path, &outputDescs)) {
+            for (auto const& desc : outputDescs) {
+                _Erase<VtValue>(Key(path, desc.name));
+            }
+            _Erase<HdExtComputationOutputDescriptorVector>(
+                Key::ExtComputationOutputs(path));
+        }
+
         _Erase<HdExtComputationPrimvarDescriptorVector>(
             Key::ExtComputationPrimvars(path));
         _Erase<std::string>(Key::ExtComputationKernel(path));
@@ -417,8 +439,8 @@ public:
     SdfPath& GetMaterialId(SdfPath const& path) const {
         return _Get<SdfPath>(Key::MaterialId(path));
     }
-    VtValue& GetMaterialPrimvars(SdfPath const& path) const {
-        return _Get<VtValue>(Key::MaterialPrimvars(path));
+    TfTokenVector& GetMaterialPrimvars(SdfPath const& path) const {
+        return _Get<TfTokenVector>(Key::MaterialPrimvars(path));
     }
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
@@ -439,8 +461,8 @@ public:
     VtValue& GetMaterialParam(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
-    VtValue& GetExtComputationSceneInputNames(SdfPath const& path) const {
-        return _Get<VtValue>(Key::ExtComputationSceneInputNames(path));
+    TfTokenVector& GetExtComputationSceneInputNames(SdfPath const& path) const {
+        return _Get<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
     }
     HdExtComputationInputDescriptorVector&
     GetExtComputationInputs(SdfPath const& path) const {
@@ -516,7 +538,8 @@ public:
     bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
         return _Find(Key::MaterialId(path), value);
     }
-    bool FindMaterialPrimvars(SdfPath const& path, VtValue* value) const {
+    bool FindMaterialPrimvars(SdfPath const& path,
+                              TfTokenVector* value) const {
         return _Find(Key::MaterialPrimvars(path), value);
     }
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
@@ -538,7 +561,8 @@ public:
     bool FindMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
     }
-    bool FindExtComputationSceneInputNames(SdfPath const& path, VtValue* value) const {
+    bool FindExtComputationSceneInputNames(SdfPath const& path,
+                                           TfTokenVector* value) const {
         return _Find(Key::ExtComputationSceneInputNames(path), value);
     }
     bool FindExtComputationInputs(
@@ -612,7 +636,7 @@ public:
     bool ExtractMaterialId(SdfPath const& path, SdfPath* value) {
         return _Extract(Key::MaterialId(path), value);
     }
-    bool ExtractMaterialPrimvars(SdfPath const& path, VtValue* value) {
+    bool ExtractMaterialPrimvars(SdfPath const& path, TfTokenVector* value) {
         return _Extract(Key::MaterialPrimvars(path), value);
     }
     bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
@@ -637,7 +661,8 @@ public:
     bool ExtractMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
     }
-    bool ExtractExtComputationSceneInputNames(SdfPath const& path, VtValue* value) {
+    bool ExtractExtComputationSceneInputNames(SdfPath const& path,
+                                              TfTokenVector* value) {
         return _Extract(Key::ExtComputationSceneInputNames(path), value);
     }
     bool ExtractExtComputationInputs(
@@ -668,6 +693,7 @@ public:
     {
         _GarbageCollect(_boolCache);
         _GarbageCollect(_tokenCache);
+        _GarbageCollect(_tokenVectorCache);
         _GarbageCollect(_rangeCache);
         _GarbageCollect(_cullStyleCache);
         _GarbageCollect(_matrixCache);
@@ -695,6 +721,10 @@ private:
     typedef _TypedCache<TfToken> _TokenCache;
     mutable _TokenCache _tokenCache;
 
+    // materialPrimvars (names), extComputationSceneInputNames
+    typedef _TypedCache<TfTokenVector> _TokenVectorCache;
+    mutable _TokenVectorCache _tokenVectorCache;
+
     // extent
     typedef _TypedCache<GfRange3d> _RangeCache;
     mutable _RangeCache _rangeCache;
@@ -715,7 +745,7 @@ private:
     typedef _TypedCache<SdfPath> _SdfPathCache;
     mutable _SdfPathCache _sdfPathCache;
 
-    // primvars, topology, materialResources, materialPrimvars
+    // primvars, topology, materialResources, materialPrimvars, extCompInputs
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 
@@ -749,6 +779,9 @@ private:
     }
     void _GetCache(_TokenCache **cache) const {
         *cache = &_tokenCache;
+    }
+    void _GetCache(_TokenVectorCache **cache) const {
+        *cache = &_tokenVectorCache;
     }
     void _GetCache(_RangeCache **cache) const {
         *cache = &_rangeCache;
