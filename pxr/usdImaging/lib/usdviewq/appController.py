@@ -3025,21 +3025,17 @@ class AppController(QtCore.QObject):
             for prim in self._dataModel.selection.getPrims()]
         if len(selectedItems) > 0:
             self._ui.primView.setCurrentItem(selectedItems[0])
-        for item in selectedItems:
-            item.setSelected(True)
-            self._ui.primView.scrollToItem(item)
+        self._ui.primView.updateSelection(selectedItems, [])
 
     def _updatePrimViewSelection(self, added, removed):
         """Do an incremental update to primView's selection using the added and
         removed prim paths from the selectionDataModel.
         """
-        for path in added:
-            item = self._getItemAtPath(path, ensureExpanded=True)
-            item.setSelected(True)
-            self._ui.primView.scrollToItem(item)
-        for path in removed:
-            item = self._getItemAtPath(path)
-            item.setSelected(False)
+        addedItems = [ 
+            self._getItemAtPath(path, ensureExpanded=True) 
+            for path in added ]
+        removedItems = [ self._getItemAtPath(path) for path in removed ]
+        self._ui.primView.updateSelection(addedItems, removedItems)
 
     def _primsFromSelectionRanges(self, ranges):
         """Iterate over all prims in a QItemSelection from primView."""
@@ -3067,15 +3063,28 @@ class AppController(QtCore.QObject):
                     self._dataModel.selection.removePrim(prim)
 
     def _itemClicked(self, item, col):
-        # toggleVis() returns True if the click caused a visibility change.
-        if col == PrimViewColumnIndex.VIS and item.toggleVis():
-            self.editComplete('Updated prim visibility')
+        # If user clicked in a selected row, we will toggle all selected items;
+        # otherwise, just the clicked one.
+        if col == PrimViewColumnIndex.VIS:
+            itemsToToggle = [ item ]
+            if item.isSelected():
+                itemsToToggle =  [
+                    self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
+                    for prim in self._dataModel.selection.getPrims()]
+            changedAny = False
             with Timer() as t:
-                PrimViewItem.propagateVis(item)
+                for toToggle in itemsToToggle:
+                    # toggleVis() returns True if the click caused a visibility
+                    # change.
+                    changedOne = toToggle.toggleVis()
+                    if changedOne:
+                        PrimViewItem.propagateVis(toToggle)
+                        changedAny = True
+            if changedAny:
+                self.editComplete('Updated prim visibility')
             if self._printTiming:
                 t.PrintTime("update vis column")
-            self._updatePropertyInspector(
-                obj=self._dataModel.selection.getFocusPrim())
+            
 
     def _itemPressed(self, item, col):
         if col == PrimViewColumnIndex.DRAWMODE:
