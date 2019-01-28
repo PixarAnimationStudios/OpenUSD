@@ -176,6 +176,26 @@ public:
             static TfToken attr("surfaceShaderParams");
             return Key(path, attr);
         }
+        static Key ExtComputationSceneInputNames(SdfPath const& path) {
+            static TfToken attr("extComputationSceneInputNames");
+            return Key(path, attr);
+        }
+        static Key ExtComputationInputs(SdfPath const& path) {
+            static TfToken attr("extComputationInputs");
+            return Key(path, attr);
+        }
+        static Key ExtComputationOutputs(SdfPath const& path) {
+            static TfToken attr("extComputationOutputs");
+            return Key(path, attr);
+        }
+        static Key ExtComputationPrimvars(SdfPath const& path) {
+            const TfToken attr("extComputationPrimvars");
+            return Key(path, attr);
+        }
+        static Key ExtComputationKernel(SdfPath const& path) {
+            const TfToken attr("extComputationKernel");
+            return Key(path, attr);
+        }
     };
 
     UsdImagingValueCache()
@@ -335,6 +355,15 @@ public:
             }
             _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
         }
+
+        _Erase<VtValue>(Key::ExtComputationSceneInputNames(path));
+        _Erase<HdExtComputationInputDescriptorVector>(
+            Key::ExtComputationInputs(path));
+        _Erase<HdExtComputationOutputDescriptorVector>(
+            Key::ExtComputationOutputs(path));
+        _Erase<HdExtComputationPrimvarDescriptorVector>(
+            Key::ExtComputationPrimvars(path));
+        _Erase<std::string>(Key::ExtComputationKernel(path));
     }
 
     VtValue& GetColor(SdfPath const& path) const {
@@ -410,6 +439,31 @@ public:
     VtValue& GetMaterialParam(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
+    VtValue& GetExtComputationSceneInputNames(SdfPath const& path) const {
+        return _Get<VtValue>(Key::ExtComputationSceneInputNames(path));
+    }
+    HdExtComputationInputDescriptorVector&
+    GetExtComputationInputs(SdfPath const& path) const {
+        return _Get<HdExtComputationInputDescriptorVector>(
+            Key::ExtComputationInputs(path));
+    }
+    HdExtComputationOutputDescriptorVector&
+    GetExtComputationOutputs(SdfPath const& path) const {
+        return _Get<HdExtComputationOutputDescriptorVector>(
+            Key::ExtComputationOutputs(path));
+    }
+    HdExtComputationPrimvarDescriptorVector&
+    GetExtComputationPrimvars(SdfPath const& path) const {
+        return _Get<HdExtComputationPrimvarDescriptorVector>(
+            Key::ExtComputationPrimvars(path));
+    }
+    VtValue& GetExtComputationInput(SdfPath const& path,
+                                    TfToken const& name) const {
+        return _Get<VtValue>(Key(path, name));
+    }
+    std::string& GetExtComputationKernel(SdfPath const& path) const {
+        return _Get<std::string>(Key::ExtComputationKernel(path));
+    }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
@@ -483,6 +537,31 @@ public:
     }
     bool FindMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
+    }
+    bool FindExtComputationSceneInputNames(SdfPath const& path, VtValue* value) const {
+        return _Find(Key::ExtComputationSceneInputNames(path), value);
+    }
+    bool FindExtComputationInputs(
+        SdfPath const& path,
+        HdExtComputationInputDescriptorVector* value) const {
+        return _Find(Key::ExtComputationInputs(path), value);
+    }
+    bool FindExtComputationOutputs(
+        SdfPath const& path,
+        HdExtComputationOutputDescriptorVector* value) const {
+        return _Find(Key::ExtComputationOutputs(path), value);
+    }
+    bool FindExtComputationPrimvars(
+        SdfPath const& path,
+        HdExtComputationPrimvarDescriptorVector* value) const {
+        return _Find(Key::ExtComputationPrimvars(path), value);
+    }
+    bool FindExtComputationInput(
+        SdfPath const& path, TfToken const& name, VtValue* value) const {
+        return _Find(Key(path, name), value);
+    }
+    bool FindExtComputationKernel(SdfPath const& path, std::string* value) const {
+        return _Find(Key::ExtComputationKernel(path), value);
     }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
@@ -558,6 +637,31 @@ public:
     bool ExtractMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
     }
+    bool ExtractExtComputationSceneInputNames(SdfPath const& path, VtValue* value) {
+        return _Extract(Key::ExtComputationSceneInputNames(path), value);
+    }
+    bool ExtractExtComputationInputs(
+        SdfPath const& path,
+        HdExtComputationInputDescriptorVector* value) {
+        return _Extract(Key::ExtComputationInputs(path), value);
+    }
+    bool ExtractExtComputationOutputs(
+        SdfPath const& path,
+        HdExtComputationOutputDescriptorVector* value) {
+        return _Extract(Key::ExtComputationOutputs(path), value);
+    }
+    bool ExtractExtComputationPrimvars(
+        SdfPath const& path,
+        HdExtComputationPrimvarDescriptorVector* value) {
+        return _Extract(Key::ExtComputationPrimvars(path), value);
+    }
+    bool ExtractExtComputationInput(SdfPath const& path, TfToken const& name,
+                                    VtValue* value) {
+        return _Extract(Key(path, name), value);
+    }
+    bool ExtractExtComputationKernel(SdfPath const& path, std::string* value) {
+        return _Extract(Key::ExtComputationKernel(path), value);
+    }
 
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
@@ -575,6 +679,9 @@ public:
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
         _GarbageCollect(_shaderParamCache);
+        _GarbageCollect(_extComputationInputsCache);
+        _GarbageCollect(_extComputationOutputsCache);
+        _GarbageCollect(_extComputationPrimvarsCache);
     }
 
 private:
@@ -625,6 +732,18 @@ private:
     typedef _TypedCache<HdMaterialParamVector> _MaterialParamCache;
     mutable _MaterialParamCache _shaderParamCache;
 
+    typedef _TypedCache<HdExtComputationInputDescriptorVector>
+        _ExtComputationInputsCache;
+    mutable _ExtComputationInputsCache _extComputationInputsCache;
+
+    typedef _TypedCache<HdExtComputationOutputDescriptorVector>
+        _ExtComputationOutputsCache;
+    mutable _ExtComputationOutputsCache _extComputationOutputsCache;
+
+    typedef _TypedCache<HdExtComputationPrimvarDescriptorVector>
+        _ExtComputationPrimvarsCache;
+    mutable _ExtComputationPrimvarsCache _extComputationPrimvarsCache;
+
     void _GetCache(_BoolCache **cache) const {
         *cache = &_boolCache;
     }
@@ -661,6 +780,15 @@ private:
     }
     void _GetCache(_MaterialParamCache **cache) const {
         *cache = &_shaderParamCache;
+    }
+    void _GetCache(_ExtComputationInputsCache **cache) const {
+        *cache = &_extComputationInputsCache;
+    }
+    void _GetCache(_ExtComputationOutputsCache **cache) const {
+        *cache = &_extComputationOutputsCache;
+    }
+    void _GetCache(_ExtComputationPrimvarsCache **cache) const {
+        *cache = &_extComputationPrimvarsCache;
     }
 };
 

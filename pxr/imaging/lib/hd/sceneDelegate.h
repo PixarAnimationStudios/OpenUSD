@@ -217,6 +217,15 @@ struct HdExtComputationInputDescriptor {
     : name(name_), sourceComputationId(sourceComputationId_)
     , sourceComputationOutputName(sourceComputationOutputName_)
     { }
+
+    bool operator==(HdExtComputationInputDescriptor const& rhs) const {
+        return name == rhs.name &&
+               sourceComputationId == rhs.sourceComputationId &&
+               sourceComputationOutputName == rhs.sourceComputationOutputName;
+    }
+    bool operator!=(HdExtComputationInputDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 typedef std::vector<HdExtComputationInputDescriptor>
@@ -238,6 +247,14 @@ struct HdExtComputationOutputDescriptor {
         HdTupleType const & valueType_)
     : name(name_), valueType(valueType_)
     { }
+
+    bool operator==(HdExtComputationOutputDescriptor const& rhs) const {
+        return name == rhs.name &&
+               valueType == rhs.valueType;
+    }
+    bool operator!=(HdExtComputationOutputDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 typedef std::vector<HdExtComputationOutputDescriptor>

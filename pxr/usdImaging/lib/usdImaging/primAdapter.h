@@ -55,6 +55,7 @@ class UsdPrim;
 class UsdImagingDelegate;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
+class HdExtComputationContext;
 
 typedef boost::shared_ptr<class UsdImagingPrimAdapter> 
                                                 UsdImagingPrimAdapterSharedPtr;
@@ -78,7 +79,7 @@ public:
     virtual ~UsdImagingPrimAdapter();
 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
-    /// expected to create one or more Rprims in the render index using the
+    /// expected to create one or more prims in the render index using the
     /// given proxy.
     virtual SdfPath Populate(UsdPrim const& prim,
                 UsdImagingIndexProxy* index,
@@ -223,6 +224,13 @@ public:
     virtual void MarkMaterialDirty(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Computations 
+    // ---------------------------------------------------------------------- //
+    USDIMAGING_API
+    virtual void InvokeComputation(SdfPath const& computationPath,
+                                   HdExtComputationContext* context);
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing

@@ -200,6 +200,13 @@ UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
 }
 
 /*virtual*/
+void
+UsdImagingPrimAdapter::InvokeComputation(SdfPath const& computationPath,
+                                         HdExtComputationContext* context)
+{
+}
+
+/*virtual*/
 SdfPath
 UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 {
