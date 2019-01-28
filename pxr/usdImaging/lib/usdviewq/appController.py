@@ -2753,8 +2753,7 @@ class AppController(QtCore.QObject):
             # Create a new item.  If we want its children we obviously
             # have to create those too.
             children = self._getFilteredChildren(prim)
-            item = PrimViewItem(prim, self, len(children) != 0, 
-                                parent=self._ui.primView)
+            item = PrimViewItem(prim, self, len(children) != 0)
             self._primToItemMap[prim] = item
             self._populateChildren(item, depth, maxDepth, children)
             # Push the item after the children so ancestors are processed
