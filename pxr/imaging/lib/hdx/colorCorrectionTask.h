@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/garch/gl.h"
 #include <string>
 
@@ -119,7 +120,7 @@ struct HdxColorCorrectionTaskParams
     // Switch between HdColorCorrectionTokens.
     // We default to 'disabled' to be backwards compatible with clients that are
     // still running with sRGB buffers.
-    TfToken colorCorrectionMode = HdColorCorrectionTokens->disabled;
+    TfToken colorCorrectionMode = HdxColorCorrectionTokens->disabled;
 
     // 'display', 'view', 'colorspace' and 'look' are options the client may 
     // supply to configure OCIO. If one is not provided the default values

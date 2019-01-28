@@ -43,8 +43,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdAovTokens, HD_AOV_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_RENDER_SETTINGS_TOKENS);
 
-TF_DEFINE_PUBLIC_TOKENS(HdColorCorrectionTokens, HD_COLOR_CORRECTION_TOKENS);
-
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)
 {
     return TfToken(

@@ -181,7 +181,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
     // OpenColorIO for color correction in which case we insert extra OCIO code.
     #ifdef PXR_OCIO_PLUGIN_ENABLED
         bool useOCIO = 
-            _colorCorrectionMode == HdColorCorrectionTokens->openColorIO;
+            _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
     #else
         bool useOCIO = false;
     #endif
@@ -370,7 +370,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
     // OpenColorIO for color correction in which case we insert extra OCIO code.
     #ifdef PXR_OCIO_PLUGIN_ENABLED
         bool useOCIO = 
-            _colorCorrectionMode == HdColorCorrectionTokens->openColorIO;
+            _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
     #else
         bool useOCIO = false;
     #endif

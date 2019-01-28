@@ -360,7 +360,7 @@ public:
     /// @{
     // ---------------------------------------------------------------------
 
-    /// Set \p id to one of the HdColorCorrectionTokens.
+    /// Set \p id to one of the HdxColorCorrectionTokens.
     /// \p framebufferResolution should be the size of the bound framebuffer
     /// that will be color corrected. A 16F framebuffer should be bound when
     /// using color correction. See SetEnableFloatPointDrawTarget().

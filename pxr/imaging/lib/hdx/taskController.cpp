@@ -314,7 +314,7 @@ HdxTaskController::GetTasks()
             _colorCorrectionTaskId, HdTokens->params);
 
     bool useColorCorrect = colorCorrectionParams.colorCorrectionMode != 
-                           HdColorCorrectionTokens->disabled &&
+                           HdxColorCorrectionTokens->disabled &&
                            !colorCorrectionParams.colorCorrectionMode.IsEmpty();
 
     if (useColorCorrect) {

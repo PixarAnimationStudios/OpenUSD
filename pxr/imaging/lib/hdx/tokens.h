@@ -81,6 +81,13 @@ TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_API, HDX_OPTION_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagsTokens, HDX_API, HDX_RENDERTAGS_TOKENS);
 
+#define HDX_COLOR_CORRECTION_TOKENS              \
+    (disabled)                                  \
+    (sRGB)                                      \
+    (openColorIO)
+
+TF_DECLARE_PUBLIC_TOKENS(HdxColorCorrectionTokens, HDX_API, 
+                         HDX_COLOR_CORRECTION_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

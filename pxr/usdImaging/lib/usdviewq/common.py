@@ -221,7 +221,7 @@ class ShadedRenderModes(ConstantGroup):
 
 class ColorCorrectionModes(ConstantGroup):
     # Color correction used when render is presented to screen
-    # These strings should match HdColorCorrectionTokens
+    # These strings should match HdxColorCorrectionTokens
     DISABLED = "disabled"
     SRGB = "sRGB"
     OPENCOLORIO = "openColorIO"

@@ -313,10 +313,6 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (convergedVariance)                               \
     (convergedSamplesPerPixel)
 
-#define HD_COLOR_CORRECTION_TOKENS              \
-    (disabled)                                  \
-    (sRGB)                                      \
-    (openColorIO)
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
@@ -327,8 +323,6 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdColorCorrectionTokens, HD_API, 
-                         HD_COLOR_CORRECTION_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
