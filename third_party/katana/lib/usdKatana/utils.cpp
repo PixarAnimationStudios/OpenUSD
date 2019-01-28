@@ -1532,7 +1532,7 @@ PxrUsdKatanaUtils::PrimIsSubcomponent(const UsdPrim &prim)
     // unfortunately there's no good IsXXX() method to test
     // for subcomponents -- they aren't Models or Groups --
     // but they do have Payloads.
-    if (!(prim.HasPayload() && prim.GetParent()))
+    if (!(prim.HasAuthoredPayloads() && prim.GetParent()))
         return false;
 
     // XXX(spiff) with bug/102670, this test will be trivial: prim.IsAssembly()

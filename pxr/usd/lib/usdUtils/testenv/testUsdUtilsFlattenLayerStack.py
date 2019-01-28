@@ -46,7 +46,7 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
             # Composition arcs remain intact
             self.assertTrue(p.HasAuthoredReferences())
             self.assertTrue(p.HasAuthoredInherits())
-            self.assertTrue(p.HasPayload())
+            self.assertTrue(p.HasAuthoredPayloads())
             self.assertTrue(p.HasVariantSets())
 
             # Classes continue to exist

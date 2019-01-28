@@ -2110,7 +2110,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
         _WalkPrimsWithMasters(
             path,
             [&unloadIndexPaths] (UsdPrim const &prim) {
-                if (prim.IsInMaster() && prim.HasPayload()) {
+                if (prim.IsInMaster() && prim.HasAuthoredPayloads()) {
                     unloadIndexPaths.push_back(
                         prim._GetSourcePrimIndex().GetPath());
                 }
@@ -4232,7 +4232,7 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
             stagePath = path;
 
         UsdPrim prim = _stage->GetPrimAtPath(stagePath);
-        bool isNewPayload = !prim || !prim.HasPayload();
+        bool isNewPayload = !prim || !prim.HasAuthoredPayloads();
 
         if (!isNewPayload)
             return false;
@@ -4255,7 +4255,8 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
         }
 
         UsdPrim root = _stage->GetPseudoRoot();
-        for (; !prim.HasPayload() && prim != root; prim = prim.GetParent()) {
+        for (; !prim.HasAuthoredPayloads() && prim != root; 
+             prim = prim.GetParent()) {
             // continue
         }
 

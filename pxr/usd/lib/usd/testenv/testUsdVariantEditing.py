@@ -128,7 +128,7 @@ def TestNewPayloadAutoLoading():
 
     pvs.SetVariantSelection('with_payload')
     with pvs.GetVariantEditContext():
-        main.SetPayload(payloadLayer, '/parent')
+        main.GetPayloads().AddPayload(payloadLayer.identifier, '/parent')
 
     pvs.SetVariantSelection('without_payload')
 
