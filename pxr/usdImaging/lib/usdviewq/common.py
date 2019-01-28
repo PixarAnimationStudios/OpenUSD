@@ -219,6 +219,13 @@ class ShadedRenderModes(ConstantGroup):
     GEOM_FLAT = RenderModes.GEOM_FLAT
     GEOM_SMOOTH = RenderModes.GEOM_SMOOTH
 
+class ColorCorrectionModes(ConstantGroup):
+    # Color correction used when render is presented to screen
+    # These strings should match HdColorCorrectionTokens
+    DISABLED = "disabled"
+    SRGB = "sRGB"
+    OPENCOLORIO = "openColorIO"
+
 class PickModes(ConstantGroup):
     # Pick modes
     PRIMS = "Prims"

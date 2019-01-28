@@ -38,7 +38,7 @@ from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
-from common import (RenderModes, ShadedRenderModes, Timer,
+from common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
     GetInstanceIndicesForIds, SelectionHighlightModes, DEBUG_CLIPPING)
 from rootDataModel import RootDataModel
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
@@ -1332,10 +1332,18 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
         self._renderParams.highlight = renderSelHighlights
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
+        self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
+        self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
+        self._renderParams.renderResolution[0] = self.width()
+        self._renderParams.renderResolution[1] = self.height()
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
+
+        # Enable floating point framebuffer (for color correction)
+        renderer.SetEnableFloatPointDrawTarget(True)
+
         try:
             renderer.Render(pseudoRoot, self._renderParams)
         except Tf.ErrorException as e:
@@ -1541,12 +1549,8 @@ class StageView(QtOpenGL.QGLWidget):
                 self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
                 self._glTimeElapsedQuery.BeginTimeElapsed()
 
-            # Enable sRGB in order to apply a final gamma to this window, just like
-            # in Presto.
-            from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
-            GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
-
-            GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))))
+            self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
+            GL.glClearColor(*self._renderParams.clearColor)
 
             GL.glEnable(GL.GL_DEPTH_TEST)
             GL.glDepthFunc(GL.GL_LESS)
@@ -1711,7 +1715,7 @@ class StageView(QtOpenGL.QGLWidget):
                 if self._dataModel.viewSettings.showMask_Opaque:
                     color = color[0:3] + (1.0,)
                 else:
-                    color = color[0:3] + (color[3] * 0.7,)
+                    color = color[0:3] + (color[3] * 0.45,)
                 self._mask.updateColor(color)
                 self._mask.updatePrims(cameraViewport, self)
                 uiTasks.append(self._mask)
@@ -1734,8 +1738,6 @@ class StageView(QtOpenGL.QGLWidget):
             # ### DRAW HUD ### #
             if self._dataModel.viewSettings.showHUD:
                 self.drawHUD(renderer)
-
-            GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
             if (not self._dataModel.playing) & (not renderer.IsConverged()):
                 QtCore.QTimer.singleShot(5, self.update)
@@ -1761,13 +1763,13 @@ class StageView(QtOpenGL.QGLWidget):
         # put the result in the HUD string
         self.fpsHUDInfo['Render'] = "%.2f ms (%.2f FPS)" % (ms, fps)
 
-        col = Gf.ConvertDisplayToLinear(Gf.Vec3f(.733,.604,.333))
+        col = Gf.Vec3f(.733,.604,.333)
 
         # the subtree info does not update while animating, grey it out
         if not self._dataModel.playing:
             subtreeCol = col
         else:
-            subtreeCol = Gf.ConvertDisplayToLinear(Gf.Vec3f(.6,.6,.6))
+            subtreeCol = Gf.Vec3f(.6,.6,.6)
 
         # Subtree Info
         if self._dataModel.viewSettings.showHUD_Info:

@@ -59,7 +59,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
-                    RenderModes, ShadedRenderModes,
+                    RenderModes, ColorCorrectionModes, ShadedRenderModes,
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
@@ -580,6 +580,15 @@ class AppController(QtCore.QObject):
             for action in self._renderModeActions:
                 self._ui.renderModeActionGroup.addAction(action)
 
+            self._ui.colorCorrectionActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.colorCorrectionActionGroup.setExclusive(True)
+            self._colorCorrectionActions = (
+                self._ui.actionNoColorCorrection,
+                self._ui.actionSRGBColorCorrection,
+                self._ui.actionOpenColorIO)
+            for action in self._colorCorrectionActions:
+                self._ui.colorCorrectionActionGroup.addAction(action)
+
             # XXX This should be a validator in ViewSettingsDataModel.
             if self._dataModel.viewSettings.renderMode not in RenderModes:
                 fallback = str(
@@ -849,6 +858,9 @@ class AppController(QtCore.QObject):
                 self._onCompositionSelectionChanged)
 
             self._ui.renderModeActionGroup.triggered.connect(self._changeRenderMode)
+
+            self._ui.colorCorrectionActionGroup.triggered.connect(
+                self._changeColorCorrection)
 
             self._ui.pickModeActionGroup.triggered.connect(self._changePickMode)
 
@@ -2070,6 +2082,9 @@ class AppController(QtCore.QObject):
 
     def _changeRenderMode(self, mode):
         self._dataModel.viewSettings.renderMode = str(mode.text())
+
+    def _changeColorCorrection(self, mode):
+        self._dataModel.viewSettings.colorCorrectionMode = str(mode.text())
 
     def _changePickMode(self, mode):
         self._dataModel.viewSettings.pickMode = str(mode.text())
@@ -4456,6 +4471,7 @@ class AppController(QtCore.QObject):
         actions and submenus to match the values in the ViewSettingsDataModel.
         """
         self._refreshRenderModeMenu()
+        self._refreshColorCorrectionModeMenu()
         self._refreshPickModeMenu()
         self._refreshComplexityMenu()
         self._refreshBBoxMenu()
@@ -4478,6 +4494,11 @@ class AppController(QtCore.QObject):
         for action in self._renderModeActions:
             action.setChecked(
                 str(action.text()) == self._dataModel.viewSettings.renderMode)
+
+    def _refreshColorCorrectionModeMenu(self):
+        for action in self._colorCorrectionActions:
+            action.setChecked(
+                str(action.text()) == self._dataModel.viewSettings.colorCorrectionMode)
 
     def _refreshPickModeMenu(self):
         for action in self._pickModeActions:

@@ -1297,6 +1297,14 @@
      <addaction name="actionGeom_Flat"/>
      <addaction name="actionHidden_Surface_Wireframe"/>
     </widget>
+    <widget class="QMenu" name="menuColorCorrection">
+     <property name="title">
+      <string>Color Management</string>
+     </property>
+     <addaction name="actionNoColorCorrection"/>
+     <addaction name="actionSRGBColorCorrection"/>
+     <addaction name="actionOpenColorIO"/>
+    </widget>
     <widget class="QMenu" name="menuBackground_Color">
      <property name="title">
       <string>Background Color</string>
@@ -1411,6 +1419,7 @@
     <addaction name="actionFrame_Backwards"/>
     <addaction name="separator"/>
     <addaction name="menuShading_Mode"/>
+    <addaction name="menuColorCorrection"/>
     <addaction name="menuLights"/>
     <addaction name="menuBackground_Color"/>
     <addaction name="menuCamera"/>
@@ -1927,6 +1936,39 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+9</string>
+   </property>
+  </action>
+  <action name="actionNoColorCorrection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>disabled</string>
+   </property>
+  </action>
+  <action name="actionSRGBColorCorrection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>sRGB</string>
+   </property>
+  </action>
+  <action name="actionOpenColorIO">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>openColorIO</string>
    </property>
   </action>
   <action name="actionFreeCam">
