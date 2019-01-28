@@ -2754,8 +2754,8 @@ _GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
         }
 
         // Prim payloads
-        if (prim->HasPayload()) {
-            SdfPayload payload = prim->GetPayload();
+        for (const SdfPayload &payload:
+             prim->GetPayloadList().GetAddedOrExplicitItems()) {
             assetReferences->insert(payload.GetAssetPath());
         }
 
@@ -2839,6 +2839,28 @@ _UpdateReferencePath(
     return reference;
 }
 
+// SdfPayloadListEditor::ModifyItemEdits() callback that updates a payload's
+// asset path.
+//
+static boost::optional<SdfPayload>
+_UpdatePayloadPath(
+    const string &oldLayerPath,
+    const string &newLayerPath,
+    const SdfPayload &payload)
+{
+    if (payload.GetAssetPath() == oldLayerPath) {
+        // Delete if new layer path is empty, otherwise rename.
+        if (newLayerPath.empty()) {
+            return boost::optional<SdfPayload>();
+        } else {
+            SdfPayload pload = payload;
+            pload.SetAssetPath(newLayerPath);
+            return pload;
+        }
+    }
+    return payload;
+}
+
 void
 SdfLayer::_UpdateReferencePaths(
     const SdfPrimSpecHandle &prim,
@@ -2852,18 +2874,8 @@ SdfLayer::_UpdateReferencePaths(
         &_UpdateReferencePath, oldLayerPath, newLayerPath, ph::_1));
 
     // Prim payloads
-    if (prim->HasPayload()) {
-        SdfPayload payload = prim->GetPayload();
-        if (payload.GetAssetPath() == oldLayerPath) {
-            if (newLayerPath.empty()) {
-                prim->ClearPayload();
-            }
-            else {
-                payload.SetAssetPath(newLayerPath);
-                prim->SetPayload(payload);
-            }
-        }
-    }
+    prim->GetPayloadList().ModifyItemEdits(std::bind(
+        &_UpdatePayloadPath, oldLayerPath, newLayerPath, ph::_1));
 
     // Prim variants
     SdfVariantSetsProxy variantSetMap = prim->GetVariantSets();

@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/instanceCache.h"
+#include "pxr/usd/usd/payloads.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
@@ -868,32 +869,50 @@ UsdPrim::HasAuthoredReferences() const
 bool
 UsdPrim::HasPayload() const
 {
-    return _Prim()->HasPayload();
+    return HasAuthoredPayloads();
 }
 
 bool
 UsdPrim::SetPayload(const SdfPayload& payload) const
 {
-    return SetMetadata(SdfFieldKeys->Payload, payload);
+    UsdPayloads payloads = GetPayloads();
+    payloads.ClearPayloads();
+    return payloads.SetPayloads(SdfPayloadVector{payload});
 }
 
 bool
 UsdPrim::SetPayload(const std::string& assetPath, const SdfPath& primPath) const
 {
-    return SetMetadata(SdfFieldKeys->Payload, SdfPayload(assetPath, primPath));
+    return SetPayload(SdfPayload(assetPath, primPath));
 }
 
 bool
 UsdPrim::SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const
 {
-    return SetMetadata(SdfFieldKeys->Payload,
-                       SdfPayload(layer->GetIdentifier(), primPath));
+    return SetPayload(SdfPayload(layer->GetIdentifier(), primPath));
 }
 
 bool
 UsdPrim::ClearPayload() const
 {
-    return ClearMetadata(SdfFieldKeys->Payload);
+    return GetPayloads().ClearPayloads();
+}
+
+UsdPayloads
+UsdPrim::GetPayloads() const
+{
+    return UsdPayloads(*this);
+}
+
+bool
+UsdPrim::HasAuthoredPayloads() const
+{
+    // Unlike the equivalent function for references, we query the prim data
+    // for the cached value of HasPayload computed by Pcp instead of querying
+    // the composed metadata. This is necessary as this function is called by 
+    // _IncludeNewlyDiscoveredPayloadsPredicate in UsdStage which can't safely
+    // call back into the querying the composed metatdata.
+    return _Prim()->HasPayload();
 }
 
 void

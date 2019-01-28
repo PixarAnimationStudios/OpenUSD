@@ -675,6 +675,54 @@ class TestSdfCopyUtils(unittest.TestCase):
             layer.GetPrimAtPath("/ChildCopy").GetInfo("references"), 
             expectedListOp)
 
+    def test_PayloadRemapping(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        srcPrimSpec = Sdf.CreatePrimInLayer(layer, "/Root/Child")
+        srcPrimSpec.payloadList.explicitItems = [
+            # External payload
+            Sdf.Payload("./test.sdf", "/Ref"), 
+            # External sub-root payload
+            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            # Internal payload
+            Sdf.Payload("", "/Ref"),
+            # Internal sub-root payload
+            Sdf.Payload("", "/Root/Ref")
+        ]
+
+        # Copy the root prim spec and verify that the internal sub-root 
+        # payloads on the child prim that target a prim beneath /Root are 
+        # remapped to /RootCopy.
+        self.assertTrue(Sdf.CopySpec(layer, "/Root", layer, "/RootCopy"))
+
+        expectedListOp = Sdf.PayloadListOp()
+        expectedListOp.explicitItems = [
+            Sdf.Payload("./test.sdf", "/Ref"), 
+            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("", "/Ref"),
+            Sdf.Payload("", "/RootCopy/Ref")
+        ]
+
+        self.assertEqual(
+            layer.GetPrimAtPath("/RootCopy/Child").GetInfo("payload"), 
+            expectedListOp)
+
+        # Copy the child prim spec. Since all of the internal sub-root
+        # payloads point outside the root of the copy operation, none
+        # of them will be remapped.
+        self.assertTrue(Sdf.CopySpec(layer, "/Root/Child", layer, "/ChildCopy"))
+
+        expectedListOp = Sdf.PayloadListOp()
+        expectedListOp.explicitItems = [
+            Sdf.Payload("./test.sdf", "/Ref"), 
+            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("", "/Ref"),
+            Sdf.Payload("", "/Root/Ref")
+        ]
+
+        self.assertEqual(
+            layer.GetPrimAtPath("/ChildCopy").GetInfo("payload"), 
+            expectedListOp)
+
     def test_Relocates(self):
         """Tests that relocates are remapped to destination prim on copy"""
         layer = Sdf.Layer.CreateAnonymous()

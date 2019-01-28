@@ -356,19 +356,12 @@ Sdf_WritePrimMetadata(
                 multiLine ? "\n" : "");
         }
         else if (field == SdfFieldKeys->Payload) {
-            if (multiLine) {
-                Sdf_FileIOUtility::Puts(out, indent+1, "");
-            }
-            Sdf_FileIOUtility::Puts(out, 0, "payload = ");
-            if (SdfPayload payload = prim.GetPayload()) {
-                Sdf_FileIOUtility::WriteAssetPath(out, 0, payload.GetAssetPath());
-                if (!payload.GetPrimPath().IsEmpty())
-                    Sdf_FileIOUtility::WriteSdfPath(out, 0, payload.GetPrimPath());
-            } else {
-                Sdf_FileIOUtility::Puts(out, 0, "None");
-            }
-            if (multiLine) {
-                Sdf_FileIOUtility::Puts(out, 0, "\n");
+            const VtValue v = prim.GetField(field);
+            if (!Sdf_WriteIfListOp<SdfPayloadListOp>(
+                    out, indent+1, TfToken("payload"), v)) {
+                TF_CODING_ERROR(
+                    "'%s' field holding unexpected type '%s'",
+                    field.GetText(), v.GetTypeName().c_str());
             }
         }
         else if (field == SdfFieldKeys->References) {

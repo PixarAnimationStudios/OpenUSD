@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -51,6 +52,8 @@ TF_REGISTRY_FUNCTION(TfType)
         .Alias(TfType::GetRoot(), "SdfStringListOp");
     TfType::Define<SdfReferenceListOp>()
         .Alias(TfType::GetRoot(), "SdfReferenceListOp");
+    TfType::Define<SdfPayloadListOp>()
+        .Alias(TfType::GetRoot(), "SdfPayloadListOp");
     TfType::Define<SdfIntListOp>()
         .Alias(TfType::GetRoot(), "SdfIntListOp");
     TfType::Define<SdfUIntListOp>()
@@ -799,6 +802,7 @@ SDF_INSTANTIATE_LIST_OP(TfToken);
 SDF_INSTANTIATE_LIST_OP(SdfUnregisteredValue);
 SDF_INSTANTIATE_LIST_OP(SdfPath);
 SDF_INSTANTIATE_LIST_OP(SdfReference);
+SDF_INSTANTIATE_LIST_OP(SdfPayload);
 
 template
 SDF_API void SdfApplyListOrdering(std::vector<string>* v, 

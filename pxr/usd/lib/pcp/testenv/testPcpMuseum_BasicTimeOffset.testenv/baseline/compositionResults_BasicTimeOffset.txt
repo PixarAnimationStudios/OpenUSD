@@ -115,3 +115,114 @@ Time Offsets:
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Frame    reference  (offset=30.00, scale=1.00)
 
+------------------------------------------------------------------------
+Results for composing </PayloadRoot>
+
+Prim Stack:
+    root.sdf             /PayloadRoot
+    A.sdf                /Model
+    B.sdf                /Model
+
+Time Offsets:
+    A.sdf                /Model          payload    (offset=10.00, scale=2.00)
+        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </PayloadRoot/Anim>
+
+Prim Stack:
+    B.sdf                /Model/Anim
+
+Time Offsets:
+    A.sdf                /Model/Anim     payload    (offset=10.00, scale=2.00)
+        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </PayloadRoot/Frame>
+
+Prim Stack:
+    B.sdf                /Model/Frame
+
+Time Offsets:
+    A.sdf                /Model/Frame    payload    (offset=10.00, scale=2.00)
+        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </PayloadRefPayload>
+
+Prim Stack:
+    root.sdf             /PayloadRefPayload
+    ref_sub.sdf          /Ref
+    B.sdf                /Model
+
+Time Offsets:
+    ref.sdf              /Ref            payload    (offset=10.00, scale=2.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model          payload    (offset=50.00, scale=2.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </PayloadRefPayload/Anim>
+
+Prim Stack:
+    B.sdf                /Model/Anim
+
+Time Offsets:
+    ref.sdf              /Ref/Anim       payload    (offset=10.00, scale=2.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Anim     payload    (offset=50.00, scale=2.00)
+
+------------------------------------------------------------------------
+Results for composing </PayloadRefPayload/Frame>
+
+Prim Stack:
+    B.sdf                /Model/Frame
+
+Time Offsets:
+    ref.sdf              /Ref/Frame      payload    (offset=10.00, scale=2.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Frame    payload    (offset=50.00, scale=2.00)
+
+------------------------------------------------------------------------
+Results for composing </PayloadMultiRef>
+
+Prim Stack:
+    root.sdf             /PayloadMultiRef
+    ref_sub.sdf          /Ref2
+    B.sdf                /Model
+
+Time Offsets:
+    ref.sdf              /Ref2           payload    (offset=10.00, scale=2.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model          reference  (offset=50.00, scale=2.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </PayloadMultiRef/Anim>
+
+Prim Stack:
+    B.sdf                /Model/Anim
+
+Time Offsets:
+    ref.sdf              /Ref2/Anim      payload    (offset=10.00, scale=2.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Anim     reference  (offset=50.00, scale=2.00)
+
+------------------------------------------------------------------------
+Results for composing </PayloadMultiRef/Frame>
+
+Prim Stack:
+    B.sdf                /Model/Frame
+
+Time Offsets:
+    ref.sdf              /Ref2/Frame     payload    (offset=10.00, scale=2.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Frame    reference  (offset=50.00, scale=2.00)
+

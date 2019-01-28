@@ -32,7 +32,8 @@ class TestSdfPayload(unittest.TestCase):
         # Generate a bunch of unique payloads
         args = [
             ['assetPath', ['', '//test/layer.sdf']],
-            ['primPath', ['', '/rootPrim', '/rootPrim/child']]
+            ['primPath', ['', '/rootPrim', '/rootPrim/child']],
+            ['layerOffset', [Sdf.LayerOffset(),  Sdf.LayerOffset(48, -2)]]
         ]
         payloads = []
         for values in itertools.product(*[a[1] for a in args]):

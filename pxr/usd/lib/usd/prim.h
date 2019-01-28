@@ -57,6 +57,7 @@ class Usd_PrimData;
 
 class UsdAttribute;
 class UsdRelationship;
+class UsdPayloads;
 class UsdReferences;
 class UsdSchemaBase;
 class UsdAPISchemaBase;
@@ -917,20 +918,28 @@ public:
         bool recurseOnTargets = false) const;
 
     // --------------------------------------------------------------------- //
-    /// \name Payloads, Load and Unload 
+    /// \name Payload Authoring 
+    /// \deprecated 
+    /// This API is now deprecated. Please use the HasAuthoredPayloads and the
+    /// UsdPayloads API returned from GetPayloads() to query and author payloads 
+    /// instead. 
+    /// @{ 
     // --------------------------------------------------------------------- //
 
-    /// Clears the payload at the current EditTarget for this prim. 
-    /// Return false if the payload could not be cleared.
+    /// \deprecated 
+    /// Clears the payload at the current EditTarget for this prim. Return false 
+    /// if the payload could not be cleared. 
     USD_API
     bool ClearPayload() const;
 
+    /// \deprecated 
     /// Return true if a payload is present on this prim.
     ///
     /// \sa \ref Usd_Payloads
     USD_API
     bool HasPayload() const;
 
+    /// \deprecated 
     /// Author payload metadata for this prim at the current edit
     /// target. Return true on success, false if the value could not be set. 
     ///
@@ -938,15 +947,36 @@ public:
     USD_API
     bool SetPayload(const SdfPayload& payload) const;
 
+    /// \deprecated 
     /// Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
     USD_API
     bool SetPayload(
         const std::string& assetPath, const SdfPath& primPath) const;
     
+    /// \deprecated 
     /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifier(),
     /// primPath)).
     USD_API
     bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \name Payloads, Load and Unload 
+    // --------------------------------------------------------------------- //
+
+    /// Return a UsdPayloads object that allows one to add, remove, or
+    /// mutate payloads <em>at the currently set UsdEditTarget</em>.
+    ///
+    /// There is currently no facility for \em listing the currently authored
+    /// payloads on a prim... the problem is somewhat ill-defined, and
+    /// requires some thought.
+    USD_API
+    UsdPayloads GetPayloads() const;
+
+    /// Return true if this prim has any authored payloads.
+    USD_API
+    bool HasAuthoredPayloads() const;
 
     /// Load this prim, all its ancestors, and by default all its descendants.
     /// If \p loadPolicy is UsdLoadWithoutDescendants, then load only this prim

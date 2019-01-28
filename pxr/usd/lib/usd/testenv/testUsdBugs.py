@@ -87,11 +87,11 @@ class TestUsdBugs(unittest.TestCase):
         x = Sdf.CreatePrimInLayer(l1, '/x')
         x.instanceable = True
         x.specifier = Sdf.SpecifierDef
-        x.payload = Sdf.Payload(l2.identifier, '/xpay')
+        x.payloadList.explicitItems.append(Sdf.Payload(l2.identifier, '/xpay'))
 
         y = Sdf.CreatePrimInLayer(l1, '/x/y')
         y.specifier = Sdf.SpecifierDef
-        y.payload = Sdf.Payload(l2.identifier, '/ypay')
+        x.payloadList.explicitItems.append(Sdf.Payload(l2.identifier, '/ypay'))
 
         s = Usd.Stage.Open(l1, Usd.Stage.LoadAll)
 
@@ -356,10 +356,10 @@ class TestUsdBugs(unittest.TestCase):
         Sdf.CreatePrimInLayer(
             l2, '/cam/cam_payload').specifier = Sdf.SpecifierDef
 
-        l1.GetPrimAtPath('/shot/camera/cache').payload = Sdf.Payload(
-            l2.identifier, '/cam_extra')
-        l1.GetPrimAtPath('/shot/camera/cache/cam').payload = Sdf.Payload(
-            l2.identifier, '/cam')
+        l1.GetPrimAtPath('/shot/camera/cache').payloadList.Prepend(
+            Sdf.Payload(l2.identifier, '/cam_extra'))
+        l1.GetPrimAtPath('/shot/camera/cache/cam').payloadList.Prepend(
+            Sdf.Payload(l2.identifier, '/cam'))
         
         stage = Usd.Stage.Open(l1)
         stage.SetEditTarget(stage.GetSessionLayer())

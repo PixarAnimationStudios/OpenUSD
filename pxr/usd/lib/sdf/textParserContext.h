@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/parserValueContext.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -110,6 +111,9 @@ public:
 
     // helpers for reference parsing
     SdfReferenceVector referenceParsingRefs;
+
+    // helpers for payload parsing
+    SdfPayloadVector payloadParsingRefs;
 
     // helper for relocates parsing
     SdfRelocatesMap relocatesParsingMap;

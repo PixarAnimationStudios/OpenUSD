@@ -42,6 +42,7 @@ typedef SdfListProxy<SdfNameTokenKeyPolicy> SdfNameOrderProxy;
 typedef SdfListProxy<SdfSubLayerTypePolicy> SdfSubLayerProxy;                    
 typedef SdfListEditorProxy<SdfNameKeyPolicy> SdfNameEditorProxy;
 typedef SdfListEditorProxy<SdfPathKeyPolicy> SdfPathEditorProxy;
+typedef SdfListEditorProxy<SdfPayloadTypePolicy> SdfPayloadEditorProxy;
 typedef SdfListEditorProxy<SdfReferenceTypePolicy> SdfReferenceEditorProxy;
 
 typedef SdfChildrenView<Sdf_AttributeChildPolicy,
@@ -67,6 +68,7 @@ typedef SdfPathEditorProxy SdfConnectionsProxy;
 typedef SdfPathEditorProxy SdfInheritsProxy;
 typedef SdfPathEditorProxy SdfSpecializesProxy;
 typedef SdfPathEditorProxy SdfTargetsProxy;
+typedef SdfPayloadEditorProxy SdfPayloadsProxy;
 typedef SdfReferenceEditorProxy SdfReferencesProxy;
 typedef SdfNameEditorProxy SdfVariantSetNamesProxy;
 
@@ -87,6 +89,13 @@ SdfGetPathEditorProxy(const SdfSpecHandle& o, const TfToken & n);
 /// does \b not check that the children hold references.
 SdfReferenceEditorProxy
 SdfGetReferenceEditorProxy(const SdfSpecHandle& o, const TfToken & n);
+
+/// Returns a payload list editor proxy for the children in the value with
+/// the given name.  If the value doesn't exist, doesn't contain an GdChildren,
+/// or the object is invalid then this returns an invalid list editor.  This
+/// does \b not check that the children hold payloads.
+SdfPayloadEditorProxy
+SdfGetPayloadEditorProxy(const SdfSpecHandle& o, const TfToken & n);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

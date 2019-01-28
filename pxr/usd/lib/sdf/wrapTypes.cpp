@@ -355,6 +355,7 @@ void wrapTypes()
     SdfPyWrapListProxy<SdfSubLayerProxy>();
     SdfPyWrapListEditorProxy<SdfConnectionsProxy>();
     SdfPyWrapListEditorProxy<SdfInheritsProxy>();
+    SdfPyWrapListEditorProxy<SdfPayloadsProxy>();
     SdfPyWrapListEditorProxy<SdfReferencesProxy>();
     SdfPyWrapListEditorProxy<SdfVariantSetNamesProxy>();
 
@@ -373,6 +374,7 @@ void wrapTypes()
     SdfPyWrapMapEditProxy<SdfRelocatesMapProxy>();
 
     SdfPyWrapListOp<SdfPathListOp>("PathListOp");
+    SdfPyWrapListOp<SdfPayloadListOp>("PayloadListOp");
     SdfPyWrapListOp<SdfReferenceListOp>("ReferenceListOp");
     SdfPyWrapListOp<SdfStringListOp>("StringListOp");
     SdfPyWrapListOp<SdfTokenListOp>("TokenListOp");
@@ -383,6 +385,7 @@ void wrapTypes()
     SdfPyWrapListOp<SdfUnregisteredValueListOp>("UnregisteredValueListOp");
 
     VtValueFromPython<SdfPathListOp>();
+    VtValueFromPython<SdfPayloadListOp>();
     VtValueFromPython<SdfReferenceListOp>();
     VtValueFromPython<SdfStringListOp>();
     VtValueFromPython<SdfTokenListOp>();

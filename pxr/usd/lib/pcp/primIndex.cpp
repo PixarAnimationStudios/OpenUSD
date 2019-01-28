@@ -3616,7 +3616,7 @@ _EvalNodeFallbackVariant(
 // Payload
 
 static void
-_EvalNodePayload(
+_EvalNodePayloads(
     PcpPrimIndex *index, 
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer)
@@ -3629,22 +3629,18 @@ _EvalNodePayload(
         return;
     }
 
-    // Compose payload arc for node.
-    //
-    // XXX We currently only support a single arc per layer stack site,
-    //     but we could potentially support multiple targets here, just
-    //     like we do with references.
-    //
-    SdfPayload payload;
-    SdfLayerHandle payloadSpecLayer;
-    PcpComposeSitePayload(node, &payload, &payloadSpecLayer);
-    if (!payload) {
+    // Compose value for local payloads.
+    SdfPayloadVector payloadArcs;
+    PcpSourceReferenceInfoVector payloadInfo;
+    PcpComposeSitePayloads(node, &payloadArcs, &payloadInfo);
+
+    if (payloadArcs.empty()) {
         return;
     }
 
+    const SdfPath & srcPath = node.GetPath();
     PCP_INDEXING_MSG(
-        indexer, node, "Found payload @%s@<%s>", 
-        payload.GetAssetPath().c_str(), payload.GetPrimPath().GetText());
+        indexer, node, "Found payload for node %s", srcPath.GetText());
 
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
@@ -3679,163 +3675,185 @@ _EvalNodePayload(
         }
     }
 
-    // Verify the payload prim path.
-    if (!payload.GetPrimPath().IsEmpty() &&
-        !(payload.GetPrimPath().IsAbsolutePath() &&
-          payload.GetPrimPath().IsPrimPath())) {
-        PcpErrorInvalidPrimPathPtr err = PcpErrorInvalidPrimPath::New();
-        err->rootSite = PcpSite(node.GetSite());
-        err->site     = PcpSite(node.GetSite());
-        err->primPath = payload.GetPrimPath();
-        err->arcType = PcpArcTypePayload;
-        indexer->RecordError(err);
-        return;
-    }
+    for (size_t payloadArcNum=0; payloadArcNum < payloadArcs.size(); ++payloadArcNum) {
+        const SdfPayload &payload = payloadArcs[payloadArcNum];
+        const PcpSourceReferenceInfo &info = payloadInfo[payloadArcNum];
+        const SdfLayerHandle &srcLayer = info.layer;
+        const SdfLayerOffset &srcLayerOffset = info.layerOffset;
+        SdfLayerOffset layerOffset = payload.GetLayerOffset();
 
-    // Resolve the payload asset path.
-    std::string canonicalMutedLayerId;
-    if (indexer->inputs.cache->IsLayerMuted(
-            payloadSpecLayer, payload.GetAssetPath(), 
-            &canonicalMutedLayerId)) {
-        PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
-        err->rootSite = PcpSite(node.GetSite());
-        err->site = PcpSite(node.GetSite());
-        err->targetPath = payload.GetPrimPath();
-        err->assetPath = payload.GetAssetPath();
-        err->resolvedAssetPath = canonicalMutedLayerId;
-        err->arcType = PcpArcTypePayload;
-        err->layer = payloadSpecLayer;
-        indexer->RecordError(err);
-        return;
-    }
+        PCP_INDEXING_MSG(
+            indexer, node, "Found payload @%s@<%s>", 
+            info.authoredAssetPath.c_str(), payload.GetPrimPath().GetText());
 
-    // Apply payload decorators
-    SdfLayer::FileFormatArguments args;
-    if (indexer->inputs.payloadDecorator) {
-        PcpPayloadContext payloadCtx = Pcp_CreatePayloadContext(
-            node, indexer->previousFrame);
-        indexer->inputs.payloadDecorator->
-            DecoratePayload(indexer->rootSite.path, payload, payloadCtx, &args);
-    }
-    Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema, &args);
+        bool fail = false;
 
-    // Resolve asset path
-    // See Pcp_NeedToRecomputeDueToAssetPathChange
-    std::string resolvedAssetPath(payload.GetAssetPath());
-    TfErrorMark m;
-    SdfLayerRefPtr payloadLayer = SdfFindOrOpenRelativeToLayer(
-        payloadSpecLayer, &resolvedAssetPath, args);
-
-    if (!payloadLayer) {
-        PcpErrorInvalidAssetPathPtr err = PcpErrorInvalidAssetPath::New();
-        err->rootSite = PcpSite(node.GetRootNode().GetSite());
-        err->site = PcpSite(node.GetSite());
-        err->targetPath = payload.GetPrimPath();
-        err->assetPath = payload.GetAssetPath();
-        err->resolvedAssetPath = resolvedAssetPath;
-        err->arcType = PcpArcTypePayload;
-        err->layer = payloadSpecLayer;
-        if (!m.IsClean()) {
-            vector<string> commentary;
-            for (auto const &err: m) {
-                commentary.push_back(err.GetCommentary());
-            }
-            m.Clear();
-            err->messages = TfStringJoin(commentary.begin(),
-                                         commentary.end(), "; ");
-        }
-        indexer->RecordError(err);
-        return;
-    }
-
-    // Check if the payload layer is in the root node's layer stack. 
-    // If so, we report an error. (Internal payloads are disallowed.)
-    const PcpLayerStackPtr rootLayerStack = node.GetLayerStack();
-    if (rootLayerStack->HasLayer(payloadLayer)) {
-        PcpErrorInternalAssetPathPtr err = PcpErrorInternalAssetPath::New();
-        err->rootSite = PcpSite(node.GetRootNode().GetSite());
-        err->site = PcpSite(node.GetSite());
-        err->targetPath = payload.GetPrimPath();
-        err->assetPath = payload.GetAssetPath();
-        err->resolvedAssetPath = resolvedAssetPath;
-        err->arcType = PcpArcTypePayload;
-        indexer->RecordError(err);
-        return;
-    }
-
-    // Create the layerStack for the payload.
-    const ArResolverContext& payloadResolverContext
-        = node.GetLayerStack()->GetIdentifier().pathResolverContext;
-    PcpLayerStackIdentifier 
-        payloadLayerStackIdentifier( payloadLayer, SdfLayerHandle(),
-            payloadResolverContext);
-    PcpLayerStackRefPtr payloadLayerStack = 
-        indexer->inputs.cache->ComputeLayerStack( 
-            payloadLayerStackIdentifier, &indexer->outputs->allErrors);
-
-    // Assume that we will insert the payload contents -- unless
-    // we detect an error below.
-    bool directNodeShouldContributeSpecs = true;
-
-    // Determine the payload prim path.  This is either the one explicitly
-    // specified in the SdfPayload, or if that's empty, then the one
-    // specified by DefaultPrim in the referenced layer.
-    SdfPath defaultPayloadPath;
-    if (payload.GetPrimPath().IsEmpty()) {
-        // Check the layer for a defaultPrim, and use that if present.
-        defaultPayloadPath = _GetDefaultPrimPath(payloadLayer);
-        if (defaultPayloadPath.IsEmpty()) {
-            PcpErrorUnresolvedPrimPathPtr err =
-                PcpErrorUnresolvedPrimPath::New();
+        // Verify the payload prim path.
+        if (!payload.GetPrimPath().IsEmpty() &&
+            !(payload.GetPrimPath().IsAbsolutePath() &&
+              payload.GetPrimPath().IsPrimPath())) {
+            PcpErrorInvalidPrimPathPtr err = PcpErrorInvalidPrimPath::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->site = PcpSite(node.GetSite());
-            // Use a relative path with the field key for a hint.
-            err->unresolvedPath = SdfPath::ReflexiveRelativePath().
-                AppendChild(SdfFieldKeys->DefaultPrim);
+            err->primPath = payload.GetPrimPath();
             err->arcType = PcpArcTypePayload;
             indexer->RecordError(err);
-
-            // Set the payloadPath to the pseudo-root path.  We'll still add
-            // an arc to it as a special dependency placeholder, so we
-            // correctly invalidate if/when the default target metadata gets
-            // authored in the target layer.
-            defaultPayloadPath = SdfPath::AbsoluteRootPath();
-            directNodeShouldContributeSpecs = false;
+            fail = true;
         }
+
+        // Validate layer offset in original payload (not the composed
+        // layer offset stored in payload).
+        if (!srcLayerOffset.IsValid() ||
+            !srcLayerOffset.GetInverse().IsValid()) {
+            // XXX: We should rename this error to be more generic for both
+            // references and payloads.
+            PcpErrorInvalidReferenceOffsetPtr err =
+                PcpErrorInvalidReferenceOffset::New();
+            err->rootSite = PcpSite(node.GetRootNode().GetSite());
+            err->layer      = srcLayer;
+            err->sourcePath = srcPath;
+            err->assetPath  = info.authoredAssetPath;
+            err->targetPath = payload.GetPrimPath();
+            err->offset     = srcLayerOffset;
+            indexer->RecordError(err);
+
+            // Don't set fail, just reset the offset.
+            layerOffset = SdfLayerOffset();
+        }
+
+        // Go no further if we've found any problems with this payload.
+        if (fail) {
+            continue;
+        }
+
+        // Compute the payload layer stack
+        SdfLayerRefPtr payloadLayer;
+        PcpLayerStackRefPtr payloadLayerStack;
+
+        const bool isInternalPayload = payload.GetAssetPath().empty();
+        if (isInternalPayload) {
+            payloadLayerStack = node.GetLayerStack();
+            payloadLayer = payloadLayerStack->GetIdentifier().rootLayer;
+        } else {
+            // Resolve the payload asset path.
+            std::string canonicalMutedLayerId;
+            if (indexer->inputs.cache->IsLayerMuted(
+                    srcLayer, info.authoredAssetPath, &canonicalMutedLayerId)) {
+                PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
+                err->rootSite = PcpSite(node.GetRootNode().GetSite());
+                err->site = PcpSite(node.GetSite());
+                err->targetPath = payload.GetPrimPath();
+                err->assetPath = info.authoredAssetPath;
+                err->resolvedAssetPath = canonicalMutedLayerId;
+                err->arcType = PcpArcTypePayload;
+                err->layer = srcLayer;
+                indexer->RecordError(err);
+                return;
+            }
+
+            // Apply payload decorators
+            SdfLayer::FileFormatArguments args;
+            if (indexer->inputs.payloadDecorator) {
+                PcpPayloadContext payloadCtx = Pcp_CreatePayloadContext(
+                    node, indexer->previousFrame);
+                indexer->inputs.payloadDecorator->
+                    DecoratePayload(indexer->rootSite.path, payload, payloadCtx, &args);
+            }
+            Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema, &args);
+
+            TfErrorMark m;
+            // Relative asset paths will already have been anchored to their 
+            // source layers in PcpComposeSitePayloads, so we can just call
+            // SdfLayer::FindOrOpen instead of SdfFindOrOpenRelativeToLayer.
+            payloadLayer = SdfLayer::FindOrOpen(payload.GetAssetPath(), args);
+
+            if (!payloadLayer) {
+                PcpErrorInvalidAssetPathPtr err = PcpErrorInvalidAssetPath::New();
+                err->rootSite = PcpSite(node.GetRootNode().GetSite());
+                err->site = PcpSite(node.GetSite());
+                err->targetPath = payload.GetPrimPath();
+                err->assetPath = info.authoredAssetPath;
+                err->resolvedAssetPath = payload.GetAssetPath();
+                err->arcType = PcpArcTypePayload;
+                err->layer = srcLayer;
+                if (!m.IsClean()) {
+                    vector<string> commentary;
+                    for (auto const &err: m) {
+                        commentary.push_back(err.GetCommentary());
+                    }
+                    m.Clear();
+                    err->messages = TfStringJoin(commentary.begin(),
+                                                 commentary.end(), "; ");
+                }
+                indexer->RecordError(err);
+                return;
+            }
+
+            // Create the layerStack for the payload.
+            const ArResolverContext& payloadResolverContext = 
+                node.GetLayerStack()->GetIdentifier().pathResolverContext;
+            PcpLayerStackIdentifier payloadLayerStackIdentifier( 
+                payloadLayer, SdfLayerHandle(), payloadResolverContext);
+            payloadLayerStack = indexer->inputs.cache->ComputeLayerStack( 
+                payloadLayerStackIdentifier, &indexer->outputs->allErrors);
+        }
+
+        // Assume that we will insert the payload contents -- unless
+        // we detect an error below.
+        bool directNodeShouldContributeSpecs = true;
+
+        // Determine the payload prim path.  This is either the one explicitly
+        // specified in the SdfPayload, or if that's empty, then the one
+        // specified by DefaultPrim in the referenced layer.
+        SdfPath defaultPayloadPath;
+        if (payload.GetPrimPath().IsEmpty()) {
+            // Check the layer for a defaultPrim, and use that if present.
+            defaultPayloadPath = _GetDefaultPrimPath(payloadLayer);
+            if (defaultPayloadPath.IsEmpty()) {
+                PcpErrorUnresolvedPrimPathPtr err =
+                    PcpErrorUnresolvedPrimPath::New();
+                err->rootSite = PcpSite(node.GetRootNode().GetSite());
+                err->site = PcpSite(node.GetSite());
+                // Use a relative path with the field key for a hint.
+                err->unresolvedPath = SdfPath::ReflexiveRelativePath().
+                    AppendChild(SdfFieldKeys->DefaultPrim);
+                err->arcType = PcpArcTypePayload;
+                indexer->RecordError(err);
+
+                // Set the payloadPath to the pseudo-root path.  We'll still add
+                // an arc to it as a special dependency placeholder, so we
+                // correctly invalidate if/when the default target metadata gets
+                // authored in the target layer.
+                defaultPayloadPath = SdfPath::AbsoluteRootPath();
+                directNodeShouldContributeSpecs = false;
+            }
+        }
+
+        // Final payload path to use.
+        SdfPath const &payloadPath = defaultPayloadPath.IsEmpty() ?
+            payload.GetPrimPath() : defaultPayloadPath;
+
+        PcpMapExpression mapExpr = 
+            _CreateMapExpressionForArc(
+                /* source */ payloadPath, /* target */ node, 
+                indexer->inputs, layerOffset);
+
+        // Only need to include ancestral opinions if the prim path is
+        // not a root prim.
+        const bool includeAncestralOpinions = !payloadPath.IsRootPrimPath();
+
+        _AddArc( PcpArcTypePayload,
+                 /* parent = */ node,
+                 /* origin = */ node,
+                 PcpLayerStackSite( payloadLayerStack, payloadPath ),
+                 mapExpr,
+                 /* arcSiblingNum = */ payloadArcNum,
+                 directNodeShouldContributeSpecs,
+                 includeAncestralOpinions,
+                 /* requirePrimAtTarget = */ true,
+                 /* skipDuplicateNodes = */ false,
+                 indexer );
     }
-
-    // Final payload path to use.
-    SdfPath const &payloadPath = defaultPayloadPath.IsEmpty() ?
-        payload.GetPrimPath() : defaultPayloadPath;
-
-    // Incorporate any layer offset from this site to the sublayer
-    // where the payload was expressed.
-    const SdfLayerOffset *maybeOffset =
-        node.GetSite().layerStack->
-        GetLayerOffsetForLayer(payloadSpecLayer);
-    const SdfLayerOffset offset =
-        maybeOffset ? *maybeOffset : SdfLayerOffset();
-
-    PcpMapExpression mapExpr = 
-        _CreateMapExpressionForArc(
-            /* source */ payloadPath, /* target */ node, 
-            indexer->inputs, offset);
-
-    // Only need to include ancestral opinions if the prim path is
-    // not a root prim.
-    const bool includeAncestralOpinions = !payloadPath.IsRootPrimPath();
-
-    _AddArc( PcpArcTypePayload,
-             /* parent = */ node,
-             /* origin = */ node,
-             PcpLayerStackSite( payloadLayerStack, payloadPath ),
-             mapExpr,
-             /* arcSiblingNum = */ 0,
-             directNodeShouldContributeSpecs,
-             includeAncestralOpinions,
-             /* requirePrimAtTarget = */ true,
-             /* skipDuplicateNodes = */ false,
-             indexer );
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4063,29 +4081,43 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
             }
         }
 
-        // Handle payload arcs. See _EvalNodePayload.
+        // Handle payload arcs. See _EvalNodePayloads.
+        // XXX: This is identical to the loop for references except for the 
+        // type and PcpComposeSite* function. When payloads are fully conformed
+        // to references, it would be worth refactoring this.
         auto payloadNodeRange = _GetDirectChildRange(node, PcpArcTypePayload);
         if (payloadNodeRange.first != payloadNodeRange.second) {
-            SdfPayload payload;
-            SdfLayerHandle sourceLayer;
-            PcpComposeSitePayload(node, &payload, &sourceLayer);
+            SdfPayloadVector payloads;
+            PcpSourceReferenceInfoVector sourceInfo;
+            PcpComposeSitePayloads(node, &payloads, &sourceInfo);
 
-            if (!payload) {
+            const size_t numPayloadArcs = 
+                std::distance(payloadNodeRange.first, payloadNodeRange.second) ;
+            if (numPayloadArcs != payloads.size()) {
                 // This could happen if there was some scene description
-                // change that removed the payload, which requires
-                // recomputation.
+                // change that added/removed payloads, but also if a 
+                // layer couldn't be opened when this index was computed. 
+                // We conservatively mark this index as needing recomputation
+                // in the latter case to simplify things.
                 return true;
             }
 
-            // Compute the same asset path that would be used during 
-            // composition to open layers via SdfFindOrOpenRelativeToLayer.
-            const std::string& anchoredAssetPath = 
-                SdfComputeAssetPathRelativeToLayer(
-                    sourceLayer, payload.GetAssetPath());
+            for (size_t i = 0; i < payloads.size(); ++i, ++payloadNodeRange.first) {
+                // Skip internal payloads since there's no asset path
+                // computation that occurs when processing them.
+                if (payloads[i].GetAssetPath().empty()) {
+                    continue;
+                }
 
-            if (_ComputedAssetPathWouldCreateDifferentNode(
-                    *payloadNodeRange.first, anchoredAssetPath)) {
-                return true;
+                // PcpComposeSitePayloads will have filled in each
+                // SdfPayload with the same asset path that would be used
+                // during composition to open layers.
+                const std::string& anchoredAssetPath = payloads[i].GetAssetPath();
+
+                if (_ComputedAssetPathWouldCreateDifferentNode(
+                        *payloadNodeRange.first, anchoredAssetPath)) {
+                    return true;
+                }
             }
         }
     }
@@ -4455,7 +4487,7 @@ Pcp_BuildPrimIndex(
             _EvalNodeReferences(&outputs->primIndex, task.node, &indexer);
             break;
         case Task::Type::EvalNodePayload:
-            _EvalNodePayload(&outputs->primIndex, task.node, &indexer);
+            _EvalNodePayloads(&outputs->primIndex, task.node, &indexer);
             break;
         case Task::Type::EvalNodeInherits:
             _EvalNodeInherits(&outputs->primIndex, task.node, &indexer);

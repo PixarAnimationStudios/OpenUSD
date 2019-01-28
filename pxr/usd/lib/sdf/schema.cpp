@@ -531,7 +531,7 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->PrimOrder, std::vector<TfToken>())
         .ListValueValidator(&_ValidateIdentifierToken);
     _DoRegisterField(SdfFieldKeys->NoLoadHint, false);
-    _DoRegisterField(SdfFieldKeys->Payload, SdfPayload())
+    _DoRegisterField(SdfFieldKeys->Payload, SdfPayloadListOp())
         .ListValueValidator(&_ValidatePayload);
     _DoRegisterField(SdfFieldKeys->Permission, SdfPermissionPublic);
     _DoRegisterField(SdfFieldKeys->Prefix, "");
@@ -1145,11 +1145,6 @@ SdfSchemaBase::IsValidPayload(const SdfPayload& p)
         return SdfAllowed("Payload prim path <" + 
                           p.GetPrimPath().GetString() + "> must be either "
                           "empty or an absolute prim path");
-    }
-
-    if (p.GetAssetPath().empty() && !p.GetPrimPath().IsEmpty()) {
-        return SdfAllowed("Payload must specify an asset path and an optional "
-                          "additional prim path, or nothing");
     }
 
     return true;

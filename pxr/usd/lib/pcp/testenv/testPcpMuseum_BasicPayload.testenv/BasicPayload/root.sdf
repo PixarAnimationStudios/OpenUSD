@@ -1,16 +1,171 @@
 #sdf 1.4.32
+(
+    """
+    This museum exhibit demonstrates basic payload behavior
+    supported by Pcp.
+    """
+    subLayers = [
+        @./sublayer.sdf@
+    ]
+    defaultPrim = "InternalPayload"
+)
 
-def "Root"
+def "SimplePayload" (
+    payload = @./payload.sdf@</SimplePayload>
+)
 {
-    def "SimplePayload" (
-        payload = @./payload.sdf@</SimplePayload>
-    )
+}
+
+def "SimpleSubrootPayload" (
+    payload = @./payload.sdf@</SimplePayload/Child>
+)
+{
+}
+
+def Scope "PrimWithPayloads" (
+payload = [
+    @./payload.sdf@</SimplePayload>,
+    @./ref.sdf@</PayloadPrimA>,
+    @./ref2.sdf@</PrimB>
+]
+)
+{
+}
+
+over "PrimB" (
+    """
+    These overs for prims payloaded by PrimWithPayloads above
+    should not factor into composition.
+    """
+)
+{
+    over "PrimB_Child"
     {
     }
+}
 
-    def "SimpleSubrootPayload" (
-        payload = @./payload.sdf@</SimplePayload/Child>
+def Scope "PrimWithSelfPayload" (
+    payload = [
+       @./root.sdf@</InternalPayload>,
+       @./sublayer.sdf@</InternalSublayerPayload>
+    ]
+)
+{
+}
+
+def Scope "PrimWithInternalPayload" (
+    payload = [
+        </InternalPayload>,
+        </InternalPayload2>
+    ]
+)
+{
+}       
+
+def Scope "InternalPayload"
+{
+    def Scope "InternalPayload_Child"
+    {
+    }
+}
+
+over "InternalSublayerPayload" (
+     """
+     These overs for prims referenced by PrimWithInternalPayload above
+     should not factor into composition.
+     """
+)
+{
+    over "InternalSublayerPayload_Child"
+    {
+    }
+}
+
+def Scope "PrimWithDefaultPayloadTarget" (
+    payload = @./defaultRef.sdf@
+)
+{   
+}
+
+def Scope "PrimWithDefaultPayloadTarget2" (
+    payload = <>
+)
+{
+}
+
+def Scope "PayloadPrimWithSubrootInReference" (
+    payload = [
+        @./ref.sdf@</RefPrimA/PrimA_Child>,
+        @./ref.sdf@</RefPrimA/PrimC_Child>
+    ]
+)
+{
+}    
+
+def Scope "RefPrimWithSubrootInReference" (
+    references = [
+        @./ref.sdf@</RefPrimA/PrimA_Child>,
+        @./ref.sdf@</RefPrimA/PrimC_Child>
+    ]
+)
+{
+}   
+
+def Scope "PrimWithInternalSubrootPayload" (
+    references = </InternalPayload/InternalPayload_Child>
+)
+{
+}
+
+def Scope "PrimWithPayloadsInVariants" (
+    append variantSets = ["v"]
+    variants = {
+        string "v" = "ref"
+    }
+)
+{
+    variantSet "v" = {
+        "ref" {
+            def "Ref"
+            {
+            }
+
+            def "A" (
+                payload = </PrimWithPayloadsInVariants/Ref>
+            )
+            {
+            }    
+        }
+    }
+
+    def "B" (
+        payload = </PrimWithPayloadsInVariants/Ref>
     )
     {
     }
 }
+
+# These two don't work due to a composition bug, but I would expect that
+# they should. PrimC_Child is a subroot prim that is itself hidden in a 
+# payload which doesn't doesn't get loaded unless the exact path in the
+# reference is in the requested payloads. It works correctly if it is, but
+# it is semantically incorrect to do so. I'm leaving these cases in to 
+# track the composition errors in the test. The test results will need to 
+# be updated when the bug is fixed.
+def Scope "PayloadPrimWithSubrootInPayload" (
+    payload = [
+        @./ref.sdf@</PayloadPrimA/PrimA_Child>,
+        @./ref.sdf@</PayloadPrimA/PrimC_Child>
+    ]
+)
+{
+}    
+
+def Scope "RefPrimWithSubrootInPayload" (
+    references = [
+        @./ref.sdf@</PayloadPrimA/PrimA_Child>,
+        @./ref.sdf@</PayloadPrimA/PrimC_Child>
+    ]
+)
+{
+}    

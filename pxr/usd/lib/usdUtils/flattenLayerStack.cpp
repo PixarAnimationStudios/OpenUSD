@@ -173,6 +173,7 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
     TYPE_DISPATCH(SdfTokenListOp);
     TYPE_DISPATCH(SdfStringListOp);
     TYPE_DISPATCH(SdfPathListOp);
+    TYPE_DISPATCH(SdfPayloadListOp);
     TYPE_DISPATCH(SdfReferenceListOp);
     TYPE_DISPATCH(SdfUnregisteredValueListOp);
     TYPE_DISPATCH(VtDictionary);
@@ -212,6 +213,15 @@ _ApplyLayerOffsetToReference(const SdfLayerOffset &offset,
     SdfReference result = ref;
     result.SetLayerOffset(offset * ref.GetLayerOffset());
     return boost::optional<SdfReference>(result);
+}
+
+static boost::optional<SdfPayload>
+_ApplyLayerOffsetToPayload(const SdfLayerOffset &offset,
+                           const SdfPayload &pl)
+{
+    SdfPayload result = pl;
+    result.SetLayerOffset(offset * pl.GetLayerOffset());
+    return boost::optional<SdfPayload>(result);
 }
 
 // Apply layer offsets (time remapping) to time-keyed metadata.
@@ -278,6 +288,16 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
             return VtValue(refs);
         }
     }
+    else if (field == SdfFieldKeys->Payload) {
+        if (val.IsHolding<SdfPayloadListOp>()) {
+            SdfPayloadListOp pls = val.UncheckedGet<SdfPayloadListOp>();
+            // We do not need to call UsdPrepLayerOffset() here since
+            // we want to author a new offset, not apply one.
+            pls.ModifyOperations(std::bind(
+                _ApplyLayerOffsetToPayload, offset, std::placeholders::_1));
+            return VtValue(pls);
+        }
+    }
     return val;
 }
 
@@ -289,6 +309,16 @@ _FixReference(const UsdUtilsResolveAssetPathFn& resolveAssetPathFn,
     SdfReference result = ref;
     result.SetAssetPath(resolveAssetPathFn(sourceLayer, ref.GetAssetPath()));
     return boost::optional<SdfReference>(result);
+}
+
+static boost::optional<SdfPayload>
+_FixPayload(const UsdUtilsResolveAssetPathFn& resolveAssetPathFn,
+            const SdfLayerHandle &sourceLayer,
+            const SdfPayload &pl)
+{
+    SdfPayload result = pl;
+    result.SetAssetPath(resolveAssetPathFn(sourceLayer, pl.GetAssetPath()));
+    return boost::optional<SdfPayload>(result);
 }
 
 static void
@@ -332,8 +362,16 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     else if (val->IsHolding<SdfPayload>()) {
         SdfPayload pl;
         val->Swap(pl);
-        pl.SetAssetPath(resolveAssetPathFn(sourceLayer, pl.GetAssetPath()));
+        pl = *_FixPayload(resolveAssetPathFn, sourceLayer, pl);
         val->Swap(pl);
+        return;
+    }
+    else if (val->IsHolding<SdfPayloadListOp>()) {
+        SdfPayloadListOp pls;
+        val->Swap(pls);
+        pls.ModifyOperations(std::bind(_FixPayload, 
+                    resolveAssetPathFn, sourceLayer, std::placeholders::_1));
+        val->Swap(pls);
         return;
     }
 }

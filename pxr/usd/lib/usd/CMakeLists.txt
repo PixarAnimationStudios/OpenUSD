@@ -36,6 +36,7 @@ pxr_library(usd
         modelAPI
         notice
         object
+        payloads
         prim
         primData
         primDataHandle
@@ -106,6 +107,7 @@ pxr_library(usd
         wrapModelAPI.cpp
         wrapNotice.cpp
         wrapObject.cpp
+        wrapPayloads.cpp
         wrapPrim.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
@@ -167,6 +169,7 @@ pxr_test_scripts(
     testenv/testUsdChangeProcessing.py
     testenv/testUsdClasses.py
     testenv/testUsdCollectionAPI.py
+    testenv/testUsdCrate07To08Conversion.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdFileFormats.py
@@ -316,6 +319,11 @@ pxr_build_test(testUsdUsdzResolver
 pxr_install_test_dir(
     SRC testenv/testUsdStageThreading
     DEST testUsdStageThreading
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdCrate07To08Conversion.testenv
+    DEST testUsdCrate07To08Conversion
 )
 
 pxr_install_test_dir(
@@ -710,6 +718,12 @@ pxr_register_test(testUsdStageLoadUnload
 pxr_register_test(testUsdPayloads
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPayloads"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCrate07To08Conversion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrate07To08Conversion"
     EXPECTED_RETURN_CODE 0
 )
 

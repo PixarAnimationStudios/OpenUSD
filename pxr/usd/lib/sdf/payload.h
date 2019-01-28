@@ -28,9 +28,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/dictionary.h"
 
+#include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 
 #include <iosfwd>
@@ -62,7 +63,8 @@ public:
     SDF_API
     SdfPayload(
         const std::string &assetPath = std::string(),
-        const SdfPath &primPath = SdfPath());
+        const SdfPath &primPath = SdfPath(),
+        const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
     /// Returns the asset path of the layer that the payload uses.
     const std::string &GetAssetPath() const {
@@ -84,8 +86,15 @@ public:
         _primPath = primPath;
     }
 
-    /// Bool conversion; true if the payload is not empty.
-    SDF_API operator bool() const;
+    /// Returns the layer offset associated with the payload.
+    const SdfLayerOffset &GetLayerOffset() const {
+        return _layerOffset;
+    }
+
+    /// Sets a new layer offset.
+    void SetLayerOffset(const SdfLayerOffset &layerOffset) {
+        _layerOffset = layerOffset;
+    }
 
     /// Returns whether this payload equals \a rhs.
     SDF_API bool operator==(const SdfPayload &rhs) const;
@@ -99,6 +108,7 @@ private:
         size_t h = 0;
         boost::hash_combine(h, p._assetPath);
         boost::hash_combine(h, p._primPath);
+        boost::hash_combine(h, p._layerOffset);
         return h;
     }
 
@@ -107,6 +117,9 @@ private:
 
     // The root prim path to the referenced prim in the external layer.
     SdfPath _primPath;
+
+    // The layer offset to transform time.
+    SdfLayerOffset _layerOffset;
 };
 
 /// Writes the string representation of \a SdfPayload to \a out.

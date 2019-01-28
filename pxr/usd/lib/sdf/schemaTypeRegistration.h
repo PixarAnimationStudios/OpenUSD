@@ -80,7 +80,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->Owner,                   std::string))                   \
 ((SdfFieldKeys->PrimOrder,               std::vector<TfToken>))          \
 ((SdfFieldKeys->NoLoadHint,              bool))                          \
-((SdfFieldKeys->Payload,                 SdfPayload))                    \
+((SdfFieldKeys->Payload,                 SdfPayloadListOp))              \
 ((SdfFieldKeys->Permission,              SdfPermission))                 \
 ((SdfFieldKeys->Prefix,                  std::string))                   \
 ((SdfFieldKeys->PrefixSubstitutions,     VtDictionary))                  \

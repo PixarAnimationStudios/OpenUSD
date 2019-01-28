@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 
 #include "pxr/base/tf/token.h"
@@ -674,6 +675,24 @@ SdfCopySpec(
 
 // ------------------------------------------------------------
 
+template <class T>
+static T 
+_FixInternalSubrootPaths(
+    const T& ref, const SdfPath& srcPrefix, const SdfPath& dstPrefix)
+{
+    // Only try to fix up internal sub-root references.
+    if (!ref.GetAssetPath().empty() ||
+        ref.GetPrimPath().IsEmpty() ||
+        ref.GetPrimPath().IsRootPrimPath()) {
+        return ref;
+    }
+
+    T fixedRef = ref;
+    fixedRef.SetPrimPath(ref.GetPrimPath().ReplacePrefix(srcPrefix, dstPrefix));
+
+    return fixedRef;
+}
+
 bool
 SdfShouldCopyValue(
     const SdfPath& srcRootPath, const SdfPath& dstRootPath,
@@ -711,22 +730,27 @@ SdfShouldCopyValue(
                     dstRootPath.GetPrimPath().StripAllVariantSelections();
 
                 refListOp.ModifyOperations(
-                    [&srcPrefix, &dstPrefix](const SdfReference& ref) {
-                        // Only try to fix up internal sub-root references.
-                        if (!ref.GetAssetPath().empty() ||
-                            ref.GetPrimPath().IsEmpty() ||
-                            ref.GetPrimPath().IsRootPrimPath()) {
-                            return ref;
-                        }
-                        
-                        SdfReference fixedRef = ref;
-                        fixedRef.SetPrimPath(ref.GetPrimPath()
-                            .ReplacePrefix(srcPrefix, dstPrefix));
-
-                        return fixedRef;
-                    });
+                    std::bind(&_FixInternalSubrootPaths<SdfReference>, 
+                              std::placeholders::_1, std::cref(srcPrefix), 
+                              std::cref(dstPrefix)));
 
                 *valueToCopy = VtValue::Take(refListOp);
+            }
+        }
+        else if (field == SdfFieldKeys->Payload) {
+            SdfPayloadListOp payloadListOp;
+            if (srcLayer->HasField(srcPath, field, &payloadListOp)) {
+                const SdfPath& srcPrefix =
+                    srcRootPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrefix =
+                    dstRootPath.GetPrimPath().StripAllVariantSelections();
+
+                payloadListOp.ModifyOperations(
+                    std::bind(&_FixInternalSubrootPaths<SdfPayload>, 
+                              std::placeholders::_1, std::cref(srcPrefix), 
+                              std::cref(dstPrefix)));
+
+                *valueToCopy = VtValue::Take(payloadListOp);
             }
         }
         else if (field == SdfFieldKeys->Relocates) {

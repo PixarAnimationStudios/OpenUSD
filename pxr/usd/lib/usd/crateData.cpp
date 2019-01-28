@@ -39,6 +39,7 @@
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/loops.h"
 
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/schema.h"
 
 #include <tbb/parallel_for.h>
@@ -454,6 +455,11 @@ public:
                     // Special case, convert internal TimeSamples to
                     // SdfTimeSampleMap.
                     val = _MakeTimeSampleMap(val);
+                } else if (field == SdfFieldKeys->Payload) {
+                    // Special case, the payload field is expected to be a list
+                    // op but can be represented in crate files as a single 
+                    // SdfPayload to be compatible with older crate versions.
+                    val = _ToPayloadListOpValue(val);
                 }
                 return value->StoreValue(val);
             }
@@ -474,6 +480,11 @@ public:
                     // Special case, convert internal TimeSamples to
                     // SdfTimeSampleMap.
                     *value = _MakeTimeSampleMap(*value);
+                } else if (field == SdfFieldKeys->Payload) {
+                    // Special case, the payload field is expected to be a list
+                    // op but can be represented in crate files as a single 
+                    // SdfPayload to be compatible with older crate versions.
+                    *value = _ToPayloadListOpValue(*value);
                 }
             }
             return true;
@@ -529,10 +540,18 @@ public:
         }
         
         VtValue const *valPtr = &value;
-        VtValue timeSamples;
+        VtValue convertedVal;
         if (fieldName == SdfDataTokens->TimeSamples) {
-            timeSamples = _Make_TimeSamples(value);
-            valPtr = &timeSamples;
+            convertedVal = _Make_TimeSamples(value);
+            valPtr = &convertedVal;
+        } else if (fieldName == SdfFieldKeys->Payload) {
+            // Special case. Some payload list op values can be represented as
+            // a single SdfPayload which is compatible with crate file software
+            // version 0.7.0 and earlier. We always attempt to write the payload
+            // field as old version compatible if possible in case we need to
+            // write the file in a 0.7.0 compatible crate file.
+            convertedVal = _FromPayloadListOpValue(value);
+            valPtr = &convertedVal;
         }
         
         auto &spec = lastSet->second;
@@ -947,6 +966,61 @@ private:
             }
             return VtValue::Take(result);
         }
+        return val;
+    }
+
+    // Converts the value to a SdfPayloadListOp value if possible.
+    inline VtValue _ToPayloadListOpValue(VtValue const &val) const {
+        // Can convert if the value holds an SdfPayload. 
+        if (val.IsHolding<SdfPayload>()) {
+            const SdfPayload &payload = val.UncheckedGet<SdfPayload>();
+            SdfPayloadListOp result;
+            // Support for payload list ops and internal payloads were added 
+            // at the same time. So semantically, a single SdfPayload with an
+            // empty asset path was equivalent to setting the payload to be
+            // explicitly none. We maintain this semantic meaning so that we
+            // can continue to read older versions of crate files correctly.
+            if (payload.GetAssetPath().empty()) {
+                // Explicitly empty payload list
+                result.ClearAndMakeExplicit();
+            } else {
+                // Explicit payload list containing the single payload.
+                result.SetExplicitItems(SdfPayloadVector(1, payload));
+            }
+            return VtValue::Take(result);
+        }    
+        // Value is returned as is if it's already a payload list op or if it's
+        // any other type.
+        return val;
+    }
+
+    // Converts the value from a SdfPayloadListOp value to an SdfPayload only
+    // if it can be semantically represented as a single SdfPayload
+    inline VtValue _FromPayloadListOpValue(VtValue const &val) const {
+        if (val.IsHolding<SdfPayloadListOp>()) {
+            const SdfPayloadListOp &listOp = val.UncheckedGet<SdfPayloadListOp>();
+            // The list must be explicit to be represented as a single 
+            // SdfPayload.
+            if (listOp.IsExplicit()) {
+                if (listOp.GetExplicitItems().size() == 0) {
+                    // If the list is explicitly empty, it is equivalent to a
+                    // default SdfPayload.
+                    return VtValue(SdfPayload());
+                } else if (listOp.GetExplicitItems().size() == 1) {
+                    // Otherwise an explicit list of one payload may be 
+                    // convertible. Even if we have a single explicit payload, 
+                    // we must check whether it is internal as an SdfPayload 
+                    // with no asset path was used to represent "payload = none"
+                    // in older versions and we need keep those semantics.
+                    const SdfPayload &payload = listOp.GetExplicitItems().front();
+                    if (!payload.GetAssetPath().empty()) {
+                        return VtValue(payload);
+                    }
+                }
+            }
+        }
+        // Fall through to the original value if no SdfPayload conversion is
+        // possible.
         return val;
     }
 
