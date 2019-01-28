@@ -40,18 +40,21 @@ class ComputedPropertyNames(ConstantGroup):
 # defined below.
 #
 def _GetCustomAttributes(currentPrim, rootDataModel):
-    customAttrs = []
     currentPrimIsImageable = currentPrim.IsA(UsdGeom.Imageable)
     
-    if currentPrimIsImageable or not currentPrim.IsA(Usd.Typed):
-        customAttrs.append(BoundingBoxAttribute(currentPrim, rootDataModel))
-    
-    if currentPrimIsImageable:
-        customAttrs.extend([LocalToWorldXformAttribute(currentPrim, 
-                                                       rootDataModel),
-                            ResolvedPreviewMaterial(currentPrim, rootDataModel),
-                            ResolvedFullMaterial(currentPrim, rootDataModel)])
-    return customAttrs
+    # If the currentPrim is imageable or if it is a typeless def, it 
+    # participates in imageable computations.
+    currentPrimGetsImageableComputations = currentPrim.IsA(UsdGeom.Imageable) \
+            or not currentPrim.GetTypeName()
+        
+    if currentPrimGetsImageableComputations:
+        return [BoundingBoxAttribute(currentPrim, rootDataModel),
+                LocalToWorldXformAttribute(currentPrim, 
+                                           rootDataModel),
+                ResolvedPreviewMaterial(currentPrim, rootDataModel),
+                ResolvedFullMaterial(currentPrim, rootDataModel)]
+
+    return []
 
 #
 # The base class for per-prim custom attributes.
