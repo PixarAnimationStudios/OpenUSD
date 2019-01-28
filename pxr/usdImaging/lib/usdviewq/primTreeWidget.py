@@ -321,17 +321,23 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         if item:
             col = self.columnAt(ev.x())
             self._selectionModel.processSelections = self.ColumnPressCausesSelection(col)
-                
+        # The internals always set currentItem from a mouse click, and that
+        # affects things like keyboard navigation.  So if we didn't want the
+        # item to be selected, we don't want it to be current either, so
+        # restore the previous currnetItem afterwards.
+        currentItem = self.currentItem()
         super(PrimTreeWidget, self).mousePressEvent(ev)
+        if currentItem and not self._selectionModel.processSelections:
+            self.setCurrentItem(currentItem)
 
     def leaveEvent(self, ev):
         super(PrimTreeWidget, self).leaveEvent(ev)
         self._selectionModel.processSelections = True
 
-    # We override these selection-related API, and provide a batch wrapper
-    # for QTreeWidgetItem.setSelected in case, in the future, we have
-    # user plugins firing while we are still interacting with this widget,
-    # and they manipulate selection.
+    # We override these selection and interaction-related API, and provide a
+    # batch wrapper for QTreeWidgetItem.setSelected in case, in the future,
+    # we have user plugins firing while we are still interacting with this
+    # widget, and they manipulate selection.
     def clearSelection(self):
         with SelectionEnabler(self._selectionModel):
             super(PrimTreeWidget, self).clearSelection()
@@ -343,6 +349,14 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
     def selectAll(self):
         with SelectionEnabler(self._selectionModel):
             super(PrimTreeWidget, self).selectAll()
+
+    def keyPressEvent(self, ev):
+        with SelectionEnabler(self._selectionModel):
+            super(PrimTreeWidget, self).keyPressEvent(ev)
+
+    def keyReleaseEvent(self, ev):
+        with SelectionEnabler(self._selectionModel):
+            super(PrimTreeWidget, self).keyReleaseEvent(ev)
 
     def updateSelection(self, added, removed):
         """Mutate the widget's selected items, selecting items in `added`
