@@ -359,6 +359,9 @@ GlfDrawTarget::_BindAttachment( GlfDrawTarget::AttachmentRefPtr const & a )
         attachment += attach;
     }
 
+    GLint restoreFramebuffer = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &restoreFramebuffer);
+
     // Multisampled framebuffer
     if (HasMSAA()) {
         glBindFramebuffer(GL_FRAMEBUFFER, _framebufferMS);
@@ -370,6 +373,8 @@ GlfDrawTarget::_BindAttachment( GlfDrawTarget::AttachmentRefPtr const & a )
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER,
         attachment, GL_TEXTURE_2D, id, /*level*/ 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, restoreFramebuffer);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -571,8 +576,6 @@ GlfDrawTarget::WriteToFile(std::string const & name,
         glBindTexture( GL_TEXTURE_2D, restoreBinding );
 
         glPopClientAttrib();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     VtDictionary metadata;
