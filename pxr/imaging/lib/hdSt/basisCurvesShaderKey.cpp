@@ -133,7 +133,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool linear = (type == HdTokens->linear);
     TF_VERIFY(cubic || linear);
 
-    if (cubic) {
+    // The order of the clauses below matters!
+    if (drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
+        primType = HdSt_GeometricShader::PrimitiveType::PRIM_POINTS;
+    } else if (cubic) {
         // cubic curves get drawn via isolines in a tessellation shader
         // even in wire mode.
         primType =
@@ -170,6 +173,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     // Setup Tessellation
     if (linear) {
         switch(drawStyle) {
+        case HdSt_BasisCurvesShaderKey::POINTS:
         case HdSt_BasisCurvesShaderKey::WIRE:
         {
             TCS[0] = TfToken();
@@ -210,6 +214,12 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         }
     } else { // cubic
         switch(drawStyle) {
+        case HdSt_BasisCurvesShaderKey::POINTS:
+        {
+            TCS[0] = TfToken();
+            TES[0] = TfToken();
+            break;
+        }
         case HdSt_BasisCurvesShaderKey::WIRE:
         {
             TCS[0] = _tokens->curvesTessControlShared;
@@ -284,7 +294,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     FS[fsIndex++] = isPrimTypePoints?
                         _tokens->pointIdFS : _tokens->pointIdFallbackFS;
 
-    if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE){
+    if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 
+        drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
         FS[fsIndex++] = _tokens->curvesFragmentWire;
         FS[fsIndex++] = TfToken();
     }

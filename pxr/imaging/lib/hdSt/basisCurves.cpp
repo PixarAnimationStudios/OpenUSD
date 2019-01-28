@@ -150,7 +150,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     if (*dirtyBits & (HdChangeTracker::DirtyTopology
                     | HdChangeTracker::DirtyDisplayStyle
                     | DirtyIndices
-                    | DirtyHullIndices)) {
+                    | DirtyHullIndices
+                    | DirtyPointsIndices)) {
         _PopulateTopology(sceneDelegate, drawItem, dirtyBits, desc);
     }
 
@@ -214,8 +215,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     switch (desc.geomStyle) {
     case HdBasisCurvesGeomStylePoints:
     {
-        // XXX: Points rendering for basis curves isn't supported yet.
-        drawStyle = HdSt_BasisCurvesShaderKey::WIRE;
+        drawStyle = HdSt_BasisCurvesShaderKey::POINTS;
         normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
         break;
     }
@@ -298,7 +298,7 @@ HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= _customDirtyBitsInUse &
-            (DirtyIndices|DirtyHullIndices);
+            (DirtyIndices|DirtyHullIndices|DirtyPointsIndices);
     }
 
     return bits;
@@ -336,6 +336,12 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                 if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
                     _customDirtyBitsInUse |= DirtyHullIndices;
                     *dirtyBits |= DirtyHullIndices;
+                }
+            } else if (desc.geomStyle == HdBasisCurvesGeomStylePoints) {
+                drawingCoord->SetTopologyIndex(HdStBasisCurves::PointsTopology);
+                if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
+                    _customDirtyBitsInUse |= DirtyPointsIndices;
+                    *dirtyBits |= DirtyPointsIndices;
                 }
             } else {
                 if (!(_customDirtyBitsInUse & DirtyIndices)) {
@@ -510,6 +516,11 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         if ((*dirtyBits & DirtyHullIndices) == 0) return;
         *dirtyBits &= ~DirtyHullIndices;
         indexToken = HdTokens->hullIndices;
+    } else  if (drawItem->GetDrawingCoord()->GetTopologyIndex()
+        == HdStBasisCurves::PointsTopology) {
+        if ((*dirtyBits & DirtyPointsIndices) == 0) return;
+        *dirtyBits &= ~DirtyPointsIndices;
+        indexToken = HdTokens->pointsIndices;
     } else {
         if ((*dirtyBits & DirtyIndices) == 0) return;
         *dirtyBits &= ~DirtyIndices;
@@ -527,8 +538,13 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             HdBufferSourceVector sources;
             HdBufferSpecVector bufferSpecs;
 
-            sources.push_back(_topology->GetIndexBuilderComputation(
-                !_SupportsRefinement(_refineLevel)));
+            if (desc.geomStyle == HdBasisCurvesGeomStylePoints) {
+                sources.push_back(
+                    _topology->GetPointsIndexBuilderComputation());
+            } else {
+                sources.push_back(_topology->GetIndexBuilderComputation(
+                    !_SupportsRefinement(_refineLevel)));
+            }
 
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 

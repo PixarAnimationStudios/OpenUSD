@@ -980,18 +980,6 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
     //  * showGuides, showRender, showProxy
     //  * gammaCorrectColors
 
-    if (params.applyRenderState) {
-        // drawmode.
-        // XXX: Temporary solution until shader-based styling implemented.
-        switch (params.drawMode) {
-        case UsdImagingGLDrawMode::DRAW_POINTS:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-            break;
-        default:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            break;
-        }
-    }
 
     VtValue selectionValue(_selTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
@@ -1114,8 +1102,10 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     // choose repr
     HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     bool refined = params.complexity > 1.0;
-
-    if (params.drawMode == UsdImagingGLDrawMode::DRAW_GEOM_FLAT ||
+    
+    if (params.drawMode == UsdImagingGLDrawMode::DRAW_POINTS) {
+        reprSelector = HdReprSelector(HdReprTokens->points);
+    } else if (params.drawMode == UsdImagingGLDrawMode::DRAW_GEOM_FLAT ||
         params.drawMode == UsdImagingGLDrawMode::DRAW_SHADED_FLAT) {
         // Flat shading
         reprSelector = HdReprSelector(HdReprTokens->hull);

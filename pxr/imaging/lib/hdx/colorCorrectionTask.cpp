@@ -420,12 +420,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
     glGetIntegerv(GL_VIEWPORT, restoreViewport);
     glViewport(0, 0, _framebufferSize[0], _framebufferSize[1]);
 
-    // XXX Remove this once we no longer set glPolygonMode in 
-    //     UsdImagingGLEngine::_Render()
-    GLint restorePolyMode[2] = {};
-    glGetIntegerv(GL_POLYGON_MODE, restorePolyMode);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glViewport(restoreViewport[0], restoreViewport[1],
@@ -448,7 +442,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
 
     glDepthMask(restoreDepthWriteMask);
     glStencilMask(restoreStencilWriteMask);
-    glPolygonMode(GL_FRONT_AND_BACK, restorePolyMode[0]);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
