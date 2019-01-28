@@ -84,6 +84,18 @@ void UsdUtilsExtractExternalReferences(
 /// \note If the given asset has a dependency on a directory (i.e. an external 
 /// reference to a directory path), the dependency is ignored and the contents 
 /// of the directory are not included in the created package. 
+/// 
+/// \note This function modifies the layers referenced by \p assetPath 
+/// (including the root layer and all transitive layer dependencies) in-place. 
+/// However, it does not save the layers before copying them into the package 
+/// that is created. It also does not revert the changes it makes to the 
+/// layers. Therefore, it is strongly recommended that you run this function in 
+/// isolation after any source UsdStages have been closed. If you have UsdStages 
+/// open during the function call that reference the layers being modified, you 
+/// may receive warnings or composition errors which may not affect the 
+/// resulting package adversely.
+/// 
+/// \sa UsdUtilsCreateNewARKitUsdzPackage()
 USDUTILS_API
 bool
 UsdUtilsCreateNewUsdzPackage(
@@ -111,6 +123,18 @@ UsdUtilsCreateNewUsdzPackage(
 /// \note If the given asset has a dependency on a directory (i.e. an external 
 /// reference to a directory path), the dependency is ignored and the contents 
 /// of the directory are not included in the created package. 
+/// 
+/// \note This function modifies the layers referenced by \p assetPath 
+/// (including the root layer and all transitive layer dependencies) in-place. 
+/// However, it does not save the layers before copying them into the package 
+/// that is created. It also does not revert the changes it makes to the 
+/// layers. Therefore, it is strongly recommended that you run this function in 
+/// isolation after any source UsdStages have been closed. If you have UsdStages 
+/// open during the function call that reference the layers being modified, you 
+/// may receive warnings or composition errors which may not affect the 
+/// resulting package adversely.  
+/// 
+/// \sa UsdUtilsCreateNewUsdzPackage()
 USDUTILS_API
 bool
 UsdUtilsCreateNewARKitUsdzPackage(
