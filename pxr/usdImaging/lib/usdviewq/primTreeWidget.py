@@ -225,8 +225,8 @@ class PrimItemSelectionModel(QtCore.QItemSelectionModel):
     own class that we can force to ignore selection requests except when we
     really want it to."""
     
-    def __init__(self):
-        super(PrimItemSelectionModel, self).__init__()
+    def __init__(self, model):
+        super(PrimItemSelectionModel, self).__init__(model)
         self._processSelections = True
 
     @property
@@ -273,8 +273,7 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
     def __init__(self, parent):
         super(PrimTreeWidget, self).__init__(parent=parent)
         self._appController = None
-        self._selectionModel = PrimItemSelectionModel()
-        self._selectionModel.setModel(self.model())
+        self._selectionModel = PrimItemSelectionModel(self.model())
         self.setSelectionModel(self._selectionModel)
 
     def InitDrawModeDelegate(self, appController):
