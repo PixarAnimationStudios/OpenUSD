@@ -214,13 +214,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 UsdGeomSubset 
 UsdGeomSubset::CreateGeomSubset(
     const UsdGeomImageable &geom, 
-    const std::string &subsetName,
+    const TfToken &subsetName,
     const TfToken &elementType,
     const VtIntArray &indices,
     const TfToken &familyName,
     const TfToken &familyType)
 {
-    SdfPath subsetPath = geom.GetPath().AppendChild(TfToken(subsetName));
+    SdfPath subsetPath = geom.GetPath().AppendChild(subsetName);
     UsdGeomSubset subset = UsdGeomSubset::Define(geom.GetPrim().GetStage(), 
                                                  subsetPath);
  
@@ -261,7 +261,7 @@ _CreateUniqueGeomSubset(
 UsdGeomSubset 
 UsdGeomSubset::CreateUniqueGeomSubset(
     const UsdGeomImageable &geom, 
-    const std::string &subsetName,
+    const TfToken &subsetName,
     const TfToken &elementType,
     const VtIntArray &indices,
     const TfToken &familyName,
