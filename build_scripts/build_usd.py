@@ -122,7 +122,7 @@ def GetPythonLibraryAndIncludeDir():
     """Returns tuple containing the path to the Python shared library
     and include directory corresponding to the version of python on
     the users PATH. Returns None if either directory could not be
-    determined. This function always returns None on Windows.
+    determined. This function always returns None on Windows or Linux.
 
     This function is primarily used to determine which version of
     Python USD should link against when multiple versions are installed.
@@ -135,6 +135,15 @@ def GetPythonLibraryAndIncludeDir():
     if Windows():
         return None
 
+    # We also skip all this on Linux. The below code gets the wrong answer on 
+    # certain distributions like Ubuntu, which organizes libraries based on 
+    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
+    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
+    # this function is intended to solve primarily occurs on macOS, so it's
+    # simpler to just skip this for now.
+    if Linux():
+        return None
+
     cmd = ("import distutils.sysconfig; "
            "print distutils.sysconfig.get_python_inc()")
     pythonIncludeDir = GetCommandOutput("python -c '{}'".format(cmd))
@@ -143,12 +152,7 @@ def GetPythonLibraryAndIncludeDir():
            "print distutils.sysconfig.get_config_var(\"LIBDIR\")")
     pythonLibPath = GetCommandOutput("python -c '{}'".format(cmd))
     if pythonLibPath:
-        if MacOS():
-            pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.dylib")
-        elif Linux():
-            pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.so")
-        else:
-            pythonLibPath = None
+        pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.dylib")
 
     if pythonIncludeDir and pythonLibPath:
         return (pythonLibPath, pythonIncludeDir)
@@ -987,7 +991,9 @@ def InstallUSD(context, force, buildArgs):
             # when there are multiple versions of Python installed. This
             # can lead to crashes due to USD being linked against one
             # version of Python but running through some other Python
-            # interpreter version.
+            # interpreter version. This primarily shows up on macOS, as it's
+            # common to have a Python install that's separate from the one
+            # included with the system.
             #
             # To avoid this, we try to determine these paths from Python
             # itself rather than rely on CMake's heuristics.
