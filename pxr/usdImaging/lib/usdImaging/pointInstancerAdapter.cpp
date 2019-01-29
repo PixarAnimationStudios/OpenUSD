@@ -1909,6 +1909,25 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
 }
 
 /*virtual*/
+HdVolumeFieldDescriptorVector
+UsdImagingPointInstancerAdapter::GetVolumeFieldDescriptors(
+    UsdPrim const& usdPrim,
+    SdfPath const &id,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(id)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(), id);
+        UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
+        return rproto.adapter->GetVolumeFieldDescriptors(
+            protoPrim, id, time);
+    } else {
+        return UsdImagingPrimAdapter::GetVolumeFieldDescriptors(
+            usdPrim, id, time);
+    }
+}
+
+/*virtual*/
 SdfPathVector
 UsdImagingPointInstancerAdapter::GetDependPaths(SdfPath const &instancerPath) const
 {
