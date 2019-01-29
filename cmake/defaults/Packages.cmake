@@ -103,6 +103,11 @@ if (PXR_BUILD_IMAGING)
         find_package(OpenImageIO REQUIRED)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
     endif()
+    # --OpenColorIO
+    if (PXR_BUILD_OPENCOLORIO_PLUGIN)
+        find_package(OpenColorIO REQUIRED)
+        add_definitions(-DPXR_OCIO_PLUGIN_ENABLED)
+    endif()
     # --OpenGL
     if (PXR_ENABLE_GL_SUPPORT)
         find_package(OpenGL REQUIRED)

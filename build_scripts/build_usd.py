@@ -804,6 +804,32 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
                          "include/OpenImageIO/oiioversion.h")
 
 ############################################################
+# OpenColorIO
+
+# Note that we use v1.1.0 instead of the minimum required v1.0.9
+# because v1.0.9 has problems building on macOS and Windows.
+OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+
+def InstallOpenColorIO(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
+        extraArgs = ['-DOCIO_BUILD_TRUELIGHT=OFF',
+                     '-DOCIO_BUILD_APPS=OFF',
+                     '-DOCIO_BUILD_NUKE=OFF',
+                     '-DOCIO_BUILD_DOCS=OFF',
+                     '-DOCIO_BUILD_TESTS=OFF',
+                     '-DOCIO_BUILD_PYGLUE=OFF',
+                     '-DOCIO_BUILD_JNIGLUE=OFF',
+                     '-DOCIO_STATIC_JNIGLUE=OFF']
+
+        # Add on any user-specified extra arguments.
+        extraArgs += buildArgs
+
+        RunCMake(context, force, extraArgs)
+
+OPENCOLORIO = Dependency("OpenColorIO", InstallOpenColorIO,
+                         "include/OpenColorIO/OpenColorABI.h")
+
+############################################################
 # OpenSubdiv
 
 OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_1_1.zip"
@@ -1009,6 +1035,11 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=OFF')
                 
+            if context.buildOCIO:
+                extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=OFF')
+
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -1229,6 +1260,12 @@ subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true",
                       help="Build OpenImageIO plugin for USD")
 subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false",
                       help="Do not build OpenImageIO plugin for USD (default)")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--opencolorio", dest="build_ocio", action="store_true", 
+                      default=False,
+                      help="Build OpenColorIO plugin for USD")
+subgroup.add_argument("--no-opencolorio", dest="build_ocio", action="store_false",
+                      help="Do not build OpenColorIO plugin for USD (default)")
 
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1371,6 +1408,7 @@ class InstallContext:
         self.embreeLocation = (os.path.abspath(args.embree_location)
                                if args.embree_location else None)
         self.buildOIIO = args.build_oiio
+        self.buildOCIO = args.build_ocio
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -1449,6 +1487,9 @@ if context.buildImaging:
     
     if context.buildOIIO:
         requiredDependencies += [JPEG, TIFF, PNG, OPENIMAGEIO]
+
+    if context.buildOCIO:
+        requiredDependencies += [OPENCOLORIO]
                              
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
@@ -1568,6 +1609,7 @@ Building with settings:
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenImageIO support:      {buildOIIO} 
+      OpenColorIO support:      {buildOCIO} 
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
@@ -1614,6 +1656,7 @@ summaryMsg = summaryMsg.format(
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
+    buildOCIO=("On" if context.buildOCIO else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
@@ -1710,5 +1753,3 @@ if context.buildKatana:
 if context.buildHoudini:
     Print("See documentation at http://openusd.org/docs/Houdini-USD-Plugins.html "
           "for setting up the Houdini plugin.\n")
-    
-    

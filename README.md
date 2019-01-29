@@ -65,6 +65,7 @@ may be disabled at build-time, for further details see [Advanced Build Configura
 | [GLEW](http://glew.sourceforge.net/)                              | 2.0.0                                       | x |
 | [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                       |   |
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                      | x |
+| [OpenColorIO](http://opencolorio.org/)                            | 1.0.9                                       | x |
 | [OSL (OpenShadingLanguage)](https://github.com/imageworks/OpenShadingLanguage)     | 1.5.12                                      | x |
 | [Ptex](http://ptex.us/)                                           | 2.0.30                                      | x |
 

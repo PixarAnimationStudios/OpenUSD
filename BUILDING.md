@@ -165,6 +165,12 @@ jpg, png, tga, and hdr. With OpenImageIO enabled, support extends to exr, tif,
 zfile, and tx file formats, which allows for the use of more advanced features
 like subimages and mipmaps.
 
+##### OpenColorIO 
+
+This plugin can optionally be enabled by specifying the cmake flag
+```PXR_BUILD_OPENCOLORIO_PLUGIN=TRUE```. When enabled, OpenColorIO provides 
+color management for Hydra viewports. 
+
 ##### Embree Rendering
 
 This component contains an example rendering backend for Hydra and usdview, based on the
