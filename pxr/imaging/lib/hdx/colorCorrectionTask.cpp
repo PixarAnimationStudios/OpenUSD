@@ -113,15 +113,21 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
                            config->getDefaultView(display) :
                            _viewOCIO.c_str();
 
-        const char* inputColorSpace = _colorspaceOCIO.empty() ?
-            OCIO::ROLE_SCENE_LINEAR :
-            _colorspaceOCIO.c_str();
+        std::string inputColorSpace = _colorspaceOCIO;
+        if (inputColorSpace.empty()) {
+            OCIO::ConstColorSpaceRcPtr cs = config->getColorSpace("default");
+            if (cs) {
+                inputColorSpace = cs->getName();
+            } else {
+                inputColorSpace = OCIO::ROLE_SCENE_LINEAR;
+            }
+        }
 
         // Setup the transformation we need to apply
         OCIO::DisplayTransformRcPtr transform = OCIO::DisplayTransform::Create();
         transform->setDisplay(display);
         transform->setView(view);
-        transform->setInputColorSpaceName(inputColorSpace);
+        transform->setInputColorSpaceName(inputColorSpace.c_str());
         if (!_looksOCIO.empty()) {
             transform->setLooksOverride(_looksOCIO.c_str());
             transform->setLooksOverrideEnabled(true);

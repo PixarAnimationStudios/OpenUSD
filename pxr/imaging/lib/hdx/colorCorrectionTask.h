@@ -137,7 +137,8 @@ struct HdxColorCorrectionTaskParams
     std::string looksOCIO;
 
     // The width, height and depth used for the GPU LUT 3d texture
-    int lut3dSizeOCIO = 32;
+    // 0-64 (65) is the current pxr default
+    int lut3dSizeOCIO = 65;
 };
 
 // VtValue requirements
