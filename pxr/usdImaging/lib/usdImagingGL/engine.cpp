@@ -1362,13 +1362,26 @@ UsdImagingGLEngine::_RestoreClientDrawTarget(
     GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
     glEnable(GL_DEPTH_TEST);
 
+    // Depth test must be ALWAYS instead of disabling the depth_test because
+    // we still want to write to the depth buffer. Disabling depth_test disables
+    // depth_buffer writes and we need to copy depth to client buffer.
     GLint restoreDepthFunc;
     glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
     glDepthFunc(GL_ALWAYS);
 
+    // Any alpha blending the client wanted should have happened into our 
+    // internal FB. When copying back to client buffer disable blending.
+    GLboolean restoreblendEnabled;
+    glGetBooleanv(GL_BLEND, &restoreblendEnabled);
+    glDisable(GL_BLEND);
+
     GLuint colorId = _drawTarget->GetAttachment("color")->GetGlTextureName();
     GLuint depthId = _drawTarget->GetAttachment("depth")->GetGlTextureName();
     _compositor.Draw(colorId, depthId, /*remapDepth*/ false);
+
+    if (restoreblendEnabled) {
+        glEnable(GL_BLEND);
+    }
 
     glDepthFunc(restoreDepthFunc);
     if (!restoreDepthEnabled) {

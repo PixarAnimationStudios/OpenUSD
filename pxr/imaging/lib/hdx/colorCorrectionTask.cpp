@@ -416,14 +416,46 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
     glDepthMask(GL_FALSE);
     glStencilMask(GL_FALSE);
 
+    // Depth test must be ALWAYS instead of disabling the depth_test because
+    // we still want to write to the depth buffer. Disabling depth_test disables
+    // depth_buffer writes.
+    GLint restoreDepthFunc;
+    glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
+    glDepthFunc(GL_ALWAYS);
+
     GLint restoreViewport[4] = {0};
     glGetIntegerv(GL_VIEWPORT, restoreViewport);
     glViewport(0, 0, _framebufferSize[0], _framebufferSize[1]);
 
+    // The app may have alpha blending enabled.
+    // We want to pass-through the alpha values, not alpha-blend on top of dest.
+    GLboolean restoreblendEnabled;
+    glGetBooleanv(GL_BLEND, &restoreblendEnabled);
+    glDisable(GL_BLEND);
+
+    // Alpha to coverage would prevent any pixels that have an alpha of 0.0 from
+    // being written. We want to color correct all pixels. Even background
+    // pixels that were set with a clearColor alpha of 0.0
+    GLboolean restoreAlphaToCoverage;
+    glGetBooleanv(GL_SAMPLE_ALPHA_TO_COVERAGE, &restoreAlphaToCoverage);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    if (restoreAlphaToCoverage) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    }
+
+    if (restoreblendEnabled) {
+        glEnable(GL_BLEND);
+    }
 
     glViewport(restoreViewport[0], restoreViewport[1],
                restoreViewport[2], restoreViewport[3]);
+
+    glDepthFunc(restoreDepthFunc);
+    glDepthMask(restoreDepthWriteMask);
+    glStencilMask(restoreStencilWriteMask);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDisableVertexAttribArray(_locations[POSITION]);
@@ -439,9 +471,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
         glBindTexture(GL_TEXTURE_3D, 0);
         glDisable(GL_TEXTURE_3D);
     }
-
-    glDepthMask(restoreDepthWriteMask);
-    glStencilMask(restoreStencilWriteMask);
 
     GLF_POST_PENDING_GL_ERRORS();
 }

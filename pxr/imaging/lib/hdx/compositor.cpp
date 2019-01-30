@@ -255,8 +255,16 @@ HdxCompositor::Draw(GLuint colorId, GLuint depthId, bool remapDepth)
             sizeof(float)*6, reinterpret_cast<void*>(sizeof(float)*4));
     glEnableVertexAttribArray(_locations[uvIn]);
 
+    GLboolean restoreAlphaToCoverage;
+    glGetBooleanv(GL_SAMPLE_ALPHA_TO_COVERAGE, &restoreAlphaToCoverage);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
+    if (restoreAlphaToCoverage) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    }
+    
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDisableVertexAttribArray(_locations[position]);
     glDisableVertexAttribArray(_locations[uvIn]);
