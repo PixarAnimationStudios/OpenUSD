@@ -1909,6 +1909,9 @@ public:
     /// from the schema in Alembic property order.
     std::vector<std::string> GetUnextractedSchemaNames() const;
 
+    /// Returns a _PrimReaderContext corresponding to the parent of this context.
+    _PrimReaderContext GetParentContext() const;
+
 private:
     Property& _AddProperty(const TfToken& name);
     Property& _AddProperty(const TfToken& name,
@@ -2298,6 +2301,16 @@ _PrimReaderContext::_GetPropertyMetadata(
                        UsdAbcCustomMetadata->riType);
     _GetBoolMetadata(alembicMetadata, usdMetadata,
                      UsdAbcCustomMetadata->gprimDataRender);
+}
+
+_PrimReaderContext 
+_PrimReaderContext::GetParentContext() const
+{    
+    _PrimReaderContext parentContext(
+        _context, 
+        _prim.getParent(), 
+        _path.GetParentPath());
+    return parentContext;
 }
 
 //
@@ -2872,11 +2885,11 @@ struct _CopyFaceSetBase {
     }
 };
 
-/// Class to copy faceset isPartition into the family name
-struct _CopyFaceSetFamilyName : _CopyFaceSetBase {
+/// Class to copy faceset isPartition into the family type
+struct _CopyFaceSetFamilyType : _CopyFaceSetBase {
     using _CopyFaceSetBase::operator();
 
-    _CopyFaceSetFamilyName(const IFaceSet& object_) 
+    _CopyFaceSetFamilyType(const IFaceSet& object_) 
         : _CopyFaceSetBase(object_) {};
 
     bool operator()(const UsdAbc_AlembicDataAny& dst,
@@ -3352,10 +3365,24 @@ _ReadFaceSet(_PrimReaderContext* context)
         UsdGeomTokens->elementType,
         SdfValueTypeNames->Token,
         _CopySynthetic(UsdGeomTokens->face));
+
+    TfToken defaultFamilyName("materialBind");
     context->AddUniformProperty(
         UsdGeomTokens->familyName,
         SdfValueTypeNames->Token,
-        _CopyFaceSetFamilyName(object));
+        _CopySynthetic(defaultFamilyName));
+
+    _PrimReaderContext parentPrimContext = context->GetParentContext();
+
+    TfToken subsetFamilyAttributeName = TfToken(TfStringJoin(std::vector<std::string>{
+        "subsetFamily",
+        defaultFamilyName.GetString(),
+        "familyType"}, ":"));
+
+    parentPrimContext.AddUniformProperty(
+        subsetFamilyAttributeName,
+        SdfValueTypeNames->Token,
+        _CopyFaceSetFamilyType(object));
 
     // Consume properties implicitly handled above.
     context->Extract(Type::schema_type::info_type::defaultName());

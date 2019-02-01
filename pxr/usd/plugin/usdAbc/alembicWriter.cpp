@@ -944,6 +944,9 @@ public:
     /// in Usd property order.
     TfTokenVector GetUnextractedNames() const;
 
+    /// Return the _WriterContext associated with this prim.
+    _WriterContext& GetWriterContext() const;
+
 private:
     UsdSamples _ExtractSamples(const TfToken& name);
     
@@ -1124,6 +1127,12 @@ TfTokenVector
 _PrimWriterContext::GetUnextractedNames() const
 {
     return _unextracted;
+}
+
+_WriterContext&
+_PrimWriterContext::GetWriterContext() const
+{
+    return _context;
 }
 
 // ----------------------------------------------------------------------------
@@ -2906,9 +2915,23 @@ _WriteFaceSet(_PrimWriterContext* context)
     UsdSamples indices =
         context->ExtractSamples(UsdGeomTokens->indices,
                                 SdfValueTypeNames->IntArray);
-    UsdSamples familyName =
-        context->ExtractSamples(UsdGeomTokens->familyName,
-                                SdfValueTypeNames->Token);
+
+    // The familyType is contained in the parent prim, so we 
+    // contruct a new _PrimWriterContext to access it.
+    SdfPath parentPath = context->GetPath().GetParentPath();
+    _PrimWriterContext parentPrimContext(context->GetWriterContext(),
+                                         context->GetParent(),
+                                         SdfAbstractDataSpecId(&parentPath));
+
+    TfToken defaultFamilyName("materialBind");
+    TfToken subsetFamilyAttributeName = TfToken(TfStringJoin(std::vector<std::string>{
+        "subsetFamily",
+        defaultFamilyName.GetString(),
+        "familyType"}, ":"));
+
+    UsdSamples familyType =
+        parentPrimContext.ExtractSamples(subsetFamilyAttributeName,
+                                         SdfValueTypeNames->Token);
 
     // Copy all the samples.
     typedef Type::schema_type::Sample SampleT;
@@ -2926,18 +2949,21 @@ _WriteFaceSet(_PrimWriterContext* context)
         object->getSchema().set(sample);
     }
 
-    // Face set exclusivity is not a property of the sample. Instead, it's set 
-    // on the object schema and not time sampled.
+    // It's possible that our default family name "materialBind", is not 
+    // set on the prim. In that case, use kFaceSetNonExclusive.
     FaceSetExclusivity faceSetExclusivity = kFaceSetNonExclusive;
-    if (!familyName.IsEmpty())
+    if (!familyType.IsEmpty())
     {
-        const TfToken& value = familyName.Get(0.0f).UncheckedGet<TfToken>();
+        const TfToken& value = familyType.Get(0.0f).UncheckedGet<TfToken>();
         if (!value.IsEmpty() && 
             (value == UsdGeomTokens->partition || 
              value == UsdGeomTokens->nonOverlapping)) {
             faceSetExclusivity = kFaceSetExclusive;
         }
     }
+
+    // Face set exclusivity is not a property of the sample. Instead, it's set 
+    // on the object schema and not time sampled.
     object->getSchema().setFaceExclusivity(faceSetExclusivity);
 
     // Set the time sampling.
