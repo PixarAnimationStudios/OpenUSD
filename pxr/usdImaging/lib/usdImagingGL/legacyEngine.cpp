@@ -305,8 +305,6 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
     _root = root;
     _params = params;
 
-    glEnable(GL_FRAMEBUFFER_SRGB_EXT);
-
     glPushAttrib( GL_LIGHTING_BIT );
     glPushAttrib( GL_POLYGON_BIT );
     glPushAttrib( GL_CURRENT_BIT );
@@ -477,8 +475,6 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
     glPopAttrib(); // GL_CURRENT_BIT
     glPopAttrib(); // GL_POLYGON_BIT
     glPopAttrib(); // GL_LIGHTING_BIT
-
-    glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 }
 
 void
