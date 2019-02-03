@@ -1072,6 +1072,7 @@ class AppController(QtCore.QObject):
 
         # configure render plugins after stageView initialized its renderer.
         self._configureRendererPlugins()
+        self._configureColorManagement()
 
         if self._mallocTags == 'stageAndImaging':
             DumpMallocTags(self._dataModel.stage,
@@ -1492,6 +1493,10 @@ class AppController(QtCore.QObject):
                 widget.setValue(widget.defValue)
             if isinstance(widget, QtWidgets.QLineEdit):
                 widget.setText(widget.defValue)
+
+    def _configureColorManagement(self):
+        self._ui.menuColorCorrection.setEnabled(
+            UsdImagingGL.Engine.IsColorCorrectionCapable())
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):

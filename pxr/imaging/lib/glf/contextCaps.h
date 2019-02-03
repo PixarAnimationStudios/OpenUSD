@@ -89,6 +89,8 @@ public:
     // workarounds for driver issues
     bool copyBufferEnabled;
 
+    bool floatingPointBuffersEnabled;
+
 private:
     void _LoadCaps();
     GlfContextCaps();

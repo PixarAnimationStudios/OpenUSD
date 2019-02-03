@@ -878,12 +878,23 @@ UsdImagingGLEngine::SetColorCorrectionSettings(
         return;
     }
 
+    if (!IsColorCorrectionCapable()) {
+        return;
+    }
+
     TF_VERIFY(_taskController);
 
     HdxColorCorrectionTaskParams hdParams;
     hdParams.framebufferSize = framebufferResolution;
     hdParams.colorCorrectionMode = id;
     _taskController->SetColorCorrectionParams(hdParams);
+}
+
+bool 
+UsdImagingGLEngine::IsColorCorrectionCapable()
+{
+    return GlfContextCaps::GetInstance().floatingPointBuffersEnabled && 
+           _IsHydraEnabled();
 }
 
 //----------------------------------------------------------------------------
@@ -1302,6 +1313,11 @@ void
 UsdImagingGLEngine::_BindInternalDrawTarget(
     UsdImagingGLRenderParams const& params)
 {
+    // Avoid GL errors in MacOS (e.g. Hydra with Embree)
+    if (!GlfContextCaps::GetInstance().floatingPointBuffersEnabled) {
+        return;
+    }
+
     if (!_useFloatPointDrawTarget) {
         return;
     }
@@ -1340,6 +1356,11 @@ void
 UsdImagingGLEngine::_RestoreClientDrawTarget(
     UsdImagingGLRenderParams const& params)
 {
+    // Avoid GL errors in MacOS (e.g. Hydra with Embree)
+    if (!GlfContextCaps::GetInstance().floatingPointBuffersEnabled) {
+        return;
+    }
+
     if (!_useFloatPointDrawTarget || !_drawTarget) {
         return;
     }

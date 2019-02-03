@@ -150,6 +150,9 @@ void wrapEngine()
                     &UsdImagingGLEngine::SetEnableFloatPointDrawTarget)
             .def("SetColorCorrectionSettings", 
                     &UsdImagingGLEngine::SetColorCorrectionSettings)
+            .def("IsColorCorrectionCapable", 
+                &UsdImagingGLEngine::IsColorCorrectionCapable)
+                .staticmethod("IsColorCorrectionCapable")
         ;
 
     }

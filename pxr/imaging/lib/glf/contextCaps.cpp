@@ -82,6 +82,7 @@ GlfContextCaps::GlfContextCaps()
     , shaderDrawParametersEnabled(false)
 
     , copyBufferEnabled(true)
+    , floatingPointBuffersEnabled(false)
 {
 }
 
@@ -178,6 +179,11 @@ GlfContextCaps::_LoadCaps()
         glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
         coreProfile = (profileMask & GL_CONTEXT_CORE_PROFILE_BIT);
     }
+    if (glVersion >= 400) {
+        // Older versions of GL maybe support R16F and D32F, but for now we set
+        // the minimum GL at 4.
+        floatingPointBuffersEnabled = true;
+    }
     if (glVersion >= 420) {
         shadingLanguage420pack = true;
     }
@@ -252,6 +258,7 @@ GlfContextCaps::_LoadCaps()
         glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
 
         // downgrade to the overridden GLSL version
+        floatingPointBuffersEnabled &= (glslVersion >= 400);
         shadingLanguage420pack      &= (glslVersion >= 420);
         explicitUniformLocation     &= (glslVersion >= 430);
         bindlessTextureEnabled      &= (glslVersion >= 430);

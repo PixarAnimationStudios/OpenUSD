@@ -1549,8 +1549,7 @@ class StageView(QtOpenGL.QGLWidget):
                 self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
                 self._glTimeElapsedQuery.BeginTimeElapsed()
 
-            # The legacy engine does not use the color correction pipeline
-            if not UsdImagingGL.Engine.IsHydraEnabled():
+            if not UsdImagingGL.Engine.IsColorCorrectionCapable():
                 from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
                 GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
@@ -1694,8 +1693,7 @@ class StageView(QtOpenGL.QGLWidget):
                     self._renderModeDict[self._dataModel.viewSettings.renderMode],
                     drawSelHighlights)
 
-                # The legacy engine does not use the color correction pipeline
-                if not UsdImagingGL.Engine.IsHydraEnabled():
+                if not UsdImagingGL.Engine.IsColorCorrectionCapable():
                     GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
                 self.DrawAxis(viewProjectionMatrix)
