@@ -1495,8 +1495,9 @@ class AppController(QtCore.QObject):
                 widget.setText(widget.defValue)
 
     def _configureColorManagement(self):
-        self._ui.menuColorCorrection.setEnabled(
-            UsdImagingGL.Engine.IsColorCorrectionCapable())
+        enableMenu = (not self._noRender and 
+                      UsdImagingGL.Engine.IsColorCorrectionCapable())
+        self._ui.menuColorCorrection.setEnabled(enableMenu)
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):

@@ -69,7 +69,7 @@ _IsHydraEnabled()
     // Make sure there is an OpenGL context when 
     // trying to initialize Hydra/Reference
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (!context) {
+    if (!context || !context->IsValid()) {
         TF_CODING_ERROR("OpenGL context required, using reference renderer");
         return false;
     }
