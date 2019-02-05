@@ -1297,6 +1297,11 @@ function(_pxr_library NAME)
                 )
             endif()
 
+            # Install target's PDB
+            if(WIN32)
+                install(FILES $<TARGET_PDB_FILE:${NAME}> EXPORT pxrTargets DESTINATION ${libInstallPrefix} OPTIONAL)
+            endif()
+
             export(TARGETS ${NAME}
                 APPEND
                 FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"

@@ -296,6 +296,9 @@ def RunCMake(context, force, extraArgs = None):
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
+
+        variant= BuildVariant(context)
+
         Run("cmake --build . --config {config} --target install -- {multiproc}"
             .format(config=config,
                     multiproc=("/M:{procs}"
@@ -460,6 +463,16 @@ def DownloadURL(url, context, force, dontExtract = None):
             raise RuntimeError("Failed to extract archive {filename}: {err}"
                                .format(filename=filename, err=e))
 
+def BuildVariant(context): 
+    if context.buildDebug:
+        return "Debug"
+    elif context.buildRelease:
+        return "Release"
+    elif context.buildRelWithDebug:
+        return "RelWithDebInfo"
+
+    return "RelWithDebInfo"
+
 ############################################################
 # 3rd-Party Dependencies
 
@@ -550,6 +563,15 @@ def InstallBoost(context, force, buildArgs):
         # b2 supports at most -j64 and will error if given a higher value.
         num_procs = min(64, context.numJobs)
 
+        # boost only accepts three variants: debug, release, profile
+        boostBuildVariant = "profile"
+        if context.buildDebug:
+            boostBuildVariant= "debug"
+        elif context.buildRelease:
+            boostBuildVariant= "release"
+        elif context.buildRelWithDebug:
+            boostBuildVariant= "profile"
+
         b2_settings = [
             '--prefix="{instDir}"'.format(instDir=context.instDir),
             '--build-dir="{buildDir}"'.format(buildDir=context.buildDir),
@@ -558,8 +580,7 @@ def InstallBoost(context, force, buildArgs):
             'link=shared',
             'runtime-link=shared',
             'threading=multi', 
-            'variant={variant}'
-                .format(variant="debug" if context.buildDebug else "release"),
+            'variant={variant}'.format(variant=boostBuildVariant),
             '--with-atomic',
             '--with-program_options',
             '--with-regex'
@@ -927,6 +948,14 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # tbbmalloc, which can cause problems with the Maya plugin.
         extraArgs.append('-DNO_TBB=ON')
 
+        # set CMAKE_BUILD_TYPE based on build variant
+        if context.buildDebug:
+          extraArgs.append('-DCMAKE_BUILD_TYPE=Debug')
+        elif context.buildRelease:
+          extraArgs.append('-DCMAKE_BUILD_TYPE=Release')
+        elif context.buildRelWithDebug:
+          extraArgs.append('-DCMAKE_BUILD_TYPE=RelWithDebInfo')
+
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
@@ -1084,6 +1113,16 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
         
+        # set TBB_USE_DEBUG_BUILD and CMAKE_BUILD_TYPE based on build variant
+        if context.buildDebug:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
+            extraArgs.append('-DCMAKE_BUILD_TYPE=Debug')
+        elif context.buildRelease:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
+            extraArgs.append('-DCMAKE_BUILD_TYPE=Release')
+        else:
+            extraArgs.append('-DCMAKE_BUILD_TYPE=RelWithDebInfo')
+
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
         else:
@@ -1261,6 +1300,16 @@ group.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
 group.add_argument("--build", type=str,
                    help=("Build directory for USD and 3rd-party dependencies " 
                          "(default: <install_dir>/build)"))
+
+group.add_argument("--build-debug", dest="build_debug", action="store_true",
+                    help="Build in Debug mode")
+
+group.add_argument("--build-release", dest="build_release", action="store_true",
+                    help="Build in Release mode")
+
+group.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
+                    help="Build in RelWithDebInfo mode")
+
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
                          "building libraries (see docs above)"))
@@ -1476,6 +1525,9 @@ class InstallContext:
 
         # Build type
         self.buildDebug = args.build_debug;
+        self.buildRelease = args.build_release;
+        self.buildRelWithDebug = args.build_relwithdebug;
+
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
@@ -1733,7 +1785,7 @@ Building with settings:
   Downloader                    {downloader}
 
   Building                      {buildType}
-    Config                      {buildConfig}
+    Variant                     {buildVariant}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenImageIO support:      {buildOIIO} 
@@ -1781,7 +1833,7 @@ summaryMsg = summaryMsg.format(
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
-    buildConfig=("Debug" if context.buildDebug else "Release"),
+    buildVariant=BuildVariant(context),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
