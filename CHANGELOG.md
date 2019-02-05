@@ -1,5 +1,144 @@
 # Change Log
 
+## [19.03] - 2019-02-13
+
+### Added
+Build:
+- Ability to download and build OpenColorIO dependency via `--opencolorio`
+  argument to support new color management functionality in Hydra.
+
+USD:
+- Enabled usddumpcrate utility for viewing .usdc file information in the build.
+  (PR #470)
+- Internal payloads, list editing and layer offsets for payload arcs. Payloads
+  now provide the same set of features as references.
+
+  This may affect backwards compatibility of layers written with this version
+  of USD:
+  - Layers containing payloads using these new features will not be readable
+    in previous USD versions. .usdc files containing these payloads will be
+    marked as version 0.8.0.
+  - Layers containing payloads that only use the previously-available features
+    will continue to be readable in previous USD versions.
+- API for querying authored and inherited primvars in UsdGeomPrimvarsAPI schema.
+- Optional 'jointNames' attribute to UsdSkelSkeleton to help DCC import/export.
+
+Imaging:
+- HdxColorCorrectionTask to do linear to sRGB conversions or color management
+  via OpenColorIO.
+- HdxProgressiveTask type tag for tasks that support progressive rendering.
+- Initial support for computations in the UsdImaging scene delegate.
+- Support for points rendering for basis curves in Hydra GL.
+- Publish the normals attribute or primvar from points primitives through 
+  Hydra. (PR #742)
+- usdview now responds to all scene edits from the interpreter. Plugins can
+  connect to the usdviewApi.dataModel.signalPrimsChanged signal to be notified
+  for these changes.
+
+Houdini plugin:
+- Support for more primvar types.
+
+Katana plugin:
+- Support for reading materials with multiple incoming shader connections.
+
+Maya plugin:
+- Initial work for a UsdPreviewSurface shader node and USD export support.
+
+### Changed
+Build:
+- build_usd.py now explicitly detects Python version to link against on macOS
+  to avoid conflicts between multiple installations. (Issue #19, #699)
+- build_usd.py only builds boost libraries like boost::filesystem when needed.
+
+USD:
+- UsdStage::MuteAndUnmuteLayers and LoadAndUnload now send a
+  UsdNotice::StageContentsChanged notification. (PR #710)
+
+Imaging:
+- UsdImaging scene delegate now stops population traversal at non-imageable
+  prims.
+- Materials are no longer resynced on visibility changes.
+- Hydra will now only reset varying state for clean prims.
+- HdxCompositor can now copy depth without remapping its range and can also
+  copy color and depth to a user-provided viewport size.
+- Interacting with the 'Vis' or 'Draw Mode' columns in usdview no longer
+  changes selection.
+- When multiple prims are selected in usdview, changes in the 'Vis' column
+  to one of those prims will affect all of them.
+
+Katana plugin:
+- Optimizations for reading gprims and point instancers via a new library,
+  vtKatana. This library requires Katana 3.0 or later.
+
+Maya plugin:
+- Configuration of the default material scope name has been moved to usdUtils
+  to facilitate sharing across plugins. See UsdUtilsGetMaterialsScopeName.
+
+### Deprecated
+USD:
+- UsdAttribute::HasAuthoredValueOpinion in favor of HasAuthoredValue.
+- UsdPrim::ClearPayload, HasPayload, and SetPayload in favor of API on
+  UsdPayloads object returned by GetPayloads.
+- Primvar API on UsdGeomImageable in favor of UsdGeomPrimvarsAPI schema.
+
+Katana:
+- Support for Katana 2.x in favor of Katana 3.x. We anticipate removing support
+  for Katana 2.x in the next release.
+
+### Removed
+- Dependency on boost::filesystem (Issue #679)
+- Ability to read pre-xformOp transform attributes on UsdGeomXformable prims.
+- UsdShadeMaterial::CreateMaterialFaceSet, GetMaterialFaceSet,
+  HasMaterialFaceSet functions.
+- UsdGeomCollectionAPI schema.
+
+### Fixed
+Build:
+- Detection of Visual Studio on non-English platforms in build_usd.py.
+  (Issue #613, #697)
+
+USD:
+- Error when composing prims with both direct and ancestral specializes arcs.
+- Incorrect strength ordering when composing specializes arcs declared across
+  an internal reference arc.
+- UsdAttribute::GetConnections and UsdRelationship::GetTargets could return
+  incorrect paths in cases involving nested instancing and instance proxies
+  inside of masters.
+- Corrupted values when parsing OSL string arrays in Sdr via sdrOsl plugin.
+- Various fixes for UsdSkelSkinningQuery and UsdSkelAnimMapper.
+- Incorrect results from UsdGeomBBoxCache::ComputeRelativeBound.
+- UsdGeomPointInstancer enums in Python are now properly scoped under
+  UsdGeom.PointInstancer instead of UsdGeom.
+
+Imaging:
+- GlfDrawTarget::_BindAttachment could leave a different framebuffer bound
+  than what was bound before calling the function.
+- Multiple GLSL shader fixes to allow Hydra GL to render correctly with Intel
+  GPUs.
+- Errors when trying to use usdview on macOS due to incorrect handling of
+  unsupported Hydra renderers. When no supported renderers are found, usdview
+  will fall back to the legacy renderer.
+- Missing symbol exports in UsdVolImaging that could cause build errors on
+  Windows. (PR #742)
+- Regression in usdview that caused the "Redraw On Frame Scrub" option to
+  always be in effect. (Issue #734)
+
+Alembic plugin:
+- Alembic curve basis, type, and wrap were being converted to varying 
+  attributes in USD instead of uniform.
+
+Houdini plugin:
+- Incorrect display in Tree View panel when unimporting the top-most prim.
+- USD Reference ROP behavior when updating or removing an existing reference.
+- Various compilation errors with different Houdini versions.
+- Incorrect default value for horizontal aperture offset in USD camera node.
+- Vertex attributes on meshes with rightHanded winding order. (Issue #631, 
+  PR #632)
+
+Maya plugin:
+- Incorrect name conflict error on export when stripping namespaces and merging
+  transform and shape nodes. (PR #683)
+
 ## [19.01] - 2018-12-14
 
 ### Added
