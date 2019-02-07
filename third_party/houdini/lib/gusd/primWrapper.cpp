@@ -1085,7 +1085,7 @@ GusdPrimWrapper::loadPrimvars(
                     gtData = new GT_DAIndirect( remapIndicies, gtData );
                 }
                 if( point ) {
-                    *point = (*point)->addAttribute( attr_name.c_str(), gtData, true );
+                    *point = (*point)->addAttribute( attrname.c_str(), gtData, true );
                 }
             }
         }
@@ -1099,7 +1099,7 @@ GusdPrimWrapper::loadPrimvars(
                          gtData->entries(), minVertex );
             }
             else if( vertex ) {           
-                *vertex = (*vertex)->addAttribute( attr_name.c_str(), gtData, true );
+                *vertex = (*vertex)->addAttribute( attrname.c_str(), gtData, true );
             }
         }
         else if( primvar.GetInterpolation() == UsdGeomTokens->uniform )
@@ -1112,13 +1112,13 @@ GusdPrimWrapper::loadPrimvars(
                          gtData->entries(), minUniform );
             }
             else if( primitive ) {
-                *primitive = (*primitive)->addAttribute( attr_name.c_str(), gtData, true );
+                *primitive = (*primitive)->addAttribute( attrname.c_str(), gtData, true );
             }
         }
         else if( primvar.GetInterpolation() == UsdGeomTokens->constant )
         {
             if( constant ) {
-                *constant = (*constant)->addAttribute( attr_name.c_str(), gtData, true );
+                *constant = (*constant)->addAttribute( attrname.c_str(), gtData, true );
             }
         }
     }
