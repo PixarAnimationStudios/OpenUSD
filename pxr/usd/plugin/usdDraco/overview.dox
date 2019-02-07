@@ -1,0 +1,13 @@
+/*!
+\page usddraco_page_front UsdDraco : Draco File Format Plugin
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdDraco : Draco File Format Plugin
+\publicLib
+\endif
+
+\section usdDraco_overview Overview
+
+This library provides Draco file format plugin for USD.
+
+*/
+

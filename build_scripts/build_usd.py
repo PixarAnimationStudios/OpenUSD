@@ -967,6 +967,19 @@ def InstallAlembic(context, force, buildArgs):
 ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 
 ############################################################
+# Draco
+
+DRACO_URL = "https://github.com/google/draco/archive/master.zip"
+
+def InstallDraco(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
+        cmakeOptions = ['-DBUILD_USD_PLUGIN=ON']
+        cmakeOptions += buildArgs
+        RunCMake(context, force, cmakeOptions)
+
+DRACO = Dependency("Draco", InstallDraco, "include/Draco/src/draco/compression/decode.h")
+
+############################################################
 # MaterialX
 
 MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.36.0.zip"
@@ -1072,6 +1085,11 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=OFF')
         else:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=OFF')
+
+        if context.buildDraco:
+            extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=OFF')
 
         if context.buildMaterialX:
             extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=ON')
@@ -1287,6 +1305,14 @@ subgroup.add_argument("--hdf5", dest="enable_hdf5", action="store_true",
 subgroup.add_argument("--no-hdf5", dest="enable_hdf5", action="store_false",
                       help="Disable HDF5 support in the Alembic plugin (default)")
 
+group = parser.add_argument_group(title="Draco Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--draco", dest="build_draco", action="store_true", 
+                      default=False,
+                      help="Build Draco plugin for USD")
+subgroup.add_argument("--no-draco", dest="build_draco", action="store_false",
+                      help="Do not build Draco plugin for USD (default)")
+
 group = parser.add_argument_group(title="MaterialX Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
@@ -1420,6 +1446,9 @@ class InstallContext:
         self.buildAlembic = args.build_alembic
         self.enableHDF5 = self.buildAlembic and args.enable_hdf5
 
+        # - Draco Plugin
+        self.buildDraco = args.build_draco
+
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
@@ -1480,6 +1509,9 @@ if context.buildAlembic:
     if context.enableHDF5:
         requiredDependencies += [HDF5]
     requiredDependencies += [OPENEXR, ALEMBIC]
+
+if context.buildDraco:
+    requiredDependencies += [DRACO]
 
 if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
@@ -1623,6 +1655,7 @@ Building with settings:
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
+    Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
     Maya Plugin                 {buildMaya}
     Katana Plugin               {buildKatana}
@@ -1669,6 +1702,7 @@ summaryMsg = summaryMsg.format(
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
+    buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"),
     buildMaya=("On" if context.buildMaya else "Off"),

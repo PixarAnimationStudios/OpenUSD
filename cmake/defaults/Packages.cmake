@@ -169,6 +169,10 @@ if (PXR_BUILD_ALEMBIC_PLUGIN)
     endif()
 endif()
 
+if (PXR_BUILD_DRACO_PLUGIN)
+    find_package(Draco REQUIRED)
+endif()
+
 if (PXR_BUILD_MATERIALX_PLUGIN)
     find_package(MaterialX REQUIRED)
 endif()
