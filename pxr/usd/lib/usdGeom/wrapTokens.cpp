@@ -101,7 +101,6 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "extent", UsdGeomTokens->extent);
     _AddToken(cls, "extentsHint", UsdGeomTokens->extentsHint);
     _AddToken(cls, "face", UsdGeomTokens->face);
-    _AddToken(cls, "faceSet", UsdGeomTokens->faceSet);
     _AddToken(cls, "faceVarying", UsdGeomTokens->faceVarying);
     _AddToken(cls, "faceVaryingLinearInterpolation", UsdGeomTokens->faceVaryingLinearInterpolation);
     _AddToken(cls, "faceVertexCounts", UsdGeomTokens->faceVertexCounts);

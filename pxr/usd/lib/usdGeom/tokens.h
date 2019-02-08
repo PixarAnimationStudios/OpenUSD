@@ -210,10 +210,6 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomSubset::GetElementTypeAttr(), Default value for UsdGeomSubset::GetElementTypeAttr()
     const TfToken face;
-    /// \brief "faceSet"
-    /// 
-    /// <Deprecated> This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
-    const TfToken faceSet;
     /// \brief "faceVarying"
     /// 
     /// Possible value for UsdGeomPrimvar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.

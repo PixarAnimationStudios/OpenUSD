@@ -61,10 +61,6 @@ over "GLOBAL" (
                 of purpose tokens returned by 
                 UsdGeomImageable::GetOrderedPurposeTokens."""
             }
-            dictionary faceSet = {
-                string doc = """<Deprecated> This is the namespace prefix used by 
-                UsdGeomFaceSetAPI for authoring faceSet attributes."""
-            }
             dictionary upAxis = {
                 string doc = """Stage-level metadata that encodes a scene's
                 orientation as a token whose value can be "Y" or "Z"."""
