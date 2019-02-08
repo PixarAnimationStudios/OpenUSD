@@ -9,7 +9,7 @@
 # MAYA_<lib>_FOUND    Defined if <lib> has been found
 # MAYA_<lib>_LIBRARY  Path to <lib> library
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
-# MAYA_API_VERSION    Maya version (6 digits)
+# MAYA_API_VERSION    Maya version (6-8 digits)
 #
 # IMPORTANT: Currently, there's only support for OSX platform and Maya version 2017 because of ABI issues with libc++.
 
@@ -28,27 +28,26 @@
 
 if(APPLE)
     find_path(MAYA_BASE_DIR
-            ../../devkit/include/maya/MFn.h
+            include/maya/MFn.h
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
-            "/Applications/Autodesk/maya2017/Maya.app/Contents"
-            "/Applications/Autodesk/maya2015/Maya.app/Contents"
-            "/Applications/Autodesk/maya2014/Maya.app/Contents"
-            "/Applications/Autodesk/maya2013.5/Maya.app/Contents"
-            "/Applications/Autodesk/maya2013/Maya.app/Contents"
-            "/Applications/Autodesk/maya2012.17/Maya.app/Contents"
-            "/Applications/Autodesk/maya2012/Maya.app/Contents"
-            "/Applications/Autodesk/maya2011/Maya.app/Contents"
-            "/Applications/Autodesk/maya2010/Maya.app/Contents"
+            "/Applications/Autodesk/maya2019"
+            "/Applications/Autodesk/maya2018"
+            "/Applications/Autodesk/maya2017"
+            "/Applications/Autodesk/maya2016.5"
+            "/Applications/Autodesk/maya2016"
+        DOC
+            "Maya installation root directory"
     )
-    find_path(MAYA_LIBRARY_DIR libOpenMaya.dylib
+    find_path(MAYA_LIBRARY_DIR
+            libOpenMaya.dylib
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
             "${MAYA_BASE_DIR}"
         PATH_SUFFIXES
-            Maya.app/contents/MacOS/
+            Maya.app/Contents/MacOS/
         DOC
             "Maya's libraries path"
     )
@@ -58,13 +57,13 @@ elseif(UNIX)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
-            "/usr/autodesk/maya2015-x64"
-            "/usr/autodesk/maya2014-x64"
-            "/usr/autodesk/maya2013-x64"
-            "/usr/autodesk/maya2012.17-x64"
-            "/usr/autodesk/maya2012-x64"
-            "/usr/autodesk/maya2011-x64"
-            "/usr/autodesk/maya2010-x64"
+            "/usr/autodesk/maya2019-x64"
+            "/usr/autodesk/maya2018-x64"
+            "/usr/autodesk/maya2017-x64"
+            "/usr/autodesk/maya2016.5-x64"
+            "/usr/autodesk/maya2016-x64"
+        DOC
+            "Maya installation root directory"
     )
     find_path(MAYA_LIBRARY_DIR
             libOpenMaya.so
@@ -83,32 +82,13 @@ elseif(WIN32)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "C:/Program Files/Autodesk/Maya2019"
+            "C:/Program Files/Autodesk/Maya2018"
             "C:/Program Files/Autodesk/Maya2017"
             "C:/Program Files/Autodesk/Maya2016.5"
-            "C:/Program Files/Autodesk/Maya2015.5-x64"
-            "C:/Program Files/Autodesk/Maya2015.5"
-            "C:/Program Files/Autodesk/Maya2014.5-x64"
-            "C:/Program Files/Autodesk/Maya2014.5"
-            "C:/Program Files/Autodesk/Maya2013.5-x64"
-            "C:/Program Files/Autodesk/Maya2013.5"
-            "C:/Program Files (x86)/Autodesk/Maya2013.5"
-            "C:/Autodesk/maya-2013.5x64"
-            "C:/Program Files/Autodesk/Maya2013-x64"
-            "C:/Program Files/Autodesk/Maya2013"
-            "C:/Program Files (x86)/Autodesk/Maya2013"
-            "C:/Autodesk/maya-2013x64"
-            "C:/Program Files/Autodesk/Maya2012-x64"
-            "C:/Program Files/Autodesk/Maya2012"
-            "C:/Program Files (x86)/Autodesk/Maya2012"
-            "C:/Autodesk/maya-2012x64"
-            "C:/Program Files/Autodesk/Maya2011-x64"
-            "C:/Program Files/Autodesk/Maya2011"
-            "C:/Program Files (x86)/Autodesk/Maya2011"
-            "C:/Autodesk/maya-2011x64"
-            "C:/Program Files/Autodesk/Maya2010-x64"
-            "C:/Program Files/Autodesk/Maya2010"
-            "C:/Program Files (x86)/Autodesk/Maya2010"
-            "C:/Autodesk/maya-2010x64"
+            "C:/Program Files/Autodesk/Maya2016"
+        DOC
+            "Maya installation root directory"
     )
     find_path(MAYA_LIBRARY_DIR
             OpenMaya.lib
@@ -133,7 +113,7 @@ find_path(MAYA_INCLUDE_DIR
         ../../devkit/include/
         include/
     DOC
-        "Maya's devkit headers path"
+        "Maya's headers path"
 )
 
 find_path(MAYA_LIBRARY_DIR
@@ -146,7 +126,7 @@ find_path(MAYA_LIBRARY_DIR
         ../../devkit/include/
         include/
     DOC
-        "Maya's devkit headers path"
+        "Maya's libraries path"
 )
 
 list(APPEND MAYA_INCLUDE_DIRS ${MAYA_INCLUDE_DIR})
@@ -182,12 +162,7 @@ foreach(MAYA_LIB
     find_library(MAYA_${MAYA_LIB}_LIBRARY
             ${MAYA_LIB}
         HINTS
-            "${MAYA_LOCATION}"
-            "$ENV{MAYA_LOCATION}"
-            "${MAYA_BASE_DIR}"
-        PATH_SUFFIXES
-            MacOS/
-            lib/
+            "${MAYA_LIBRARY_DIR}"
         DOC
             "Maya's ${MAYA_LIB} library path"
         # NO_CMAKE_SYSTEM_PATH needed to avoid conflicts between
@@ -208,7 +183,7 @@ find_program(MAYA_EXECUTABLE
         "$ENV{MAYA_LOCATION}"
         "${MAYA_BASE_DIR}"
     PATH_SUFFIXES
-        MacOS/
+        Maya.app/Contents/bin/
         bin/
     DOC
         "Maya's executable path"
