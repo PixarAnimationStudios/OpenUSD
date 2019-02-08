@@ -163,7 +163,15 @@ class Launcher(object):
         parser.add_argument('--quitAfterStartup', action='store_true',
                             dest='quitAfterStartup',
                             help='quit immediately after start up')
-
+                            
+        parser.add_argument('--sessionLayer', default=None, type=str,
+                            help= "If specified, the stage will be opened "
+                            "with the 'sessionLayer' in place of the default "
+                            "anonymous layer. As this changes the session "
+                            "layer from anonymous to persistent, be "
+                            "aware that layers saved from Export Overrides "
+                            "will include the opinions in the persistent "
+                            "session layer.")
 
     def ParseOptions(self, parser):
         '''

@@ -380,7 +380,8 @@ class AppController(QtCore.QObject):
 
             # read the stage here
             stage = self._openStage(
-                self._parserData.usdFile, self._parserData.populationMask)
+                self._parserData.usdFile, self._parserData.sessionLayer,
+                self._parserData.populationMask)
             if not stage:
                 sys.exit(0)
 
@@ -1093,7 +1094,7 @@ class AppController(QtCore.QObject):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath, populationMaskPaths):
+    def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1121,14 +1122,30 @@ class AppController(QtCore.QObject):
                     [err.commentary.strip() for err in e.args]))
                 sys.exit(1)
 
+            if sessionFilePath:
+                try:
+                    sessionLayer = Sdf.Layer.Find(sessionFilePath)
+                    if sessionLayer:
+                        sessionLayer.Reload()
+                    else:
+                        sessionLayer = Sdf.Layer.FindOrOpen(sessionFilePath)
+                except Tf.ErrorException as e:
+                    sys.stderr.write(_GetFormattedError(
+                        [err.commentary.strip() for err in e.args]))
+                    sys.exit(1)
+            else:
+                sessionLayer = Sdf.Layer.CreateAnonymous()
+
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, 
+                stage = Usd.Stage.OpenMasked(layer,
+                                             sessionLayer,
                                              self._resolverContextFn(usdFilePath),
                                              popMask, loadSet)
             else:
                 stage = Usd.Stage.Open(layer,
+                                       sessionLayer,
                                        self._resolverContextFn(usdFilePath), 
                                        loadSet)
 
@@ -2397,7 +2414,8 @@ class AppController(QtCore.QObject):
             # while trying to open another stage.
             self._closeStage()
             stage = self._openStage(
-                self._parserData.usdFile, self._parserData.populationMask)
+                self._parserData.usdFile, self._parserData.sessionLayer,
+                self._parserData.populationMask)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
