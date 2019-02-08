@@ -1121,12 +1121,19 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // get an adapter); resync the containing mesh.
                 if (iter->IsA<UsdGeomSubset>()) {
                     UsdPrim parentPrim = iter->GetParent();
-                    TF_DEBUG(USDIMAGING_CHANGES)
-                        .Msg("[Resync Prim]: Populating <%s> on behalf "
-                             "of subset <%s>\n",
-                             parentPrim.GetPath().GetText(),
-                             iter->GetPath().GetText());
-                    proxy->Repopulate(parentPrim.GetPath());
+                    _PrimInfo *parentPrimInfo =
+                        GetPrimInfo(parentPrim.GetPath());
+                    if (parentPrimInfo != nullptr &&
+                        TF_VERIFY(parentPrimInfo->adapter, "%s\n",
+                                  parentPrim.GetPath().GetText())) {
+                        TF_DEBUG(USDIMAGING_CHANGES)
+                            .Msg("[Resync Prim]: Resyncing parent <%s> on "
+                                 "behalf of subset <%s>\n",
+                                 parentPrim.GetPath().GetText(),
+                                 iter->GetPath().GetText());
+                        parentPrimInfo->adapter->ProcessPrimResync(
+                            parentPrim.GetPath(), proxy);
+                    }
                     iter.PruneChildren();
                     continue;
                 }
