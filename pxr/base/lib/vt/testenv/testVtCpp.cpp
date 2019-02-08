@@ -54,6 +54,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/span.h"
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -249,6 +250,49 @@ static void testArray() {
             TF_AXIOM(array.size() == size);
         };
         testImplicit({1,2,3}, 3);
+    }
+
+    {
+        // Test VtArray -> TfSpan conversions.
+
+        const VtIntArray constData({1,2,3,4,5});
+        
+        {
+            VtIntArray copy(constData);
+
+            TfSpan<const int> span = copy;
+            // Make sure we didn't detach.
+            TF_AXIOM(span.data() == constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+        {
+            VtIntArray copy(constData);
+
+            auto span = TfMakeConstSpan(copy);
+            // Make sure we didn't detach.
+            TF_AXIOM(span.data() == constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+
+        {
+            VtIntArray copy(constData);
+
+            TfSpan<int> span = copy;
+            // Should have detached.
+            TF_AXIOM(span.data() == copy.cdata() &&
+                     span.data() != constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+
+        {
+            VtIntArray copy(constData);
+            
+            auto span = TfMakeSpan(copy);
+            // Should have detached.
+            TF_AXIOM(span.data() == copy.cdata() &&
+                     span.data() != constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
     }
 }
 

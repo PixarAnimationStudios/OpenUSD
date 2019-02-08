@@ -129,6 +129,7 @@ pxr_library(tf
         preprocessorUtils.h
         preprocessorUtilsLite.h
         safeTypeCompare.h
+        span.h
         staticData.h
         staticTokens.h
         typeInfoMap.h
@@ -289,6 +290,13 @@ pxr_build_test(testTfCast
         tf
     CPPFILES
         testenv/testTfCast.cpp
+)
+
+pxr_build_test(testTfSpan
+    LIBRARIES
+        tf
+    CPPFILES
+        testenv/testTfSpan.cpp
 )
 
 pxr_build_test(testTf
@@ -671,4 +679,7 @@ pxr_register_test(testTf_PyStaticTokens
 )
 pxr_register_test(testTfCxxCast
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfCast"
+)
+pxr_register_test(testTfSpan
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfSpan"
 )

@@ -43,6 +43,7 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -54,6 +55,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 #include <boost/python/extract.hpp>
+#include <boost/python/implicit.hpp>
 #include <boost/python/iterator.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/object.hpp>
@@ -518,6 +520,10 @@ void VtWrapArray()
 
     VTOPERATOR_WRAPDECLARE_BOOL(Equal)
     VTOPERATOR_WRAPDECLARE_BOOL(NotEqual)
+
+    // Wrap implicit conversions from VtArray to TfSpan.
+    implicitly_convertible<This, TfSpan<Type> >();
+    implicitly_convertible<This, TfSpan<const Type> >();
 }
 
 // wrapping for functions that work for base types that support comparisons
