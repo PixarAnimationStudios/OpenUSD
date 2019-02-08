@@ -40,7 +40,9 @@
 #include "pxr/base/tf/pyUtils.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/variant.hpp>
+#include <boost/variant/get.hpp>
+#include <boost/variant/variant.hpp>
+#include <mutex>
 
 using std::string;
 
@@ -117,41 +119,27 @@ public:
     }
 
     using VariantType = boost::variant<int, bool, std::string>;
-    using VariantCreationFn = std::function<VariantType()>;
 
-    struct _Record {
-        VariantCreationFn defValue;
-        VariantCreationFn value;
-        string description;
-    };
-
-    bool _Define(string const& varName,
-                 VariantCreationFn defValue,
-                 string const& description, 
-                 VariantCreationFn value,
-                 std::atomic<void*>* cachedValue, 
-                 void** potentialCachedValue) {
-        _Record r;
-        r.defValue = defValue;
-        r.value = value;
-        r.description = description;
+    template <typename U>
+    bool Define(string const& varName,
+                U const& value,
+                std::atomic<U*>* cachedValue) {
 
         bool inserted = false;
         {
             std::lock_guard<std::mutex> lock(_lock);
-            inserted = _recordsByName.insert(std::make_pair(varName, r)).second;
-            if (inserted) {
-                // Install the cached value into the setting if one
-                // doesn't already exist, which it should not or we
-                // wouldn't be defining the setting.  If it didn't
-                // already exist then ensure the called doesn't delete
-                // it later.
-                void* expectedNullPtr = nullptr;
-                if (cachedValue->compare_exchange_strong(
-                        expectedNullPtr, *potentialCachedValue)) {
-                    *potentialCachedValue = nullptr;
-                }
+            // Double check cachedValue now that we've acquired the registry
+            // lock.  It's entirely possible that another thread may have
+            // initialized our TfEnvSetting while we were waiting.
+            if (cachedValue->load()) {
+                return _printAlerts;
             }
+
+            TfHashMap<string, VariantType, TfHash>::iterator it;
+            std::tie(it, inserted) = _valuesByName.insert({varName, value});
+
+            U* entryPointer = boost::get<U>(&(it->second));
+            cachedValue->store(entryPointer);
         }
 
         if (!inserted) {
@@ -163,48 +151,31 @@ public:
             return false;
         }
         else {
-            if (*potentialCachedValue) {
-                TF_CODING_ERROR("TfEnvSetting value for %s was already "
-                                "initialized.", varName.c_str());
-            }
             return _printAlerts;
         }
     }
 
-    template <typename T, typename U>
-    bool Define(string const& varName,
-                T defValue,
-                string const& description, 
-                U value,
-                std::atomic<void*>* cachedValue, 
-                void** potentialCachedValue) {
-        return _Define(varName,
-                       [defValue](){ return VariantType(defValue); },
-                       description,
-                       [value](){ return VariantType(value); },
-                       cachedValue, potentialCachedValue);
-    }
-
-    boost::variant<int, bool, std::string> LookupByName(string const& name) {
+    VariantType LookupByName(string const& name) {
         std::lock_guard<std::mutex> lock(_lock);
-        _Record* r = TfMapLookupPtr(_recordsByName, name);
-        return r ? r->value() : VariantType(); 
+        VariantType* v = TfMapLookupPtr(_valuesByName, name);
+        return v ? *v : VariantType(); 
     }
 
+private:
     std::mutex _lock;
-    TfHashMap<string, _Record, TfHash> _recordsByName;
+    TfHashMap<string, VariantType, TfHash> _valuesByName;
     bool _printAlerts;
 };
 
 TF_INSTANTIATE_SINGLETON(Tf_EnvSettingRegistry);
 
-static bool _Getenv(char const *name, bool def) {
+static bool _Getenv(std::string const& name, bool def) {
     return TfGetenvBool(name, def);
 }
-static int _Getenv(char const *name, int def) {
+static int _Getenv(std::string const& name, int def) {
     return TfGetenvInt(name, def);
 }
-static string _Getenv(char const *name, const char *def) {
+static string _Getenv(std::string const& name, const char *def) {
     return TfGetenv(name, def);
 }
 
@@ -224,19 +195,17 @@ static string _Str(const std::string &value) {
 template <class T>
 void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
 {
+    const std::string settingName = setting->_name;
+
     // Create an object to install as the cached value.
-    const T value = _Getenv(setting->_name, setting->_default);
-    T *cachedValue = new T(value);
+    const T value = _Getenv(settingName, setting->_default);
 
     // Define the setting in the registry and install the cached setting
     // value.
     Tf_EnvSettingRegistry &reg = Tf_EnvSettingRegistry::GetInstance();
-    if (reg.Define(setting->_name,
-                   setting->_default,
-                   setting->_description, 
-                   *cachedValue,
-                   reinterpret_cast< std::atomic<void*>* >(setting->_value),
-                   reinterpret_cast<void**>(&cachedValue))) {
+    if (reg.Define(settingName,
+                   value,
+                   setting->_value)) {
         // Setting was defined successfully and we should print alerts.
         if (setting->_default != value) {
             string text = TfStringPrintf("#  %s is overridden to '%s'.  "
@@ -249,11 +218,6 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
                     line.c_str(), text.c_str(), line.c_str());
         }
     }
-
-    // If the setting was already defined or the cached setting already
-    // existed then cachedValue will not have been set to NULL and we
-    // discard it here.
-    delete cachedValue;
 }
 
 // Explicitly instantiate for the supported types: bool, int, and string.
