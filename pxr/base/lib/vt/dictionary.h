@@ -34,7 +34,6 @@
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/move.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/functional/hash.hpp>

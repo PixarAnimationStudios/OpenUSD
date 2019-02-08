@@ -46,7 +46,6 @@ pxr_library(tf
         hash
         iterator
         mallocTag
-        move
         notice
         nullPtr
         ostreamMethods

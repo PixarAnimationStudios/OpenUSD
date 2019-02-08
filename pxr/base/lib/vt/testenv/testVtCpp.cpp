@@ -751,15 +751,6 @@ struct _NotDefaultConstructible
     }
 };
 
-// Currently the default implementation of TfMoveTo is the only thing that
-// requires default constructibility for types stored in VtValue, so we provide
-// an overload here that doesn't invoke it.
-void
-TfMoveTo(_NotDefaultConstructible *location, _NotDefaultConstructible &value)
-{
-    new (location) _NotDefaultConstructible(value);
-}
-
 enum Vt_TestEnum {
     Vt_TestEnumVal1,
     Vt_TestEnumVal2
