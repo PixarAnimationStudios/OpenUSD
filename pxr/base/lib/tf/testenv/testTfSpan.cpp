@@ -111,7 +111,8 @@ int main(int argc, char** argv)
 
     // Test subspans.
     {
-        TfSpan<const int> span(data);
+        // Should be able to construct subspans from a constant span.
+        const TfSpan<const int> span(data);
 
         // Test with default count (std::dynamic_extent)
         TfSpan<const int> subspan = span.subspan(2);

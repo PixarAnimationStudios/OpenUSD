@@ -188,7 +188,7 @@ public:
     /// If \p count == -1 (or std::dynamic_extent in C++20), the new span
     /// has a range of [data()+offset, data()+size()). Otherwise, the new
     /// span has range [data()+offset, data()+offset+count).
-    TfSpan<T> subspan(difference_type offset, difference_type count=-1) {
+    TfSpan<T> subspan(difference_type offset, difference_type count=-1) const {
         TF_DEV_AXIOM(offset >= 0 && offset < _size);
         if (count == -1) {
             return TfSpan<T>(_data + offset, _size - offset);
