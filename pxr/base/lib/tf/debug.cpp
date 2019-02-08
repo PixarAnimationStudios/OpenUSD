@@ -379,30 +379,6 @@ TfDebug::_SetNodes(_Node* ptr, size_t n, bool state)
     for (size_t i = 0; i < n; i++) {
         (ptr+i)->enabled = state;
     }
-
-    // If we're setting only one node, with children, we recurse:
-
-    if (n == 1 && ptr->children) {
-        for (size_t i = 0; i < ptr->children->size(); i++)
-            _SetNodes((*ptr->children)[i], 1, state);
-    }
-}
-
-void
-TfDebug::_SetParentChild(_Node* parent, _Node* child)
-{
-    if (child->children)
-        TF_FATAL_ERROR("cannot set parent/child relationship after "
-                       "child node has been given children itself");
-    
-    if (child->hasParent)
-        TF_FATAL_ERROR("child node has already been assigned a parent");
-    
-    if (!parent->children)
-        parent->children = new vector<_Node*>;
-
-    parent->children->push_back(child);
-    child->hasParent = true;
 }
 
 void

@@ -362,10 +362,6 @@ pxr_test_scripts(
     testenv/testTf_PyContainerConversions.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/baseline/TfDebug
-    DEST TfDebug/baseline
-)
 # These tests will depend on downstream libraries when built monolithic.
 # We don't want changes to those libraries to affect test results so we
 # simply disable these tests in that case.
@@ -411,8 +407,6 @@ pxr_register_test(TfDl
 )
 pxr_register_test(TfDebug
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebug"
-    STDOUT_REDIRECT debug.out
-    DIFF_COMPARE debug.out
 )
 pxr_register_test(TfDebugFatal_1
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_1"
