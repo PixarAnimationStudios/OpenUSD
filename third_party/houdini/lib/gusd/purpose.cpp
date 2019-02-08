@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "gusd/purpose.h"
+#include "gusd/USD_Utils.h"
 
 #include "pxr/usd/usdGeom/imageable.h"
 
@@ -72,13 +73,17 @@ GusdPurposeSetToStrings(GusdPurposeSet purposes)
 {
     UT_StringArray names;
     if(purposes&GUSD_PURPOSE_DEFAULT)
-        names.append(UTmakeUnsafeRef(UsdGeomTokens->default_.GetString()));
+        names.append(GusdUSD_Utils::TokenToStringHolder(
+                         UsdGeomTokens->default_));
     if(purposes&GUSD_PURPOSE_PROXY)
-        names.append(UTmakeUnsafeRef(UsdGeomTokens->proxy.GetString()));
+        names.append(GusdUSD_Utils::TokenToStringHolder(
+                         UsdGeomTokens->proxy));
     if(purposes&GUSD_PURPOSE_RENDER)
-        names.append(UTmakeUnsafeRef(UsdGeomTokens->render.GetString()));
+        names.append(GusdUSD_Utils::TokenToStringHolder(
+                         UsdGeomTokens->render));
     if(purposes&GUSD_PURPOSE_GUIDE)
-        names.append(UTmakeUnsafeRef(UsdGeomTokens->guide.GetString()));
+        names.append(GusdUSD_Utils::TokenToStringHolder(
+                         UsdGeomTokens->guide));
     return names;
 }
 

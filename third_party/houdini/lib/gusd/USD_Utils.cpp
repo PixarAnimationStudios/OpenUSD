@@ -46,6 +46,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace GusdUSD_Utils {
 
 
+UT_StringHolder
+TokenToStringHolder(const TfToken& token)
+{
+    return token.IsImmortal() ?
+        UT_StringHolder(UT_StringHolder::REFERENCE, token.GetString()) :
+        UT_StringHolder(token.GetString());
+}
+
+
 bool
 CreateSdfPath(const UT_StringRef& pathStr,
               SdfPath& path, UT_ErrorSeverity sev)

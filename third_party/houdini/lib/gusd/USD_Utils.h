@@ -50,6 +50,10 @@ namespace GusdUSD_Utils
 {
 
 
+/// Convert a TfToken to a UT_StringHolder.
+GUSD_API
+UT_StringHolder TokenToStringHolder(const TfToken& token);
+
 /// Extract the numeric time from a time code.
 /// If @a time is not numeric, returns the numeric value
 /// from UsdTimeCode::EarliestTime().

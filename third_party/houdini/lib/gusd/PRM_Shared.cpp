@@ -89,7 +89,7 @@ void _GenUsdPrimMenu(void* data, PRM_Name* names, int size,
             for(const auto& prim : prims) {
                 if(++i > primEnd)
                     break;
-                const char* path = prim.GetPath().GetString().c_str();
+                const char* path = prim.GetPath().GetText();
                 names[i] = PRM_Name(path,path);
                 names[i].harden();
             }
@@ -253,7 +253,7 @@ PRM_Name* _GetPurposeNames()
 {
     static UT_Array<PRM_Name> names;
     for(const auto& p : UsdGeomImageable::GetOrderedPurposeTokens())
-        names.append(PRM_Name(p.GetString().c_str(), p.GetString().c_str()));
+        names.append(PRM_Name(p.GetText(), p.GetText()));
     names.append(PRM_Name());
     return &names(0);
 }

@@ -40,6 +40,7 @@ pxr_shared_library(${PXR_PACKAGE}
         ${HOUDINI_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        agentUtils
         debugCodes
         error
         GT_Utils
