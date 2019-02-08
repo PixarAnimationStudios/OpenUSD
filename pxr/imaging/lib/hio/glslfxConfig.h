@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLF_GLSLFX_CONFIG_H
-#define GLF_GLSLFX_CONFIG_H
+#ifndef HIO_GLSLFX_CONFIG_H
+#define HIO_GLSLFX_CONFIG_H
 
-/// \file glf/glslfxConfig.h
+/// \file hio/glslfxConfig.h
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/hio/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
@@ -36,14 +36,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class GlfGLSLFXConfig 
+/// \class HioGlslfxConfig 
 ///
 /// A class representing the configuration of a glslfx file.
 ///
-/// GlfGLSLFXConfig provides an API for querying the configuration of a
+/// HioGlslfxConfig provides an API for querying the configuration of a
 /// glslfx file
 ///
-class GlfGLSLFXConfig
+class HioGlslfxConfig
 {
 public:
     /// Enumerates Roles that parameters can have.
@@ -119,12 +119,12 @@ public:
 
     typedef std::vector<Attribute> Attributes;
 
-    /// Create a new GlfGLSLFXConfig from an input string
+    /// Create a new HioGlslfxConfig from an input string
     ///
     /// The \p filename parameter is only used for error reporting.
     ///
-    GLF_API
-    static GlfGLSLFXConfig * Read(std::string const & input,
+    HIO_API
+    static HioGlslfxConfig * Read(std::string const & input,
                                   std::string const & filename,
                                   std::string *errorStr);
 
@@ -133,28 +133,28 @@ public:
     typedef VtDictionary MetadataDictionary;
 
     /// Return the set of source keys for a particular shader stage
-    GLF_API
+    HIO_API
     SourceKeys GetSourceKeys(TfToken const & shaderStageKey) const;
 
     /// Return the parameters specified in the configuration
-    GLF_API
+    HIO_API
     Parameters GetParameters() const;
 
     /// Return the textures specified in the configuration
-    GLF_API
+    HIO_API
     Textures GetTextures() const;
 
     /// Returns the attributes specified in the configuration
-    GLF_API
+    HIO_API
     Attributes GetAttributes() const;
 
     /// Returns the metadata specified in the configuration
-    GLF_API
+    HIO_API
     MetadataDictionary GetMetadata() const;
 
 private:
     // private ctor. should only be called by ::Read
-    GlfGLSLFXConfig(VtDictionary const & dict, std::string *errorStr);
+    HioGlslfxConfig(VtDictionary const & dict, std::string *errorStr);
 
     void _Init(VtDictionary const & dict, std::string *errorStr);
 

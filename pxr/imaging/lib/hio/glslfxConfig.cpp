@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glslfxConfig.h"
-#include "pxr/imaging/glf/debugCodes.h"
+#include "pxr/imaging/hio/glslfxConfig.h"
+#include "pxr/imaging/hio/debugCodes.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
@@ -49,22 +49,23 @@ TF_DEFINE_PRIVATE_TOKENS(
     (source)
 );
 
-VtDictionary Glf_GetDictionaryFromInput(const string &input, const string &filename, string *errorStr);
+VtDictionary Hio_GetDictionaryFromInput
+    (const string &input, const string &filename, string *errorStr);
 
-GlfGLSLFXConfig *
-GlfGLSLFXConfig::Read(string const & input, string const & filename, string *errorStr)
+HioGlslfxConfig *
+HioGlslfxConfig::Read(string const & input, string const & filename, string *errorStr)
 {
-    return new GlfGLSLFXConfig(
-        Glf_GetDictionaryFromInput(input, filename, errorStr), errorStr );
+    return new HioGlslfxConfig(
+        Hio_GetDictionaryFromInput(input, filename, errorStr), errorStr );
 }
 
-GlfGLSLFXConfig::GlfGLSLFXConfig(VtDictionary const & dict, string * errors)
+HioGlslfxConfig::HioGlslfxConfig(VtDictionary const & dict, string * errors)
 {
     _Init(dict, errors);
 }
 
 void
-GlfGLSLFXConfig::_Init(VtDictionary const & dict, string * errors)
+HioGlslfxConfig::_Init(VtDictionary const & dict, string * errors)
 {
     _params = _GetParameters(dict, errors);
     _textures = _GetTextures(dict, errors);
@@ -73,16 +74,16 @@ GlfGLSLFXConfig::_Init(VtDictionary const & dict, string * errors)
     _sourceKeyMap = _GetSourceKeyMap(dict, errors);
 }
 
-GlfGLSLFXConfig::SourceKeys
-GlfGLSLFXConfig::GetSourceKeys(TfToken const & shaderStageKey) const
+HioGlslfxConfig::SourceKeys
+HioGlslfxConfig::GetSourceKeys(TfToken const & shaderStageKey) const
 {
-    GlfGLSLFXConfig::SourceKeys ret;
+    HioGlslfxConfig::SourceKeys ret;
     TfMapLookup(_sourceKeyMap, shaderStageKey, &ret);
     return ret;
 }
  
-GlfGLSLFXConfig::_SourceKeyMap
-GlfGLSLFXConfig::_GetSourceKeyMap(VtDictionary const & dict,
+HioGlslfxConfig::_SourceKeyMap
+HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
                                    string *errorStr) const
 {
     // XXX as we implement more public API for this thing, some better structure
@@ -190,27 +191,27 @@ GlfGLSLFXConfig::_GetSourceKeyMap(VtDictionary const & dict,
     return ret;
 }
 
-static GlfGLSLFXConfig::Role
+static HioGlslfxConfig::Role
 _GetRoleFromString(string const & roleString, string *errorStr)
 {
     if (roleString == _tokens->color) {
-        return GlfGLSLFXConfig::RoleColor;
+        return HioGlslfxConfig::RoleColor;
     }
 
     *errorStr = TfStringPrintf("Unknown role specification: %s",
                                roleString.c_str());
-    return GlfGLSLFXConfig::RoleNone;
+    return HioGlslfxConfig::RoleNone;
 }
 
 
-GlfGLSLFXConfig::Parameters
-GlfGLSLFXConfig::GetParameters() const
+HioGlslfxConfig::Parameters
+HioGlslfxConfig::GetParameters() const
 {
     return _params;
 }
 
-GlfGLSLFXConfig::Parameters
-GlfGLSLFXConfig::_GetParameters(VtDictionary const & dict, 
+HioGlslfxConfig::Parameters
+HioGlslfxConfig::_GetParameters(VtDictionary const & dict, 
                                  string *errorStr) const
 {
     Parameters ret;
@@ -336,7 +337,7 @@ GlfGLSLFXConfig::_GetParameters(VtDictionary const & dict,
             }
         }
 
-        TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("        param: %s\n",
+        TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("        param: %s\n",
             paramName.c_str());
 
         ret.push_back(Parameter(paramName, defVal, docString, role));
@@ -346,14 +347,14 @@ GlfGLSLFXConfig::_GetParameters(VtDictionary const & dict,
 }
 
 
-GlfGLSLFXConfig::Textures
-GlfGLSLFXConfig::GetTextures() const
+HioGlslfxConfig::Textures
+HioGlslfxConfig::GetTextures() const
 {
     return _textures;
 }
 
-GlfGLSLFXConfig::Textures
-GlfGLSLFXConfig::_GetTextures(VtDictionary const & dict, 
+HioGlslfxConfig::Textures
+HioGlslfxConfig::_GetTextures(VtDictionary const & dict, 
                                string *errorStr) const
 {
     Textures ret;
@@ -407,7 +408,7 @@ GlfGLSLFXConfig::_GetTextures(VtDictionary const & dict,
             docString = docVal.UncheckedGet<string>();
         }
 
-        TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("        texture: %s\n",
+        TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("        texture: %s\n",
             textureName.c_str());
 
         ret.push_back(Texture(textureName, defVal, docString));
@@ -416,14 +417,14 @@ GlfGLSLFXConfig::_GetTextures(VtDictionary const & dict,
     return ret;
 }
 
-GlfGLSLFXConfig::Attributes
-GlfGLSLFXConfig::GetAttributes() const
+HioGlslfxConfig::Attributes
+HioGlslfxConfig::GetAttributes() const
 {
     return _attributes;
 }
 
-GlfGLSLFXConfig::Attributes
-GlfGLSLFXConfig::_GetAttributes(VtDictionary const & dict,
+HioGlslfxConfig::Attributes
+HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
                                  string *errorStr) const
 {
     Attributes ret;
@@ -473,7 +474,7 @@ GlfGLSLFXConfig::_GetAttributes(VtDictionary const & dict,
             docString = docVal.UncheckedGet<string>();
         }
 
-        TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("        attribute: %s\n",
+        TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("        attribute: %s\n",
             attributeName.c_str());
 
         ret.push_back(Attribute(attributeName, docString));
@@ -482,14 +483,14 @@ GlfGLSLFXConfig::_GetAttributes(VtDictionary const & dict,
     return ret;
 }
 
-GlfGLSLFXConfig::MetadataDictionary
-GlfGLSLFXConfig::GetMetadata() const
+HioGlslfxConfig::MetadataDictionary
+HioGlslfxConfig::GetMetadata() const
 {
     return _metadata;
 }
 
-GlfGLSLFXConfig::MetadataDictionary
-GlfGLSLFXConfig::_GetMetadata(VtDictionary const & dict,
+HioGlslfxConfig::MetadataDictionary
+HioGlslfxConfig::_GetMetadata(VtDictionary const & dict,
                               string *errorStr) const
 {
     MetadataDictionary ret;

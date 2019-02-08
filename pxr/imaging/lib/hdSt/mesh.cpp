@@ -1536,11 +1536,11 @@ _GetMixinShaderSource(TfToken const &shaderStageKey)
     // TODO: each delegate should provide their own package of mixin shaders
     // the lighting mixins are fallback only.
     static std::once_flag firstUse;
-    static std::unique_ptr<GlfGLSLFX> mixinFX;
+    static std::unique_ptr<HioGlslfx> mixinFX;
    
     std::call_once(firstUse, [](){
         std::string filePath = HdStPackageLightingIntegrationShader();
-        mixinFX.reset(new GlfGLSLFX(filePath));
+        mixinFX.reset(new HioGlslfx(filePath));
     });
 
     return mixinFX->GetSource(shaderStageKey);

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/package.h"
@@ -262,7 +262,7 @@ HdStGLSLProgram::GetComputeProgram(
         HdStGLSLProgramSharedPtr newProgram(
             new HdStGLSLProgram(HdTokens->computeShader));
 
-        GlfGLSLFX glslfx(HdStPackageComputeShader());
+        HioGlslfx glslfx(HdStPackageComputeShader());
         std::string version = "#version 430\n";
         if (!newProgram->CompileShader(
                 GL_COMPUTE_SHADER, version + glslfx.GetSource(shaderToken))) {

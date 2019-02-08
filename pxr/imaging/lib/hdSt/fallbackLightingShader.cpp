@@ -30,7 +30,7 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdSt_FallbackLightingShader::HdSt_FallbackLightingShader()
 {
-    _glslfx.reset(new GlfGLSLFX(HdStPackageFallbackLightingShader()));
+    _glslfx.reset(new HioGlslfx(HdStPackageFallbackLightingShader()));
 }
 
 HdSt_FallbackLightingShader::~HdSt_FallbackLightingShader()

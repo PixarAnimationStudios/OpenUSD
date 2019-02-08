@@ -1,0 +1,15 @@
+/*!
+\page hio_page_front Hio: Hydra Resource I/O
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Hio: Hydra Resource I/O
+
+\publicLib
+\endif
+
+Utility classes for loading resources used by Hydra.
+
+This library currently provides access to Pixar's shader container format,
+glslfx. Image loaders in Glf will eventually be moved to Hio, to provide a
+clean separation between resources that do/don't depend on GL.
+
+*/

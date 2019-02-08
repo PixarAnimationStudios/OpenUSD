@@ -36,7 +36,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/material.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -1007,7 +1007,7 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
 std::string
 UsdImagingGLDrawModeAdapter::_GetSurfaceShaderSource() const
 {
-    GlfGLSLFX gfx (UsdImagingGLPackageDrawModeShader());
+    HioGlslfx gfx (UsdImagingGLPackageDrawModeShader());
     if (!gfx.IsValid()) {
         TF_CODING_ERROR("Couldn't load UsdImagingPackageDrawModeShader");
         return std::string();

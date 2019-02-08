@@ -29,7 +29,7 @@
 #include "usdKatana/baseMaterialHelpers.h"
 
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/usd/usdGeom/scope.h"
 
@@ -556,7 +556,7 @@ _GetMaterialAttr(
     
     bool foundGlslfxTerminal = false;
     if (UsdShadeOutput glslfxOut = materialSchema.GetSurfaceOutput(
-                GlfGLSLFXTokens->glslfx)) {
+                HioGlslfxTokens->glslfx)) {
         if (flatten || 
             !glslfxOut.IsSourceConnectionFromBaseMaterial()) 
         {

@@ -30,7 +30,7 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
@@ -89,7 +89,7 @@ public:
 
 private:
     TfToken _glslfxFile;
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
     mutable size_t  _hash;
     mutable bool    _hashValid;
 

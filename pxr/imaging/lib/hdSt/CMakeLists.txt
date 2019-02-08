@@ -16,6 +16,7 @@ endif()
 
 pxr_library(hdSt
     LIBRARIES
+        hio
         garch
         glf
         hd

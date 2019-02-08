@@ -38,7 +38,7 @@
 #include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/uvTextureStorage.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
@@ -52,7 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (limitSurfaceEvaluation)
 );
 
-GlfGLSLFX *HdStMaterial::_fallbackSurfaceShader = nullptr;
+HioGlslfx *HdStMaterial::_fallbackSurfaceShader = nullptr;
 
 // A bindless GL sampler buffer.
 // This identifies a texture as a 64-bit handle, passed to GLSL as "uvec2".
@@ -471,7 +471,7 @@ HdStMaterial::_InitFallbackShader()
 
     const TfToken &filePath = HdStPackageFallbackSurfaceShader();
 
-    _fallbackSurfaceShader = new GlfGLSLFX(filePath);
+    _fallbackSurfaceShader = new HioGlslfx(filePath);
 
     // Check fallback shader loaded, if not continue with the invalid shader
     // this would mean the shader compilation fails and the prim would not

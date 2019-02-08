@@ -46,7 +46,7 @@
 
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
@@ -302,8 +302,8 @@ HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
 HdSprim *
 HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {
-    GlfGLSLFXSharedPtr glslfx(
-        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
+    HioGlslfxSharedPtr glslfx(
+        new HioGlslfx(HdStPackageFallbackSurfaceShader()));
 
     HdStSurfaceShaderSharedPtr fallbackShaderCode(new HdStGLSLFXShader(glslfx));
 
@@ -349,13 +349,13 @@ HdStRenderDelegate::IsSupported()
 TfTokenVector
 HdStRenderDelegate::GetShaderSourceTypes() const
 {
-    return {GlfGLSLFXTokens->glslfx};
+    return {HioGlslfxTokens->glslfx};
 }
 
 TfToken 
 HdStRenderDelegate::GetMaterialNetworkSelector() const
 {
-    return GlfGLSLFXTokens->glslfx;
+    return HioGlslfxTokens->glslfx;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

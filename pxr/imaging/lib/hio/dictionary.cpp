@@ -34,26 +34,26 @@ using namespace std;
 
 TF_DEBUG_CODES(
 
-    GLF_DEBUG_DICTIONARY
+    HIO_DEBUG_DICTIONARY
     
 );
 
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_DICTIONARY,
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HIO_DEBUG_DICTIONARY,
         "glslfx dictionary parsing");
 }
 
 static VtDictionary
-_Glf_GetDictionaryFromJSON(
+_Hio_GetDictionaryFromJSON(
     const string &input,
     string *errorStr )
 {
     if (input.empty())
     {
         const char *errorMsg = "Cannot create VtDictionary from empty string";
-        TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg("%s", errorMsg);
+        TF_DEBUG(HIO_DEBUG_DICTIONARY).Msg("%s", errorMsg);
 
         if( errorStr ) {
             *errorStr = errorMsg;
@@ -77,27 +77,27 @@ _Glf_GetDictionaryFromJSON(
     JsValue jsdict = JsParseString(TfStringJoin(filtered, "\n"), &error);
 
     if (jsdict.IsNull()) {
-        if (errorStr || TfDebug::IsEnabled(GLF_DEBUG_DICTIONARY)) {
+        if (errorStr || TfDebug::IsEnabled(HIO_DEBUG_DICTIONARY)) {
             std::string errorMessageStr = TfStringPrintf(
                 "Failed to extract dictionary from input (line %d, col %d): %s",
                 error.line, error.column, error.reason.c_str());
             if (errorStr) {
                 *errorStr = errorMessageStr;
             }
-            TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg("%s", errorMessageStr.c_str());
+            TF_DEBUG(HIO_DEBUG_DICTIONARY).Msg("%s", errorMessageStr.c_str());
         }
         return VtDictionary();
     }
 
     if (!jsdict.IsObject()) {
-        if (errorStr || TfDebug::IsEnabled(GLF_DEBUG_DICTIONARY)) {
+        if (errorStr || TfDebug::IsEnabled(HIO_DEBUG_DICTIONARY)) {
             std::string errorMessageStr = TfStringPrintf(
                 "Input string did not evaluate to a JSON dictionary:\n%s\n",
                 input.c_str());
             if (errorStr) {
                 *errorStr = errorMessageStr;
             }
-            TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg("%s", errorMessageStr.c_str());
+            TF_DEBUG(HIO_DEBUG_DICTIONARY).Msg("%s", errorMessageStr.c_str());
         }
         return VtDictionary();
     }
@@ -110,13 +110,13 @@ _Glf_GetDictionaryFromJSON(
 
 
 VtDictionary
-Glf_GetDictionaryFromInput(
+Hio_GetDictionaryFromInput(
     const string &input,
     const string &filename,
     string *errorStr )
 {
     std::string jsError;
-    VtDictionary ret = _Glf_GetDictionaryFromJSON(input, &jsError);
+    VtDictionary ret = _Hio_GetDictionaryFromJSON(input, &jsError);
 
     if (jsError.empty()) {
         // JSON succeeded, great, we're done.

@@ -41,6 +41,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("glf"),
         TfToken("hd"),
         TfToken("hdx"),
+        TfToken("hio"),
         TfToken("plug"),
         TfToken("pxOsd"),
         TfToken("sdf"),

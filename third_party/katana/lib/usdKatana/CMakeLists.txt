@@ -26,6 +26,8 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUI
         usdUtils
         cameraUtil
+        hio
+        glf
         katanaAttrfncApi
         ${vtKatana_LIBRARY}
         ${Boost_THREAD_LIBRARY} 

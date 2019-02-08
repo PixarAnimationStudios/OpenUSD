@@ -41,13 +41,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class HdStGLSLFXShader> HdStGLSLFXShaderSharedPtr;
-typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
 
 // XXX: DOCS!
 class HdStGLSLFXShader : public HdStSurfaceShader {
 public:
     HDST_API
-    HdStGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx);
+    HdStGLSLFXShader(HioGlslfxSharedPtr const& glslfx);
     HDST_API
     virtual ~HdStGLSLFXShader();
 
@@ -56,7 +56,7 @@ public:
     virtual void Reload();
 
 private:
-    GlfGLSLFXSharedPtr _glslfx;
+    HioGlslfxSharedPtr _glslfx;
 };
 
 

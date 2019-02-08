@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glslfx.h"
-#include "pxr/imaging/glf/glslfxConfig.h"
-#include "pxr/imaging/glf/debugCodes.h"
+#include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/hio/glslfxConfig.h"
+#include "pxr/imaging/hio/debugCodes.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(GlfGLSLFXTokens, GLF_GLSLFX_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_GLSLFX_TOKENS);
 
 #define CURRENT_VERSION 0.1
 
@@ -189,17 +189,17 @@ _ComputeResolvedPath(
 }
 
 
-GlfGLSLFX::GlfGLSLFX() :
+HioGlslfx::HioGlslfx() :
     _valid(false), _hash(0)
 {
     // do nothing
 }
 
-GlfGLSLFX::GlfGLSLFX(string const & filePath) :
+HioGlslfx::HioGlslfx(string const & filePath) :
     _globalContext(filePath),
     _valid(true), _hash(0)
 {
-    TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("Creating GLSLFX data from %s\n",
+    TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("Creating GLSLFX data from %s\n",
                                     filePath.c_str());
 
     _valid = _ProcessFile(filePath, _globalContext);
@@ -209,11 +209,11 @@ GlfGLSLFX::GlfGLSLFX(string const & filePath) :
     }
 }
 
-GlfGLSLFX::GlfGLSLFX(istream &is) :
+HioGlslfx::HioGlslfx(istream &is) :
     _globalContext("istream"),
     _valid(true), _hash(0)
 {
-    TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("Creating GLSLFX data from istream\n");
+    TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("Creating GLSLFX data from istream\n");
 
     _valid = _ProcessInput(&is, _globalContext);
 
@@ -223,7 +223,7 @@ GlfGLSLFX::GlfGLSLFX(istream &is) :
 }
 
 bool
-GlfGLSLFX::IsValid(std::string *reason) const
+HioGlslfx::IsValid(std::string *reason) const
 {
     if (reason && !_valid) {
         *reason = _invalidReason;
@@ -232,7 +232,7 @@ GlfGLSLFX::IsValid(std::string *reason) const
 }
 
 bool
-GlfGLSLFX::_ProcessFile(string const & filePath, _ParseContext & context)
+HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
 {
     if (!TfPathExists(filePath)) {
         // XXX:validation
@@ -242,7 +242,7 @@ GlfGLSLFX::_ProcessFile(string const & filePath, _ParseContext & context)
 
     if (_seenFiles.count(filePath)) {
         // for now, just ignore files that have already been included
-        TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("Multiple import of %s\n",
+        TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("Multiple import of %s\n",
                                         filePath.c_str());
         return true;
     }
@@ -253,7 +253,7 @@ GlfGLSLFX::_ProcessFile(string const & filePath, _ParseContext & context)
 }
 
 bool
-GlfGLSLFX::_ProcessInput(std::istream * input,
+HioGlslfx::_ProcessInput(std::istream * input,
                          _ParseContext & context)
 {
     while (getline(*input, context.currentLine)) {
@@ -284,12 +284,12 @@ GlfGLSLFX::_ProcessInput(std::istream * input,
                 return false;
             }
 
-            TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("  %s : %d : %s\n",
+            TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("  %s : %d : %s\n",
                 TfGetBaseName(context.filename).c_str(), context.lineNo,
                 context.currentLine.c_str());
 
         } else
-        if (context.currentSectionType == GlfGLSLFXTokens->glslfx && 
+        if (context.currentSectionType == HioGlslfxTokens->glslfx && 
                 context.currentLine.find(_tokens->import.GetText()) == 0) {
             if (!_ProcessImport(context)) {
                 return false;
@@ -309,7 +309,7 @@ GlfGLSLFX::_ProcessInput(std::istream * input,
     }
 
     for (std::string const& importFile : context.imports) {
-        TF_DEBUG(GLF_DEBUG_GLSLFX).Msg(" Importing File : %s\n",
+        TF_DEBUG(HIO_DEBUG_GLSLFX).Msg(" Importing File : %s\n",
                                         importFile.c_str());
 
         _ParseContext localContext(importFile);
@@ -322,7 +322,7 @@ GlfGLSLFX::_ProcessInput(std::istream * input,
 }
 
 bool
-GlfGLSLFX::_ProcessImport(_ParseContext & context)
+HioGlslfx::_ProcessImport(_ParseContext & context)
 {
     vector<string> tokens = TfStringTokenize(context.currentLine);
 
@@ -350,7 +350,7 @@ GlfGLSLFX::_ProcessImport(_ParseContext & context)
 }
 
 bool
-GlfGLSLFX::_ParseSectionLine(_ParseContext & context)
+HioGlslfx::_ParseSectionLine(_ParseContext & context)
 {
 
     vector<string> tokens = TfStringTokenize(context.currentLine);
@@ -364,7 +364,7 @@ GlfGLSLFX::_ParseSectionLine(_ParseContext & context)
     context.currentSectionType = tokens[1];
     context.currentSectionId.clear();
 
-    if (context.currentSectionType == GlfGLSLFXTokens->glslfx.GetText()) {
+    if (context.currentSectionType == HioGlslfxTokens->glslfx.GetText()) {
         return _ParseVersionLine(tokens, context);
     }
     if (context.currentSectionType == _tokens->configuration.GetText()) {
@@ -381,7 +381,7 @@ GlfGLSLFX::_ParseSectionLine(_ParseContext & context)
 }
 
 bool
-GlfGLSLFX::_ParseGLSLSectionLine(vector<string> const & tokens,
+HioGlslfx::_ParseGLSLSectionLine(vector<string> const & tokens,
                                   _ParseContext & context)
 {
     if (tokens.size() < 3) {
@@ -414,7 +414,7 @@ GlfGLSLFX::_ParseGLSLSectionLine(vector<string> const & tokens,
 }
 
 bool
-GlfGLSLFX::_ParseVersionLine(vector<string> const & tokens,
+HioGlslfx::_ParseVersionLine(vector<string> const & tokens,
                               _ParseContext & context)
 {
     if (context.lineNo != 1) {
@@ -447,7 +447,7 @@ GlfGLSLFX::_ParseVersionLine(vector<string> const & tokens,
 }
 
 bool
-GlfGLSLFX::_ParseConfigurationLine(_ParseContext & context)
+HioGlslfx::_ParseConfigurationLine(_ParseContext & context)
 {
     if (_configMap.find(context.filename) != _configMap.end()) {
         TF_RUNTIME_ERROR("Syntax Error on line %d of %s. "
@@ -467,7 +467,7 @@ GlfGLSLFX::_ParseConfigurationLine(_ParseContext & context)
 
 
 bool
-GlfGLSLFX::_ComposeConfiguration(std::string *reason)
+HioGlslfx::_ComposeConfiguration(std::string *reason)
 {
     // XXX for now, the strongest value just wins. there is no partial
     // composition. so, if you define in an import .glslfx file:
@@ -491,11 +491,11 @@ GlfGLSLFX::_ComposeConfiguration(std::string *reason)
 
     for (std::string const& item : _configOrder) {
         TF_AXIOM(_configMap.find(item) != _configMap.end());
-        TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("    Parsing config for %s\n",
+        TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("    Parsing config for %s\n",
                                         TfGetBaseName(item).c_str());
 
         string errorStr;
-        _config.reset(GlfGLSLFXConfig::Read(_configMap[item], item, &errorStr));
+        _config.reset(HioGlslfxConfig::Read(_configMap[item], item, &errorStr));
 
         if (!errorStr.empty()) {
             *reason = 
@@ -508,48 +508,48 @@ GlfGLSLFX::_ComposeConfiguration(std::string *reason)
     return true;
 }
 
-GlfGLSLFXConfig::Parameters
-GlfGLSLFX::GetParameters() const
+HioGlslfxConfig::Parameters
+HioGlslfx::GetParameters() const
 {
     if (_config) {
         return _config->GetParameters();
     }
 
-    return GlfGLSLFXConfig::Parameters();
+    return HioGlslfxConfig::Parameters();
 }
 
-GlfGLSLFXConfig::Textures
-GlfGLSLFX::GetTextures() const
+HioGlslfxConfig::Textures
+HioGlslfx::GetTextures() const
 {
     if (_config) {
         return _config->GetTextures();
     }
 
-    return GlfGLSLFXConfig::Textures();
+    return HioGlslfxConfig::Textures();
 }
 
-GlfGLSLFXConfig::Attributes
-GlfGLSLFX::GetAttributes() const
+HioGlslfxConfig::Attributes
+HioGlslfx::GetAttributes() const
 {
     if (_config) {
         return _config->GetAttributes();
     }
 
-    return GlfGLSLFXConfig::Attributes();
+    return HioGlslfxConfig::Attributes();
 }
 
-GlfGLSLFXConfig::MetadataDictionary
-GlfGLSLFX::GetMetadata() const
+HioGlslfxConfig::MetadataDictionary
+HioGlslfx::GetMetadata() const
 {
     if (_config) {
         return _config->GetMetadata();
     }
 
-    return GlfGLSLFXConfig::MetadataDictionary();
+    return HioGlslfxConfig::MetadataDictionary();
 }
 
 string
-GlfGLSLFX::_GetSource(const TfToken &shaderStageKey) const
+HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
 {
     if (!_config) {
         return "";
@@ -579,71 +579,71 @@ GlfGLSLFX::_GetSource(const TfToken &shaderStageKey) const
 }
 
 string
-GlfGLSLFX::GetVertexSource() const
+HioGlslfx::GetVertexSource() const
 {
     return _GetSource(_tokens->vertexShader);
 }
 
 
 string
-GlfGLSLFX::GetTessControlSource() const
+HioGlslfx::GetTessControlSource() const
 {
     return _GetSource(_tokens->tessControlShader);
 }
 
 
 string
-GlfGLSLFX::GetTessEvalSource() const
+HioGlslfx::GetTessEvalSource() const
 {
     return _GetSource(_tokens->tessEvalShader);
 }
 
 
 string
-GlfGLSLFX::GetGeometrySource() const
+HioGlslfx::GetGeometrySource() const
 {
     return _GetSource(_tokens->geometryShader);
 }
 
 
 string
-GlfGLSLFX::GetFragmentSource() const
+HioGlslfx::GetFragmentSource() const
 {
     return _GetSource(_tokens->fragmentShader);
 }
 
 string
-GlfGLSLFX::GetPreambleSource() const
+HioGlslfx::GetPreambleSource() const
 {
     return _GetSource(_tokens->preamble);
 }
 
 string
-GlfGLSLFX::GetSurfaceSource() const
+HioGlslfx::GetSurfaceSource() const
 {
     return _GetSource(_tokens->surfaceShader);
 }
 
 string
-GlfGLSLFX::GetDisplacementSource() const
+HioGlslfx::GetDisplacementSource() const
 {
     return _GetSource(_tokens->displacementShader);
 }
 
 string
-GlfGLSLFX::GetVertexInjectionSource() const
+HioGlslfx::GetVertexInjectionSource() const
 {
     return _GetSource(_tokens->vertexShaderInjection);
 }
 
 string
-GlfGLSLFX::GetGeometryInjectionSource() const
+HioGlslfx::GetGeometryInjectionSource() const
 {
     return _GetSource(_tokens->geometryShaderInjection);
 }
 
 string
-GlfGLSLFX::GetSource(const TfToken &shaderStageKey) const
+HioGlslfx::GetSource(const TfToken &shaderStageKey) const
 {
     return _GetSource(shaderStageKey);
 }

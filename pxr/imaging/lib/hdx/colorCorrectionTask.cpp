@@ -32,7 +32,7 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/setenv.h"
 
@@ -194,7 +194,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
 
     _shaderProgram.reset(new HdStGLSLProgram(_tokens->colorCorrectionShader));
 
-    GlfGLSLFX glslfx(HdxPackageColorCorrectionShader());
+    HioGlslfx glslfx(HdxPackageColorCorrectionShader());
 
     std::string fragCode = "#version 120\n";
 

@@ -31,7 +31,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 #include "pxr/imaging/glf/udimTexture.h"
 
@@ -446,7 +446,7 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
     TfToken const& shaderType,
     VtDictionary * metadataOut) const
 {
-    auto getGLSLFXSource = [&shaderType, &metadataOut](const GlfGLSLFX &gfx) {
+    auto getGLSLFXSource = [&shaderType, &metadataOut](const HioGlslfx &gfx) {
         if (!gfx.IsValid()){
             return std::string();
         }
@@ -479,31 +479,31 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
                     auto &shaderReg = SdrRegistry::GetInstance();
                     if (SdrShaderNodeConstPtr sdrNode = 
                             shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
-                                GlfGLSLFXTokens->glslfx)) {
+                                HioGlslfxTokens->glslfx)) {
                         const std::string &glslfxPath = sdrNode->GetSourceURI();
                         TF_DEBUG(USDIMAGING_SHADERS).Msg(
                             "Loading UsdShade preview surface %s\n", 
                             glslfxPath.c_str());
-                        return getGLSLFXSource(GlfGLSLFX(glslfxPath));
+                        return getGLSLFXSource(HioGlslfx(glslfxPath));
                     }
                 }
             }
         } else if (implSource == UsdShadeTokens->sourceAsset) {
             SdfAssetPath sourceAsset;
             if (shader.GetSourceAsset(&sourceAsset, 
-                                      /*sourceType*/ GlfGLSLFXTokens->glslfx)) {
+                                      /*sourceType*/ HioGlslfxTokens->glslfx)) {
                 std::string resolvedSrcAsset = 
                     ArGetResolver().Resolve(sourceAsset.GetAssetPath());
                 if (!resolvedSrcAsset.empty()) {
-                    return getGLSLFXSource(GlfGLSLFX(resolvedSrcAsset));
+                    return getGLSLFXSource(HioGlslfx(resolvedSrcAsset));
                 }
             }
         } else if (implSource == UsdShadeTokens->sourceCode) {
             std::string sourceCode; 
             if (shader.GetSourceCode(&sourceCode, 
-                                     /*sourceType*/ GlfGLSLFXTokens->glslfx)) {
+                                     /*sourceType*/ HioGlslfxTokens->glslfx)) {
                 std::istringstream sourceCodeStream(sourceCode);
-                return getGLSLFXSource(GlfGLSLFX(sourceCodeStream));
+                return getGLSLFXSource(HioGlslfx(sourceCodeStream));
             }
         }
     }
@@ -545,7 +545,7 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
         filePath = asset.GetAssetPath();
     }
 
-    GlfGLSLFX gfx(filePath);
+    HioGlslfx gfx(filePath);
     return getGLSLFXSource(gfx);
 }
 
@@ -583,7 +583,7 @@ UsdImagingGLHydraMaterialAdapter::_GetMaterialParamValue(
                 auto &shaderReg = SdrRegistry::GetInstance();
                 if (SdrShaderNodeConstPtr sdrNode = 
                     shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
-                        GlfGLSLFXTokens->glslfx)) {
+                        HioGlslfxTokens->glslfx)) {
                     if (const auto &sdrInput = 
                                 sdrNode->GetShaderInput(paramName)) {
                         value = sdrInput->GetDefaultValue();
@@ -855,7 +855,7 @@ _ShaderNetworkWalker::_ShaderNetworkWalker(
 
         SdrShaderNodeConstPtr sdrNode = 
                 shaderReg.GetShaderNodeByIdentifierAndType(id, 
-                    GlfGLSLFXTokens->glslfx);
+                    HioGlslfxTokens->glslfx);
 
         TfToken sdrFamily(sdrNode ? sdrNode->GetFamily() : TfToken());
         TfToken sdrRole(sdrNode ? sdrNode->GetRole() : "");
@@ -1167,7 +1167,7 @@ _ShaderNetworkWalker::_GetShaderRole(const UsdShadeShader &shader)
         auto &shaderReg = SdrRegistry::GetInstance();
         SdrShaderNodeConstPtr sdrNode = 
                 shaderReg.GetShaderNodeByIdentifierAndType(id, 
-                    GlfGLSLFXTokens->glslfx);
+                    HioGlslfxTokens->glslfx);
         return sdrNode ? sdrNode->GetRole() : std::string();
     }
     return std::string();

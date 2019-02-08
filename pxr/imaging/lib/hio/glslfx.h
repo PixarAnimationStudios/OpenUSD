@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLF_GLSLFX_H
-#define GLF_GLSLFX_H
+#ifndef HIO_GLSLFX_H
+#define HIO_GLSLFX_H
 
-/// \file glf/glslfx.h
+/// \file hio/glslfx.h
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/glslfxConfig.h"
+#include "pxr/imaging/hio/api.h"
+#include "pxr/imaging/hio/glslfxConfig.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -42,16 +42,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define GLF_GLSLFX_TOKENS  \
+#define HIO_GLSLFX_TOKENS  \
     (glslfx)
 
-TF_DECLARE_PUBLIC_TOKENS(GlfGLSLFXTokens, GLF_API, GLF_GLSLFX_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_API, HIO_GLSLFX_TOKENS);
 
-/// \class GlfGLSLFX
+/// \class HioGlslfx
 ///
 /// A class representing the config and shader source of a glslfx file.
 ///
-/// a GlfGLSLFX object is constructed by providing the path of a file whose
+/// a HioGlslfx object is constructed by providing the path of a file whose
 /// contents look something like this:
 ///
 /// \code
@@ -122,62 +122,62 @@ TF_DECLARE_PUBLIC_TOKENS(GlfGLSLFXTokens, GLF_API, GLF_GLSLFX_TOKENS);
 /// }
 /// \endcode
 ///
-class GlfGLSLFX
+class HioGlslfx
 {
 public:
     /// Create an invalid glslfx object
-    GLF_API
-    GlfGLSLFX();
+    HIO_API
+    HioGlslfx();
 
     /// Create a glslfx object from a file
-    GLF_API
-    GlfGLSLFX(std::string const & filePath);
+    HIO_API
+    HioGlslfx(std::string const & filePath);
 
     /// Create a glslfx object from a stream
-    GLF_API
-    GlfGLSLFX(std::istream &is);
+    HIO_API
+    HioGlslfx(std::istream &is);
 
     /// Return the parameters specified in the configuration
-    GLF_API
-    GlfGLSLFXConfig::Parameters GetParameters() const;
+    HIO_API
+    HioGlslfxConfig::Parameters GetParameters() const;
 
     /// Return the textures specified in the configuration
-    GLF_API
-    GlfGLSLFXConfig::Textures GetTextures() const;
+    HIO_API
+    HioGlslfxConfig::Textures GetTextures() const;
 
     /// Return the attributes specified in the configuration
-    GLF_API
-    GlfGLSLFXConfig::Attributes GetAttributes() const;
+    HIO_API
+    HioGlslfxConfig::Attributes GetAttributes() const;
 
     /// Return the metadata specified in the configuration
-    GLF_API
-    GlfGLSLFXConfig::MetadataDictionary GetMetadata() const;
+    HIO_API
+    HioGlslfxConfig::MetadataDictionary GetMetadata() const;
 
     /// Returns true if this is a valid glslfx file
-    GLF_API
+    HIO_API
     bool IsValid(std::string *reason=NULL) const;
 
     /// \name Compatible shader sources
     /// @{
 
     /// Get the vertex source string
-    GLF_API
+    HIO_API
     std::string GetVertexSource() const;
 
     /// Get the tess control source string
-    GLF_API
+    HIO_API
     std::string GetTessControlSource() const;
 
     /// Get the tess eval source string
-    GLF_API
+    HIO_API
     std::string GetTessEvalSource() const;
 
     /// Get the geometry source string
-    GLF_API
+    HIO_API
     std::string GetGeometrySource() const;
 
     /// Get the fragment source string
-    GLF_API
+    HIO_API
     std::string GetFragmentSource() const;
 
     /// @}
@@ -186,29 +186,29 @@ public:
     /// @{
 
     /// Get the preamble (osd uniform definitions)
-    GLF_API
+    HIO_API
     std::string GetPreambleSource() const;
 
     /// Get the surface source string
-    GLF_API
+    HIO_API
     std::string GetSurfaceSource() const;
 
     /// Get the displacement source string
-    GLF_API
+    HIO_API
     std::string GetDisplacementSource() const;
 
     /// Get the vertex injection source string
-    GLF_API
+    HIO_API
     std::string GetVertexInjectionSource() const;
 
     /// Get the geometry injection source string
-    GLF_API
+    HIO_API
     std::string GetGeometryInjectionSource() const;
 
     /// @}
 
     /// Get the shader source associated with given key
-    GLF_API
+    HIO_API
     std::string GetSource(const TfToken &shaderStageKey) const;
 
     /// Get the original file name passed to the constructor
@@ -267,7 +267,7 @@ private:
     std::vector<std::string> _configOrder;
     std::set<std::string> _seenFiles;
 
-    boost::scoped_ptr<GlfGLSLFXConfig> _config;
+    boost::scoped_ptr<HioGlslfxConfig> _config;
 
     bool _valid;
     std::string _invalidReason; // if _valid is false, reason why

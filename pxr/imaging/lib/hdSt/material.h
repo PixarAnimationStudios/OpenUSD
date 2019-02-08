@@ -39,7 +39,7 @@ typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPt
 typedef std::vector<HdStTextureResourceSharedPtr>
                                 HdStTextureResourceSharedPtrVector;
 
-class GlfGLSLFX;
+class HioGlslfx;
 
 class HdStMaterial final: public HdMaterial {
 public:
@@ -128,7 +128,7 @@ private:
 
     void _InitFallbackShader();
 
-    static GlfGLSLFX                  *_fallbackSurfaceShader;
+    static HioGlslfx                  *_fallbackSurfaceShader;
 
     HdStSurfaceShaderSharedPtr         _surfaceShader;
     HdStTextureResourceSharedPtrVector _fallbackTextureResources;

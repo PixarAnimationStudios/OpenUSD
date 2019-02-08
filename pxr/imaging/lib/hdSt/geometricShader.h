@@ -31,7 +31,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -202,7 +202,7 @@ private:
     float _lineWidth;
     // depth offset?
 
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
     bool _cullingPass;
     ID _hash;
 
