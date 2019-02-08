@@ -894,7 +894,7 @@ bool
 UsdImagingGLEngine::IsColorCorrectionCapable()
 {
     return GlfContextCaps::GetInstance().floatingPointBuffersEnabled && 
-           _IsHydraEnabled();
+           IsHydraEnabled();
 }
 
 //----------------------------------------------------------------------------
