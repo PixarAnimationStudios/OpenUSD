@@ -189,6 +189,19 @@ find_program(MAYA_EXECUTABLE
         "Maya's executable path"
 )
 
+find_program(MAYA_PY_EXECUTABLE
+        mayapy
+    HINTS
+        "${MAYA_LOCATION}"
+        "$ENV{MAYA_LOCATION}"
+        "${MAYA_BASE_DIR}"
+    PATH_SUFFIXES
+        Maya.app/Contents/bin/
+        bin/
+    DOC
+        "Maya's Python executable path"
+)
+
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
 
     # Tease the MAYA_API_VERSION numbers from the lib headers
@@ -203,6 +216,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Maya
     REQUIRED_VARS
         MAYA_EXECUTABLE
+        MAYA_PY_EXECUTABLE
         MAYA_INCLUDE_DIRS
         MAYA_LIBRARIES
     VERSION_VAR
