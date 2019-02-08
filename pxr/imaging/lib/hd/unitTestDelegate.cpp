@@ -131,8 +131,12 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
-                        points, numVerts, verts, VtIntArray(), PxOsdSubdivTags(),
-                        VtValue(GfVec4f(1)), HdInterpolationConstant, guide, doubleSided);
+                        points, numVerts, verts, VtIntArray(),
+                        PxOsdSubdivTags(),
+                        VtValue(GfVec3f(1)), HdInterpolationConstant,
+                        VtValue(1.0f), HdInterpolationConstant,
+                        guide, doubleSided);
+
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
@@ -148,6 +152,8 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
                              PxOsdSubdivTags const &subdivTags,
                              VtValue const &color,
                              HdInterpolation colorInterpolation,
+                             VtValue const &opacity,
+                             HdInterpolation opacityInterpolation,
                              bool guide,
                              SdfPath const &instancerId,
                              TfToken const &scheme,
@@ -161,7 +167,8 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, holes, subdivTags,
-                        color, colorInterpolation, guide, doubleSided);
+                        color, colorInterpolation, opacity,
+                        opacityInterpolation, guide, doubleSided);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
@@ -176,6 +183,8 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     TfToken const &basis,
                                     VtValue const &color,
                                     HdInterpolation colorInterpolation,
+                                    VtValue const &opacity,
+                                    HdInterpolation opacityInterpolation,
                                     VtValue const &width,
                                     HdInterpolation widthInterpolation,
                                     SdfPath const &instancerId)
@@ -192,6 +201,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                           type,
                           basis,
                           color, colorInterpolation,
+                          opacity, opacityInterpolation,
                           width, widthInterpolation);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
@@ -203,6 +213,8 @@ HdUnitTestDelegate::AddPoints(SdfPath const &id,
                                VtVec3fArray const &points,
                                VtValue const &color,
                                HdInterpolation colorInterpolation,
+                               VtValue const &opacity,
+                               HdInterpolation opacityInterpolation,
                                VtValue const &width,
                                HdInterpolation widthInterpolation,
                                SdfPath const &instancerId)
@@ -216,6 +228,7 @@ HdUnitTestDelegate::AddPoints(SdfPath const &id,
 
     _points[id] = _Points(points,
                           color, colorInterpolation,
+                          opacity, opacityInterpolation,
                           width, widthInterpolation);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
@@ -839,7 +852,7 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         if(_curves.find(id) != _curves.end()) {
             return VtValue(_curves[id].normals);
         }
-    } else if (key == HdTokens->color) {
+    } else if (key == HdTokens->displayColor) {
         if(_meshes.find(id) != _meshes.end()) {
             return _meshes[id].color;
         }
@@ -848,6 +861,16 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         }
         else if (_points.find(id) != _points.end()) {
             return _points[id].color;
+        }
+    } else if (key == HdTokens->displayOpacity) {
+        if(_meshes.find(id) != _meshes.end()) {
+            return _meshes[id].opacity;
+        }
+        else if (_curves.find(id) != _curves.end()) {
+            return _curves[id].opacity;
+        }
+        else if (_points.find(id) != _points.end()) {
+            return _points[id].opacity;
         }
     } else if (key == HdTokens->widths) {
         if(_curves.find(id) != _curves.end()) {
@@ -904,13 +927,19 @@ HdUnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
         primvars.emplace_back(_tokens->translate, interpolation);
     } else if(_meshes.find(id) != _meshes.end()) {
         if (_meshes[id].colorInterpolation == interpolation) {
-            primvars.emplace_back(HdTokens->color, interpolation,
+            primvars.emplace_back(HdTokens->displayColor, interpolation,
                                   HdPrimvarRoleTokens->color);
+        }
+        if (_meshes[id].opacityInterpolation == interpolation) {
+            primvars.emplace_back(HdTokens->displayOpacity, interpolation);
         }
     } else if (_curves.find(id) != _curves.end()) {
         if (_curves[id].colorInterpolation == interpolation) {
-            primvars.emplace_back(HdTokens->color, interpolation,
+            primvars.emplace_back(HdTokens->displayColor, interpolation,
                                   HdPrimvarRoleTokens->color);
+        }
+        if (_curves[id].opacityInterpolation == interpolation) {
+            primvars.emplace_back(HdTokens->displayOpacity, interpolation);
         }
         if (_curves[id].widthInterpolation == interpolation) {
             primvars.emplace_back(HdTokens->widths, interpolation);
@@ -922,8 +951,11 @@ HdUnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
         }
     } else if (_points.find(id) != _points.end()) {
         if (_points[id].colorInterpolation == interpolation) {
-            primvars.emplace_back(HdTokens->color, interpolation,
+            primvars.emplace_back(HdTokens->displayColor, interpolation,
                                   HdPrimvarRoleTokens->color);
+        }
+        if (_points[id].opacityInterpolation == interpolation) {
+            primvars.emplace_back(HdTokens->displayOpacity, interpolation);
         }
         if (_points[id].widthInterpolation == interpolation) {
             primvars.emplace_back(HdTokens->widths, interpolation);
@@ -1018,31 +1050,31 @@ HdUnitTestDelegate::AddPolygons(
     VtValue color;
 
     if (colorInterp == HdInterpolationConstant) {
-        color = VtValue(GfVec4f(1, 1, 0, 1));
+        color = VtValue(GfVec3f(1, 1, 0));
     } else if (colorInterp == HdInterpolationUniform) {
-        GfVec4f colors[] = { GfVec4f(1, 0, 0, 1),
-                             GfVec4f(0, 0, 1, 1),
-                             GfVec4f(0, 1, 0, 1) };
+        GfVec3f colors[] = { GfVec3f(1, 0, 0),
+                             GfVec3f(0, 0, 1),
+                             GfVec3f(0, 1, 0) };
         color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
     } else if (colorInterp == HdInterpolationVertex) {
-        VtVec4fArray colorArray(sizeof(points)/sizeof(points[0]));
+        VtVec3fArray colorArray(sizeof(points)/sizeof(points[0]));
         for (size_t i = 0; i < colorArray.size(); ++i) {
-            colorArray[i] = GfVec4f(fabs(sin(0.5*i)),
+            colorArray[i] = GfVec3f(fabs(sin(0.5*i)),
                                     fabs(cos(0.7*i)),
-                                    fabs(sin(0.9*i)*cos(0.25*i)),
-                                    1);
+                                    fabs(sin(0.9*i)*cos(0.25*i)));
         }
         color = VtValue(colorArray);
     } else if (colorInterp == HdInterpolationFaceVarying) {
-        VtVec4fArray colorArray(sizeof(verts)/sizeof(verts[0]));
+        VtVec3fArray colorArray(sizeof(verts)/sizeof(verts[0]));
         for (size_t i = 0; i < colorArray.size(); ++i) {
-            colorArray[i] = GfVec4f(fabs(sin(0.5*i)),
+            colorArray[i] = GfVec3f(fabs(sin(0.5*i)),
                                     fabs(cos(0.7*i)),
-                                    fabs(sin(0.9*i)*cos(0.25*i)),
-                                    1);
+                                    fabs(sin(0.9*i)*cos(0.25*i)));
         }
         color = VtValue(colorArray);
     }
+
+    VtValue opacity = VtValue(1.0f);
 
     AddMesh(id,
             transform,
@@ -1053,6 +1085,8 @@ HdUnitTestDelegate::AddPolygons(
             subdivTags,
             color,
             colorInterp,
+            opacity,
+            HdInterpolationConstant,
             false,
             instancerId);
 }
@@ -1107,12 +1141,12 @@ HdUnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
 }
 
 void
-HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
-                                       GfMatrix4f const &transform,
-                                       VtValue const &primvar,
-                                       HdInterpolation  primvarInterpolation,
-                                       bool rightHanded, bool doubleSided,
-                                       SdfPath const &instancerId)
+HdUnitTestDelegate::AddGridWithCustomColor(SdfPath const &id, int nx, int ny,
+                                           GfMatrix4f const &transform,
+                                           VtValue const &color,
+                                           HdInterpolation  colorInterpolation,
+                                           bool rightHanded, bool doubleSided,
+                                           SdfPath const &instancerId)
 {
     std::vector<GfVec3f> points;
     std::vector<int> numVerts;
@@ -1120,6 +1154,7 @@ HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
     VtIntArray holes;
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
+    VtValue opacity = VtValue(1.0f);
 
     AddMesh(id,
             transform,
@@ -1128,8 +1163,10 @@ HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
             _BuildArray(&verts[0], verts.size()),
             holes,
             subdivTags,
-            primvar,
-            primvarInterpolation,
+            color,
+            colorInterpolation,
+            opacity,
+            HdInterpolationConstant,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1150,12 +1187,11 @@ HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
-    VtVec4fArray colorArray(numVerts.size());
+    VtVec3fArray colorArray(numVerts.size());
     for (size_t i = 0; i < numVerts.size(); ++i) {
-        colorArray[i] = GfVec4f(fabs(sin(0.1*i)),
+        colorArray[i] = GfVec3f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
-                                fabs(sin(0.7*i)*cos(0.25*i)),
-                                1);
+                                fabs(sin(0.7*i)*cos(0.25*i)));
     }
 
     AddMesh(id,
@@ -1167,6 +1203,8 @@ HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
             subdivTags,
             VtValue(colorArray),
             HdInterpolationUniform,
+            VtValue(1.0f),
+            HdInterpolationConstant,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1187,12 +1225,11 @@ HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
-    VtVec4fArray colorArray(points.size());
+    VtVec3fArray colorArray(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
-        colorArray[i] = GfVec4f(fabs(sin(0.1*i)),
+        colorArray[i] = GfVec3f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
-                                fabs(sin(0.7*i)*cos(0.25*i)),
-                                1);
+                                fabs(sin(0.7*i)*cos(0.25*i)));
     }
 
     AddMesh(id,
@@ -1204,6 +1241,8 @@ HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
             subdivTags,
             VtValue(colorArray),
             HdInterpolationVertex,
+            VtValue(1.0f),
+            HdInterpolationConstant,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1224,12 +1263,11 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
-    VtVec4fArray colorArray(verts.size());
+    VtVec3fArray colorArray(verts.size());
     for (size_t i = 0; i < verts.size(); ++i) {
-        colorArray[i] = GfVec4f(fabs(sin(0.1*i)),
+        colorArray[i] = GfVec3f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
-                                fabs(sin(0.7*i)*cos(0.25*i)),
-                                1);
+                                fabs(sin(0.7*i)*cos(0.25*i)));
     }
 
     AddMesh(id,
@@ -1241,6 +1279,8 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
             subdivTags,
             VtValue(colorArray),
             HdInterpolationFaceVarying,
+            VtValue(1.0f),
+            HdInterpolationConstant,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1305,19 +1345,19 @@ HdUnitTestDelegate::AddCurves(
 
     VtValue color;
     if (colorInterp == HdInterpolationConstant) {
-        color = VtValue(GfVec4f(1));
+        color = VtValue(GfVec3f(1));
     } else if (colorInterp == HdInterpolationUniform) {
-        GfVec4f colors[] = { GfVec4f(1, 0, 0, 1), GfVec4f(0, 0, 1, 1) };
+        GfVec3f colors[] = { GfVec3f(1, 0, 0), GfVec3f(0, 0, 1) };
         color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
     } else if (colorInterp == HdInterpolationVertex) {
-        GfVec4f colors[] = { GfVec4f(0, 0, 1, 1),
-                             GfVec4f(0, 1, 0, 1),
-                             GfVec4f(0, 1, 1, 1),
-                             GfVec4f(1, 0, 0, 1),
-                             GfVec4f(1, 0, 1, 1),
-                             GfVec4f(1, 1, 0, 1),
-                             GfVec4f(1, 1, 1, 1),
-                             GfVec4f(0.5, 0.5, 1, 1) };
+        GfVec3f colors[] = { GfVec3f(0, 0, 1),
+                             GfVec3f(0, 1, 0),
+                             GfVec3f(0, 1, 1),
+                             GfVec3f(1, 0, 0),
+                             GfVec3f(1, 0, 1),
+                             GfVec3f(1, 1, 0),
+                             GfVec3f(1, 1, 1),
+                             GfVec3f(0.5, 0.5, 1) };
         color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
     }
 
@@ -1348,6 +1388,7 @@ HdUnitTestDelegate::AddCurves(
         type,
         basis,
         color, colorInterp,
+        VtValue(1.0f), HdInterpolationConstant,
         width, widthInterp,
         instancerId);
 }
@@ -1374,14 +1415,13 @@ HdUnitTestDelegate::AddPoints(
     VtValue color;
     if (colorInterp == HdInterpolationConstant ||
         colorInterp == HdInterpolationUniform) {
-        color = VtValue(GfVec4f(1, 1, 1, 1));
+        color = VtValue(GfVec3f(1, 1, 1));
     } else if (colorInterp == HdInterpolationVertex) {
-        VtVec4fArray colors(numPoints);
+        VtVec3fArray colors(numPoints);
         for (int i = 0; i < numPoints; ++i) {
-            colors[i] = GfVec4f(fabs(sin(0.1*i)),
+            colors[i] = GfVec3f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
-                                fabs(sin(0.7*i)*cos(0.25*i)),
-                                1);
+                                fabs(sin(0.7*i)*cos(0.25*i)));
         }
         color = VtValue(colors);
     }
@@ -1401,6 +1441,7 @@ HdUnitTestDelegate::AddPoints(
     AddPoints(
         id, points,
         color, colorInterp,
+        VtValue(1.0f), HdInterpolationConstant,
         width, widthInterp,
         instancerId);
 }
@@ -1475,8 +1516,10 @@ HdUnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
             _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             _BuildArray(holes, sizeof(holes)/sizeof(holes[0])),
             subdivTags,
-            /*color=*/VtValue(GfVec4f(1)),
+            /*color=*/VtValue(GfVec3f(1)),
             /*colorInterpolation=*/HdInterpolationConstant,
+            /*opacity=*/VtValue(1.0f),
+            HdInterpolationConstant,
             false,
             instancerId);
 }
@@ -1704,13 +1747,15 @@ HdUnitTestDelegate::PopulateInvalidPrimsSet()
                             VtVec3fArray(),
                             HdTokens->linear,
                             TfToken(),
-                            VtValue(GfVec4f(1)), HdInterpolationConstant,
+                            VtValue(GfVec3f(1)), HdInterpolationConstant,
+                            VtValue(1.0f), HdInterpolationConstant,
                             VtValue(1.0f), HdInterpolationConstant);
 
     // empty point
     AddPoints(SdfPath("/empty_points"),
                        VtVec3fArray(),
                        VtValue(GfVec4f(1)), HdInterpolationConstant,
+                       VtValue(1.0f), HdInterpolationConstant,
                        VtValue(1.0f), HdInterpolationConstant);
 
     return GfVec3f(0);

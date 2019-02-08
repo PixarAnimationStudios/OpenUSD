@@ -130,9 +130,15 @@ protected:
     /// inherited purpose. Inherited values are strongest.
     TfToken _GetPurpose(const UsdPrim & prim, UsdTimeCode time) const;
 
-    /// Returns a value holding color, opacity for \p prim,
+    /// Returns a value holding color for \p prim,
     /// taking into account explicitly authored color on the prim.
-    GfVec4f _GetColorAndOpacity(const UsdPrim& prim, UsdTimeCode time) const;
+    GfVec3f _GetSkeletonDisplayColor(const UsdPrim& prim,
+                                     UsdTimeCode time) const;
+
+    /// Returns a value holding opacity for \p prim,
+    /// taking into account explicitly authored opacity on the prim.
+    float _GetSkeletonDisplayOpacity(const UsdPrim& prim,
+                                     UsdTimeCode time) const;
 
 private:
 

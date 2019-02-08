@@ -89,6 +89,8 @@ public:
                  PxOsdSubdivTags const &subdivTags,
                  VtValue const &color,
                  HdInterpolation colorInterpolation,
+                 VtValue const &opacity,
+                 HdInterpolation opacityInterpolation,
                  bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
@@ -128,14 +130,14 @@ public:
                                      bool rightHanded=true, bool doubleSided=false,
                                      SdfPath const &instancerId=SdfPath());
 
-    // Add a grid with division x*y and a custom primvar
+    // Add a grid with division x*y and a custom color
     HD_API
-    void AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
-                            GfMatrix4f const &transform,
-                            VtValue const &primvar,
-                            HdInterpolation primvarInterpolation,
-                            bool rightHanded=true, bool doubleSided=false,
-                            SdfPath const &instancerId=SdfPath());
+    void AddGridWithCustomColor(SdfPath const &id, int nx, int ny,
+                                GfMatrix4f const &transform,
+                                VtValue const &color,
+                                HdInterpolation colorInterpolation,
+                                bool rightHanded=true, bool doubleSided=false,
+                                SdfPath const &instancerId=SdfPath());
 
     /// Add a triangle, quad and pentagon.
     HD_API
@@ -159,6 +161,8 @@ public:
                         TfToken const &basis,
                         VtValue const &color,
                         HdInterpolation colorInterpolation,
+                        VtValue const &opacity,
+                        HdInterpolation opacityInterpolation,
                         VtValue const &width,
                         HdInterpolation widthInterpolation,
                         SdfPath const &instancerId=SdfPath());
@@ -177,6 +181,8 @@ public:
                    VtVec3fArray const &points,
                    VtValue const &color,
                    HdInterpolation colorInterpolation,
+                   VtValue const &opacity,
+                   HdInterpolation opacityInterpolation,
                    VtValue const &width,
                    HdInterpolation widthInterpolation,
                    SdfPath const &instancerId=SdfPath());
@@ -375,13 +381,16 @@ private:
               PxOsdSubdivTags const &subdivTags,
               VtValue const &color,
               HdInterpolation colorInterpolation,
+              VtValue const &opacity,
+              HdInterpolation opacityInterpolation,
               bool guide,
               bool doubleSided) :
             scheme(scheme), orientation(orientation),
             transform(transform),
             points(points), numVerts(numVerts), verts(verts),
             holes(holes), subdivTags(subdivTags), color(color),
-            colorInterpolation(colorInterpolation), guide(guide),
+            colorInterpolation(colorInterpolation), opacity(opacity),
+            opacityInterpolation(opacityInterpolation), guide(guide),
             doubleSided(doubleSided) { }
 
         TfToken scheme;
@@ -394,6 +403,8 @@ private:
         PxOsdSubdivTags subdivTags;
         VtValue color;
         HdInterpolation colorInterpolation;
+        VtValue opacity;
+        HdInterpolation opacityInterpolation;
         bool guide;
         bool doubleSided;
         HdReprSelector reprSelector;
@@ -407,6 +418,8 @@ private:
                 TfToken const &basis,
                 VtValue const &color,
                 HdInterpolation colorInterpolation,
+                VtValue const &opacity,
+                HdInterpolation opacityInterpolation,
                 VtValue const &width,
                 HdInterpolation widthInterpolation) :
             points(points), curveVertexCounts(curveVertexCounts), 
@@ -414,6 +427,7 @@ private:
             type(type),
             basis(basis),
             color(color), colorInterpolation(colorInterpolation),
+            opacity(opacity), opacityInterpolation(opacityInterpolation),
             width(width), widthInterpolation(widthInterpolation) { }
 
         VtVec3fArray points;
@@ -423,6 +437,8 @@ private:
         TfToken basis;
         VtValue color;
         HdInterpolation colorInterpolation;
+        VtValue opacity;
+        HdInterpolation opacityInterpolation;
         VtValue width;
         HdInterpolation widthInterpolation;
     };
@@ -431,15 +447,20 @@ private:
         _Points(VtVec3fArray const &points,
                 VtValue const &color,
                 HdInterpolation colorInterpolation,
+                VtValue const &opacity,
+                HdInterpolation opacityInterpolation,
                 VtValue const &width,
                 HdInterpolation widthInterpolation) :
             points(points),
             color(color), colorInterpolation(colorInterpolation),
+            opacity(opacity), opacityInterpolation(opacityInterpolation),
             width(width), widthInterpolation(widthInterpolation) { }
 
         VtVec3fArray points;
         VtValue color;
         HdInterpolation colorInterpolation;
+        VtValue opacity;
+        HdInterpolation opacityInterpolation;
         VtValue width;
         HdInterpolation widthInterpolation;
     };

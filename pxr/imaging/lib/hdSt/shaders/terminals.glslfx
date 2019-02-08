@@ -336,8 +336,13 @@ ReprStyle GetReprStyle()
     hullColor.rgb = mix(mix(c0, c1, weight),
                         mix(c1, c2, weight), weight);
 
-#elif defined(HD_HAS_hullColor)
-    hullColor = HdGet_hullColor();
+#else
+#if defined(HD_HAS_hullColor)
+    hullColor.rgb = HdGet_hullColor();
+#endif
+#if defined(HD_HAS_hullOpacity)
+    hullColor.a = HdGet_hullOpacity();
+#endif
 #endif
 
     ReprStyle reprStyle;

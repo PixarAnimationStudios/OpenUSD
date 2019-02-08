@@ -724,14 +724,16 @@ UsdImagingGLLegacyEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     // Get DoubleSided Attribute
     gprimSchema->GetDoubleSidedAttr().Get(doubleSided);
 
-    // Get interpolation and color using UsdShadeMaterial
-    VtValue colorAsVt = UsdImagingGprimAdapter::GetColorAndOpacity(prim, 
-                                                _params.frame, interpolation);
-    VtVec4fArray temp = colorAsVt.Get<VtVec4fArray>();
-    GfVec4f rgba = temp[0];
-    GfVec3f rgb = GfVec3f(rgba[0], rgba[1], rgba[2]);
-
-    color->push_back(rgb);
+    // Get interpolation and color using UsdShadeMaterial'
+    VtValue colorAsVt;
+    if (UsdImagingGprimAdapter::GetColor(prim, 
+                _params.frame, interpolation, &colorAsVt)) {
+        VtVec3fArray temp = colorAsVt.Get<VtVec3fArray>();
+        color->push_back(temp[0]);
+    } else {
+        color->push_back(GfVec3f(0.5f, 0.5f, 0.5f));
+        *interpolation = UsdGeomTokens->constant;
+    }
 }
 
 void 

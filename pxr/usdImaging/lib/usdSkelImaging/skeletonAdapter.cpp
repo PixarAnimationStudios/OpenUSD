@@ -215,13 +215,19 @@ UsdSkelImagingSkeletonAdapter::UpdateForTime(
                       HdTokens->points,
                       HdInterpolationVertex,
                       HdPrimvarRoleTokens->point);
-        
+
         valueCache->GetColor(cachePath) =
-            VtValue(_GetColorAndOpacity(prim, time));
+            _GetSkeletonDisplayColor(prim, time);
+        valueCache->GetOpacity(cachePath) =
+            _GetSkeletonDisplayOpacity(prim, time);
+
         _MergePrimvar(&valueCache->GetPrimvars(cachePath),
-                      HdTokens->color,
+                      HdTokens->displayColor,
                       HdInterpolationConstant,
                       HdPrimvarRoleTokens->color);
+        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                      HdTokens->displayOpacity,
+                      HdInterpolationConstant);
     }
 
     if (requestedBits & HdChangeTracker::DirtyDoubleSided) {
@@ -339,13 +345,16 @@ UsdSkelImagingSkeletonAdapter::_GetPurpose(const UsdPrim& prim,
 }
 
 
-namespace {
-
-
 GfVec3f
-_GetSkeletonDisplayColor(const UsdGeomPrimvarsAPI& primvars,
-                         UsdTimeCode time)
+UsdSkelImagingSkeletonAdapter::_GetSkeletonDisplayColor(
+        const UsdPrim& prim,
+        UsdTimeCode time) const
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    UsdGeomPrimvarsAPI primvars(prim);
+
     if (UsdGeomPrimvar pv = primvars.GetPrimvar(
             UsdGeomTokens->primvarsDisplayColor)) {
         // May be stored as a constant.
@@ -363,9 +372,15 @@ _GetSkeletonDisplayColor(const UsdGeomPrimvarsAPI& primvars,
 
 
 float
-_GetSkeletonDisplayOpacity(const UsdGeomPrimvarsAPI& primvars,
-                           UsdTimeCode time)
+UsdSkelImagingSkeletonAdapter::_GetSkeletonDisplayOpacity(
+        const UsdPrim& prim,
+        UsdTimeCode time) const
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    UsdGeomPrimvarsAPI primvars(prim);
+
     if (UsdGeomPrimvar pv = primvars.GetPrimvar(
             UsdGeomTokens->primvarsDisplayOpacity)) {
         // May be stored as a constant.
@@ -379,25 +394,6 @@ _GetSkeletonDisplayOpacity(const UsdGeomPrimvarsAPI& primvars,
             return opacities[0];
     }
     return 1.0f;
-}
-
-
-} // namespace
-
-
-GfVec4f
-UsdSkelImagingSkeletonAdapter::_GetColorAndOpacity(const UsdPrim& prim,
-                                                   UsdTimeCode time) const
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    UsdGeomPrimvarsAPI primvars(prim);
-
-    GfVec3f color = _GetSkeletonDisplayColor(primvars, time);
-    float opacity = _GetSkeletonDisplayOpacity(primvars, time);
-    
-    return GfVec4f(color[0], color[1], color[2], opacity);
 }
 
 

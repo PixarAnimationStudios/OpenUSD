@@ -461,18 +461,26 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        VtVec4fArray color = VtVec4fArray(1);
+        VtVec3fArray color = VtVec3fArray(1);
         // Default color to 18% gray.
         GfVec3f schemaColor= GfVec3f(0.18f, 0.18f, 0.18f);
         UsdAttribute drawModeColorAttr = model.GetModelDrawModeColorAttr();
         if (drawModeColorAttr) {
             drawModeColorAttr.Get(&schemaColor);
         }
-        color[0] = GfVec4f(schemaColor[0], schemaColor[1], schemaColor[2], 1);
+        color[0] = schemaColor;
         valueCache->GetColor(cachePath) = color;
 
-        _MergePrimvar(&primvars, HdTokens->color,
+        _MergePrimvar(&primvars, HdTokens->displayColor,
                       HdInterpolationConstant, HdPrimvarRoleTokens->color);
+
+        VtFloatArray opacity = VtFloatArray(1);
+        // Full opacity.
+        opacity[0] = 1.0f;
+        valueCache->GetOpacity(cachePath) = opacity;
+
+        _MergePrimvar(&primvars, HdTokens->displayOpacity,
+                      HdInterpolationConstant);
     }
 
     // We compute all of the below items together, since their derivations

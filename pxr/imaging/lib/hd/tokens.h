@@ -40,7 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bSpline)                                   \
     (camera)                                    \
     (catmullRom)                                \
-    (color)                                     \
     (collection)                                \
     (computeShader)                             \
     (cubic)                                     \
@@ -48,6 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cullStyle)                                 \
     (doubleSided)                               \
     (dispatchCount)                             \
+    (displayColor)                              \
+    (displayOpacity)                            \
     (displayStyle)                              \
     (drawDispatch)                              \
     (drawingShader)                             \

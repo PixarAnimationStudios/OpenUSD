@@ -743,10 +743,12 @@ in CurveVertexData
 
 void main(void)
 {
-#ifdef HD_HAS_color
-    vec4 color = HdGet_color();
-#else
-    vec4 color = vec4(1);
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity().r;
 #endif
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
@@ -783,10 +785,12 @@ centroid in float v;
 vec3 fragmentNormal(vec3 position, vec3 normal, float v);
 void main(void)
 {
-#ifdef HD_HAS_color
-    vec4 color = HdGet_color();
-#else
-    vec4 color = vec4(1);
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity().r;
 #endif
     color.rgb = ApplyColorOverrides(color).rgb;
 

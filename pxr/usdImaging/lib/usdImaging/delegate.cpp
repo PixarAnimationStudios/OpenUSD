@@ -2344,12 +2344,20 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 VtVec3fArray vec;
                 value = VtValue(vec);
             }
-        } else if (key == HdTokens->color) {
+        } else if (key == HdTokens->displayColor) {
             // XXX: Getting all primvars here when we only want color is wrong.
             _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPrimvar);
             if (!TF_VERIFY(_valueCache.ExtractColor(usdPath, &value))){
-                VtVec4fArray vec(1);
-                vec.push_back(GfVec4f(.5,.5,.5,1.0));
+                VtVec3fArray vec(1);
+                vec.push_back(GfVec3f(.5,.5,.5));
+                value = VtValue(vec);
+            }
+        } else if (key == HdTokens->displayOpacity) {
+            // XXX: Getting all primvars here when we only want opacity is bad.
+            _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPrimvar);
+            if (!TF_VERIFY(_valueCache.ExtractOpacity(usdPath, &value))){
+                VtFloatArray vec(1);
+                vec.push_back(1.0f);
                 value = VtValue(vec);
             }
         } else if (key == HdTokens->widths) {

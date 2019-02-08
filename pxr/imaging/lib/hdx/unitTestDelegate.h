@@ -120,6 +120,8 @@ public:
                  PxOsdSubdivTags const &subdivTags,
                  VtValue const &color,
                  HdInterpolation colorInterpolation,
+                 VtValue const &opacity,
+                 HdInterpolation opacityInterpolation,
                  bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
@@ -129,8 +131,10 @@ public:
     void AddCube(SdfPath const &id, GfMatrix4d const &transform, bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
-                 VtValue const &color = VtValue(GfVec4f(1,1,1,1)),
-                 HdInterpolation colorInterpolation = HdInterpolationConstant);
+                 VtValue const &color = VtValue(GfVec3f(1,1,1)),
+                 HdInterpolation colorInterpolation = HdInterpolationConstant,
+                 VtValue const &opacity = VtValue(1.0f),
+                 HdInterpolation opacityInterpolation = HdInterpolationConstant);
 
     void AddGrid(SdfPath const &id, GfMatrix4d const &transform,
                  bool guide=false, SdfPath const &instancerId=SdfPath());
@@ -182,13 +186,16 @@ private:
               PxOsdSubdivTags const &subdivTags,
               VtValue const &color,
               HdInterpolation colorInterpolation,
+              VtValue const &opacity,
+              HdInterpolation opacityInterpolation,
               bool guide,
               bool doubleSided) :
             scheme(scheme), orientation(orientation),
             transform(transform),
             points(points), numVerts(numVerts), verts(verts),
             subdivTags(subdivTags), color(color),
-            colorInterpolation(colorInterpolation), guide(guide),
+            colorInterpolation(colorInterpolation), opacity(opacity),
+            opacityInterpolation(opacityInterpolation), guide(guide),
             doubleSided(doubleSided) { }
 
         TfToken scheme;
@@ -200,6 +207,8 @@ private:
         PxOsdSubdivTags subdivTags;
         VtValue color;
         HdInterpolation colorInterpolation;
+        VtValue opacity;
+        HdInterpolation opacityInterpolation;
         bool guide;
         bool doubleSided;
         TfToken reprName;

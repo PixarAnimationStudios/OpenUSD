@@ -122,8 +122,9 @@ UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
 bool
 UsdImagingPointsAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
 {
-    return (primvarName == UsdImagingTokens->primvarsWidths ||
-            primvarName == UsdImagingTokens->primvarsNormals);
+    return (primvarName == HdTokens->normals ||
+            primvarName == HdTokens->widths) ||
+        UsdImagingGprimAdapter::_IsBuiltinPrimvar(primvarName);
 }
 
 void 

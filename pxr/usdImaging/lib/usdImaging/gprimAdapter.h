@@ -43,7 +43,7 @@ class UsdGeomGprim;
 ///
 /// This adapter is provided as a base class for all adapters that want basic
 /// Gprim data support, such as visibility, doubleSided, extent, displayColor,
-/// purpose, and transform.
+/// displayOpacity, purpose, and transform.
 ///
 class UsdImagingGprimAdapter : public UsdImagingPrimAdapter {
 public:
@@ -132,13 +132,23 @@ public:
                               SdfPath const& cachePath,
                               UsdTimeCode time) const;
 
-    /// Returns color, opacity, and Usd interpolation token for a given
+    /// Returns color and Usd interpolation token for a given
     /// prim, taking into account surface shader colors and explicitly
     /// authored color on the prim.
     USDIMAGING_API
-    static VtValue GetColorAndOpacity(UsdPrim const& prim, 
-                                      UsdTimeCode time,
-                                      TfToken *interpolation);
+    static bool GetColor(UsdPrim const& prim, 
+                         UsdTimeCode time,
+                         TfToken *interpolation,
+                         VtValue *color);
+
+    /// Returns opacity and Usd interpolation token for a given
+    /// prim, taking into account surface shader opacity and explicitly
+    /// authored opacity on the prim.
+    USDIMAGING_API
+    static bool GetOpacity(UsdPrim const& prim, 
+                           UsdTimeCode time,
+                           TfToken *interpolation,
+                           VtValue *opacity);
 
     // Helper function: add a given type of rprim, potentially with instancer
     // name mangling, and add any bound shader.

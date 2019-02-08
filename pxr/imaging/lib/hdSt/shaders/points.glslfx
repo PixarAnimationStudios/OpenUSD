@@ -83,10 +83,12 @@ void main(void)
     // camera facing.
     vec3 Neye = vec3(0, 0, 1);
 
-#ifdef HD_HAS_color
-    vec4 color = HdGet_color();
-#else
-    vec4 color = vec4(1);
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity().r;
 #endif
 
     vec4 patchCoord = vec4(0);

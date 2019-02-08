@@ -749,11 +749,11 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
     }
 
     // If a color primvar is present, use that as diffuse color; otherwise,
-    // use flat white.
-    GfVec4f color = GfVec4f(1.0f, 1.0f, 1.0f, 1.0f);
+    // use flat grey.
+    GfVec3f color = GfVec3f(0.5f, 0.5f, 0.5f);
     if (_enableSceneColors &&
-            prototypeContext->primvarMap.count(HdTokens->color) > 0) {
-        prototypeContext->primvarMap[HdTokens->color]->Sample(
+            prototypeContext->primvarMap.count(HdTokens->displayColor) > 0) {
+        prototypeContext->primvarMap[HdTokens->displayColor]->Sample(
                 rayHit.primID, rayHit.u, rayHit.v, &color);
     }
 
@@ -773,10 +773,10 @@ HdEmbreeRenderer::_ComputeColor(RTCRay const& rayHit,
     float aoLightIntensity =
         _ComputeAmbientOcclusion(hitPos, normal, random);
 
-    // Return color.xyz * diffuseLight * aoLightIntensity.
-    // XXX: Transparency?
-    GfVec3f finalColor = GfVec3f(color[0], color[1], color[2]) *
-        diffuseLight * aoLightIntensity;
+    // XXX: We should support opacity here...
+
+    // Return color * diffuseLight * aoLightIntensity.
+    GfVec3f finalColor = color * diffuseLight * aoLightIntensity;
 
     // Clamp colors to [0,1].
     GfVec4f output;
