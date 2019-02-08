@@ -1708,9 +1708,9 @@ GusdGU_USD::ImportPrimUnpacked(GU_Detail& gd,
             
 #if SYS_VERSION_FULL_INT >= 0x11000000
             UT_Matrix4D xform;
-            prim->getFullTransform4(xform);
+            packedPrim->getFullTransform4(xform);
 
-            return impl->unpackGeometry(gd, primvarPattern, xform);
+            return impl->unpackGeometry(gd, primvarPattern, &xform);
 #else
             return impl->unpackGeometry(gd, primvarPattern);
 #endif
