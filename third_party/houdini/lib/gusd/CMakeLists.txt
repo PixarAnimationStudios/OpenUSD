@@ -41,14 +41,27 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         agentUtils
+        boundsCache
+        curvesWrapper
         debugCodes
         error
+        GEO_IOTranslator
+        GT_OldPointInstancer
+        GT_PackedUSD
+        GT_PointInstancer
+        GT_PrimCache
         GT_Utils
         GU_PackedUSD
         GU_USD
+        groupBaseWrapper
+        instancerWrapper
+        meshWrapper
+        NURBSCurvesWrapper
         OP_ParmChangeMicroNode
-        primWrapper
         PRM_Shared
+        packedUsdWrapper
+        pointsWrapper
+        primWrapper
         purpose
         refiner
         scopeWrapper
@@ -56,9 +69,6 @@ pxr_shared_library(${PXR_PACKAGE}
         stageCache
         stageEdit
         tokens
-        GT_PrimCache
-        GT_PointInstancer
-        GT_OldPointInstancer
         USD_CustomTraverse
         USD_DataCache
         USD_StdTraverse
@@ -69,11 +79,8 @@ pxr_shared_library(${PXR_PACKAGE}
         USD_VisCache
         UT_TypeTraits
         visitor
-        groupBaseWrapper
-        xformWrapper
         writeCtrlFlags
-        curvesWrapper
-        NURBSCurvesWrapper
+        xformWrapper
 
     PUBLIC_HEADERS
         context.h
@@ -97,15 +104,6 @@ pxr_shared_library(${PXR_PACKAGE}
 
     CPPFILES
         plugin.cpp
-
-    PRIVATE_CLASSES
-        GEO_IOTranslator
-        GT_PackedUSD
-        boundsCache
-        meshWrapper
-        packedUsdWrapper
-        pointsWrapper
-        instancerWrapper
 
     PYMODULE_FILES
         __init__.py
