@@ -3,13 +3,15 @@ set(PXR_PACKAGE usdSkelImaging)
 
 pxr_library(usdSkelImaging
     LIBRARIES
+        hio
         hd
-        pxOsd
         usdImaging
         usdSkel
 
     PUBLIC_CLASSES
         skeletonAdapter
+        skelRootAdapter
+        package
         utils
 
     PUBLIC_HEADERS
@@ -17,4 +19,5 @@ pxr_library(usdSkelImaging
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/skinning.glslfx
 )

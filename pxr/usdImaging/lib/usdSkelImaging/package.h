@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,32 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_DEBUGCODES_H
-#define USDIMAGING_DEBUGCODES_H
+#ifndef USDSKELIMAGING_PACKAGE_H
+#define USDSKELIMAGING_PACKAGE_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "pxr/usdImaging/usdSkelImaging/api.h"
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEBUG_CODES(
-
-    USDIMAGING_COLLECTIONS,
-    USDIMAGING_CHANGES,
-    USDIMAGING_COMPUTATIONS,
-    USDIMAGING_INSTANCER,
-    USDIMAGING_PLUGINS,
-    USDIMAGING_POINT_INSTANCER_PROTO_CREATED,
-    USDIMAGING_POINT_INSTANCER_PROTO_CULLING,
-    USDIMAGING_SELECTION,
-    USDIMAGING_SHADERS,
-    USDIMAGING_TEXTURES,
-    USDIMAGING_UPDATES
-
-);
-
+USDSKELIMAGING_API
+TfToken UsdSkelImagingPackageSkinningShader();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_DEBUGCODES_H
+#endif // USDSKELIMAGING_PACKAGE_H

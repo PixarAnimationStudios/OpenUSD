@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,32 +21,32 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_DEBUGCODES_H
-#define USDIMAGING_DEBUGCODES_H
+#include "pxr/usdImaging/usdSkelImaging/package.h"
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/thisPlugin.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static TfToken
+_GetShaderPath(char const * shader)
+{
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string path =
+        PlugFindPluginResource(plugin, TfStringCatPaths("shaders", shader));
+    TF_VERIFY(!path.empty(), "Could not find shader: %s\n", shader);
 
-TF_DEBUG_CODES(
+    return TfToken(path);
+}
 
-    USDIMAGING_COLLECTIONS,
-    USDIMAGING_CHANGES,
-    USDIMAGING_COMPUTATIONS,
-    USDIMAGING_INSTANCER,
-    USDIMAGING_PLUGINS,
-    USDIMAGING_POINT_INSTANCER_PROTO_CREATED,
-    USDIMAGING_POINT_INSTANCER_PROTO_CULLING,
-    USDIMAGING_SELECTION,
-    USDIMAGING_SHADERS,
-    USDIMAGING_TEXTURES,
-    USDIMAGING_UPDATES
-
-);
-
+TfToken
+UsdSkelImagingPackageSkinningShader()
+{
+    static TfToken skinningShader = _GetShaderPath("skinning.glslfx");
+    return skinningShader;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // USDIMAGING_DEBUGCODES_H

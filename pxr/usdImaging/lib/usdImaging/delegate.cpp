@@ -2448,8 +2448,7 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
                    TfEnum::GetName(interpolation).c_str())) {
         return primvars;
     }
-    TF_VERIFY(!allPrimvars.empty(),
-              "No primvars found for <%s>\n", usdPath.GetText());
+    // It's valid to have no authored primvars (they could be computed)
     for (HdPrimvarDescriptor const& pv: allPrimvars) {
         if (pv.interpolation == interpolation) {
             primvars.push_back(pv);
