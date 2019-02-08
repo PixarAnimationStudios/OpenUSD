@@ -220,6 +220,19 @@ _GatherShadingParameters(
                 }
             }
 
+        } else {
+            // This input may author an opinion which blocks connections (eg, a
+            // connection from a base material). A blocked connection manifests
+            // as an authored connection, but no connections can be determined.
+            UsdAttribute inputAttr = shaderInput.GetAttr();
+            bool hasAuthoredConnections = inputAttr.HasAuthoredConnections();
+            SdfPathVector conns;
+            inputAttr.GetConnections(&conns);
+
+            // Use a NullAttribute to capture the block
+            if (hasAuthoredConnections and conns.empty()) {
+                connectionsBuilder.set(inputId, FnKat::NullAttribute());
+            }
         }
 
         // produce the value here and let katana handle the connection part
