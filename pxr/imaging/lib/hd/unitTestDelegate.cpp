@@ -274,6 +274,27 @@ HdUnitTestDelegate::AddMaterialHydra(SdfPath const &id,
                                          params);
 }
 
+void
+HdUnitTestDelegate::UpdateMaterialHydra(SdfPath const &id,
+                                        std::string const &sourceSurface,
+                                        std::string const &sourceDisplacement,
+                                        HdMaterialParamVector const &params)
+{
+    _materialsHydra[id] = _MaterialHydra(sourceSurface, 
+                                         sourceDisplacement, 
+                                         params);
+
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkSprimDirty(id, HdMaterial::DirtySurfaceShader |
+                               HdMaterial::DirtyParams);
+
+    for (auto const &p : _materialBindings) {
+        if (p.second == id) {
+            tracker.MarkRprimDirty(p.first, HdChangeTracker::DirtyMaterialId);
+        }
+    }
+}
+
 void 
 HdUnitTestDelegate::AddMaterialResource(SdfPath const &id,
                                          VtValue materialResource)

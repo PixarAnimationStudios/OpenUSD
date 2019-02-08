@@ -210,6 +210,12 @@ public:
                           std::string const &sourceDisplacement,
                           HdMaterialParamVector const &params);
     
+    HD_API
+    void UpdateMaterialHydra(SdfPath const &id,
+                             std::string const &sourceSurface,
+                             std::string const &sourceDisplacement,
+                             HdMaterialParamVector const &params);
+
     /// Material
     HD_API
     void AddMaterialResource(SdfPath const &id,

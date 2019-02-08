@@ -107,7 +107,7 @@ static void CameraAndLightTest()
     SdfPath cube("/geometry");
     delegate->AddCube(cube, tx);
 
-    SdfPath camera("/camera");
+    SdfPath camera("/camera_test");
     SdfPath light("/light");
 
     delegate->AddCamera(camera);
