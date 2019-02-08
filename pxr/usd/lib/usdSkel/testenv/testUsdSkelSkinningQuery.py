@@ -65,6 +65,7 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
         #
         query = _GetSkinningQuery(
             rootPath+"/ErrorCases/InvalidArraySize1")
+        assert query.GetPrim()
         assert query
         assert not query.ComputeJointInfluences()
         assert not query.ComputeVaryingJointInfluences(10)
