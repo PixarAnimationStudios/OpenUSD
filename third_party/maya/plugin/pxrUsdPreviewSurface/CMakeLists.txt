@@ -75,7 +75,7 @@ pxr_install_test_dir(
     DEST testPxrUsdPreviewSurfaceExport
 )
 pxr_register_test(testPxrUsdPreviewSurfaceExport
-    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdPreviewSurfaceExport"
     TESTENV testPxrUsdPreviewSurfaceExport
     ENV
