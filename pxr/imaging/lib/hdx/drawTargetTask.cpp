@@ -318,6 +318,12 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
+                           HdRenderIndex* renderIndex)
+{
+}
+
+void
 HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();

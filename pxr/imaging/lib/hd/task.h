@@ -68,11 +68,68 @@ public:
 
     /// Sync Phase:  Obtain task state from Scene delegate based on
     /// change processing.
+    ///
+    /// This function might only be called if dirtyBits is not 0,
+    /// so isn't guaranteed to be called every time HdEngine::Execute() is run
+    /// with this task.
+    ///
+    /// However, this is the only time when the task should communicate with
+    /// with the scene delegate responsible for the task and should be
+    /// used to pull all changed data.  As outside the Sync phase, the scene
+    /// delegate may not have the data available.
+    ///
+    /// Tasks maybe synced in parallel and out of order.
+    ///
+    /// The ctx parameter is present for legacy reason and shouldn't be used
+    /// once the task has moved to using the 3-phase mechanism.
+    ///
+    /// After a task has been synced, it is expected that it produces a
+    /// collection identifying the prims that are important to the task.  This
+    /// collection is used to filter the prims in the scene so only the
+    /// Relevant prims get synced.
+    ///
+    /// Note about inter-prim dependencies:
+    ///   Quite often tasks need to access other prims, such as a camera prim
+    ///   for example.  These other prims have not been synced yet when sync is
+    ///   called.  Therefore, it is not recommended to access these prims during
+    ///   the sync phase.  Instead a task should store the path to the prim
+    ///   to be resolved to an actual prim during the "prepare" phase.
+
     virtual void Sync(HdSceneDelegate* delegate,
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits) = 0;
 
+    /// Prepare Phase: Resolve bindings and manage resources.
+    ///
+    /// The Prepare phase happens before the Data Commit phase.
+    /// All tasks in the task list get called for every execute.
+    /// At this time all Tasks and other prims have completed the phase synced.
+    ///
+    /// This is an opportunity for the task to pull data from other prims
+    /// (such as a camera prim), but accessing the render index.
+    ///
+    /// The task can also use the phase to create, register and update temporary
+    /// resources with the resource registry or other render delegate
+    /// specific mechanism.
+    ///
+    /// Tasks are always "Prepared" in execution order.
+    ///
+    /// Inter-task communication is achievable via the task context.
+    /// The same task context is used for the prepare and execution phases.
+    /// Data in the task context isn't guaranteed to persist across calls
+    /// to HdEngine::Execute().
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) = 0;
+
     /// Execute Phase: Runs the task.
+    ///
+    /// The execution phase should trigger render delegate processing,
+    /// such as issuing draw commands.
+    ///
+    /// Task execution is non-parallel and ordered.
+    ///
+    /// The task context is the same as used by the prepare step and is used
+    /// for inter-task communication.
     virtual void Execute(HdTaskContext* ctx) = 0;
 
     SdfPath const& GetId() const { return _id; }

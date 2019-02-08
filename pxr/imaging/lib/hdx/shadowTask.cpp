@@ -207,6 +207,12 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxShadowTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+}
+
+void
 HdxShadowTask::Execute(HdTaskContext* ctx)
 {
     static const TfTokenVector SHADOW_RENDER_TAGS =

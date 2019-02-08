@@ -265,6 +265,14 @@ public:
             _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+
+    }
+
     virtual void Execute(HdTaskContext* ctx) override
     {
         // Try to extract render tags from the context in case

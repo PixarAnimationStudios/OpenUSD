@@ -172,6 +172,12 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxSelectionTask::Prepare(HdTaskContext* ctx,
+                          HdRenderIndex* renderIndex)
+{
+}
+
+void
 HdxSelectionTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();

@@ -90,6 +90,35 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 
     index.SyncAll(tasks, &_taskContext);
 
+
+    // --------------------------------------------------------------------- //
+    // PREPARE PHASE
+    // --------------------------------------------------------------------- //
+    // Now that all Prims have obtained obtained their current states
+    // we can now prepare the task system for rendering.
+    //
+    // While sync operations are change-tracked, so are only performed if
+    // something is dirty, prepare operations are done for every execution.
+    //
+    // As tasks are synced first, they cannot resolve their bindings at sync
+    // time, so this is where tasks perform their inter-prim communication.
+    //
+    // The prepare phase is also where a task manages the resources it needs
+    // for the render phase.
+    TF_DEBUG(HD_ENGINE_PHASE_INFO).Msg(
+            "\n"
+            "==============================================================\n"
+            "             HdEngine [Prepare Phase](Task::Prepare)          \n"
+            "--------------------------------------------------------------\n");
+
+    size_t numTasks = tasks.size();
+    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+        const HdTaskSharedPtr &task = tasks[taskNum];
+
+        task->Prepare(&_taskContext, &index);
+    }
+
+
     // --------------------------------------------------------------------- //
     // DATA COMMIT PHASE
     // --------------------------------------------------------------------- //
@@ -117,8 +146,10 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
             "             HdEngine [Execute Phase](Task::Execute)          \n"
             "--------------------------------------------------------------\n");
 
-    TF_FOR_ALL(it, tasks) {
-        (*it)->Execute(&_taskContext);
+    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+        const HdTaskSharedPtr &task = tasks[taskNum];
+
+        task->Execute(&_taskContext);
     }
 }
 

@@ -68,6 +68,11 @@ public:
             _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+    }
+
     virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();

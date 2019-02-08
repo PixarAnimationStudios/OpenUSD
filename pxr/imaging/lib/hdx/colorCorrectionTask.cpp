@@ -509,6 +509,12 @@ HdxColorCorrectionTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxColorCorrectionTask::Prepare(HdTaskContext* ctx,
+                                HdRenderIndex* renderIndex)
+{
+}
+
+void
 HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();

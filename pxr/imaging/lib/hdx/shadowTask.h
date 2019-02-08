@@ -113,6 +113,11 @@ public:
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits) override;
 
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
     /// Execute render pass task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;

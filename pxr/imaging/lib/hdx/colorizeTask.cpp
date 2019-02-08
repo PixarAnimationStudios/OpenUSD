@@ -206,6 +206,11 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
+{
+}
+
+void
 HdxColorizeTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
