@@ -221,8 +221,8 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyPoints) {
-        VtValue& points = valueCache->GetPoints(cachePath);
-        points = GetPoints(prim, cachePath, time);
+
+        valueCache->GetPoints(cachePath) = GetPoints(prim, cachePath, time);
 
         // Expose points as a primvar.
         _MergePrimvar(
