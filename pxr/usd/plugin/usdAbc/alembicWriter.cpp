@@ -2923,15 +2923,9 @@ _WriteFaceSet(_PrimWriterContext* context)
                                          context->GetParent(),
                                          SdfAbstractDataSpecId(&parentPath));
 
-    TfToken defaultFamilyName("materialBind");
-    TfToken subsetFamilyAttributeName = TfToken(TfStringJoin(std::vector<std::string>{
-        "subsetFamily",
-        defaultFamilyName.GetString(),
-        "familyType"}, ":"));
-
-    UsdSamples familyType =
-        parentPrimContext.ExtractSamples(subsetFamilyAttributeName,
-                                         SdfValueTypeNames->Token);
+    UsdSamples familyType = parentPrimContext.ExtractSamples(
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
+        SdfValueTypeNames->Token);
 
     // Copy all the samples.
     typedef Type::schema_type::Sample SampleT;
@@ -2954,7 +2948,8 @@ _WriteFaceSet(_PrimWriterContext* context)
     FaceSetExclusivity faceSetExclusivity = kFaceSetNonExclusive;
     if (!familyType.IsEmpty())
     {
-        const TfToken& value = familyType.Get(0.0f).UncheckedGet<TfToken>();
+        double time = UsdTimeCode::EarliestTime().GetValue();
+        const TfToken& value = familyType.Get(time).UncheckedGet<TfToken>();
         if (!value.IsEmpty() && 
             (value == UsdGeomTokens->partition || 
              value == UsdGeomTokens->nonOverlapping)) {

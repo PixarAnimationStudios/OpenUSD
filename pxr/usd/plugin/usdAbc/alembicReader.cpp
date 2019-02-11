@@ -3348,12 +3348,18 @@ _ReadFaceSet(_PrimReaderContext* context)
         return;
     }
 
+    // A FaceSet must be a child of another Alembic object.
+    if (!context->GetObject().getParent()) {
+        // No parent exists.
+        return;
+    }
+
     Type object(context->GetObject(), kWrapExisting);
 
     // Add child properties under schema.
     context->SetSchema(Type::schema_type::info_type::defaultName());
 
-    // Set prim type.  This depends on the CurveType of the curve.
+    // Set prim type.
     context->GetPrim().typeName = UsdAbcPrimTypeNames->GeomSubset;
 
     context->AddProperty(
@@ -3366,21 +3372,15 @@ _ReadFaceSet(_PrimReaderContext* context)
         SdfValueTypeNames->Token,
         _CopySynthetic(UsdGeomTokens->face));
 
-    TfToken defaultFamilyName("materialBind");
     context->AddUniformProperty(
         UsdGeomTokens->familyName,
         SdfValueTypeNames->Token,
-        _CopySynthetic(defaultFamilyName));
+        _CopySynthetic(UsdAbcPropertyNames->defaultFamilyName));
 
     _PrimReaderContext parentPrimContext = context->GetParentContext();
 
-    TfToken subsetFamilyAttributeName = TfToken(TfStringJoin(std::vector<std::string>{
-        "subsetFamily",
-        defaultFamilyName.GetString(),
-        "familyType"}, ":"));
-
     parentPrimContext.AddUniformProperty(
-        subsetFamilyAttributeName,
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
         SdfValueTypeNames->Token,
         _CopyFaceSetFamilyType(object));
 

@@ -64,17 +64,12 @@ class TestUsdAbcFaceset(unittest.TestCase):
             for c, e in zip(faceIndices, expectedValue):
                 self.assertEqual(c, e)
 
-        # Validate the indices for faceset2 (which was constant, but promoted
-        # to a single sample at 0 during conversion)
+        # Validate the indices for faceset2.
         indices = faceset2_1.GetIndicesAttr()
 
         timeSamples = indices.GetTimeSamples()
-        expectedTimeSamples = [0.0]
 
-        self.assertEqual(len(timeSamples), len(expectedTimeSamples))
-
-        for c, e in zip(timeSamples, expectedTimeSamples):
-            self.assertTrue(Gf.IsClose(c, e, 1e-5))
+        self.assertEqual(len(timeSamples), 0)
 
         expectedFaceIndices = {0.0: [1, 2, 4]}
         for time, expectedValue in expectedFaceIndices.items():
@@ -104,28 +99,28 @@ class TestUsdAbcFaceset(unittest.TestCase):
         faceset1_3 = UsdGeom.Subset(faceset1prim3)
 
         # Check the round-tripping of familyTypes.
-
         imageable1 = UsdGeom.Imageable(prim1)
         imageable2 = UsdGeom.Imageable(prim2)
         imageable3 = UsdGeom.Imageable(prim3)
 
-        # In cube1 we've used "unrestricted" as the familyType. 
+        # In cube1 we've used "partition" as the familyType. This should be
+        # converted to "nonOverlapping" as it more closely matches the Alembic
+        # definition of "partition".
         self.assertEqual(faceset1_1.GetFamilyNameAttr().Get(), 'materialBind')
         self.assertEqual(faceset2_1.GetFamilyNameAttr().Get(), 'materialBind')
         self.assertEqual(UsdGeom.Subset.GetFamilyType(imageable1, "materialBind"),
-                         "unrestricted")
+                         "nonOverlapping")
 
-        # In cube2 we've used "nonOverlapping" in order to ensure both 
-        # familyTypes can be round-tripped.
+        # In cube2 we've used "unrestricted". This should come across directly.
         self.assertEqual(faceset1_2.GetFamilyNameAttr().Get(), 'materialBind')
         self.assertEqual(faceset2_2.GetFamilyNameAttr().Get(), 'materialBind')
         self.assertEqual(UsdGeom.Subset.GetFamilyType(imageable2, "materialBind"),
-                         "nonOverlapping")
-        # We've also added another familyName in addition. We should see this 
+                         "unrestricted")
+        # We've also added another familyName in addition. We should see this
         # being lost in the round-trip and converted to "materialBind".
         self.assertEqual(faceset3_2.GetFamilyNameAttr().Get(), 'materialBind')
 
-        # In cube3, no familyName or familyType has been specified. Upon 
+        # In cube3, no familyName or familyType has been specified. Upon
         # round-tripping, a default value of "unrestricted" will appear on the
         # the default "materialBind" familyName.
         self.assertEqual(faceset1_3.GetFamilyNameAttr().Get(), 'materialBind')

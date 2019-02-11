@@ -102,6 +102,8 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
 #define USD_ABC_GPRIM_NAMES \
     (primvars) \
     (userProperties) \
+    ((defaultFamilyName, "materialBind")) \
+    ((defaultFamilyTypeAttributeName, "subsetFamily:materialBind:familyType")) \
     /* end */
 #define USD_ABC_POINTBASED_NAMES \
     ((uv, "primvars:uv")) \
