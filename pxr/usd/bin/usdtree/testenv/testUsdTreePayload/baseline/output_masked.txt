@@ -1,5 +1,7 @@
 USD
  `--root
+     | `--(kind)
      `--child1
+         | `--(kind)
          |--subchild1a
          `--subchild1b

@@ -26,6 +26,8 @@ import argparse
 import os
 import sys
 
+from pxr import Usd
+
 
 METADATA_KEYS_TO_SKIP = ('typeName', 'specifier')
 
@@ -65,6 +67,14 @@ class USDAccessor(object):
     @staticmethod
     def GetSpecifier(prim):
         return prim.GetSpecifier()
+    
+    @staticmethod
+    def GetKind(prim):
+        return Usd.ModelAPI(prim).GetKind()
+
+    @staticmethod
+    def IsActive(prim):
+        return prim.IsActive()
 
 
 class SdfAccessor(object):
@@ -96,6 +106,14 @@ class SdfAccessor(object):
     def GetSpecifier(prim):
         return prim.specifier
 
+    @staticmethod
+    def GetKind(prim):
+        return prim.kind
+
+    @staticmethod
+    def IsActive(prim):
+        return prim.active
+
 
 def PrintPrim(args, acc, prim, prefix, isLast):
     if not isLast:
@@ -120,6 +138,15 @@ def PrintPrim(args, acc, prim, prefix, isLast):
         label = '{} {}'.format(definition, acc.GetName(prim))
     else:
         label =  acc.GetName(prim)
+
+    if args.kinds:
+        k = acc.GetKind(prim)
+        if k:
+            label += ' [kind={}]'.format(k)
+    
+    if not acc.IsActive(prim):
+        label += ' (inactive)'
+    
     _Msg('{}{}{}'.format(prefix, lastStep, label))
 
     attrs = []
@@ -162,7 +189,6 @@ def PrintLayer(args, layer):
 
 def PrintTree(args, path):
     if args.flatten:
-        from pxr import Usd
         popMask = (None if args.populationMask is None else Usd.StagePopulationMask())
         if popMask:
             for mask in args.populationMask:
@@ -179,7 +205,6 @@ def PrintTree(args, path):
                 stage = Usd.Stage.Open(path)
         PrintStage(args, stage)
     elif args.flattenLayerStack:
-        from pxr import Usd
         from pxr import UsdUtils
         stage = Usd.Stage.Open(path, Usd.Stage.LoadNone)
         layer = UsdUtils.FlattenLayerStack(stage)
@@ -210,9 +235,13 @@ def main():
         dest='metadata',
         help='Display authored metadata')
     parser.add_argument(
+        '--kinds', '-k', action='store_true',
+        dest='kinds',
+        help='Display kinds')
+    parser.add_argument(
         '--definitions', '-d', action='store_true',
         dest='definitions',
-        help='Display prim definitions')
+        help='Display prim specifiers and types')
     parser.add_argument(
         '-f', '--flatten', action='store_true', help='Compose the stage with the '
         'input file as root layer and write the flattened content.')

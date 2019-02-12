@@ -1,9 +1,16 @@
 USD
  `--root
+     | `--(kind)
      |--child1
+     |     :--(kind)
      |     `--(payload)
      `--child2
-         | `--(customData)
+         | :--(customData)
+         | `--(kind)
          |--subchild2a
+         |   | `--(kind)
          |   `--subgrandchild2a1
-         `--subchild2b
+         |         `--(kind)
+         `--subchild2b (inactive)
+               :--(active)
+               `--(kind)

@@ -102,3 +102,16 @@ pxr_register_test(testUsdTreeFlattenLayerStack
     DIFF_COMPARE output_fls.txt
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdTreePayload
+    DEST testUsdTreeKinds
+)
+
+pxr_register_test(testUsdTreeKinds
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdtree --kinds input.usda"
+    STDOUT_REDIRECT output_kinds.txt
+    DIFF_COMPARE output_kinds.txt
+    EXPECTED_RETURN_CODE 0
+)
