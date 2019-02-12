@@ -3,7 +3,8 @@ USD
      |--child1
      |   |--subchild1a
      |   `--subchild1b
-     `--child2
-         |--subchild2a
-         |   `--subgrandchild2a1
-         `--subchild2b
+     |--child2
+     |   |--subchild2a
+     |   |   `--subgrandchild2a1
+     |   `--subchild2b
+     `--child3

@@ -1,15 +1,9 @@
 USD
  `--root
-     | `--(specifier)
      |--child1
-     |     :--(payload)
-     |     `--(specifier)
+     |     `--(payload)
      `--child2
-         | :--(customData)
-         | `--(specifier)
+         | `--(customData)
          |--subchild2a
-         |   | `--(specifier)
          |   `--subgrandchild2a1
-         |         `--(specifier)
          `--subchild2b
-               `--(specifier)

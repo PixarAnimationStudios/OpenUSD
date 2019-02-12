@@ -27,72 +27,108 @@ import os
 import sys
 
 
+METADATA_KEYS_TO_SKIP = ('typeName', 'specifier')
+
+
 def _Msg(msg):
     sys.stdout.write(msg + '\n')
 
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
-def _GetChildren(prim, iterType):
-    if iterType == 'UsdPrim':
-        return prim.GetChildren()
-    else:
+
+class USDAccessor(object):
+    @staticmethod
+    def GetChildren(prim):
+        return prim.GetAllChildren()
+
+    @staticmethod
+    def GetProperties(prim):
+        return prim.GetAuthoredProperties()
+
+    @staticmethod
+    def GetPropertyName(prop):
+        return prop.GetName()
+
+    @staticmethod
+    def GetMetadata(prim):
+        return prim.GetAllAuthoredMetadata().keys()
+
+    @staticmethod
+    def GetName(prim):
+        return prim.GetName()
+
+    @staticmethod
+    def GetTypeName(prim):
+        return prim.GetTypeName()
+
+    @staticmethod
+    def GetSpecifier(prim):
+        return prim.GetSpecifier()
+
+
+class SdfAccessor(object):
+    @staticmethod
+    def GetChildren(prim):
         return prim.nameChildren
 
-def _GetProperties(prim, iterType):
-    if iterType == 'UsdPrim':
-        return prim.GetAuthoredProperties()
-    else:
+    @staticmethod
+    def GetProperties(prim):
         return prim.properties
 
-def _GetMetadata(prim, iterType):
-    if iterType == 'UsdPrim':
-        return prim.GetAllAuthoredMetadata().keys()
-    else:
-        return sorted(prim.ListInfoKeys())
+    @staticmethod
+    def GetPropertyName(prop):
+        return prop.name
 
-def _GetName(prim, iterType):
-    if iterType == 'UsdPrim':
-        return prim.GetName()
-    else:
+    @staticmethod
+    def GetMetadata(prim):
+        return prim.ListInfoKeys()
+
+    @staticmethod
+    def GetName(prim):
         return prim.name
 
-def _GetTypeName(prim, iterType):
-    if iterType == 'UsdPrim':
-        return prim.GetTypeName()
-    else:
+    @staticmethod
+    def GetTypeName(prim):
         return prim.typeName
 
+    @staticmethod
+    def GetSpecifier(prim):
+        return prim.specifier
 
-def PrintPrim(args, prim, iterType, prefix, isLast):
+
+def PrintPrim(args, acc, prim, prefix, isLast):
     if not isLast:
         lastStep = ' |--'
-        if _GetChildren(prim, iterType):
+        if acc.GetChildren(prim):
             attrStep = ' |   |'
         else:
             attrStep = ' |    '
     else:
         lastStep = ' `--'
-        if _GetChildren(prim, iterType):
+        if acc.GetChildren(prim):
             attrStep = '     |'
         else:
             attrStep = '      '
-    if args.types:
-        typeName = _GetTypeName(prim, iterType)
+    if args.definitions:
+        spec = acc.GetSpecifier(prim).displayName.lower()
+        typeName = acc.GetTypeName(prim)
         if typeName:
-            label = '{}[{}]'.format( _GetName(prim, iterType), typeName)
+            definition = '{} {}'.format(spec, typeName)
         else:
-            label =  _GetName(prim, iterType)
+            definition = spec
+        label = '{} {}'.format(definition, acc.GetName(prim))
     else:
-        label =  _GetName(prim, iterType)
+        label =  acc.GetName(prim)
     _Msg('{}{}{}'.format(prefix, lastStep, label))
 
     attrs = []
     if args.metadata:
-        attrs.extend('({})'.format(md) for md in _GetMetadata(prim, iterType))
+        mdKeys = filter(lambda x: x not in METADATA_KEYS_TO_SKIP, sorted(acc.GetMetadata(prim)))
+        attrs.extend('({})'.format(md) for md in mdKeys)
     
     if args.attributes:
-        attrs.extend('.{}'.format(prop.GetName()) for prop in _GetProperties(prim, iterType))
+        attrs.extend('.{}'.format(acc.GetPropertyName(prop)) for prop in acc.GetProperties(prim))
     
     numAttrs = len(attrs)
     for i, attr in enumerate(attrs):
@@ -102,26 +138,26 @@ def PrintPrim(args, prim, iterType, prefix, isLast):
             _Msg('{}{} `--{}'.format(prefix, attrStep, attr))
 
 
-def PrintChildren(args, prim, iterType, prefix):
-    children = _GetChildren(prim, iterType)
+def PrintChildren(args, acc, prim, prefix):
+    children = acc.GetChildren(prim)
     numChildren = len(children)
     for i, child in enumerate(children):
         if i < numChildren - 1:
-            PrintPrim(args, child, iterType, prefix, isLast=False)
-            PrintChildren(args, child, iterType, prefix + ' |  ')
+            PrintPrim(args, acc, child, prefix, isLast=False)
+            PrintChildren(args, acc, child, prefix + ' |  ')
         else:
-            PrintPrim(args, child, iterType, prefix, isLast=True)
-            PrintChildren(args, child, iterType, prefix + '    ')
+            PrintPrim(args, acc, child, prefix, isLast=True)
+            PrintChildren(args, acc, child, prefix + '    ')
 
 
 def PrintStage(args, stage):
     _Msg('USD')
-    PrintChildren(args, stage.GetPseudoRoot(), 'UsdPrim', '')
+    PrintChildren(args, USDAccessor, stage.GetPseudoRoot(), '')
 
 
 def PrintLayer(args, layer):
     _Msg('USD')
-    PrintChildren(args, layer.pseudoRoot, 'SdfPrimSpec', '')
+    PrintChildren(args, SdfAccessor, layer.pseudoRoot, '')
 
 
 def PrintTree(args, path):
@@ -141,10 +177,13 @@ def PrintTree(args, path):
                 stage = Usd.Stage.Open(path, Usd.Stage.LoadNone)
             else:
                 stage = Usd.Stage.Open(path)
-        if args.flattenLayerStack:
-            from pxr import UsdUtils
-            stage = UsdUtils.FlattenLayerStack(stage)
         PrintStage(args, stage)
+    elif args.flattenLayerStack:
+        from pxr import Usd
+        from pxr import UsdUtils
+        stage = Usd.Stage.Open(path, Usd.Stage.LoadNone)
+        layer = UsdUtils.FlattenLayerStack(stage)
+        PrintLayer(args, layer)
     else:
         from pxr import Sdf
         layer = Sdf.Layer.FindOrOpen(path)
@@ -171,12 +210,12 @@ def main():
         dest='metadata',
         help='Display authored metadata')
     parser.add_argument(
-        '--types', '-t', action='store_true',
-        dest='types',
-        help='Display prim types')
+        '--definitions', '-d', action='store_true',
+        dest='definitions',
+        help='Display prim definitions')
     parser.add_argument(
-        '-f', '--flatten', action='store_true', help='Compose stages with the '
-        'input files as root layers and write their flattened content')
+        '-f', '--flatten', action='store_true', help='Compose the stage with the '
+        'input file as root layer and write the flattened content.')
     parser.add_argument(
         '--flattenLayerStack', action='store_true',
         help='Flatten the layer stack with the given root layer. '

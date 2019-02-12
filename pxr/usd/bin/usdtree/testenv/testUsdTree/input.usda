@@ -20,4 +20,7 @@ def "root"{
         def "subchild2b"{
         }
     }
+    over "child3"{
+        custom string whatisthis = "this is an over"
+    }
 }
