@@ -51,27 +51,32 @@ public:
 
     virtual UsdPrim GetPrim() const override { return _anim.GetPrim(); }
     
-    virtual bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
-                                             UsdTimeCode time) const override;
+    bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
+                                     UsdTimeCode time) const override;
 
-    virtual bool ComputeJointLocalTransformComponents(
-                     VtVec3fArray* translations,
-                     VtQuatfArray* rotations,
-                     VtVec3hArray* scales,
-                     UsdTimeCode time) const override;
+    bool ComputeJointLocalTransformComponents(
+             VtVec3fArray* translations,
+             VtQuatfArray* rotations,
+             VtVec3hArray* scales,
+             UsdTimeCode time) const override;
 
-    virtual bool
-    GetJointTransformTimeSamples(const GfInterval& interval,
-                                 std::vector<double>* times) const override;
+    bool ComputeBlendShapeWeights(VtFloatArray* weights,
+                                  UsdTimeCode time) const override;
 
-    virtual bool 
-    GetJointTransformAttributes(
-        std::vector<UsdAttribute>* attrs) const override;
+    bool GetJointTransformTimeSamples(
+             const GfInterval& interval,
+             std::vector<double>* times) const override;
+
+    bool GetJointTransformAttributes(
+             std::vector<UsdAttribute>* attrs) const override;
     
-    virtual bool JointTransformsMightBeTimeVarying() const override;
+    bool JointTransformsMightBeTimeVarying() const override;
 
-    virtual bool ComputeBlendShapeWeights(VtFloatArray* weights,
-                                          UsdTimeCode time) const override;
+    bool GetBlendShapeWeightTimeSamples(
+             const GfInterval& interval,
+             std::vector<double>* times) const override;
+
+    bool BlendShapeWeightsMightBeTimeVarying() const override;
 
 
 private:
@@ -189,6 +194,22 @@ UsdSkel_SkelAnimationQueryImpl::ComputeBlendShapeWeights(
         return _blendShapeWeights.Get(weights, time);
     }
     return false;
+}
+
+
+bool
+UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightTimeSamples(
+    const GfInterval& interval,
+    std::vector<double>* times) const
+{
+    return _blendShapeWeights.GetTimeSamplesInInterval(interval, times);
+}
+
+
+bool
+UsdSkel_SkelAnimationQueryImpl::BlendShapeWeightsMightBeTimeVarying() const
+{
+    return _blendShapeWeights.ValueMightBeTimeVarying();
 }
 
 

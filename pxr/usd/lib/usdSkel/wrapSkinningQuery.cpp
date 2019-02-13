@@ -137,6 +137,10 @@ void wrapUsdSkelSkinningQuery()
 
         .def("GetPrim", &This::GetPrim,
              return_value_policy<return_by_value>())
+
+        .def("HasJointInfluences", &This::HasJointInfluences)
+
+        .def("HasBlendShapes", &This::HasBlendShapes)
         
         .def("GetNumInfluencesPerComponent",
              &This::GetNumInfluencesPerComponent)

@@ -66,7 +66,7 @@ public:
 
     /// Return the location at which the shape is applied.
     USDSKEL_API
-    float GetWeight() const;
+    bool GetWeight(float* weight) const;
 
     /// Set the location at which the shape is applied.
     USDSKEL_API
@@ -143,7 +143,7 @@ private:
     static TfToken const &_GetNamespacePrefix();
 
     /// Factory for UsdBlendShape's use, so that we can encapsulate the
-    /// logic of what discriminates an Inbetween in this calss, while
+    /// logic of what discriminates an Inbetween in this class, while
     /// preserving the pattern that attributes can only be created via
     /// their container objects.
     ///

@@ -79,6 +79,8 @@ public:
         UsdAttribute jointWeightsAttr;
         UsdAttribute geomBindTransformAttr;
         UsdAttribute jointsAttr;
+        UsdAttribute blendShapesAttr;
+        UsdRelationship blendShapeTargetsRel;
         UsdPrim skel;
     };
     

@@ -95,6 +95,25 @@ _GetJointTransformTimeSamplesInInterval(const UsdSkelAnimQuery& self,
 }
 
 
+std::vector<double>
+_GetBlendShapeWeightTimeSamples(const UsdSkelAnimQuery& self)
+{   
+    std::vector<double> times;
+    self.GetBlendShapeWeightTimeSamples(&times);
+    return times;
+}
+
+
+std::vector<double>
+_GetBlendShapeWeightTimeSamplesInInterval(const UsdSkelAnimQuery& self,
+                                        const GfInterval& interval)
+{   
+    std::vector<double> times;
+    self.GetBlendShapeWeightTimeSamplesInInterval(interval, &times);
+    return times;
+}
+
+
 } // namespace
 
 
@@ -130,6 +149,15 @@ void wrapUsdSkelAnimQuery()
         
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
+
+        .def("GetBlendShapeWeightTimeSamples", &_GetBlendShapeWeightTimeSamples)
+
+        .def("GetBlendShapeWeightTimeSamplesInInterval",
+             &_GetBlendShapeWeightTimeSamplesInInterval,
+             (arg("interval")))
+
+        .def("BlendShapeWeightsMightBeTimeVarying",
+             &This::BlendShapeWeightsMightBeTimeVarying)
 
         .def("GetJointOrder", &This::GetJointOrder)
 

@@ -139,6 +139,36 @@ UsdSkelAnimQuery::GetBlendShapeOrder() const
 }
 
 
+bool
+UsdSkelAnimQuery::GetBlendShapeWeightTimeSamples(std::vector<double>* times) const
+{
+    return GetBlendShapeWeightTimeSamplesInInterval(
+        GfInterval::GetFullInterval(), times);
+}
+
+
+bool
+UsdSkelAnimQuery::GetBlendShapeWeightTimeSamplesInInterval(
+    const GfInterval& interval,
+    std::vector<double>* times) const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->GetBlendShapeWeightTimeSamples(interval, times);
+    }
+    return false;
+}
+
+
+bool
+UsdSkelAnimQuery::BlendShapeWeightsMightBeTimeVarying() const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->BlendShapeWeightsMightBeTimeVarying();
+    }
+    return false;
+}
+
+
 std::string
 UsdSkelAnimQuery::GetDescription() const
 {

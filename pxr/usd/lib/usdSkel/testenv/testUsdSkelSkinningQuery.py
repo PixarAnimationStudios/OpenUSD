@@ -39,26 +39,30 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
         cache = UsdSkel.Cache()
 
         root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
-        assert cache.Populate(root)
-
+        self.assertTrue(cache.Populate(root))
 
         def _GetSkinningQuery(path):
             return cache.GetSkinningQuery(stage.GetPrimAtPath(path))
 
-        assert not _GetSkinningQuery(
+        self.assertFalse(_GetSkinningQuery(
             rootPath+"/ErrorCases/MismatchedInterpolation")
+                         .HasJointInfluences())
 
-        assert not _GetSkinningQuery(
+        self.assertFalse(_GetSkinningQuery(
             rootPath+"/ErrorCases/InvalidInterpolation1")
+                         .HasJointInfluences())
 
-        assert not _GetSkinningQuery(
+        self.assertFalse(_GetSkinningQuery(
             rootPath+"/ErrorCases/InvalidInterpolation2")
+                         .HasJointInfluences())
 
-        assert not _GetSkinningQuery(
+        self.assertFalse(_GetSkinningQuery(
             rootPath+"/ErrorCases/MismatchedElementSize")
+                         .HasJointInfluences())
 
-        assert not _GetSkinningQuery(
+        self.assertFalse(_GetSkinningQuery(
             rootPath+"/ErrorCases/InvalidElementSize")
+                         .HasJointInfluences())
 
         #
         # Validate error cases during ComputeJointInfluences()
@@ -108,15 +112,6 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
 
         varyingInfluences = query.ComputeVaryingJointInfluences(2)
         assert influences == varyingInfluences
-
-
-    def test_Skinning(self):
-        testFile = "skinning.usda"
-        stage = Usd.Stage.Open(testFile)
-
-        UsdSkel.BakeSkinning(stage.Traverse())
-
-        stage.GetRootLayer().Export("skinning.skinned.usda")
 
 
 if __name__ == "__main__":

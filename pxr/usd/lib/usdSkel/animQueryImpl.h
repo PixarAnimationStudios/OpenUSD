@@ -84,6 +84,13 @@ public:
     ComputeBlendShapeWeights(VtFloatArray* weights,
                              UsdTimeCode time=UsdTimeCode::Default()) const = 0;
 
+    virtual bool
+    GetBlendShapeWeightTimeSamples(const GfInterval& interval,
+                                   std::vector<double>* times) const = 0;
+
+    virtual bool
+    BlendShapeWeightsMightBeTimeVarying() const = 0;
+
     const VtTokenArray& GetJointOrder() const { return _jointOrder; }
 
     const VtTokenArray& GetBlendShapeOrder() const { return _blendShapeOrder; }

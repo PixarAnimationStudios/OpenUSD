@@ -63,15 +63,25 @@ public:
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
                          const UsdAttribute& geomBindTransform,
-                         const UsdAttribute& joints);
+                         const UsdAttribute& joints,
+                         const UsdAttribute& blendShapes,
+                         const UsdRelationship& blendShapeTargets);
 
     /// Returns true if this query is valid.
-    bool IsValid() const { return _valid; }
+    bool IsValid() const { return bool(_prim); }
     
-    /// Boolena conversion operator. Equivalent to IsValid().
+    /// Boolean conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
 
     const UsdPrim& GetPrim() const { return _prim; }
+
+    /// Returns true if there are blend shapes associated with this prim.    
+    USDSKEL_API
+    bool HasBlendShapes() const;
+
+    /// Returns true if joint influence data is associated with this prim.
+    USDSKEL_API
+    bool HasJointInfluences() const;
 
     /// Returns the number of influences encoded for each component.
     /// If the prim defines rigid joint influences, then this returns
@@ -99,6 +109,14 @@ public:
 
     const UsdGeomPrimvar& GetJointWeightsPrimvar() const {
         return _jointWeightsPrimvar;
+    }
+
+    const UsdAttribute& GetBlendShapesAttr() const {
+        return _blendShapes;
+    }
+
+    const UsdRelationship& GetBlendShapeTargetsRel() const {
+        return _blendShapeTargets;
     }
 
     /// Return the mapper for this target, if any.
@@ -193,14 +211,25 @@ public:
     std::string GetDescription() const;
 
 private:
+
+    void _InitializeJointInfluenceBindings(
+             const UsdAttribute& jointIndices,
+             const UsdAttribute& jointWeights);
+
+    void _InitializeBlendShapeBindings(
+             const UsdAttribute& blendShapes,
+             const UsdRelationship& blendShapeTargets);
+
     UsdPrim _prim;
-    bool _valid;
-    int _numInfluencesPerComponent;
+    int _numInfluencesPerComponent = 1;
+    int _flags = 0;
     TfToken _interpolation;
 
     UsdGeomPrimvar _jointIndicesPrimvar;
     UsdGeomPrimvar _jointWeightsPrimvar;
     UsdAttribute _geomBindTransformAttr;
+    UsdAttribute _blendShapes;
+    UsdRelationship _blendShapeTargets;
     UsdSkelAnimMapperRefPtr _mapper;
     boost::optional<VtTokenArray> _jointOrder;
 };

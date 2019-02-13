@@ -120,6 +120,23 @@ UsdSkelBlendShape::CreateOffsetsAttr(VtValue const &defaultValue, bool writeSpar
 }
 
 UsdAttribute
+UsdSkelBlendShape::GetNormalOffsetsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->normalOffsets);
+}
+
+UsdAttribute
+UsdSkelBlendShape::CreateNormalOffsetsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->normalOffsets,
+                       SdfValueTypeNames->Vector3fArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelBlendShape::GetPointIndicesAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->pointIndices);
@@ -154,6 +171,7 @@ UsdSkelBlendShape::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->offsets,
+        UsdSkelTokens->normalOffsets,
         UsdSkelTokens->pointIndices,
     };
     static TfTokenVector allNames =
@@ -239,5 +257,26 @@ UsdSkelBlendShape::GetAuthoredInbetweens() const
                                UsdSkelInbetweenShape::_GetNamespacePrefix()) :
                            std::vector<UsdProperty>());
 }
+
+
+bool
+UsdSkelBlendShape::ValidatePointIndices(TfSpan<const int> indices,
+                                        size_t numPoints,
+                                        std::string* reason)
+{
+    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+        const unsigned pointIndex = indices[i];
+        if (pointIndex >= numPoints) {
+            if (reason) {
+                *reason = TfStringPrintf(
+                    "Index [%d] at element %td >= numPoints [%zu]",
+                    pointIndex, i, numPoints);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

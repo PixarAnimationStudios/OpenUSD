@@ -43,6 +43,8 @@
 #include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/usd/usdSkel/animation.h"
+#include "pxr/usd/usdSkel/bindingAPI.h"
+#include "pxr/usd/usdSkel/blendShapeQuery.h"
 #include "pxr/usd/usdSkel/cache.h"
 #include "pxr/usd/usdSkel/debugCodes.h"
 #include "pxr/usd/usdSkel/root.h"
@@ -68,8 +70,10 @@ bool
 UsdSkelIsSkinnablePrim(const UsdPrim& prim)
 {
     // XXX: Note that UsdGeomPointBased prims are boundable prims,
-    // so no need to explicit check for UsdGeomPointBased.
-    return prim.IsA<UsdGeomBoundable>() && !prim.IsA<UsdSkelSkeleton>();
+    // so no need to explicitly check for UsdGeomPointBased.
+    return prim.IsA<UsdGeomBoundable>() &&
+          !prim.IsA<UsdSkelSkeleton>() &&
+          !prim.IsA<UsdSkelRoot>();
 }
 
 
@@ -1119,6 +1123,104 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 namespace {
 
 
+/// Apply indexed offsets to \p points.
+bool
+UsdSkel_ApplyIndexedBlendShape(const float weight,
+                               const TfSpan<const GfVec3f> offsets,
+                               const TfSpan<const unsigned> indices,
+                               TfSpan<GfVec3f> points)
+{
+    TRACE_FUNCTION();
+
+    // Flag for marking error state from within threads.
+    std::atomic_bool errors(false);
+
+    _ParallelForN(
+        offsets.size(), /*forceSerial*/ false,
+        [&](size_t start, size_t end)
+        {  
+            for (size_t i = start; i < end; ++i) {
+                const unsigned index = indices[i];
+                if (static_cast<ptrdiff_t>(index) < points.size()) { 
+                    points[index] += offsets[i]*weight;
+                }  else {
+                    // XXX: If one offset index is bad, an asset has probably
+                    // gotten out of sync, and probably many other indices
+                    // will be invalid, too. Bail out early.
+                    TF_WARN("Out of range point index %d (num points = %td).",
+                            index, points.size());
+                    errors = true;
+                    return;
+                }
+            }
+        });
+
+    return !errors;
+}
+
+
+/// Apply non-indexed offsets to \p points.
+void
+UsdSkel_ApplyNonIndexedBlendShape(const float weight,
+                                  const TfSpan<const GfVec3f> offsets,
+                                  TfSpan<GfVec3f> points)
+{
+    TRACE_FUNCTION();
+
+    _ParallelForN(
+        points.size(), /*forceSerial*/ false,
+        [&](size_t start, size_t end)
+        {
+            for (size_t i = start; i < end; ++i) {
+                points[i] += offsets[i]*weight;
+            }
+        });
+}
+
+
+} // namespace
+                        
+
+bool
+UsdSkelApplyBlendShape(const float weight,
+                       const TfSpan<const GfVec3f> offsets,
+                       const TfSpan<const unsigned> indices,
+                       TfSpan<GfVec3f> points)
+{
+    // Early out if weights are zero.
+    if (GfIsClose(weight, 0.0, 1e-6)) {
+        return true;
+    }
+
+    if (indices.empty()) {
+
+        if (offsets.size() == points.size()) {
+            UsdSkel_ApplyNonIndexedBlendShape(weight, offsets, points);
+        } else {
+            TF_WARN("Size of non-indexed offsets [%zu] != size of points [%zu]",
+                    offsets.size(), points.size());
+            return false;
+        }
+
+    } else {
+        
+        if (offsets.size() == indices.size()) {
+            
+            return UsdSkel_ApplyIndexedBlendShape(
+                weight, offsets, indices, points);
+        } else {
+            TF_WARN("Size of indexed offsets [%zu] != size of indices [%zu]",
+                    offsets.size(), indices.size());
+            return false;
+        }
+    }
+    return true;
+}
+
+
+namespace {
+
+
 /// XXX: Copied from Usd_MergeTimeSamples()
 /// Replace with a public method when and if one becomes available.
 void
@@ -1227,9 +1329,13 @@ _GetSkinningTimeSamples(const UsdPrim& prim,
     std::vector<double> propertyTimes;
 
     // Start off with time samples that affect joint tranforms.
-    if(UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
-        if(animQuery.GetJointTransformTimeSamplesInInterval(
+    if (UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
+        if (animQuery.GetJointTransformTimeSamplesInInterval(
                interval, &propertyTimes)) {
+            _MergeTimeSamples(times, propertyTimes, &tmpTimes);
+        }
+        if (animQuery.GetBlendShapeWeightTimeSamplesInInterval(
+                interval, &propertyTimes)) {
             _MergeTimeSamples(times, propertyTimes, &tmpTimes);
         }
     }
@@ -1238,12 +1344,12 @@ _GetSkinningTimeSamples(const UsdPrim& prim,
     // (necessary because world space transforms are used to push
     //  deformations in skeleton-space back into normal prim space.
     //  See the notes in the deformation methods for more on why.
-    if(_GetWorldTransformTimeSamples(prim, interval, &propertyTimes)) {
+    if (_GetWorldTransformTimeSamples(prim, interval, &propertyTimes)) {
         _MergeTimeSamples(times, propertyTimes, &tmpTimes);
     }
 
-    if(!skinningQuery.IsRigidlyDeformed() && prim.IsA<UsdGeomPointBased>()) {
-        if(UsdGeomPointBased(prim).GetPointsAttr().GetTimeSamplesInInterval(
+    if (!skinningQuery.IsRigidlyDeformed() && prim.IsA<UsdGeomPointBased>()) {
+        if (UsdGeomPointBased(prim).GetPointsAttr().GetTimeSamplesInInterval(
                interval, &propertyTimes)) {
             _MergeTimeSamples(times, propertyTimes, &tmpTimes);
         }
@@ -1291,8 +1397,8 @@ _BakeSkinnedPoints(const UsdPrim& prim,
                    const std::vector<UsdTimeCode>& times,
                    UsdGeomXformCache* xfCache)
 {
-    UsdGeomPointBased pointBased(prim);
-    if(!pointBased) {
+    const UsdGeomPointBased pointBased(prim);
+    if (!pointBased) {
         TF_CODING_ERROR("%s -- Attempted varying deformation of a non "
                         "point-based prim. Skinning currently only understands "
                         "varying deformations on UsdGeomPointBased types.",
@@ -1300,26 +1406,54 @@ _BakeSkinnedPoints(const UsdPrim& prim,
         return false;
     }
 
-    UsdAttribute pointsAttr = pointBased.GetPointsAttr();
+    const UsdAttribute pointsAttr = pointBased.GetPointsAttr();
 
     // Pre-sample all point values.    
     std::vector<VtValue> pointsValues(times.size());
-    for(size_t i = 0; i < times.size(); ++i) {
-        if(!pointsAttr.Get(&pointsValues[i], times[i])) {
+    for (size_t i = 0; i < times.size(); ++i) {
+        if (!pointsAttr.Get(&pointsValues[i], times[i])) {
             return false;
         }
     }
 
-    UsdAttribute extentAttr = pointBased.GetExtentAttr();
+    const UsdAttribute extentAttr = pointBased.GetExtentAttr();
 
-    for(size_t i = 0; i < times.size(); ++i) {
+    // Pre-compute all blend shape offsets/indices.
+    const UsdSkelBindingAPI binding(prim);
+    const UsdSkelBlendShapeQuery blendShapeQuery(binding);
+    // Cache the offsets and point indices of all blend shapes.
+    const std::vector<VtUIntArray> blendShapePointIndices =
+        blendShapeQuery.ComputeBlendShapePointIndices();
+    const std::vector<VtVec3fArray> subShapePointOffsets =
+        blendShapeQuery.ComputeSubShapePointOffsets();
+
+    // Compute mapper for remapping blend shape weights.
+    UsdSkelAnimMapper blendShapeMapper;
+    bool haveBlendShapes = false;
+
+    if (skinningQuery.HasBlendShapes()) {
+
+        // We have bindings for blend shapes, but these only mean
+        // something if we have an animation source to provide weight values.
+        if (const auto& animQuery = skelQuery.GetAnimQuery()) {
+            VtTokenArray blendShapeOrder;
+            if (skinningQuery.GetBlendShapesAttr().Get(&blendShapeOrder)) {
+                blendShapeMapper =
+                    UsdSkelAnimMapper(animQuery.GetBlendShapeOrder(),
+                                      blendShapeOrder);
+                haveBlendShapes = true;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < times.size(); ++i) {
         const VtValue& points = pointsValues[i];
-        if(!points.IsHolding<VtVec3fArray>()) {
+        if (!points.IsHolding<VtVec3fArray>()) {
             // Could have been a blocked sample. Skip it.
             continue;
         }
 
-        UsdTimeCode time = times[i];
+        const UsdTimeCode time = times[i];
 
         TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
             "[UsdSkelBakeSkinning]   Skinning points at time %s "
@@ -1327,13 +1461,14 @@ _BakeSkinnedPoints(const UsdPrim& prim,
             TfStringify(time).c_str(), i, times.size());
 
         // XXX: More complete and sophisticated skinning code would compute
-        // xforms once for all prims deformed by a single skeleton, instead
-        // of recomputing skinning transforms for each deformed prim.
+        // skinning transforms and blend shape weights once for all prims
+        // deformed by a single skeleton, instead of recomputing them for each
+        // individual prim skinned.
         // However, since this method is intended only for testing, simplicity
         // and correctness are greater priorities than performance.
 
         VtMatrix4dArray xforms;
-        if(!skelQuery.ComputeSkinningTransforms(&xforms, time)) {
+        if (!skelQuery.ComputeSkinningTransforms(&xforms, time)) {
             TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                 "[UsdSkelBakeSkinning]   Failed computing "
                 "skinning transforms\n");
@@ -1341,7 +1476,56 @@ _BakeSkinnedPoints(const UsdPrim& prim,
         }
 
         VtVec3fArray skinnedPoints(points.UncheckedGet<VtVec3fArray>());
-        if(skinningQuery.ComputeSkinnedPoints(xforms, &skinnedPoints, time)) {
+
+        // Apply blend shapes before skinning.
+        if (haveBlendShapes) {
+
+            TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
+                "[UsdSkelBakeSkinning]    Applying blend shapes\n");
+
+            VtFloatArray weights;
+            if (!skelQuery.GetAnimQuery().ComputeBlendShapeWeights(
+                    &weights, time)) {
+                TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
+                    "[UsdSkelBakeSkinning]    Failed computing "
+                    "blend shape weights\n");
+                return false;
+            }
+
+            // Remap the weights from the order on the animation source
+            // to the order of the shapes bound to this skinnable prim.
+            VtFloatArray weightsForPrim;
+            if (!blendShapeMapper.Remap(weights, &weightsForPrim)) {
+                return false;
+            }
+
+            // Compute resolved sub-shapes.
+            VtFloatArray subShapeWeights;
+            VtUIntArray blendShapeIndices, subShapeIndices;
+            if (!blendShapeQuery.ComputeSubShapeWeights(
+                    weightsForPrim, &subShapeWeights,
+                    &blendShapeIndices, &subShapeIndices)) {
+                return false;
+            }
+
+            if (!blendShapeQuery.ComputeDeformedPoints(
+                    subShapeWeights, blendShapeIndices, subShapeIndices,
+                    blendShapePointIndices, subShapePointOffsets,
+                    skinnedPoints)) {
+                return false;
+            }
+        }
+        if (skinningQuery.HasJointInfluences()) {
+
+            TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
+                "[UsdSkelBakeSkinning]    Applying linear blend skinning\n");
+
+            if (!skinningQuery.ComputeSkinnedPoints(
+                    xforms, &skinnedPoints, time)) {
+                TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
+                    "[UsdSkelBakeSkinning]   Failed skinning points\n");
+                return false;
+            }
 
             // Skinning deforms points in *skel* space.
             // A world-space point is then computed as:
@@ -1368,21 +1552,18 @@ _BakeSkinnedPoints(const UsdPrim& prim,
             GfMatrix4d skelToGprimXf =
                 skelLocalToWorld*gprimLocalToWorld.GetInverse();
 
-            for(auto& pt : skinnedPoints) {
+            for (auto& pt : skinnedPoints) {
                 pt = skelToGprimXf.Transform(pt);
             }
-            pointsAttr.Set(skinnedPoints, time);
+       }
 
-            // Update point extent.
-            VtVec3fArray extent;
-            if(UsdGeomBoundable::ComputeExtentFromPlugins(
-                   pointBased, time, &extent)) {
-                extentAttr.Set(extent, time);
-            }
-        } else {
-            TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
-                "[UsdSkelBakeSkinning]   Failed skinning points\n");
-            return false;
+        pointsAttr.Set(skinnedPoints, time);
+
+        // Update point extent.
+        VtVec3fArray extent;
+        if (UsdGeomBoundable::ComputeExtentFromPlugins(
+               pointBased, time, &extent)) {
+            extentAttr.Set(extent, time);
         }
     }
     return true;
@@ -1590,8 +1771,7 @@ UsdSkelBakeSkinning(const UsdSkelRoot& root, const GfInterval& interval)
             // Determine what times to author deformed prim data on.
             std::vector<double> times;
             _GetSkinningTimeSamples(skinnedPrim, skelQuery,
-                                    skinningQuery,
-                                    interval, &times);
+                                    skinningQuery, interval, &times);
             _MergeTimeSamples(&allPrimTimes, times, &tmpTimes);
 
             // Get times in terms of time codes, so that defaults
@@ -1601,14 +1781,25 @@ UsdSkelBakeSkinning(const UsdSkelRoot& root, const GfInterval& interval)
                 timeCodes.push_back(UsdTimeCode::Default());
             }
 
-            if (skinningQuery.IsRigidlyDeformed()) {
+            if (!skinningQuery.HasJointInfluences() &&
+                !skinningQuery.HasBlendShapes()) {
+
+                TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
+                    "   Skipping skinning "
+                    "(prim has no joint influences or blend shapes)\n");
+                continue;
+            }
+
+            if (skinningQuery.IsRigidlyDeformed() &&
+                !skinningQuery.HasBlendShapes()) {
+
                 if (!_BakeSkinnedTransform(skinnedPrim, skelQuery,
                                            skinningQuery, timeCodes,
                                            &xfCache)) {
                     return false;
                 }
             } else {
-                if(!skinnedPrim.IsA<UsdGeomPointBased>()) {
+                if (!skinnedPrim.IsA<UsdGeomPointBased>()) {
                     // XXX: This is not an error!
                     // There might be custom types that do not inherit
                     // from UsdGeomPointBased that some clients know
@@ -1641,7 +1832,7 @@ UsdSkelBakeSkinning(const UsdSkelRoot& root, const GfInterval& interval)
     // against the union of all times.
     std::vector<UsdTimeCode> allPrimTimeCodes(allPrimTimes.begin(),
                                               allPrimTimes.end());
-    if(allPrimTimeCodes.size() == 0) {
+    if (allPrimTimeCodes.size() == 0) {
         allPrimTimeCodes.push_back(UsdTimeCode::Default());
     }
     

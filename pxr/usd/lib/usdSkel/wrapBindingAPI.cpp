@@ -210,6 +210,17 @@ _GetAnimationSource(const UsdSkelBindingAPI& binding)
 }
 
 
+tuple
+_ValidateJointIndices(TfSpan<const int> jointIndices,
+                      size_t numJoints)
+{
+    std::string reason;
+    bool valid = UsdSkelBindingAPI::ValidateJointIndices(
+        jointIndices, numJoints, &reason);
+    return boost::python::make_tuple(valid, reason);
+}
+
+
 WRAP_CUSTOM {
     using This = UsdSkelBindingAPI;
 
@@ -234,6 +245,10 @@ WRAP_CUSTOM {
         .def("GetInheritedSkeleton", &This::GetInheritedSkeleton)
         
         .def("GetInheritedAnimationSource", &This::GetInheritedAnimationSource)
+
+        .def("ValidateJointIndices", &_ValidateJointIndices,
+             (arg("jointIndices"), arg("numJoints")))
+        .staticmethod("ValidateJointIndices")
         ;
 }
 

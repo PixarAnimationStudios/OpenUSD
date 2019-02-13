@@ -36,6 +36,7 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3h.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 
@@ -369,6 +370,19 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         const float* jointWeights,
                         size_t numInfluences,
                         GfMatrix4d* xform);
+
+
+/// Apply a single blend shape to \p points.
+/// The shape is given as a span of \p offsets. If the \p indices span is not
+/// empty, it provides the index into the \p points span at which each offset
+/// should be mapped. Otherwise, the \p offsets span must be the same size as
+/// the \p points span.
+USDSKEL_API
+bool
+UsdSkelApplyBlendShape(const float weight,
+                       const TfSpan<const GfVec3f> offsets,
+                       const TfSpan<const unsigned> indices,
+                       TfSpan<GfVec3f> points);
 
 
 /// Bake the effect of skinning prims directly into points and transforms,

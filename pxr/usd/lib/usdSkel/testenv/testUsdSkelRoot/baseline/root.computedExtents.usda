@@ -10,7 +10,7 @@ def SkelRoot "Root" (
     kind = "component"
 )
 {
-    rel skel:animationSource = </Root/Animation>
+    rel skel:animationSource = </Root/Skeleton/Animation>
     rel skel:skeleton = </Root/Skeleton>
 
     def Skeleton "Skeleton"

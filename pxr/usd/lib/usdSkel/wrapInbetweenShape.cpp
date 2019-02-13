@@ -50,6 +50,14 @@ _GetOffsets(const UsdSkelInbetweenShape& self)
 }
 
 
+object
+_GetWeight(const UsdSkelInbetweenShape& self)
+{
+    float w = 0;
+    return self.GetWeight(&w) ? object(w) : object();
+}
+
+
 } // namespace
 
 
@@ -62,7 +70,7 @@ void wrapUsdSkelInbetweenShape()
         .def(init<UsdAttribute>(arg("attr")))
         .def(!self)
 
-        .def("GetWeight", &This::GetWeight)
+        .def("GetWeight", &_GetWeight)
         .def("SetWeight", &This::SetWeight, arg("weight"))
         .def("HasAuthoredWeight", &This::HasAuthoredWeight)
 
