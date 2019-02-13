@@ -30,12 +30,17 @@
 #include "GU_USD.h"
 #include "tokens.h"
 
+#include "pxr/base/gf/half.h"
+
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndexedString.h>
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_DAIndirect.h>
 #include <GT/GT_DABool.h>
 #include <SYS/SYS_Version.h>
+#include <UT/UT_StringMMPattern.h>
+
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -710,306 +715,247 @@ GusdPrimWrapper::addTrailingBookend( double curFrame )
                                    UsdTimeCode(curFrame));     
 }
 
+
+namespace {
+
+
+/// Returns a GT_Type as interpreted from the role pulled from
+/// an SdfValueTypeName.
+GT_Type
+Gusd_GetTypeFromRole(const TfToken& role)
+{
+    if (role == SdfValueRoleNames->Point) {
+        return GT_TYPE_POINT;
+    } else if (role == SdfValueRoleNames->Normal) {
+        return GT_TYPE_NORMAL;
+    } else if (role == SdfValueRoleNames->Vector) {
+        return GT_TYPE_VECTOR;
+    } else if (role == SdfValueRoleNames->Color) {
+        return GT_TYPE_COLOR;
+    } else if (role == SdfValueRoleNames->TextureCoordinate) {
+#if SYS_VERSION_FULL_INT >= 0x10050000
+        return GT_TYPE_TEXTURE;
+#endif // SYS_VERSION_FULL_INT >= 0x10050000
+    }
+    return GT_TYPE_NONE;
+}
+
+
+const char*
+Gusd_GetCStr(const std::string& o)  { return o.c_str(); }
+
+const char*
+Gusd_GetCStr(const TfToken& o)      { return o.GetText(); }
+
+const char*
+Gusd_GetCStr(const SdfAssetPath& o) { return o.GetAssetPath().c_str(); }
+
+
+/// Convert a value to a GT_DataArray.
+/// The value is either a POD type or a tuple of PODs.
+template <typename ELEMTYPE, typename GTARRAY,
+          int TUPLESIZE=1, GT_Type GT_TYPE=GT_TYPE_NONE>
+GT_DataArray*
+Gusd_ConvertTupleToGt(const VtValue& val)
+{
+    TF_DEV_AXIOM(val.IsHolding<ELEMTYPE>());
+
+    const auto& heldVal = val.UncheckedGet<ELEMTYPE>();
+
+    return new GTARRAY((const typename GTARRAY::data_type*)&heldVal,
+                       1, TUPLESIZE, GT_TYPE);
+}
+
+
+/// Convert a VtArray to a GT_DataArray.
+/// The elements of the array are either PODs, or tuples of PODs (eg., vectors).
+template <typename ELEMTYPE, typename GTARRAY,
+          int TUPLESIZE=1, GT_Type GT_TYPE=GT_TYPE_NONE>
+GT_DataArray*    
+Gusd_ConvertTupleArrayToGt(const UsdGeomPrimvar& primvar, const VtValue& val)
+{
+    TF_DEV_AXIOM(val.IsHolding<VtArray<ELEMTYPE> >());
+
+    const auto& array = val.UncheckedGet<VtArray<ELEMTYPE> >();
+    if (array.size() > 0) {
+        const int elementSize = primvar.GetElementSize();
+        if (elementSize > 0) {
+
+            // Only lookup primvar role for non POD types
+            // (vectors, matrices, etc.), and only if it has not
+            // been specified via template argument.
+            GT_Type type = GT_TYPE;
+            if (type == GT_TYPE_NONE) {
+                // A GT_Type has not been specified using template args.
+                // We can try to derive a type from the role on the primvar's 
+                // type name, but only worth doing for types that can
+                // actually have roles (eg., not PODs)
+                if (!SYSisPOD<ELEMTYPE>()) {
+                    type = Gusd_GetTypeFromRole(
+                        primvar.GetTypeName().GetRole());
+                }
+            }
+            
+            if (elementSize == 1) {
+                return new GusdGT_VtArray<ELEMTYPE>(array, type);
+            } else {
+                const size_t numTuples = array.size()/elementSize;
+                const int tupleSize = elementSize*TUPLESIZE;
+
+                if (numTuples*elementSize == array.size()) {
+                    return new GTARRAY(
+                        (const typename GTARRAY::data_type*)array.cdata(),
+                        numTuples, tupleSize);
+                } else {
+                    GUSD_WARN().Msg(
+                        "Invalid primvar <%s>: array size [%zu] is not a "
+                        "multiple of the elementSize [%d].",
+                        primvar.GetAttr().GetPath().GetText(),
+                        array.size(), elementSize);
+                }
+            }
+        } else {
+            GUSD_WARN().Msg(
+                "Invalid primvar <%s>: illegal elementSize [%d].",
+                primvar.GetAttr().GetPath().GetText(),
+                elementSize);
+        }
+    }
+    return nullptr;
+}
+
+
+/// Convert a string-like value to a GT_DataArray.
+template <typename ELEMTYPE>
+GT_DataArray*
+Gusd_ConvertStringToGt(const VtValue& val)
+{
+    TF_DEV_AXIOM(val.IsHolding<ELEMTYPE>());
+    
+    auto gtString = new GT_DAIndexedString(1);
+    gtString->setString(0, 0, Gusd_GetCStr(val.UncheckedGet<ELEMTYPE>()));
+    return gtString;
+}
+
+
+/// Convert a VtArray of string-like values to a GT_DataArray.
+template <typename ELEMTYPE>
+GT_DataArray*
+Gusd_ConvertStringArrayToGt(const UsdGeomPrimvar& primvar, const VtValue& val)
+{
+    TF_DEV_AXIOM(val.IsHolding<VtArray<ELEMTYPE> >());
+
+    const auto& array = val.UncheckedGet<VtArray<ELEMTYPE> >();
+    if (array.size() > 0) {
+        const int elementSize = primvar.GetElementSize();
+        if (elementSize > 0) {
+            const size_t numTuples = array.size()/elementSize;
+            if (numTuples*elementSize == array.size()) {
+                const ELEMTYPE* values = array.cdata();
+
+                auto gtStrings = new GT_DAIndexedString(numTuples, elementSize);
+
+                for (size_t i = 0; i < numTuples; ++i) {
+                    for (int cmp = 0; cmp < elementSize; ++cmp, ++values) {
+                        gtStrings->setString(i, cmp, Gusd_GetCStr(*values));
+                    }
+                }
+                return gtStrings;
+            } else {
+                GUSD_WARN().Msg(
+                    "Invalid primvar <%s>: array size [%zu] is not a "
+                        "multiple of the elementSize [%d].",
+                        primvar.GetAttr().GetPath().GetText(),
+                        array.size(), elementSize);
+            }
+        }  else {
+            GUSD_WARN().Msg(
+                "Invalid primvar <%s>: illegal elementSize [%d].",
+                primvar.GetAttr().GetPath().GetText(),
+                elementSize);
+        }
+    }
+    return nullptr;
+}
+
+
+} // namespace
+
+
 /* static */
 GT_DataArrayHandle
-GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode time ) {
+GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode time )
+{
+    VtValue val;
+    if (!primvar.ComputeFlattened(&val, time)) {
+        return nullptr;
+    }
 
-    SdfValueTypeName typeName = primvar.GetTypeName();
-    if( typeName == SdfValueTypeNames->Bool )
-    {
-        bool usdVal;
-        primvar.Get( &usdVal, time );
+#define _CONVERT_TUPLE(elemType, gtArray, tupleSize, gtType)            \
+    if (val.IsHolding<elemType>()) {                                    \
+        return Gusd_ConvertTupleToGt<elemType, gtArray, tupleSize>(val); \
+    } else if (val.IsHolding<VtArray<elemType> >()) {                   \
+        return Gusd_ConvertTupleArrayToGt<elemType, gtArray, tupleSize>( \
+            primvar, val);                                              \
+    }
 
-        auto gtData = new GT_DABool( 1, 1 );
-	gtData->setBit(0, usdVal);
+    // Check for most common value types first.
+    _CONVERT_TUPLE(GfVec3f, GT_Real32Array, 3, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2f, GT_Real32Array, 2, GT_TYPE_NONE);
+    _CONVERT_TUPLE(float, GT_Real32Array, 1, GT_TYPE_NONE);
+    _CONVERT_TUPLE(int, GT_Int32Array, 1, GT_TYPE_NONE);
 
-	return gtData;
-    }
-    else if( typeName == SdfValueTypeNames->Int )
-    {
-        int usdVal;
-        primvar.Get( &usdVal, time );
+    // Scalars
+    _CONVERT_TUPLE(double, GT_Real64Array, 1, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfHalf, GT_Real16Array, 1, GT_TYPE_NONE);
+    _CONVERT_TUPLE(int64, GT_Int64Array, 1, GT_TYPE_NONE);
+    _CONVERT_TUPLE(unsigned char, GT_UInt8Array, 1, GT_TYPE_NONE);
 
-        return new GT_Int32Array( &usdVal, 1, 1 );
-    }
-    else if( typeName == SdfValueTypeNames->Int64 )
-    {
-        int64_t usdVal;
-        primvar.Get( &usdVal, time );
+    // TODO: UInt, UInt64 (convert to int32/int64?)
+    
+    // Vec2
+    _CONVERT_TUPLE(GfVec2d, GT_Real64Array, 2, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2h, GT_Real16Array, 2, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2i, GT_Int32Array, 2, GT_TYPE_NONE);
 
-        return new GT_Int64Array( &usdVal, 1, 1 );
-    }
-    else if( typeName == SdfValueTypeNames->Float )
-    {
-        float usdVal;
-        primvar.Get( &usdVal, time );
+    // Vec3
+    _CONVERT_TUPLE(GfVec3d, GT_Real64Array, 3, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec3h, GT_Real16Array, 3, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec3i, GT_Int32Array, 3, GT_TYPE_NONE);
 
-        return new GT_Real32Array( &usdVal, 1, 1 );
-    }
-    else if( typeName == SdfValueTypeNames->Double )
-    {
-        double usdVal;
-        primvar.Get( &usdVal, time );
+    // Vec4
+    _CONVERT_TUPLE(GfVec4d, GT_Real64Array, 4, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4f, GT_Real32Array, 4, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4h, GT_Real16Array, 4, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4i, GT_Int32Array, 4, GT_TYPE_NONE);
 
-        return new GT_Real64Array( &usdVal, 1, 1 );
-    }
-    else if( typeName == SdfValueTypeNames->Float3 )
-    {
-        GfVec3f usdVal;
-        primvar.Get( &usdVal, time );
+    // Quat
+    _CONVERT_TUPLE(GfQuatd, GT_Real64Array, 4, GT_TYPE_QUATERNION);
+    _CONVERT_TUPLE(GfQuatf, GT_Real32Array, 4, GT_TYPE_QUATERNION);
+    _CONVERT_TUPLE(GfQuath, GT_Real16Array, 4, GT_TYPE_QUATERNION);
 
-        return new GT_Real32Array( usdVal.data(), 1, 3 );
-    }
-    else if( typeName == SdfValueTypeNames->Double3 )
-    {
-        GfVec3d usdVal;
-        primvar.Get( &usdVal, time );
+    // Matrices
+    _CONVERT_TUPLE(GfMatrix3d, GT_Real64Array, 9, GT_TYPE_MATRIX3);
+    _CONVERT_TUPLE(GfMatrix4d, GT_Real64Array, 16, GT_TYPE_MATRIX);
+    // TODO: Correct GT_Type for GfMatrix2d?
+    _CONVERT_TUPLE(GfMatrix2d, GT_Real64Array, 4, GT_TYPE_NONE);
 
-        return new GT_Real64Array( usdVal.data(), 1, 3 );
-    }
-    else if( typeName == SdfValueTypeNames->Color3f )
-    {
-        GfVec3f usdVal;
-        primvar.Get( &usdVal, time );
+#undef _CONVERT_TUPLE
 
-        return new GT_Real32Array( usdVal.data(), 1, 3, GT_TYPE_COLOR );
+#define _CONVERT_STRING(elemType)                                   \
+    if (val.IsHolding<elemType>()) {                                \
+        return Gusd_ConvertStringToGt<elemType>(val);               \
+    } else if (val.IsHolding<VtArray<elemType> >()) {               \
+        return Gusd_ConvertStringArrayToGt<elemType>(primvar, val); \
     }
-    else if( typeName == SdfValueTypeNames->Color3d )
-    {
-        GfVec3d usdVal;
-        primvar.Get( &usdVal, time );
 
-        return new GT_Real64Array( usdVal.data(), 1, 3, GT_TYPE_COLOR );
-    }
-    else if( typeName == SdfValueTypeNames->Normal3f )
-    {
-        GfVec3f usdVal;
-        primvar.Get( &usdVal, time );
+    _CONVERT_STRING(std::string);
+    _CONVERT_STRING(TfToken);
+    _CONVERT_STRING(SdfAssetPath);
 
-        return new GT_Real32Array( usdVal.data(), 1, 3, GT_TYPE_NORMAL );
-    }
-    else if( typeName == SdfValueTypeNames->Normal3d )
-    {
-        GfVec3d usdVal;
-        primvar.Get( &usdVal, time );
+#undef _CONVERT_STRING
 
-        return new GT_Real64Array( usdVal.data(), 1, 3, GT_TYPE_NORMAL );
-    }
-    else if( typeName == SdfValueTypeNames->Point3f )
-    {
-        GfVec3f usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real32Array( usdVal.data(), 1, 3, GT_TYPE_POINT );
-    }
-    else if( typeName == SdfValueTypeNames->Point3d )
-    {
-        GfVec3d usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real64Array( usdVal.data(), 1, 3, GT_TYPE_POINT );
-    }
-    else if( typeName == SdfValueTypeNames->Float4 )
-    {
-        GfVec4f usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real32Array( usdVal.data(), 1, 4 );
-    }
-    else if( typeName == SdfValueTypeNames->Double4 )
-    {
-        GfVec4d usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real64Array( usdVal.data(), 1, 4 );
-    }
-    else if( typeName == SdfValueTypeNames->Quatf )
-    {
-        GfVec4f usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real32Array( usdVal.data(), 1, 4, GT_TYPE_QUATERNION );
-    }
-    else if( typeName == SdfValueTypeNames->Quatd )
-    {
-        GfVec4d usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real64Array( usdVal.data(), 1, 4, GT_TYPE_QUATERNION );
-    }
-    else if( typeName == SdfValueTypeNames->Matrix3d )
-    {
-        GfMatrix3d usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real64Array( usdVal.GetArray(), 1, 9, GT_TYPE_MATRIX3 );
-    }
-    else if( typeName == SdfValueTypeNames->Matrix4d ||
-             typeName == SdfValueTypeNames->Frame4d )
-    {
-        GfMatrix4d usdVal;
-        primvar.Get( &usdVal, time );
-
-        return new GT_Real64Array( usdVal.GetArray(), 1, 16, GT_TYPE_MATRIX );
-    }
-    else if( typeName == SdfValueTypeNames->String )
-    {
-        string usdVal;
-        primvar.Get( &usdVal, time );
-
-        auto     gtString = new GT_DAIndexedString( 1 );
-        gtString->setString( 0, 0, usdVal.c_str() );
-        return gtString;
-    }
-    else if( typeName == SdfValueTypeNames->StringArray )
-    {
-        VtArray<string> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        auto gtString = new GT_DAIndexedString( usdVal.size() );
-        for( size_t i = 0; i < usdVal.size(); ++i )
-            gtString->setString( i, 0, usdVal[i].c_str() );
-        return gtString;
-    }
-    else if( typeName == SdfValueTypeNames->BoolArray )
-    {
-        VtArray<bool> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<bool>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->IntArray )
-    {
-        VtArray<int> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<int>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Int64Array )
-    {
-        VtArray<int64_t> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<int64_t>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->FloatArray )
-    {
-        VtArray<float> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<float>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->DoubleArray )
-    {
-        VtArray<double> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<double>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Float2Array )
-    {
-        VtArray<GfVec2f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec2f>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Double2Array )
-    {
-        VtArray<GfVec2d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec2d>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Float3Array )
-    {
-        VtArray<GfVec3f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3f>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Double3Array )
-    {
-        VtArray<GfVec3d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3d>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Color3fArray )
-    {
-        VtArray<GfVec3f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3f>(usdVal,GT_TYPE_COLOR);
-    }
-    else if( typeName == SdfValueTypeNames->Color3dArray )
-    {
-        VtArray<GfVec3d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3d>(usdVal,GT_TYPE_COLOR);
-    }
-    else if( typeName == SdfValueTypeNames->Vector3fArray )
-    {
-        VtArray<GfVec3f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3f>(usdVal, GT_TYPE_VECTOR);
-    }
-    else if( typeName == SdfValueTypeNames->Vector3dArray )
-    {
-        VtArray<GfVec3d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3d>(usdVal, GT_TYPE_VECTOR);
-    }
-    else if( typeName == SdfValueTypeNames->Normal3fArray )
-    {
-        VtArray<GfVec3f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3f>(usdVal, GT_TYPE_NORMAL);
-    }
-    else if( typeName == SdfValueTypeNames->Normal3dArray )
-    {
-        VtArray<GfVec3d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3d>(usdVal, GT_TYPE_NORMAL);
-    }
-    else if( typeName == SdfValueTypeNames->Point3fArray )
-    {
-        VtArray<GfVec3f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3f>(usdVal, GT_TYPE_POINT);
-    }
-    else if( typeName == SdfValueTypeNames->Point3dArray )
-    {
-        VtArray<GfVec3d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec3d>(usdVal, GT_TYPE_POINT);
-    }
-    else if( typeName == SdfValueTypeNames->Float4Array )
-    {
-        VtArray<GfVec4f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec4f>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->Double4Array )
-    {
-        VtArray<GfVec4d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec4d>(usdVal);
-    }
-    else if( typeName == SdfValueTypeNames->QuatfArray )
-    {
-        VtArray<GfVec4f> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec4f>(usdVal, GT_TYPE_QUATERNION);
-    }
-    else if( typeName == SdfValueTypeNames->QuatdArray )
-    {
-        VtArray<GfVec4d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfVec4d>(usdVal, GT_TYPE_QUATERNION);
-    }
-    else if( typeName == SdfValueTypeNames->Matrix3dArray )
-    {
-        VtArray<GfMatrix3d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfMatrix3d>(usdVal, GT_TYPE_MATRIX3);
-    }
-    else if( typeName == SdfValueTypeNames->Matrix4dArray ||
-             typeName == SdfValueTypeNames->Frame4dArray )
-    {
-        VtArray<GfMatrix4d> usdVal;
-        primvar.ComputeFlattened( &usdVal, time );
-        return new GusdGT_VtArray<GfMatrix4d>(usdVal, GT_TYPE_MATRIX);
-    }
-    return NULL;
+    return nullptr;
 }
 
 void
@@ -1030,10 +976,15 @@ GusdPrimWrapper::loadPrimvars(
     // By default, set the pattern to match only "Cd". Then write
     // over this pattern if there is one provided in rparms.
     const char* Cd = "Cd";
-    UT_String primvarPattern(Cd);
+    UT_String primvarPatternStr(Cd);
 
     if (rparms) {
-        rparms->import("usd:primvarPattern", primvarPattern);
+        rparms->import("usd:primvarPattern", primvarPatternStr);
+    }
+
+    UT_StringMMPattern primvarPattern;
+    if (primvarPatternStr) {
+        primvarPattern.compile(primvarPatternStr);
     }
 
     std::vector<UsdGeomPrimvar> authoredPrimvars;
@@ -1043,13 +994,13 @@ GusdPrimWrapper::loadPrimvars(
         UsdGeomImageable prim = getUsdPrim();
 
         UsdGeomPrimvar colorPrimvar = prim.GetPrimvar(GusdTokens->Cd);
-        if (colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+        if (colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValue()) {
             hasCdPrimvar = true;
         }
 
         // It's common for "Cd" to be the only primvar to load.
         // In this case, avoid getting all other authored primvars.
-        if (primvarPattern == Cd) {
+        if (primvarPatternStr == Cd) {
             if (hasCdPrimvar) {
                 authoredPrimvars.push_back(colorPrimvar);
             } else {
@@ -1057,11 +1008,11 @@ GusdPrimWrapper::loadPrimvars(
                 // Try to find "displayColor" instead.
                 colorPrimvar = prim.GetPrimvar(UsdGeomTokens->primvarsDisplayColor);
                 if (colorPrimvar &&
-                    colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+                    colorPrimvar.GetAttr().HasAuthoredValue()) {
                     authoredPrimvars.push_back(colorPrimvar);
                 }
             }
-        } else if (primvarPattern != "") {
+        } else if (!primvarPattern.isEmpty()) {
             authoredPrimvars = prim.GetAuthoredPrimvars();
         }
     }    
@@ -1084,7 +1035,7 @@ GusdPrimWrapper::loadPrimvars(
 
         // If the name of this primvar doesn't
         // match the primvarPattern, skip it.
-        if (!name.multiMatch(primvarPattern, 1, " ")) {
+        if (!name.multiMatch(primvarPattern)) {
             continue;
         }
 

@@ -206,12 +206,24 @@ public:
     USD_API
     bool HasValue() const;
 
-    /// Return true if the attribute associated with this query has either an 
-    /// authored default value or authored time samples.
+    /// \deprecated This method is deprecated because it returns `true` even when
+    /// an attribute is blocked.  Please use HasAuthoredValue() instead. If 
+    /// you truly need to know whether the attribute has **any** authored
+    /// value opinions, *including blocks*, you can make the following query:
+    /// `query.GetAttribute().GetResolveInfo().HasAuthoredValueOpinion()`
     ///
-    /// \sa UsdAttribute::HasAuthoredValueOpinion
+    ///
+    /// Return true if this attribute has either an authored default value or
+    /// authored time samples.
     USD_API
     bool HasAuthoredValueOpinion() const;
+
+    /// Return true if this attribute has either an authored default value or
+    /// authored time samples.  If the attribute has been 
+    /// \ref Usd_AttributeBlocking "blocked", then return `false`
+    /// \sa UsdAttribute::HasAuthoredValue()
+    USD_API
+    bool HasAuthoredValue() const;
 
     /// Return true if the attribute associated with this query has a 
     /// fallback value provided by a registered schema.

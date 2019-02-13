@@ -1,0 +1,39 @@
+<fragment uiName="float4ToFloatX" name="float4ToFloatX" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    {{ autoGenWarning }}
+    <description>
+        Extracts the X component of a 4D float vector.
+    </description>
+    <properties>
+        <float4 name="vectorInput"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float name="floatOutput"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="float4ToFloatX"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="float4ToFloatX"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="float4ToFloatX"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
+            <function_name val="float4ToFloatX"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

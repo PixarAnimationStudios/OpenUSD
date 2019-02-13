@@ -5,25 +5,413 @@
 )
 
 def MfScope "TestPrim1" (
-    payload = None
-)
-{
-}
-
-def MfScope "TestPrim2" (
     payload = @///test/layer.sdf@</Prim>
 )
 {
 }
 
+def MfScope "TestPrim2" (
+    payload = [
+        @///test/layer.sdf@</Prim>,
+        @///test/layer2.sdf@</Prim2>
+    ]
+)
+{
+}
+
 def MfScope "TestPrim3" (
+    payload = [
+        @///test/layer.sdf@</Prim> (offset = 11; scale = 22),
+        @///test1/layer1.sdf@</Prim2> (
+            offset = 0.1
+            scale = 0.2
+        ),
+        @///test2/layer2.sdf@</Prim3>,
+        @///test3/layer3.sdf@</Prim4> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestPrim4" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestPrim5" (
+    payload = @///test/layer.sdf@</Prim> (offset = 11; scale = 22)
+)
+{
+}
+
+def MfScope "TestPrim6" (
+    payload = [
+        @///test/layer.sdf@</Prim> ()
+    ]
+)
+{
+}
+
+def MfScope "TestPrim7" (
+    delete payload = @///test/layer.sdf@</Prim>
+    add payload = [
+        @///test/layer.sdf@</Prim>,
+        @///test/layer2.sdf@</Prim2>
+    ]
+    reorder payload = [
+        @///test/layer2.sdf@</Prim2>,
+        @///test/layer.sdf@</Prim>,
+    ]
+)
+{
+}
+
+def MfScope "TestFile1" (
+    payload = @///test/layer.sdf@
+)
+{
+}
+
+def MfScope "TestFile2" (
+    payload = [
+        @///test/layer.sdf@,
+        @///test/layer2.sdf@
+    ]
+)
+{
+}
+
+def MfScope "TestFile3" (
+    payload = [
+        @///test/layer.sdf@ (offset = 11; scale = 22),
+        @///test1/layer1.sdf@ (
+            offset = 0.1
+            scale = 0.2
+        ),
+        @///test2/layer2.sdf@,
+        @///test3/layer3.sdf@ (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestFile4" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestFile5" (
+    payload = @///test/layer.sdf@ (offset = 11; scale = 22)
+)
+{
+}
+
+def MfScope "TestFile6" (
+    payload = [
+        @///test/layer.sdf@ (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestFile7" (
+    delete payload = @///test/layer.sdf@
+    add payload = [
+        @///test/layer.sdf@,
+        @///test/layer2.sdf@
+    ]
+    reorder payload = [
+        @///test/layer2.sdf@,
+        @///test/layer.sdf@,
+    ]
+)
+{
+}
+
+def MfScope "TestPrimOnly1" (
+    payload = </Test>
+)
+{
+}
+
+def MfScope "TestPrimOnly2" (
+    payload = [
+        </Test>,
+        </Test2>
+    ]
+)
+{
+}
+
+def MfScope "TestPrimOnly3" (
+    payload = [
+        </Test> (offset = 11; scale = 22),
+        </Test1> (
+            offset = 0.1
+            scale = 0.2
+        ),
+        </Test2>,
+        </Test3> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestPrimOnly4" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestPrimOnly5" (
+    payload = </Test> (offset = 11; scale = 22)
+)
+{
+}
+
+def MfScope "TestPrimOnly6" (
+    payload = [
+        </Test> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestPrimOnly7" (
+    delete payload = </Test>
+    add payload = [
+        </Test>,
+        </Test2>
+    ]
+    reorder payload = [
+        </Test2>,
+        </Test>
+    ]
+)
+{
+}
+
+def MfScope "TestSelfDefault1" (
+    payload = <>
+)
+{
+}
+
+def MfScope "TestSelfDefault2" (
+    payload = [
+        <>
+    ]
+)
+{
+}
+
+def MfScope "TestSelfDefault3" (
+    payload = [
+        <> (
+            offset = 0.1
+            scale = 0.2
+        ),
+    ]
+)
+{
+}
+
+def MfScope "TestSelfDefault4" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestSelfDefault5" (
+    payload = <> (offset = 11; scale = 22)
+)
+{
+}
+
+def MfScope "TestSelfDefault6" (
+    payload = [
+        <> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestSelfDefault7" (
+    delete payload = <>
+    add payload = [
+        <>
+    ]
+    reorder payload = [
+        <>
+    ]
+)
+{
+}
+
+def MfScope "TestMixed" (
+    payload = [
+        @///test/layer.sdf@</Prim>,
+        @///test/layer2.sdf@,
+        </Prim>,
+        <>
+    ]
+)
+{
+}
+
+def MfScope "TestMixed2" (
+    payload = [
+        @/test/layer.sdf@</Prim>,
+        @/test/layer2.sdf@,
+        @@@/test/layer3.sdf@@@</Prim>,
+        @@@/test/layer4.sdf@@@
+    ]
+)
+{
+}
+
+def MfScope "TestMixed3" (
+    payload = [
+        @/test/layer.sdf@</Prim>,@/test/layer2.sdf@,@@@/test/layer3.sdf@@@</Prim>,@@@/test/layer4.sdf@@@
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrim1" (
     payload = @///test/layer.sdf@</Prim/Child>
 )
 {
 }
 
-def MfScope "TestAsset" (
-    payload = @///test/layer.sdf@
+def MfScope "TestSubrootPrim2" (
+    payload = [
+        @///test/layer.sdf@</Prim/Child>,
+        @///test/layer2.sdf@</Prim2/Child>
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrim3" (
+    payload = [
+        @///test/layer.sdf@</Prim/Child> (offset = 11; scale = 22),
+        @///test1/layer1.sdf@</Prim2/Child> (
+            offset = 0.1
+            scale = 0.2
+        ),
+        @///test2/layer2.sdf@</Prim3/Child>,
+        @///test3/layer3.sdf@</Prim4/Child> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrim4" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestSubrootPrim5" (
+    payload = @///test/layer.sdf@</Prim/Child> (offset = 11; scale = 22)
+)
+{
+}
+
+def MfScope "TestSubrootPrim6" (
+    payload = [
+        @///test/layer.sdf@</Prim/Child> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrim7" (
+    delete payload = @///test/layer.sdf@</Prim/Child>
+    add payload = [
+        @///test/layer.sdf@</Prim/Child>,
+        @///test/layer2.sdf@</Prim2/Child>
+    ]
+    reorder payload = [
+        @///test/layer2.sdf@</Prim2/Child>,
+        @///test/layer.sdf@</Prim/Child>,
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly1" (
+    payload = </Test/Child>
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly2" (
+    payload = [
+        </Test/Child>,
+        </Test2/Child>
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly3" (
+    payload = [
+        </Test/Child> (offset = 11; scale = 22),
+        </Test1/Child> (
+            offset = 0.1
+            scale = 0.2
+        ),
+        </Test2/Child>,
+        </Test3/Child> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly4" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly5" (
+    payload = </Test/Child> (offset = 11; scale = 22)
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly6" (
+    payload = [
+        </Test/Child> (
+        )
+    ]
+)
+{
+}
+
+def MfScope "TestSubrootPrimOnly7" (
+    delete payload = </Test/Child>
+    add payload = [
+        </Test/Child>,
+        </Test2/Child>
+    ]
+    reorder payload = [
+        </Test2/Child>,
+        </Test/Child>
+    ]
 )
 {
 }

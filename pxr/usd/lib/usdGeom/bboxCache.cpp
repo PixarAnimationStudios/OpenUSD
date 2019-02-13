@@ -325,7 +325,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
     GfMatrix4d primCtm = _ctmCache.GetLocalToWorldTransform(prim);
     GfMatrix4d ancestorCtm =
         _ctmCache.GetLocalToWorldTransform(relativeToAncestorPrim);
-    GfMatrix4d relativeCtm = ancestorCtm.GetInverse() * primCtm;
+    GfMatrix4d relativeCtm = primCtm * ancestorCtm.GetInverse();
 
     bbox.Transform(relativeCtm);
 
@@ -1197,7 +1197,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // For more information, see bugzilla #115735
 
                 bool primHasAuthoredPoints =
-                    pointBasedObj.GetPointsAttr().HasAuthoredValueOpinion();
+                    pointBasedObj.GetPointsAttr().HasAuthoredValue();
 
                 if (primHasAuthoredPoints) {
                     successGettingExtent = _ComputeExtent(boundableObj, &extent);

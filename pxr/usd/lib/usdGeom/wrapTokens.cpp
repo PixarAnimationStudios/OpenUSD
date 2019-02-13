@@ -80,7 +80,6 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "clippingPlanes", UsdGeomTokens->clippingPlanes);
     _AddToken(cls, "clippingRange", UsdGeomTokens->clippingRange);
     _AddToken(cls, "closed", UsdGeomTokens->closed);
-    _AddToken(cls, "collection", UsdGeomTokens->collection);
     _AddToken(cls, "constant", UsdGeomTokens->constant);
     _AddToken(cls, "cornerIndices", UsdGeomTokens->cornerIndices);
     _AddToken(cls, "cornerSharpnesses", UsdGeomTokens->cornerSharpnesses);

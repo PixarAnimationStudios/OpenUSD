@@ -109,7 +109,7 @@ def CreateModelStage(assetName,
         # The other, more plausible edge case: we're just wrapping
         # some other file (e.g. alembic) in order to give it a payload
         # and other proper USD trappings - no variants
-        modelRootPrim.SetPayload(Sdf.Payload(filesToReference[0]))
+        modelRootPrim.GetPayloads().AddPayload(Sdf.Payload(filesToReference[0]))
         return stage
 
     # OK, we're making a variantSet, and we are going to vary the payload
@@ -126,7 +126,7 @@ def CreateModelStage(assetName,
         # The context object makes all edits "go inside" the variant we
         # just created.
         with varSet.GetVariantEditContext():
-            modelRootPrim.SetPayload(Sdf.Payload(variantFile))
+            modelRootPrim.GetPayloads().AddPayload(Sdf.Payload(variantFile))
     # Now put the variantSet into the state we want it to be in by default
     varSet.SetVariantSelection(defaultVariantSelection)
     

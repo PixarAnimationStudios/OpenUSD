@@ -69,6 +69,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (fileTextureName)
     (outAlpha)
     (outColor)
+    (outColorR)
+    (outColorG)
+    (outColorB)
     (wrapU)
     (wrapV)
 
@@ -101,8 +104,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (black)
     (repeat)
 
-    // UsdUVTexture Output Name
+    // UsdUVTexture Output Names
     ((TextureOutputName, "rgba"))
+    ((RedOutputName, "r"))
+    ((GreenOutputName, "g"))
+    ((BlueOutputName, "b"))
+    ((AlphaOutputName, "a"))
 );
 
 
@@ -115,13 +122,25 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
     // Create a UsdUVTexture shader as the "primary" shader for this writer.
     UsdShadeShader texShaderSchema =
         UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(texShaderSchema);
+    if (!TF_VERIFY(
+            texShaderSchema,
+            "Could not define UsdShadeShader at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 
     texShaderSchema.CreateIdAttr(VtValue(_tokens->UsdUVTexture));
 
     _usdPrim = texShaderSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdShadeShader at path '%s'\n",
+            texShaderSchema.GetPath().GetText())) {
+        return;
+    }
 
+    // We always create an rgba output for the shader. Other outputs for
+    // specific components will be created on demand if they have connections.
     texShaderSchema.CreateOutput(
         _tokens->TextureOutputName,
         SdfValueTypeNames->Float4);
@@ -168,7 +187,12 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     UsdShadeShader shaderSchema(_usdPrim);
-    TF_AXIOM(shaderSchema);
+    if (!TF_VERIFY(
+            shaderSchema,
+            "Could not get UsdShadeShader schema for UsdPrim at path '%s'\n",
+            _usdPrim.GetPath().GetText())) {
+        return;
+    }
 
     // File
     const MPlug fileTextureNamePlug =
@@ -416,15 +440,35 @@ PxrUsdTranslators_FileTextureWriter::GetShadingPropertyNameForMayaAttrName(
     }
 
     TfToken usdAttrName;
+    SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
-    if (mayaAttrName == _tokens->outColor ||
-            mayaAttrName == _tokens->outAlpha) {
+    if (mayaAttrName == _tokens->outColor) {
+        usdAttrName = _tokens->TextureOutputName;
+        usdTypeName = SdfValueTypeNames->Float4;
+    } else if (mayaAttrName == _tokens->outColorR) {
+        usdAttrName = _tokens->RedOutputName;
+    } else if (mayaAttrName == _tokens->outColorG) {
+        usdAttrName = _tokens->GreenOutputName;
+    } else if (mayaAttrName == _tokens->outColorB) {
+        usdAttrName = _tokens->BlueOutputName;
+    } else if (mayaAttrName == _tokens->outAlpha) {
+        usdAttrName = _tokens->AlphaOutputName;
+    }
+
+    if (!usdAttrName.IsEmpty()) {
+        UsdShadeShader shaderSchema(_usdPrim);
+        if (!shaderSchema) {
+            return TfToken();
+        }
+
+        shaderSchema.CreateOutput(usdAttrName, usdTypeName);
+
         usdAttrName =
             TfToken(
                 TfStringPrintf(
                     "%s%s",
                     UsdShadeTokens->outputs.GetText(),
-                    _tokens->TextureOutputName.GetText()).c_str());
+                    usdAttrName.GetText()).c_str());
     }
 
     return usdAttrName;

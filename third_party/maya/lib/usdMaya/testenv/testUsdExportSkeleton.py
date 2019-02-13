@@ -38,9 +38,6 @@ class testUsdExportSkeleton(unittest.TestCase):
     def setUpClass(cls):
         standalone.initialize('usd')
 
-        cmds.file(os.path.abspath('UsdExportSkeleton.ma'), open=True,
-            force=True)
-
         cmds.loadPlugin('pxrUsd', quiet=True)
 
     @classmethod
@@ -49,6 +46,9 @@ class testUsdExportSkeleton(unittest.TestCase):
 
     def testSkeletonTopology(self):
         """Tests that the joint topology is correct."""
+        cmds.file(os.path.abspath('UsdExportSkeleton.ma'),
+                  open=True, force=True)
+
         usdFile = os.path.abspath('UsdExportSkeleton.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', exportSkels='auto')
@@ -92,6 +92,8 @@ class testUsdExportSkeleton(unittest.TestCase):
         Tests that the computed joint transforms in USD, when tarnsformed into
         world space, match the world space transforms of the Maya joints.
         """
+        cmds.file(os.path.abspath('UsdExportSkeleton.ma'),
+                  open=True, force=True)
 
         # frameRange = [1, 30]
         frameRange = [1, 3]
@@ -145,6 +147,19 @@ class testUsdExportSkeleton(unittest.TestCase):
                 self.assertTrue(Gf.IsClose(mayaJointWorldXf,
                                            usdJointWorldXf, 1e-5))
 
+    def testSkelWithoutBindPose(self):
+        """
+        Tests export of a Skeleton when a bindPose is not fully setup.
+        """
+        cmds.file(os.path.abspath('UsdExportSkeletonWithoutBindPose.ma'),
+                  open=True, force=True)
+
+        frameRange = [1, 5]
+        usdFile = os.path.abspath('UsdExportSkeletonWithoutBindPose.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+                       shadingMode='none', frameRange=frameRange,
+                       exportSkels='auto')
+        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

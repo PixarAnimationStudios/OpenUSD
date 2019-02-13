@@ -39,10 +39,11 @@ class AdjustedPrim(object):
     layerOffset = None
 
 
-def MakePrim(stage, refLyr, path, offset, scale, matchPath=False):
+def MakePrim(stage, refLyr, path, offset, scale, matchPath=False, makePayload=False):
     """Creates a reference at the given path and applies the offset and scale,
     if matchPath is true, it assumes the reference path is the same as the
-    local path, otherwise </Foo> is used.
+    local path, otherwise </Foo> is used. If makePayload is true, a payload is
+    created instead of a reference.
     """
     p = AdjustedPrim()
     p.prim = stage.OverridePrim(path)
@@ -53,8 +54,12 @@ def MakePrim(stage, refLyr, path, offset, scale, matchPath=False):
     if matchPath:
         refPath = path
 
-    ref = Sdf.Reference(refLyr.identifier, refPath, p.layerOffset)
-    assert p.prim.GetReferences().AddReference(ref)
+    if makePayload:
+        payload = Sdf.Payload(refLyr.identifier, refPath, p.layerOffset)
+        assert p.prim.GetPayloads().AddPayload(payload)
+    else:
+        ref = Sdf.Reference(refLyr.identifier, refPath, p.layerOffset)
+        assert p.prim.GetReferences().AddReference(ref)
     return p
 
 
@@ -131,7 +136,7 @@ def VerifyOffset(adjPrim):
         % (stageTime, attr.GetBracketingTimeSamples(stageTime))
     assert (offset * 10., offset * 10.) == attr.GetBracketingTimeSamples(stageTime)
 
-def BuildReferenceOffsets(rootLyr, testLyr):
+def BuildReferenceOffsets(rootLyr, testLyr, makePayloads=False):
     stage = Usd.Stage.Open(rootLyr)
 
     cases = [
@@ -157,7 +162,8 @@ def BuildReferenceOffsets(rootLyr, testLyr):
         ('/Scale_negHalf_Offset_neg1', -1.0, -0.5)
         ]
 
-    adjPrims = [MakePrim(stage, testLyr, path=c[0], offset=c[1], scale=c[2])
+    adjPrims = [MakePrim(stage, testLyr, path=c[0], offset=c[1], scale=c[2],
+                         makePayload=makePayloads)
                 for c in cases]
 
     rootLyr.Save()
@@ -166,7 +172,7 @@ def BuildReferenceOffsets(rootLyr, testLyr):
     return adjPrims
 
 
-def BuildNestedReferenceOffsets(adjustedPrims, rootLyr, refLyr):
+def BuildNestedReferenceOffsets(adjustedPrims, rootLyr, refLyr, makePayloads=False):
     adjPrims = []
     stage = Usd.Stage.Open(rootLyr)
 
@@ -176,7 +182,7 @@ def BuildNestedReferenceOffsets(adjustedPrims, rootLyr, refLyr):
         offset = p.layerOffset.offset
         scale = p.layerOffset.scale
         adjPrim = MakePrim(stage, refLyr, p.prim.GetPath(),
-                           offset, scale, matchPath=True)
+                           offset, scale, matchPath=True, makePayload=makePayloads)
         #
         # When nesting offsets, we need to combine the underlying offset with
         # ours so the verification code works. We're assuming that
@@ -216,6 +222,27 @@ class TestUsdTimeOffsets(unittest.TestCase):
                 adjPrims, nestedRootLyr, rootLyr):
                 VerifyOffset(adjPrim)
 
+    def test_PayloadOffsets(self):
+        for fmt in allFormats:
+            testLyr = GenTestLayer("TestPayloadOffsets", fmt)
+            rootLyr = Sdf.Layer.CreateNew("TestPayloadOffsets."+fmt)
+            nestedRootLyr = Sdf.Layer.CreateNew("TestPayloadOffsetsNested."+fmt)
+
+            print "-"*80
+            print "Testing flat offsets:"
+            print "-"*80
+            adjPrims = BuildReferenceOffsets(rootLyr, testLyr, makePayloads=True)
+            for adjPrim in adjPrims:
+                VerifyOffset(adjPrim)
+
+            print
+            print "-"*80
+            print "Testing nested offsets:"
+            print "-"*80
+            for adjPrim in BuildNestedReferenceOffsets(
+                adjPrims, nestedRootLyr, rootLyr, makePayloads=True):
+                VerifyOffset(adjPrim)
+
     def test_OffsetsAuthoring(self):
         for fmt in allFormats:
             # Create a simple structure one rootLayer with one subLayer, a prim
@@ -227,6 +254,7 @@ class TestUsdTimeOffsets(unittest.TestCase):
             rootLayer = Sdf.Layer.CreateAnonymous('root.'+fmt)
             subLayer = Sdf.Layer.CreateAnonymous('sub.'+fmt)
             refLayer = Sdf.Layer.CreateAnonymous('ref.'+fmt)
+            payloadLayer = Sdf.Layer.CreateAnonymous('payload.'+fmt)
 
             # add subLayer to rootLayer and give it a layer offset.
             subOffset = Sdf.LayerOffset(scale=3.0, offset=4.0)
@@ -244,13 +272,22 @@ class TestUsdTimeOffsets(unittest.TestCase):
             fooRoot.referenceList.Add(Sdf.Reference(refLayer.identifier,
                                                     barRef.path, refOffset))
 
+            # add Baz target prim in payloadLayer.
+            bazPayload = Sdf.PrimSpec(payloadLayer, 'Baz', Sdf.SpecifierDef)
+
+            # make Foo reference Baz.
+            payloadOffset = Sdf.LayerOffset(scale=0.5, offset=-1.0)
+            fooRoot.payloadList.Add(Sdf.Payload(payloadLayer.identifier,
+                                                bazPayload.path, payloadOffset))
+
             # Create a UsdStage, get 'Foo'.
             stage = Usd.Stage.Open(rootLayer)
             foo = stage.GetPrimAtPath('/Foo')
 
             # Make an EditTarget to author into the referenced Bar.
-            editTarget = Usd.EditTarget(refLayer,
-                                        foo.GetPrimIndex().rootNode.children[0])
+            refNode = foo.GetPrimIndex().rootNode.children[0]
+            self.assertEqual(refNode.path, Sdf.Path('/Bar'))
+            editTarget = Usd.EditTarget(refLayer, refNode)
             with Usd.EditContext(stage, editTarget):
                 attr = foo.CreateAttribute('attr', Sdf.ValueTypeNames.Double)
                 attr.Set(1.0, time=2.0)
@@ -263,6 +300,24 @@ class TestUsdTimeOffsets(unittest.TestCase):
                     'attr'].GetInfo('timeSamples').keys()[0]
                 self.assertEqual(
                     Usd.PrepLayerOffset(refOffset).GetInverse() * 2.0,
+                    authoredTime)
+
+            # Make an EditTarget to author into the payloaded Baz.
+            payloadNode = foo.GetPrimIndex().rootNode.children[1]
+            self.assertEqual(payloadNode.path, Sdf.Path('/Baz'))
+            editTarget = Usd.EditTarget(payloadLayer, payloadNode)
+            with Usd.EditContext(stage, editTarget):
+                attr = foo.CreateAttribute('attrFromBaz', Sdf.ValueTypeNames.Double)
+                attr.Set(1.0, time=2.0)
+                self.assertEqual(attr.Get(time=2.0), 1.0,
+                    ('expected value 1.0 at time=2.0, got %s' %
+                     attr.Get(time=2.0)))
+                # Check that the time value in the payload is correctly
+                # transformed.
+                authoredTime = bazPayload.attributes[
+                    'attrFromBaz'].GetInfo('timeSamples').keys()[0]
+                self.assertEqual(
+                    Usd.PrepLayerOffset(payloadOffset).GetInverse() * 2.0,
                     authoredTime)
 
             # Make an EditTarget to author into the sublayer.

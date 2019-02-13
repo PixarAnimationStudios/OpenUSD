@@ -97,7 +97,8 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDispatchCount) {
         VtValue vtDispatchCount =
-                sceneDelegate->Get(GetId(), HdTokens->dispatchCount);
+                sceneDelegate->GetExtComputationInput(GetId(),
+                                                      HdTokens->dispatchCount);
         // For backward compatibility, allow the dispatch count to be empty.
         if (!vtDispatchCount.IsEmpty()) {
             _dispatchCount = vtDispatchCount.Get<size_t>();
@@ -108,7 +109,8 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyElementCount) {
         VtValue vtElementCount =
-                sceneDelegate->Get(GetId(), HdTokens->elementCount);
+                sceneDelegate->GetExtComputationInput(GetId(),
+                                                      HdTokens->elementCount);
         // For backward compatibility, allow the element count to be empty.
         if (!vtElementCount.IsEmpty()) {
             _elementCount = vtElementCount.Get<size_t>();

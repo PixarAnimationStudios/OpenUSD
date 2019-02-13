@@ -29,8 +29,13 @@
 
 #include "pxr/usd/usdGeom/basisCurves.h"
 
+#include <FnAPI/FnAPI.h>
 #include <FnAttribute/FnDataBuilder.h>
 #include <FnLogging/FnLogging.h>
+
+#if KATANA_VERSION_MAJOR >= 3
+#include "vtKatana/array.h"
+#endif // KATANA_VERSION_MAJOR >= 3
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,6 +48,11 @@ _SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
 {
     VtIntArray vtxCts;
     basisCurves.GetCurveVertexCountsAttr().Get(&vtxCts, currentTime);
+
+#if KATANA_VERSION_MAJOR >= 3
+    auto countsAttr = VtKatanaMapOrCopy(vtxCts);
+    attrs.set("geometry.numVertices", countsAttr);
+#else
     std::vector<int> ctsVec(vtxCts.begin(), vtxCts.end());
 
     FnKat::IntBuilder numVertsBuilder(1);
@@ -50,6 +60,7 @@ _SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
     numVerts = ctsVec;
 
     attrs.set("geometry.numVertices", numVertsBuilder.build());
+#endif // KATANA_VERSION_MAJOR >= 3
 
     VtFloatArray widths;
     basisCurves.GetWidthsAttr().Get(&widths, currentTime);
@@ -61,10 +72,15 @@ _SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
     }
     else if (numWidths > 1)
     {
+#if KATANA_VERSION_MAJOR >= 3
+        auto widthsAttr = VtKatanaMapOrCopy(widths);
+        attrs.set("geometry.point.width", widthsAttr);
+#else
         FnKat::FloatBuilder widthsBuilder(1);
         widthsBuilder.set(
             std::vector<float>(widths.begin(), widths.end()));
         attrs.set("geometry.point.width", widthsBuilder.build());
+#endif // KATANA_VERSION_MAJOR >= 3
     }
 
     TfToken curveType;

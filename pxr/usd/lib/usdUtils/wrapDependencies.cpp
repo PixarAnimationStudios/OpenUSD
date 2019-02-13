@@ -30,6 +30,7 @@
 #include <boost/python/tuple.hpp>
 
 #include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/usd/sdf/assetPath.h"
@@ -94,4 +95,10 @@ void wrapDependencies()
 
     bp::def("ComputeAllDependencies", _ComputeAllDependencies,
             (bp::arg("assetPath")));
+
+    using Py_UsdUtilsModifyAssetPathFn = std::string(const std::string&);
+    TfPyFunctionFromPython<Py_UsdUtilsModifyAssetPathFn>();
+    bp::def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
+        (bp::arg("layer"), bp::arg("modifyFn")));
+
 }

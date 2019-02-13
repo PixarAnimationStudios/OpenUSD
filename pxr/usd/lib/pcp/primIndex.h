@@ -120,12 +120,12 @@ public:
     PCP_API
     bool HasSpecs() const;
 
-    /// Returns true if the prim has an authored payload arc.
+    /// Returns true if the prim has any authored payload arcs.
     /// The payload contents are only resolved and included
     /// if this prim's path is in the payload inclusion set
-    /// provided in PcpPrimIndexInputs.
+    /// provided in PcpPrimIndexInputs. 
     PCP_API
-    bool HasPayload() const;
+    bool HasAnyPayloads() const;
 
     /// Returns true if this prim index was composed in USD mode.
     /// \see PcpCache::IsUsd().

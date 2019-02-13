@@ -469,8 +469,7 @@ struct SdfValueTypeTraits<char[N]>
     (PointIndex)                                \
     (EdgeIndex)                                 \
     (FaceIndex)                                 \
-    (TextureCoordinate)                         \
-    (Schema)                                   
+    (TextureCoordinate)
 
 TF_DECLARE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_API, SDF_VALUE_ROLE_NAME_TOKENS);
 

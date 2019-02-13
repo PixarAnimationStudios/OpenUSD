@@ -121,7 +121,7 @@ _SetMayaDictValue(
 bool
 UsdMayaRoundTripUtil::IsAttributeUserAuthored(const UsdAttribute& attr)
 {
-    return attr.HasAuthoredValueOpinion() && !IsAttributeMayaGenerated(attr);
+    return attr.HasAuthoredValue() && !IsAttributeMayaGenerated(attr);
 }
 
 /* static */

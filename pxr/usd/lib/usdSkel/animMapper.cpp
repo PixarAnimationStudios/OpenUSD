@@ -81,11 +81,11 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
         // This includes identity maps.
 
         // Find where the first source element begins on the target.
-        auto it = std::find(targetOrder, targetOrder + targetOrderSize,
-                            sourceOrder[0]);
-        size_t pos = it - targetOrder;
-        if(pos < targetOrderSize) {
-            size_t compareCount =
+        const auto it = std::find(targetOrder, targetOrder + targetOrderSize,
+                                  sourceOrder[0]);
+        const size_t pos = it - targetOrder;
+        if((pos + sourceOrderSize) <= targetOrderSize) {
+            const size_t compareCount =
                 std::min(sourceOrderSize, targetOrderSize-pos);
             if(std::equal(sourceOrder, sourceOrder+compareCount, it)) {
                 _offset = pos;

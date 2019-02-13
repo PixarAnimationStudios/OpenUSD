@@ -561,9 +561,13 @@ HdRenderIndex::_ConfigureReprs()
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true));
+    HdMesh::ConfigureRepr(HdReprTokens->points,
+                          HdMeshReprDesc(HdMeshGeomStylePoints,
+                                         HdCullStyleNothing,
+                                         HdMeshReprDescTokens->pointColor,
+                                         /*flatShadingEnabled=*/false,
+                                         /*blendWireframeColor=*/false));
 
-    // TODO: Port over wire on surf geometry shader from internal code base
-    // (internal pixar bug 129550)
     HdBasisCurves::ConfigureRepr(HdReprTokens->hull,
                                  HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdReprTokens->smoothHull,
@@ -578,6 +582,8 @@ HdRenderIndex::_ConfigureReprs()
                                  HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
+    HdBasisCurves::ConfigureRepr(HdReprTokens->points,
+                                 HdBasisCurvesGeomStylePoints);
 
     HdPoints::ConfigureRepr(HdReprTokens->hull,
                             HdPointsGeomStylePoints);
@@ -592,6 +598,8 @@ HdRenderIndex::_ConfigureReprs()
     HdPoints::ConfigureRepr(HdReprTokens->refinedWire,
                             HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdReprTokens->points,
                             HdPointsGeomStylePoints);
 }
 // -------------------------------------------------------------------------- //

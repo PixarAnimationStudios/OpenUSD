@@ -128,6 +128,42 @@ public:
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
+        // If this file can be opened on a USD stage or referenced into a USD 
+        // stage via composition, then analyze the file, collect & update all 
+        // references. If not, return early.
+        if (!UsdStage::IsSupportedFile(_filePath)) {
+            return;
+        }
+
+        TRACE_FUNCTION();
+
+        _layer = SdfLayer::FindOrOpen(_filePath);
+        if (!_layer) {
+            TF_WARN("Unable to open layer at path @%s@.", _filePath.c_str());
+            return;
+        }
+
+        _AnalyzeDependencies();
+    }
+
+    // overload version of the above constructor that takes a \c layer instead
+    // of a filePath.
+    _FileAnalyzer(const SdfLayerHandle& layer,
+                  _ReferenceTypesToInclude refTypesToInclude=
+                        _ReferenceTypesToInclude::All,
+                  const RemapAssetPathFunc &remapPathFunc={},
+                  const ProcessAssetPathFunc &processPathFunc={}) : 
+        _layer(layer),
+        _refTypesToInclude(refTypesToInclude),
+        _remapPathFunc(remapPathFunc),
+        _processPathFunc(processPathFunc)
+    {
+        if (!_layer) {
+            return;
+        }
+
+        _filePath = _layer->GetRealPath();
+
         _AnalyzeDependencies();
     }
 
@@ -155,8 +191,8 @@ private:
     // Processes any sublayers in the SdfLayer associated with the file.
     void _ProcessSublayers();
 
-    // Processes the payload on the given primSpec.
-    void _ProcessPayload(const SdfPrimSpecHandle &primSpec);
+    // Processes all payloads on the given primSpec.
+    void _ProcessPayloads(const SdfPrimSpecHandle &primSpec);
 
     // Processes prim metadata.
     void _ProcessMetadata(const SdfPrimSpecHandle &primSpec);
@@ -170,6 +206,11 @@ private:
     // Returns the given VtValue with any asset paths remapped to point to 
     // destination-relative path.
     VtValue _UpdateAssetValue(const VtValue &val);
+
+    // Callback function that's passed into SdfPayloadsProxy::ModifyItemEdits()
+    // to update all payloads.
+    boost::optional<SdfPayload> _RemapSdfPayload(
+            const SdfPayload &payload);
 
     // Callback function that's passed into SdfReferencesProxy::ModifyItemEdits()
     // to update all references.
@@ -267,20 +308,34 @@ _FileAnalyzer::_ProcessSublayers()
     }
 }
 
-void
-_FileAnalyzer::_ProcessPayload(const SdfPrimSpecHandle &primSpec)
+boost::optional<SdfPayload>
+_FileAnalyzer::_RemapSdfPayload(const SdfPayload &payload) 
 {
-    if (primSpec->HasPayload()) {
-        SdfPayload payload = primSpec->GetPayload();
-        auto &payloadPath = payload.GetAssetPath();
-        auto remappedPayloadPath = _ProcessDependency(payloadPath, 
-                _DepType::Payload);
-
-        if (_remapPathFunc) {
-            payload.SetAssetPath(remappedPayloadPath);
-            primSpec->SetPayload(payload);
-        }
+    // If this is a local (or self) payload, there's no asset path to update.
+    if (payload.GetAssetPath().empty()) {
+        return payload;
     }
+
+    std::string remappedPayloadPath = _ProcessDependency(payload.GetAssetPath(),
+            _DepType::Payload);
+    // If the path was not remapped to a different path, then return the 
+    // incoming payload unmodifed.
+    if (remappedPayloadPath == payload.GetAssetPath())
+        return payload;
+
+    // The payload path was remapped, hence construct a new SdfPayload
+    // object with the remapped path.
+    SdfPayload remappedPayload = payload;
+    remappedPayload.SetAssetPath(remappedPayloadPath);
+    return remappedPayload;
+}
+
+void
+_FileAnalyzer::_ProcessPayloads(const SdfPrimSpecHandle &primSpec)
+{
+    SdfPayloadsProxy payloadList = primSpec->GetPayloadList();
+    payloadList.ModifyItemEdits(std::bind(&_FileAnalyzer::_RemapSdfPayload, 
+            this, std::placeholders::_1));
 }
 
 void
@@ -493,20 +548,7 @@ _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
 void
 _FileAnalyzer::_AnalyzeDependencies()
 {
-    // If this file can be opened on a USD stage or referenced into a USD 
-    // stage via composition, then analyze the file, collect & update all 
-    // references. If not, return early.
-    if (!UsdStage::IsSupportedFile(_filePath)) {
-        return;
-    }
-
     TRACE_FUNCTION();
-
-    _layer = SdfLayer::FindOrOpen(_filePath);
-    if (!_layer) {
-        TF_WARN("Unable to open layer at path @%s@.", _filePath.c_str());
-        return;
-    }
 
     _ProcessSublayers();
 
@@ -518,7 +560,7 @@ _FileAnalyzer::_AnalyzeDependencies()
         dfs.pop();
 
         if (curr != _layer->GetPseudoRoot()) {
-            _ProcessPayload(curr);    
+            _ProcessPayloads(curr);    
             _ProcessProperties(curr);
             _ProcessMetadata(curr);
             _ProcessReferences(curr);
@@ -1254,6 +1296,21 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
 
     // Return true if one or more layers or assets were added  to the results.
     return !layers->empty() || !assets->empty();
+}
+
+void 
+UsdUtilsModifyAssetPaths(
+        const SdfLayerHandle& layer,
+        const UsdUtilsModifyAssetPathFn& modifyFn)
+{
+    _FileAnalyzer(layer,
+        _ReferenceTypesToInclude::All, 
+        [&modifyFn](const std::string& assetPath, 
+                    const SdfLayerRefPtr& layer, 
+                    bool skipDep) { 
+            return modifyFn(assetPath);
+        }
+    );
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

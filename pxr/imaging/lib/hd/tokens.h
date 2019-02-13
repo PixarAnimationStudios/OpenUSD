@@ -311,10 +311,8 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (enableSceneLights)                               \
     /* Raytracer sampling settings */                 \
     (convergedVariance)                               \
-    (convergedSamplesPerPixel)                        \
-    /* (for raytracers which use a fixed-size internal buffer) */ \
-    (renderBufferWidth)                               \
-    (renderBufferHeight)
+    (convergedSamplesPerPixel)
+
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);

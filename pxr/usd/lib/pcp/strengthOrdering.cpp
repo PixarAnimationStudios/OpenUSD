@@ -114,23 +114,26 @@ PcpCompareSiblingNodeStrength(
         // with the same origin and that are siblings when one has been 
         // implied across a composition arc to the root node and the other 
         // has been propagated (i.e., copied) to the root node. In this
-        // case, the implied arc -- the one whose opinions come from the
-        // root layer stack -- is more local, and thus stronger
-        if (aOrigin == bOrigin           &&
+        // case, the implied arc is more local, and thus stronger. The implied
+        // node will be the one whose site is *not* the same as its origin;
+        // the propagated node is the one whose site is the same as its origin.
+        if (aOrigin == bOrigin &&
             aOrigin != a.GetParentNode() &&
             bOrigin != b.GetParentNode()) {
 
             TF_VERIFY(a.GetParentNode() == a.GetRootNode() &&
                       b.GetParentNode() == b.GetRootNode());
 
-            if (a.GetLayerStack() == a.GetRootNode().GetLayerStack()) {
-                return -1;
-            }
-            else if (b.GetLayerStack() == b.GetRootNode().GetLayerStack()) {
+            if (a.GetSite() == aOrigin.GetSite()) {
+                // a was propagated, so it's weaker than b.
                 return 1;
             }
+            else if (b.GetSite() == bOrigin.GetSite()) {
+                // b was propagated, so it's weaker than a.
+                return -1;
+            }
             
-            TF_VERIFY(false, "Did not find node with root layer stack.");
+            TF_VERIFY(false, "Did not find implied or propagated node.");
             return 0;
         }
 

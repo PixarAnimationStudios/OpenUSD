@@ -183,13 +183,25 @@ PxrUsdTranslators_InstancerWriter::PxrUsdTranslators_InstancerWriter(
     UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
     _numPrototypes(0)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     UsdGeomPointInstancer primSchema =
         UsdGeomPointInstancer::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(primSchema);
+    if (!TF_VERIFY(
+            primSchema,
+            "Could not define UsdGeomPointInstancer at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
     _usdPrim = primSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomPointInstancer at path '%s'\n",
+            primSchema.GetPath().GetText())) {
+        return;
+    }
 
     // Note that the instancer is a model -- it's an assembly by default, though
     // the model kind writer is allowed to "fix" this up.

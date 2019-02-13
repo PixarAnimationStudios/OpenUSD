@@ -271,6 +271,9 @@ public:
     USD_API
     UsdProperty FlattenTo(const UsdProperty &property) const;
 
+protected:
+    bool _GetTargets(SdfSpecType specType, SdfPathVector *out) const;
+
 private:
     friend class UsdAttribute;
     friend class UsdObject;

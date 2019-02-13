@@ -67,6 +67,7 @@
 #include <iosfwd>
 #include <memory>
 #include <typeinfo>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -211,7 +212,7 @@ class VtValue
     // 16 bytes when compiled 64 bit (1 word type-info pointer, 1 word storage
     // space).
     static const size_t _MaxLocalSize = sizeof(void*);
-    typedef boost::aligned_storage<
+    typedef std::aligned_storage<
         /* size */_MaxLocalSize, /* alignment */_MaxLocalSize>::type _Storage;
 
     template <class T>
@@ -435,7 +436,7 @@ class VtValue
         ////////////////////////////////////////////////////////////////////
         // _TypeInfo interface function implementations.
         static void _CopyInit(_Storage const &src, _Storage &dst) {
-            new (&dst) Container(_Container(src));
+            new (&_Container(dst)) Container(_Container(src));
         }
 
         static void _Destroy(_Storage &storage) {
@@ -454,7 +455,7 @@ class VtValue
         }
 
         static void _Move(_Storage &src, _Storage &dst) {
-            TfMoveTo(&_Container(dst), _Container(src));
+            new (&_Container(dst)) Container(std::move(_Container(src)));
             _Destroy(src);
         }
 
@@ -634,13 +635,12 @@ public:
 
     /// Copy construct with \p other.
     VtValue(VtValue const &other) {
-        // If other is local, can memcpy without derefing info ptrs.
-        _info = other._info;
-        if (other._IsLocalAndTriviallyCopyable()) {
-            _storage = other._storage;
-        } else if (auto *info = _info.Get()) {
-            info->CopyInit(other._storage, _storage);
-        }
+        _Copy(other, *this);
+    }
+
+    /// Move construct with \p other.
+    VtValue(VtValue &&other) {
+        _Move(other, *this);
     }
 
     /// Construct a VtValue holding a copy of \p obj.
@@ -682,10 +682,17 @@ public:
     /// Destructor.
     ~VtValue() { _Clear(); }
 
-    /// Assignment from another \a VtValue.
+    /// Copy assignment from another \a VtValue.
     VtValue &operator=(VtValue const &other) {
         if (ARCH_LIKELY(this != &other))
             _Copy(other, *this);
+        return *this;
+    }
+
+    /// Move assignment from another \a VtValue.
+    VtValue &operator=(VtValue &&other) {
+        if (ARCH_LIKELY(this != &other))
+            _Move(other, *this);
         return *this;
     }
 
@@ -1030,7 +1037,7 @@ private:
     VT_API size_t _GetNumElements() const;
     friend struct Vt_ValueShapeDataAccess;
 
-    static void _Copy(VtValue const &src, VtValue &dst) {
+    static inline void _Copy(VtValue const &src, VtValue &dst) {
         if (src.IsEmpty()) {
             dst._Clear();
             return;
@@ -1045,7 +1052,7 @@ private:
         }
     }
 
-    static void _Move(VtValue &src, VtValue &dst) {
+    static inline void _Move(VtValue &src, VtValue &dst) {
         if (src.IsEmpty()) {
             dst._Clear();
             return;

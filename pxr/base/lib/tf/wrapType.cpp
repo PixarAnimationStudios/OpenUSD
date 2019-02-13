@@ -260,6 +260,7 @@ void wrapType()
     classDef
         .def( init<const TfType &>() )
 
+        .def(!self)
         .def( self == self )
         .def( self != self )
         .def( self < self )

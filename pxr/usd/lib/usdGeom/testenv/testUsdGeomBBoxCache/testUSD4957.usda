@@ -1,0 +1,18 @@
+#usda 1.0
+
+def Xform "A"
+{
+    uniform token[] xformOpOrder = ["xformOp:scale"]
+    double3 xformOp:scale = (2, 2, 2)
+    def Xform "B"
+    {
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+        double3 xformOp:rotateXYZ = (90, 0, 0)
+        
+        def Sphere "C"
+        {
+            double3 xformOp:translate = (10, 10, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}

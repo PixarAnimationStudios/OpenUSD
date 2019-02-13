@@ -80,10 +80,18 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         assert Sdf.Layer.Find(rootLayerFile)
 
         payloadLayerFile = 'basic/payload.sdf'
-        payloadLayerId = Sdf.Layer.CreateIdentifier(
+        payloadLayerId1 = Sdf.Layer.CreateIdentifier(
             payloadLayerFile, {'doc':'instance','kind':'ref'})
-        assert Sdf.Layer.Find(payloadLayerId), \
-            "Failed to find expected payload layer '%s'" % payloadLayerId
+        payloadLayerId2 = Sdf.Layer.CreateIdentifier(
+            payloadLayerFile, {'doc':'updated_instance','kind':'ref'})
+        payloadLayerId3 = Sdf.Layer.CreateIdentifier(
+            payloadLayerFile, {'doc':'updated_instance','kind':'updated_instance'})
+        assert Sdf.Layer.Find(payloadLayerId1), \
+            "Failed to find expected payload layer '%s'" % payloadLayerId1
+        assert not Sdf.Layer.Find(payloadLayerId2), \
+            "Expected to not find payload layer '%s'" % payloadLayerId2
+        assert not Sdf.Layer.Find(payloadLayerId3), \
+            "Expected to not find payload layer '%s'" % payloadLayerId3
 
         # Test that authoring a new value for the relevant fields
         # causes the prim to be significantly changed.
@@ -99,7 +107,12 @@ class TestPcpPayloadDecorator(unittest.TestCase):
             
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
-        assert Sdf.Layer.Find(payloadLayerId)
+        assert Sdf.Layer.Find(payloadLayerId1), \
+            "Failed to find expected payload layer '%s'" % payloadLayerId1
+        assert Sdf.Layer.Find(payloadLayerId2), \
+            "Failed to find expected payload layer '%s'" % payloadLayerId2
+        assert not Sdf.Layer.Find(payloadLayerId3), \
+            "Expected to not find payload layer '%s'" % payloadLayerId3
 
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance') \
@@ -113,9 +126,12 @@ class TestPcpPayloadDecorator(unittest.TestCase):
 
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
-        payloadLayerId = Sdf.Layer.CreateIdentifier(
-            payloadLayerFile, {'doc':'updated_instance','kind':'updated_instance'})
-        assert Sdf.Layer.Find(payloadLayerId)
+        assert Sdf.Layer.Find(payloadLayerId1), \
+            "Failed to find expected payload layer '%s'" % payloadLayerId1
+        assert Sdf.Layer.Find(payloadLayerId2), \
+            "Failed to find expected payload layer '%s'" % payloadLayerId2
+        assert Sdf.Layer.Find(payloadLayerId3), \
+            "Failed to find expected payload layer '%s'" % payloadLayerId3
 
         # Test that authoring a new value for an irrelevant field
         # does not cause any changes.
@@ -128,6 +144,64 @@ class TestPcpPayloadDecorator(unittest.TestCase):
                 "Got spec changes %s" % cp.GetSpecChanges()
             assert cp.GetPrimChanges() == [], \
                 "Got prim changes %s" % cp.GetPrimChanges()
+
+    def test_BasicPayloadList(self):
+        '''Test that composing a prim with payloads causes
+        the appropriate decorator functions to be called and that the
+        arguments generated from those functions are taken into account
+        when opening the payload layers when payloads are defined in a list op.'''
+
+        rootLayerFile = 'basic_payload_list/root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+
+        cache = self._CreatePcpCache(rootLayer, Decorator())
+        cache.RequestPayloads(['/Instance'], [])
+        (pi, err) = cache.ComputePrimIndex('/Instance')
+
+        assert not err
+        assert Sdf.Layer.Find(rootLayerFile)
+
+        payloadLayerFile1 = 'basic_payload_list/payload1.sdf'
+        payloadLayerFile2 = 'basic_payload_list/payload2.sdf'
+        payload1LayerId1 = Sdf.Layer.CreateIdentifier(
+            payloadLayerFile1, {'doc':'instance','kind':'ref'})
+        payload1LayerId2 = Sdf.Layer.CreateIdentifier(
+            payloadLayerFile1, {'doc':'updated_instance','kind':'ref'})
+        payload2LayerId1 = Sdf.Layer.CreateIdentifier(
+            payloadLayerFile2, {'doc':'instance','kind':'ref'})
+        payload2LayerId2 = Sdf.Layer.CreateIdentifier(
+            payloadLayerFile2, {'doc':'updated_instance','kind':'ref'})
+        assert Sdf.Layer.Find(payload1LayerId1), \
+            "Failed to find expected payload layer '%s'" % payload1LayerId1
+        assert not Sdf.Layer.Find(payload1LayerId2), \
+            "Expected to not find payload layer '%s'" % payload1LayerId2
+        assert Sdf.Layer.Find(payload2LayerId1), \
+            "Failed to find expected payload layer '%s'" % payload2LayerId1
+        assert not Sdf.Layer.Find(payload2LayerId2), \
+            "Expected to not find payload layer '%s'" % payload2LayerId2
+
+        # Test that authoring a new value for the relevant fields
+        # causes the prim to be significantly changed.
+        with Pcp._TestChangeProcessor(cache) as cp:
+            rootLayer.GetPrimAtPath('/Instance') \
+                .SetInfo('documentation', 'updated_instance')
+            assert cp.GetSignificantChanges() == ['/Instance'], \
+                "Got significant changes %s" % cp.GetSignificantChanges()
+            assert cp.GetSpecChanges() == [], \
+                "Got spec changes %s" % cp.GetSpecChanges()
+            assert cp.GetPrimChanges() == [], \
+                "Got prim changes %s" % cp.GetPrimChanges()
+
+        (pi, err) = cache.ComputePrimIndex('/Instance')
+
+        assert Sdf.Layer.Find(payload1LayerId1), \
+            "Failed to find expected payload layer '%s'" % payload1LayerId1
+        assert Sdf.Layer.Find(payload1LayerId2), \
+            "Failed to find expected payload layer '%s'" % payload1LayerId2
+        assert Sdf.Layer.Find(payload2LayerId1), \
+            "Failed to find expected payload layer '%s'" % payload2LayerId1
+        assert Sdf.Layer.Find(payload2LayerId2), \
+            "Failed to find expected payload layer '%s'" % payload2LayerId2
 
     def TestSiblingStrength():
         '''Test that Pcp.PayloadDecorator is invoked and that the

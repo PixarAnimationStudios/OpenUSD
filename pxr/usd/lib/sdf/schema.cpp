@@ -531,7 +531,7 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->PrimOrder, std::vector<TfToken>())
         .ListValueValidator(&_ValidateIdentifierToken);
     _DoRegisterField(SdfFieldKeys->NoLoadHint, false);
-    _DoRegisterField(SdfFieldKeys->Payload, SdfPayload())
+    _DoRegisterField(SdfFieldKeys->Payload, SdfPayloadListOp())
         .ListValueValidator(&_ValidatePayload);
     _DoRegisterField(SdfFieldKeys->Permission, SdfPermissionPublic);
     _DoRegisterField(SdfFieldKeys->Prefix, "");
@@ -1147,11 +1147,6 @@ SdfSchemaBase::IsValidPayload(const SdfPayload& p)
                           "empty or an absolute prim path");
     }
 
-    if (p.GetAssetPath().empty() && !p.GetPrimPath().IsEmpty()) {
-        return SdfAllowed("Payload must specify an asset path and an optional "
-                          "additional prim path, or nothing");
-    }
-
     return true;
 }
 
@@ -1708,7 +1703,6 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     r.AddType(T("PointIndex", int()).Role(SdfValueRoleNames->PointIndex));
     r.AddType(T("EdgeIndex",  int()).Role(SdfValueRoleNames->EdgeIndex));
     r.AddType(T("FaceIndex",  int()).Role(SdfValueRoleNames->FaceIndex));
-    r.AddType(T("Schema",     TfToken()).Role(SdfValueRoleNames->Schema));
 }
 
 void 

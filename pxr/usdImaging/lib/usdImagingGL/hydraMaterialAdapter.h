@@ -54,9 +54,6 @@ public:
     USDIMAGINGGL_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
-    USDIMAGINGGL_API
-    virtual bool IsPopulatedIndirectly() override;
-
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

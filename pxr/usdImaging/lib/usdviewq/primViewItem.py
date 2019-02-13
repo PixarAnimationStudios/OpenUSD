@@ -37,11 +37,11 @@ def _GetPrimInfo(prim, time):
 # prim data associated with it and populate itself with that data.
 
 class PrimViewItem(QtWidgets.QTreeWidgetItem):
-    def __init__(self, prim, appController, primHasChildren, parent=None):
+    def __init__(self, prim, appController, primHasChildren):
         # Do *not* pass a parent.  The client must build the hierarchy.
         # This can dramatically improve performance when building a
         # large hierarchy.
-        super(PrimViewItem, self).__init__(parent=parent)
+        super(PrimViewItem, self).__init__()
 
         self.prim = prim
         self._appController = appController
@@ -95,7 +95,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
     def _HasAuthoredDrawMode(prim):
         modelAPI = UsdGeom.ModelAPI(prim)
         drawModeAttr = modelAPI.GetModelDrawModeAttr()
-        return drawModeAttr and drawModeAttr.HasAuthoredValueOpinion()
+        return drawModeAttr and drawModeAttr.HasAuthoredValue()
 
     def _isComputedDrawModeInherited(self, parentDrawModeIsInherited=None):
         """Returns true if the computed draw mode for this item is inherited 

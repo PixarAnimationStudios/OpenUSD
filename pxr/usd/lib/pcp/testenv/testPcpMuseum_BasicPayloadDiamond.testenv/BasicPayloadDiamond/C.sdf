@@ -1,0 +1,6 @@
+#sdf 1.4.32
+
+def DifferentPrimType "C" 
+{
+    custom double C_attr
+}

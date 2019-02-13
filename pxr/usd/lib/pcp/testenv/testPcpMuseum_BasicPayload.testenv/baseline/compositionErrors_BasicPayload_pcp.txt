@@ -1,0 +1,10 @@
+------------------------------------------------------------------------
+Errors while composing </PayloadPrimWithSubrootInPayload>
+
+Unresolved payload path </PayloadPrimA/PrimC_Child> on prim @BasicPayload/root.sdf@,@BasicPayload/session.sdf@</PayloadPrimWithSubrootInPayload>.
+
+------------------------------------------------------------------------
+Errors while composing </RefPrimWithSubrootInPayload>
+
+Unresolved reference path </PayloadPrimA/PrimC_Child> on prim @BasicPayload/root.sdf@,@BasicPayload/session.sdf@</RefPrimWithSubrootInPayload>.
+

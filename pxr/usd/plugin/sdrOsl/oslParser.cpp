@@ -364,7 +364,14 @@ SdrOslParserPlugin::_getDefaultValue(
         }
 
         VtStringArray array;
-        array.assign(param.sdefault.begin(), param.sdefault.end());
+        array.reserve(param.sdefault.size());
+
+        // Strings are stored as `ustring`s from OIIO; these need to be
+        // converted explicitly into `std::string`s (otherwise the
+        // `VtStringArray` will contain garbage).
+        for (const OIIO::ustring& ustr : param.sdefault) {
+            array.push_back(ustr.string());
+        }
 
         return VtValue::Take(array);
     }

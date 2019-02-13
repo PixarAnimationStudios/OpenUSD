@@ -337,7 +337,14 @@ protected:
             TF_CODING_ERROR("Repr %s not found", reprToken.GetText());
             return DescArray();
         }
-        void Append(TfToken const &reprToken, DescArray descs) {
+        void AddOrUpdate(TfToken const &reprToken, DescArray descs) {
+            for (auto& config : _configs) {
+                if (config.first == reprToken) {
+                    // Overrwrite the existing entry.
+                    config.second = descs;
+                    return;
+                }
+            }
             _configs.push_back(std::make_pair(reprToken, descs));
         }
         std::vector<std::pair<TfToken, DescArray> > _configs;

@@ -52,13 +52,12 @@ public:
     UsdImagingInstanceAdapter();
     virtual ~UsdImagingInstanceAdapter();
 
-    virtual SdfPath Populate(UsdPrim const& prim,
-                     UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL) override;
+    virtual SdfPath Populate(UsdPrim const& prim, UsdImagingIndexProxy* index,
+            UsdImagingInstancerContext const* instancerContext = NULL) override;
 
-    virtual bool ShouldCullChildren(UsdPrim const& prim) override { return true; }
+    virtual bool ShouldCullChildren() const override;
 
-    virtual bool IsInstancerAdapter() override { return true; }
+    virtual bool IsInstancerAdapter() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve

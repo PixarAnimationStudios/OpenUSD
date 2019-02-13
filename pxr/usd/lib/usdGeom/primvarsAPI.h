@@ -56,6 +56,28 @@ class SdfAssetPath;
 /// UsdGeomPrimvarsAPI encodes geometric "primitive variables",
 /// as UsdGeomPrimvar, which interpolate across a primitive's topology,
 /// can override shader inputs, and inherit down namespace.
+/// 
+/// \section usdGeom_PrimvarFetchingAPI Which Method to Use to Retrieve Primvars
+/// 
+/// While creating primvars is unambiguous (CreatePrimvar()), there are quite
+/// a few methods available for retrieving primvars, making it potentially
+/// confusing knowing which one to use.  Here are some guidelines:
+/// 
+/// \li If you are populating a GUI with the primvars already available for 
+/// authoring values on a prim, use GetPrimvars().
+/// \li If you want all of the "useful" (e.g. to a renderer) primvars
+/// available at a prim, including those inherited from ancestor prims, use
+/// FindPrimvarsWithInheritance().  Note that doing so individually for many
+/// prims will be inefficient.
+/// \li To find a particular primvar defined directly on a prim, which may
+/// or may not provide a value, use GetPrimvar().
+/// \li To find a particular primvar defined on a prim or inherited from
+/// ancestors, which may or may not provide a value, use 
+/// FindPrimvarWithInheritance().
+/// \li To *efficiently* query for primvars using the overloads of
+/// FindPrimvarWithInheritance() and FindPrimvarsWithInheritance(), one
+/// must first cache the results of FindIncrementallyInheritablePrimvars() for
+/// each non-leaf prim on the stage. 
 ///
 class UsdGeomPrimvarsAPI : public UsdAPISchemaBase
 {
@@ -138,11 +160,6 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    // --------------------------------------------------------------------- //
-    /// \name Primvar Creation and Introspection
-    /// @{
-    // --------------------------------------------------------------------- //
- 
     /// Author scene description to create an attribute on this prim that
     /// will be recognized as Primvar (i.e. will present as a valid
     /// UsdGeomPrimvar).
@@ -176,7 +193,7 @@ public:
                                  const TfToken& interpolation = TfToken(),
                                  int elementSize = -1) const;
 
-    /// Return the Primvar attribute named by \p name, which will
+    /// Return the Primvar object named by \p name, which will
     /// be valid if a Primvar attribute definition already exists.
     ///
     /// Name lookup will account for Primvar namespacing, which means
@@ -186,64 +203,160 @@ public:
     /// \endcode
     /// will not, unless \p name is properly namespace prefixed.
     ///
-    /// \sa HasPrimvar()
+    /// \note Just because a Primvar is valid and defined, and *even if* its
+    /// underlying UsdAttribute (GetAttr()) answers HasValue() affirmatively,
+    /// one must still check the return value of Get(), due to the potential
+    /// of time-varying value blocks (see \ref Usd_AttributeBlocking).
+    ///
+    /// \sa HasPrimvar(), \ref usdGeom_PrimvarFetchingAPI
     USDGEOM_API
     UsdGeomPrimvar GetPrimvar(const TfToken &name) const;
     
     /// Return valid UsdGeomPrimvar objects for all defined Primvars on
-    /// this prim.
+    /// this prim, similarly to UsdPrim::GetAttributes().
     ///
-    /// Although we hope eventually to make this faster, this is currently
-    /// a fairly expensive operation.  If you know you'll need to process
-    /// other attributes as well, you might do better by fetching all
-    /// the attributes at once, and using the pattern described in 
-    /// \ref UsdGeomPrimvar_Using_Primvar "Using Primvars" to test individual
-    /// attributes.
+    /// The returned primvars may not possess any values, and therefore not
+    /// be useful to some clients. For the primvars useful for inheritance
+    /// computations, see GetPrimvarsWithAuthoredValues(), and for primvars
+    /// useful for direct consumption, see GetPrimvarsWithValues().
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
     USDGEOM_API
     std::vector<UsdGeomPrimvar> GetPrimvars() const;
 
-    /// Like GetPrimvars(), but exclude primvars that have no authored scene
-    /// description.
+    /// Like GetPrimvars(), but include only primvars that have some
+    /// authored scene description (though not necessarily a value).
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
     USDGEOM_API
     std::vector<UsdGeomPrimvar> GetAuthoredPrimvars() const;
 
-    /// Like GetPrimvars(), but searches instead for authored
-    /// primvars inherited from ancestor prims.  Primvars are only
-    /// inherited if they do not exist on the prim itself.  The
-    /// returned primvars will be bound to attributes on the corresponding
-    /// ancestor prims.  Only primvars with authored values are inherited;
+    /// Like GetPrimvars(), but include only primvars that have some
+    /// value, whether it comes from authored scene description or a schema
+    /// fallback.
+    ///
+    /// For most purposes, this method is more useful than GetPrimvars().
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
+    USDGEOM_API
+    std::vector<UsdGeomPrimvar> GetPrimvarsWithValues() const;
+
+    /// Like GetPrimvars(), but include only primvars that have an **authored**
+    /// value.
+    ///
+    /// This is the query used when computing inheritable primvars, and is
+    /// generally more useful than GetAuthoredPrimvars().
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
+    USDGEOM_API
+    std::vector<UsdGeomPrimvar> GetPrimvarsWithAuthoredValues() const;
+
+    /// Compute the primvars that can be inherited from this prim by its
+    /// child prims, including the primvars that **this** prim inherits from
+    /// ancestor prims.  Inherited primvars will be bound to attributes on
+    /// the corresponding ancestor prims.
+    ///
+    /// Only primvars with **authored**, **non-blocked**,
+    /// **constant interpolation** values are inheritable;
     /// fallback values are not inherited.   The order of the returned
     /// primvars is undefined.
+    ///
+    /// It is not generally useful to call this method on UsdGeomGprim leaf
+    /// prims, and furthermore likely to be expensive since *most* primvars
+    /// are defined on Gprims.
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
     USDGEOM_API
-    std::vector<UsdGeomPrimvar> FindInheritedPrimvars() const;
+    std::vector<UsdGeomPrimvar> FindInheritablePrimvars() const;
 
-    /// Like GetPrimvar(), but searches instead for the named primvar
-    /// inherited on ancestor prim.  Primvars are only inherited if
-    /// they do not exist on the prim itself.  The returned primvar will
-    /// be bound to the attribute on the corresponding ancestor prim.
+    /// Compute the primvars that can be inherited from this prim by its
+    /// child prims, starting from the set of primvars inherited from
+    /// this prim's ancestors.  If this method returns an empty vector, then
+    /// this prim's children should inherit the same set of primvars available
+    /// to this prim, i.e. the input `inheritedFromAncestors` .
+    ///
+    /// As opposed to FindInheritablePrimvars(), which always recurses up
+    /// through all of the prim's ancestors, this method allows more
+    /// efficient computation of inheritable primvars by starting with the
+    /// list of primvars inherited from this prim's ancestors, and returning
+    /// a newly allocated vector only when this prim makes a change to the
+    /// set of inherited primvars.  This enables O(n) inherited primvar
+    /// computation for all prims on a Stage, with potential to share
+    /// computed results that are identical (i.e. when this method returns an
+    /// empty vector, its parent's result can (and must!) be reused for all
+    /// of the prim's children.
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
     USDGEOM_API
-    UsdGeomPrimvar FindInheritedPrimvar(const TfToken &name) const;
+    std::vector<UsdGeomPrimvar> FindIncrementallyInheritablePrimvars(
+        const std::vector<UsdGeomPrimvar> &inheritedFromAncestors) const;
+
+    /// Like GetPrimvar(), but if the named primvar does not exist or has no
+    /// authored value on this prim, search for the named, value-producing
+    /// primvar on ancestor prims.
+    /// 
+    /// The returned primvar will be bound to the attribute on the 
+    /// corresponding ancestor prim on which it was found (if any).  If neither
+    /// this prim nor any ancestor contains a value-producing primvar, then
+    /// the returned primvar will be the same as that returned by GetPrimvar().
+    ///
+    /// This is probably the method you want to call when needing to consume
+    /// a primvar of a particular name.
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
+    USDGEOM_API
+    UsdGeomPrimvar FindPrimvarWithInheritance(const TfToken &name) const;
+
+    /// \overload
+    /// 
+    /// This version of FindPrimvarWithInheritance() takes the pre-computed
+    /// set of primvars inherited from this prim's ancestors, as computed
+    /// by FindInheritablePrimvars() or FindIncrementallyInheritablePrimvars()
+    /// on the prim's parent.
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
+    USDGEOM_API
+    UsdGeomPrimvar FindPrimvarWithInheritance(const TfToken &name,
+        const std::vector<UsdGeomPrimvar> &inheritedFromAncestors) const;
+
+    /// Find all of the value-producing primvars either defined on this prim,
+    /// or inherited from ancestor prims.
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
+    USDGEOM_API
+    std::vector<UsdGeomPrimvar> FindPrimvarsWithInheritance() const;
+
+    /// \overload
+    /// 
+    /// This version of FindPrimvarsWithInheritance() takes the pre-computed
+    /// set of primvars inherited from this prim's ancestors, as computed
+    /// by FindInheritablePrimvars() or FindIncrementallyInheritablePrimvars()
+    /// on the prim's parent.
+    ///
+    /// \sa \ref usdGeom_PrimvarFetchingAPI
+    USDGEOM_API
+    std::vector<UsdGeomPrimvar> FindPrimvarsWithInheritance(
+        const std::vector<UsdGeomPrimvar> &inheritedFromAncestors) const;
 
     /// Is there a defined Primvar \p name on this prim?
     ///
     /// Name lookup will account for Primvar namespacing.
     ///
-    /// \sa GetPrimvar()
+    /// Like GetPrimvar(), a return value of `true` for HasPrimvar() does not
+    /// guarantee the primvar will produce a value.
     USDGEOM_API
     bool HasPrimvar(const TfToken &name) const;
 
-    /// Is there an inherited Primvar \p name on this prim?
-    /// The name given is the primvar name, not its underlying attribute name.
-    /// \sa FindInheritedPrimvar()
+    /// Is there a Primvar named \p name with an authored value on this
+    /// prim or any of its ancestors?
+    ///
+    /// This is probably the method you want to call when wanting to know
+    /// whether or not the prim "has" a primvar of a particular name.
+    ///
+    /// \sa FindPrimvarWithInheritance()
     USDGEOM_API
-    bool HasInheritedPrimvar(const TfToken &name) const;
+    bool HasPossiblyInheritedPrimvar(const TfToken &name) const;
 
-    /// @}
-
-private:
-    // Helper for Get(Authored)Primvars().
-    std::vector<UsdGeomPrimvar>
-    _MakePrimvars(std::vector<UsdProperty> const &props) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

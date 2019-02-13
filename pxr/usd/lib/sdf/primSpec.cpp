@@ -560,7 +560,6 @@ SDF_DEFINE_GET_SET(SuffixSubstitutions,  SdfFieldKeys->SuffixSubstitutions,
 
 SDF_DEFINE_GET_SET_HAS_CLEAR(Active,         SdfFieldKeys->Active,       bool)
 SDF_DEFINE_GET_SET_HAS_CLEAR(Kind,           SdfFieldKeys->Kind,    TfToken)
-SDF_DEFINE_GET_SET_HAS_CLEAR(Payload,        SdfFieldKeys->Payload, SdfPayload)
 SDF_DEFINE_GET_SET_HAS_CLEAR(Instanceable,   SdfFieldKeys->Instanceable, bool)
 
 SDF_DEFINE_TYPED_GET_SET(Specifier,  SdfFieldKeys->Specifier,  
@@ -643,6 +642,31 @@ SdfPrimSpec::ClearSpecializesList()
 {
     if (_ValidateEdit(SdfFieldKeys->Specializes)) {
         GetSpecializesList().ClearEdits();
+    }
+}
+
+//
+// Payloads
+//
+
+SdfPayloadsProxy
+SdfPrimSpec::GetPayloadList() const
+{
+    return SdfGetPayloadEditorProxy(
+        SdfCreateHandle(this), SdfFieldKeys->Payload);
+}
+
+bool
+SdfPrimSpec::HasPayloads() const
+{
+    return GetPayloadList().HasKeys();
+}
+
+void
+SdfPrimSpec::ClearPayloadList()
+{
+    if (_ValidateEdit(SdfFieldKeys->Payload)) {
+        GetPayloadList().ClearEdits();
     }
 }
 

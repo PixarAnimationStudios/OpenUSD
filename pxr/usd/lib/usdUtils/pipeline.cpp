@@ -24,37 +24,48 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-
 #include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+TF_DEFINE_ENV_SETTING(
+    USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME,
+    false,
+    "Disables the ability to configure the materials scope name with a "
+    "plugInfo.json value and forces the use of the built-in default instead. "
+    "This is primarily used for unit testing purposes as a way to ignore any "
+    "site-based configuration.");
 
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (UsdUtilsPipeline)
+        (MaterialsScopeName)
         (RegisteredVariantSets)
             (selectionExportPolicy)
                 // lowerCamelCase of the enums.
                 (never)
                 (ifAuthored)
                 (always)
+
+    ((DefaultMaterialsScopeName, "Looks"))
 );
 
 
@@ -237,5 +248,76 @@ TfToken UsdUtilsGetPrefName()
     return TfToken("pref");
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+TF_MAKE_STATIC_DATA(TfToken, _materialsScopeName)
+{
+    PlugPluginPtrVector plugs = PlugRegistry::GetInstance().GetAllPlugins();
+    for (const PlugPluginPtr plug : plugs) {
+        JsObject metadata = plug->GetMetadata();
+        JsValue pipelineUtilsDictValue;
+        if (!TfMapLookup(
+                metadata,
+                _tokens->UsdUtilsPipeline,
+                &pipelineUtilsDictValue)) {
+            continue;
+        }
 
+        if (!pipelineUtilsDictValue.Is<JsObject>()) {
+            TF_CODING_ERROR(
+                "%s[%s] was not a dictionary.",
+                plug->GetName().c_str(),
+                _tokens->UsdUtilsPipeline.GetText());
+            continue;
+        }
+
+        JsObject pipelineUtilsDict = pipelineUtilsDictValue.Get<JsObject>();
+
+        JsValue materialsScopeNameValue;
+        if (!TfMapLookup(
+                pipelineUtilsDict,
+                _tokens->MaterialsScopeName,
+                &materialsScopeNameValue)) {
+            continue;
+        }
+
+        if (!materialsScopeNameValue.IsString()) {
+            TF_CODING_ERROR(
+                "%s[%s][%s] was not a string.",
+                plug->GetName().c_str(),
+                _tokens->UsdUtilsPipeline.GetText(),
+                _tokens->MaterialsScopeName.GetText());
+            continue;
+        }
+
+        const std::string materialsScopeNameString =
+            materialsScopeNameValue.GetString();
+        if (!SdfPath::IsValidIdentifier(materialsScopeNameString)) {
+            TF_CODING_ERROR(
+                "%s[%s][%s] was not a valid identifier: \"%s\".",
+                plug->GetName().c_str(),
+                _tokens->UsdUtilsPipeline.GetText(),
+                _tokens->MaterialsScopeName.GetText(),
+                materialsScopeNameString.c_str());
+            continue;
+        }
+
+        *_materialsScopeName = TfToken(materialsScopeNameString);
+    }
+
+    if (_materialsScopeName->IsEmpty()) {
+        *_materialsScopeName = _tokens->DefaultMaterialsScopeName;
+    }
+}
+
+TfToken
+UsdUtilsGetMaterialsScopeName(const bool forceDefault)
+{
+    if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME) ||
+            forceDefault) {
+        return _tokens->DefaultMaterialsScopeName;
+    }
+
+    return *_materialsScopeName;
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

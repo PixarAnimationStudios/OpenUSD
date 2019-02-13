@@ -65,7 +65,7 @@ class VtValue;
 ///   #AR_DEFINE_PACKAGE_RESOLVER
 /// \code{.cpp}
 /// # custom resolver's .cpp file
-/// AR_DEFINE_RESOLVER(CustomResolver, ArResolver);
+/// AR_DEFINE_PACKAGE_RESOLVER(CustomPackageResolver, ArPackageResolver);
 /// \endcode
 ///
 /// - Declare the ArPackageResolver subclass in the plugin's plugInfo.json file.

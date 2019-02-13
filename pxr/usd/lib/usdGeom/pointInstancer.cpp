@@ -513,7 +513,8 @@ UsdGeomPointInstancer::VisAllIds(UsdTimeCode const &time) const
 {
     VtInt64Array invised(0);
 
-    if (GetInvisibleIdsAttr().HasAuthoredValueOpinion())
+    if (GetInvisibleIdsAttr().HasAuthoredValue())
+        // We _could_ just block the attr instead. Better?
         return CreateInvisibleIdsAttr().Set(invised, time);
 
     return true;

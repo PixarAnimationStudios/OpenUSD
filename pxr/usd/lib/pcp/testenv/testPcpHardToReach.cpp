@@ -47,7 +47,7 @@ TestBug160419()
     SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous();
     SdfPrimSpecHandle refPrim = 
         SdfCreatePrimInLayer(rootLayer, SdfPath("/Ref/Child"));
-    refPrim->SetPayload(
+    refPrim->GetPayloadList().Prepend(
         SdfPayload(payloadLayer->GetIdentifier(), payloadPrim->GetPath()));
 
     SdfPrimSpecHandle rootPrim = 

@@ -14,8 +14,9 @@ class "Imageable" (
     what geometry should be included for processing by rendering and other
     computations.
 
-    <Deprecated> Imageable also provides API for accessing primvars, which
-    have been moved to the UsdGeomPrimvarsAPI schema.  This API is planned
+    \\deprecated Imageable also provides API for accessing primvars, which
+    has been moved to the UsdGeomPrimvarsAPI schema, because primvars can now
+    be applied on non-Imageable prim types.  This API is planned
     to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
 )
 {
@@ -93,7 +94,29 @@ class "Imageable" (
 class "PrimvarsAPI" (
     doc = """UsdGeomPrimvarsAPI encodes geometric \"primitive variables\",
     as UsdGeomPrimvar, which interpolate across a primitive's topology,
-    can override shader inputs, and inherit down namespace."""
+    can override shader inputs, and inherit down namespace.
+    
+    Which Method to Use to Retrieve Primvars
+     
+     While creating primvars is unambiguous (CreatePrimvar()), there are quite
+     a few methods available for retrieving primvars, making it potentially
+     confusing knowing which one to use.  Here are some guidelines:
+     
+     - If you are populating a GUI with the primvars already available for 
+     authoring values on a prim, use GetPrimvars().
+     - If you want all of the \"useful\" (e.g. to a renderer) primvars
+     available at a prim, including those inherited from ancestor prims, use
+     FindPrimvarsWithInheritance().  Note that doing so individually for many
+     prims will be inefficient.
+     - To find a particular primvar defined directly on a prim, which may
+     or may not provide a value, use GetPrimvar().
+     - To find a particular primvar defined on a prim or inherited from
+     ancestors, which may or may not provide a value, use 
+     FindPrimvarWithInheritance().
+     - To *efficiently* query for primvars using the overloads of
+     FindPrimvarWithInheritance() and FindPrimvarsWithInheritance(), one
+     must first cache the results of FindIncrementallyInheritablePrimvars() for
+     each non-leaf prim on the stage. """
 )
 {
 }

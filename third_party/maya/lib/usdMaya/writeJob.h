@@ -80,6 +80,8 @@ private:
     void _PerFrameCallback(double iFrame);
     void _PostCallback();
 
+    bool _CheckNameClashes(const SdfPath &path, const MDagPath &dagPath);
+
     // Name of the created/appended USD file
     std::string _fileName;
 

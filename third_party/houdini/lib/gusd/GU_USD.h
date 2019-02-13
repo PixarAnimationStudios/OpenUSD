@@ -309,6 +309,15 @@ public:
                                        const UT_Matrix4D* xforms,
                                        bool keepLengths=false,
                                        const GA_AttributeFilter* filter=nullptr);
+
+    /// Imports \p prim as unpacked geometry in \p gd.
+    static bool ImportPrimUnpacked(GU_Detail& gd,
+                                   const UsdPrim& prim,
+                                   UsdTimeCode time,
+                                   const char* lod = nullptr,
+                                   GusdPurposeSet purpose = GUSD_PURPOSE_PROXY,
+                                   const char* primvarPattern = "*",
+                                   const UT_Matrix4D* xform = nullptr);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

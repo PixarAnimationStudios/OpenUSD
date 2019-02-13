@@ -1945,7 +1945,7 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
         if (!prim.IsActive() || prim.IsMaster())
             return;
         
-        if (prim._GetSourcePrimIndex().HasPayload()) {
+        if (prim._GetSourcePrimIndex().HasAnyPayloads()) {
             SdfPath const &payloadIncludePath =
                 prim._GetSourcePrimIndex().GetPath();
             if (!unloadedOnly ||
@@ -1996,7 +1996,7 @@ UsdStage::_DiscoverAncestorPayloads(const SdfPath& rootPath,
         if (!parent.IsActive() || parent.IsMaster())
             continue;
 
-        if (parent._GetSourcePrimIndex().HasPayload()) {
+        if (parent._GetSourcePrimIndex().HasAnyPayloads()) {
             const SdfPath& payloadIncludePath = 
                 parent._GetSourcePrimIndex().GetPath();
             if (!unloadedOnly ||
@@ -2070,6 +2070,8 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
     }
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
@@ -2108,7 +2110,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
         _WalkPrimsWithMasters(
             path,
             [&unloadIndexPaths] (UsdPrim const &prim) {
-                if (prim.IsInMaster() && prim.HasPayload()) {
+                if (prim.IsInMaster() && prim.HasAuthoredPayloads()) {
                     unloadIndexPaths.push_back(
                         prim._GetSourcePrimIndex().GetPath());
                 }
@@ -3425,6 +3427,7 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges)
         .Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 const std::vector<std::string>&
@@ -4229,7 +4232,7 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
             stagePath = path;
 
         UsdPrim prim = _stage->GetPrimAtPath(stagePath);
-        bool isNewPayload = !prim || !prim.HasPayload();
+        bool isNewPayload = !prim || !prim.HasAuthoredPayloads();
 
         if (!isNewPayload)
             return false;
@@ -4252,7 +4255,8 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
         }
 
         UsdPrim root = _stage->GetPseudoRoot();
-        for (; !prim.HasPayload() && prim != root; prim = prim.GetParent()) {
+        for (; !prim.HasAuthoredPayloads() && prim != root; 
+             prim = prim.GetParent()) {
             // continue
         }
 
@@ -4751,7 +4755,7 @@ _CopyPrim(const UsdPrim &usdPrim,
     // and GetAuthoredProperties to consider clips.
     auto hasValue = [](const UsdProperty& prop){
         return prop.Is<UsdAttribute>()
-               && prop.As<UsdAttribute>().HasAuthoredValueOpinion();
+               && prop.As<UsdAttribute>().HasAuthoredValue();
     };
     
     for (auto const &prop : usdPrim.GetProperties()) {

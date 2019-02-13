@@ -30,6 +30,12 @@
 
 #include "pxr/usd/usdGeom/points.h"
 
+#include <FnAPI/FnAPI.h>
+
+#if KATANA_VERSION_MAJOR >= 3
+#include "vtKatana/array.h"
+#endif // KATANA_VERSION_MAJOR >= 3
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -42,11 +48,15 @@ _GetWidthAttr(const UsdGeomPoints& points, double currentTime)
         return FnKat::Attribute();
     }
 
+#if KATANA_VERSION_MAJOR >= 3
+    return VtKatanaMapOrCopy(widths);
+#else
     FnKat::FloatBuilder widthsBuilder(1);
     widthsBuilder.set(std::vector<float>(widths.begin(), widths.end()));
 
 
     return widthsBuilder.build();
+#endif // KATANA_VERSION_MAJOR >= 3
 }
 
 void

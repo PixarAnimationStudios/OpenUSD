@@ -242,25 +242,6 @@ struct UsdMayaWriteUtil
             const UsdTimeCode& usdTime,
             UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
-    /// Get the name of the USD prim under which exported materials are
-    /// authored.
-    ///
-    /// By default, this scope is named "Looks", but it can be configured
-    /// in the UsdMaya metadata of a plugInfo.json file like so:
-    /// 
-    /// "UsdMaya": {
-    ///     "UsdExport": {
-    ///         "materialsScopeName": "SomeScopeName"
-    ///     }
-    /// }
-    ///
-    /// Note that this name can also be specified as a parameter during export
-    /// and the value returned by this function will not account for that. In
-    /// that case, the value should be read from the export args for that
-    /// particular export instead.
-    PXRUSDMAYA_API
-    static TfToken GetMaterialsScopeName();
-
     /// \}
 
     /// \name Helpers for reading Maya data

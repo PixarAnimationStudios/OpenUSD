@@ -163,6 +163,7 @@ void wrapUsdAttribute()
 
         .def("HasValue", &UsdAttribute::HasValue)
         .def("HasAuthoredValueOpinion", &UsdAttribute::HasAuthoredValueOpinion)
+        .def("HasAuthoredValue", &UsdAttribute::HasAuthoredValue)
         .def("HasFallbackValue", &UsdAttribute::HasFallbackValue)
 
         .def("ValueMightBeTimeVarying", &UsdAttribute::ValueMightBeTimeVarying)

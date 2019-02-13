@@ -84,6 +84,9 @@ public:
     /// Returns the inverse of the world-space joint bind transforms.
     bool GetJointWorldInverseBindTransforms(VtMatrix4dArray* xforms);
 
+    /// Returns the inverse of the local-space rest transforms.
+    bool GetJointLocalInverseRestTransforms(VtMatrix4dArray* xforms);
+
 private:
     UsdSkel_SkelDefinition();
 
@@ -92,6 +95,8 @@ private:
     void _ComputeJointSkelRestTransforms();
     
     void _ComputeJointWorldInverseBindTransforms();
+
+    void _ComputeJointLocalInverseRestTransforms();
 
 private:
     UsdSkelSkeleton _skel;
@@ -106,6 +111,7 @@ private:
     // sharing across instanced skeletons.
     VtMatrix4dArray _jointSkelRestXforms;
     VtMatrix4dArray _jointWorldInverseBindXforms;
+    VtMatrix4dArray _jointLocalInverseRestXforms;
     std::atomic<int> _flags;
     std::mutex _mutex;
 };

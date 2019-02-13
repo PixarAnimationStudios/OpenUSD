@@ -219,6 +219,13 @@ class ShadedRenderModes(ConstantGroup):
     GEOM_FLAT = RenderModes.GEOM_FLAT
     GEOM_SMOOTH = RenderModes.GEOM_SMOOTH
 
+class ColorCorrectionModes(ConstantGroup):
+    # Color correction used when render is presented to screen
+    # These strings should match HdxColorCorrectionTokens
+    DISABLED = "disabled"
+    SRGB = "sRGB"
+    OPENCOLORIO = "openColorIO"
+
 class PickModes(ConstantGroup):
     # Pick modes
     PRIMS = "Prims"
@@ -504,7 +511,7 @@ def GetPrimLoadability(prim):
     A prim 'isLoaded' only if there are no unloaded prims beneath it, i.e.
     it is stating whether the prim is "fully loaded".  This
     is a debatable definition, but seems useful for usdview's purposes."""
-    if not (prim.IsActive() and (prim.IsGroup() or prim.HasPayload())):
+    if not (prim.IsActive() and (prim.IsGroup() or prim.HasAuthoredPayloads())):
         return (False, True)
     # XXX Note that we are potentially traversing the entire stage here.
     # If this becomes a performance issue, we can cast this query into C++,

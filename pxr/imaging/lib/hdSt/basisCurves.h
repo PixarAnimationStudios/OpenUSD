@@ -117,12 +117,14 @@ protected:
 private:
     enum DrawingCoord {
         HullTopology = HdDrawingCoord::CustomSlotsBegin,
+        PointsTopology,
         InstancePrimvar  // has to be at the very end
     };
 
     enum DirtyBits : HdDirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
-        DirtyHullIndices    = (DirtyIndices       << 1)
+        DirtyHullIndices    = (DirtyIndices       << 1),
+        DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
 
     // When processing primvars, these will get set to if we determine that

@@ -67,6 +67,7 @@ void wrapUsdSkelTokens()
     _AddToken(cls, "bindTransforms", UsdSkelTokens->bindTransforms);
     _AddToken(cls, "blendShapes", UsdSkelTokens->blendShapes);
     _AddToken(cls, "blendShapeWeights", UsdSkelTokens->blendShapeWeights);
+    _AddToken(cls, "jointNames", UsdSkelTokens->jointNames);
     _AddToken(cls, "joints", UsdSkelTokens->joints);
     _AddToken(cls, "offsets", UsdSkelTokens->offsets);
     _AddToken(cls, "pointIndices", UsdSkelTokens->pointIndices);

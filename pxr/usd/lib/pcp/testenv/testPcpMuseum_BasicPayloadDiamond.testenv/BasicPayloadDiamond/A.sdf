@@ -1,0 +1,8 @@
+#sdf 1.4.32
+
+def Prim "A" (
+    add payload = @./C.sdf@</C>
+)
+{
+    custom double A_attr
+}

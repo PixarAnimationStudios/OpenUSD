@@ -136,6 +136,35 @@ struct Vt_DefaultValueFactory<SdfPathKeyPolicy> {
     }
 };
 
+/// \class SdfPayloadTypePolicy
+///
+/// List editor type policy for \c SdfPayload.
+///
+class SdfPayloadTypePolicy {
+public:
+    typedef SdfPayload value_type;
+
+    static const value_type& Canonicalize(const value_type& x)
+    {
+        return x;
+    }
+
+    static const std::vector<value_type>& Canonicalize(
+        const std::vector<value_type>& x)
+    {
+        return x;
+    }
+};
+
+// Cannot get from a VtValue except as the correct type.
+template <>
+struct Vt_DefaultValueFactory<SdfPayloadTypePolicy> {
+    static Vt_DefaultValueHolder Invoke() {
+        TF_AXIOM(false && "Failed VtValue::Get<SdfPayloadTypePolicy> not allowed");
+        return Vt_DefaultValueHolder::Create((void*)0);
+    }
+};
+
 /// \class SdfReferenceTypePolicy
 ///
 /// List editor type policy for \c SdfReference.

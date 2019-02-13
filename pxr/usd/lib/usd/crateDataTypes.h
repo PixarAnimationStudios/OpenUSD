@@ -105,3 +105,5 @@ xx(Value,               52, VtValue,                     false)
 
 xx(UnregisteredValue,   53, SdfUnregisteredValue,        false)
 xx(UnregisteredValueListOp, 54, SdfUnregisteredValueListOp, false)
+xx(PayloadListOp,       55, SdfPayloadListOp,            false)
+

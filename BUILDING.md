@@ -44,7 +44,7 @@ cmake                                       \
 cmake --build . --target install -- -j <NUM_CORES>
 ```
 
-#### On OS X
+#### On macOS
 
 The following will generate an Xcode project that can be used to build USD.
 
@@ -164,6 +164,12 @@ If OpenImageIO is disabled, imaging by default supports the image formats bmp,
 jpg, png, tga, and hdr. With OpenImageIO enabled, support extends to exr, tif, 
 zfile, and tx file formats, which allows for the use of more advanced features
 like subimages and mipmaps.
+
+##### OpenColorIO 
+
+This plugin can optionally be enabled by specifying the cmake flag
+```PXR_BUILD_OPENCOLORIO_PLUGIN=TRUE```. When enabled, OpenColorIO provides 
+color management for Hydra viewports. 
 
 ##### Embree Rendering
 
@@ -309,7 +315,7 @@ flags:
 | ------------------------------ |-----------------------------------------| ------- |
 | PXR_SET_EXTERNAL_NAMESPACE     | The outer namespace identifier          | ```pxr```     |
 | PXR_SET_INTERNAL_NAMESPACE     | The internal namespace identifier       | ```pxrInternal_v_x_y``` (for version x.y.z) |
-| PXR_ENABLE_NAMESPACES          | Enable namespaces                       | ```OFF```    |
+| PXR_ENABLE_NAMESPACES          | Enable namespaces                       | ```ON```    |
 
 When enabled, there are a set of macros provided in a generated header,
 pxr/pxr.h, which facilitates using namespaces:

@@ -2,6 +2,7 @@ set(DIRS
     usdcat
     usdchecker
     usddiff
+    usddumpcrate
     usdedit
     usdresolve
     usdstitch

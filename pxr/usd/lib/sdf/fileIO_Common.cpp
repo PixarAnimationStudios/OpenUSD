@@ -231,6 +231,35 @@ struct _ListOpWriter<SdfReference>
     }
 };
 
+template <>
+struct _ListOpWriter<SdfPayload>
+{
+    static constexpr bool ItemPerLine = true;
+    static bool SingleItemRequiresBrackets(const SdfPayload& payload)
+    {
+        return false;
+    }
+    static void Write(ostream& out, size_t indent, const SdfPayload& payload)
+    {
+        Sdf_FileIOUtility::Write(out, indent, "");
+
+        if (!payload.GetAssetPath().empty()) {
+            Sdf_FileIOUtility::WriteAssetPath(out, 0, payload.GetAssetPath());
+            if (!payload.GetPrimPath().IsEmpty())
+                Sdf_FileIOUtility::WriteSdfPath(out, 0, payload.GetPrimPath());
+        }
+        else {
+            // If this is an internal payload, we always have to write
+            // out a path, even if it's empty since that encodes a payload
+            // to the default prim.
+            Sdf_FileIOUtility::WriteSdfPath(out, 0, payload.GetPrimPath());
+        }
+
+        Sdf_FileIOUtility::WriteLayerOffset(
+            out, indent+1, false /*multiLineMetaData*/, payload.GetLayerOffset());
+    }
+};
+
 template <class ListOpList>
 void
 _WriteListOpList(
@@ -604,6 +633,9 @@ Sdf_FileIOUtility::WriteListOp(std::ostream &out,
 template void
 Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
                                const SdfPathListOp&);
+template void
+Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+                               const SdfPayloadListOp&);
 template void
 Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
                                const SdfReferenceListOp&);

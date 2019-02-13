@@ -26,24 +26,10 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readMesh.h"
-#include "usdKatana/utils.h"
 
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-TF_DEFINE_ENV_SETTING(USD_KATANA_IMPORT_FACESET_API, true, 
-                      "Whether face-sets encoded using the deprecated "
-                      "UsdGeomFaceSetAPI schema must be imported by PxrUsdIn.")
-
-static void 
-_CreateFaceSetsFromFaceSetAPI(
-        const UsdPrim& prim,
-        const PxrUsdKatanaUsdInPrivateData &data,
-        FnKat::GeolibCookInterface& interface);
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, opArgs, interface)
 {
@@ -55,70 +41,4 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, opArgs, inter
         UsdGeomMesh(prim), privateData, attrs);
 
     attrs.toInterface(interface);
-
-    if (TfGetEnvSetting(USD_KATANA_IMPORT_FACESET_API) and 
-        UsdShadeMaterial::HasMaterialFaceSet(prim)) 
-    {
-        _CreateFaceSetsFromFaceSetAPI(prim, privateData, interface);
-    }
-}
-
-// For now, this is only used by the mesh op.  If this logic needs to be
-// accessed elsewhere, it should move down into usdKatana.
-static void 
-_CreateFaceSetsFromFaceSetAPI(
-        const UsdPrim& prim,
-        const PxrUsdKatanaUsdInPrivateData &data,
-        FnKat::GeolibCookInterface& interface)
-{
-    UsdGeomFaceSetAPI faceSet = UsdShadeMaterial::GetMaterialFaceSet(prim);
-    bool isPartition = faceSet.GetIsPartition();;
-    if (!isPartition) {
-        TF_WARN("Found face set on prim <%s> that is not a partition.", 
-                prim.GetPath().GetText());
-        // continue here?
-    }
-
-    const double currentTime = data.GetCurrentTime();
-
-    VtIntArray faceCounts, faceIndices;
-    faceSet.GetFaceCounts(&faceCounts, currentTime);
-    faceSet.GetFaceIndices(&faceIndices, currentTime);
-
-    SdfPathVector bindingTargets;
-    faceSet.GetBindingTargets(&bindingTargets);
-
-    size_t faceSetIdxStart = 0;
-    for(size_t faceSetIdx = 0; faceSetIdx < faceCounts.size(); ++faceSetIdx) {
-        size_t faceCount = faceCounts[faceSetIdx];
-
-        FnKat::GroupBuilder faceSetAttrs;
-
-        faceSetAttrs.set("type", FnKat::StringAttribute("faceset"));
-        faceSetAttrs.set("materialAssign", FnKat::StringAttribute(
-            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-                bindingTargets[faceSetIdx], data)));
-
-        FnKat::IntBuilder facesBuilder;
-        {
-            std::vector<int> faceIndicesVec(faceCount);
-            for (size_t faceIndicesIdx = 0; faceIndicesIdx < faceCount; ++faceIndicesIdx)
-            {
-                faceIndicesVec[faceIndicesIdx] = 
-                    faceIndices[faceSetIdxStart + faceIndicesIdx];
-            }
-            faceSetIdxStart += faceCount;
-            facesBuilder.set(faceIndicesVec);
-        }
-        faceSetAttrs.set("geometry.faces", facesBuilder.build());
-
-        std::string faceSetName = TfStringPrintf("faceset_%zu", faceSetIdx);
-
-        FnKat::GroupBuilder staticSceneCreateAttrs;
-        staticSceneCreateAttrs.set("a", faceSetAttrs.build());
-        interface.createChild(
-            faceSetName,
-            "StaticSceneCreate",
-            staticSceneCreateAttrs.build());
-    }
 }

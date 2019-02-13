@@ -127,7 +127,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimActiveFlag] = active;
 
         // Cache whether or not this prim has a payload.
-        bool hasPayload = _primIndex->HasPayload();
+        bool hasPayload = _primIndex->HasAnyPayloads();
         _flags[Usd_PrimHasPayloadFlag] = hasPayload;
 
         // An active prim is loaded if it's loadable and in the load set, or

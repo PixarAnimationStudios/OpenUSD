@@ -1,0 +1,83 @@
+<fragment uiName="usdPreviewSurfaceLighting" name="usdPreviewSurfaceLighting" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    {{ autoGenWarning }}
+    <description>
+        Computes the diffuse and specular lighting contributions for a light.
+    </description>
+    <properties>
+        <!-- UsdPreviewSurface Parameters -->
+        <float3 name="diffuseColor"/>
+        <bool name="useSpecularWorkflow"/>
+        <float name="ior"/>
+        <float name="metallic"/>
+        <float name="specularAmount"/>
+        <float3 name="specularColor"/>
+        <float name="specularRoughness"/>
+        <float name="clearcoatAmount"/>
+        <float3 name="clearcoatColor"/>
+        <float name="clearcoatRoughness"/>
+        <float name="occlusion"/>
+
+        <!-- Dot products for lighting computed by Maya's mayaShaderGeom fragment. -->
+        <float name="NdotL"/>
+        <float name="NdotV"/>
+        <float name="NdotH"/>
+        <float name="VdotH"/>
+
+        <!-- Irradiance values from Maya for the light being computed. The
+             irradiance accounts for shadowing and attenuation of the light. -->
+        <float3 name="diffuseIrradiance"/>
+        <float3 name="specularIrradiance"/>
+    </properties>
+    <values>
+        <!-- UsdPreviewSurface Parameter Default Values -->
+        <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
+        <bool name="useSpecularWorkflow" value="false"/>
+        <float name="ior" value="1.5"/>
+        <float name="metallic" value="0.0"/>
+        <float name="specularAmount" value="1.0"/>
+        <float3 name="specularColor" value="0.0,0.0,0.0"/>
+        <float name="specularRoughness" value="0.5"/>
+        <float name="clearcoatAmount" value="0.0"/>
+        <float3 name="clearcoatColor" value="1.0,1.0,1.0"/>
+        <float name="clearcoatRoughness" value="0.01"/>
+        <float name="occlusion" value="1.0"/>
+
+        <!-- Default values for Maya-provided parameters. -->
+        <float name="NdotL" value="0.0"/>
+        <float name="NdotV" value="0.0"/>
+        <float name="NdotH" value="0.0"/>
+        <float name="VdotH" value="0.0"/>
+
+        <float3 name="diffuseIrradiance" value="0.0,0.0,0.0"/>
+        <float3 name="specularIrradiance" value="0.0,0.0,0.0"/>
+    </values>
+    <outputs>
+        <struct name="usdPreviewSurfaceLighting" struct_name="LightingContributions"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="usdPreviewSurfaceLighting"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="usdPreviewSurfaceLighting"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
+            <function_name val="usdPreviewSurfaceLighting"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="usdPreviewSurfaceLighting"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

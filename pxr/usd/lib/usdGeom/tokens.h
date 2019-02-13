@@ -126,10 +126,6 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
     const TfToken closed;
-    /// \brief "collection"
-    /// 
-    /// This is the namespace prefix used by  the deprecated UsdGeomCollectionAPI for authoring collections. Use UsdTokens->collection instead, which is used by the new collection schema UsdCollectionAPI.
-    const TfToken collection;
     /// \brief "constant"
     /// 
     /// Possible value for UsdGeomPrimvar::SetInterpolation. Default value for UsdGeomPrimvar::GetInterpolation. One value remains constant over the entire surface primitive.

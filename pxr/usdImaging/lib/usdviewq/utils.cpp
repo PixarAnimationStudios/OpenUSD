@@ -80,10 +80,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
 {
-    hasCompositionArcs = (prim.HasAuthoredReferences()    ||
-                          prim.HasPayload()               ||
-                          prim.HasAuthoredInherits()      ||
-                          prim.HasAuthoredSpecializes()   ||
+    hasCompositionArcs = (prim.HasAuthoredReferences() ||
+                          prim.HasAuthoredPayloads() ||
+                          prim.HasAuthoredInherits() ||
+                          prim.HasAuthoredSpecializes() ||
                           prim.HasVariantSets());
     isActive = prim.IsActive();
     UsdGeomImageable img(prim);

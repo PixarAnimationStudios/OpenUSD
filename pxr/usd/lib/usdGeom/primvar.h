@@ -81,13 +81,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars
 /// 
+/// The UsdGeomPrimvarsAPI schema provides a complete interface for creating
+/// and querying prims for primvars.
+///
 /// The <b>only</b> way to create a new Primvar in scene description is by
-/// calling UsdGeomImageable::CreatePrimvar().  One cannot "enhance" or
+/// calling UsdGeomPrimvarsAPI::CreatePrimvar().  One cannot "enhance" or
 /// "promote" an already existing attribute into a Primvar, because doing so
 /// may require a namespace edit to rename the attribute, which cannot, in
 /// general, be done within a single UsdEditContext.  Instead, create a new
-/// UsdGeomPrimvar using UsdGeomImageable::CreatePrimvar(), and then copy the
-/// existing attribute onto the new UsdGeomPrimvar.
+/// UsdGeomPrimvar of the desired name using
+/// UsdGeomPrimvarsAPI::CreatePrimvar(), and then copy the existing attribute
+/// onto the new UsdGeomPrimvar.
 ///
 /// Primvar names can contain arbitrary sub-namespaces. The behavior of
 /// UsdGeomImageable::GetPrimvar(TfToken const &name) is to prepend "primvars:"
@@ -103,31 +107,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \anchor UsdGeomPrimvar_Using_Primvar
 /// If a client wishes to access an already-extant attribute as a Primvar,
 /// (which may or may not actually be valid Primvar), they can use the
-/// speculative constructor like so:
+/// speculative constructor; typically, a primvar is only "interesting" if it
+/// additionally provides a value.  This might look like:
 /// \code
-/// if (UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr)){
+/// UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr);
+/// if (primvar.HasValue()) {
+///     VtValue values;
+///     primvar.Get(&values, timeCode);
 ///     TfToken interpolation = primvar.GetInterpolation();
 ///     int     elementSize = primvar.GetElementSize();
 ///     ...
 /// }
 /// \endcode
 ///
-/// (or if you possess UsdProperty objects instead, as the result of
-/// a UsdPrim::GetProperties() call...)
+/// or, because Get() returns `true` if and only if it found a value:
 /// \code
-/// if (UsdGeomPrimvar primvar = UsdGeomPrimvar(usdProp.As<UsdAttribute>())){
-/// }
-/// \endcode
-///
-/// Python does not permit the 'assignment in conditional" pattern, so
-/// the above example in python would be:
-///
-/// \code{.py}
-/// primvar = Usd.Primvar(usdAttr)
-/// if primvar:
-///     interpolation = primvar.GetInterpolation()
-///     elementSize = primvar.GetElementSize()
+/// UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr);
+/// VtValue values;
+/// if (primvar.Get(&values, timeCode)) {
+///     TfToken interpolation = primvar.GetInterpolation();
+///     int     elementSize = primvar.GetElementSize();
 ///     ...
+/// }
 /// \endcode
 ///
 /// \subsection Usd_Handling_Indexed_Primvars Proper Client Handling of "Indexed" Primvars
@@ -248,11 +249,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \section Usd_UsdGeomPrimvar_Inheritance Primvar Namespace Inheritance
 ///
-/// Primvar values can be inherited down namespace.  That is, a primvar
-/// value set on a prim will also apply to any child prims, unless those
-/// children have their own opinions about those named primvars.
+/// Constant interpolation primvar values can be inherited down namespace.
+/// That is, a primvar value set on a prim will also apply to any child
+/// prims, unless those children have their own opinions about those named
+/// primvars. For complete details on how primvars inherit, see
+/// \ref usdGeom_PrimvarInheritance .
 ///
-/// \sa UsdGeomImageable::FindInheritedPrimvars().
+/// \sa UsdGeomImageable::FindInheritablePrimvars().
 ///
 class UsdGeomPrimvar
 {
@@ -374,9 +377,18 @@ public:
     /// Explicit UsdAttribute extractor
     UsdAttribute const &GetAttr() const { return _attr; }
     
-    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
-    /// addition the attribute is identified as a Primvar.
+    /// Return true if the underlying UsdAttribute::IsDefined(), and in
+    /// addition the attribute is identified as a Primvar.  Does not imply
+    /// that the primvar provides a value
     bool IsDefined() const { return IsPrimvar(_attr); }
+
+    /// Return true if the underlying attribute has a value, either from
+    /// authored scene description or a fallback.
+    bool HasValue() const { return _attr.HasValue(); }
+
+    /// Return true if the underlying attribute has an unblocked, authored
+    /// value.
+    bool HasAuthoredValue() const { return _attr.HasAuthoredValue(); }
 
     /// \anchor UsdGeomPrimvar_bool
     /// Return true if this Primvar is valid for querying and authoring
@@ -624,6 +636,33 @@ public:
     bool SetIdTarget(const SdfPath& path) const;
     
     /// @}
+
+    /// Equality comparison.  Return true if \a lhs and \a rhs represent the
+    /// same UsdGeomPrimvar, false otherwise.
+    friend bool operator==(const UsdGeomPrimvar &lhs, const UsdGeomPrimvar &rhs) {
+        return lhs.GetAttr() == rhs.GetAttr();
+    }
+
+    /// Inequality comparison. Return false if \a lhs and \a rhs represent the
+    /// same UsdPrimvar, true otherwise.
+    friend bool operator!=(const UsdGeomPrimvar &lhs, const UsdGeomPrimvar &rhs) {
+        return !(lhs == rhs);
+    }
+
+    /// Less-than operator. Returns true if \a lhs < \a rhs. 
+    /// 
+    /// This simply compares the paths of the underlyingattributes. 
+    friend bool operator<(const UsdGeomPrimvar &lhs, const UsdGeomPrimvar &rhs) {
+        return lhs.GetAttr().GetPath() < rhs.GetAttr().GetPath();
+    }
+
+    // hash_value overload for std/boost hash.
+    USDGEOM_API
+    friend size_t hash_value(const UsdGeomPrimvar &obj) {
+        return hash_value(obj.GetAttr());
+    }
+
+
 private:
     friend class UsdGeomImageable;
     friend class UsdGeomPrimvarsAPI;

@@ -482,13 +482,12 @@ inline void Tf_RefPtrTracker_Assign(const void*, const void*, const void*) { }
 // becomes unique or non-unique.
 struct Tf_RefPtr_UniqueChangedCounter {
     static inline int
-    AddRef(TfRefBase const *refBase,
-           TfRefBase::UniqueChangedListener const &listener)
+    AddRef(TfRefBase const *refBase)
     {
         if (refBase) {
             // Check to see if we need to invoke the unique changed listener.
             if (refBase->_shouldInvokeUniqueChangedListener)
-                return _AddRef(refBase, listener);
+                return _AddRef(refBase);
             else
                 return refBase->GetRefCount()._FetchAndAdd(1);
         }
@@ -496,12 +495,11 @@ struct Tf_RefPtr_UniqueChangedCounter {
     }
 
     static inline bool
-    RemoveRef(TfRefBase const* refBase,
-              TfRefBase::UniqueChangedListener const &listener) {
+    RemoveRef(TfRefBase const* refBase) {
         if (refBase) {
             // Check to see if we need to invoke the unique changed listener.
             return refBase->_shouldInvokeUniqueChangedListener ?
-                        _RemoveRef(refBase, listener) :
+                        _RemoveRef(refBase) :
                         refBase->GetRefCount()._DecrementAndTestIfZero();
         }
         return false;
@@ -510,12 +508,11 @@ struct Tf_RefPtr_UniqueChangedCounter {
     // Increment ptr's count if it is not zero.  Return true if done so
     // successfully, false if its count is zero.
     static inline bool
-    AddRefIfNonzero(TfRefBase const *ptr,
-                    TfRefBase::UniqueChangedListener const &listener) {
+    AddRefIfNonzero(TfRefBase const *ptr) {
         if (!ptr)
             return false;
         if (ptr->_shouldInvokeUniqueChangedListener) {
-            return _AddRefIfNonzero(ptr, listener);
+            return _AddRefIfNonzero(ptr);
         } else {
             auto &counter = ptr->GetRefCount()._counter;
             auto val = counter.load();
@@ -527,38 +524,32 @@ struct Tf_RefPtr_UniqueChangedCounter {
         }
     }
     
-    TF_API static bool _RemoveRef(TfRefBase const *refBase,
-                           TfRefBase::UniqueChangedListener const &listener);
+    TF_API static bool _RemoveRef(TfRefBase const *refBase);
 
-    TF_API static int _AddRef(TfRefBase const *refBase,
-                       TfRefBase::UniqueChangedListener const &listener);
+    TF_API static int _AddRef(TfRefBase const *refBase);
 
-    TF_API static bool _AddRefIfNonzero(TfRefBase const *refBase,
-                       TfRefBase::UniqueChangedListener const &listener);
+    TF_API static bool _AddRefIfNonzero(TfRefBase const *refBase);
 };
 
 // This code is used to increment and decrement ref counts in the case where
 // the object pointed to explicitly does not support unique changed listeners.
 struct Tf_RefPtr_Counter {
     static inline int
-    AddRef(TfRefBase const *refBase,
-           TfRefBase::UniqueChangedListener const &) {
+    AddRef(TfRefBase const *refBase) {
         if (refBase)
             return refBase->GetRefCount()._FetchAndAdd(1);
         return 0;
     }
 
     static inline bool
-    RemoveRef(TfRefBase const *ptr,
-              TfRefBase::UniqueChangedListener const &) {
+    RemoveRef(TfRefBase const *ptr) {
         return (ptr && (ptr->GetRefCount()._DecrementAndTestIfZero()));
     }
 
     // Increment ptr's count if it is not zero.  Return true if done so
     // successfully, false if its count is zero.
     static inline bool
-    AddRefIfNonzero(TfRefBase const *ptr,
-                    TfRefBase::UniqueChangedListener const &) {
+    AddRefIfNonzero(TfRefBase const *ptr) {
         if (!ptr)
             return false;
         auto &counter = ptr->GetRefCount()._counter;
@@ -1153,11 +1144,11 @@ private:
     friend const std::type_info& TfTypeid(const TfRefPtr<U>& ptr);
 
     void _AddRef() const {
-        _Counter::AddRef(_refBase, TfRefBase::_uniqueChangedListener);
+        _Counter::AddRef(_refBase);
     }
 
     void _RemoveRef(const TfRefBase* ptr) const {
-        if (_Counter::RemoveRef(ptr, TfRefBase::_uniqueChangedListener)) {
+        if (_Counter::RemoveRef(ptr)) {
             Tf_RefPtrTracker_LastRef(this,
                 reinterpret_cast<T*>(const_cast<TfRefBase*>(ptr)));
             delete ptr;

@@ -111,7 +111,6 @@ protected:
     virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
 
 private:
-    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time) const;
     void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, 
             UsdTimeCode time) const;
     void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, 

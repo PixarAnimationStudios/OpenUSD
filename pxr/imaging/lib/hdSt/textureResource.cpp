@@ -213,8 +213,8 @@ GLuint64EXT HdStSimpleTextureResource::GetTexelsTextureHandle()
     bool bindlessTexture =
         GlfContextCaps::GetInstance().bindlessTextureEnabled;
     if (bindlessTexture) {
-        if (!glIsTextureHandleResidentNV(handle)) {
-            glMakeTextureHandleResidentNV(handle);
+        if (!glIsTextureHandleResidentARB(handle)) {
+            glMakeTextureHandleResidentARB(handle);
         }
     }
 
@@ -270,8 +270,8 @@ GLuint64EXT HdStSimpleTextureResource::GetLayoutTextureHandle()
     bool bindlessTexture =
         GlfContextCaps::GetInstance().bindlessTextureEnabled;
     if (bindlessTexture) {
-        if (!glIsTextureHandleResidentNV(handle)) {
-            glMakeTextureHandleResidentNV(handle);
+        if (!glIsTextureHandleResidentARB(handle)) {
+            glMakeTextureHandleResidentARB(handle);
         }
     }
 

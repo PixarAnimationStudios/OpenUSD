@@ -80,5 +80,12 @@ HdxPackageSimpleLightingShader()
     return simpleLightingShader;
 }
 
+TfToken
+HdxPackageColorCorrectionShader()
+{
+    static TfToken shader = _GetShaderPath("colorCorrection.glslfx");
+    return shader;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

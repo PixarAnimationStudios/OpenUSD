@@ -205,7 +205,18 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                 _depthBuffer.Unmap();
             }
         }
+
+        // Embree does not output opacity at this point so we disable alpha
+        // blending in the compositor so we can see the background color.
+        GLboolean restoreblendEnabled;
+        glGetBooleanv(GL_BLEND, &restoreblendEnabled);
+        glDisable(GL_BLEND);
+
         _compositor.Draw();
+
+        if (restoreblendEnabled) {
+            glEnable(GL_BLEND);
+        }
     }
 
     // Only start a new render if something in the scene has changed.

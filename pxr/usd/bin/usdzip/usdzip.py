@@ -120,7 +120,7 @@ def _ListContents(listLocation, zipFile):
 
 def main():
     parser = argparse.ArgumentParser(description='Utility for creating a .usdz '
-        'file containging USD assets and for inspecting existing .usdz files.')
+        'file containing USD assets and for inspecting existing .usdz files.')
 
     parser.add_argument('usdzFile', type=str, nargs='?',
                         help='Name of the .usdz file to create or to inspect '

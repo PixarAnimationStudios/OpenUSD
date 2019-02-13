@@ -288,7 +288,7 @@ public:
     USDGEOM_API
     static UsdGeomSubset CreateGeomSubset(
         const UsdGeomImageable &geom, 
-        const std::string &subsetName,
+        const TfToken &subsetName,
         const TfToken &elementType,
         const VtIntArray &indices,
         const TfToken &familyName=TfToken(),
@@ -306,7 +306,7 @@ public:
     USDGEOM_API
     static UsdGeomSubset CreateUniqueGeomSubset(
         const UsdGeomImageable &geom, 
-        const std::string &subsetName,
+        const TfToken &subsetName,
         const TfToken &elementType,
         const VtIntArray &indices,
         const TfToken &familyName=TfToken(),

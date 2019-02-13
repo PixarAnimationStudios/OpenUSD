@@ -91,9 +91,6 @@ class GfFrustum {
     enum ProjectionType {
         Orthographic,                   ///< Orthographic projection
         Perspective,                    ///< Perspective projection
-        ORTHOGRAPHIC = Orthographic,    ///< Orthographic synonym for 2x
-        PERSPECTIVE  = Perspective,     ///< Perspective synonym for 2x
-        UNDEFINED_PROJECTION_TYPE,      ///< Used by 2x
     };
 
     /// This constructor creates an instance with default viewing parameters:
@@ -250,7 +247,7 @@ class GfFrustum {
 
     /// Sets up the frustum in a manner similar to \c gluPerspective().
     ///
-    /// It sets the projection type to \c GfFrustum::PERSPECTIVE and sets the
+    /// It sets the projection type to \c GfFrustum::Perspective and sets the
     /// window specification so that the resulting symmetric frustum encloses
     /// an angle of \p fieldOfViewHeight degrees in the vertical direction,
     /// with \p aspectRatio used to figure the angle in the horizontal
@@ -611,7 +608,7 @@ class GfFrustum {
 /// Output a GfFrustum using the format [(position) (rotation) [window]
 /// [nearFar] viewDistance type]
 ///
-/// The "type" is "perspective", "orthographic," or "unknown" depending on the
+/// The "type" is "perspective", or "orthographic, depending on the
 /// projection type of the frustum.
 ///
 /// \ingroup group_gf_DebuggingOutput

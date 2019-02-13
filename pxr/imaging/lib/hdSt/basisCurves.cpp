@@ -150,7 +150,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     if (*dirtyBits & (HdChangeTracker::DirtyTopology
                     | HdChangeTracker::DirtyDisplayStyle
                     | DirtyIndices
-                    | DirtyHullIndices)) {
+                    | DirtyHullIndices
+                    | DirtyPointsIndices)) {
         _PopulateTopology(sceneDelegate, drawItem, dirtyBits, desc);
     }
 
@@ -194,20 +195,41 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
+    TfToken curveType = _topology->GetCurveType();
+    TfToken curveBasis = _topology->GetCurveBasis();
+    bool supportsRefinement = _SupportsRefinement(_refineLevel);
+    if (!supportsRefinement) {
+        // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
+        // when unrefined can be confusing. Should we continue to do this?
+        TF_DEBUG(HD_RPRIM_UPDATED).
+            Msg("HdStBasisCurves(%s) - Downcasting curve type to linear because"
+                " refinement is disabled.\n", GetId().GetText());
+        curveType = HdTokens->linear;
+        curveBasis = TfToken();
+    }
+
     HdSt_BasisCurvesShaderKey::DrawStyle drawStyle = 
         HdSt_BasisCurvesShaderKey::WIRE;
     HdSt_BasisCurvesShaderKey::NormalStyle normalStyle = 
         HdSt_BasisCurvesShaderKey::HAIR;
-
-    TfToken curveType = _topology->GetCurveType();
-    TfToken curveBasis = _topology->GetCurveBasis();
-
-    if (_SupportsRefinement(_refineLevel)){
-        bool supportsWidths = desc.geomStyle == HdBasisCurvesGeomStylePatch &&
-            _SupportsUserWidths(drawItem);
-        if (supportsWidths){
-            bool supportsNormals = _SupportsUserNormals(drawItem);
-            if (supportsNormals){
+    switch (desc.geomStyle) {
+    case HdBasisCurvesGeomStylePoints:
+    {
+        drawStyle = HdSt_BasisCurvesShaderKey::POINTS;
+        normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+        break;
+    }
+    case HdBasisCurvesGeomStyleWire:
+    {
+        drawStyle = HdSt_BasisCurvesShaderKey::WIRE;
+        normalStyle = HdSt_BasisCurvesShaderKey::HAIR;
+        break;
+    }
+    case HdBasisCurvesGeomStylePatch:
+    {
+        if (_SupportsRefinement(_refineLevel) &&
+            _SupportsUserWidths(drawItem)) {
+            if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
             }
@@ -226,14 +248,13 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                 }
             }
         }
+        break;
     }
-    else{
-        TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStBasisCurves(%s) - Downcasting curve type to linear because refinement is disabled.\n",
-                GetId().GetText());
-        curveType = HdTokens->linear;
-        curveBasis = TfToken();
-
+    default:
+    {
+        TF_CODING_ERROR("Invalid geomstyle in basis curve %s repr desc.",
+                        GetId().GetText());
+    }
     }
 
     TF_DEBUG(HD_RPRIM_UPDATED).
@@ -277,7 +298,7 @@ HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= _customDirtyBitsInUse &
-            (DirtyIndices|DirtyHullIndices);
+            (DirtyIndices|DirtyHullIndices|DirtyPointsIndices);
     }
 
     return bits;
@@ -315,6 +336,12 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                 if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
                     _customDirtyBitsInUse |= DirtyHullIndices;
                     *dirtyBits |= DirtyHullIndices;
+                }
+            } else if (desc.geomStyle == HdBasisCurvesGeomStylePoints) {
+                drawingCoord->SetTopologyIndex(HdStBasisCurves::PointsTopology);
+                if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
+                    _customDirtyBitsInUse |= DirtyPointsIndices;
+                    *dirtyBits |= DirtyPointsIndices;
                 }
             } else {
                 if (!(_customDirtyBitsInUse & DirtyIndices)) {
@@ -489,6 +516,11 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         if ((*dirtyBits & DirtyHullIndices) == 0) return;
         *dirtyBits &= ~DirtyHullIndices;
         indexToken = HdTokens->hullIndices;
+    } else  if (drawItem->GetDrawingCoord()->GetTopologyIndex()
+        == HdStBasisCurves::PointsTopology) {
+        if ((*dirtyBits & DirtyPointsIndices) == 0) return;
+        *dirtyBits &= ~DirtyPointsIndices;
+        indexToken = HdTokens->pointsIndices;
     } else {
         if ((*dirtyBits & DirtyIndices) == 0) return;
         *dirtyBits &= ~DirtyIndices;
@@ -506,8 +538,13 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             HdBufferSourceVector sources;
             HdBufferSpecVector bufferSpecs;
 
-            sources.push_back(_topology->GetIndexBuilderComputation(
-                !_SupportsRefinement(_refineLevel)));
+            if (desc.geomStyle == HdBasisCurvesGeomStylePoints) {
+                sources.push_back(
+                    _topology->GetPointsIndexBuilderComputation());
+            } else {
+                sources.push_back(_topology->GetIndexBuilderComputation(
+                    !_SupportsRefinement(_refineLevel)));
+            }
 
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 

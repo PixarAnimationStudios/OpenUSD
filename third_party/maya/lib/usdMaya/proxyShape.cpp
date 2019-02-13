@@ -128,8 +128,9 @@ MObject UsdMayaProxyShape::inStageDataAttr;
 MObject UsdMayaProxyShape::inStageDataCachedAttr;
 MObject UsdMayaProxyShape::fastPlaybackAttr;
 MObject UsdMayaProxyShape::outStageDataAttr;
-MObject UsdMayaProxyShape::displayGuidesAttr;
-MObject UsdMayaProxyShape::displayRenderGuidesAttr;
+MObject UsdMayaProxyShape::drawRenderPurposeAttr;
+MObject UsdMayaProxyShape::drawProxyPurposeAttr;
+MObject UsdMayaProxyShape::drawGuidePurposeAttr;
 MObject UsdMayaProxyShape::softSelectableAttr;
 
 
@@ -280,9 +281,9 @@ UsdMayaProxyShape::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    displayGuidesAttr = numericAttrFn.create(
-        "displayGuides",
-        "displayGuides",
+    drawRenderPurposeAttr = numericAttrFn.create(
+        "drawRenderPurpose",
+        "drp",
         MFnNumericData::kBoolean,
         0.0,
         &retValue);
@@ -290,12 +291,25 @@ UsdMayaProxyShape::initialize()
     numericAttrFn.setKeyable(true);
     numericAttrFn.setReadable(false);
     numericAttrFn.setAffectsAppearance(true);
-    retValue = addAttribute(displayGuidesAttr);
+    retValue = addAttribute(drawRenderPurposeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    displayRenderGuidesAttr = numericAttrFn.create(
-        "displayRenderGuides",
-        "displayRenderGuides",
+    drawProxyPurposeAttr = numericAttrFn.create(
+        "drawProxyPurpose",
+        "dpp",
+        MFnNumericData::kBoolean,
+        1.0,
+        &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setKeyable(true);
+    numericAttrFn.setReadable(false);
+    numericAttrFn.setAffectsAppearance(true);
+    retValue = addAttribute(drawProxyPurposeAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    drawGuidePurposeAttr = numericAttrFn.create(
+        "drawGuidePurpose",
+        "dgp",
         MFnNumericData::kBoolean,
         0.0,
         &retValue);
@@ -303,7 +317,7 @@ UsdMayaProxyShape::initialize()
     numericAttrFn.setKeyable(true);
     numericAttrFn.setReadable(false);
     numericAttrFn.setAffectsAppearance(true);
-    retValue = addAttribute(displayRenderGuidesAttr);
+    retValue = addAttribute(drawGuidePurposeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     softSelectableAttr = numericAttrFn.create(
@@ -409,8 +423,9 @@ UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     if (plug == excludePrimPathsAttr ||
             plug == timeAttr ||
             plug == complexityAttr ||
-            plug == displayGuidesAttr ||
-            plug == displayRenderGuidesAttr) {
+            plug == drawRenderPurposeAttr ||
+            plug == drawProxyPurposeAttr ||
+            plug == drawGuidePurposeAttr) {
         // If the attribute that needs to be computed is one of these, then it
         // does not affect the ouput stage data, but it *does* affect imaging
         // the shape. In that case, we notify Maya that the shape needs to be
@@ -661,7 +676,7 @@ UsdMayaProxyShape::boundingBox() const
     UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
     MDataBlock dataBlock = nonConstThis->forceCache();
     dataBlock.inputValue(outStageDataAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, MBoundingBox() );
+    CHECK_MSTATUS_AND_RETURN(status, MBoundingBox());
 
     // XXX:
     // If we could cheaply determine whether a stage only has static geometry,
@@ -677,52 +692,46 @@ UsdMayaProxyShape::boundingBox() const
         return cacheLookup->second;
     }
 
-    GfBBox3d allBox;
     UsdPrim prim = usdPrim();
-    if (prim) {
-        UsdGeomImageable imageablePrim( prim );
-        bool showGuides = displayGuides();
-        bool showRenderGuides = displayRenderGuides();
-        if (showGuides && showRenderGuides) {
-            allBox = imageablePrim.ComputeUntransformedBound(
-                currTime,
-                UsdGeomTokens->default_,
-                UsdGeomTokens->proxy,
-                UsdGeomTokens->guide,
-                UsdGeomTokens->render);
-        } else if (showGuides && !showRenderGuides) {
-            allBox = imageablePrim.ComputeUntransformedBound(
-                currTime,
-                UsdGeomTokens->default_,
-                UsdGeomTokens->proxy,
-                UsdGeomTokens->guide);
-        } else if (!showGuides && showRenderGuides) {
-            allBox = imageablePrim.ComputeUntransformedBound(
-                currTime,
-                UsdGeomTokens->default_,
-                UsdGeomTokens->proxy,
-                UsdGeomTokens->render);
-        } else {
-            allBox = imageablePrim.ComputeUntransformedBound(
-                currTime,
-                UsdGeomTokens->default_,
-                UsdGeomTokens->proxy);
-        }
-    } else {
+    if (!prim) {
         return MBoundingBox();
     }
 
-    MBoundingBox &retval = nonConstThis->_boundingBoxCache[currTime];
+    const UsdGeomImageable imageablePrim(prim);
 
-    GfRange3d boxRange = allBox.ComputeAlignedBox();
-    // Convert to GfRange3d to MBoundingBox
-    if ( !boxRange.IsEmpty() ) {
-        retval = MBoundingBox( MPoint( boxRange.GetMin()[0],
-                                       boxRange.GetMin()[1],
-                                       boxRange.GetMin()[2]),
-                               MPoint( boxRange.GetMax()[0],
-                                       boxRange.GetMax()[1],
-                                       boxRange.GetMax()[2]) );
+    bool drawRenderPurpose = false;
+    bool drawProxyPurpose = true;
+    bool drawGuidePurpose = false;
+    _GetDrawPurposeToggles(
+        dataBlock,
+        &drawRenderPurpose,
+        &drawProxyPurpose,
+        &drawGuidePurpose);
+
+    const TfToken purpose1 = UsdGeomTokens->default_;
+    const TfToken purpose2 =
+        drawRenderPurpose ? UsdGeomTokens->render : TfToken();
+    const TfToken purpose3 =
+        drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
+    const TfToken purpose4 =
+        drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
+
+    const GfBBox3d allBox = imageablePrim.ComputeUntransformedBound(
+        currTime,
+        purpose1,
+        purpose2,
+        purpose3,
+        purpose4);
+
+    MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
+
+    const GfRange3d boxRange = allBox.ComputeAlignedBox();
+    if (!boxRange.IsEmpty()) {
+        const GfVec3d boxMin = boxRange.GetMin();
+        const GfVec3d boxMax = boxRange.GetMax();
+        retval = MBoundingBox(
+            MPoint(boxMin[0], boxMin[1], boxMin[2]),
+            MPoint(boxMax[0], boxMax[1], boxMax[2]));
     }
 
     return retval;
@@ -877,45 +886,37 @@ UsdMayaProxyShape::_GetExcludePrimPaths(MDataBlock dataBlock) const
 }
 
 bool
-UsdMayaProxyShape::displayGuides() const
-{
-    return _GetDisplayGuides( const_cast<UsdMayaProxyShape*>(this)->forceCache() );
-}
-
-bool
-UsdMayaProxyShape::_GetDisplayGuides(MDataBlock dataBlock) const
+UsdMayaProxyShape::_GetDrawPurposeToggles(
+        MDataBlock dataBlock,
+        bool* drawRenderPurpose,
+        bool* drawProxyPurpose,
+        bool* drawGuidePurpose) const
 {
     MStatus status;
-    bool retValue = true;
 
-    MDataHandle displayGuidesHandle =
-        dataBlock.inputValue(displayGuidesAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, true );
+    MDataHandle drawRenderPurposeHandle =
+        dataBlock.inputValue(drawRenderPurposeAttr, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-    retValue = displayGuidesHandle.asBool();
+    MDataHandle drawProxyPurposeHandle =
+        dataBlock.inputValue(drawProxyPurposeAttr, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-    return retValue;
-}
+    MDataHandle drawGuidePurposeHandle =
+        dataBlock.inputValue(drawGuidePurposeAttr, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-bool
-UsdMayaProxyShape::displayRenderGuides() const
-{
-    return _GetDisplayRenderGuides( const_cast<UsdMayaProxyShape*>(this)->forceCache() );
-}
+    if (drawRenderPurpose) {
+        *drawRenderPurpose = drawRenderPurposeHandle.asBool();
+    }
+    if (drawProxyPurpose) {
+        *drawProxyPurpose = drawProxyPurposeHandle.asBool();
+    }
+    if (drawGuidePurpose) {
+        *drawGuidePurpose = drawGuidePurposeHandle.asBool();
+    }
 
-bool
-UsdMayaProxyShape::_GetDisplayRenderGuides(MDataBlock dataBlock) const
-{
-    MStatus status;
-    bool retValue = true;
-
-    MDataHandle displayRenderGuidesHandle =
-        dataBlock.inputValue(displayRenderGuidesAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, true );
-
-    retValue = displayRenderGuidesHandle.asBool();
-
-    return retValue;
+    return true;
 }
 
 bool
@@ -924,20 +925,26 @@ UsdMayaProxyShape::GetAllRenderAttributes(
         SdfPathVector* excludePrimPathsOut,
         int* complexityOut,
         UsdTimeCode* timeOut,
-        bool* guidesOut,
-        bool* renderGuidesOut)
+        bool* drawRenderPurpose,
+        bool* drawProxyPurpose,
+        bool* drawGuidePurpose)
 {
     MDataBlock dataBlock = forceCache();
 
-    *usdPrimOut = _GetUsdPrim( dataBlock );
-    if (!usdPrimOut->IsValid())
+    *usdPrimOut = _GetUsdPrim(dataBlock);
+    if (!usdPrimOut->IsValid()) {
         return false;
+    }
 
-    *excludePrimPathsOut = _GetExcludePrimPaths( dataBlock );
-    *complexityOut = _GetComplexity( dataBlock );
-    *timeOut = _GetTime( dataBlock );
-    *guidesOut = _GetDisplayGuides( dataBlock );
-    *renderGuidesOut = _GetDisplayRenderGuides( dataBlock );
+    *excludePrimPathsOut = _GetExcludePrimPaths(dataBlock);
+    *complexityOut = _GetComplexity(dataBlock);
+    *timeOut = _GetTime(dataBlock);
+
+    _GetDrawPurposeToggles(
+        dataBlock,
+        drawRenderPurpose,
+        drawProxyPurpose,
+        drawGuidePurpose);
 
     return true;
 }

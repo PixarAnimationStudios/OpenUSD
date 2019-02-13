@@ -42,7 +42,6 @@ pxr_library(tf
         expiryNotifier
         fastCompression
         fileUtils
-        flyweight
         getenv
         hash
         iterator
@@ -308,7 +307,6 @@ pxr_build_test(testTf
         testenv/envSetting.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
-        testenv/flyweight.cpp
         testenv/getenv.cpp
         testenv/hash.cpp
         testenv/iterator.cpp
@@ -481,9 +479,6 @@ pxr_register_test(TfFileUtils_Python
 pxr_register_test(TfStringUtils_Python
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfStringUtils"
-)
-pxr_register_test(TfFlyweight
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFlyweight"
 )
 pxr_register_test(TfGetenv
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfGetenv"

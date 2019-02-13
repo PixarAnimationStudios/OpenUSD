@@ -57,13 +57,25 @@ PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(
         UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     UsdGeomNurbsCurves primSchema =
         UsdGeomNurbsCurves::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(primSchema);
+    if (!TF_VERIFY(
+            primSchema,
+            "Could not define UsdGeomNurbsCurves at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
     _usdPrim = primSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomNurbsCurves at path '%s'\n",
+            primSchema.GetPath().GetText())) {
+        return;
+    }
 }
 
 /* virtual */
@@ -110,35 +122,37 @@ PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
 
     // Get curve attrs ======
     unsigned int numCurves = 1; // Assuming only 1 curve for now
-    VtArray<int> curveOrder(numCurves);
-    VtArray<int> curveVertexCounts(numCurves);
-    VtArray<float> curveWidths(numCurves);
-    VtArray<GfVec2d> ranges(numCurves);
+    VtIntArray curveOrder(numCurves);
+    VtIntArray curveVertexCounts(numCurves);
+    VtFloatArray curveWidths(numCurves);
+    VtVec2dArray ranges(numCurves);
 
     curveOrder[0] = curveFn.degree()+1;
     curveVertexCounts[0] = curveFn.numCVs();
-    TF_AXIOM(curveOrder[0] <= curveVertexCounts[0] );
+    if (!TF_VERIFY(curveOrder[0] <= curveVertexCounts[0])) {
+        return false;
+    }
     curveWidths[0] = 1.0; // TODO: Retrieve from custom attr
 
     double mayaKnotDomainMin;
     double mayaKnotDomainMax;
     status = curveFn.getKnotDomain(mayaKnotDomainMin, mayaKnotDomainMax);
-    TF_AXIOM(status == MS::kSuccess);
+    CHECK_MSTATUS_AND_RETURN(status, false);
     ranges[0][0] = mayaKnotDomainMin;
     ranges[0][1] = mayaKnotDomainMax;
 
     MPointArray mayaCurveCVs;
     status = curveFn.getCVs(mayaCurveCVs, MSpace::kObject);
-    TF_AXIOM(status == MS::kSuccess);
-    VtArray<GfVec3f> points(mayaCurveCVs.length()); // all CVs batched together
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    VtVec3fArray points(mayaCurveCVs.length()); // all CVs batched together
     for (unsigned int i=0; i < mayaCurveCVs.length(); i++) {
         points[i].Set(mayaCurveCVs[i].x, mayaCurveCVs[i].y, mayaCurveCVs[i].z);
     }
 
     MDoubleArray mayaCurveKnots;
     status = curveFn.getKnots(mayaCurveKnots);
-    TF_AXIOM(status == MS::kSuccess);
-    VtArray<double> curveKnots(mayaCurveKnots.length() + 2); // all knots batched together
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    VtDoubleArray curveKnots(mayaCurveKnots.length() + 2); // all knots batched together
     for (unsigned int i = 0; i < mayaCurveKnots.length(); i++) {
         curveKnots[i + 1] = mayaCurveKnots[i];
     }
@@ -153,7 +167,7 @@ PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     }
 
     // Gprim
-    VtArray<GfVec3f> extent(2);
+    VtVec3fArray extent(2);
     UsdGeomCurves::ComputeExtent(points, curveWidths, &extent);
     _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
 

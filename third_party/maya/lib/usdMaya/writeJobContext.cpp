@@ -207,7 +207,9 @@ UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
 UsdMayaWriteJobContext::_ExportAndRefPaths
 UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) const
 {
-    TF_AXIOM(mInstancesPrim);
+    if (!TF_VERIFY(mInstancesPrim)) {
+        return _ExportAndRefPaths();
+    }
 
     std::string fullName;
     if (mArgs.stripNamespaces){
@@ -271,6 +273,11 @@ UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath
                 _GetInstanceMasterPaths(allInstances[0]);
         const SdfPath& exportPath = masterPaths.first;
         const SdfPath& referencePath = masterPaths.second;
+
+        if (exportPath.IsEmpty()) {
+            _objectsToMasterPaths[handle] = _ExportAndRefPaths();
+            return _ExportAndRefPaths();
+        }
 
         // Export the master's hierarchy.
         // Force un-instancing when exporting to avoid an infinite loop (we've
@@ -449,7 +456,34 @@ UsdMayaWriteJobContext::_PostProcess()
         if (_objectsToMasterWriters.empty()) {
             mStage->RemovePrim(mInstancesPrim.GetPrimPath());
         } else {
+            // The InstanceSources group should be an over and moved to the
+            // end of the layer.
             mInstancesPrim.SetSpecifier(SdfSpecifierOver);
+
+            // We need to drop down to the Sdf level to reorder root prims.
+            // (Note that we want to change the actual order in the layer, and
+            // not just author a reorder statement.)
+            const SdfPath instancesPrimPath = mInstancesPrim.GetPrimPath();
+            SdfPrimSpecHandleVector newRootPrims;
+            SdfPrimSpecHandle instancesPrimSpec;
+            for (const SdfPrimSpecHandle& rootPrimSpec :
+                    mStage->GetRootLayer()->GetRootPrims()) {
+                if (rootPrimSpec->GetPath() == instancesPrimPath) {
+                    instancesPrimSpec = rootPrimSpec;
+                }
+                else {
+                    newRootPrims.push_back(rootPrimSpec);
+                }
+            }
+            if (instancesPrimSpec) {
+                newRootPrims.push_back(instancesPrimSpec);
+                mStage->GetRootLayer()->SetRootPrims(newRootPrims);
+            }
+            else {
+                TF_CODING_ERROR("Expected to find <%s> in the root prims; "
+                        "was it moved or removed?",
+                        instancesPrimPath.GetText());
+            }
         }
     }
 

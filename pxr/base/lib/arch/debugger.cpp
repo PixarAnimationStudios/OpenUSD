@@ -263,7 +263,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     // newly created process group leader exits, we have to ignore SIGHUP.
     //
     // Note: BSD systems use ioctl(fd, TIOCNOTTY, NULL) to disable
-    // controlling terminals, but Mac OSX appears to have a working
+    // controlling terminals, but macOS appears to have a working
     // setsid() call so I've used it.
     //
     signal(SIGHUP, SIG_IGN);

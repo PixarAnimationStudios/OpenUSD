@@ -115,12 +115,34 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredPrimvars", &UsdGeomPrimvarsAPI::GetAuthoredPrimvars,
              return_value_policy<TfPySequenceToList>())
-        .def("FindInheritedPrimvars", &UsdGeomPrimvarsAPI::FindInheritedPrimvars,
+        .def("GetPrimvarsWithValues", &UsdGeomPrimvarsAPI::GetPrimvarsWithValues,
              return_value_policy<TfPySequenceToList>())
-        .def("FindInheritedPrimvar", &UsdGeomPrimvarsAPI::FindInheritedPrimvar,
-             arg("name"))
+        .def("GetPrimvarsWithAuthoredValues", 
+             &UsdGeomPrimvarsAPI::GetPrimvarsWithAuthoredValues,
+             return_value_policy<TfPySequenceToList>())
+        .def("FindInheritablePrimvars", 
+             &UsdGeomPrimvarsAPI::FindInheritablePrimvars,
+             return_value_policy<TfPySequenceToList>())
+        .def("FindIncrementallyInheritablePrimvars", 
+             &UsdGeomPrimvarsAPI::FindIncrementallyInheritablePrimvars,
+             (arg("inheritedFromAncestors")),
+             return_value_policy<TfPySequenceToList>())
+        .def("FindPrimvarWithInheritance", 
+             (UsdGeomPrimvar (UsdGeomPrimvarsAPI::*)(const TfToken&) const)&UsdGeomPrimvarsAPI::FindPrimvarWithInheritance,
+             (arg("name")))
+        .def("FindPrimvarWithInheritance", 
+             (UsdGeomPrimvar (UsdGeomPrimvarsAPI::*)(const TfToken&, const std::vector<UsdGeomPrimvar>&) const)&UsdGeomPrimvarsAPI::FindPrimvarWithInheritance,
+             (arg("name"), arg("inheritedFromAncestors")))
+        .def("FindPrimvarsWithInheritance", 
+             (std::vector<UsdGeomPrimvar> (UsdGeomPrimvarsAPI::*)() const)&UsdGeomPrimvarsAPI::FindPrimvarsWithInheritance,
+             return_value_policy<TfPySequenceToList>())
+        .def("FindPrimvarsWithInheritance", 
+             (std::vector<UsdGeomPrimvar> (UsdGeomPrimvarsAPI::*)(const std::vector<UsdGeomPrimvar>&) const)&UsdGeomPrimvarsAPI::FindPrimvarsWithInheritance,
+             (arg("inheritedFromAncestors")),
+             return_value_policy<TfPySequenceToList>())
         .def("HasPrimvar", &UsdGeomPrimvarsAPI::HasPrimvar, arg("name"))
-        .def("HasInheritedPrimvar", &UsdGeomPrimvarsAPI::HasInheritedPrimvar,
+        .def("HasPossiblyInheritedPrimvar", 
+             &UsdGeomPrimvarsAPI::HasPossiblyInheritedPrimvar,
              arg("name"))
         ;
 }

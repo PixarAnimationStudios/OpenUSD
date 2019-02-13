@@ -62,8 +62,8 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// In addition to its value type, an Attribute has two other defining
 /// qualities:
 /// \li <b>Variability</b> Expresses whether an attribute is intended to
-/// have time samples (GetVariability() == SdfVariabilityVarying), or only
-/// a default (GetVariability() == SdfVariabilityUniform).  For more on
+/// have time samples (GetVariability() == \c SdfVariabilityVarying), or only
+/// a default (GetVariability() == \c SdfVariabilityUniform).  For more on
 /// reasoning about time samples, 
 /// see \ref Usd_AttributeValueMethods "Value & Time-Sample Accessors".
 ///
@@ -117,7 +117,7 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// authored values.
 ///
 /// Linear interpolation is only supported for certain data types.  See 
-/// USD_LINEAR_INTERPOLATION_TYPES for the list of these types.  Types 
+/// \ref USD_LINEAR_INTERPOLATION_TYPES for the list of these types.  Types 
 /// that do not support linear interpolation will use held interpolation 
 /// instead.
 ///
@@ -125,6 +125,40 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// and matrix data types.  If linear interpolation is requested for
 /// two array values with different sizes, held interpolation will
 /// be used instead.
+///
+/// \section Usd_AttributeBlocking Attribute Value Blocking
+///
+/// While prims can effectively be removed from a scene by
+/// \ref Usd_ActiveInactive "deactivating them," properties cannot.  However,
+/// it is possible to **block an attribute's value**, thus making the attribute
+/// behave as if it has a definition (and possibly metadata), but no authored
+/// value.  
+/// 
+///
+/// One blocks an attribute using UsdAttribute::Block(), which will block the
+/// attribute in the stage's current UsdEditTarget, by authoring an
+/// SdfValueBlock in the attribute's *default*, and only values authored in
+/// weaker layers than the editTarget will be blocked.  If the value block is
+/// the strongest authored opinion for the attribute, the HasAuthoredValue()
+/// method will return *false*, and the HasValue() and Get() methods will
+/// only return *true* if the attribute possesses a fallback value from the
+/// prim's schema.  "Unblocking" a blocked attribute is as simple as setting
+/// a *default* or timeSample value for the attribute in the same or stronger
+/// layer.
+///
+/// \subsection Usd_TimeVaryingAttributeBlocks Time-varying Blocks
+///
+/// The semantics of \ref Usd_ValueClips_Overview "Value Clips" necessitate
+/// the ability to selectively block an attribute's value for only some intervals
+/// in its authored range of samples.  One can block an attribute's value at
+/// time *t* by calling `attr.Set(SdfValueBlock, t)` When an attribute is thusly
+/// "partially blocked", UsdAttribute::Get() will succeed only for those time
+/// intervals whose left/earlier bracketing timeSample is **not** SdfValueBlock.
+///
+/// Due to this time-varying potential of value blocking, it may be the case 
+/// that an attribute's  HasAuthoredValue() and HasValue() methods both return
+/// *true* (because they do not and cannot consider time-varying blocks), but
+/// Get() may yet return *false* over some intervals.
 ///
 /// \section Usd_AssetPathValuedAttributes Attributes of type SdfAssetPath and UsdAttribute::Get()
 ///
@@ -326,14 +360,28 @@ public:
                                   bool* hasTimeSamples) const;
 
     /// Return true if this attribute has an authored default value, authored
-    /// time samples or a fallback value provided by a registered schema.
+    /// time samples or a fallback value provided by a registered schema. If
+    /// the attribute has been \ref Usd_AttributeBlocking "blocked", then
+    /// return `true` if and only if it has a fallback value.
     USD_API
     bool HasValue() const;
 
+    /// \deprecated This method is deprecated because it returns `true` even when
+    /// an attribute is blocked.  Please use HasAuthoredValue() instead.  If 
+    /// you truly need to know whether the attribute has **any** authored
+    /// value opinions, *including blocks*, you can make the following query:
+    /// `attr.GetResolveInfo().HasAuthoredValueOpinion()`
+    ///
     /// Return true if this attribute has either an authored default value or
     /// authored time samples.
     USD_API
     bool HasAuthoredValueOpinion() const;
+
+    /// Return true if this attribute has either an authored default value or
+    /// authored time samples.  If the attribute has been 
+    /// \ref Usd_AttributeBlocking "blocked", then return `false`
+    USD_API
+    bool HasAuthoredValue() const;
 
     /// Return true if this attribute has a fallback value provided by 
     /// a registered schema.
@@ -385,6 +433,7 @@ public:
     /// retrieve resolved asset paths from SdfAssetPath-valued attributes.
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
+        static_assert(!std::is_const<T>::value, "");
         static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         return _Get(value, time);
     }
@@ -437,8 +486,8 @@ public:
     USD_API
     bool Clear() const;
 
-    /// Clears the authored value for this attribute at the given 
-    /// \a time, at the current EditTarget and returns true on success. 
+    /// Clear the authored value for this attribute at the given 
+    /// \a time, at the current EditTarget and return true on success. 
     /// UsdTimeCode::Default() can be used to clear the default value.
     ///
     /// Calling clear when either no value is authored or no spec is present,
@@ -450,12 +499,12 @@ public:
     USD_API
     bool ClearDefault() const;
 
-    /// Removes all time samples on an attribute and sets a block
-    /// value as the default. See \c SdfValueBlock for more information
-    /// on the type being authored. This value covers all lower opinions
-    /// in the LayerStack. During value resolution, if a block is authored,
-    /// if there is a fallback, the client will receive that, otherwise they
-    /// will receive false when calling Get(). 
+    /// Remove all time samples on an attribute and author a *block*
+    /// \c default value. This causes the attribute to resolve as 
+    /// if there were no authored value opinions in weaker layers.
+    ///
+    /// See \ref Usd_AttributeBlocking for more information, including
+    /// information on time-varying blocking.
     USD_API
     void Block() const;
 

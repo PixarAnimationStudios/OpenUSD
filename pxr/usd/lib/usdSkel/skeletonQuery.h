@@ -145,6 +145,16 @@ public:
                                     UsdTimeCode time,
                                     bool atRest=false) const;
 
+    /// Compute joint transforms which, when concatenated against the rest pose,
+    /// produce joint transforms in joint-local space. More specifically, this
+    /// computes *restRelativeTransform* in:
+    /// \code
+    ///     restRelativeTransform * restTransform = jointLocalTransform
+    /// \endcode
+    USDSKEL_API
+    bool ComputeJointRestRelativeTransforms(VtMatrix4dArray* xforms,
+                                            UsdTimeCode time) const;
+
     /// Compute joint transforms in world space, at whatever time is configured
     /// on \p xfCache.
     /// This is equivalent to computing skel-space joint transforms with

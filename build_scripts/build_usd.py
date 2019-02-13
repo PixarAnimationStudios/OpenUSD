@@ -26,6 +26,7 @@ from distutils.spawn import find_executable
 import argparse
 import contextlib
 import datetime
+import distutils
 import fnmatch
 import glob
 import multiprocessing
@@ -74,43 +75,89 @@ def Linux():
 def MacOS():
     return platform.system() == "Darwin"
 
+def GetCommandOutput(command):
+    """Executes the specified command and returns output or None."""
+    try:
+        return subprocess.check_output(
+            shlex.split(command), stderr=subprocess.STDOUT).strip()
+    except subprocess.CalledProcessError:
+        pass
+    return None
+
 def GetXcodeDeveloperDirectory():
     """Returns the active developer directory as reported by 'xcode-select -p'.
     Returns None if none is set."""
     if not MacOS():
         return None
 
-    try:
-        return subprocess.check_output("xcode-select -p").strip()
-    except subprocess.CalledProcessError:
-        pass
-    return None
+    return GetCommandOutput("xcode-select -p")
 
 def GetVisualStudioCompilerAndVersion():
     """Returns a tuple containing the path to the Visual Studio compiler
-    and a tuple for its version, e.g. (19, 00, 24210). If the compiler is
-    not found, returns None."""
+    and a tuple for its version, e.g. (14, 0). If the compiler is not found
+    or version number cannot be determined, returns None."""
     if not Windows():
         return None
 
     msvcCompiler = find_executable('cl')
     if msvcCompiler:
+        # VisualStudioVersion environment variable should be set by the
+        # Visual Studio Command Prompt.
         match = re.search(
-            "Compiler Version (\d+).(\d+).(\d+)", 
-            subprocess.check_output("cl", stderr=subprocess.STDOUT))
+            "(\d+).(\d+)", 
+            os.environ.get("VisualStudioVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
-
 def IsVisualStudio2017OrGreater():
-    MSVC_2017_COMPILER_VERSION = (19, 10, 00000)
+    VISUAL_STUDIO_2017_VERSION = (15, 0)
     msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
     if msvcCompilerAndVersion:
         _, version = msvcCompilerAndVersion
-        return version >= MSVC_2017_COMPILER_VERSION
+        return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
+def GetPythonLibraryAndIncludeDir():
+    """Returns tuple containing the path to the Python shared library
+    and include directory corresponding to the version of python on
+    the users PATH. Returns None if either directory could not be
+    determined. This function always returns None on Windows or Linux.
+
+    This function is primarily used to determine which version of
+    Python USD should link against when multiple versions are installed.
+    """
+    # We just skip all this on Windows. The call to get_config_var('LIBDIR')
+    # doesn't work on Windows, so we'd have to find some other way to get
+    # the same information. But, users on Windows are unlikely to have 
+    # multiple copies of the same version of Python, so the problem this 
+    # function is intended to solve doesn't arise on that platform.
+    if Windows():
+        return None
+
+    # We also skip all this on Linux. The below code gets the wrong answer on 
+    # certain distributions like Ubuntu, which organizes libraries based on 
+    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
+    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
+    # this function is intended to solve primarily occurs on macOS, so it's
+    # simpler to just skip this for now.
+    if Linux():
+        return None
+
+    cmd = ("import distutils.sysconfig; "
+           "print distutils.sysconfig.get_python_inc()")
+    pythonIncludeDir = GetCommandOutput("python -c '{}'".format(cmd))
+
+    cmd = ("import distutils.sysconfig; "
+           "print distutils.sysconfig.get_config_var(\"LIBDIR\")")
+    pythonLibPath = GetCommandOutput("python -c '{}'".format(cmd))
+    if pythonLibPath:
+        pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.dylib")
+
+    if pythonIncludeDir and pythonLibPath:
+        return (pythonLibPath, pythonIncludeDir)
+
+    return None
 
 def GetCPUCount():
     try:
@@ -417,16 +464,10 @@ class PythonDependency(object):
     def Exists(self, context):
         # If one of the modules in our list exists we are good
         for moduleName in self.moduleNames:
-            try:
-                # Eat all output; we just care if the import succeeded or not.
-                subprocess.check_output(shlex.split(
-                    'python -c "import {module}"'.format(module=moduleName)),
-                    stderr=subprocess.STDOUT)
+            cmd = "python -c 'import {module}'".format(module=moduleName)
+            if GetCommandOutput(cmd) != None:
                 return True
-            except subprocess.CalledProcessError:
-                pass
         return False
-
 
 def AnyPythonDependencies(deps):
     return any([type(d) is PythonDependency for d in deps])
@@ -464,8 +505,6 @@ elif Windows():
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
 
-
-
 def InstallBoost(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -494,22 +533,25 @@ def InstallBoost(context, force, buildArgs):
             'threading=multi', 
             'variant=release',
             '--with-atomic',
-            '--with-date_time',
-            '--with-filesystem',
             '--with-program_options',
-            '--with-regex',
-            '--with-system',
-            '--with-thread'
+            '--with-regex'
         ]
 
         if context.buildPython:
             b2_settings.append("--with-python")
 
+        if context.buildKatana or context.buildOIIO:
+            b2_settings.append("--with-date_time")
+            b2_settings.append("--with-system")
+            b2_settings.append("--with-thread")
+
+        if context.buildOIIO:
+            b2_settings.append("--with-filesystem")
+
         if force:
             b2_settings.append("-a")
 
         if Windows():
-
             if IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
             else:
@@ -766,6 +808,32 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
                          "include/OpenImageIO/oiioversion.h")
 
 ############################################################
+# OpenColorIO
+
+# Note that we use v1.1.0 instead of the minimum required v1.0.9
+# because v1.0.9 has problems building on macOS and Windows.
+OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+
+def InstallOpenColorIO(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
+        extraArgs = ['-DOCIO_BUILD_TRUELIGHT=OFF',
+                     '-DOCIO_BUILD_APPS=OFF',
+                     '-DOCIO_BUILD_NUKE=OFF',
+                     '-DOCIO_BUILD_DOCS=OFF',
+                     '-DOCIO_BUILD_TESTS=OFF',
+                     '-DOCIO_BUILD_PYGLUE=OFF',
+                     '-DOCIO_BUILD_JNIGLUE=OFF',
+                     '-DOCIO_STATIC_JNIGLUE=OFF']
+
+        # Add on any user-specified extra arguments.
+        extraArgs += buildArgs
+
+        RunCMake(context, force, extraArgs)
+
+OPENCOLORIO = Dependency("OpenColorIO", InstallOpenColorIO,
+                         "include/OpenColorIO/OpenColorABI.h")
+
+############################################################
 # OpenSubdiv
 
 OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_1_1.zip"
@@ -918,6 +986,23 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+
+            # CMake has trouble finding the library and include directories
+            # when there are multiple versions of Python installed. This
+            # can lead to crashes due to USD being linked against one
+            # version of Python but running through some other Python
+            # interpreter version. This primarily shows up on macOS, as it's
+            # common to have a Python install that's separate from the one
+            # included with the system.
+            #
+            # To avoid this, we try to determine these paths from Python
+            # itself rather than rely on CMake's heuristics.
+            pyLibPathAndIncPath = GetPythonLibraryAndIncludeDir()
+            if pyLibPathAndIncPath:
+                extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
+                                 .format(pyLibPath=pyLibPathAndIncPath[0]))
+                extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
+                                 .format(pyIncPath=pyLibPathAndIncPath[1]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -956,6 +1041,11 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=OFF')
                 
+            if context.buildOCIO:
+                extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=OFF')
+
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -1176,6 +1266,12 @@ subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true",
                       help="Build OpenImageIO plugin for USD")
 subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false",
                       help="Do not build OpenImageIO plugin for USD (default)")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--opencolorio", dest="build_ocio", action="store_true", 
+                      default=False,
+                      help="Build OpenColorIO plugin for USD")
+subgroup.add_argument("--no-opencolorio", dest="build_ocio", action="store_false",
+                      help="Do not build OpenColorIO plugin for USD (default)")
 
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1318,6 +1414,7 @@ class InstallContext:
         self.embreeLocation = (os.path.abspath(args.embree_location)
                                if args.embree_location else None)
         self.buildOIIO = args.build_oiio
+        self.buildOCIO = args.build_ocio
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -1396,6 +1493,9 @@ if context.buildImaging:
     
     if context.buildOIIO:
         requiredDependencies += [JPEG, TIFF, PNG, OPENIMAGEIO]
+
+    if context.buildOCIO:
+        requiredDependencies += [OPENCOLORIO]
                              
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
@@ -1515,6 +1615,7 @@ Building with settings:
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenImageIO support:      {buildOIIO} 
+      OpenColorIO support:      {buildOCIO} 
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
@@ -1561,6 +1662,7 @@ summaryMsg = summaryMsg.format(
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
+    buildOCIO=("On" if context.buildOCIO else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
@@ -1657,5 +1759,3 @@ if context.buildKatana:
 if context.buildHoudini:
     Print("See documentation at http://openusd.org/docs/Houdini-USD-Plugins.html "
           "for setting up the Houdini plugin.\n")
-    
-    

@@ -1,6 +1,6 @@
 {
     "Types" : {
         "MoverBend::MultiMode" : {
-            "isSdValueType": true,
+            "isMenvaPluginType": true,
         }
     }

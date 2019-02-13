@@ -74,14 +74,6 @@ UsdImagingGLHydraMaterialAdapter::IsSupported(
     return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
-bool
-UsdImagingGLHydraMaterialAdapter::IsPopulatedIndirectly()
-{
-    // Materials are populated as a consequence of populating a prim
-    // which uses the material.
-    return true;
-}
-
 SdfPath
 UsdImagingGLHydraMaterialAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
@@ -401,6 +393,11 @@ UsdImagingGLHydraMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                TfToken const& propertyName)
 {
+    if (propertyName == UsdGeomTokens->visibility) {
+        // Materials aren't affected by visibility
+        return HdChangeTracker::Clean;
+    }
+
     // XXX: This doesn't get notifications for dependent nodes.
     return HdChangeTracker::AllDirty;
 }

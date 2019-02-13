@@ -23,12 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
+from pxr import UsdMaya
 
 from pxr import Sdf
 

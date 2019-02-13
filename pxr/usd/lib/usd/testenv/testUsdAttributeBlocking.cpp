@@ -92,7 +92,7 @@ _CheckDefaultNotBlocked(UsdAttribute& attr, const T expectedValue)
     TF_AXIOM(value == expectedValue);
     TF_AXIOM(untypedValue.UncheckedGet<T>() == expectedValue);
     TF_AXIOM(attr.HasValue());
-    TF_AXIOM(attr.HasAuthoredValueOpinion());
+    TF_AXIOM(attr.HasAuthoredValue());
 }
 
 template <typename T>
@@ -102,13 +102,15 @@ _CheckDefaultBlocked(UsdAttribute& attr)
     T value;
     VtValue untypedValue;
     UsdAttributeQuery query(attr);
+    UsdResolveInfo info = attr.GetResolveInfo();
 
     TF_AXIOM(!attr.Get<T>(&value));
     TF_AXIOM(!query.Get<T>(&value));
     TF_AXIOM(!attr.Get(&untypedValue));
     TF_AXIOM(!query.Get(&untypedValue));
     TF_AXIOM(!attr.HasValue());
-    TF_AXIOM(attr.HasAuthoredValueOpinion());
+    TF_AXIOM(!attr.HasAuthoredValue());
+    TF_AXIOM(info.HasAuthoredValueOpinion());
 }
 
 template <typename T>

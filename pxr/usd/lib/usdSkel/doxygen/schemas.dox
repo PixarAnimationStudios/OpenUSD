@@ -272,14 +272,20 @@ When a mesh is skinned in UsdSkel, blend shape application precedes the effect
 of skinning using joint transformations. If no in-between shapes are defined,
 a set of blend shapes is applied against an input point as follows:
 
-\f[
+\htmlonly
+<img src="blendshapes.svg"
+ alt="
     P' = P +\sum_i{w_ib_i} \\
     \text{where:} \\
     \begin{align*}
        b_i    &= \text{Position offset of shape } i \\
        P      &= \text{Initial point being deformed}
     \end{align*}
-\f]
+ " />
+\endhtmlonly
+\if TRICK_DOXYGEN_INTO_COPYING_IMAGES
+\image html ../images/blendshapes.svg width=0 height=0
+\endif
 
 In other words, the position offsets are multiplied against the corresponding
 weight value, and added against the input positions. Note that the above
@@ -318,7 +324,7 @@ The in-between shapes themselves are encoded as attributes in the 'inbetweens:'
 namespace, using the 'weight' metadata field to indicate the weight value
 at which they apply.
 
-The in-between shapes corresponding to \f$weight = 0\f$ and \f$weight = 1\f$
+The in-between shapes corresponding to `weight = 0` and `weight = 1`
 are **implicitly** defined on a blend shape. The former defines the null shape,
 for which all shape offset are zero, while the latter is the shape given by the
 _offsets_ property of the UsdSkelBlendShape primitive.
@@ -339,7 +345,9 @@ continue to process the blend shape while ignoring the malformed in-betweens.
 If we consider only the set of valid in-betweens, a set of blend shapes
 containing in-betweens are applied to a point as follows:
 
-\f[
+\htmlonly
+<img src="blendshapesWithInbetweens.svg"
+ alt="
     P' = P + \sum_i{ [b_l(1 - \frac{w_i-\alpha_l}{\alpha_u-\alpha_l}) +
                      b_u\frac{w_i-\alpha_l}{\alpha_u-\alpha_l}] } \\
     \text{where:} \\
@@ -348,26 +356,32 @@ containing in-betweens are applied to a point as follows:
         w_i      &= \text{Weight value of blendshape } i \\
         b_i      &= \text{Position offsets of blendshape } i \\
         \alpha_i &= \text{Weight location of in-between blendshape } i \\
-        l        &= \text{The index of the nearest weight with weight }
-                          \leq w \text{, or the index of the in-between with
-                          the lowest weight value otherwise} \\
-        u        &= \text{The index of the next in-between with weight }
-                          \geq w_l, l \neq u \\
+        l        &= \text{The index of the nearest weight with weight } \leq w, \\
+                 & \text{or the index of the in-between with  the lowest weight value otherwise} \\
+        u        &= \text{The index of the next in-between with weight} \geq w_l, l \neq u \\
     \end{align*}
- \f]
+ " />
+\endhtmlonly
+\if TRICK_DOXYGEN_INTO_COPYING_IMAGES
+\image html ../images/blendshapesWithInbetweens.svg width=0 height=0
+\endif
 
-For example, given in-between weights of \f$[0.25, 0.5]\f$, if a blendshape
+For example, given in-between weights of `[0.25, 0.5]`, if a blendshape
 weight is greater than 0.5, we interpolate between the shape at 0.5 and the
-implicit primary shape (\f$weight = 1\f$), adding the result to the base shape.
-If the weight is in the \f$[0.25,0.5]\f$ interval, we interpolate between the
+implicit primary shape (`weight = 1`), adding the result to the base shape.
+If the weight is in the `[0.25,0.5]` interval, we interpolate between the
 shapes at 0.25 and 0.5, adding the result to the base shape. Finally, if the
 weight is less than 0.25, we interpolate between the implicit null shape
-(\f$weight = 0\f$) and the shape at 0.25. Note also that this interpolation
+(`weight = 0`) and the shape at 0.25. Note also that this interpolation
 is _unbounded_, so if the input weight is, say, -0.25, then we have:
-\f[
-    (1 - \frac{w_i-\alpha_l}{\alpha_u-\alpha_l}) = (1 - \frac{-0.25 - 0}{0.25 - 0}) = 2 \\
-    \frac{w_i-\alpha_l}{\alpha_u-\alpha_l} = \frac{-0.25 - 0}{0.25 - 0} = -1
-\f]
+
+\htmlonly
+<img src="unboundedInterpolationExample.svg"
+ alt ="\frac{w_i-\alpha_l}{\alpha_u-\alpha_l} = \frac{-0.25 - 0}{0.25 - 0} = -1" />
+\endhtmlonly
+\if TRICK_DOXYGEN_INTO_COPYING_IMAGES
+\image html ../images/unboundedInterpolationExample.svg width=0 height=0
+\endif
 
 So at a weight value of -0.25, the shape at 0.25 is applied with a weight of -1.
    
@@ -500,7 +514,9 @@ The primvar's _elementSize_ defines the fixed number of influences for each
 point.
 
 _elementSize_ of the primvar. I.e.,
-\f[
+\htmlonly
+<img src="influencesPrimvarLayout.svg"
+ alt="
     \begin{bmatrix}
         w(point_0,influence_0) & w(point_0,influence_1) & \dots & w(point_0,influnce_M) \\
         w(point_1,influence_1) & \dots & & w(point_1,influence_M) \\
@@ -513,7 +529,11 @@ _elementSize_ of the primvar. I.e.,
         M        &= \text{primvar elementSize} \\
         N        &= \text{number of points}
     \end{align*}
-\f]
+ " />
+\endhtmlonly
+\if TRICK_DOXYGEN_INTO_COPYING_IMAGES
+\image html ../images/influencesPrimvarLayout.svg width=0 height=0
+\endif
 
 If a point has fewer influences than are needed for other points, the unused
 array elements of that point should be filled with 0, both for joint indices

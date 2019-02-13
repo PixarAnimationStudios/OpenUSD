@@ -1236,7 +1236,7 @@ void ArchFileAdvise(
 #if defined(ARCH_OS_WINDOWS)
     // No windows implementation yet.  Not clear what's equivalent.
 #elif defined(ARCH_OS_DARWIN)
-    // No OSX implementation; posix_fadvise does not exist on that platform.
+    // No macOS implementation; posix_fadvise does not exist on that platform.
 #else // assume POSIX
     // This must follow ArchFileAdvice exactly.
     int adviceMap[] = {

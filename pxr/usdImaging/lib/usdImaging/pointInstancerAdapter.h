@@ -54,9 +54,9 @@ public:
         UsdImagingIndexProxy* index,
         UsdImagingInstancerContext const* instancerContext = NULL) override;
 
-    virtual bool ShouldCullChildren(UsdPrim const& prim) override { return true; }
+    virtual bool ShouldCullChildren() const override;
 
-    virtual bool IsInstancerAdapter() override { return true; }
+    virtual bool IsInstancerAdapter() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -186,6 +186,14 @@ public:
                                 SdfPath const &path,
                                 VtIntArray const &instanceIndices,
                                 HdSelectionSharedPtr const &result) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Volume field information
+    // ---------------------------------------------------------------------- //
+
+    virtual HdVolumeFieldDescriptorVector
+    GetVolumeFieldDescriptors(UsdPrim const& usdPrim, SdfPath const &id,
+                              UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 

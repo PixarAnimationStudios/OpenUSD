@@ -135,7 +135,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         if lightTypeName == 'DomeLight':
             # PxrDomeLight has no normalize attribute
             self.assertFalse(
-                lightSchema.GetNormalizeAttr().HasAuthoredValueOpinion())
+                lightSchema.GetNormalizeAttr().HasAuthoredValue())
         else:
             expectedNormalize = True
             self.assertEqual(lightSchema.GetNormalizeAttr().Get(),
@@ -347,7 +347,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         # Shadows are enabled by default, and we author sparsely, so there
         # should NOT be an opinion.
         self.assertFalse(
-            shadowAPI.GetShadowEnableAttr().HasAuthoredValueOpinion())
+            shadowAPI.GetShadowEnableAttr().HasAuthoredValue())
 
         expectedShadowColor = Gf.Vec3f(0.5)
         self.assertTrue(Gf.IsClose(shadowAPI.GetShadowColorAttr().Get(),

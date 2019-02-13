@@ -1680,4 +1680,43 @@ GusdGU_USD::MultTransformableAttrs(GU_Detail& gd,
     return !task.wasInterrupted();
 }
 
+
+bool
+GusdGU_USD::ImportPrimUnpacked(GU_Detail& gd,
+                               const UsdPrim& prim,
+                               UsdTimeCode time,
+                               const char* lod,
+                               GusdPurposeSet purpose,
+                               const char* primvarPattern,
+                               const UT_Matrix4D* xform)
+{
+    if (prim) {
+
+        // Create a packed prim on a temporary detail.
+        
+        GU_Detail tmpGd;
+
+        if (auto* packedPrim =
+            GusdGU_PackedUSD::Build(tmpGd, prim, time, lod, purpose, xform)) {
+            
+            const GusdGU_PackedUSD* impl = 
+                dynamic_cast<const GusdGU_PackedUSD*>(
+                    packedPrim->implementation());
+            UT_ASSERT_P(impl);
+
+            // Unpack the prims.
+            
+#if SYS_VERSION_FULL_INT >= 0x11000000
+            UT_Matrix4D xform;
+            packedPrim->getFullTransform4(xform);
+
+            return impl->unpackGeometry(gd, primvarPattern, &xform);
+#else
+            return impl->unpackGeometry(gd, primvarPattern);
+#endif
+        }
+    }
+    return false;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

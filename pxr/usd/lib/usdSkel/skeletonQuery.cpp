@@ -163,6 +163,74 @@ UsdSkelSkeletonQuery::_ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
 }
 
 
+namespace {
+
+/// Compute `out = a * b`.
+void
+_MultTransforms(const GfMatrix4d* a,
+                const GfMatrix4d* b,
+                GfMatrix4d* out,
+                size_t count)
+{
+    for (size_t i = 0; i < count; ++i) {    
+        out[i] = a[i] * b[i];
+    }
+}
+
+} // namespace
+
+
+bool
+UsdSkelSkeletonQuery::ComputeJointRestRelativeTransforms(
+    VtMatrix4dArray* xforms, UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' pointer is null.");
+        return false;
+    }
+
+    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+        if (_HasMappableAnim()) {
+            // jointLocalXf = restRelativeXf * restXf
+            // restRelativeXf = jointLocalXf * inv(restXf)
+
+            // Pull inverse rest transforms first
+            // They are cached on the definition.
+            VtMatrix4dArray invRestXforms;
+            if (_definition->GetJointLocalInverseRestTransforms(
+                    &invRestXforms)) {
+
+                VtMatrix4dArray localXforms;
+                if (_ComputeJointLocalTransforms(
+                        &localXforms, time, /*atRest*/ false)) {
+                    if (TF_VERIFY(localXforms.size() == invRestXforms.size())) {
+                        
+                        xforms->resize(localXforms.size());
+
+                        _MultTransforms(localXforms.cdata(),
+                                        invRestXforms.cdata(),
+                                        xforms->data(), xforms->size());
+                        return true;
+                    }
+                }
+            } else {
+                TF_WARN("%s -- Failed computing rest-relative transforms: "
+                        "the 'restTransforms' of the Skeleton are either unset, "
+                        "or do not have a matching number of joints.",
+                        GetSkeleton().GetPrim().GetPath().GetText());
+            }
+        } else {
+            // No bound animation, so rest relative transforms are identity.
+            xforms->assign(GetTopology().GetNumJoints(), GfMatrix4d(1));
+            return true;
+        }
+    }
+    return false;
+}
+
+
 bool
 UsdSkelSkeletonQuery::ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
                                                   UsdGeomXformCache* xfCache,

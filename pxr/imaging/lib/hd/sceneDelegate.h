@@ -217,6 +217,15 @@ struct HdExtComputationInputDescriptor {
     : name(name_), sourceComputationId(sourceComputationId_)
     , sourceComputationOutputName(sourceComputationOutputName_)
     { }
+
+    bool operator==(HdExtComputationInputDescriptor const& rhs) const {
+        return name == rhs.name &&
+               sourceComputationId == rhs.sourceComputationId &&
+               sourceComputationOutputName == rhs.sourceComputationOutputName;
+    }
+    bool operator!=(HdExtComputationInputDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 typedef std::vector<HdExtComputationInputDescriptor>
@@ -238,6 +247,14 @@ struct HdExtComputationOutputDescriptor {
         HdTupleType const & valueType_)
     : name(name_), valueType(valueType_)
     { }
+
+    bool operator==(HdExtComputationOutputDescriptor const& rhs) const {
+        return name == rhs.name &&
+               valueType == rhs.valueType;
+    }
+    bool operator!=(HdExtComputationOutputDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 typedef std::vector<HdExtComputationOutputDescriptor>
@@ -622,6 +639,12 @@ public:
     virtual HdExtComputationPrimvarDescriptorVector
     GetExtComputationPrimvarDescriptors(SdfPath const& id,
                                         HdInterpolation interpolationMode);
+
+    /// Returns a single value for a given computation id and input token.
+    /// The token may be a computation input or a computation config parameter.
+    HD_API
+    virtual VtValue GetExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input);
 
     /// Returns the kernel source assigned to the computation at the path id.
     /// If the string is empty the computation has no GPU kernel and the

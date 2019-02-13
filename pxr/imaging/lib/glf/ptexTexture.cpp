@@ -316,7 +316,7 @@ GlfPtexTexture::GetTextureInfo(bool forceLoad)
     info["depth"] = (int)_depth;
     info["format"] = (int)_format;
     info["imageFilePath"] = _imageFilePath;
-    info["referenceCount"] = GetRefCount().Get();
+    info["referenceCount"] = GetCurrentCount();
 
     return info;
 }

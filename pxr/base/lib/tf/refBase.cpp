@@ -34,6 +34,17 @@ TfRefBase::~TfRefBase()
 {
 }
 
+void
+TfRefBase::SetUniqueChangedListener(UniqueChangedListener listener)
+{
+    if (_uniqueChangedListener.lock ||
+        _uniqueChangedListener.func ||
+        _uniqueChangedListener.unlock) {
+        TF_FATAL_ERROR("Setting an already set UniqueChangedListener");
+    }
+    _uniqueChangedListener = listener;
+}
+
 TfSimpleRefBase::~TfSimpleRefBase()
 {
 }

@@ -35,6 +35,7 @@
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include <FnAPI/FnAPI.h>
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 #include <FnGeolib/util/Path.h>
 #include <FnLogging/FnLogging.h>
@@ -42,6 +43,10 @@
 #include <boost/unordered_set.hpp>
 
 #include <pystring/pystring.h>
+
+#if KATANA_VERSION_MAJOR >= 3
+#include "vtKatana/array.h"
+#endif // KATANA_VERSION_MAJOR >= 3
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -270,10 +275,9 @@ PxrUsdKatanaReadPointInstancer(
         data.GetMotionSampleTimes(positionsAttr);
     const size_t sampleCount = motionSampleTimes.size();
     std::vector<UsdTimeCode> sampleTimes(sampleCount);
-    for (size_t a = 0; a < sampleCount; ++a)
-    {
-        sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
-    }
+    std::transform(motionSampleTimes.begin(), motionSampleTimes.end(), 
+                   sampleTimes.begin(), [currentTime](double motionSampleTime){
+                        return UsdTimeCode(currentTime + motionSampleTime);});
 
     std::vector<VtArray<GfMatrix4d>> xformSamples(sampleCount);
 
@@ -334,6 +338,8 @@ PxrUsdKatanaReadPointInstancer(
     omitList.reserve(numInstances);
 
     std::map<SdfPath, std::string> protoPathsToKatPaths;
+
+    
 
     for (size_t i = 0; i < numInstances; ++i)
     {
@@ -552,6 +558,23 @@ PxrUsdKatanaReadPointInstancer(
                     FnKat::IntAttribute(&instanceIndices[0],
                             instanceIndices.size(), 1));
 
+#if KATANA_VERSION_MAJOR >= 3
+    // If motion is backwards, make sure to reverse time samples.
+    std::vector<float> attrSampleTimes(motionSampleTimes.size());
+    std::transform(motionSampleTimes.begin(), motionSampleTimes.end(),
+        attrSampleTimes.begin(), [&data](double relSampleTime){
+            return data.IsMotionBackward()
+                ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                : relSampleTime;
+        });
+    if (data.IsMotionBackward()){
+        std::reverse(attrSampleTimes.begin(), attrSampleTimes.end());
+        std::reverse(xformSamples.begin(), xformSamples.end());
+    }
+    auto instanceMatrixAttr = VtKatanaMapOrCopy(attrSampleTimes, xformSamples);
+    instancesBldr.setAttrAtLocation("instances",
+            "geometry.instanceMatrix", instanceMatrixAttr);
+#else
     FnKat::DoubleBuilder instanceMatrixBldr(16);
     for (size_t a = 0; a < numXformSamples; ++a) {
 
@@ -577,6 +600,7 @@ PxrUsdKatanaReadPointInstancer(
     }
     instancesBldr.setAttrAtLocation("instances",
             "geometry.instanceMatrix", instanceMatrixBldr.build());
+#endif // KATANA_VERSION_MAJOR > 3
 
     if (!omitList.empty())
     {

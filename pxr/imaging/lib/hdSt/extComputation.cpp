@@ -104,7 +104,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
     HdBufferSourceVector inputs;
     for (TfToken const & inputName: GetSceneInputNames()) {
-        VtValue inputValue = sceneDelegate->Get(GetId(), inputName);
+        VtValue inputValue = sceneDelegate->GetExtComputationInput(
+                                                GetId(), inputName);
         size_t arraySize =
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
         HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(

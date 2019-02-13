@@ -523,7 +523,7 @@ bool PxrUsdTranslators_MeshWriter::_addDisplayPrimvars(
     // have to set an empty array.
     // If we already have an authored value, don't try to write a new one.
     UsdAttribute colorAttr = primSchema.GetDisplayColorAttr();
-    if (!colorAttr.HasAuthoredValueOpinion() && (!RGBData.empty() || !assignmentIndices.empty())) {
+    if (!colorAttr.HasAuthoredValue() && (!RGBData.empty() || !assignmentIndices.empty())) {
         UsdGeomPrimvar displayColor = primSchema.CreateDisplayColorPrimvar();
         if (interpolation != displayColor.GetInterpolation()) {
             displayColor.SetInterpolation(interpolation);
@@ -551,7 +551,7 @@ bool PxrUsdTranslators_MeshWriter::_addDisplayPrimvars(
     }
 
     UsdAttribute alphaAttr = primSchema.GetDisplayOpacityAttr();
-    if (!alphaAttr.HasAuthoredValueOpinion() && (!AlphaData.empty() || !assignmentIndices.empty())) {
+    if (!alphaAttr.HasAuthoredValue() && (!AlphaData.empty() || !assignmentIndices.empty())) {
         // we consider a single alpha value that is 1.0 to be the "default"
         // value.  We only want to write values that are not the "default".
         bool hasDefaultAlpha = AlphaData.size() == 1 && GfIsClose(AlphaData[0], 1.0, 1e-9);
@@ -788,7 +788,9 @@ PxrUsdTranslators_MeshWriter::_CleanupPrimvars()
 
         // If the unauthoredValueIndex wasn't 0 above, it must be -1 (the
         // fallback value in USD).
-        TF_AXIOM(unauthoredValueIndex == -1);
+        if (!TF_VERIFY(unauthoredValueIndex == -1)) {
+            return;
+        }
 
         // Since the unauthoredValueIndex is -1, we never explicitly set it,
         // meaning that none of the samples contain an unassigned value.

@@ -97,8 +97,6 @@ TF_DECLARE_PUBLIC_TOKENS(
     (verbose) \
     /* Special "none" token */ \
     (none) \
-    /* Default name for parent prim of exported materials */ \
-    ((DefaultMaterialsScopeName, "Looks")) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \

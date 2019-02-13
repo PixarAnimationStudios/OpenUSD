@@ -113,10 +113,17 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
     UsdPrim materialPrim = usdPrim.GetStage()->GetPrimAtPath(materialPath);
 
     if (materialPrim) {
-       UsdImagingPrimAdapterSharedPtr materialAdapter =
-           index->GetMaterialAdapter(materialPrim);
-        if (materialAdapter) {
-            materialAdapter->Populate(materialPrim, index, nullptr);
+        if (materialPrim.IsA<UsdShadeMaterial>()) {
+            UsdImagingPrimAdapterSharedPtr materialAdapter =
+                index->GetMaterialAdapter(materialPrim);
+            if (materialAdapter) {
+                materialAdapter->Populate(materialPrim, index, nullptr);
+            }
+        } else {
+            TF_WARN("Gprim <%s> has illegal material reference to "
+                    "prim <%s> of type (%s)", usdPrim.GetPath().GetText(),
+                    materialPrim.GetPath().GetText(),
+                    materialPrim.GetTypeName().GetText());
         }
     }
 
@@ -210,6 +217,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                    instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
+    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
+
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
+        VtValue& points = valueCache->GetPoints(cachePath);
+        points = GetPoints(prim, cachePath, time);
+
+        // Expose points as a primvar.
+        _MergePrimvar(
+            &primvars,
+            HdTokens->points,
+            HdInterpolationVertex,
+            HdPrimvarRoleTokens->point);
+    }
 
     SdfPath usdMaterialPath;
     if (requestedBits & (HdChangeTracker::DirtyPrimvar |
@@ -231,7 +251,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetColor(cachePath) =
             GetColorAndOpacity(prim, time, &interpToken);
         _MergePrimvar(
-            &valueCache->GetPrimvars(cachePath),
+            &primvars,
             HdTokens->color,
             _UsdToHdInterpolation(interpToken),
             HdPrimvarRoleTokens->color);
@@ -239,26 +259,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         if (_GetMaterialBindingPurpose() == HdTokens->full) {
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
-            // for the list of primvars.
-            UsdGeomPrimvarsAPI primvars(gprim);
-
-            // Local (non-inherited) primvars
-            for (auto const &pv: primvars.GetPrimvars()) {
+            // for the list of primvars.  The inherited primvars from parent
+            // should really be cached and shared...
+            
+            // All primvars returned by plural Find* methods have already
+            // been verified to have some authored value
+            UsdGeomPrimvarsAPI primvars(prim);
+            for (auto const &pv: primvars.FindPrimvarsWithInheritance()) {
                 if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
                     continue;
                 }
                 _ComputeAndMergePrimvar(
                     prim, cachePath, pv, time, valueCache);
             }
-            // Inherited primvars
-            for (auto const &pv: primvars.FindInheritedPrimvars()) {
-                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
-                    continue;
-                }
-                _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, valueCache);
-            }
-
         } else {
 
             if (!usdMaterialPath.IsEmpty()) {
@@ -266,26 +279,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 // and check if they are in this prim, if so, add them to the 
                 // primvars descriptions.
                 TfTokenVector matPrimvarNames;
-                VtValue vtMaterialPrimvars;
-                if (valueCache->FindMaterialPrimvars(usdMaterialPath, 
-                        &vtMaterialPrimvars)) {
-                    if (vtMaterialPrimvars.IsHolding<TfTokenVector>()) {
-                        matPrimvarNames = 
-                            vtMaterialPrimvars.Get<TfTokenVector>();
-                    }
-                }
+                valueCache->FindMaterialPrimvars(usdMaterialPath, 
+                                                 &matPrimvarNames);
 
                 UsdGeomPrimvarsAPI primvars(gprim);
                 for (auto const &pvName : matPrimvarNames) {
                     if (_IsBuiltinPrimvar(pvName)) {
                         continue;
                     }
-                    UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
-                    if (!pv) {
-                        // If not found, try as inherited primvar.
-                        pv = primvars.FindInheritedPrimvar(pvName);
-                    }
-                    if (pv) {
+                    // XXX If we can cache inheritable primvars at each 
+                    // non-leaf prim, then we can use the overload that keeps
+                    // us from needing to search up ancestors.
+                    UsdGeomPrimvar pv = primvars.FindPrimvarWithInheritance(pvName);
+                    if (pv.HasValue()) {
                         _ComputeAndMergePrimvar(
                             prim, cachePath, pv, time, valueCache);
                     }
@@ -407,6 +413,26 @@ UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
     // Hydra doesn't currently manage detection and propagation of these
     // changes, so we must mark the rprim dirty.
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
+}
+
+/*virtual*/
+VtValue
+UsdImagingGprimAdapter::GetPoints(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  UsdTimeCode time) const
+{
+    TF_UNUSED(cachePath);
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    VtVec3fArray points;
+    if (!prim.GetAttribute(UsdGeomTokens->points).Get(&points, time)) {
+        TF_WARN("Points could not be read from prim: <%s>",
+                prim.GetPath().GetText());
+        points = VtVec3fArray();
+    }
+
+    return VtValue(points);
 }
 
 // -------------------------------------------------------------------------- //

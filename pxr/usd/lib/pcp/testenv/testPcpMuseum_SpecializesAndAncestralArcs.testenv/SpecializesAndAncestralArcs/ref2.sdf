@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def "Ref2" (
+    inherits = </Class>
+)
+{
+}
+
+class "Class"
+{
+}

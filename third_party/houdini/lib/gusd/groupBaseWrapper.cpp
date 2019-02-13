@@ -44,12 +44,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #undef drand48
 #undef srand48
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::vector;
-using std::string;
-
 #ifdef DEBUG
 #define DBG(x) x
 #else

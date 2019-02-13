@@ -388,7 +388,7 @@ GfGetLength(GfVec4h const &v)
 inline GfHalf
 GfNormalize(GfVec4h *v, GfHalf eps = 0.001)
 {
-    return v->Normalize();
+    return v->Normalize(eps);
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.

@@ -161,7 +161,9 @@ HdChangeTracker::ResetVaryingState()
 
     // reset all variability bit
     TF_FOR_ALL (it, _rprimState) {
-        it->second &= ~Varying;
+        if (IsClean(it->second)) {
+            it->second &= ~Varying;
+        }
     }
 }
 

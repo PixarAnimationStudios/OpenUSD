@@ -146,6 +146,13 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("SetEnableFloatPointDrawTarget", 
+                    &UsdImagingGLEngine::SetEnableFloatPointDrawTarget)
+            .def("SetColorCorrectionSettings", 
+                    &UsdImagingGLEngine::SetColorCorrectionSettings)
+            .def("IsColorCorrectionCapable", 
+                &UsdImagingGLEngine::IsColorCorrectionCapable)
+                .staticmethod("IsColorCorrectionCapable")
         ;
 
     }

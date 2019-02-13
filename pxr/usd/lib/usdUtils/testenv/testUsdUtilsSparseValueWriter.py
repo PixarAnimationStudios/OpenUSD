@@ -33,11 +33,11 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         # Test scalar valued attribute.
         attr = scope.GetPrim().CreateAttribute("attr", typeName)
-        self.assertFalse(attr.HasAuthoredValueOpinion())
+        self.assertFalse(attr.HasAuthoredValue())
 
         valueWriter = UsdUtils.SparseAttrValueWriter(attr, 
                 defaultValue=defaultValue)
-        self.assertTrue(attr.HasAuthoredValueOpinion())
+        self.assertTrue(attr.HasAuthoredValue())
 
         valueType = type(defaultValue)
         valueWriter.SetTimeSample(value=valueType(10.), time=0.0)
@@ -59,11 +59,11 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         # Test array valued attribute.
         arrayAttr = scope.GetPrim().CreateAttribute("arrayAttr", arrayTypeName)
-        self.assertFalse(arrayAttr.HasAuthoredValueOpinion())
+        self.assertFalse(arrayAttr.HasAuthoredValue())
         
         arrayValueWriter = UsdUtils.SparseAttrValueWriter(arrayAttr, 
                 defaultValue=[defaultValue, defaultValue])
-        self.assertTrue(arrayAttr.HasAuthoredValueOpinion())
+        self.assertTrue(arrayAttr.HasAuthoredValue())
 
         arrayValueWriter.SetTimeSample(value=[valueType(10.), valueType(10.)], 
                                        time=0.0)
@@ -142,11 +142,11 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         # Test scalar valued quat attribute.
         attr = scope.GetPrim().CreateAttribute("quat", typeName)
-        self.assertFalse(attr.HasAuthoredValueOpinion())
+        self.assertFalse(attr.HasAuthoredValue())
 
         valueWriter = UsdUtils.SparseAttrValueWriter(attr, 
                 defaultValue=defaultValue)
-        self.assertTrue(attr.HasAuthoredValueOpinion())
+        self.assertTrue(attr.HasAuthoredValue())
 
         valueType = type(defaultValue)
         realType = type(defaultValue.GetReal())
@@ -183,11 +183,11 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         # Test array valued quats.
         arrayAttr = scope.GetPrim().CreateAttribute("arrayQuat", arrayTypeName)
-        self.assertFalse(arrayAttr.HasAuthoredValueOpinion())
+        self.assertFalse(arrayAttr.HasAuthoredValue())
         
         arrayValueWriter = UsdUtils.SparseAttrValueWriter(arrayAttr, 
                 defaultValue=[defaultValue, defaultValue])
-        self.assertTrue(arrayAttr.HasAuthoredValueOpinion())
+        self.assertTrue(arrayAttr.HasAuthoredValue())
 
         arrayValueWriter.SetTimeSample(
                 value=[valueType(realType(10.), imaginaryType(10.0)), 
@@ -250,7 +250,7 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         # Default value isn't authored into scene description since it matches
         # the fallback value of radius.
-        self.assertFalse(radius.HasAuthoredValueOpinion())
+        self.assertFalse(radius.HasAuthoredValue())
 
         attrValueWriter.SetTimeSample(10.0, 1.0)
         attrValueWriter.SetTimeSample(10.0, 2.0)
@@ -273,12 +273,12 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         # Default value isn't authored for the height attribute into scene
         # description since it matches the fallback value of height.
-        self.assertFalse(height.HasAuthoredValueOpinion())
+        self.assertFalse(height.HasAuthoredValue())
 
         # Default value is authored for the radius attribute into scene
         # description since it does not match the fallback value of radius, 
         # which is 1.0.
-        self.assertTrue(radius.HasAuthoredValueOpinion())
+        self.assertTrue(radius.HasAuthoredValue())
 
         self.assertEqual(radius.Get(), 2.0)
         # Calling SetAttribute again with time-Default will update the default
@@ -305,11 +305,11 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
 
         attr1 = scope.GetPrim().CreateAttribute("attr1", 
                 Sdf.ValueTypeNames.Float)
-        self.assertFalse(attr1.HasAuthoredValueOpinion())
+        self.assertFalse(attr1.HasAuthoredValue())
 
         attrValueWriter = UsdUtils.SparseAttrValueWriter(attr1)
         # No default value was specified. So no authored value yet.
-        self.assertFalse(attr1.HasAuthoredValueOpinion())
+        self.assertFalse(attr1.HasAuthoredValue())
 
         attrValueWriter.SetTimeSample(10.0, time=10.0)
         # Authoring an earlier time-sample than the previous one results in 

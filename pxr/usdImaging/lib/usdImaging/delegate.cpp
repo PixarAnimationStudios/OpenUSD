@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -666,12 +667,15 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                             iter->GetPath().GetText());
                 continue;
             }
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(*iter)) {
+                iter.PruneChildren();
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
+                            "due to prim type <%s>\n",
+                            iter->GetPath().GetText(),
+                            iter->GetTypeName().GetText());
+                continue;
+            }
             if (_AdapterSharedPtr adapter = _AdapterLookup(*iter)) {
-                // We delay populating some parts of the scene (e.g. material)
-                // until they are needed by some other prim.
-                if (adapter->IsPopulatedIndirectly()) {
-                    continue;
-                }
                 // Schedule the prim for population and discovery
                 // of material bindings.
                 //
@@ -683,7 +687,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                  bindingDispatcher.Run(wu);
                 
                 leafPaths.push_back(std::make_pair(*iter, adapter));
-                if (adapter->ShouldCullChildren(*iter)) {
+                if (adapter->ShouldCullChildren()) {
                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned "
                                     "children of <%s> due to adapter\n",
                             iter->GetPath().GetText());
@@ -758,7 +762,6 @@ UsdImagingDelegate::Populate(std::vector<UsdImagingDelegate*> const& delegates,
         UsdImagingIndexProxy indexProxy(delegates[i], &worker);
         indexProxy.Repopulate(rootPrims[i].GetPath());
 
-        delegates[i]->GetRenderIndex().GetChangeTracker().ResetVaryingState();
         delegates[i]->_Populate(&indexProxy);
     }
 
@@ -1059,9 +1062,25 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
             // See additional notes around instancerPath use below for why this
             // is needed.
             if (_instancerPrimPaths.find(curPrim.GetPath()) 
-                                                != _instancerPrimPaths.end()) {
+                    != _instancerPrimPaths.end()) {
                 instancerPath = curPrim.GetPath();
                 prunedByParent = true;
+            }
+
+            // Check for type-based pruning opinions.
+            // XXX: If the path-to-resync is a geom subset, that skips regular
+            // type-based pruning. It would be nice to not have to special-case
+            // this...
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(curPrim) &&
+                !(curPrim == prim && prim.IsA<UsdGeomSubset>())) {
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
+                    "Discovery of new prims below <%s> pruned by "
+                    "prim type of <%s>: (%s)\n",
+                    rootPath.GetText(),
+                    curPrim.GetPath().GetText(),
+                    curPrim.GetTypeName().GetText());
+                prunedByParent = true;
+                break;
             }
 
             _PrimInfo *primInfo = GetPrimInfo(curPrim.GetPath());
@@ -1074,7 +1093,7 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                           curPrim.GetPath().GetText())) {
                 _AdapterSharedPtr &adapter = primInfo->adapter;
 
-                if (adapter->ShouldCullChildren(prim)) {
+                if (adapter->ShouldCullChildren()) {
                     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
                            "Discovery of new prims below <%s> pruned by "
                            "adapter of <%s>\n",
@@ -1098,6 +1117,32 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 const UsdPrim &usdPrim = *iter;
                 _PrimInfo *primInfo = GetPrimInfo(usdPrim.GetPath());
 
+                // Special case for adding UsdGeomSubset prims (which do not
+                // get an adapter); resync the containing mesh.
+                if (iter->IsA<UsdGeomSubset>()) {
+                    UsdPrim parentPrim = iter->GetParent();
+                    TF_DEBUG(USDIMAGING_CHANGES)
+                        .Msg("[Resync Prim]: Populating <%s> on behalf "
+                             "of subset <%s>\n",
+                             parentPrim.GetPath().GetText(),
+                             iter->GetPath().GetText());
+                    proxy->Repopulate(parentPrim.GetPath());
+                    iter.PruneChildren();
+                    continue;
+                }
+
+                // Check if this prim (& subtree) should be pruned based on
+                // prim type.
+                if (UsdImagingPrimAdapter::ShouldCullSubtree(usdPrim)) {
+                    iter.PruneChildren();
+                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
+                        "[Re]population of subtree <%s> pruned by prim type "
+                        "(%s)\n",
+                        usdPrim.GetPath().GetText(),
+                        usdPrim.GetTypeName().GetText());
+                    continue;
+                }
+
                 // If this prim in the tree wants to prune children, we must
                 // respect that and ignore any additions under this descendant.
                 if (primInfo != nullptr  &&
@@ -1105,7 +1150,7 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                               usdPrim.GetPath().GetText())) {
                     _AdapterSharedPtr &adapter = primInfo->adapter;
 
-                    if (adapter->ShouldCullChildren(usdPrim)) {
+                    if (adapter->ShouldCullChildren()) {
                         iter.PruneChildren();
                         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
                                 "[Re]population of children of <%s> pruned by "
@@ -1119,25 +1164,9 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // because the prim just came into existence.
                 _AdapterSharedPtr adapter = _AdapterLookup(*iter);
                 if (!adapter) {
-                    // Special case for adding UsdGeomSubset prims
-                    // (which do not get an adapter); resync the
-                    // containing mesh.
-                    if (UsdGeomSubset(*iter)) {
-                        UsdPrim parentPrim = iter->GetParent();
-                        adapter = _AdapterLookup(parentPrim);
-                        TF_DEBUG(USDIMAGING_CHANGES)
-                            .Msg("[Resync Prim]: Populating <%s> on behalf "
-                                 "of subset <%s>\n",
-                                 parentPrim.GetPath().GetText(),
-                                 iter->GetPath().GetText());
-                        proxy->Repopulate(parentPrim.GetPath());
-                        iter.PruneChildren();
-                        continue;
-                    } else {
-                        // This prim has no prim adapter, continue traversing
-                        // descendants.    
-                        continue;
-                    }
+                    // This prim has no prim adapter, continue traversing
+                    // descendants.    
+                    continue;
                 }
 
                 // This prim has an adapter, but wasn't in our adapter map, so
@@ -2791,14 +2820,10 @@ UsdImagingDelegate::GetMaterialPrimvars(SdfPath const &materialId)
     }
 
     SdfPath usdPath = GetPathForUsd(materialId);
+    TfTokenVector materialPrimvars;
+    _valueCache.FindMaterialPrimvars(usdPath, &materialPrimvars);
 
-    VtValue vtMaterialPrimvars;
-    if (_valueCache.FindMaterialPrimvars(usdPath, &vtMaterialPrimvars)) {
-        if (vtMaterialPrimvars.IsHolding<TfTokenVector>()) {
-            return vtMaterialPrimvars.Get<TfTokenVector>();
-        }
-    }
-    return TfTokenVector();
+    return materialPrimvars;
 }
 
 VtDictionary
@@ -2829,6 +2854,170 @@ UsdImagingDelegate::GetMaterialMetadata(SdfPath const &materialId)
     }
 
     return value.GetWithDefault<VtDictionary>();
+}
+
+TfTokenVector
+UsdImagingDelegate::GetExtComputationSceneInputNames(
+    SdfPath const& computationId)
+{
+    HD_TRACE_FUNCTION();
+
+    SdfPath usdPath = GetPathForUsd(computationId);
+
+    TfTokenVector inputNames;
+    if (!_valueCache.ExtractExtComputationSceneInputNames(
+            usdPath, &inputNames)) {
+
+        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation input "
+                                   "descriptor fetch for %s\n", 
+                                   computationId.GetText());
+        
+        _UpdateSingleValue(usdPath, HdExtComputation::DirtyInputDesc);
+        TF_VERIFY(_valueCache.ExtractExtComputationSceneInputNames(
+                      usdPath, &inputNames));
+    }
+
+    return inputNames;
+}
+
+HdExtComputationInputDescriptorVector
+UsdImagingDelegate::GetExtComputationInputDescriptors(
+    SdfPath const& computationId)
+{
+    HD_TRACE_FUNCTION();
+
+    SdfPath usdPath = GetPathForUsd(computationId);
+
+    HdExtComputationInputDescriptorVector inputs;
+    if (!_valueCache.ExtractExtComputationInputs(usdPath, &inputs)) {
+
+        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation input "
+                                   "descriptor fetch for %s\n", 
+                                   computationId.GetText());
+        
+        _UpdateSingleValue(usdPath, HdExtComputation::DirtyInputDesc);
+        TF_VERIFY(_valueCache.ExtractExtComputationInputs(usdPath, &inputs));
+    }
+
+    return inputs;
+}
+
+HdExtComputationOutputDescriptorVector
+UsdImagingDelegate::GetExtComputationOutputDescriptors(
+    SdfPath const& computationId)
+{
+    HD_TRACE_FUNCTION();
+
+    SdfPath usdPath = GetPathForUsd(computationId);
+
+    HdExtComputationOutputDescriptorVector outputs;
+    if (!_valueCache.ExtractExtComputationOutputs(usdPath, &outputs)) {
+
+        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation output "
+                                   "descriptor fetch for %s\n", 
+                                   computationId.GetText());
+        
+        _UpdateSingleValue(usdPath, HdExtComputation::DirtyOutputDesc);
+        TF_VERIFY(_valueCache.ExtractExtComputationOutputs(usdPath, &outputs));
+    }
+
+    return outputs;
+}
+
+HdExtComputationPrimvarDescriptorVector
+UsdImagingDelegate::GetExtComputationPrimvarDescriptors(
+    SdfPath const& computationId,
+    HdInterpolation interpolation)
+{
+    HD_TRACE_FUNCTION();
+    SdfPath usdPath = GetPathForUsd(computationId);
+
+    // Filter the stored primvars to just ones of the requested type.
+    HdExtComputationPrimvarDescriptorVector primvars;
+    HdExtComputationPrimvarDescriptorVector allPrimvars;
+    if (!_valueCache.ExtractExtComputationPrimvars(usdPath, &allPrimvars)) {
+        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation primvar "
+                                   "descriptor fetch for %s\n", 
+                                   computationId.GetText());
+        
+        // XXX: May be we ought to have an additional dirty bit for this, like
+        // DirtyComputedPrimvar, rather than using DirtyPrimvar?
+        _UpdateSingleValue(usdPath, HdChangeTracker::DirtyPrimvar);
+        
+        // Don't use a verify below because it is often the case that there are
+        // no computated primvars on an rprim.
+        _valueCache.ExtractExtComputationPrimvars(usdPath, &allPrimvars);
+    }
+
+    if (allPrimvars.empty()) {
+        return primvars;
+    }
+
+    for (const auto& pv : allPrimvars) {
+        if (pv.interpolation == interpolation) {
+            primvars.push_back(pv);
+        }
+    }
+    return primvars;
+}
+
+VtValue
+UsdImagingDelegate::GetExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input)
+{
+    SdfPath usdPath = GetPathForUsd(computationId);
+    VtValue value;
+
+    if (!_valueCache.ExtractExtComputationInput(usdPath, input, &value)) {
+        TF_DEBUG(HD_SAFE_MODE).Msg(
+            "WARNING: Slow fetch for token %s for computation %s\n", 
+                            input.GetText(), computationId.GetText());
+        if (input == HdTokens->dispatchCount) {
+            _UpdateSingleValue(usdPath, HdExtComputation::DirtyDispatchCount);
+        } else if (input == HdTokens->elementCount) {
+            _UpdateSingleValue(usdPath, HdExtComputation::DirtyElementCount);
+        } else {
+            _UpdateSingleValue(usdPath, HdExtComputation::DirtySceneInput);
+        }
+
+        TF_VERIFY(_valueCache.ExtractExtComputationInput(usdPath, input, 
+                                                         &value));
+    }
+    return value;
+}
+
+std::string
+UsdImagingDelegate::GetExtComputationKernel(SdfPath const& computationId)
+{
+    HD_TRACE_FUNCTION();
+    
+    std::string kernel;
+    if (!computationId.IsEmpty()) {
+
+        SdfPath usdPath = GetPathForUsd(computationId);
+        if (!_valueCache.ExtractExtComputationKernel(usdPath, &kernel)) {
+            TF_DEBUG(HD_SAFE_MODE).Msg(
+                "WARNING: Slow extComputation kernel fetch for %s\n",
+                computationId.GetText());
+            _UpdateSingleValue(usdPath, HdExtComputation::DirtyKernel);
+            TF_VERIFY(_valueCache.ExtractExtComputationKernel(
+                          usdPath, &kernel));
+        }
+    }
+    return kernel;
+}
+
+void
+UsdImagingDelegate::InvokeExtComputation(SdfPath const& computationId,
+                                         HdExtComputationContext *context)
+{
+    _PrimInfo *primInfo = GetPrimInfo(computationId);
+
+    _PrimInfoMap::iterator it = _primInfoMap.find(computationId);
+    if (TF_VERIFY(primInfo, "%s\n", computationId.GetText()) &&
+        TF_VERIFY(primInfo->adapter, "%s\n", computationId.GetText())) {
+        primInfo->adapter->InvokeComputation(computationId, context);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

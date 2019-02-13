@@ -46,12 +46,13 @@
 #include <GT/GT_RefineParms.h>
 #include <GU/GU_PrimPacked.h>
 #include <GA/GA_Names.h>
-#include <UT/UT_HDKVersion.h>
 #include <UT/UT_Options.h>
+#include <SYS/SYS_Version.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
 #include <unordered_map>
+#include <iostream>
 
 using std::cout;
 using std::cerr;
@@ -630,7 +631,7 @@ int GusdGT_PackedUSDMesh::
 getStaticPrimitiveType() 
 {
     if( s_gtPackedUsdMeshId == GT_PRIM_UNDEFINED ) {
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000
         // XXX There appears to be a bug in 16.5 that prevents primitives
         // with custom primitive ids to refine in the viewport. As a 
         // workaround we'll use GT_PRIM_ALEMBIC_SHAPE_MESH for now.

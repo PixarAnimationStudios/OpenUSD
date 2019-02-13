@@ -64,13 +64,25 @@ PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
         UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    TF_AXIOM(GetDagPath().isValid());
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
 
     UsdGeomNurbsPatch primSchema =
         UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
-    TF_AXIOM(primSchema);
+    if (!TF_VERIFY(
+            primSchema,
+            "Could not define UsdGeomNurbsPatch at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
     _usdPrim = primSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomNurbsPatch at path '%s'\n",
+            primSchema.GetPath().GetText())) {
+        return;
+    }
 }
 
 static

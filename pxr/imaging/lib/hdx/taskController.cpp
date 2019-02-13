@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdx/colorizeTask.h"
+#include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
@@ -51,6 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (simpleLightTask)
     (shadowTask)
     (colorizeTask)
+    (colorCorrectionTask)
     (camera)
     (renderBufferDescriptor)
 );
@@ -120,6 +122,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     _CreateLightingTask();
     _CreateShadowTask();
     _CreateColorizeTask();
+    _CreateColorCorrectionTask();
 }
 
 void
@@ -226,6 +229,21 @@ HdxTaskController::_CreateColorizeTask()
         taskParams);
 }
 
+void
+HdxTaskController::_CreateColorCorrectionTask()
+{
+    _colorCorrectionTaskId = GetControllerId().AppendChild(
+        _tokens->colorCorrectionTask);
+
+    HdxColorCorrectionTaskParams taskParams;
+
+    GetRenderIndex()->InsertTask<HdxColorCorrectionTask>(&_delegate,
+        _colorCorrectionTaskId);
+
+    _delegate.SetParameter(_colorCorrectionTaskId, HdTokens->params,
+        taskParams);
+}
+
 HdxTaskController::~HdxTaskController()
 {
     GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
@@ -235,6 +253,7 @@ HdxTaskController::~HdxTaskController()
         _simpleLightTaskId,
         _shadowTaskId,
         _colorizeTaskId,
+        _colorCorrectionTaskId
     };
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         GetRenderIndex()->RemoveTask(tasks[i]);
@@ -247,14 +266,14 @@ HdxTaskController::~HdxTaskController()
     }
 }
 
-HdTaskSharedPtrVector const& 
+HdTaskSharedPtrVector const
 HdxTaskController::GetTasks()
 {
-    _tasks.clear();
+    HdTaskSharedPtrVector tasks;
 
     // Light - Only run simpleLightTask if the backend supports simpleLight...
     if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
+        tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
 
         // If shadows are enabled then we add the task to generate the 
         // shadow maps.
@@ -263,12 +282,12 @@ HdxTaskController::GetTasks()
                 _simpleLightTaskId, HdTokens->params);
 
         if (simpleLightParams.enableShadows) {
-            _tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
+            tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
         }
     }
 
     // Render
-    _tasks.push_back(GetRenderIndex()->GetTask(_renderTaskId));
+    tasks.push_back(GetRenderIndex()->GetTask(_renderTaskId));
 
     // Selection highlighting (overlay as long as this isn't an id render).
     const HdxRenderTaskParams& renderTaskParams =
@@ -276,7 +295,7 @@ HdxTaskController::GetTasks()
             _renderTaskId, HdTokens->params);
 
     if (!renderTaskParams.enableIdRender) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
+        tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
     }
 
     if (_renderBufferIds.size() > 0) {
@@ -284,11 +303,25 @@ HdxTaskController::GetTasks()
             _delegate.GetParameter<HdxColorizeTaskParams>(
                     _colorizeTaskId, HdTokens->params);
         if (!colorizeParams.aovName.IsEmpty()) {
-            _tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
+            tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
         }
     }
 
-    return _tasks;
+    // -------------------------------------------------------------------------
+    // Color-Correction - should be LAST task in the list
+    const HdxColorCorrectionTaskParams& colorCorrectionParams =
+        _delegate.GetParameter<HdxColorCorrectionTaskParams>(
+            _colorCorrectionTaskId, HdTokens->params);
+
+    bool useColorCorrect = colorCorrectionParams.colorCorrectionMode != 
+                           HdxColorCorrectionTokens->disabled &&
+                           !colorCorrectionParams.colorCorrectionMode.IsEmpty();
+
+    if (useColorCorrect) {
+        tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
+    }
+
+    return tasks;
 }
 
 SdfPath
@@ -892,6 +925,21 @@ HdxTaskController::IsConverged() const
     return static_cast<HdxRenderTask*>(
         GetRenderIndex()->GetTask(_renderTaskId).get())
         ->IsConverged();
+}
+
+void 
+HdxTaskController::SetColorCorrectionParams(
+    HdxColorCorrectionTaskParams const& params)
+{
+    HdxColorCorrectionTaskParams oldParams = 
+        _delegate.GetParameter<HdxColorCorrectionTaskParams>(
+            _colorCorrectionTaskId, HdTokens->params);
+
+    if (params != oldParams) {
+        _delegate.SetParameter(_colorCorrectionTaskId, HdTokens->params,params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -67,7 +67,7 @@ class testUsdExportDisplayColor(unittest.TestCase):
         self.assertEqual(primvar.GetInterpolation(), expectedInterpolation)
 
         if expectedValues is None:
-            self.assertFalse(primvar.GetAttr().HasAuthoredValueOpinion())
+            self.assertFalse(primvar.GetAttr().HasAuthoredValue())
             self.assertEqual(primvar.Get(), None)
         else:
             for idx in range(len(primvar.Get())):

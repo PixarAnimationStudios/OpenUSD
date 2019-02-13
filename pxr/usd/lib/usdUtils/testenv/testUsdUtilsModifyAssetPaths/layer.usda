@@ -1,0 +1,55 @@
+#usda 1.0
+
+# this is a file with asset paths in different configurations to test the
+# robustness of ModifyAssetPaths.
+(
+    subLayers = [
+        @foo.usd@,
+    ]
+)
+
+def Xform "Model" (
+    assetInfo= {
+        asset identifier = @foo.usd@
+        asset[] payloadAssetDependencies = [@foo.usd@, @bar.usd@]
+    }
+    payload = @foo.usd@</foo>
+    references = [
+        @foo.usd@</foo>, 
+        @bar.usd@
+    ]
+    customData = {
+        asset foo = @foo.usd@
+        dictionary d = {
+            asset foo = @foo.usd@
+        }
+    }
+)
+{
+    asset foo = @foo.usd@
+    asset[] bar = [
+        @foo.usd@,
+        @bar.usd@,
+    ]
+
+    asset varFoo.timeSamples = {
+        1: @foo.usd@,
+    }
+    asset[] varBar.timeSamples = {
+        1: [@foo.usd@, @bar.usd@],
+        2: [@bar.usd@, @foo.usd@],
+    }
+}
+
+def Xform "Variants" (
+     add variantSets = ["standin"]
+)
+{
+    variantSet "standin" = {
+        "render" (
+        )
+        {
+            asset foo = @foo.usd@
+        }
+    }
+}

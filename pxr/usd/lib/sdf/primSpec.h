@@ -582,26 +582,22 @@ public:
     void ClearInstanceable();
 
     /// @}
-    /// \name Payload
+    /// \name Payloads
     /// @{
 
-    /// Returns this prim spec's payload.
+    /// Returns a proxy for the prim's payloads.
     ///
-    /// The default value for payload is an empty \c SdfPayload.
+    /// Payloads for this prim may be modified through the proxy.
     SDF_API
-    SdfPayload GetPayload() const;
+    SdfPayloadsProxy GetPayloadList() const;
 
-    /// Sets this prim spec's payload.
+    /// Returns true if this prim has payloads set.
     SDF_API
-    void SetPayload(const SdfPayload& value);
+    bool HasPayloads() const;
 
-    /// Returns true if this prim spec has an opinion about payload.
+    /// Clears the payloads for this prim.
     SDF_API
-    bool HasPayload() const;
-
-    /// Remove the payload opinion from this prim spec if there is one.
-    SDF_API
-    void ClearPayload();
+    void ClearPayloadList();
 
     /// @}
     /// \name Inherits

@@ -32,8 +32,10 @@
 
 #include "pxr/usd/usd/timeCode.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -95,7 +97,9 @@ public:
     bool enableSceneMaterials;
     // Respect USD's model:drawMode attribute...
     bool enableUsdDrawModes;
-
+    GfVec4f clearColor;
+    TfToken colorCorrectionMode;
+    GfVec2i renderResolution;
 
     inline UsdImagingGLRenderParams();
 
@@ -128,7 +132,9 @@ UsdImagingGLRenderParams::UsdImagingGLRenderParams() :
     alphaThreshold(-1),
     clipPlanes(),
     enableSceneMaterials(true),
-    enableUsdDrawModes(true)
+    enableUsdDrawModes(true),
+    clearColor(0,0,0,1),
+    renderResolution(100,100)
 {
 }
 
@@ -156,7 +162,10 @@ UsdImagingGLRenderParams::operator==(const UsdImagingGLRenderParams &other)
         && alphaThreshold              == other.alphaThreshold
         && clipPlanes                  == other.clipPlanes
         && enableSceneMaterials        == other.enableSceneMaterials
-        && enableUsdDrawModes          == other.enableUsdDrawModes;
+        && enableUsdDrawModes          == other.enableUsdDrawModes
+        && clearColor                  == other.clearColor
+        && colorCorrectionMode         == other.colorCorrectionMode
+        && renderResolution            == other.renderResolution;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -291,6 +291,7 @@ typedef class SdfListOp<TfToken> SdfTokenListOp;
 typedef class SdfListOp<std::string> SdfStringListOp;
 typedef class SdfListOp<class SdfPath> SdfPathListOp;
 typedef class SdfListOp<class SdfReference> SdfReferenceListOp;
+typedef class SdfListOp<class SdfPayload> SdfPayloadListOp;
 typedef class SdfListOp<class SdfUnregisteredValue> SdfUnregisteredValueListOp;
 
 PXR_NAMESPACE_CLOSE_SCOPE

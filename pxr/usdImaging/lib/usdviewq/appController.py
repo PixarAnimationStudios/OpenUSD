@@ -59,7 +59,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
-                    RenderModes, ShadedRenderModes,
+                    RenderModes, ColorCorrectionModes, ShadedRenderModes,
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
@@ -580,6 +580,15 @@ class AppController(QtCore.QObject):
             for action in self._renderModeActions:
                 self._ui.renderModeActionGroup.addAction(action)
 
+            self._ui.colorCorrectionActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.colorCorrectionActionGroup.setExclusive(True)
+            self._colorCorrectionActions = (
+                self._ui.actionNoColorCorrection,
+                self._ui.actionSRGBColorCorrection,
+                self._ui.actionOpenColorIO)
+            for action in self._colorCorrectionActions:
+                self._ui.colorCorrectionActionGroup.addAction(action)
+
             # XXX This should be a validator in ViewSettingsDataModel.
             if self._dataModel.viewSettings.renderMode not in RenderModes:
                 fallback = str(
@@ -850,6 +859,9 @@ class AppController(QtCore.QObject):
 
             self._ui.renderModeActionGroup.triggered.connect(self._changeRenderMode)
 
+            self._ui.colorCorrectionActionGroup.triggered.connect(
+                self._changeColorCorrection)
+
             self._ui.pickModeActionGroup.triggered.connect(self._changePickMode)
 
             self._ui.selHighlightModeActionGroup.triggered.connect(
@@ -1060,6 +1072,7 @@ class AppController(QtCore.QObject):
 
         # configure render plugins after stageView initialized its renderer.
         self._configureRendererPlugins()
+        self._configureColorManagement()
 
         if self._mallocTags == 'stageAndImaging':
             DumpMallocTags(self._dataModel.stage,
@@ -1480,6 +1493,11 @@ class AppController(QtCore.QObject):
                 widget.setValue(widget.defValue)
             if isinstance(widget, QtWidgets.QLineEdit):
                 widget.setText(widget.defValue)
+
+    def _configureColorManagement(self):
+        enableMenu = (not self._noRender and 
+                      UsdImagingGL.Engine.IsColorCorrectionCapable())
+        self._ui.menuColorCorrection.setEnabled(enableMenu)
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
@@ -2070,6 +2088,9 @@ class AppController(QtCore.QObject):
 
     def _changeRenderMode(self, mode):
         self._dataModel.viewSettings.renderMode = str(mode.text())
+
+    def _changeColorCorrection(self, mode):
+        self._dataModel.viewSettings.colorCorrectionMode = str(mode.text())
 
     def _changePickMode(self, mode):
         self._dataModel.viewSettings.pickMode = str(mode.text())
@@ -2738,8 +2759,7 @@ class AppController(QtCore.QObject):
             # Create a new item.  If we want its children we obviously
             # have to create those too.
             children = self._getFilteredChildren(prim)
-            item = PrimViewItem(prim, self, len(children) != 0, 
-                                parent=self._ui.primView)
+            item = PrimViewItem(prim, self, len(children) != 0)
             self._primToItemMap[prim] = item
             self._populateChildren(item, depth, maxDepth, children)
             # Push the item after the children so ancestors are processed
@@ -3010,21 +3030,17 @@ class AppController(QtCore.QObject):
             for prim in self._dataModel.selection.getPrims()]
         if len(selectedItems) > 0:
             self._ui.primView.setCurrentItem(selectedItems[0])
-        for item in selectedItems:
-            item.setSelected(True)
-            self._ui.primView.scrollToItem(item)
+        self._ui.primView.updateSelection(selectedItems, [])
 
     def _updatePrimViewSelection(self, added, removed):
         """Do an incremental update to primView's selection using the added and
         removed prim paths from the selectionDataModel.
         """
-        for path in added:
-            item = self._getItemAtPath(path, ensureExpanded=True)
-            item.setSelected(True)
-            self._ui.primView.scrollToItem(item)
-        for path in removed:
-            item = self._getItemAtPath(path)
-            item.setSelected(False)
+        addedItems = [ 
+            self._getItemAtPath(path, ensureExpanded=True) 
+            for path in added ]
+        removedItems = [ self._getItemAtPath(path) for path in removed ]
+        self._ui.primView.updateSelection(addedItems, removedItems)
 
     def _primsFromSelectionRanges(self, ranges):
         """Iterate over all prims in a QItemSelection from primView."""
@@ -3052,15 +3068,28 @@ class AppController(QtCore.QObject):
                     self._dataModel.selection.removePrim(prim)
 
     def _itemClicked(self, item, col):
-        # toggleVis() returns True if the click caused a visibility change.
-        if col == PrimViewColumnIndex.VIS and item.toggleVis():
-            self.editComplete('Updated prim visibility')
+        # If user clicked in a selected row, we will toggle all selected items;
+        # otherwise, just the clicked one.
+        if col == PrimViewColumnIndex.VIS:
+            itemsToToggle = [ item ]
+            if item.isSelected():
+                itemsToToggle =  [
+                    self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
+                    for prim in self._dataModel.selection.getPrims()]
+            changedAny = False
             with Timer() as t:
-                PrimViewItem.propagateVis(item)
+                for toToggle in itemsToToggle:
+                    # toggleVis() returns True if the click caused a visibility
+                    # change.
+                    changedOne = toToggle.toggleVis()
+                    if changedOne:
+                        PrimViewItem.propagateVis(toToggle)
+                        changedAny = True
+            if changedAny:
+                self.editComplete('Updated prim visibility')
             if self._printTiming:
                 t.PrintTime("update vis column")
-            self._updatePropertyInspector(
-                obj=self._dataModel.selection.getFocusPrim())
+            
 
     def _itemPressed(self, item, col):
         if col == PrimViewColumnIndex.DRAWMODE:
@@ -3167,8 +3196,10 @@ class AppController(QtCore.QObject):
 
         prim = self._dataModel.selection.getFocusPrim()
         composed = _GetCustomAttributes(prim, self._dataModel)
-        inheritedPrimvars = UsdGeom.PrimvarsAPI(prim).FindInheritedPrimvars() 
+        inheritedPrimvars = UsdGeom.PrimvarsAPI(prim).FindInheritablePrimvars() 
 
+        # There may be overlap between inheritedProps and prim attributes,
+        # but that's OK because propsDict will uniquify them below
         inheritedProps = [primvar.GetAttr() for primvar in inheritedPrimvars]
         props = prim.GetAttributes() + prim.GetRelationships()  + inheritedProps
 
@@ -3374,7 +3405,7 @@ class AppController(QtCore.QObject):
         if not obj:
             # Check if it is an inherited primvar.
             inheritedPrimvar = UsdGeom.PrimvarsAPI(
-                    focusPrim).FindInheritedPrimvar(attrName)
+                    focusPrim).FindPrimvarWithInheritance(attrName)
             if inheritedPrimvar:
                 obj = inheritedPrimvar.GetAttr()
         return obj
@@ -4454,6 +4485,7 @@ class AppController(QtCore.QObject):
         actions and submenus to match the values in the ViewSettingsDataModel.
         """
         self._refreshRenderModeMenu()
+        self._refreshColorCorrectionModeMenu()
         self._refreshPickModeMenu()
         self._refreshComplexityMenu()
         self._refreshBBoxMenu()
@@ -4476,6 +4508,11 @@ class AppController(QtCore.QObject):
         for action in self._renderModeActions:
             action.setChecked(
                 str(action.text()) == self._dataModel.viewSettings.renderMode)
+
+    def _refreshColorCorrectionModeMenu(self):
+        for action in self._colorCorrectionActions:
+            action.setChecked(
+                str(action.text()) == self._dataModel.viewSettings.colorCorrectionMode)
 
     def _refreshPickModeMenu(self):
         for action in self._pickModeActions:

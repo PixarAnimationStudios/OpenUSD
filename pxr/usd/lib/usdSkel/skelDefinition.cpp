@@ -35,10 +35,11 @@ namespace {
 
 
 enum _Flags {
-    _HaveBindPose = 0x1,
-    _HaveRestPose = 0x2,
-    _SkelRestXformsComputed = 0x4,
-    _WorldInverseBindXformsComputed = 0x8
+    _HaveBindPose = 1 << 0,
+    _HaveRestPose = 1 << 1,
+    _SkelRestXformsComputed = 1 << 2,
+    _WorldInverseBindXformsComputed = 1 << 3,
+    _LocalInverseRestXformsComputed = 1 << 4
 };
 
 
@@ -188,15 +189,13 @@ UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
     int flags = _flags;
     if (flags&_HaveBindPose) {
 
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+
         if (ARCH_UNLIKELY(!(flags&_WorldInverseBindXformsComputed))) {
-
-            if (!xforms) {
-                TF_CODING_ERROR("'xforms' pointer is null.");
-                return false;
-            }
-
             _ComputeJointWorldInverseBindTransforms();
-
         }
         *xforms = _jointWorldInverseBindXforms;
         return true;
@@ -219,6 +218,42 @@ UsdSkel_SkelDefinition::_ComputeJointWorldInverseBindTransforms()
     _jointWorldInverseBindXforms = xforms;
 
     _flags = _flags|_WorldInverseBindXformsComputed;
+}
+
+
+bool
+UsdSkel_SkelDefinition::GetJointLocalInverseRestTransforms(
+    VtMatrix4dArray* xforms)
+{
+    int flags = _flags;
+    if (flags&_HaveRestPose) {
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+        }
+        if (ARCH_UNLIKELY(!(flags&_LocalInverseRestXformsComputed))) {
+            _ComputeJointLocalInverseRestTransforms();
+        }
+        *xforms = _jointLocalInverseRestXforms;
+        return true;
+    }
+    return false;
+}
+
+
+void
+UsdSkel_SkelDefinition::_ComputeJointLocalInverseRestTransforms()
+{
+    TRACE_FUNCTION();
+
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    VtMatrix4dArray xforms(_jointLocalRestXforms);
+    for (auto& xf : xforms) {
+        xf = xf.GetInverse();
+    }
+    _jointLocalInverseRestXforms = xforms;
+
+    _flags = _flags|_LocalInverseRestXformsComputed;
 }
 
 

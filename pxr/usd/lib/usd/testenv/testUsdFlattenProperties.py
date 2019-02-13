@@ -361,8 +361,8 @@ class TestUsdFlattenProperties(unittest.TestCase):
               "variability": Sdf.VariabilityVarying })
 
         # Using an instance proxy avoids this problem.
-        srcAttr = self.stage.GetPrimAtPath("/FlattenInstanceProperty/Instance2") \
-                            .GetAttribute("builtinAttr")
+        srcAttr = self.stage.GetPrimAtPath(
+            "/FlattenInstanceProperty/Instance2").GetAttribute("builtinAttr")
         dstPrim = self.stage.DefinePrim("/FlattenInstanceProperty_3",
                                         "FlattenPropertyTest")
         dstAttr = srcAttr.FlattenTo(dstPrim)
@@ -374,7 +374,7 @@ class TestUsdFlattenProperties(unittest.TestCase):
         self._VerifyExpectedFields(
             dstAttrSpec,
             { "connectionPaths": ExplicitPathListOp([
-                "/FlattenInstanceProperty_3/Instance.builtinAttr"]),
+                "/FlattenInstanceProperty/Instance.builtinAttr"]),
               "custom": False,
               "default": "instance authored value 2",
               "typeName": "string",

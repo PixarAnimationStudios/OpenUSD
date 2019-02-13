@@ -23,19 +23,16 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from pxr import UsdMaya
+
 from pxr import Tf
 
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
-
-from maya import cmds, standalone
+from maya import cmds
+from maya import standalone
 from maya import OpenMaya as OM
 
 import unittest
+
 
 class testUsdMayaReadWriteUtils(unittest.TestCase):
     @classmethod

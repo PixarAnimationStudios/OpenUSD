@@ -394,6 +394,27 @@ _PrimSetReferenceListItems(SdfListOpType opType, Sdf_TextParserContext *context)
 }
 
 static void
+_PrimSetPayloadListItems(SdfListOpType opType, Sdf_TextParserContext *context) 
+{
+    if (context->payloadParsingRefs.empty() &&
+        opType != SdfListOpTypeExplicit) {
+        Err(context, 
+            "Setting payload to None (or an empty list) is only allowed "
+            "when setting explicit payloads, not for list editing");
+        return;
+    }
+
+    TF_FOR_ALL(ref, context->payloadParsingRefs) {
+        ERROR_AND_RETURN_IF_NOT_ALLOWED(
+            context, 
+            SdfSchema::IsValidPayload(*ref));
+    }
+
+    _SetListOpItems(SdfFieldKeys->Payload, opType, 
+                    context->payloadParsingRefs, context);
+}
+
+static void
 _PrimSetVariantSetNamesListItems(SdfListOpType opType, 
                                  Sdf_TextParserContext *context)
 {
@@ -1659,15 +1680,48 @@ prim_metadata:
                 _GetPermissionFromString($3.Get<std::string>(), context), 
                 context);
         }
-    // Not parsed with generic metadata because: SdfPayload is two consecutive
-    // values
+    // Not parsed with generic metadata because: SdfListOp is not supported
     | TOK_PAYLOAD {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
-        } '=' payload_item {
-            _SetField(
-                context->path, SdfFieldKeys->Payload, 
-                SdfPayload(context->layerRefPath, context->savedPath), context);
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeExplicit, context);
+        }
+    | TOK_DELETE TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeDeleted, context);
+        }
+    | TOK_ADD TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeAdded, context);
+        }
+    | TOK_PREPEND TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypePrepended, context);
+        }
+    | TOK_APPEND TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeAppended, context);
+        }
+    | TOK_REORDER TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeOrdered, context);
         }
     // Not parsed with generic metadata because: SdfListOp is not supported
     | TOK_INHERITS {
@@ -1842,9 +1896,67 @@ prim_metadata:
         }
     ;
 
-payload_item:
+payload_list:
     TOK_NONE
-    | layer_ref prim_path_opt
+    | payload_list_item
+    | '[' newlines_opt ']'
+    | '[' newlines_opt payload_list_int listsep_opt ']'
+    ;
+
+payload_list_int:
+    payload_list_item
+    | payload_list_int listsep payload_list_item
+    ;
+
+payload_list_item:
+    layer_ref prim_path_opt payload_params_opt  {
+        if (context->layerRefPath.empty()) {
+            Err(context, "Payload asset path must not be empty. If this "
+                "is intended to be an internal payload, remove the "
+                "'@' delimiters.");
+        }
+
+        SdfPayload payload(context->layerRefPath,
+                           context->savedPath,
+                           context->layerRefOffset);
+        context->payloadParsingRefs.push_back(payload);
+    }
+    | TOK_PATHREF {
+        // Internal payloads do not begin with an asset path so there's
+        // no layer_ref rule, but we need to make sure we reset state the
+        // so we don't pick up data from a previously-parsed payload.
+        context->layerRefPath.clear();
+        context->layerRefOffset = SdfLayerOffset();
+        ABORT_IF_ERROR(context->seenError);
+      } 
+      payload_params_opt {
+        if (!$1.Get<std::string>().empty()) {
+           _PathSetPrim($1, context);
+        }
+        else {
+            context->savedPath = SdfPath::EmptyPath();
+        }        
+
+        SdfPayload payload(std::string(),
+                           context->savedPath,
+                           context->layerRefOffset);
+        context->payloadParsingRefs.push_back(payload);
+    }
+    ;
+
+payload_params_opt:
+    /* empty */
+    | '(' newlines_opt ')'
+    | '(' newlines_opt payload_params_int stmtsep_opt ')'
+    ;
+
+payload_params_int:
+    payload_params_item
+    | payload_params_int stmtsep payload_params_item
+    ;
+
+payload_params_item:
+    layer_offset_stmt
     ;
 
 reference_list:
