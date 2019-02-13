@@ -414,23 +414,21 @@ HdStDrawTarget::_RegisterTextureResource(
 
 /*static*/
 void
-HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
+HdStDrawTarget::GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrConstVector *drawTargets)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
     SdfPathVector sprimPaths;
 
-    if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
-        sprimPaths = renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+    if (renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
+        sprimPaths = renderIndex->GetSprimSubtree(HdPrimTypeTokens->drawTarget,
             SdfPath::AbsoluteRootPath());
     }
 
     TF_FOR_ALL (it, sprimPaths) {
         HdSprim const *drawTarget =
-                        renderIndex.GetSprim(HdPrimTypeTokens->drawTarget, *it);
+                        renderIndex->GetSprim(HdPrimTypeTokens->drawTarget, *it);
 
         if (drawTarget != nullptr)
         {
