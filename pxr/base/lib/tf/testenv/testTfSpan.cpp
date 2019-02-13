@@ -46,6 +46,13 @@ Tf_TestSpanMatchesContainer(const Span& span, const Container& cont)
     TF_AXIOM(std::equal(span.rbegin(), span.rend(), cont.rbegin()));
     TF_AXIOM(std::equal(span.crbegin(), span.crend(), cont.crbegin()));
 }
+
+
+void Tf_TestImplicitConversionInOverloads(TfSpan<int> span) {}
+void Tf_TestImplicitConversionInOverloads(TfSpan<float> span) {}
+
+void Tf_TestConstImplicitConversionInOverloads(TfSpan<const int> span) {}
+void Tf_TestConstImplicitConversionInOverloads(TfSpan<const float> span) {}
                   
 
 int main(int argc, char** argv)
@@ -138,6 +145,10 @@ int main(int argc, char** argv)
         TF_AXIOM(std::equal(data.begin(), data.end(),
                             expected.begin()));
     }
+
+    // Test implicit conversion in function calls with multiple overloads.
+    Tf_TestImplicitConversionInOverloads(data);
+    Tf_TestConstImplicitConversionInOverloads(constData);
 
     return 0;
 }

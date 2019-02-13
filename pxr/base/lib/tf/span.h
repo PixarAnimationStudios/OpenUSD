@@ -123,7 +123,10 @@ public:
     template <class Container>
     TfSpan(Container& cont,
            typename std::enable_if<
-               !std::is_const<element_type>::value,Container>::type* = 0)
+               !std::is_const<element_type>::value &&
+               std::is_same<typename Container::value_type, value_type
+                >::value, Container
+           >::type* = 0)
         : _data(cont.data()), _size(cont.size())
         {
             TF_DEV_AXIOM(_size == 0 || _data);
@@ -133,7 +136,11 @@ public:
     /// The resulting span has a range of
     /// [cont.data(), cont.data()+cont.size())
     template <class Container>
-    TfSpan(const Container& cont)
+    TfSpan(const Container& cont,
+           typename std::enable_if<
+               std::is_same<typename Container::value_type, value_type
+                >::value, Container
+           >::type* = 0)
         : _data(cont.data()), _size(cont.size())
         {
             TF_DEV_AXIOM(_size == 0 || _data);
