@@ -155,98 +155,11 @@ UsdSkelAnimMapper::IsNull() const
 }
 
 
-namespace {
-
-
-template <typename T>
-void _ResizeArray(VtArray<T>* array, size_t size, const T* defaultValue)
-{
-    if(defaultValue) {
-        size_t prevSize = array->size();
-        array->resize(size);
-        T* data = array->data();
-        for(size_t i = prevSize; i < size; ++i) {
-            data[i] = *defaultValue;
-        }
-    } else {
-        array->resize(size);
-    }
-}
-
-
-} // namespace
-
-
-template <typename T>
 bool
-UsdSkelAnimMapper::_Remap(const VtArray<T>& source,
-                          VtArray<T>* target,
-                          int elementSize,
-                          const T* defaultValue) const
+UsdSkelAnimMapper::_IsOrdered() const
 {
-    if(!target) {
-        TF_CODING_ERROR("'target' pointer is invalid.");
-        return false;
-    }
-    if(elementSize <= 0) {
-        TF_WARN("Invalid elementSize [%d]: "
-                "size must be greater than zero.", elementSize);
-        return false;
-    }
-
-    const size_t targetArraySize = _targetSize*elementSize;
-
-    if(IsIdentity() && source.size() == targetArraySize) {
-        // Can make a copy of the array (will share a reference to the source)
-        *target = source;
-        return true;
-    }
-
-    // Resize the target array to the expected size.
-    _ResizeArray(target, targetArraySize, defaultValue);
-
-    if(IsNull()) {
-        return true;
-    } else if(_flags&_OrderedMap) {
-
-        size_t copyCount =
-            std::min(source.size(), targetArraySize - _offset*elementSize);
-        std::copy(source.cdata(), source.cdata()+copyCount,
-                  target->data() + _offset*elementSize);
-    } else {
-
-        const T* sourceData = source.cdata();
-        T* targetData = target->data();
-        size_t copyCount = std::min(source.size()/elementSize,
-                                    _indexMap.size());
-
-        const int* indexMap = _indexMap.data();
-
-        for(size_t i = 0; i < copyCount; ++i) {
-            int targetIdx = indexMap[i];
-            if(targetIdx >= 0 && targetIdx < target->size()) {
-                TF_DEV_AXIOM(i*elementSize < source.size());
-                TF_DEV_AXIOM((i+1)*elementSize <= source.size());
-                TF_DEV_AXIOM((targetIdx+1)*elementSize <= target->size());
-                std::copy(sourceData + i*elementSize,
-                          sourceData + (i+1)*elementSize,
-                          targetData + targetIdx*elementSize);
-            }
-        }
-    }
-    return true;
+    return _flags&_OrderedMap;
 }
-
-
-// Explicitly instantiate templated Remap methods for all array-value sdf types.
-#define _INSTANTIATE_REMAP(r, unused, elem)                     \
-    template USDSKEL_API bool UsdSkelAnimMapper::_Remap(                    \
-        const SDF_VALUE_TRAITS_TYPE(elem)::ShapedType&,         \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*,               \
-        int, const SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;
-
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_REMAP, ~, SDF_VALUE_TYPES);
-#undef _INSTANTIATE_REMAP
 
 
 template <typename T>
@@ -258,14 +171,14 @@ UsdSkelAnimMapper::_UntypedRemap(const VtValue& source,
 {
     TF_DEV_AXIOM(source.IsHolding<VtArray<T> >());
 
-    if(!target) {
+    if (!target) {
         TF_CODING_ERROR("'target' pointer is null.");
         return false;
     }
 
-    if(target->IsEmpty()) {
+    if (target->IsEmpty()) {
         *target = VtArray<T>();
-    } else if(!target->IsHolding<VtArray<T> >()) {
+    } else if (!target->IsHolding<VtArray<T> >()) {
         TF_CODING_ERROR("Type of 'target' [%s] did not match the type of "
                         "'source' [%s].", target->GetTypeName().c_str(),
                         source.GetTypeName().c_str());
@@ -273,8 +186,8 @@ UsdSkelAnimMapper::_UntypedRemap(const VtValue& source,
     }
 
     const T* defaultValueT = nullptr;
-    if(!defaultValue.IsEmpty()) {
-        if(defaultValue.IsHolding<T>()) {
+    if (!defaultValue.IsEmpty()) {
+        if (defaultValue.IsHolding<T>()) {
             defaultValueT = &defaultValue.UncheckedGet<T>();
         } else {
             TF_CODING_ERROR("Unexpected type [%s] for defaultValue: expecting "
@@ -286,7 +199,7 @@ UsdSkelAnimMapper::_UntypedRemap(const VtValue& source,
 
     const auto& sourceArray = source.UncheckedGet<VtArray<T> >();
     auto targetArray = target->UncheckedGet<VtArray<T> >();
-    if(_Remap(sourceArray, &targetArray, elementSize, defaultValueT)) {
+    if (Remap(sourceArray, &targetArray, elementSize, defaultValueT)) {
         *target = targetArray;
         return true;
     }

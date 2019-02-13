@@ -30,6 +30,7 @@
 #include "pxr/usd/usdSkel/api.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/sdf/types.h"
 
 #include <type_traits>
@@ -65,24 +66,20 @@ public:
     UsdSkelAnimMapper(const TfToken* sourceOrder, size_t sourceOrderSize,
                       const TfToken* targetOrder, size_t targetOrderSize);
 
-    /// Typed remapping of data from \p source into \p target.
-    /// The \p source array provides a run of \p elementSize elements for each
-    /// path in the \\em sourceOrder. These elements are remapped and copied
-    /// over the \p target array.
+    /// Typed remapping of data in an arbitrary, stl-like container.
+    /// The \p sourc earray provides a run of \p elementSize for each path in
+    /// the \\em sourceOrder. These elements are remapped and copied over the
+    /// \p target array.
     /// Prior to remapping, the \p target array is resized to the size of the
-    /// \\em targetOrder (as given at mapper construction time) multiplied by
-    /// the \p elementSize. New elements created in the array are initialized
+    /// \\ em targetOrdre (as given at mapper construction time) multiplied by
+    /// the \p elementSize. New element created in the array are initialized
     /// to \p defaultValue, if provided.
-    template <typename T>
-    bool Remap(const VtArray<T>& source,
-               VtArray<T>* target,
+    template <typename Container>
+    bool Remap(const Container& source,
+               Container* target,
                int elementSize=1,
-               const T* defaultValue=nullptr) const {
-        static_assert(!std::is_pointer<T>::value, "");
-        static_assert(SdfValueTypeTraits<T>::IsValueType, "");
-        static_assert(!VtIsArray<T>::value, "");
-        return _Remap(source, target, elementSize, defaultValue);
-    }
+               const typename Container::value_type*
+                   defaultValue=nullptr) const;
 
     /// Type-erased remapping of data from \p source into \p target.
     /// The \p source array provides a run of \p elementSize elements for each
@@ -133,13 +130,28 @@ public:
     }
 
 private:
-    template <typename T>
-    bool _Remap(const VtArray<T>& source, VtArray<T>* target,
-                int elementSize, const T* defaultValue=nullptr) const;
 
     template <typename T>
     bool _UntypedRemap(const VtValue& source, VtValue* target,
                        int elementSize, const VtValue& defaultValue) const;
+
+    template <typename T>
+    static void _ResizeContainer(VtArray<T>* array,
+                                 size_t size,
+                                 const T& defaultValue);
+
+    template <typename Container>
+    static void _ResizeContainer(
+        Container* container,
+        size_t size,
+        const typename Container::value_type& defaultValue,
+        typename std::enable_if<
+            !VtIsArray<Container>::value,
+            Container>::type* = 0)
+        { container->resize(size, defaultValue); }
+
+    USDSKEL_API
+    bool _IsOrdered() const;
 
     /// Size of the output map.
     size_t _targetSize;
@@ -153,6 +165,87 @@ private:
     VtIntArray _indexMap;
     int _flags;
 };
+
+
+template <typename T>
+void
+UsdSkelAnimMapper::_ResizeContainer(VtArray<T>* array, size_t size,
+                                    const T& defaultValue)
+{
+    // XXX: VtArray::resize() doesn't take an default value atm.
+    // We should fix this...
+    const size_t prevSize = array->size();
+    array->resize(size);
+    auto span = TfMakeSpan(*array);
+    for(size_t i = prevSize; i < size; ++i) {
+        span[i] = defaultValue;
+    }
+}
+
+
+template <typename Container>
+bool
+UsdSkelAnimMapper::Remap(const Container& source,
+                         Container* target,
+                         int elementSize,
+                         const typename Container::value_type* defaultValue) const
+{
+    using _ValueType = typename Container::value_type;
+
+    if (!target) {
+        TF_CODING_ERROR("'target' is null");
+        return false;
+    }
+    if (elementSize <= 0) {
+        TF_WARN("Invalid elementSize [%d]: "
+                "size must be greater than zero.", elementSize);
+        return false;
+    }
+
+    const size_t targetArraySize = _targetSize*elementSize;
+
+    if (IsIdentity() && source.size() == targetArraySize) {
+        // Can make copy of the array.
+        *target = source;
+        return true;
+    }
+
+    // Resize the target array to the expected size.
+    _ResizeContainer(target, targetArraySize,
+                     defaultValue ? *defaultValue : _ValueType());
+
+    if (IsNull()) {
+        return true;
+    } else if (_IsOrdered()) {
+
+        size_t copyCount =
+            std::min(source.size(), targetArraySize - _offset*elementSize);
+        std::copy(source.cdata(), source.cdata()+copyCount,
+                  target->data() + _offset*elementSize);
+    } else {
+
+        const _ValueType* sourceData = source.cdata();
+
+        _ValueType* targetData = target->data();
+        size_t copyCount = std::min(source.size()/elementSize,
+                                    _indexMap.size());
+
+        const int* indexMap = _indexMap.data();
+
+        for (size_t i = 0; i < copyCount; ++i) {
+            int targetIdx = indexMap[i];
+            if (targetIdx >= 0 && targetIdx < target->size()) {
+                TF_DEV_AXIOM(i*elementSize < source.size());
+                TF_DEV_AXIOM((i+1)*elementSize <= source.size());
+                TF_DEV_AXIOM((targetIdx+1)*elementSize <= target->size());
+                std::copy(sourceData + i*elementSize,
+                          sourceData + (i+1)*elementSize,
+                          targetData + targetIdx*elementSize);
+            }
+        }
+    }
+    return true;
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
