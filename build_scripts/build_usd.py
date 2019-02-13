@@ -118,25 +118,23 @@ def IsVisualStudio2017OrGreater():
         return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
-def GetPythonLibraryAndIncludeDir():
-    """Returns tuple containing the path to the Python shared library
-    and include directory corresponding to the version of python on
-    the users PATH. Returns None if either directory could not be
-    determined. This function always returns None on Windows or Linux.
+def GetPythonInfo():
+    """Returns a tuple containing the path to the Python executable, shared
+    library, and include directory corresponding to the version of Python
+    currently running. Returns None if any path could not be determined. This
+    function always returns None on Windows or Linux.
 
     This function is primarily used to determine which version of
     Python USD should link against when multiple versions are installed.
     """
-    # We just skip all this on Windows. The call to get_config_var('LIBDIR')
-    # doesn't work on Windows, so we'd have to find some other way to get
-    # the same information. But, users on Windows are unlikely to have 
-    # multiple copies of the same version of Python, so the problem this 
+    # We just skip all this on Windows. Users on Windows are unlikely to have
+    # multiple copies of the same version of Python, so the problem this
     # function is intended to solve doesn't arise on that platform.
     if Windows():
         return None
 
-    # We also skip all this on Linux. The below code gets the wrong answer on 
-    # certain distributions like Ubuntu, which organizes libraries based on 
+    # We also skip all this on Linux. The below code gets the wrong answer on
+    # certain distributions like Ubuntu, which organizes libraries based on
     # multiarch. The below code yields /usr/lib/libpython2.7.so, but
     # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
     # this function is intended to solve primarily occurs on macOS, so it's
@@ -144,18 +142,29 @@ def GetPythonLibraryAndIncludeDir():
     if Linux():
         return None
 
-    cmd = ("import distutils.sysconfig; "
-           "print distutils.sysconfig.get_python_inc()")
-    pythonIncludeDir = GetCommandOutput("python -c '{}'".format(cmd))
+    try:
+        import distutils.sysconfig
 
-    cmd = ("import distutils.sysconfig; "
-           "print distutils.sysconfig.get_config_var(\"LIBDIR\")")
-    pythonLibPath = GetCommandOutput("python -c '{}'".format(cmd))
-    if pythonLibPath:
-        pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.dylib")
+        pythonExecPath = None
+        pythonLibPath = None
 
-    if pythonIncludeDir and pythonLibPath:
-        return (pythonLibPath, pythonIncludeDir)
+        pythonPrefix = distutils.sysconfig.PREFIX
+        if pythonPrefix:
+            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
+            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
+
+        pythonIncludeDir = distutils.sysconfig.get_python_inc()
+    except:
+        return None
+
+    if pythonExecPath and pythonIncludeDir and pythonLibPath:
+        # Ensure that the paths are absolute, since depending on the version of
+        # Python being run and the path used to invoke it, we may have gotten a
+        # relative path from distutils.sysconfig.PREFIX.
+        return (
+            os.path.abspath(pythonExecPath),
+            os.path.abspath(pythonLibPath),
+            os.path.abspath(pythonIncludeDir))
 
     return None
 
@@ -462,11 +471,14 @@ class PythonDependency(object):
         self.moduleNames = moduleNames
 
     def Exists(self, context):
-        # If one of the modules in our list exists we are good
+        # If one of the modules in our list imports successfully, we are good.
         for moduleName in self.moduleNames:
-            cmd = "python -c 'import {module}'".format(module=moduleName)
-            if GetCommandOutput(cmd) != None:
+            try:
+                pyModule = __import__(moduleName)
                 return True
+            except:
+                pass
+
         return False
 
 def AnyPythonDependencies(deps):
@@ -987,9 +999,9 @@ def InstallUSD(context, force, buildArgs):
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
 
-            # CMake has trouble finding the library and include directories
-            # when there are multiple versions of Python installed. This
-            # can lead to crashes due to USD being linked against one
+            # CMake has trouble finding the executable, library, and include
+            # directories when there are multiple versions of Python installed.
+            # This can lead to crashes due to USD being linked against one
             # version of Python but running through some other Python
             # interpreter version. This primarily shows up on macOS, as it's
             # common to have a Python install that's separate from the one
@@ -997,12 +1009,14 @@ def InstallUSD(context, force, buildArgs):
             #
             # To avoid this, we try to determine these paths from Python
             # itself rather than rely on CMake's heuristics.
-            pyLibPathAndIncPath = GetPythonLibraryAndIncludeDir()
-            if pyLibPathAndIncPath:
+            pythonInfo = GetPythonInfo()
+            if pythonInfo:
+                extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
+                                 .format(pyExecPath=pythonInfo[0]))
                 extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
-                                 .format(pyLibPath=pyLibPathAndIncPath[0]))
+                                 .format(pyLibPath=pythonInfo[1]))
                 extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
-                                 .format(pyIncPath=pyLibPathAndIncPath[1]))
+                                 .format(pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -1145,6 +1159,21 @@ library. Multiple quotes may be needed to ensure arguments are passed on
 exactly as desired. Users must ensure these arguments are suitable for the
 specified library and do not conflict with other options, otherwise build 
 errors may occur.
+
+- Python Versions and DCC Plugins:
+Some DCCs (most notably, Maya) may ship with and run using their own version of
+Python. In that case, it is important that USD and the plugins for that DCC are
+built using the DCC's version of Python and not the system version. This can be
+done by running %(prog)s using the DCC's version of Python.
+
+For example, to build USD and the Maya plugins on macOS for Maya 2019, run:
+
+/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --maya --no-usdview ...
+
+Note that this is primarily an issue on macOS, where a DCC's version of Python
+is likely to conflict with the version provided by the system. On other
+platforms, %(prog)s *should* be run using the system Python and *should not*
+be run using the DCC's Python.
 """.format(
     libraryList=" ".join(sorted([d.name for d in AllDependencies])))
 
@@ -1545,6 +1574,35 @@ if context.buildMaya and PTEX in requiredDependencies:
                "plugin, since using a separately-built Ptex library "
                "would conflict with the version used by Maya.")
     sys.exit(1)
+
+# Determine whether we're running in Maya's version of Python. When building
+# against Maya's Python, there are some additional restrictions on what we're
+# able to build.
+isMayaPython = False
+try:
+    import maya
+
+    # If the maya import succeeds and this function returns a tuple, then the
+    # USD build will be configured to use Maya's version of Python.
+    if GetPythonInfo() != None:
+        isMayaPython = True
+except:
+    pass
+
+if context.buildMaya and isMayaPython:
+    if context.buildUsdview:
+        PrintError("Cannot build usdview when building against Maya's version "
+                   "of Python. Maya does not provide access to the 'OpenGL' "
+                   "Python module. Use '--no-usdview' to disable building "
+                   "usdview.")
+        sys.exit(1)
+
+    # We should not attempt to build the plugins for any other DCCs if we're
+    # building against Maya's version of Python.
+    if any([context.buildHoudini, context.buildKatana]):
+        PrintError("Cannot build plugins for other DCCs when building against "
+                   "Maya's version of Python.")
+        sys.exit(1)
 
 dependenciesToBuild = []
 for dep in requiredDependencies:
