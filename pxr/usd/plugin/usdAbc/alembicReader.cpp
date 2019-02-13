@@ -1120,16 +1120,6 @@ _ReaderContext::ConvertSampleTimes(
     std::vector<double> result;
     result.resize(alembicTimes.size());
 
-    // Check special case from TidScene.  If there's just one time and
-    // it's really big then we assume it's TidSceneObject::FRAME_UNVARYING
-    // or FRAME_INVALID except possibly scaled by frame rate.  In this
-    // case we just use 0.0.
-    if (alembicTimes.size() == 1 && 
-        GfAbs(alembicTimes[0]) > std::numeric_limits<double>::max() / 100.0) {
-        result[0] = 0.0;
-        return TimeSamples(result);
-    }
-
     // Special case.
     if (_timeScale == 1.0 && _timeOffset == 0.0) {
         std::copy(alembicTimes.begin(), alembicTimes.end(), result.begin());
