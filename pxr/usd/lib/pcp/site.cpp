@@ -95,6 +95,74 @@ PcpSite::Hash::operator()(const PcpSite &site) const
 
 ////////////////////////////////////////////////////////////////////////
 
+PcpSiteStr::PcpSiteStr()
+{
+    // Do nothing
+}
+
+PcpSiteStr::PcpSiteStr(const PcpLayerStackIdentifierStr &id,
+                       const SdfPath &path) :
+    layerStackIdentifierStr(id),
+    path(path)
+{
+    // Do nothing
+}
+
+PcpSiteStr::PcpSiteStr(const PcpLayerStackIdentifier &id,
+                       const SdfPath &path) :
+    layerStackIdentifierStr(id),
+    path(path)
+{
+    // Do nothing
+}
+
+PcpSiteStr::PcpSiteStr( const SdfLayerHandle &layer, const SdfPath &path)
+    : layerStackIdentifierStr(layer ? layer->GetIdentifier() : std::string())
+    , path(path)
+{
+    // Do nothing
+}
+
+PcpSiteStr::PcpSiteStr(PcpLayerStackSite const &site)
+    : layerStackIdentifierStr(site.layerStack->GetIdentifier())
+    , path(site.path)
+{
+}
+
+PcpSiteStr::PcpSiteStr(PcpSite const &site)
+    : layerStackIdentifierStr(site.layerStackIdentifier)
+    , path(site.path)
+{
+}
+
+bool
+PcpSiteStr::operator==(const PcpSiteStr &rhs) const
+{
+    return layerStackIdentifierStr == rhs.layerStackIdentifierStr
+        && path == rhs.path;
+}
+
+bool
+PcpSiteStr::operator<(const PcpSiteStr &rhs) const
+{
+    return (layerStackIdentifierStr < rhs.layerStackIdentifierStr) ||
+           (layerStackIdentifierStr == rhs.layerStackIdentifierStr && 
+            path < rhs.path);
+}
+
+size_t
+PcpSiteStr::Hash::operator()(const PcpSiteStr &site) const
+{
+    size_t hash = 0;
+    boost::hash_combine(hash, site.layerStackIdentifierStr);
+    boost::hash_combine(hash, site.path);
+    return hash;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+
+
 PcpLayerStackSite::PcpLayerStackSite()
 {
     // Do nothing
@@ -136,6 +204,12 @@ std::ostream&
 operator<<(std::ostream& s, const PcpSite& x)
 {
     return s << x.layerStackIdentifier << "<" << x.path << ">";
+}
+
+std::ostream&
+operator<<(std::ostream& s, const PcpSiteStr& x)
+{
+    return s << x.layerStackIdentifierStr << "<" << x.path << ">";
 }
 
 std::ostream&

@@ -1267,7 +1267,7 @@ _CheckForCycle(
         // Reverse the list to order arcs from root to leaf.
         std::reverse(err->cycle.begin(), err->cycle.end());
         // Retain the root site.
-        err->rootSite = PcpSite(err->cycle.front().site);
+        err->rootSite = err->cycle.front().site;
         // There is no node for the last site in the chain, so report it
         // directly.
         seg.site = childSite;

@@ -134,7 +134,7 @@ PcpIsLocalClassBasedArc(PcpArcType arcType)
 /// what type of arcs. 
 ///
 struct PcpSiteTrackerSegment {
-    PcpLayerStackSite site;
+    PcpSiteStr site;
     PcpArcType arcType;
 };
 

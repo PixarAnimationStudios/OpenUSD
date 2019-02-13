@@ -96,7 +96,7 @@ public:
     /// the error was encountered.  (Note that some error types
     /// contain an additional site to capture more specific information
     /// about the site of the error.)
-    PcpSite rootSite;
+    PcpSiteStr rootSite;
    
 protected:
     /// Constructor.
@@ -726,9 +726,9 @@ public:
     PCP_API virtual std::string ToString() const;
     
     /// The site where the invalid arc was expressed.
-    PcpSite site;
+    PcpSiteStr site;
     /// The private, invalid target of the arc.
-    PcpSite privateSite;
+    PcpSiteStr privateSite;
 
 private:
     /// Constructor is private. Use New() instead.
@@ -837,7 +837,7 @@ public:
     PCP_API virtual std::string ToString() const;
     
     /// The site where the invalid arc was expressed.
-    PcpSite site;
+    PcpSiteStr site;
     SdfPath unresolvedPath;
     PcpArcType arcType;
 
