@@ -35,6 +35,8 @@
 
 #include <FnLogging/FnLogging.h>
 
+#include "vtKatana/array.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -151,51 +153,42 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     VtIntArray holeIndices;
     if (mesh.GetHoleIndicesAttr().Get(&holeIndices, time)
         && holeIndices.size() > 0) {
-        FnKat::IntBuilder holeIndicesBuilder(1);
-        holeIndicesBuilder.set(std::vector<int>(holeIndices.begin(),
-                                                holeIndices.end()));
-        attrs.set("geometry.holePolyIndices", holeIndicesBuilder.build());
+        auto holeAttr = VtKatanaMapOrCopy(holeIndices);
+        attrs.set("geometry.holePolyIndices", holeAttr);
     }
 
     // Creases
     VtIntArray creaseIndices;
     if (mesh.GetCreaseIndicesAttr().Get(&creaseIndices, time)
         && creaseIndices.size() > 0) {
-        FnKat::IntBuilder creasesBuilder(1);
-        creasesBuilder.set(std::vector<int>(creaseIndices.begin(),
-                                            creaseIndices.end()));
-        attrs.set("geometry.creaseIndices", creasesBuilder.build());
+        auto creaseAttr = VtKatanaMapOrCopy(creaseIndices);
+        attrs.set("geometry.creaseIndices", creaseAttr);
 
         VtIntArray creaseLengths;
         if (mesh.GetCreaseLengthsAttr().Get(&creaseLengths, time)
             && creaseLengths.size() > 0) {
-            FnKat::IntBuilder creaseLengthsBuilder(1);
-            creaseLengthsBuilder.set(std::vector<int>(creaseLengths.begin(),
-                                                      creaseLengths.end()));
-            attrs.set("geometry.creaseLengths", creaseLengthsBuilder.build());
+            auto creaseLengthsAttr = VtKatanaMapOrCopy(creaseLengths);
+            attrs.set("geometry.creaseLengths", creaseLengthsAttr);
         }
         VtFloatArray creaseSharpness;
         if (mesh.GetCreaseSharpnessesAttr().Get(&creaseSharpness, time)
             && creaseSharpness.size() > 0) {
-            FnKat::FloatBuilder creaseSharpnessBuilder(1);
+            auto creaseSharpnessAttr = VtKatanaMapOrCopy(creaseSharpness);
             FnKat::IntBuilder creaseSharpnessLengthsBuilder(1);
-            creaseSharpnessBuilder.set(
-                std::vector<float>(
-                    creaseSharpness.begin(), creaseSharpness.end()));
             std::vector<int> numSharpnesses;
             if (creaseLengths.size() == creaseSharpness.size()) {
                 // We have exactly 1 sharpness per crease.
-                numSharpnesses.resize(creaseLengths.size());
-                std::fill(numSharpnesses.begin(), numSharpnesses.end(), 1);
+                numSharpnesses.resize(creaseLengths.size(), 1);
             } else {
-                // We have N-1 sharpnesses for each crease that has N edges.
-                TF_FOR_ALL(lengthItr, creaseLengths) {
-                    numSharpnesses.push_back((*lengthItr) - 1);
-                }
+                std::transform(creaseLengths.begin(), creaseLengths.end(),
+                    std::back_inserter(numSharpnesses), [](int creaseLength){
+                        // We have N-1 sharpnesses for each crease that has N edges.
+                        return creaseLength - 1;
+                    });
             }
             creaseSharpnessLengthsBuilder.set(numSharpnesses);
 
-            attrs.set("geometry.creaseSharpness", creaseSharpnessBuilder.build());
+            attrs.set("geometry.creaseSharpness", creaseSharpnessAttr);
             attrs.set("geometry.creaseSharpnessLengths",
                         creaseSharpnessLengthsBuilder.build());
         }
@@ -205,68 +198,16 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     VtIntArray cornerIndices;
     if (mesh.GetCornerIndicesAttr().Get(&cornerIndices, time)
         && cornerIndices.size() > 0) {
-        FnKat::IntBuilder cornersBuilder(1);
-        cornersBuilder.set(std::vector<int>(cornerIndices.begin(),
-                                            cornerIndices.end()));
-        attrs.set("geometry.cornerIndices", cornersBuilder.build());
+        auto cornerIndicesAttr = VtKatanaMapOrCopy(cornerIndices);
+        attrs.set("geometry.cornerIndices", cornerIndicesAttr);
     }
     VtFloatArray cornerSharpness;
     if (mesh.GetCornerSharpnessesAttr().Get(&cornerSharpness, time)
         && cornerSharpness.size() > 0) {
-        FnKat::FloatBuilder cornerSharpnessBuilder(1);
-        cornerSharpnessBuilder.set(std::vector<float>(cornerSharpness.begin(),
-                                                      cornerSharpness.end()));
-        attrs.set("geometry.cornerSharpness", cornerSharpnessBuilder.build());
+        auto cornerSharpnessAttr = VtKatanaMapOrCopy(cornerSharpness);
+        attrs.set("geometry.cornerSharpness", cornerSharpnessAttr);
     }
 }
-
-
-// Promote a FloatAttribute to vertex (facevarying in usd)
-FnKat::FloatAttribute 
-_promoteToVertex(
-        FnKat::FloatAttribute& attr,
-        std::string& scope,
-        FnKat::GroupAttribute& polyAttr,
-        double currentTime) 
-{
-    // If this is already vertex, return the input
-    if (scope == "vertex") {
-        // aka facevarying
-        return attr;
-    }
-
-    // Grab the actual array
-    FnKat::FloatConstVector attrArr = attr.getNearestSample(currentTime);
-
-    // Determine the size of our array
-    FnKat::IntAttribute vertIndex = polyAttr.getChildByName("vertexList");
-    FnKat::IntConstVector vertIndexArray = vertIndex.getNearestSample(currentTime);
-    std::vector<float> arr;
-    arr.reserve(vertIndexArray.size());
-
-    if (scope == "point") {
-        // aka varying/vertex
-        for (size_t i = 0; i < vertIndexArray.size(); ++i) {
-            arr.push_back(attrArr[vertIndexArray[i]]);
-        }
-    } else if (scope == "face") {
-        // aka uniform
-        // TODO: check this works
-        return FnKat::FloatAttribute();
-    } else if (scope == "primitive") {
-        for (size_t i = 0; i < vertIndexArray.size(); ++i) {
-            arr.push_back(attrArr[0]);
-        }
-    } else {
-        // Otherwise return an empty attribute
-        FnLogWarn("Cannot promote unknown scope (" << scope << ") to vertex");
-        return FnKat::FloatAttribute();
-    }
-    FnKat::FloatBuilder vecBuilder;
-    vecBuilder.set(arr);
-    return vecBuilder.build();
-}
-
 
 void
 PxrUsdKatanaReadMesh(
