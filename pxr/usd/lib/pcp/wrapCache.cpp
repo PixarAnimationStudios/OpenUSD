@@ -229,12 +229,10 @@ wrapCache()
         ("Cache", 
          init<const PcpLayerStackIdentifier&,
               const std::string&, 
-              bool,
-              const PcpPayloadDecoratorRefPtr&>(
+              bool>(
               (arg("layerStackIdentifier"),
                arg("targetSchema") = std::string(),
-               arg("usd") = false,
-               arg("payloadDecorator") = PcpPayloadDecoratorRefPtr())))
+               arg("usd") = false)))
 
         // Note: The following parameters are not wrapped as a properties
         // because setting them may require returning additional out-

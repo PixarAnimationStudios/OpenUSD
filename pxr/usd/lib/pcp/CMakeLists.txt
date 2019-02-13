@@ -77,10 +77,9 @@ pxr_library(pcp
         wrapNode.cpp
         wrapPathTranslation.cpp
         wrapPropertyIndex.cpp
-        wrapPayloadContext.cpp
-        wrapPayloadDecorator.cpp
         wrapSite.cpp
         wrapTestChangeProcessor.cpp
+        wrapTestPayloadDecorator.cpp
         wrapTypes.cpp
 
     PYMODULE_FILES

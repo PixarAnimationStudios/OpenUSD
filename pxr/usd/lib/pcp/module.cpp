@@ -29,7 +29,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( PayloadDecorator );
     TF_WRAP( Dependency );
     TF_WRAP( Cache );
     TF_WRAP( Errors );
@@ -42,8 +41,8 @@ TF_WRAP_MODULE
     TF_WRAP( PathTranslation );
     TF_WRAP( PrimIndex );
     TF_WRAP( PropertyIndex );
-    TF_WRAP( PayloadContext );
     TF_WRAP( Site );
     TF_WRAP( TestChangeProcessor );
+    TF_WRAP( TestPayloadDecorator );
     TF_WRAP( Types );
 }
