@@ -37,7 +37,14 @@ HdBufferSource::ComputeHash() const
 {
     size_t hash = 0;
     size_t size = HdDataSizeOfTupleType(GetTupleType()) * GetNumElements();
-    return ArchHash64((const char*)GetData(), size, hash);
+    hash = ArchHash64((const char*)GetData(), size, hash);
+
+    // Hash signature as well.
+    HdTupleType tt = GetTupleType();
+    boost::hash_combine(hash, GetName());
+    boost::hash_combine(hash, tt.type);
+    boost::hash_combine(hash, tt.count);
+    return hash;
 }
 
 bool
