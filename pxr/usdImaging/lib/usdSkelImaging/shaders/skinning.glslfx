@@ -44,8 +44,8 @@ void compute(int index)
     }
 
     // skel space -> world space -> model space
-    mat4 skelToPrimLocal = mat4( HdGet_skelLocalToWorld() ) * 
-                           mat4( HdGet_primWorldToLocal() );
+    mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
+                           mat4( HdGet_skelLocalToWorld() );
     p = (skelToPrimLocal * vec4(p,1)).xyz;
 
     HdSet_skinnedPoints(index, p);
@@ -68,8 +68,8 @@ void compute(int index)
     vec4 p = skinningXform * geomBindXform * vec4(HdGet_restPoints(index), 1);
     
     // skel space -> world space -> model space
-    mat4 skelToPrimLocal = mat4( HdGet_skelLocalToWorld() ) * 
-                           mat4( HdGet_primWorldToLocal() );
+    mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
+                           mat4( HdGet_skelLocalToWorld() );
     p = skelToPrimLocal * p;
 
     HdSet_skinnedPoints(index, p.xyz);
