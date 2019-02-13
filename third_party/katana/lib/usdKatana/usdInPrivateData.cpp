@@ -238,6 +238,23 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     // they can vary per attribute, so store both the overridden and the
     // fallback motion sample times for use inside GetMotionSampleTimes.
     //
+    TfToken useDefaultMotionSamplesToken("katana:useDefaultMotionSamples");
+    UsdAttribute useDefaultMotionSamplesUsdAttr = 
+        prim.GetAttribute(useDefaultMotionSamplesToken);
+    bool useDefaultMotionSamples = false;
+    if (useDefaultMotionSamplesUsdAttr)
+    {
+        // If there is no katana op override and there is a usd 
+        // attribute "katana:useDefaultMotionSamples" set to true,
+        // interpret this as "use usdInArgs defaults".
+        //
+        useDefaultMotionSamplesUsdAttr.Get(&useDefaultMotionSamples);
+        if (useDefaultMotionSamples)
+        {
+            _motionSampleTimesOverride = usdInArgs->GetMotionSampleTimes();
+        }
+    }
+
     for (size_t i = 0; i < pathsToCheck.size(); ++i)
     {
         FnKat::Attribute motionSampleTimesAttr =
@@ -260,6 +277,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
                 const auto& sampleTimes = attr.getNearestSample(0.0f);;
                 if (!sampleTimes.empty())
                 {
+                    if (useDefaultMotionSamples)
+                    {
+                        // Clear out default samples before adding overrides
+                        _motionSampleTimesOverride.clear();
+                    }
                     for (float sampleTime : sampleTimes)
                         _motionSampleTimesOverride.push_back(
                             (double)sampleTime);
@@ -267,7 +289,7 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
                 }
             }
         }
-        else if (parentData)
+        else if (parentData && !useDefaultMotionSamples)
         {
             _motionSampleTimesOverride =
                     parentData->_motionSampleTimesOverride;
