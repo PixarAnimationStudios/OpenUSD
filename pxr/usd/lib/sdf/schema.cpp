@@ -1128,9 +1128,8 @@ SdfSchemaBase::IsValidReference(const SdfReference& ref)
     const SdfPath& path = ref.GetPrimPath();
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Reference prim path <" +
-                          ref.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute prim path");
+        return SdfAllowed("Reference prim path <" + path.GetString() + 
+                          "> must be either empty or an absolute prim path");
     }
 
     return true;
@@ -1142,9 +1141,8 @@ SdfSchemaBase::IsValidPayload(const SdfPayload& p)
     const SdfPath& path = p.GetPrimPath();
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Payload prim path <" + 
-                          p.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute prim path");
+        return SdfAllowed("Payload prim path <" + path.GetString() + 
+                          "> must be either empty or an absolute prim path");
     }
 
     return true;
