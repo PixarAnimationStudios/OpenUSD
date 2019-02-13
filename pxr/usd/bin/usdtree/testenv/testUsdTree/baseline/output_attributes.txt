@@ -1,15 +1,15 @@
 USD
- `--def root
-     |--def Xform child1
+ `--root [def]
+     |--child1 [def Xform]
      |   | `--(upAxis)
-     |   |--def subchild1a
+     |   |--subchild1a [def]
      |   |     :--.foo
      |   |     `--.hello
-     |   `--def subchild1b
-     |--def child2
+     |   `--subchild1b [def]
+     |--child2 [def]
      |   | `--.foo
-     |   |--def subchild2a
-     |   |   `--def subgrandchild2a1
-     |   `--def subchild2b
-     `--over child3
+     |   |--subchild2a [def]
+     |   |   `--subgrandchild2a1 [def]
+     |   `--subchild2b [def]
+     `--child3 [over]
            `--.whatisthis

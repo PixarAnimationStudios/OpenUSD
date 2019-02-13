@@ -55,7 +55,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdTreeAttributes
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdtree --flatten --attributes --metadata --definitions input.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdtree --flatten --attributes --metadata input.usda"
     STDOUT_REDIRECT output_attributes.txt
     DIFF_COMPARE output_attributes.txt
     EXPECTED_RETURN_CODE 0
@@ -103,15 +103,16 @@ pxr_register_test(testUsdTreeFlattenLayerStack
     EXPECTED_RETURN_CODE 0
 )
 
+
 pxr_install_test_dir(
     SRC testenv/testUsdTreePayload
-    DEST testUsdTreeKinds
+    DEST testUsdTreeSimple
 )
 
-pxr_register_test(testUsdTreeKinds
+pxr_register_test(testUsdTreeSimple
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdtree --kinds input.usda"
-    STDOUT_REDIRECT output_kinds.txt
-    DIFF_COMPARE output_kinds.txt
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdtree --simple input.usda"
+    STDOUT_REDIRECT output_simple.txt
+    DIFF_COMPARE output_simple.txt
     EXPECTED_RETURN_CODE 0
 )

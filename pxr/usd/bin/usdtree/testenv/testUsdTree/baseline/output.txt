@@ -1,10 +1,10 @@
 USD
- `--root
-     |--child1
-     |   |--subchild1a
-     |   `--subchild1b
-     |--child2
-     |   |--subchild2a
-     |   |   `--subgrandchild2a1
-     |   `--subchild2b
-     `--child3
+ `--root [def]
+     |--child1 [def Xform]
+     |   |--subchild1a [def]
+     |   `--subchild1b [def]
+     |--child2 [def]
+     |   |--subchild2a [def]
+     |   |   `--subgrandchild2a1 [def]
+     |   `--subchild2b [def]
+     `--child3 [over]

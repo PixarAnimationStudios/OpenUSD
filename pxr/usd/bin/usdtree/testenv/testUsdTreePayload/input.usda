@@ -1,6 +1,6 @@
 #usda 1.0
 
-def "root"(
+def Scope "root"(
     kind = "assembly"
 ){
     def "child1"(
@@ -8,20 +8,20 @@ def "root"(
         kind = "group"
     ){
     }
-    def "child2"(
+    def Xform "child2"(
         customData = {string "foo" = "bar"}
         kind = "group"
     ){
         
-        def "subchild2a"(
+        def Xform "subchild2a"(
             kind = "component"
         ){
-            def "subgrandchild2a1"(
+            def Cube "subgrandchild2a1"(
                 kind = "subcomponent"
             ){
             }
         }
-        def "subchild2b"(
+        def Xform "subchild2b"(
             kind = "component"
             active = false
         ){

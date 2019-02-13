@@ -29,7 +29,7 @@ import sys
 from pxr import Usd
 
 
-METADATA_KEYS_TO_SKIP = ('typeName', 'specifier')
+METADATA_KEYS_TO_SKIP = ('typeName', 'specifier', 'kind', 'active')
 
 
 def _Msg(msg):
@@ -115,6 +115,29 @@ class SdfAccessor(object):
         return prim.active
 
 
+def GetPrimLabel(acc, prim):
+    spec = acc.GetSpecifier(prim).displayName.lower()
+    typeName = acc.GetTypeName(prim)
+    if typeName:
+        definition = '{} {}'.format(spec, typeName)
+    else:
+        definition = spec
+    label = '{} [{}]'.format(acc.GetName(prim), definition)
+
+    shortMetadata = []
+    
+    if not acc.IsActive(prim):
+        shortMetadata.append('active = false')
+    
+    kind = acc.GetKind(prim)
+    if kind:
+        shortMetadata.append('kind = {}'.format(kind))
+    
+    if shortMetadata:
+        label += ' ({})'.format(', '.join(shortMetadata))
+    return label
+
+
 def PrintPrim(args, acc, prim, prefix, isLast):
     if not isLast:
         lastStep = ' |--'
@@ -128,25 +151,12 @@ def PrintPrim(args, acc, prim, prefix, isLast):
             attrStep = '     |'
         else:
             attrStep = '      '
-    if args.definitions:
-        spec = acc.GetSpecifier(prim).displayName.lower()
-        typeName = acc.GetTypeName(prim)
-        if typeName:
-            definition = '{} {}'.format(spec, typeName)
-        else:
-            definition = spec
-        label = '{} {}'.format(definition, acc.GetName(prim))
+    
+    if args.simple:
+        label = acc.GetName(prim)
     else:
-        label =  acc.GetName(prim)
+        label = GetPrimLabel(acc, prim)
 
-    if args.kinds:
-        k = acc.GetKind(prim)
-        if k:
-            label += ' [kind={}]'.format(k)
-    
-    if not acc.IsActive(prim):
-        label += ' (inactive)'
-    
     _Msg('{}{}{}'.format(prefix, lastStep, label))
 
     attrs = []
@@ -235,15 +245,11 @@ def main():
         dest='metadata',
         help='Display authored metadata')
     parser.add_argument(
-        '--kinds', '-k', action='store_true',
-        dest='kinds',
-        help='Display kinds')
+        '--simple', '-s', action='store_true',
+        dest='simple',
+        help='Only display prim names: no specifier, kind or active state.')
     parser.add_argument(
-        '--definitions', '-d', action='store_true',
-        dest='definitions',
-        help='Display prim specifiers and types')
-    parser.add_argument(
-        '-f', '--flatten', action='store_true', help='Compose the stage with the '
+        '--flatten', '-f', action='store_true', help='Compose the stage with the '
         'input file as root layer and write the flattened content.')
     parser.add_argument(
         '--flattenLayerStack', action='store_true',

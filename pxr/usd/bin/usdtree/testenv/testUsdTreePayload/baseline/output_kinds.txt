@@ -1,7 +1,0 @@
-USD
- `--root [kind=assembly]
-     |--child1 [kind=group]
-     `--child2 [kind=group]
-         |--subchild2a [kind=component]
-         |   `--subgrandchild2a1 [kind=subcomponent]
-         `--subchild2b [kind=component] (inactive)
