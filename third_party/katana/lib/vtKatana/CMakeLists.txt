@@ -11,6 +11,7 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_CLASSES
         array
         traits
+        value
 
     PRIVATE_CLASSES
         internalTraits
