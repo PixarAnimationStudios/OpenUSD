@@ -90,6 +90,11 @@ UsdSkelImagingSkelRootAdapter::Populate(
             UsdSkelImagingSkeletonAdapter> (adapter);
         TF_VERIFY(skelAdapter);
 
+        // Define a new binding that only contains skinnable prims
+        // that have a bound prim adapter.
+        VtArray<UsdSkelSkinningQuery> skinningQueries;
+        skinningQueries.reserve(binding.GetSkinningTargets().size());
+
         for (const auto& skinningQuery : binding.GetSkinningTargets()) {
             UsdPrim const& skinnedPrim = skinningQuery.GetPrim();
 
@@ -97,18 +102,27 @@ UsdSkelImagingSkelRootAdapter::Populate(
             // hijacking all processing to go via it.
             UsdImagingPrimAdapterSharedPtr skinnedPrimAdapter =
                 _GetPrimAdapter(skinnedPrim);
+            if (!skinnedPrimAdapter) {
+                // This prim is technically considered skinnable,
+                // but an adapter may not be registered for the prim type.
+                continue;
+            }
+
             UsdImagingInstancerContext hijackContext;
             if (instancerContext) {
                 hijackContext = *instancerContext;
             }
             hijackContext.instancerAdapter = skelAdapter;
             skinnedPrimAdapter->Populate(skinnedPrim, index, &hijackContext);
+
+            skinningQueries.push_back(skinningQuery);
         }
         // We don't have a way to figure out all the skinned prims that are
         // bound to a skeleton when processing it (in the SkeletonAdapter).
         // We can do this with the SkelRoot and let the SkeletonAdapter know
         // about it.
-        skelAdapter->RegisterSkelBinding(binding);
+        skelAdapter->RegisterSkelBinding(
+            UsdSkelBinding(skel, skinningQueries));
     }
 
     return SdfPath();
