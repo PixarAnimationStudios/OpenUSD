@@ -41,7 +41,13 @@
 #include <atomic>
 #include <mutex>
 #include <string>
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 #include <signal.h>
 
 using std::string;

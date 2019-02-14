@@ -28,7 +28,13 @@
 /// Macros for creating Python bindings for objects used with 
 /// ArResolverContext.
 
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 #include <boost/python/extract.hpp>
 #include <boost/python/object.hpp>
 

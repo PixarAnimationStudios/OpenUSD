@@ -251,6 +251,12 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 #include <frameobject.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED

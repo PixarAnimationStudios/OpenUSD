@@ -34,7 +34,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashmap.h"
 

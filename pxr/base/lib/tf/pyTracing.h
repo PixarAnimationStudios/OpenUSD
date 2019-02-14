@@ -24,7 +24,13 @@
 #ifndef TF_PYTRACING_H
 #define TF_PYTRACING_H
 
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 
 #include "pxr/pxr.h"
 

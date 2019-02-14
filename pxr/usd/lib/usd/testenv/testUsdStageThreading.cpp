@@ -23,7 +23,13 @@
 //
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#ifdef _DEBUG
+  #undef _DEBUG
+  #include <Python.h>
+  #define _DEBUG
+#else
+  #include <Python.h>
+#endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/pxr.h"
