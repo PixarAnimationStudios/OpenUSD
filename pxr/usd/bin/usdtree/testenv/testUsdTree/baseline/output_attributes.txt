@@ -1,4 +1,4 @@
-USD
+/
  `--root [def]
      |--child1 [def Xform]
      |   | `--(upAxis)

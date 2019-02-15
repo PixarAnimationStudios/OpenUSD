@@ -1,4 +1,4 @@
-USD
+/
  `--root [def Scope] (kind = assembly)
      |--child1 [def Xform] (kind = group)
      |   |--subchild1a [def Cube]

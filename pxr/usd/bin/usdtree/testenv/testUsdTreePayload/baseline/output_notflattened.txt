@@ -1,4 +1,4 @@
-USD
+/
  `--root [def Scope] (kind = assembly)
      |--child1 [def] (kind = group)
      |     `--(payload)

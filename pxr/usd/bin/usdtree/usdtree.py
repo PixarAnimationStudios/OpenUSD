@@ -188,12 +188,12 @@ def PrintChildren(args, acc, prim, prefix):
 
 
 def PrintStage(args, stage):
-    _Msg('USD')
+    _Msg('/')
     PrintChildren(args, USDAccessor, stage.GetPseudoRoot(), '')
 
 
 def PrintLayer(args, layer):
-    _Msg('USD')
+    _Msg('/')
     PrintChildren(args, SdfAccessor, layer.pseudoRoot, '')
 
 

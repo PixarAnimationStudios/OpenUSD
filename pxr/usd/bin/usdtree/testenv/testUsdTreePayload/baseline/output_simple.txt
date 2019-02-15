@@ -1,4 +1,4 @@
-USD
+/
  `--root
      |--child1
      `--child2
