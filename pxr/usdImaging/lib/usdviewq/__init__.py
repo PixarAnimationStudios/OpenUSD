@@ -149,10 +149,16 @@ class Launcher(object):
                                  '(0 is max, negative numbers imply max - N)')
 
         parser.add_argument('--ff', action='store',
-                            dest='firstframe', type=int)
+                            dest='firstframe', type=int,
+                            help='Set the first frame of the viewer')
 
         parser.add_argument('--lf', action='store',
-                            dest='lastframe', type=int)
+                            dest='lastframe', type=int,
+                            help='Set the last frame of the viewer')
+
+        parser.add_argument('--cf', action='store',
+                            dest='currentframe', type=int,
+                            help='Set the current frame of the viewer')
 
         parser.add_argument('--complexity', action='store',
                             type=str, default="low", dest='complexity',
