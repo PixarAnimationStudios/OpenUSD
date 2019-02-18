@@ -116,6 +116,28 @@ TF_REGISTRY_FUNCTION(TfEnum)
 }
 
 static
+double
+_SafeDivOne(const double a, const double b)
+{
+    if (b != 0.0) {
+        return a / b;
+    }
+    
+    return 1.0;
+}
+
+static
+double
+_SafeDiv(const double a, const double b)
+{
+    if (b != 0.0) {
+        return a / b;
+    }
+    
+    return a;
+}
+
+static
 CameraUtilConformWindowPolicy
 _ResolveConformWindowPolicy(const GfVec2d &size,
                             CameraUtilConformWindowPolicy policy,
@@ -126,8 +148,7 @@ _ResolveConformWindowPolicy(const GfVec2d &size,
         return policy;
     }
 
-    const double aspect =
-        (size[1] != 0.0) ? size[0] / size[1] : 1.0;
+    const double aspect = _SafeDivOne(size[0], size[1]);
 
     if ((policy == CameraUtilFit) ^ (aspect > targetAspect)) {
         return CameraUtilMatchVertically;
@@ -145,8 +166,7 @@ CameraUtilConformedWindow(
         _ResolveConformWindowPolicy(window, policy, targetAspect);
 
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
-        return GfVec2d(window[0],
-                       window[0] / (targetAspect != 0.0 ? targetAspect : 1.0));
+        return GfVec2d(window[0], _SafeDiv(window[0], targetAspect));
     } else {
         return GfVec2d(window[1] * targetAspect, window[1]);
     }
@@ -166,8 +186,7 @@ CameraUtilConformedWindow(
     
     
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
-        const double height =
-            size[0] / (targetAspect != 0.0 ? targetAspect : 1.0);
+        const double height = _SafeDiv(size[0], targetAspect);
 
         return GfRange2d(
             GfVec2d(window.GetMin()[0], center[1] - height / 2.0),
@@ -210,7 +229,7 @@ CameraUtilConformedWindow(
     // Note: usually the aspect ratio is given by width / height, so one might
     // expect to see the first diagonal entry divided by the second entry.
     // However, since these parameters are used in the persepctive division,
-    // the behave the other way around.
+    // they behave the other way around.
     const GfVec2d window(projectionMatrix[1][1], projectionMatrix[0][0]);
 
     // This tells us whether we need to adjust the parameters affecting the
@@ -220,14 +239,13 @@ CameraUtilConformedWindow(
 
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
         // Adjust vertical size
-        result[1][1] = result[0][0] * targetAspect;
+        result[1][1] = window[1] * targetAspect;
 
         // Now handle the case that the frustum is asymetric, e.g., the angle
         // on the left is different from the angle on the right.
         // First compute the factor by which we scaled vertically...
         const double scaleFactor =
-            result[1][1] / 
-            (projectionMatrix[1][1] != 0.0 ? projectionMatrix[1][1] : 1.0);
+            _SafeDiv(result[1][1], projectionMatrix[1][1]);
         
         // ...and then apply it to the offsets making the frustum asymetric.
         // This one is important for perspective:
@@ -236,12 +254,10 @@ CameraUtilConformedWindow(
         result[3][1] *= scaleFactor;
     } else {
         // As above, but horizontally.
-        result[0][0] =
-            result[1][1] / (targetAspect != 0.0 ? targetAspect : 1.0);
+        result[0][0] = _SafeDiv(window[0], targetAspect);
 
         const double scaleFactor =
-            result[0][0] / 
-            (projectionMatrix[0][0] != 0.0 ? projectionMatrix[0][0] : 1.0);
+            _SafeDiv(result[0][0],  projectionMatrix[0][0]);
         
         result[2][0] *= scaleFactor;
         result[3][0] *= scaleFactor;
