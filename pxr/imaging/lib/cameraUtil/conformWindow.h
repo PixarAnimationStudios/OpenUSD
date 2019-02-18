@@ -79,7 +79,14 @@ CameraUtilConformedWindow(
     CameraUtilConformWindowPolicy policy, double targetAspect);
 
 /// Conforms the given \p projectionMatrix to have aspect ratio \p targetAspect
-/// by applying \p policy
+/// by applying \p policy.
+///
+/// Note that this function also supports mirroring about the x- or y-axis of
+/// the image corresponding to flipping all signs in the second, respectively,
+/// third column of the projection matrix. In other words, we get the same
+/// result whether we flip the signs in the matrix and then give it to this
+/// function or call this function first and flip the signs of the resulting
+/// matrix.
 CAMERAUTIL_API
 GfMatrix4d
 CameraUtilConformedWindow(

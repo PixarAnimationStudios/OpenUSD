@@ -216,6 +216,17 @@ CameraUtilConformedWindow(
                    conformed.GetMin()[1], conformed.GetMax()[1]);
 }
 
+static
+double
+_Sign(const double x)
+{
+    if (x < 0.0) {
+        return -1.0;
+    }
+
+    return 1.0;
+}
+
 GfMatrix4d
 CameraUtilConformedWindow(
     const GfMatrix4d &projectionMatrix,
@@ -230,7 +241,11 @@ CameraUtilConformedWindow(
     // expect to see the first diagonal entry divided by the second entry.
     // However, since these parameters are used in the persepctive division,
     // they behave the other way around.
-    const GfVec2d window(projectionMatrix[1][1], projectionMatrix[0][0]);
+    // Also note that we take the absolute value here and use _Sign later
+    // to restore the signs to support mirroring.
+
+    const GfVec2d window(fabs(projectionMatrix[1][1]),
+                         fabs(projectionMatrix[0][0]));
 
     // This tells us whether we need to adjust the parameters affecting the
     // vertical or horizontal aspects of the projectionMatrix.
@@ -239,7 +254,8 @@ CameraUtilConformedWindow(
 
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
         // Adjust vertical size
-        result[1][1] = window[1] * targetAspect;
+        result[1][1] =
+            _Sign(projectionMatrix[1][1]) * window[1] * targetAspect;
 
         // Now handle the case that the frustum is asymetric, e.g., the angle
         // on the left is different from the angle on the right.
@@ -254,7 +270,8 @@ CameraUtilConformedWindow(
         result[3][1] *= scaleFactor;
     } else {
         // As above, but horizontally.
-        result[0][0] = _SafeDiv(window[0], targetAspect);
+        result[0][0] =
+            _Sign(projectionMatrix[0][0]) * _SafeDiv(window[0], targetAspect);
 
         const double scaleFactor =
             _SafeDiv(result[0][0],  projectionMatrix[0][0]);
