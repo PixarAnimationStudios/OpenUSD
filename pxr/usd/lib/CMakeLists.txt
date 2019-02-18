@@ -12,6 +12,7 @@ set(DIRS
     usdShade
     usdHydra
     usdRi
+    usdVi
     usdSkel
     usdUI
     usdUtils

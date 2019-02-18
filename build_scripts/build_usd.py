@@ -446,7 +446,7 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # boost
 
 if Linux():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
+    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif MacOS():
     BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
@@ -1006,8 +1006,17 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildHoudini:
             if context.houdiniLocation:
+		pythonExecPath = "python/bin/python"
+		pythonIncludeDir = "python/include"
+		pythonLib = "python/lib/libpython2.7.so"
                 extraArgs.append('-DHOUDINI_ROOT="{houdiniLocation}"'
                                  .format(houdiniLocation=context.houdiniLocation))
+		extraArgs.append('-DPYTHON_LIBRARY="{houdiniLocation}/{pythonLib}"'
+						.format(houdiniLocation=context.houdiniLocation,
+							pythonLib=pythonLib))
+		extraArgs.append('-DPYTHON_LIBRARIES="{houdiniLocation}/{pythonLib}"'
+						.format(houdiniLocation=context.houdiniLocation,
+							pythonLib=pythonLib))
             extraArgs.append('-DPXR_BUILD_HOUDINI_PLUGIN=ON')
         else:
             extraArgs.append('-DPXR_BUILD_HOUDINI_PLUGIN=OFF')
