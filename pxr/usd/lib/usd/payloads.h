@@ -35,14 +35,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DECLARE_HANDLES(SdfPrimSpec);
-
 /// \class UsdPayloads
 ///
 /// UsdPayloads provides an interface to authoring and introspecting payloads.
 /// Payloads behave the same as Usd references except that payloads can be 
 /// optionally loaded. 
-
 class UsdPayloads {
     friend class UsdPrim;
 
@@ -114,8 +111,6 @@ public:
     explicit operator bool() { return bool(_prim); }
 
 private:
-
-    SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
 

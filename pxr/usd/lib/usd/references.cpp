@@ -24,13 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/references.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/valueUtils.h"
-
-#include "pxr/usd/sdf/changeBlock.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/usd/refOrPayloadListEditImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,69 +32,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdReferences
 // ------------------------------------------------------------------------- //
 
-namespace
+using _ListEditImpl = 
+    Usd_RefOrPayloadListEditImpl<UsdReferences, SdfReferencesProxy>;
+
+// The implementation doesn't define this function as it needs to be specialized
+// so we implement it here.
+template <>
+SdfReferencesProxy 
+_ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 {
-
-bool
-_TranslatePath(SdfReference* ref, const UsdEditTarget& editTarget)
-{
-    // We do not map prim paths across the edit target for non-internal 
-    // references, as these paths are supposed to be in the namespace of
-    // the referenced layer stack.
-    if (!ref->GetAssetPath().empty()) {
-        return true;
-    }
-
-    // Non-sub-root references aren't expected to be mappable across 
-    // non-local edit targets, so we can just use the given reference as-is.
-    if (ref->GetPrimPath().IsEmpty() ||
-        ref->GetPrimPath().IsRootPrimPath()) {
-        return true;
-    }
-
-    const SdfPath mappedPath = editTarget.MapToSpecPath(ref->GetPrimPath());
-    if (mappedPath.IsEmpty()) {
-        TF_CODING_ERROR(
-            "Cannot map <%s> to current edit target.", 
-            ref->GetPrimPath().GetText());
-        return false;
-    }
-
-    // If the edit target points inside a variant, the mapped path may 
-    // contain a variant selection. We need to strip this out, since
-    // inherit paths may not contain variant selections.
-    ref->SetPrimPath(mappedPath.StripAllVariantSelections());
-    return true;
-}
-
+    return spec->GetReferenceList();
 }
 
 bool
 UsdReferences::AddReference(const SdfReference& refIn, UsdListPosition position)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    SdfReference ref = refIn;
-    if (!_TranslatePath(&ref, _prim.GetStage()->GetEditTarget())) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    bool success = false;
-    {
-        TfErrorMark mark;
-        if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-            Usd_InsertListItem( spec->GetReferenceList(), ref, position );
-            // mark *should* contain only errors from adding the reference, NOT
-            // any recomposition errors, because the SdfChangeBlock handily
-            // defers composition till after we leave this scope.
-            success = mark.IsClean();
-        }
-    }
-    return success;
+    return _ListEditImpl::Add(*this, refIn, position);
 }
 
 bool
@@ -109,8 +56,7 @@ UsdReferences::AddReference(const std::string &assetPath,
                             const SdfLayerOffset &layerOffset,
                             UsdListPosition position)
 {
-    return AddReference(
-        SdfReference(assetPath, primPath, layerOffset), position);
+    return _ListEditImpl::Add(*this, assetPath, primPath, layerOffset, position);
 }
 
 bool
@@ -118,7 +64,7 @@ UsdReferences::AddReference(const std::string &assetPath,
                             const SdfLayerOffset &layerOffset,
                             UsdListPosition position)
 {
-    return AddReference(assetPath, SdfPath(), layerOffset, position);
+    return _ListEditImpl::Add(*this, assetPath, layerOffset, position);
 }
 
 bool 
@@ -126,102 +72,25 @@ UsdReferences::AddInternalReference(const SdfPath &primPath,
                                     const SdfLayerOffset &layerOffset,
                                     UsdListPosition position)
 {
-    return AddReference(std::string(), primPath, layerOffset, position);
+    return _ListEditImpl::AddInternal(*this, primPath, layerOffset, position);
 }
 
 bool
 UsdReferences::RemoveReference(const SdfReference& refIn)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    SdfReference ref = refIn;
-    if (!_TranslatePath(&ref, _prim.GetStage()->GetEditTarget())) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    TfErrorMark mark;
-    bool success = false;
-
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfReferencesProxy refs = spec->GetReferenceList();
-        refs.Remove(ref);
-        success = mark.IsClean();
-    }
-    mark.Clear();
-    return success;
+    return _ListEditImpl::Remove(*this, refIn);
 }
 
 bool
 UsdReferences::ClearReferences()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    SdfChangeBlock block;
-    TfErrorMark mark;
-    bool success = false;
-
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfReferencesProxy refs = spec->GetReferenceList();
-        success = refs.ClearEdits() && mark.IsClean();
-    }
-    mark.Clear();
-    return success;
+    return _ListEditImpl::Clear(*this);
 }
 
 bool 
 UsdReferences::SetReferences(const SdfReferenceVector& itemsIn)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
-
-    TfErrorMark mark;
-
-    SdfReferenceVector items;
-    items.reserve(itemsIn.size());
-    for (SdfReference item : itemsIn) {
-        if (_TranslatePath(&item, editTarget)) {
-            items.push_back(item);
-        }
-    }
-
-    if (!mark.IsClean()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfReferencesProxy refs = spec->GetReferenceList();
-        refs.GetExplicitItems() = items;
-    }
-
-    bool success = mark.IsClean();
-    mark.Clear();
-    return success;
-}
-
-// ---------------------------------------------------------------------- //
-// UsdReferences: Private Methods and Members 
-// ---------------------------------------------------------------------- //
-
-SdfPrimSpecHandle
-UsdReferences::_CreatePrimSpecForEditing()
-{
-    if (!TF_VERIFY(_prim)) {
-        return SdfPrimSpecHandle();
-    }
-
-    return _prim.GetStage()->_CreatePrimSpecForEditing(_prim);
+    return _ListEditImpl::Set(*this, itemsIn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

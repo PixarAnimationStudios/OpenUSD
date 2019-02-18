@@ -86,6 +86,7 @@ pxr_library(usd
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
+        refOrPayloadListEditImpl.h
         wrapUtils.h
 
     PYTHON_CPPFILES
