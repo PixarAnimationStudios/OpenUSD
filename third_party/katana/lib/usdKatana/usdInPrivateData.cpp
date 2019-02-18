@@ -238,20 +238,23 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     // they can vary per attribute, so store both the overridden and the
     // fallback motion sample times for use inside GetMotionSampleTimes.
     //
-    TfToken useDefaultMotionSamplesToken("katana:useDefaultMotionSamples");
-    UsdAttribute useDefaultMotionSamplesUsdAttr = 
-        prim.GetAttribute(useDefaultMotionSamplesToken);
     bool useDefaultMotionSamples = false;
-    if (useDefaultMotionSamplesUsdAttr)
+    if (!prim.IsPseudoRoot())
     {
-        // If there is no katana op override and there is a usd 
-        // attribute "katana:useDefaultMotionSamples" set to true,
-        // interpret this as "use usdInArgs defaults".
-        //
-        useDefaultMotionSamplesUsdAttr.Get(&useDefaultMotionSamples);
-        if (useDefaultMotionSamples)
+        TfToken useDefaultMotionSamplesToken("katana:useDefaultMotionSamples");
+        UsdAttribute useDefaultMotionSamplesUsdAttr = 
+            prim.GetAttribute(useDefaultMotionSamplesToken);
+        if (useDefaultMotionSamplesUsdAttr)
         {
-            _motionSampleTimesOverride = usdInArgs->GetMotionSampleTimes();
+            // If there is no katana op override and there is a usd 
+            // attribute "katana:useDefaultMotionSamples" set to true,
+            // interpret this as "use usdInArgs defaults".
+            //
+            useDefaultMotionSamplesUsdAttr.Get(&useDefaultMotionSamples);
+            if (useDefaultMotionSamples)
+            {
+                _motionSampleTimesOverride = usdInArgs->GetMotionSampleTimes();
+            }
         }
     }
 
