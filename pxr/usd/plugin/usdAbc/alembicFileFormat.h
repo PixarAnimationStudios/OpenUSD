@@ -48,24 +48,25 @@ TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
 class UsdAbcAlembicFileFormat : public SdfFileFormat {
 public:
     // SdfFileFormat overrides
-    virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const;
-    virtual bool CanRead(const std::string &file) const;
+    virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const override;
+    virtual bool CanRead(const std::string &file) const override;
     virtual bool Read(const SdfLayerBasePtr& layerBase,
                       const std::string& resolvedPath,
-                      bool metadataOnly) const;
+                      bool metadataOnly) const override;
     virtual bool WriteToFile(const SdfLayerBase* layerBase,
                              const std::string& filePath,
                              const std::string& comment = std::string(),
                              const FileFormatArguments& args = 
-                                 FileFormatArguments()) const;
+                                 FileFormatArguments()) const override;
     virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
-                                const std::string& str) const;
+                                const std::string& str) const override;
     virtual bool WriteToString(const SdfLayerBase* layerBase,
                                std::string* str,
-                               const std::string& comment=std::string()) const;
+                               const std::string& comment=std::string()) 
+                               const override;
     virtual bool WriteToStream(const SdfSpecHandle &spec,
                                std::ostream& out,
-                               size_t indent) const;
+                               size_t indent) const override;
 
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
@@ -75,7 +76,7 @@ protected:
     UsdAbcAlembicFileFormat();
 
 private:
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
 
 private:
     SdfFileFormatConstPtr _usda;

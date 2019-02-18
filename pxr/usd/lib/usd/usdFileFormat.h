@@ -65,40 +65,40 @@ public:
 
     USD_API
     virtual SdfAbstractDataRefPtr
-    InitData(const FileFormatArguments& args) const;
+    InitData(const FileFormatArguments& args) const override;
 
     USD_API
-    virtual bool CanRead(const std::string &file) const;
+    virtual bool CanRead(const std::string &file) const override;
 
     USD_API
     virtual bool Read(
         const SdfLayerBasePtr& layerBase,
         const std::string& resolvedPath,
-        bool metadataOnly) const;
+        bool metadataOnly) const override;
 
     USD_API
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const std::string& filePath,
         const std::string& comment = std::string(),
-        const FileFormatArguments& args = FileFormatArguments()) const;
+        const FileFormatArguments& args = FileFormatArguments()) const override;
 
     USD_API
     virtual bool ReadFromString(
         const SdfLayerBasePtr& layerBase,
-        const std::string& str) const;
+        const std::string& str) const override;
 
     USD_API
     virtual bool WriteToString(
         const SdfLayerBase* layerBase,
         std::string* str,
-        const std::string& comment = std::string()) const;
+        const std::string& comment = std::string()) const override;
 
     USD_API
     virtual bool WriteToStream(
         const SdfSpecHandle &spec,
         std::ostream& out,
-        size_t indent) const;
+        size_t indent) const override;
 
     /// Returns the value of the "format" argument to be used in the 
     /// FileFormatArguments when exporting or saving the given layer.
@@ -118,7 +118,7 @@ private:
     static SdfFileFormatConstPtr 
     _GetUnderlyingFileFormatForLayer(const SdfLayerBase* layer);
 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
 };
 
 

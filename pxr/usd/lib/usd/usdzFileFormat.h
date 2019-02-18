@@ -53,11 +53,11 @@ public:
     using SdfFileFormat::FileFormatArguments;
 
     USD_API
-    virtual bool IsPackage() const;
+    virtual bool IsPackage() const override;
 
     USD_API
     virtual std::string GetPackageRootLayerPath(
-        const std::string& resolvedPath) const;
+        const std::string& resolvedPath) const override;
 
     USD_API
     virtual SdfAbstractDataRefPtr

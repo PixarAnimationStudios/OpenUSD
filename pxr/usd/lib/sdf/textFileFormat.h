@@ -78,37 +78,37 @@ public:
 
     // SdfFileFormat overrides.
     SDF_API
-    virtual bool CanRead(const std::string &file) const;
+    virtual bool CanRead(const std::string &file) const override;
 
     SDF_API
     virtual bool Read(
         const SdfLayerBasePtr& layerBase,
         const std::string& resolvedPath,
-        bool metadataOnly) const;
+        bool metadataOnly) const override;
 
     SDF_API
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const std::string& filePath,
         const std::string& comment = std::string(),
-        const FileFormatArguments& args = FileFormatArguments()) const;
+        const FileFormatArguments& args = FileFormatArguments()) const override;
 
     SDF_API
     virtual bool ReadFromString(
         const SdfLayerBasePtr& layerBase,
-        const std::string& str) const;
+        const std::string& str) const override;
 
     SDF_API
     virtual bool WriteToString(
         const SdfLayerBase* layerBase,
         std::string* str,
-        const std::string& comment = std::string()) const;
+        const std::string& comment = std::string()) const override;
 
     SDF_API
     virtual bool WriteToStream(
         const SdfSpecHandle &spec,
         std::ostream& out,
-        size_t indent) const;
+        size_t indent) const override;
 
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
@@ -134,9 +134,10 @@ private:
 
     // Override to return false.  Reloading anonymous menva files clears their
     // content.
-    SDF_API virtual bool _ShouldSkipAnonymousReload() const;
+    SDF_API virtual bool _ShouldSkipAnonymousReload() const override;
 
-    SDF_API virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+    SDF_API 
+    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
 
 };
 

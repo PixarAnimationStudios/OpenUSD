@@ -52,31 +52,31 @@ public:
     using string = std::string;
 
     virtual SdfAbstractDataRefPtr InitData(
-        const FileFormatArguments& args) const;
+        const FileFormatArguments& args) const override;
 
-    virtual bool CanRead(const string &file) const;
+    virtual bool CanRead(const string &file) const override;
 
     virtual bool Read(
         const SdfLayerBasePtr& layerBase,
         const string& resolvedPath,
-        bool metadataOnly) const;
+        bool metadataOnly) const override;
 
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const string& filePath,
         const string& comment = string(),
-        const FileFormatArguments& args = FileFormatArguments()) const;
+        const FileFormatArguments& args = FileFormatArguments()) const override;
 
     virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
-                                const string& str) const;
+                                const string& str) const override;
 
     virtual bool WriteToString(const SdfLayerBase* layerBase,
                                string* str,
-                               const string& comment = string()) const;
+                               const string& comment = string()) const override;
 
     virtual bool WriteToStream(const SdfSpecHandle &spec,
                                std::ostream& out,
-                               size_t indent) const;
+                               size_t indent) const override;
 
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
@@ -85,7 +85,7 @@ protected:
     virtual ~UsdUsdcFileFormat();
 
 private:
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
 
 };
 
