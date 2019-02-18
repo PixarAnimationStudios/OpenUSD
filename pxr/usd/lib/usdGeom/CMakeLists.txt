@@ -106,10 +106,13 @@ pxr_test_scripts(
     testenv/testUsdGeomBasisCurves.py
     testenv/testUsdGeomBBoxCache.py
     testenv/testUsdGeomCamera.py
+    testenv/testUsdGeomComputeAtTime.py
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
+    testenv/testUsdGeomExtentTransform.py
     testenv/testUsdGeomMesh.py
+    testenv/testUsdGeomMetrics.py
     testenv/testUsdGeomMotionAPI.py
     testenv/testUsdGeomNoPlugLoad.py
     testenv/testUsdGeomPointInstancer.py
@@ -119,8 +122,6 @@ pxr_test_scripts(
     testenv/testUsdGeomSubset.py
     testenv/testUsdGeomXformable.py
     testenv/testUsdGeomXformCommonAPI.py
-    testenv/testUsdGeomExtentTransform.py
-    testenv/testUsdGeomComputeAtTime.py
 )
 
 pxr_build_test(testUsdGeomXformCache

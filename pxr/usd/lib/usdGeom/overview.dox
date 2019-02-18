@@ -293,6 +293,6 @@ Two things to note:
 
 The classes described above are concerned with individual primitives and 
 properties.  Some geometic quantities, however, describe aspects of an entire
-scene, which we encode as /stage metadata/.  For example it is UsdGeom that
-allows \ref UsdGeomUpAxis_group .
+scene, which we encode as _stage metadata_.  For example it is UsdGeom that
+allows \ref UsdGeomUpAxis_group and \ref UsdGeomLinearUnits_group.
 */

@@ -322,6 +322,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
     const TfToken loop;
+    /// \brief "metersPerUnit"
+    /// 
+    /// Stage-level metadata that encodes a scene's linear unit of measure as meters per encoded unit.
+    const TfToken metersPerUnit;
     /// \brief "model:applyDrawMode"
     /// 
     /// UsdGeomModelAPI

@@ -65,6 +65,10 @@ over "GLOBAL" (
                 string doc = """Stage-level metadata that encodes a scene's
                 orientation as a token whose value can be "Y" or "Z"."""
             }
+            dictionary metersPerUnit = {
+                string doc = """Stage-level metadata that encodes a scene's
+                linear unit of measure as meters per encoded unit."""
+            }
             dictionary inactiveIds = {
                 string doc = """int64listop prim metadata that specifies
                 the PointInstancer ids that should be masked (unrenderable)
