@@ -73,7 +73,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
 
-    ((RmanPlugPreferenceName, "rfmShadingEngineUsePrmanPlugs"))
+    ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
 
     ((RmanVolumeShaderPlugName, "volumeShader"))
 );
