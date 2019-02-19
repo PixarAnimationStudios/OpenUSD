@@ -87,6 +87,7 @@ class UsdMayaShadingModeExportContext
 public:
     void SetShadingEngine(const MObject& shadingEngine) { _shadingEngine = shadingEngine; }
     MObject GetShadingEngine() const { return _shadingEngine; }
+    UsdMayaExportParams GetExportParams() const { return _exportParams; }
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
     bool GetMergeTransformAndShape() const {
         return _exportParams.mergeTransformAndShape;
