@@ -144,19 +144,6 @@
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
-#include <boost/python/type_id.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -198,6 +185,3 @@
 #include <tbb/task.h>
 #include <tbb/task_arena.h>
 #include <tbb/tbb.h>
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
-#endif // PXR_PYTHON_SUPPORT_ENABLED
