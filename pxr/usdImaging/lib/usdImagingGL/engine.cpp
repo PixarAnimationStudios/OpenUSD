@@ -759,13 +759,23 @@ UsdImagingGLEngine::GetRendererAovs() const
     TF_VERIFY(_renderIndex);
 
     if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
-        return TfTokenVector(
-            { HdAovTokens->color,
-              HdAovTokens->primId,
+        TfTokenVector aovs;
+        aovs.push_back(HdAovTokens->color);
+
+        TfToken candidates[] =
+            { HdAovTokens->primId,
               HdAovTokens->depth,
               HdAovTokens->normal,
-              HdAovTokensMakePrimvar(TfToken("st")) }
-        );
+              HdAovTokensMakePrimvar(TfToken("st")) };
+
+        HdRenderDelegate *renderDelegate = _renderIndex->GetRenderDelegate();
+        for (auto const& aov : candidates) {
+            if (renderDelegate->GetDefaultAovDescriptor(aov).format 
+                    != HdFormatInvalid) {
+                aovs.push_back(aov);
+            }
+        }
+        return aovs;
     }
     return TfTokenVector();
 }
