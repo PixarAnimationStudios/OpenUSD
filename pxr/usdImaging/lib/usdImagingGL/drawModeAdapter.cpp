@@ -311,10 +311,39 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
                                             UsdImagingInstancerContext const*
                                                instancerContext) const
 {
-    if (_IsMaterialPath(cachePath) || _IsTexturePath(cachePath)) {
-        // Shader/texture aspects aren't time-varying.
+    const std::array<TfToken, 6> textureAttrs = {
+        UsdGeomTokens->modelCardTextureXPos,
+        UsdGeomTokens->modelCardTextureYPos,
+        UsdGeomTokens->modelCardTextureZPos,
+        UsdGeomTokens->modelCardTextureXNeg,
+        UsdGeomTokens->modelCardTextureYNeg,
+        UsdGeomTokens->modelCardTextureZNeg,
+    };
+
+    auto checkForTextureVariability =
+        [&textureAttrs, &prim, &timeVaryingBits, this]
+            (HdDirtyBits dirtyBits) {
+        for (const TfToken& attr: textureAttrs) {
+            if (_IsVarying(prim, attr, dirtyBits,
+                           UsdImagingTokens->usdVaryingTexture,
+                           timeVaryingBits, true)) {
+                break;
+            }
+        }
+    };
+
+    if (_IsTexturePath(cachePath)) {
+        checkForTextureVariability(HdTexture::DirtyTexture);
         return;
     }
+
+    if (_IsMaterialPath(cachePath)) {
+        checkForTextureVariability(
+            HdMaterial::DirtySurfaceShader | HdMaterial::DirtyParams);
+        return;
+    }
+
+    checkForTextureVariability(HdChangeTracker::DirtyParams);
 
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
