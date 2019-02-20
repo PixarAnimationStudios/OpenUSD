@@ -143,8 +143,13 @@ private:
     // Check whether the given cachePath is a path to the draw mode material.
     bool _IsMaterialPath(SdfPath const& path) const;
     // Check whether the given cachePath is a path to a draw mode texture.
-
     bool _IsTexturePath(SdfPath const& path) const;
+
+    // Check if any of the cards texture attributes are marked as time-varying.
+    void _CheckForTextureVariability(UsdPrim const& prim,
+                                     HdDirtyBits dirtyBits,
+                                     HdDirtyBits *timeVaryingBits) const;
+
     // Computes the extents of the given prim, using UsdGeomBBoxCache.
     // The extents are computed at UsdTimeCode::EarliestTime() (and are not
     // animated), and they are computed for purposes default/proxy/render.

@@ -303,13 +303,10 @@ UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
     }
 }
 
-
 void
-UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
-                                            SdfPath const& cachePath,
-                                            HdDirtyBits* timeVaryingBits,
-                                            UsdImagingInstancerContext const*
-                                               instancerContext) const
+UsdImagingGLDrawModeAdapter::_CheckForTextureVariability(
+    UsdPrim const& prim, HdDirtyBits dirtyBits,
+    HdDirtyBits *timeVaryingBits) const
 {
     const std::array<TfToken, 6> textureAttrs = {
         UsdGeomTokens->modelCardTextureXPos,
@@ -320,30 +317,38 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
         UsdGeomTokens->modelCardTextureZNeg,
     };
 
-    auto checkForTextureVariability =
-        [&textureAttrs, &prim, &timeVaryingBits, this]
-            (HdDirtyBits dirtyBits) {
-        for (const TfToken& attr: textureAttrs) {
-            if (_IsVarying(prim, attr, dirtyBits,
-                           UsdImagingTokens->usdVaryingTexture,
-                           timeVaryingBits, true)) {
-                break;
-            }
+    for (const TfToken& attr: textureAttrs) {
+        if (_IsVarying(prim, attr, dirtyBits,
+                       UsdImagingTokens->usdVaryingTexture,
+                       timeVaryingBits, false)) {
+            break;
         }
-    };
+    }
+}
 
+void
+UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            HdDirtyBits* timeVaryingBits,
+                                            UsdImagingInstancerContext const*
+                                               instancerContext) const
+{
+    // If the textures are time-varying, we need to mark DirtyTexture on the
+    // texture, and DirtyParams on the shader (so that the shader picks up
+    // the new texture handle).
+    // XXX: the DirtyParams part of this can go away when we do the dependency
+    // tracking in hydra.
     if (_IsTexturePath(cachePath)) {
-        checkForTextureVariability(HdTexture::DirtyTexture);
+        _CheckForTextureVariability(prim, HdTexture::DirtyTexture,
+                                    timeVaryingBits);
         return;
     }
 
     if (_IsMaterialPath(cachePath)) {
-        checkForTextureVariability(
-            HdMaterial::DirtySurfaceShader | HdMaterial::DirtyParams);
+        _CheckForTextureVariability(prim, HdMaterial::DirtyParams,
+                                    timeVaryingBits);
         return;
     }
-
-    checkForTextureVariability(HdChangeTracker::DirtyParams);
 
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
