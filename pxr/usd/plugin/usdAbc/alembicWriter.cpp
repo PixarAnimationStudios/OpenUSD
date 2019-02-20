@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -944,6 +944,9 @@ public:
     /// in Usd property order.
     TfTokenVector GetUnextractedNames() const;
 
+    /// Return the _WriterContext associated with this prim.
+    _WriterContext& GetWriterContext() const;
+
 private:
     UsdSamples _ExtractSamples(const TfToken& name);
     
@@ -1124,6 +1127,12 @@ TfTokenVector
 _PrimWriterContext::GetUnextractedNames() const
 {
     return _unextracted;
+}
+
+_WriterContext&
+_PrimWriterContext::GetWriterContext() const
+{
+    return _context;
 }
 
 // ----------------------------------------------------------------------------
@@ -1931,7 +1940,6 @@ _CopyPointIds(const VtValue& src)
     const VtInt64Array& value = src.UncheckedGet<VtInt64Array>();
     return _SampleForAlembic(std::vector<uint64_t>(value.begin(), value.end()));
 }
-
 
 // ----------------------------------------------------------------------------
 
@@ -2887,6 +2895,77 @@ _WritePolyMesh(_PrimWriterContext* context)
         context->AddTimeSampling(context->GetSampleTimesUnion()));
 }
 
+static
+void
+_WriteFaceSet(_PrimWriterContext* context)
+{
+    typedef OFaceSet Type;
+
+    const _WriterSchema& schema = context->GetSchema();
+
+    // Create the object and make it the parent.
+    shared_ptr<Type> object(new Type(context->GetParent(),
+                                     context->GetAlembicPrimName(),
+                                     _GetPrimMetadata(*context)));
+    context->SetParent(object);
+
+    // Collect the properties we need.
+    context->SetSampleTimesUnion(UsdAbc_TimeSamples());
+
+    UsdSamples indices =
+        context->ExtractSamples(UsdGeomTokens->indices,
+                                SdfValueTypeNames->IntArray);
+
+    // The familyType is contained in the parent prim, so we 
+    // contruct a new _PrimWriterContext to access it.
+    SdfPath parentPath = context->GetPath().GetParentPath();
+    _PrimWriterContext parentPrimContext(context->GetWriterContext(),
+                                         context->GetParent(),
+                                         SdfAbstractDataSpecId(&parentPath));
+
+    UsdSamples familyType = parentPrimContext.ExtractSamples(
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
+        SdfValueTypeNames->Token);
+
+    // Copy all the samples.
+    typedef Type::schema_type::Sample SampleT;
+    SampleT sample;
+
+    for (double time : context->GetSampleTimesUnion()) {
+        // Build the sample.
+        sample.reset();
+        _SampleForAlembic alembicFaces =
+        _Copy(schema,
+              time, indices,
+              &sample, &SampleT::setFaces);
+
+        // Write the sample.
+        object->getSchema().set(sample);
+    }
+
+    // It's possible that our default family name "materialBind", is not 
+    // set on the prim. In that case, use kFaceSetNonExclusive.
+    FaceSetExclusivity faceSetExclusivity = kFaceSetNonExclusive;
+    if (!familyType.IsEmpty())
+    {
+        double time = UsdTimeCode::EarliestTime().GetValue();
+        const TfToken& value = familyType.Get(time).UncheckedGet<TfToken>();
+        if (!value.IsEmpty() && 
+            (value == UsdGeomTokens->partition || 
+             value == UsdGeomTokens->nonOverlapping)) {
+            faceSetExclusivity = kFaceSetExclusive;
+        }
+    }
+
+    // Face set exclusivity is not a property of the sample. Instead, it's set 
+    // on the object schema and not time sampled.
+    object->getSchema().setFaceExclusivity(faceSetExclusivity);
+
+    // Set the time sampling.
+    object->getSchema().setTimeSampling(
+        context->AddTimeSampling(context->GetSampleTimesUnion()));
+}
+
 // As of Alembic-1.5.1, OSubD::schema_type::Sample has a bug:
 // setHoles() actually sets cornerIndices.  The member, m_holes, is
 // protected so we subclass and fix setHoles().
@@ -3471,6 +3550,9 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         .AppendWriter(_WriteArbGeomParams)
         .AppendWriter(_WriteUserProperties)
         .AppendWriter(_WriteOther)
+        ;
+    schema.AddType(UsdAbcPrimTypeNames->GeomSubset)
+        .AppendWriter(_WriteFaceSet)
         ;
 
     // This handles the root.
