@@ -15,8 +15,16 @@
 
 // Hydra
 #include <pxr/imaging/glf/simpleLight.h>
-#include <pxr/usdImaging/usdImagingGL/gl.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
+#if PXR_MAJOR_VERSION || PXR_MINOR_VERSION >= 19
+#include <pxr/usdImaging/usdImagingGL/engine.h>
+#else
+#include <pxr/usdImaging/usdImagingGL/gl.h>
+#define UsdImagingGLEngine UsdImagingGL
+#define UsdImagingGLRenderParams UsdImagingGL::RenderParams
+#define UsdImagingGLCullStyle UsdImagingGL::CullStyle
+#define UsdImagingGLDrawMode UsdImagingGL::DrawMode
+#endif
 
 namespace {
 
@@ -58,9 +66,9 @@ float clamp(float a, float b, float c) { return a < b ? b : a < c ? a : c; }
 // a GR_Primitive stops being shown so this is the only way I found to garbage-collect these.
 // If there are multiple scene viewers this may screw up if they are not all showing the same
 // thing, but it is not clear if that is possible.
-class UsdImagingGLMap {
+class EngineMap {
     struct Entry {
-        std::unique_ptr<pxr::UsdImagingGL> pointer;
+        std::unique_ptr<pxr::UsdImagingGLEngine> pointer;
         int cleanupId;
     };
     std::map<pxr::UsdStageWeakPtr, Entry> map;
@@ -80,13 +88,13 @@ public:
         ++cleanupId;
     }
 
-    pxr::UsdImagingGL* get(const pxr::UsdStageWeakPtr& stage)
+    pxr::UsdImagingGLEngine* get(const pxr::UsdStageWeakPtr& stage)
     {
         std::lock_guard<std::mutex> lock(mutex);
         Entry& entry = map[stage];
         entry.cleanupId = cleanupId;
         if (not entry.pointer)
-            entry.pointer.reset(new pxr::UsdImagingGL());
+            entry.pointer.reset(new pxr::UsdImagingGLEngine());
         return entry.pointer.get();
     }
 
@@ -108,7 +116,7 @@ public:
         return n;
     }
 
-} usdImagingGLMap;
+} engineMap;
 
 // Hash to identify unique usd prims
 // This is different from hash_value(UsdObject) as it has stage in it, does not have type
@@ -213,7 +221,7 @@ GR_PrimHydra::acceptPrimitive(GT_PrimitiveType t,
                               const GT_PrimitiveHandle& ph,
                               const GEO_Primitive* hprim)
 {
-    usdImagingGLMap.cleanup();
+    engineMap.cleanup();
     if (t != GT_PrimHydra::typeId())
         return GR_NOT_PROCESSED;
     this->ph = ph;
@@ -223,12 +231,12 @@ GR_PrimHydra::acceptPrimitive(GT_PrimitiveType t,
 void
 GR_PrimHydra::cleanup(RE_Render*)
 {
-    usdImagingGLMap.cleanup();
+    engineMap.cleanup();
 }
 
 GR_PrimHydra::~GR_PrimHydra()
 {
-    usdImagingGLMap.cleanup();
+    engineMap.cleanup();
 }
 
 static std::map<const RE_Window*, GR_PrimHydra*> lastPrim; // last one render() called on per-window
@@ -259,7 +267,7 @@ GR_PrimHydra::update(RE_Render* r,
 }
 
 // Parameters for Hydra renderer (a few added atop the pixar structure)
-struct Parameters : public pxr::UsdImagingGL::RenderParams
+struct Parameters : public pxr::UsdImagingGLRenderParams
 {
     UT_Matrix4D usdTransform; // inverse(usd)*prim transforms
     bool drawWireframe = false; // run a second pass to draw wireframe overlay
@@ -267,7 +275,7 @@ struct Parameters : public pxr::UsdImagingGL::RenderParams
     bool noPostPass = false; // renders that must be run immediately
     bool operator==(const Parameters& p) const {
         return
-            pxr::UsdImagingGL::RenderParams::operator==(p) &&
+            pxr::UsdImagingGLRenderParams::operator==(p) &&
             appxEqual(usdTransform, p.usdTransform) &&
             noPostPass == p.noPostPass &&
             drawWireframe == p.drawWireframe &&
@@ -445,7 +453,7 @@ GR_PrimHydra::render(RE_Render* r,
     // lod is clamped to shut up Hydra warnings and to avoid hanging on huge complexity:
     params.complexity = clamp(dp.opts->common().LOD(), 1.0f, 1.4f);
     if (dp.opts->common().removeBackface())
-        params.cullStyle = pxr::UsdImagingGL::CullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+        params.cullStyle = pxr::UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
     params.gammaCorrectColors = false; // nyi in usd code, but I believe we want this off
     params.enableSampleAlphaToCoverage = true; // usdView does this
     params.applyRenderState = false; // not necessary
@@ -463,14 +471,14 @@ GR_PrimHydra::render(RE_Render* r,
         params.enableLighting = not (flags & GR_RENDER_FLAG_UNLIT);
         if (flags & GR_RENDER_FLAG_FLAT_SHADED) {
             if (params.enableLighting) {
-                params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_SHADED_FLAT;
+                params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
                 polyShader = &theFlatShader;
             } else {
                 polyShader = &theUnlitShader;
             }
             params.complexity = 1.0f; // flat ignores subdivision, make wireframe match
         } else {
-            params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_SHADED_SMOOTH;
+            params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
             polyShader = params.enableLighting ? &theLitShader : &theUnlitShader;
         }
         // disable the colored lines for the wireframe pass:
@@ -478,20 +486,20 @@ GR_PrimHydra::render(RE_Render* r,
         break;
     case GR_RENDER_WIREFRAME:
     case GR_RENDER_MATERIAL_WIREFRAME:
-        params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_WIREFRAME;
+        params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_WIREFRAME;
         params.drawWireframe = true;
         drawPoly = false;
         // Houdini ignores backface culling for wireframe, but it seems useful so I keep it
-        // params.cullStyle = pxr::UsdImagingGL::CullStyle::CULL_STYLE_NOTHING;
+        // params.cullStyle = pxr::UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
         break;
     case GR_RENDER_XRAY_LINE: // wireframe ghost (nyi, reuse hidden line render)
     case GR_RENDER_HIDDEN_LINE:
-        params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_GEOM_ONLY;
+        params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_GEOM_ONLY;
         params.drawWireframe = true;
         params.noColor = true;
         break;
     case GR_RENDER_GHOST_LINE: // hidden line ghost
-        params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_GEOM_ONLY;
+        params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_GEOM_ONLY;
         params.overrideColor = vec4f(r->getUniform(RE_UNIFORM_CONST_COLOR)->getVector4());
         params.drawWireframe = true;
         break;
@@ -535,15 +543,15 @@ GR_PrimHydra::render(RE_Render* r,
         // transparency to work, but a line drawing overlay looks pretty good. Only
         // works for object selection preview, as I don't have access to what
         // parts have preview selection (it is in shader variables).
-        params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_WIREFRAME;
+        params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_WIREFRAME;
         params.overrideColor = vec4f(r->getUniform(RE_UNIFORM_CONST_COLOR)->getVector4());
-        params.cullStyle = pxr::UsdImagingGL::CullStyle::CULL_STYLE_BACK;
+        params.cullStyle = pxr::UsdImagingGLCullStyle::CULL_STYLE_BACK;
         params.noPostPass = true;
         break;
     case GR_RENDER_POST_PASS: // run batched Hydra renders
         if (myInfo->getPostPassID() != postPassId) return;
         postPassId = -1;
-        //std::cout << hydras.size() << " renders of " << usdImagingGLMap.size() << " stages\n";
+        //std::cout << hydras.size() << " renders of " << engineMap.size() << " stages\n";
         for (Hydra& h : hydras)
             runHydra(r, h, dp);
         hydras.clear();
@@ -759,10 +767,10 @@ GR_PrimHydra::render(RE_Render* r,
 
     if (params.drawWireframe) {
         // turn this flag off if main draw mode does it
-        if (params.drawMode == pxr::UsdImagingGL::DrawMode::DRAW_SHADED_SMOOTH) {
-            params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_WIREFRAME_ON_SURFACE;
+        if (params.drawMode == pxr::UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH) {
+            params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
             params.drawWireframe = false;
-        } else if (params.drawMode == pxr::UsdImagingGL::DrawMode::DRAW_WIREFRAME) {
+        } else if (params.drawMode == pxr::UsdImagingGLDrawMode::DRAW_WIREFRAME) {
             params.drawWireframe = false;
         }
     }
@@ -770,7 +778,7 @@ GR_PrimHydra::render(RE_Render* r,
     Hydra* hp = nullptr; // cache last one that we could use
 
     // Only run gc if we are drawing all hydra objects
-    if (not whichRE) usdImagingGLMap.gcenable();
+    if (not whichRE) engineMap.gcenable();
 
     for (size_t i = 0; i < size(); ++i) {
         if (drawType[i] != DrawType::HYDRA) continue;
@@ -929,32 +937,32 @@ GR_PrimHydra::runHydra(RE_Render* r, Hydra& h, GR_DrawParms& dp)
     r->pushShader(nullptr);
 
     // the renderer to use, pulled from per-stage cache
-    pxr::UsdImagingGL* usdImagingGL = usdImagingGLMap.get(h.stage);
-    usdImagingGL->PrepareBatch(h.stage->GetPseudoRoot(), h.params);
+    pxr::UsdImagingGLEngine* engine = engineMap.get(h.stage);
+    engine->PrepareBatch(h.stage->GetPseudoRoot(), h.params);
     pxr::SdfPathVector paths;
 
     for (auto&& p : h.prims) {
         // add the prim to the renderer
         pxr::UsdPrim prim(p->getUsdPrim());
-        //usdImagingGL->PrepareBatch(prim, h.params);
+        //engine->PrepareBatch(prim, h.params);
         paths.emplace_back(prim.GetPrimPath());
     }
 
-    usdImagingGL->SetCameraState(
+    engine->SetCameraState(
         mat4d(r->getUniform(RE_UNIFORM_VIEW_MATRIX)->getMatrix4()),
         mat4d(r->getUniform(RE_UNIFORM_PROJECT_MATRIX)->getMatrix4()),
         vec4d(r->getViewport2DI()));
 
-    usdImagingGL->SetRootTransform(mat4d(h.params.usdTransform));
+    engine->SetRootTransform(mat4d(h.params.usdTransform));
 
     if (h.params.enableLighting)
-        usdImagingGL->SetLightingState(lights, material, ambient);
+        engine->SetLightingState(lights, material, ambient);
 
     if (not h.selectedPaths.empty()) {
         h.params.highlight = true;
-        usdImagingGL->SetSelectionColor(
+        engine->SetSelectionColor(
             vec4fna(r->getUniform(RE_UNIFORM_SELECT_COLOR)->getVector4()));
-        usdImagingGL->SetSelected(h.selectedPaths);
+        engine->SetSelected(h.selectedPaths);
     }
 
     if (h.params.drawWireframe) {
@@ -962,15 +970,15 @@ GR_PrimHydra::runHydra(RE_Render* r, Hydra& h, GR_DrawParms& dp)
         if (h.params.noColor) r->disableColorBufferWriting();
     }
 
-    usdImagingGL->RenderBatch(paths, h.params);
+    engine->RenderBatch(paths, h.params);
 
     if (h.params.drawWireframe) {
         if (h.params.noColor) r->enableColorBufferWriting();
         r->polygonOffset(false);
-        h.params.drawMode = pxr::UsdImagingGL::DrawMode::DRAW_WIREFRAME;
+        h.params.drawMode = pxr::UsdImagingGLDrawMode::DRAW_WIREFRAME;
         h.params.overrideColor = pxr::GfVec4f(0); // this overrides wireframeColor, turn it off
         if (h.params.wireframeColor[3]) h.params.enableLighting = false; // don't light solid colors
-        usdImagingGL->RenderBatch(paths, h.params);
+        engine->RenderBatch(paths, h.params);
     }
 
     // Hydra changed the shader so cached values in RE_Render must be cleared
