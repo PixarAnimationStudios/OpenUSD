@@ -1776,7 +1776,7 @@ class AppController(QtCore.QObject):
             self._fpsHUDInfo[HUDEntries.PLAYBACK]  = "N/A"
             self._timer.stop()
             self._primViewUpdateTimer.start()
-            self._updateOnFrameChange(refreshUI=True)
+            self._updateOnFrameChange()
 
     def _advanceFrameForPlayback(self):
         sleep(max(0, 1. / self.framesPerSecond - (time() - self._lastFrameTime)))
@@ -3187,27 +3187,30 @@ class AppController(QtCore.QObject):
             str(round(self._dataModel.currentFrame.GetValue(), ndigits=2)))
 
         if (self._dataModel.currentFrame != frameAtStart) or forceUpdate:
-            # do not update HUD/BBOX if scrubbing or playing
-            updateUI = forceUpdate or not (self._dataModel.playing or
-                                          self._ui.frameSlider.isSliderDown())
-            self._updateOnFrameChange(updateUI)
+            self._updateOnFrameChange()
 
-    def _updateOnFrameChange(self, refreshUI = True):
-        """Called when the frame changed, updates the renderer and such"""
+    def _updateOnFrameChangeFinish(self):
+        """Called when the frame changes have finished.
+        e.g When the playback/scrubbing has stopped.
+        """
+        # slow stuff that we do only when not playing
+        # topology might have changed, recalculate
+        self._updateHUDGeomCounts()
+        self._updatePropertyView()
+        self._refreshAttributeValue()
 
-        if refreshUI: # slow stuff that we do only when not playing
-            # topology might have changed, recalculate
-            self._updateHUDGeomCounts()
-            self._updatePropertyView()
-            self._refreshAttributeValue()
+        # value sources of an attribute can change upon frame change
+        # due to value clips, so we must update the layer stack.
+        self._updateLayerStackView()
 
-            # value sources of an attribute can change upon frame change
-            # due to value clips, so we must update the layer stack.
-            self._updateLayerStackView()
+        # refresh the visibility column
+        self._resetPrimViewVis(selItemsOnly=False, authoredVisHasChanged=False)
 
-            # refresh the visibility column
-            self._resetPrimViewVis(selItemsOnly=False, authoredVisHasChanged=False)
-
+    def _updateOnFrameChange(self):
+        """Called when the frame changes, updates the renderer and such"""
+        # do not update HUD/BBOX if scrubbing or playing
+        if not (self._dataModel.playing or self._ui.frameSlider.isSliderDown()):
+            self._updateOnFrameChangeFinish()
         if self._stageView:
             # this is the part that renders
             if self._dataModel.playing:
