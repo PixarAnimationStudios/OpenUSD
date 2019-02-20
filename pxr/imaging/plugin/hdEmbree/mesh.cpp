@@ -579,6 +579,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         rtcSetUserData(_rtcMeshScene, _rtcMeshId,
             new HdEmbreePrototypeContext);
         _GetPrototypeContext()->rprim = this;
+        _GetPrototypeContext()->primitiveParams = (_refined ?
+            _trianglePrimitiveParams : VtIntArray());
 
         // Add _EmbreeCullFaces as a filter function for backface culling.
         rtcSetIntersectionFilterFunction(_rtcMeshScene, _rtcMeshId,
@@ -752,6 +754,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, matf.GetArray());
             // Update the transform in the instance context.
             _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
+            _GetInstanceContext(scene, i)->instanceId = i;
             // Mark the instance as updated in the BVH.
             rtcUpdate(scene, _rtcInstanceIds[i]);
         }
@@ -776,6 +779,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, _transform.GetArray());
             // Update the transform in the render context.
             _GetInstanceContext(scene, 0)->objectToWorldMatrix = _transform;
+            _GetInstanceContext(scene, 0)->instanceId = 0;
         }
         if (newInstance || newMesh ||
             HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||

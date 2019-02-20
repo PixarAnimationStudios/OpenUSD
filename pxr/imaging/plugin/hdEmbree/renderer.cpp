@@ -138,11 +138,12 @@ HdEmbreeRenderer::_ValidateAovBindings()
             continue;
         }
 
-        // Currently, HdEmbree only supports color, linearDepth, and primId
         if (_aovNames[i].name != HdAovTokens->color &&
             _aovNames[i].name != HdAovTokens->linearDepth &&
             _aovNames[i].name != HdAovTokens->depth &&
             _aovNames[i].name != HdAovTokens->primId &&
+            _aovNames[i].name != HdAovTokens->instanceId &&
+            _aovNames[i].name != HdAovTokens->elementId &&
             _aovNames[i].name != HdAovTokens->Neye &&
             _aovNames[i].name != HdAovTokens->normal &&
             !_aovNames[i].isPrimvar) {
@@ -162,8 +163,10 @@ HdEmbreeRenderer::_ValidateAovBindings()
             _aovBindingsValid = false;
         }
 
-        // primId is only supported for int32 attachments
-        if (_aovNames[i].name == HdAovTokens->primId &&
+        // ids are only supported for int32 attachments
+        if ((_aovNames[i].name == HdAovTokens->primId ||
+             _aovNames[i].name == HdAovTokens->instanceId ||
+             _aovNames[i].name == HdAovTokens->elementId) &&
             format != HdFormatInt32) {
             TF_WARN("Aov '%s' has unsupported format '%s'",
                     _aovNames[i].name.GetText(),
@@ -576,11 +579,13 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
             if(_ComputeDepth(ray, &depth, ndc)) {
                 renderBuffer->Write(GfVec3i(x,y,1), 1, &depth);
             }
-        } else if (_aovNames[i].name == HdAovTokens->primId &&
+        } else if ((_aovNames[i].name == HdAovTokens->primId ||
+                    _aovNames[i].name == HdAovTokens->elementId ||
+                    _aovNames[i].name == HdAovTokens->instanceId) &&
                    renderBuffer->GetFormat() == HdFormatInt32) {
-            int32_t primId;
-            if (_ComputePrimId(ray, &primId)) {
-                renderBuffer->Write(GfVec3i(x,y,1), 1, &primId);
+            int32_t id;
+            if (_ComputeId(ray, _aovNames[i].name, &id)) {
+                renderBuffer->Write(GfVec3i(x,y,1), 1, &id);
             }
         } else if ((_aovNames[i].name == HdAovTokens->Neye ||
                     _aovNames[i].name == HdAovTokens->normal) &&
@@ -601,8 +606,8 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
 }
 
 bool
-HdEmbreeRenderer::_ComputePrimId(RTCRay const& rayHit,
-                                 int32_t *primId)
+HdEmbreeRenderer::_ComputeId(RTCRay const& rayHit, TfToken const& idType,
+                             int32_t *id)
 {
     if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
         return false;
@@ -617,7 +622,21 @@ HdEmbreeRenderer::_ComputePrimId(RTCRay const& rayHit,
         static_cast<HdEmbreePrototypeContext*>(
             rtcGetUserData(instanceContext->rootScene, rayHit.geomID));
 
-    *primId = prototypeContext->rprim->GetPrimId();
+    if (idType == HdAovTokens->primId) {
+        *id = prototypeContext->rprim->GetPrimId();
+    } else if (idType == HdAovTokens->elementId) {
+        if (prototypeContext->primitiveParams.empty()) {
+            *id = rayHit.primID;
+        } else {
+            *id = HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam(
+                prototypeContext->primitiveParams[rayHit.primID]);
+        }
+    } else if (idType == HdAovTokens->instanceId) {
+        *id = instanceContext->instanceId;
+    } else {
+        return false;
+    }
+
     return true;
 }
 

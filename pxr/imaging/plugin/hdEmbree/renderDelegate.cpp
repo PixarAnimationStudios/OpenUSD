@@ -250,7 +250,9 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
     } else if (name == HdAovTokens->linearDepth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(0.0f));
-    } else if (name == HdAovTokens->primId) {
+    } else if (name == HdAovTokens->primId ||
+               name == HdAovTokens->instanceId ||
+               name == HdAovTokens->elementId) {
         return HdAovDescriptor(HdFormatInt32, false, VtValue(0));
     } else {
         HdParsedAovToken aovId(name);

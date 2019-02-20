@@ -72,7 +72,7 @@ static void _colorizeNdcDepth(uint8_t* dest, uint8_t* src, size_t nPixels)
             std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
         uint8_t value = (uint8_t)(255.0f * valuef);
         // special case 1.0 (far plane) as all black.
-        if (depthBuffer[i] == 1.0f) {
+        if (depthBuffer[i] >= 1.0f) {
             value = 0;
         }
         dest[i*4+0] = value;
@@ -157,6 +157,8 @@ static _Colorizer _colorizerTable[] = {
     { HdAovTokens->Neye, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->normal, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->primId, HdFormatInt32, _colorizeId },
+    { HdAovTokens->elementId, HdFormatInt32, _colorizeId },
+    { HdAovTokens->instanceId, HdFormatInt32, _colorizeId },
 };
 
 void
