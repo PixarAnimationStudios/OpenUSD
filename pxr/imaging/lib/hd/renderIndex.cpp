@@ -1372,6 +1372,10 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
     HdInstancer *instancer =
         _renderDelegate->CreateInstancer(delegate, id, parentId);
 
+    if (instancer == nullptr) {
+        return;
+    }
+
     _instancerMap[id] = instancer;
     _tracker.InstancerInserted(id);
 }
