@@ -23,6 +23,8 @@
 //
 #include "pxr/usd/usdSkel/animMapper.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
@@ -226,14 +228,24 @@ BOOST_PP_SEQ_FOR_EACH(_UNTYPED_REMAP, ~, SDF_VALUE_TYPES);
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelAnimMapper::RemapTransforms(const VtMatrix4dArray& source,
-                                   VtMatrix4dArray* target,
+UsdSkelAnimMapper::RemapTransforms(const VtArray<Matrix4>& source,
+                                   VtArray<Matrix4>* target,
                                    int elementSize) const
 {
-    static const GfMatrix4d identity(1);
+    static const Matrix4 identity(1);
     return Remap(source, target, elementSize, &identity);
 }
+
+
+template USDSKEL_API bool
+UsdSkelAnimMapper::RemapTransforms(const VtMatrix4dArray&,
+                                   VtMatrix4dArray*, int) const;
+
+template USDSKEL_API bool
+UsdSkelAnimMapper::RemapTransforms(const VtMatrix4fArray&,
+                                   VtMatrix4fArray*, int) const;
 
 
 bool

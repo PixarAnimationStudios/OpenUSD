@@ -23,11 +23,15 @@
 //
 #include "pxr/usd/usdSkel/animMapper.h"
 
-#include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+
+#include "pxr/usd/usd/pyConversions.h"
 
 #include <boost/python.hpp>
 
@@ -52,13 +56,14 @@ _Remap(const UsdSkelAnimMapper& self,
 }
 
 
-VtMatrix4dArray
+template <typename Matrix4>
+VtArray<Matrix4>
 _RemapTransforms(const UsdSkelAnimMapper& self,
-                 const VtMatrix4dArray& source,
-                 const VtMatrix4dArray& target,
+                 const VtArray<Matrix4>& source,
+                 const VtArray<Matrix4>& target,
                  int elementSize)
 {
-    VtMatrix4dArray output(target);
+    VtArray<Matrix4> output(target);
     self.RemapTransforms(source, &output, elementSize);
     return output;
 }
@@ -83,7 +88,12 @@ void wrapUsdSkelAnimMapper()
               arg("elementSize")=1,
               arg("defaultValue")=VtValue()))
 
-        .def("RemapTransforms", &_RemapTransforms,
+        .def("RemapTransforms", &_RemapTransforms<GfMatrix4d>,
+             (arg("source"),
+              arg("target"),
+              arg("elementSize")=1))
+
+        .def("RemapTransforms", &_RemapTransforms<GfMatrix4f>,
              (arg("source"),
               arg("target"),
               arg("elementSize")=1))

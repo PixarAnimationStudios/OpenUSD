@@ -23,6 +23,9 @@
 //
 #include "pxr/usd/usdSkel/skinningQuery.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
@@ -174,7 +177,7 @@ bool
 UsdSkelSkinningQuery::GetJointOrder(VtTokenArray* jointOrder) const
 {
     if (jointOrder) {
-        if(_jointOrder) {
+        if (_jointOrder) {
             *jointOrder = *_jointOrder;
             return true;
         }
@@ -299,55 +302,67 @@ UsdSkelSkinningQuery::ComputeVaryingJointInfluences(size_t numPoints,
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelSkinningQuery::ComputeSkinnedPoints(const VtMatrix4dArray& xforms,
+UsdSkelSkinningQuery::ComputeSkinnedPoints(const VtArray<Matrix4>& xforms,
                                            VtVec3fArray* points,
                                            UsdTimeCode time) const
 {
     TRACE_FUNCTION();
 
-    if(!points) {
+    if (!points) {
         TF_CODING_ERROR("'points' pointer is null.");
         return false;
     }
 
     VtIntArray jointIndices;
     VtFloatArray jointWeights;
-    if(ComputeVaryingJointInfluences(points->size(), &jointIndices,
-                                     &jointWeights, time)) {
+    if (ComputeVaryingJointInfluences(points->size(), &jointIndices,
+                                      &jointWeights, time)) {
 
         // If the binding site has a custom joint ordering, the query will have
         // a mapper that should be used to reorder transforms
         // (skel order -> binding order)
-        VtMatrix4dArray orderedXforms(xforms);
-        if(_mapper) {
-            if(!_mapper->RemapTransforms(xforms, &orderedXforms)) {
+        VtArray<Matrix4> orderedXforms(xforms);
+        if (_mapper) {
+            if (!_mapper->RemapTransforms(xforms, &orderedXforms)) {
                 return false;
             }
         }
 
-        GfMatrix4d geomBindXform = GetGeomBindTransform(time);
+        const Matrix4 geomBindXform(GetGeomBindTransform(time));
         return UsdSkelSkinPointsLBS(geomBindXform, orderedXforms,
                                     jointIndices, jointWeights,
-                                    _numInfluencesPerComponent, points);
+                                    _numInfluencesPerComponent,
+                                    *points);
     }
     return false;
 }
 
 
+template USDSKEL_API bool
+UsdSkelSkinningQuery::ComputeSkinnedPoints(const VtArray<GfMatrix4d>&,
+                                           VtVec3fArray*, UsdTimeCode) const;
+
+template USDSKEL_API bool
+UsdSkelSkinningQuery::ComputeSkinnedPoints(const VtArray<GfMatrix4f>&,
+                                           VtVec3fArray*, UsdTimeCode) const;
+
+
+template <typename Matrix4>
 bool
-UsdSkelSkinningQuery::ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
-                                              GfMatrix4d* xform,
+UsdSkelSkinningQuery::ComputeSkinnedTransform(const VtArray<Matrix4>& xforms,
+                                              Matrix4* xform,
                                               UsdTimeCode time) const
 {
     TRACE_FUNCTION();
 
-    if(!xform) {
+    if (!xform) {
         TF_CODING_ERROR("'xform' pointer is null.");
         return false;
     }
 
-    if(!IsRigidlyDeformed()) {
+    if (!IsRigidlyDeformed()) {
         TF_CODING_ERROR("Attempted to skin a transform, but "
                         "joint influences are not constant.");
         return false;
@@ -355,19 +370,19 @@ UsdSkelSkinningQuery::ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
 
     VtIntArray jointIndices;
     VtFloatArray jointWeights;
-    if(ComputeJointInfluences(&jointIndices, &jointWeights, time)) {
+    if (ComputeJointInfluences(&jointIndices, &jointWeights, time)) {
 
         // If the binding site has a custom joint ordering, the query will have
         // a mapper that should be used to reorder transforms
         // (skel order -> binding order)
-        VtMatrix4dArray orderedXforms(xforms);
-        if(_mapper) {
-            if(!_mapper->Remap(xforms, &orderedXforms)) {
+        VtArray<Matrix4> orderedXforms(xforms);
+        if (_mapper) {
+            if (!_mapper->Remap(xforms, &orderedXforms)) {
                 return false;
             }
         }
 
-        GfMatrix4d geomBindXform = GetGeomBindTransform(time);
+        const Matrix4 geomBindXform(GetGeomBindTransform(time));
         return UsdSkelSkinTransformLBS(geomBindXform, orderedXforms,
                                        jointIndices, jointWeights, xform);
     }
@@ -375,32 +390,46 @@ UsdSkelSkinningQuery::ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
 }
 
 
+template USDSKEL_API bool
+UsdSkelSkinningQuery::ComputeSkinnedTransform(
+    const VtArray<GfMatrix4d>&, GfMatrix4d*, UsdTimeCode time) const;
+
+template USDSKEL_API bool
+UsdSkelSkinningQuery::ComputeSkinnedTransform(
+    const VtArray<GfMatrix4f>&, GfMatrix4f*, UsdTimeCode time) const;
+
+
+template <typename Matrix4>
 float
 UsdSkelSkinningQuery::ComputeExtentsPadding(
-    const VtMatrix4dArray& skelRestXforms,
+    const VtArray<Matrix4>& skelRestXforms,
     const UsdGeomBoundable& boundable) const
 {
     // Don't use default time; properties may be keyed (and still unvarying)
     // We do, however, expect the computed quantity to not be time varying.
-    UsdTimeCode time = UsdTimeCode::EarliestTime();
+    const UsdTimeCode time = UsdTimeCode::EarliestTime();
 
     VtVec3fArray boundableExtent;
-    if(boundable && 
+    if (boundable && 
        boundable.GetExtentAttr().Get(&boundableExtent, time) &&
        boundableExtent.size() == 2) {
         
-        VtVec3fArray jointsExtent;
-        if(UsdSkelComputeJointsExtent(skelRestXforms, &jointsExtent)) {
+        GfRange3f jointsRange;
+        if (UsdSkelComputeJointsExtent<Matrix4>(skelRestXforms, &jointsRange)) {
 
-            GfRange3d range = 
+            // Get the aligned range of the gprim in its bind pose.
+            const GfRange3d gprimRange = 
                 GfBBox3d(GfRange3d(boundableExtent[0], boundableExtent[1]),
-                         GetGeomBindTransform(time)).ComputeAlignedRange();
+                         GetGeomBindTransform(time))
+                    .ComputeAlignedRange();
 
-            GfVec3f minDiff = jointsExtent[0] - GfVec3f(range.GetMin());
-            GfVec3f maxDiff = GfVec3f(range.GetMax()) - jointsExtent[1];
+            const GfVec3f minDiff =
+                jointsRange.GetMin() - GfVec3f(gprimRange.GetMin());
+            const GfVec3f maxDiff =
+                GfVec3f(gprimRange.GetMax()) - jointsRange.GetMax();
 
             float padding = 0.0f;
-            for(int i = 0; i < 3; ++i) {
+            for (int i = 0; i < 3; ++i) {
                 padding = std::max(padding, minDiff[i]);
                 padding = std::max(padding, maxDiff[i]);
             }
@@ -409,6 +438,15 @@ UsdSkelSkinningQuery::ComputeExtentsPadding(
     }
     return 0.0f;
 }
+
+
+template USDSKEL_API float
+UsdSkelSkinningQuery::ComputeExtentsPadding(
+    const VtArray<GfMatrix4d>&, const UsdGeomBoundable&) const;
+
+template USDSKEL_API float
+UsdSkelSkinningQuery::ComputeExtentsPadding(
+    const VtArray<GfMatrix4f>&, const UsdGeomBoundable&) const;
 
 
 GfMatrix4d

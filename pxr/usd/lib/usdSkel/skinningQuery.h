@@ -174,8 +174,9 @@ public:
     /// at time \p time (which will typically be unvarying).
     ///
     /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinnedPoints(const VtMatrix4dArray& xforms,
+    bool ComputeSkinnedPoints(const VtArray<Matrix4>& xforms,
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -188,9 +189,10 @@ public:
     /// no transform will be computed, and the function will return false.
     ///
     /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
-                                 GfMatrix4d* xform,
+    bool ComputeSkinnedTransform(const VtArray<Matrix4>& xforms,
+                                 Matrix4* xform,
                                  UsdTimeCode time=UsdTimeCode::Default()) const;
 
     /// Helper for computing an *approximate* padding for use in extents
@@ -199,8 +201,9 @@ public:
     /// at rest -- and the extents of the skinned primitive.
     /// This is intended to provide a suitable, constant metric for padding
     /// joint extents as computed by UsdSkelComputeJointsExtent.
+    template <typename Matrix4>
     USDSKEL_API
-    float ComputeExtentsPadding(const VtMatrix4dArray& skelRestXforms,
+    float ComputeExtentsPadding(const VtArray<Matrix4>& skelRestXforms,
                                 const UsdGeomBoundable& boundable) const;
 
     USDSKEL_API

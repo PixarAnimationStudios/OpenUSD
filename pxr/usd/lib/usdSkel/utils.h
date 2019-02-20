@@ -34,7 +34,9 @@
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/quatf.h"
-#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/tf/span.h"
 #include "pxr/base/vt/array.h"
@@ -49,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class GfMatrix3f;
-class GfMatrix4d;
+class GfRange3f;
 class GfRotation;
 class UsdPrim;
 class UsdPrimRange;
@@ -84,8 +86,10 @@ UsdSkelIsSkinnablePrim(const UsdPrim& prim);
 /// Compute joint transforms in joint-local space.
 /// Transforms are computed from \p xforms, holding concatenated
 /// joint transforms, and \p inverseXforms, providing the inverse
-/// of each of those transforms.
-/// If the root transforms include an additional, external transformation
+/// of each of those transforms. The resulting local space transforms
+/// are written to \p jointLocalXforms, which must be the same size
+/// as \p topology.
+/// If the root joints include an additional, external transformation
 /// -- eg., such as the skel local-to-world transformation -- then the
 /// inverse of that transform should be passed as \p rootInverseXform.
 /// If no \p rootInverseXform is provided, then \p xform and \p inverseXforms
@@ -94,16 +98,53 @@ UsdSkelIsSkinnablePrim(const UsdPrim& prim);
 USDSKEL_API
 bool
 UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   TfSpan<const GfMatrix4d> xforms,
+                                   TfSpan<const GfMatrix4d> inverseXforms,
+                                   TfSpan<GfMatrix4d> jointLocalXforms,
+                                   const GfMatrix4d* rootInverseXform=nullptr);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   TfSpan<const GfMatrix4f> xforms,
+                                   TfSpan<const GfMatrix4f> inverseXforms,
+                                   TfSpan<GfMatrix4f> jointLocalXforms,
+                                   const GfMatrix4f* rootInverseXform=nullptr);
+
+/// Compute joint transforms in joint-local space.
+/// This is a convenience overload, which computes the required inverse
+/// transforms internally.
+USDSKEL_API
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   TfSpan<const GfMatrix4d> xforms,
+                                   TfSpan<GfMatrix4d> jointLocalXforms,
+                                   const GfMatrix4d* rootInverseXform=nullptr);
+
+USDSKEL_API
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   TfSpan<const GfMatrix4f> xforms,
+                                   TfSpan<GfMatrix4f> jointLocalXforms,
+                                   const GfMatrix4f* rootInverseXform=nullptr);
+
+
+/// \overload
+/// \deprecated Use form that takes TfSpan arguments.
+USDSKEL_API
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    const VtMatrix4dArray& xforms,
                                    const VtMatrix4dArray& inverseXforms,
                                    VtMatrix4dArray* jointLocalXforms,
                                    const GfMatrix4d* rootInverseXform=nullptr);
 
+
+
+
 /// \overload
-/// Convenience overload that computes inverse transforms internally.
-/// If the inverse of \p xforms are needed elsewhere, it is more efficine to
-/// use the form of this method that takes inverse transforms as an argument,
-/// and compute the inverse transforms separately.
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
@@ -113,6 +154,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
 
 
 /// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
@@ -125,12 +167,33 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
 
 /// Compute concatenated joint transforms.
 /// This concatenates transforms from \p jointLocalXforms, providing joint
-/// transforms in joint-local space.
+/// transforms in joint-local space. The resulting transforms are written to
+/// \p jointLocalXforms, which must be the same size as \p topology.
 /// If \p rootXform is not provided, or is the identity, the resulting joint
 /// transforms will be given in skeleton space. Any additional transformations
 /// may be provided on \p rootXform if an additional level of transformation
 /// -- such as the skel local to world transform -- are desired.
 /// Each transform array must be sized to the number of joints from \p topology.
+USDSKEL_API
+bool
+UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
+                             TfSpan<const GfMatrix4d> jointLocalXforms,
+                             TfSpan<GfMatrix4d> xforms,
+                             const GfMatrix4d* rootXform=nullptr);
+
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
+                             TfSpan<const GfMatrix4f> jointLocalXforms,
+                             TfSpan<GfMatrix4f> xforms,
+                             const GfMatrix4f* rootXform=nullptr);
+
+
+
+/// \overload
+/// \deprecated Use the function form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
@@ -140,6 +203,7 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 
 
 /// \overload
+/// \deprecated Use the form that takes a TfSpan argument.
 USDSKEL_API
 bool
 UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
@@ -152,6 +216,18 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 /// The \p rootXform may also be set to provide an additional root
 /// transformation on top of all joints, which is useful for computing
 /// extent relative to a different space.
+template <typename Matrix4>
+USDSKEL_API
+bool
+UsdSkelComputeJointsExtent(TfSpan<const Matrix4> joints,
+                           GfRange3f* extent,
+                           float pad=0.0f,
+                           const Matrix4* rootXform=nullptr);
+
+
+
+/// \overload
+/// \deprecated Use form that takes a TfSpan.
 USDSKEL_API
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& joints,
@@ -161,6 +237,7 @@ UsdSkelComputeJointsExtent(const VtMatrix4dArray& joints,
 
 
 /// \overload
+/// \deprecated Use form that takes a TfSpan.
 USDSKEL_API
 bool
 UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
@@ -181,23 +258,44 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
 
 /// Decompose a transform into translate/rotate/scale components.
 /// The transform order for decomposition is scale, rotate, translate.
+template <typename Matrix4>
 USDSKEL_API
 bool
-UsdSkelDecomposeTransform(const GfMatrix4d& xform,
+UsdSkelDecomposeTransform(const Matrix4& xform,
                           GfVec3f* translate,  
                           GfRotation* rotate,
                           GfVec3h* scale);
 
 /// \overload
+template <typename Matrix4>
 USDSKEL_API
 bool
-UsdSkelDecomposeTransform(const GfMatrix4d& xform,
+UsdSkelDecomposeTransform(const Matrix4& xform,
                           GfVec3f* translate,  
                           GfQuatf* rotate,
                           GfVec3h* scale);
 
 
 /// Decompose an array of transforms into translate/rotate/scale components.
+/// All spans must be the same size.
+USDSKEL_API
+bool
+UsdSkelDecomposeTransforms(TfSpan<const GfMatrix4d> xforms,
+                           TfSpan<GfVec3f> translations,
+                           TfSpan<GfQuatf> rotations,
+                           TfSpan<GfVec3h> scales);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelDecomposeTransforms(TfSpan<const GfMatrix4f> xforms,
+                           TfSpan<GfVec3f> translations,
+                           TfSpan<GfQuatf> rotations,
+                           TfSpan<GfVec3h> scales);
+
+
+/// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelDecomposeTransforms(const VtMatrix4dArray& xforms,
@@ -207,6 +305,7 @@ UsdSkelDecomposeTransforms(const VtMatrix4dArray& xforms,
 
 
 /// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelDecomposeTransforms(const GfMatrix4d* xforms,
@@ -218,20 +317,44 @@ UsdSkelDecomposeTransforms(const GfMatrix4d* xforms,
 
 /// Create a transform from translate/rotate/scale components.
 /// This performs the inverse of UsdSkelDecomposeTransform.
+template <typename Matrix4>
 USDSKEL_API
-GfMatrix4d
+void
 UsdSkelMakeTransform(const GfVec3f& translate,
                      const GfMatrix3f& rotate,
-                     const GfVec3h& scale);
+                     const GfVec3h& scale,
+                     Matrix4* xform);
+
+/// \overload
+template <typename Matrix4>
+USDSKEL_API
+void
+UsdSkelMakeTransform(const GfVec3f& translate,
+                     const GfQuatf& rotate,
+                     const GfVec3h& scale,
+                     Matrix4* xform);
+
+/// Create transforms from arrays of components.
+/// All spans must be the same size.
+USDSKEL_API
+bool
+UsdSkelMakeTransforms(TfSpan<const GfVec3f> translations,
+                      TfSpan<const GfQuatf> rotations,
+                      TfSpan<const GfVec3h> scales,
+                      TfSpan<GfMatrix4d> xforms);
+
 
 /// \overload
 USDSKEL_API
-GfMatrix4d
-UsdSkelMakeTransform(const GfVec3f& translate,
-                     const GfQuatf& rotate,
-                     const GfVec3h& scale);
+bool
+UsdSkelMakeTransforms(TfSpan<const GfVec3f> translations,
+                      TfSpan<const GfQuatf> rotations,
+                      TfSpan<const GfVec3h> scales,
+                      TfSpan<GfMatrix4f> xforms);
 
-/// Create transforms from arrays of components.
+
+/// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelMakeTransforms(const VtVec3fArray& translations,
@@ -240,6 +363,7 @@ UsdSkelMakeTransforms(const VtVec3fArray& translations,
                       VtMatrix4dArray* xforms);
 
 /// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelMakeTransforms(const GfVec3f* translations,
@@ -262,10 +386,24 @@ UsdSkelMakeTransforms(const GfVec3f* translations,
 /// \p numInfluencesPerComponent elements.
 USDSKEL_API
 bool
+UsdSkelNormalizeWeights(TfSpan<float> weights, int numInfluencesPerComponent);
+
+
+/// \overload
+/// \deprecated Use form that takes a TfSpan.
+USDSKEL_API
+bool
 UsdSkelNormalizeWeights(VtFloatArray* weights, int numInfluencesPerComponent);
 
 
 /// Sort joint influences such that highest weight values come first.
+USDSKEL_API
+bool
+UsdSkelSortInfluences(TfSpan<int> indices, TfSpan<float> weights,
+                      int numInfluencesPerComponent);
+
+/// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelSortInfluences(VtIntArray* indices, VtFloatArray* weights,
@@ -324,6 +462,30 @@ UsdSkelResizeInfluences(VtFloatArray* weights,
 USDSKEL_API
 bool
 UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
+                     TfSpan<const GfMatrix4d> jointXforms,
+                     TfSpan<const int> jointIndices,
+                     TfSpan<const float> jointWeights,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> points,
+                     bool inSerial=false);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
+                     TfSpan<const GfMatrix4f> jointXforms,
+                     TfSpan<const int> jointIndices,
+                     TfSpan<const float> jointWeights,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> points,
+                     bool inSerial=false);
+
+
+/// \overload
+/// \deprecated Use form that takes TfSpan arguments.
+USDSKEL_API
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      const VtMatrix4dArray& jointXforms,
                      const VtIntArray& jointIndices,
                      const VtFloatArray& jointWeights,
@@ -332,6 +494,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
 
 
 /// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
@@ -343,7 +506,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      int numInfluencesPerPoint,
                      GfVec3f* points,
                      size_t numPoints,
-                     bool forceSerial=false);
+                     bool inSerial=false);
 
 
 /// Skin a transform using linear blend skinning (LBS).
@@ -354,6 +517,25 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
 USDSKEL_API
 bool
 UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
+                        TfSpan<const GfMatrix4d> jointXforms,
+                        TfSpan<const int> jointIndices,
+                        TfSpan<const float> jointWeights,
+                        GfMatrix4d* xform);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
+                        TfSpan<const GfMatrix4f> jointXforms,
+                        TfSpan<const int> jointIndices,
+                        TfSpan<const float> jointWeights,
+                        GfMatrix4f* xform);
+
+/// \overload
+/// \deprecated Use form that takes TfSpan arguments.
+USDSKEL_API
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         const VtMatrix4dArray& jointXforms,
                         const VtIntArray& jointIndices,
                         const VtFloatArray& jointWeights,
@@ -361,6 +543,7 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 
 
 /// \overload
+/// \deprecated Use form that takes TfSpan arguments.
 USDSKEL_API
 bool
 UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,

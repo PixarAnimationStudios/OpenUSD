@@ -23,6 +23,9 @@
 //
 #include "pxr/usd/usdSkel/animQueryImpl.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
@@ -52,7 +55,12 @@ public:
     virtual UsdPrim GetPrim() const override { return _anim.GetPrim(); }
     
     bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
-                                     UsdTimeCode time) const override;
+                                     UsdTimeCode time) const override
+         { return _ComputeJointLocalTransforms(xforms, time); }
+
+    bool ComputeJointLocalTransforms(VtMatrix4fArray* xforms,
+                                     UsdTimeCode time) const override
+         { return _ComputeJointLocalTransforms(xforms, time); }
 
     bool ComputeJointLocalTransformComponents(
              VtVec3fArray* translations,
@@ -78,6 +86,10 @@ public:
 
     bool BlendShapeWeightsMightBeTimeVarying() const override;
 
+private:
+    template <typename Matrix4>
+    bool _ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
+                                      UsdTimeCode time) const;
 
 private:
     UsdSkelAnimation _anim;
@@ -93,43 +105,54 @@ UsdSkel_SkelAnimationQueryImpl::UsdSkel_SkelAnimationQueryImpl(
       _scales(anim.GetScalesAttr()),
       _blendShapeWeights(anim.GetBlendShapeWeightsAttr())
 {
-    if(TF_VERIFY(anim)) {
+    if (TF_VERIFY(anim)) {
         anim.GetJointsAttr().Get(&_jointOrder);
         anim.GetBlendShapesAttr().Get(&_blendShapeOrder);
     }
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkel_SkelAnimationQueryImpl::ComputeJointLocalTransforms(
-    VtMatrix4dArray* xforms,
+UsdSkel_SkelAnimationQueryImpl::_ComputeJointLocalTransforms(
+    VtArray<Matrix4>* xforms,
     UsdTimeCode time) const
 {
     TRACE_FUNCTION();
+
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' is null");
+        return false;
+    }
 
     VtVec3fArray translations;
     VtQuatfArray rotations;
     VtVec3hArray scales;
 
-    if(ComputeJointLocalTransformComponents(&translations, &rotations,
+    if (ComputeJointLocalTransformComponents(&translations, &rotations,
                                             &scales, time)) {
 
-        if(UsdSkelMakeTransforms(translations, rotations, scales, xforms)) {
-            if(xforms->size() == _jointOrder.size()) {
+        xforms->resize(translations.size());
+        if (UsdSkelMakeTransforms(translations, rotations,
+                                  scales, *xforms)) {
+
+            if (xforms->size() == _jointOrder.size()) {
                 return true;
-            } else {
-                if(xforms->size() == 0) {
-                    // XXX: If the size of all components was zero, we
-                    // infer that the arrays were *intentionally* authored as
-                    // empty, to nullify the animation. Since this is 
-                    // suspected to be intentional, we emit no warning.
-                    return false;
-                }
-                TF_WARN("%s -- size of transform component arrays [%zu] "
-                        "!= joint order size [%zu].",
-                        _anim.GetPrim().GetPath().GetText(),
-                        xforms->size(), _jointOrder.size());
+            } else if (xforms->empty()) {
+                // If all transform components were empty, that could mean:
+                // - the attributes were never authored
+                // - the attributes were blocked
+                // - the attributes were authored with empty arrays
+                //   (possibly intentionally)
+                    
+                // In many of these cases, we should expect the animation
+                // to be silently ignored, so throw no warning.
+                return false;
             }
+            TF_WARN("%s -- size of transform component arrays [%zu] "
+                    "!= joint order size [%zu].",
+                    _anim.GetPrim().GetPath().GetText(),
+                    xforms->size(), _jointOrder.size());
         } else {
             TF_WARN("%s -- failed composing transforms from components.",
                     _anim.GetPrim().GetPath().GetText());
@@ -190,7 +213,7 @@ UsdSkel_SkelAnimationQueryImpl::ComputeBlendShapeWeights(
     VtFloatArray* weights,
     UsdTimeCode time) const
 {
-    if(TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.")) {
+    if (TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.")) {
         return _blendShapeWeights.Get(weights, time);
     }
     return false;
@@ -214,14 +237,14 @@ UsdSkel_SkelAnimationQueryImpl::BlendShapeWeightsMightBeTimeVarying() const
 
 
 // --------------------------------------------------
-// UsdSkel_AnimQuery
+// UsdSkel_AnimQueryImpl
 // --------------------------------------------------
 
 
 UsdSkel_AnimQueryImplRefPtr
 UsdSkel_AnimQueryImpl::New(const UsdPrim& prim)
 {
-    if(prim.IsA<UsdSkelAnimation>()) {
+    if (prim.IsA<UsdSkelAnimation>()) {
         return TfCreateRefPtr(new UsdSkel_SkelAnimationQueryImpl(
                                   UsdSkelAnimation(prim)));
     }

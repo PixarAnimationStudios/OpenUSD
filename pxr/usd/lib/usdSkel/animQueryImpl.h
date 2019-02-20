@@ -65,6 +65,9 @@ public:
     virtual bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                              UsdTimeCode time) const = 0;
 
+    virtual bool ComputeJointLocalTransforms(VtMatrix4fArray* xforms,
+                                             UsdTimeCode time) const = 0;
+
     virtual bool ComputeJointLocalTransformComponents(
                      VtVec3fArray* translations,
                      VtQuatfArray* rotations,

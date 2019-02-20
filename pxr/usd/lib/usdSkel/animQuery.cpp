@@ -30,6 +30,8 @@
 #include "pxr/usd/usd/attribute.h"
 
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,8 +44,9 @@ UsdSkelAnimQuery::GetPrim() const
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelAnimQuery::ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
+UsdSkelAnimQuery::ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                               UsdTimeCode time) const
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
@@ -51,6 +54,15 @@ UsdSkelAnimQuery::ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
     }
     return false;
 }
+
+
+template USDSKEL_API bool
+UsdSkelAnimQuery::ComputeJointLocalTransforms(
+    VtArray<GfMatrix4d>*, UsdTimeCode) const;
+
+template USDSKEL_API bool
+UsdSkelAnimQuery::ComputeJointLocalTransforms(
+    VtArray<GfMatrix4f>*, UsdTimeCode) const;
 
 
 bool
@@ -140,7 +152,8 @@ UsdSkelAnimQuery::GetBlendShapeOrder() const
 
 
 bool
-UsdSkelAnimQuery::GetBlendShapeWeightTimeSamples(std::vector<double>* times) const
+UsdSkelAnimQuery::GetBlendShapeWeightTimeSamples(
+    std::vector<double>* times) const
 {
     return GetBlendShapeWeightTimeSamplesInInterval(
         GfInterval::GetFullInterval(), times);

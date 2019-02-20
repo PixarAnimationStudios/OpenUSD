@@ -89,9 +89,10 @@ public:
     /// Compute joint transforms in joint-local space.
     /// Transforms are returned in the order specified by the joint ordering
     /// of the animation primitive itself.
+    template <typename Matrix4>
     USDSKEL_API
     bool ComputeJointLocalTransforms(
-             VtMatrix4dArray* xforms,
+             VtArray<Matrix4>* xforms,
              UsdTimeCode time=UsdTimeCode::Default()) const;
 
     /// Compute translation,rotation,scale components of the joint transforms

@@ -29,8 +29,10 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
 
-#include "pxr/base/vt/array.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/span.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/usd/sdf/types.h"
 
 #include <type_traits>
@@ -97,9 +99,10 @@ public:
     /// Convenience method for the common task of remapping transform arrays.
     /// This performs the same operation as Remap(), but sets the matrix
     /// identity as the default value.
+    template <typename Matrix4>
     USDSKEL_API
-    bool RemapTransforms(const VtMatrix4dArray& source,
-                         VtMatrix4dArray* target,
+    bool RemapTransforms(const VtArray<Matrix4>& source,
+                         VtArray<Matrix4>* target,
                          int elementSize=1) const;
 
     /// Returns true if this is an identity map.
