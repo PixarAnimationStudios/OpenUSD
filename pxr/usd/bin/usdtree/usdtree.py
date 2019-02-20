@@ -73,6 +73,10 @@ class USDAccessor(object):
         return Usd.ModelAPI(prim).GetKind()
 
     @staticmethod
+    def HasAuthoredActive(prim):
+        return prim.HasAuthoredActive()
+
+    @staticmethod
     def IsActive(prim):
         return prim.IsActive()
 
@@ -111,6 +115,10 @@ class SdfAccessor(object):
         return prim.kind
 
     @staticmethod
+    def HasAuthoredActive(prim):
+        return 'active' in prim.ListInfoKeys()
+
+    @staticmethod
     def IsActive(prim):
         return prim.active
 
@@ -128,6 +136,8 @@ def GetPrimLabel(acc, prim):
     
     if not acc.IsActive(prim):
         shortMetadata.append('active = false')
+    elif acc.HasAuthoredActive(prim):
+        shortMetadata.append('active = true')
     
     kind = acc.GetKind(prim)
     if kind:
@@ -227,11 +237,11 @@ def PrintTree(args, path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Writes the tree structure of a USD file. The default is to inspect a single USD file. '
-        'Use the --flatten argument to see the flattened (or composed) Stage tree.')
+        description='''Writes the tree structure of a USD file. The default is to inspect a single USD file.
+Use the --flatten argument to see the flattened (or composed) Stage tree.
+Special metadata "kind" and "active" are always shown if authored unless --simple is provided.''')
 
-    parser.add_argument('inputPath',
-        help='The input file path to usdtree')
+    parser.add_argument('inputPath')
     parser.add_argument(
         '--unloaded', action='store_true',
         dest='unloaded',
@@ -243,7 +253,7 @@ def main():
     parser.add_argument(
         '--metadata', '-m', action='store_true',
         dest='metadata',
-        help='Display authored metadata')
+        help='Display authored metadata (active and kind are part of the label and not shown as individual items)')
     parser.add_argument(
         '--simple', '-s', action='store_true',
         dest='simple',

@@ -20,7 +20,9 @@ def "root"{
         def "subchild2b"{
         }
     }
-    over "child3"{
+    over "child3"(
+        active = true
+    ){
         custom string whatisthis = "this is an over"
     }
 }
