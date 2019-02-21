@@ -666,10 +666,6 @@ UsdStageRefPtr UsdKatanaCache::GetStage(
         std::string const& ignoreLayerRegex,
         bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
-    const std::string contextPath = givenAbsPath ? 
-                                    TfGetPathName(fileName) : ArchGetCwd();
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating and caching UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
@@ -743,10 +739,6 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
                             std::string const& ignoreLayerRegex,
                             bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
-    const std::string contextPath = givenAbsPath ? 
-                                    TfGetPathName(fileName) : ArchGetCwd();
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 

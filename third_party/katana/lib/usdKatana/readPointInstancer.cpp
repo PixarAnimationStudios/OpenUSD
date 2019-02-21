@@ -65,7 +65,7 @@ namespace
     void
     _LogAndSetError(
         PxrUsdKatanaAttrMap& attrs,
-        const std::string message)
+        const std::string& message)
     {
         FnLogError(message);
         attrs.set("errorMessage",
@@ -77,7 +77,7 @@ namespace
     void
     _LogAndSetWarning(
         PxrUsdKatanaAttrMap &attrs,
-        const std::string message)
+        const std::string& message)
     {
         FnLogWarn(message);
         attrs.set("warningMessage",
@@ -98,7 +98,7 @@ namespace
         const VtIntArray& protoIndices,
         const SdfPathVector& protoPaths,
         const _PathToPrimMap& primCache,
-        const std::vector<bool> mask)
+        const std::vector<bool>& mask)
     {
         GfRange3d extentRange;
 

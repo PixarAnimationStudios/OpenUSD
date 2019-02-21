@@ -79,7 +79,6 @@ static void
 _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
                     const UsdGeomMesh &mesh, bool hierarchical, double time)
 {
-    std::string err;
 
     TfToken interpolateBoundary; 
     if (mesh.GetInterpolateBoundaryAttr().Get(&interpolateBoundary, time)){

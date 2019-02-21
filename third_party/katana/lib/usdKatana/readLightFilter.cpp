@@ -77,7 +77,7 @@ struct _UsdBuilder {
         return *this;
     }
 
-    _UsdBuilder& SetSpline(std::string kat_prefix, std::string valueSuffix,
+    _UsdBuilder& SetSpline(std::string kat_prefix, const std::string& valueSuffix,
                            UsdRiSplineAPI spline) {
         // Knot count
         VtFloatArray posVec;
