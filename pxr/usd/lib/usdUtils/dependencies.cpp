@@ -1166,10 +1166,12 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
 bool
 UsdUtilsCreateNewARKitUsdzPackage(
     const SdfAssetPath &assetPath,
-    const std::string &usdzFilePath,
+    const std::string &inUsdzFilePath,
     const std::string &firstLayerName)
 {
     auto &resolver = ArGetResolver();
+
+    std::string usdzFilePath = ArchNormPath(inUsdzFilePath);
 
     const std::string resolvedPath = resolver.Resolve(assetPath.GetAssetPath());
     if (resolvedPath.empty()) {
