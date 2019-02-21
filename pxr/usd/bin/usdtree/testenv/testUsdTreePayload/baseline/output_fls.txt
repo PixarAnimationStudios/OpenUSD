@@ -1,0 +1,7 @@
+/
+ `--root [def Scope] (kind = assembly)
+     |--child1 [def] (kind = group)
+     `--child2 [def Xform] (kind = group)
+         |--subchild2a [def Xform] (kind = component)
+         |   `--subgrandchild2a1 [def Cube] (kind = subcomponent)
+         `--subchild2b [def Xform] (active = false, kind = component)

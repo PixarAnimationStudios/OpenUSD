@@ -1,0 +1,10 @@
+/
+ `--root [def]
+     |--child1 [def Xform]
+     |   |--subchild1a [def]
+     |   `--subchild1b [def]
+     |--child2 [def]
+     |   |--subchild2a [def]
+     |   |   `--subgrandchild2a1 [def]
+     |   `--subchild2b [def]
+     `--child3 [over] (active = true)
