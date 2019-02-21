@@ -206,7 +206,7 @@ SdfLayer::_CreateNewWithFormat(
     // This method should be called with the layerRegistryMutex already held.
 
     // Create and return a new layer with _initializationMutex locked.
-    return fileFormat->NewLayer<SdfLayer>(
+    return fileFormat->NewLayer(
         fileFormat, identifier, realPathFinal, assetInfo, args);
 }
 
@@ -955,7 +955,7 @@ SdfLayer::Import(const string &layerPath)
 bool
 SdfLayer::ImportFromString(const std::string &s)
 {
-    return GetFileFormat()->ReadFromString(SdfLayerBasePtr(this), s);
+    return GetFileFormat()->ReadFromString(this, s);
 }
 
 bool
@@ -988,7 +988,7 @@ SdfLayer::_Read(
             identifier.c_str(), resolvedPath.c_str());
     }
 
-    return format->Read(SdfLayerBasePtr(this), resolvedPath, metadataOnly);
+    return format->Read(this, resolvedPath, metadataOnly);
 }
 
 /*static*/
@@ -4014,7 +4014,7 @@ SdfLayer::ExportToString( std::string *result ) const
 
     TF_DESCRIBE_SCOPE("Writing layer @%s@", GetIdentifier().c_str());
 
-    return GetFileFormat()->WriteToString(this, result);
+    return GetFileFormat()->WriteToString(*this, result);
 }
 
 bool 
@@ -4076,7 +4076,7 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
     
-    bool ok = fileFormat->WriteToFile(this, newFileName, comment, args);
+    bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);
 
     // If we wrote to the backing file then we're now clean.
     if (ok && newFileName == GetRealPath())

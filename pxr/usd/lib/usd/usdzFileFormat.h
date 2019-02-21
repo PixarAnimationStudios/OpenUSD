@@ -68,25 +68,25 @@ public:
 
     USD_API
     virtual bool Read(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& resolvedPath,
         bool metadataOnly) const override;
 
     USD_API
     virtual bool WriteToFile(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
     USD_API
     virtual bool ReadFromString(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& str) const override;
 
     USD_API
     virtual bool WriteToString(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         std::string* str,
         const std::string& comment = std::string()) const override;
 
@@ -103,7 +103,7 @@ private:
     UsdUsdzFileFormat();
     virtual ~UsdUsdzFileFormat();
 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

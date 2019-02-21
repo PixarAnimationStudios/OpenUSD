@@ -120,7 +120,7 @@ UsdUsdzFileFormat::CanRead(const std::string& filePath) const
 
 bool
 UsdUsdzFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& resolvedPath,
     bool metadataOnly) const
 {
@@ -139,13 +139,12 @@ UsdUsdzFileFormat::Read(
 
     const std::string packageRelativePath = 
         ArJoinPackageRelativePath(resolvedPath, firstFile);
-    return packagedFileFormat->Read(
-        layerBase, packageRelativePath, metadataOnly);
+    return packagedFileFormat->Read(layer, packageRelativePath, metadataOnly);
 }
 
 bool
 UsdUsdzFileFormat::WriteToFile(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     const std::string& filePath,
     const std::string& comment,
     const FileFormatArguments& args) const
@@ -156,21 +155,21 @@ UsdUsdzFileFormat::WriteToFile(
 
 bool 
 UsdUsdzFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
     return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
-        ReadFromString(layerBase, str);
+        ReadFromString(layer, str);
 }
 
 bool 
 UsdUsdzFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
-        WriteToString(layerBase, str, comment);
+        WriteToString(layer, str, comment);
 }
 
 bool
@@ -185,7 +184,7 @@ UsdUsdzFileFormat::WriteToStream(
 
 bool 
 UsdUsdzFileFormat::_IsStreamingLayer(
-    const SdfLayerBase& layer) const
+    const SdfLayer& layer) const
 {
     return true;
 }

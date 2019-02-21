@@ -46,17 +46,17 @@ public:
     // SdfFileFormat overrides
     SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const override;
     bool CanRead(const std::string &file) const override;
-    bool Read(const SdfLayerBasePtr& layerBase,
+    bool Read(SdfLayer* layer,
               const std::string& resolvedPath,
               bool metadataOnly) const override;
-    bool WriteToFile(const SdfLayerBase* layerBase,
+    bool WriteToFile(const SdfLayer& layer,
                      const std::string& filePath,
                      const std::string& comment = std::string(),
                      const FileFormatArguments& args = 
                          FileFormatArguments()) const override;
-    bool ReadFromString(const SdfLayerBasePtr& layerBase,
+    bool ReadFromString(SdfLayer* layer,
                         const std::string& str) const override;
-    bool WriteToString(const SdfLayerBase* layerBase,
+    bool WriteToString(const SdfLayer& layer,
                        std::string* str,
                        const std::string& comment=std::string()) const override;
     bool WriteToStream(const SdfSpecHandle &spec,
@@ -71,7 +71,7 @@ protected:
 
 private:
     // SdfFileFormat overrides
-    bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

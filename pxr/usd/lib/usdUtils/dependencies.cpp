@@ -1104,7 +1104,7 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
             if (TfDynamic_cast<UsdUsdFileFormatConstPtr>(fileFormat)) {
                 args[UsdUsdFileFormatTokens->FormatArg] = 
                         UsdUsdFileFormat::GetUnderlyingFormatForLayer(
-                            boost::get_pointer(layer));
+                            *get_pointer(layer));
             }
             
             std::string tmpLayerExportPath = TfStringCatPaths(tmpDirPath, 

@@ -73,16 +73,11 @@ UsdObjFileFormat::CanRead(const string& filePath) const
 
 bool
 UsdObjFileFormat::_ReadFromStream(
-    const SdfLayerBasePtr &layerBase,
+    SdfLayer* layer,
     std::istream &input,
     bool metadataOnly,
     string *outErr) const
 {
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
     // Read Obj data stream.
     UsdObjStream objStream;
     if (!UsdObjReadDataFromStream(input, &objStream, outErr))
@@ -100,7 +95,7 @@ UsdObjFileFormat::_ReadFromStream(
 
 bool
 UsdObjFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const string& resolvedPath,
     bool metadataOnly) const
 {
@@ -112,7 +107,7 @@ UsdObjFileFormat::Read(
     }
 
     string error;
-    if (!_ReadFromStream(layerBase, fin, metadataOnly, &error)) {
+    if (!_ReadFromStream(layer, fin, metadataOnly, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ from file \"%s\": %s",
                          resolvedPath.c_str(), error.c_str());
         return false;
@@ -122,12 +117,12 @@ UsdObjFileFormat::Read(
 
 bool 
 UsdObjFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
     string error;
     std::stringstream ss(str);
-    if (!_ReadFromStream(layerBase, ss, /*metadataOnly=*/false, &error)) {
+    if (!_ReadFromStream(layer, ss, /*metadataOnly=*/false, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ data from string: %s",
                          error.c_str());
         return false;
@@ -138,14 +133,14 @@ UsdObjFileFormat::ReadFromString(
 
 bool 
 UsdObjFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     // XXX: For now, defer to the usda file format for this.  We don't support
     // writing Usd content as a OBJ.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToString(layerBase, str, comment);
+        UsdUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool

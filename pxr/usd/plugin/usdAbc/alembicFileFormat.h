@@ -50,17 +50,17 @@ public:
     // SdfFileFormat overrides
     virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const override;
     virtual bool CanRead(const std::string &file) const override;
-    virtual bool Read(const SdfLayerBasePtr& layerBase,
+    virtual bool Read(SdfLayer* layer,
                       const std::string& resolvedPath,
                       bool metadataOnly) const override;
-    virtual bool WriteToFile(const SdfLayerBase* layerBase,
+    virtual bool WriteToFile(const SdfLayer& layer,
                              const std::string& filePath,
                              const std::string& comment = std::string(),
                              const FileFormatArguments& args = 
                                  FileFormatArguments()) const override;
-    virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
+    virtual bool ReadFromString(SdfLayer* layer,
                                 const std::string& str) const override;
-    virtual bool WriteToString(const SdfLayerBase* layerBase,
+    virtual bool WriteToString(const SdfLayer& layer,
                                std::string* str,
                                const std::string& comment=std::string()) 
                                const override;
@@ -76,7 +76,7 @@ protected:
     UsdAbcAlembicFileFormat();
 
 private:
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 
 private:
     SdfFileFormatConstPtr _usda;

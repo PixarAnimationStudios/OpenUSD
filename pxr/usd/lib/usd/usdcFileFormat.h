@@ -57,20 +57,20 @@ public:
     virtual bool CanRead(const string &file) const override;
 
     virtual bool Read(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const string& resolvedPath,
         bool metadataOnly) const override;
 
     virtual bool WriteToFile(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         const string& filePath,
         const string& comment = string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
-    virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
+    virtual bool ReadFromString(SdfLayer* layer,
                                 const string& str) const override;
 
-    virtual bool WriteToString(const SdfLayerBase* layerBase,
+    virtual bool WriteToString(const SdfLayer& layer,
                                string* str,
                                const string& comment = string()) const override;
 
@@ -85,7 +85,7 @@ protected:
     virtual ~UsdUsdcFileFormat();
 
 private:
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 
 };
 

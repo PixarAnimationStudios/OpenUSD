@@ -72,25 +72,25 @@ public:
 
     USD_API
     virtual bool Read(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& resolvedPath,
         bool metadataOnly) const override;
 
     USD_API
     virtual bool WriteToFile(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
     USD_API
     virtual bool ReadFromString(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& str) const override;
 
     USD_API
     virtual bool WriteToString(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         std::string* str,
         const std::string& comment = std::string()) const override;
 
@@ -106,7 +106,7 @@ public:
     /// Returns an empty token if the given layer does not have this 
     /// file format.
     USD_API
-    static TfToken GetUnderlyingFormatForLayer(const SdfLayerBase *layerBase);
+    static TfToken GetUnderlyingFormatForLayer(const SdfLayer& layer);
 
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
@@ -116,9 +116,9 @@ private:
     virtual ~UsdUsdFileFormat();
     
     static SdfFileFormatConstPtr 
-    _GetUnderlyingFileFormatForLayer(const SdfLayerBase* layer);
+    _GetUnderlyingFileFormatForLayer(const SdfLayer& layer);
 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
 
 

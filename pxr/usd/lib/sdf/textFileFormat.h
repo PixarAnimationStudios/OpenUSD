@@ -57,23 +57,23 @@ SDF_DECLARE_HANDLES(SdfSpec);
 class SdfTextFileFormat : public SdfFileFormat
 {
 public:
-    /// Writes the content of the layer \p layerBase to the stream \p ostr. If
+    /// Writes the content of the layer \p layer to the stream \p ostr. If
     /// \p comment is non-empty, the supplied text is written into the stream
     /// instead of any existing layer comment, without changing the existing
     /// comment. Returns true if the content is successfully written to
     /// stream. Otherwise, false is returned and errors are posted.
     SDF_API
     bool Write(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         std::ostream& ostr,
         const std::string& comment = std::string()) const;
 
-    /// Writes the content in \p layerBase into the stream \p ostr. If the
+    /// Writes the content in \p layer into the stream \p ostr. If the
     /// content is successfully written, this method returns true. Otherwise,
     /// false is returned and errors are posted. 
     SDF_API
     bool WriteToStream(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         std::ostream& ostr) const;
 
     // SdfFileFormat overrides.
@@ -82,25 +82,25 @@ public:
 
     SDF_API
     virtual bool Read(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& resolvedPath,
         bool metadataOnly) const override;
 
     SDF_API
     virtual bool WriteToFile(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
     SDF_API
     virtual bool ReadFromString(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& str) const override;
 
     SDF_API
     virtual bool WriteToString(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         std::string* str,
         const std::string& comment = std::string()) const override;
 
@@ -137,7 +137,7 @@ private:
     SDF_API virtual bool _ShouldSkipAnonymousReload() const override;
 
     SDF_API 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 
 };
 

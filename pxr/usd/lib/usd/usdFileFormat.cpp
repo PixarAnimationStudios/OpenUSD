@@ -251,7 +251,7 @@ UsdUsdFileFormat::CanRead(const string& filePath) const
 
 bool
 UsdUsdFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const string& resolvedPath,
     bool metadataOnly) const
 {
@@ -269,7 +269,7 @@ UsdUsdFileFormat::Read(
     // works we're good.
     for (auto const &fmt: formats) {
         TfErrorMark m;
-        if (fmt && fmt->Read(layerBase, resolvedPath, metadataOnly))
+        if (fmt && fmt->Read(layer, resolvedPath, metadataOnly))
             return true;
         m.Clear();
     }
@@ -278,40 +278,32 @@ UsdUsdFileFormat::Read(
     // to determine the underlying format first, and then load using it.
     auto underlyingFormat = _GetUnderlyingFileFormat(resolvedPath);
     return underlyingFormat &&
-        underlyingFormat->Read(layerBase, resolvedPath, metadataOnly);
+        underlyingFormat->Read(layer, resolvedPath, metadataOnly);
 }
 
 SdfFileFormatConstPtr 
 UsdUsdFileFormat::_GetUnderlyingFileFormatForLayer(
-    const SdfLayerBase* layerBase)
+    const SdfLayer& layer)
 {
-    // XXX: Blergh. Really need to clean up SdfFileFormat.
-    const SdfLayer* layer = dynamic_cast<const SdfLayer*>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return _GetDefaultFileFormat();
-    }
-
-    auto underlyingFileFormat =
-        _GetUnderlyingFileFormat(_GetLayerData(SdfCreateNonConstHandle(layer)));
-
+    auto underlyingFileFormat = _GetUnderlyingFileFormat(_GetLayerData(layer));
     return underlyingFileFormat ?
         underlyingFileFormat : _GetDefaultFileFormat();
 }
 
 /* static */
 TfToken
-UsdUsdFileFormat::GetUnderlyingFormatForLayer(const SdfLayerBase *layerBase)
+UsdUsdFileFormat::GetUnderlyingFormatForLayer(const SdfLayer& layer)
 {
-    if (layerBase->GetFileFormat()->GetFormatId() != UsdUsdFileFormatTokens->Id)
+    if (layer.GetFileFormat()->GetFormatId() != UsdUsdFileFormatTokens->Id)
         return TfToken();
 
-    auto fileFormat = _GetUnderlyingFileFormatForLayer(layerBase);
+    auto fileFormat = _GetUnderlyingFileFormatForLayer(layer);
     return _GetFormatArgumentForFileFormat(fileFormat);
 }
 
 bool
 UsdUsdFileFormat::WriteToFile(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     const std::string& filePath,
     const std::string& comment,
     const FileFormatArguments& args) const
@@ -330,20 +322,18 @@ UsdUsdFileFormat::WriteToFile(
     // behavior -- creating a new .usd layer always uses the default format
     // unless otherwise specified.
     if (!fileFormat) {
-        // XXX: Blergh. Really need to clean up SdfFileFormat.
-        auto l = dynamic_cast<const SdfLayer*>(layerBase);
-
         // Note that SdfLayer::GetRealPath is *not* the same as realpath(3); 
         // it does not follow symlinks. Hence, we use TfRealPath to determine 
         // if the source and destination files are the same. If so, we know 
         // we're saving the layer, not exporting it to a new location.
         auto layerRealPath = 
-            TfRealPath(l->GetRealPath(), /* allowInaccessibleSuffix = */ true);
+            TfRealPath(layer.GetRealPath(), 
+                       /* allowInaccessibleSuffix = */ true);
         auto destRealPath = 
             TfRealPath(filePath, /* allowInaccessibleSuffix = */ true);
         const bool isSavingLayer = (layerRealPath == destRealPath);
         if (isSavingLayer) {
-            fileFormat = _GetUnderlyingFileFormatForLayer(layerBase);
+            fileFormat = _GetUnderlyingFileFormatForLayer(layer);
         }
     }
 
@@ -351,26 +341,26 @@ UsdUsdFileFormat::WriteToFile(
         fileFormat = _GetDefaultFileFormat();
     }
 
-    return fileFormat->WriteToFile(layerBase, filePath, comment);
+    return fileFormat->WriteToFile(layer, filePath, comment);
 }
 
 bool 
 UsdUsdFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
-    return _GetUnderlyingFileFormatForLayer(boost::get_pointer(layerBase))
-        ->ReadFromString(layerBase, str);
+    return _GetUnderlyingFileFormatForLayer(*layer)
+        ->ReadFromString(layer, str);
 }
 
 bool 
 UsdUsdFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
-    return _GetUnderlyingFileFormatForLayer(layerBase)
-        ->WriteToString(layerBase, str, comment);
+    return _GetUnderlyingFileFormatForLayer(layer)
+        ->WriteToString(layer, str, comment);
 }
 
 bool
@@ -380,15 +370,15 @@ UsdUsdFileFormat::WriteToStream(
     size_t indent) const
 {
     return _GetUnderlyingFileFormatForLayer(
-        boost::get_pointer(spec->GetLayer()))->WriteToStream(
+        *boost::get_pointer(spec->GetLayer()))->WriteToStream(
             spec, out, indent);
 }
 
 bool 
 UsdUsdFileFormat::_IsStreamingLayer(
-    const SdfLayerBase& layer) const
+    const SdfLayer& layer) const
 {
-    auto formatId = _GetUnderlyingFileFormatForLayer(&layer)->GetFormatId();
+    auto formatId = _GetUnderlyingFileFormatForLayer(layer)->GetFormatId();
     return formatId == UsdUsdbFileFormatTokens->Id ||
         formatId == UsdUsdcFileFormatTokens->Id;
 }

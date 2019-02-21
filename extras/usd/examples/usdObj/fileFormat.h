@@ -57,16 +57,16 @@ public:
 
     // SdfFileFormat overrides.
     virtual bool CanRead(const std::string &file) const override;
-    virtual bool Read(const SdfLayerBasePtr& layerBase,
+    virtual bool Read(SdfLayer* layer,
                       const std::string& resolvedPath,
                       bool metadataOnly) const override;
-    virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
+    virtual bool ReadFromString(SdfLayer* layer,
                                 const std::string& str) const override;
 
     // We override Write methods so SdfLayer::ExportToString() etc, work.  We
     // don't support writing general Usd data back to OBJ files.  So
     // SdfLayer::Save() doesn't work, for example.
-    virtual bool WriteToString(const SdfLayerBase* layerBase,
+    virtual bool WriteToString(const SdfLayer& layer,
                                std::string* str,
                                const std::string& comment=std::string()) 
                                const override;
@@ -81,12 +81,12 @@ protected:
     UsdObjFileFormat();
 
 private:
-    bool _ReadFromStream(const SdfLayerBasePtr &layerBase,
+    bool _ReadFromStream(SdfLayer *layer,
                          std::istream &input,
                          bool metadataOnly,
                          std::string *outErr) const;
 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override {
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override {
         return false;
     }
 };
