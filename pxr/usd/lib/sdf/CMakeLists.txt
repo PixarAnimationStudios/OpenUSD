@@ -34,7 +34,6 @@ pxr_library(sdf
         fileFormat
         identity
         layer
-        layerBase
         layerOffset
         layerStateDelegate
         layerTree
@@ -134,7 +133,6 @@ pxr_library(sdf
         wrapCopyUtils.cpp
         wrapFileFormat.cpp
         wrapLayer.cpp
-        wrapLayerBase.cpp
         wrapLayerOffset.cpp
         wrapLayerTree.cpp
         wrapMapperSpec.cpp

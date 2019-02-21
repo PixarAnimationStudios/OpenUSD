@@ -28,7 +28,6 @@
 #include "pxr/usd/usd/zipFile.h"
 
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerBase.h"
 
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"

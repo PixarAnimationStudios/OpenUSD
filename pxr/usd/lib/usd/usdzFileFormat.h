@@ -34,7 +34,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdUsdzFileFormat);
-TF_DECLARE_WEAK_PTRS(SdfLayerBase);
 
 #define USD_USDZ_FILE_FORMAT_TOKENS  \
     ((Id,      "usdz"))              \

@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
-#include "pxr/usd/sdf/layerBase.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/usd/sdf/path.h"
@@ -90,20 +89,37 @@ struct Sdf_AssetInfo;
 /// \todo
 /// \li Should have validate... methods for rootPrims
 ///
-class SdfLayer : public SdfLayerBase
+class SdfLayer 
+    : public TfRefBase
+    , public TfWeakBase
 {
-    typedef SdfLayerBase Parent;
-    typedef SdfLayer This;
 public:
-    /// Destructor.
+    /// Destructor
     SDF_API
     virtual ~SdfLayer(); 
+
+    /// Noncopyable
+    SdfLayer(const SdfLayer&) = delete;
+    SdfLayer& operator=(const SdfLayer&) = delete;
 
     ///
     /// \name Primary API
     /// @{
 
-    using SdfLayerBase::FileFormatArguments;
+    /// Returns the schema this layer adheres to. This schema provides details
+    /// about the scene description that may be authored in this layer.
+    SDF_API virtual const SdfSchemaBase& GetSchema() const;
+
+    /// Returns the file format used by this layer.
+    SDF_API SdfFileFormatConstPtr GetFileFormat() const;
+
+    /// Type for specifying additional file format-specific arguments to
+    /// layer API.
+    typedef std::map<std::string, std::string> FileFormatArguments;
+
+    /// Returns the file format-specific arguments used during the construction
+    /// of this layer.
+    SDF_API const FileFormatArguments& GetFileFormatArguments() const;
 
     /// Creates a new empty layer with the given identifier.
     ///
@@ -201,10 +217,6 @@ public:
         const std::string &layerPath,
         bool metadataOnly = false,
         const std::string& tag = std::string());
-
-    /// Returns the scene description schema for this layer.
-    SDF_API
-    virtual const SdfSchemaBase& GetSchema() const;
 
     /// Returns the data from the absolute root path of this layer.
     SDF_API
@@ -1698,6 +1710,10 @@ private:
     void _TraverseChildren(const SdfPath &path, const TraversalFunction &func);
 
 private:
+    // File format and arguments for this layer.
+    SdfFileFormatConstPtr _fileFormat;
+    FileFormatArguments _fileFormatArgs;
+
     // Registry of Sdf Identities
     mutable Sdf_IdentityRegistry _idRegistry;
 

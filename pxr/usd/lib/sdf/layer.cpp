@@ -85,7 +85,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define< SdfLayer, TfType::Bases<SdfLayerBase> >();
+    TfType::Define<SdfLayer>();
 }
 
 // Muted Layers stores the paths of layers that should be muted.  The stored
@@ -119,17 +119,18 @@ SdfLayer::SdfLayer(
     const string &identifier,
     const string &realPath,
     const ArAssetInfo& assetInfo,
-    const FileFormatArguments &args) :
-    SdfLayerBase(fileFormat, args),
-    _idRegistry(SdfLayerHandle(this)),
-    _data(fileFormat->InitData(args)),
-    _stateDelegate(SdfSimpleLayerStateDelegate::New()),
-    _lastDirtyState(false),
-    _assetInfo(new Sdf_AssetInfo),
-    _mutedLayersRevisionCache(0),
-    _isMutedCache(false),
-    _permissionToEdit(true),
-    _permissionToSave(true)
+    const FileFormatArguments &args)
+    : _fileFormat(fileFormat)
+    , _fileFormatArgs(args)
+    , _idRegistry(SdfLayerHandle(this))
+    , _data(fileFormat->InitData(args))
+    , _stateDelegate(SdfSimpleLayerStateDelegate::New())
+    , _lastDirtyState(false)
+    , _assetInfo(new Sdf_AssetInfo)
+    , _mutedLayersRevisionCache(0)
+    , _isMutedCache(false)
+    , _permissionToEdit(true)
+    , _permissionToSave(true)
 {
     const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
@@ -157,7 +158,6 @@ SdfLayer::SdfLayer(
     _MarkCurrentStateAsClean();
 }
 
-// CODE_COVERAGE_OFF
 SdfLayer::~SdfLayer()
 {
     TF_DEBUG(SDF_LAYER).Msg(
@@ -187,11 +187,18 @@ SdfLayer::~SdfLayer()
     // case.
     _layerRegistry->Erase(SdfCreateHandle(this));
 }
-// CODE_COVERAGE_ON
 
-// ---
-// SdfLayer static functions and data
-// ---
+SdfFileFormatConstPtr
+SdfLayer::GetFileFormat() const
+{
+    return _fileFormat;
+}
+
+const SdfLayer::FileFormatArguments& 
+SdfLayer::GetFileFormatArguments() const
+{
+    return _fileFormatArgs;
+}
 
 SdfLayerRefPtr
 SdfLayer::_CreateNewWithFormat(

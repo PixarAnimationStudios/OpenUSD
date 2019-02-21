@@ -475,12 +475,15 @@ void wrapLayer()
 
     scope s = class_<This,
                      ThisHandle,
-                     bases<SdfLayerBase>,
                      boost::noncopyable>("Layer", no_init)
 
         .def(TfPyRefAndWeakPtr())
 
         .def("__repr__", _Repr)
+
+        .def("GetFileFormat", &This::GetFileFormat)
+        .def("GetFileFormatArguments", &This::GetFileFormatArguments,
+             return_value_policy<return_by_value>())
 
         .def("CreateNew", &_CreateNew,
              ( arg("identifier"),

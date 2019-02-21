@@ -28,7 +28,6 @@
 #include "pxr/usd/usd/usdcFileFormat.h"
 
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerBase.h"
 
 #include "pxr/base/trace/trace.h"
 

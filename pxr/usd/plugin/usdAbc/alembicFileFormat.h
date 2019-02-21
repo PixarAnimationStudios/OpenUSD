@@ -32,7 +32,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 #define USDABC_ALEMBIC_FILE_FORMAT_TOKENS  \
     ((Id,      "abc"))                  \
     ((Version, "1.0"))                  \
@@ -41,7 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(UsdAbcAlembicFileFormatTokens, USDABC_ALEMBIC_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdAbcAlembicFileFormat);
-TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
 
 /// \class UsdAbcAlembicFileFormat
 ///
@@ -81,7 +79,6 @@ private:
 private:
     SdfFileFormatConstPtr _usda;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

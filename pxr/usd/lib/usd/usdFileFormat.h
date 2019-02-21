@@ -33,9 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdUsdFileFormat);
-TF_DECLARE_WEAK_PTRS(SdfLayerBase);
 
 #define USD_USD_FILE_FORMAT_TOKENS  \
     ((Id,           "usd"))         \
@@ -120,7 +118,6 @@ private:
 
     virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

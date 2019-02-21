@@ -32,7 +32,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 #define USDOBJ_FILE_FORMAT_TOKENS       \
     ((Id,      "obj"))                  \
     ((Version, "1.0"))                  \
@@ -41,7 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(UsdObjFileFormatTokens, USDOBJ_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdObjFileFormat);
-TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
 
 /// \class UsdObjFileFormat
 ///
@@ -90,7 +88,6 @@ private:
         return false;
     }
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

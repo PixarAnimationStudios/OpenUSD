@@ -32,14 +32,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 #define USD_USDC_FILE_FORMAT_TOKENS   \
     ((Id,      "usdc"))
 
 TF_DECLARE_PUBLIC_TOKENS(UsdUsdcFileFormatTokens, USD_API, USD_USDC_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdUsdcFileFormat);
-TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
 
 /// \class UsdUsdcFileFormat
 ///
@@ -88,7 +86,6 @@ private:
     virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
