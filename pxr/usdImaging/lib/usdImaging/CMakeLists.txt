@@ -54,6 +54,7 @@ pxr_library(usdImaging
         materialAdapter
         meshAdapter
         nurbsPatchAdapter
+        planeAdapter
         pointsAdapter
         pointInstancerAdapter
         primAdapter

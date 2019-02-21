@@ -57,6 +57,13 @@
                         "isInternal": true,
                         "primTypeName": "Cube"
                     },
+                    "UsdImagingPlaneAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Plane"
+                    },
                     "UsdImagingCylinderAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
