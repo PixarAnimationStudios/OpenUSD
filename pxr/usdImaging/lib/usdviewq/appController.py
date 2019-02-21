@@ -544,7 +544,7 @@ class AppController(QtCore.QObject):
             self._ui.propertyView.setHorizontalScrollMode(
                 QtWidgets.QAbstractItemView.ScrollPerPixel)
 
-            self._ui.frameSlider.setUpdateOnFrameScrub(
+            self._ui.frameSlider.setTracking(
                     self._dataModel.viewSettings.redrawOnScrub)
 
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
@@ -731,8 +731,9 @@ class AppController(QtCore.QObject):
 
             self._ui.primView.expanded.connect(self._primViewExpanded)
 
-            self._ui.frameSlider.signalFrameChanged.connect(self.setFrame)
-            self._ui.frameSlider.signalPositionChanged.connect(self._sliderMoved)
+            self._ui.frameSlider.valueChanged.connect(self.setFrame)
+            self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
+            self._ui.frameSlider.sliderReleased.connect(self._updateOnFrameChangeFinish)
 
             self._ui.frameField.editingFinished.connect(self._frameStringChanged)
 
@@ -1243,7 +1244,8 @@ class AppController(QtCore.QObject):
 
         if self._playbackAvailable:
             if not resetStageDataOnly:
-                self._ui.frameSlider.resetSlider(len(self._timeSamples))
+                self._ui.frameSlider.setRange(0, len(self._timeSamples) - 1)
+                self._ui.frameSlider.setValue(0)
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
             self._ui.playButton.setChecked(False)
@@ -1528,8 +1530,6 @@ class AppController(QtCore.QObject):
         else:
             self._resetPrimView(restoreSelection=False)
 
-        self._ui.frameSlider.resetToMinimum()
-
         if not self._stageView:
 
             # The second child is self._ui.glFrame, which disappears if
@@ -1558,8 +1558,6 @@ class AppController(QtCore.QObject):
                 layout.setContentsMargins(0, 0, 0, 0)
                 self._ui.glFrame.setLayout(layout)
                 layout.addWidget(self._stageView)
-
-        self._playbackFrameIndex = 0
 
         self._primSearchResults = deque([])
         self._attrSearchResults = deque([])
@@ -1727,7 +1725,7 @@ class AppController(QtCore.QObject):
 
     def _redrawOptionToggled(self, checked):
         self._dataModel.viewSettings.redrawOnScrub = checked
-        self._ui.frameSlider.setUpdateOnFrameScrub(
+        self._ui.frameSlider.setTracking(
             self._dataModel.viewSettings.redrawOnScrub)
 
     # Frame-by-frame/Playback functionality ===================================
@@ -1751,10 +1749,14 @@ class AppController(QtCore.QObject):
         self._ui.stageBegin.setEnabled(isEnabled)
         self._ui.stageEnd.setEnabled(isEnabled)
         self._ui.redrawOnScrub.setEnabled(isEnabled)
+        self._ui.stepSizeLabel.setEnabled(isEnabled)
+        self._ui.stepSize.setEnabled(isEnabled)
 
 
     def _playClicked(self):
         if self._ui.playButton.isChecked():
+            # Enable tracking whilst playing
+            self._ui.frameSlider.setTracking(True)
             # Start playback.
             self._dataModel.playing = True
             self._ui.playButton.setText("Stop")
@@ -1767,6 +1769,7 @@ class AppController(QtCore.QObject):
             self._primViewUpdateTimer.stop()
             self._playbackIndex = 0
         else:
+            self._ui.frameSlider.setTracking(self._ui.redrawOnScrub.isChecked())
             # Stop playback.
             self._dataModel.playing = False
             self._ui.playButton.setText("Play")
@@ -1794,14 +1797,18 @@ class AppController(QtCore.QObject):
         self._advanceFrame()
 
     def _advanceFrame(self):
-        if not self._playbackAvailable:
-            return
-        self._ui.frameSlider.advanceFrame()
+        if self._playbackAvailable:
+            value = self._ui.frameSlider.value() + 1
+            if value > self._ui.frameSlider.maximum():
+                value = self._ui.frameSlider.minimum()
+            self._ui.frameSlider.setValue(value)
 
     def _retreatFrame(self):
-        if not self._playbackAvailable:
-            return
-        self._ui.frameSlider.retreatFrame()
+        if self._playbackAvailable:
+            value = self._ui.frameSlider.value() - 1
+            if value < self._ui.frameSlider.minimum():
+                value = self._ui.frameSlider.maximum()
+            self._ui.frameSlider.setValue(value)
 
     def _findClosestFrameIndex(self, timeSample):
         """Find the closest frame index for the given `timeSample`.
@@ -1846,13 +1853,30 @@ class AppController(QtCore.QObject):
 
         if (indexOfFrame != Usd.TimeCode.Default()):
             self.setFrame(indexOfFrame, forceUpdate=True)
-            self._ui.frameSlider.setValueImmediate(indexOfFrame)
+            self._ui.frameSlider.setValue(indexOfFrame)
 
         self._ui.frameField.setText(
             str(self._dataModel.currentFrame.GetValue()))
 
-    def _sliderMoved(self, value):
-        self._ui.frameField.setText(str(self._timeSamples[value]))
+    def _sliderMoved(self, frameIndex):
+        """Slot called when the frame slider is moved by a user.
+        
+        Args:
+            frameIndex (int): The new frame index value.
+        """
+        # If redraw on scrub is disabled, ensure we still update the
+        # frame field.
+        if not self._ui.redrawOnScrub.isChecked():
+            self.setFrameField(self._timeSamples[frameIndex])
+
+    def setFrameField(self, frame):
+        """Set the frame field to the given `frame`.
+
+        Args:
+            frame (str|int|float): The new frame value.
+        """
+        frame = round(float(frame), ndigits=2)
+        self._ui.frameField.setText(str(frame))
 
     # Prim/Attribute search functionality =====================================
 
@@ -3162,7 +3186,6 @@ class AppController(QtCore.QObject):
 
     def setFrame(self, frameIndex, forceUpdate=False):
         frameAtStart = self._dataModel.currentFrame
-        self._playbackFrameIndex = frameIndex
 
         frame = self._timeSamples[int(frameIndex)]
         if self._dataModel.currentFrame.GetValue() != frame:
@@ -3183,8 +3206,7 @@ class AppController(QtCore.QObject):
         # conditionally update?  All this function should do, after
         # computing a new frame number, is emit a signal that the
         # time has changed.  Future work.
-        self._ui.frameField.setText(
-            str(round(self._dataModel.currentFrame.GetValue(), ndigits=2)))
+        self.setFrameField(self._dataModel.currentFrame.GetValue())
 
         if (self._dataModel.currentFrame != frameAtStart) or forceUpdate:
             self._updateOnFrameChange()
