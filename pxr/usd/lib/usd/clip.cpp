@@ -398,7 +398,7 @@ _ResolveLegacyClipInfo(
     bool nontemplateMetadataSeen = false;
     bool templateMetadataSeen    = false;
 
-    boost::optional<std::string> templateAssetPath;
+    std::string templateAssetPath;
 
     // find our anchor(clipAssetPaths/clipTemplateAssetPath) if it exists.
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
@@ -422,14 +422,12 @@ _ResolveLegacyClipInfo(
                 break;
             }
 
-            std::string clipTemplateAssetPath;
             if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
-                                &clipTemplateAssetPath)) {
+                                &templateAssetPath)) {
                 templateMetadataSeen = true;
                 clipInfo->sourceLayerStack = layerStack;
                 clipInfo->sourcePrimPath = primPath;
                 clipInfo->indexOfLayerWhereAssetPathsFound = i;
-                templateAssetPath = clipTemplateAssetPath;
                 break;
             }
 
@@ -549,7 +547,7 @@ _ResolveLegacyClipInfo(
                     // for the templateActiveOffset here. This is because offset
                     // is only available in the new, dictionary style clips, 
                     // and was not backported to the legacy clips.
-                    _DeriveClipInfo(*templateAssetPath, *templateStride,
+                    _DeriveClipInfo(templateAssetPath, *templateStride,
                                     _DefaultClipOffsetValue,
                                     *templateStartTime, *templateEndTime,
                                     &clipInfo->clipTimes, &clipInfo->clipActive,
