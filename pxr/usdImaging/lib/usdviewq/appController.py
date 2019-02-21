@@ -26,6 +26,7 @@ from qt import QtCore, QtGui, QtWidgets
 
 # Stdlib components
 import re, sys, os, cProfile, pstats, traceback
+from bisect import bisect_left
 from itertools import groupby
 from time import time, sleep
 from collections import deque, OrderedDict
@@ -1803,26 +1804,29 @@ class AppController(QtCore.QObject):
             return
         self._ui.frameSlider.retreatFrame()
 
-    def _findIndexOfFieldContents(self, field):
-        # don't convert string to float directly because of rounding error
-        frameString = str(field.text())
+    def _findClosestFrameIndex(self, timeSample):
+        """Find the closest frame index for the given `timeSample`.
 
-        if frameString.count(".") == 0:
-            frameString += ".0"
-        elif frameString[-1] == ".":
-            frameString += "0"
+        Args:
+            timeSample (float): A time sample value.
 
-        field.setText(frameString)
+        Returns:
+            int: The closest matching frame index or 0 if one cannot be
+            found.
+        """
+        closestIndex = bisect_left(self._timeSamples, timeSample)
 
-        # Find the index of the closest valid frame
-        dist = None
-        closestIndex = Usd.TimeCode.Default()
+        # Return if index is the first or last
+        if closestIndex == 0 :
+            return closestIndex
+        if closestIndex == len(self._timeSamples):
+            return closestIndex - 1
 
-        for i in range(len(self._timeSamples)):
-            newDist = abs(self._timeSamples[i] - float(frameString))
-            if dist is None or newDist < dist:
-                dist = newDist
-                closestIndex = i
+        # If not, check for the closest value either side
+        before = self._timeSamples[closestIndex - 1]
+        after = self._timeSamples[closestIndex]
+        if after - timeSample > timeSample - before:
+            closestIndex = closestIndex - 1
         return closestIndex
 
     def _rangeBeginChanged(self):
@@ -1839,7 +1843,8 @@ class AppController(QtCore.QObject):
         self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
-        indexOfFrame = self._findIndexOfFieldContents(self._ui.frameField)
+        timeSample = float(self._ui.frameField.text())
+        indexOfFrame = self._findClosestFrameIndex(timeSample)
 
         if (indexOfFrame != Usd.TimeCode.Default()):
             self.setFrame(indexOfFrame, forceUpdate=True)
