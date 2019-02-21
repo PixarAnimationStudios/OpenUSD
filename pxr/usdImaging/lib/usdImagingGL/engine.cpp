@@ -526,7 +526,7 @@ UsdImagingGLEngine::TestIntersection(
             &_engine,
             _intersectCollection,
             qparams,
-            HdxIntersectionModeTokens->nearest,
+            HdxIntersectionModeTokens->nearestToCenter,
             &allHits)) {
         return false;
     }

@@ -682,9 +682,15 @@ HdxTaskController::TestIntersection(
         return false;
     }
 
-    if (intersectionMode == HdxIntersectionModeTokens->nearest) {
+    if (intersectionMode == HdxIntersectionModeTokens->nearestToCenter) {
         HdxIntersector::Hit hit;
         if (!result.ResolveNearestToCenter(&hit)) {
+            return false;
+        }
+        allHits->push_back(hit);
+    } else if (intersectionMode == HdxIntersectionModeTokens->nearestToCamera) {
+        HdxIntersector::Hit hit;
+        if (!result.ResolveNearestToCamera(&hit)) {
             return false;
         }
         allHits->push_back(hit);

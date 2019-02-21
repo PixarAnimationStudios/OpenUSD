@@ -51,14 +51,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 // APIs should be decoupled.
 
 /// Intersection mode tokens, mapped to HdxIntersector API.
-/// Note: "nearest" hitmode may be considerably more efficient.
-/// - "nearest" returns the nearest single hit point.
+/// Note: The "nearest*" hitmodes may be considerably more efficient.
+/// - "nearestToCamera" returns the single hit point closest (by depth) to the
+///                     camera
+/// - "nearestToCenter" returns the single hit point nearest to the center of
+///                     the selection region; note that this should be faster
+///                     than nearestToCamera, as it will sample outward from the
+///                     center, and stop as soon as it finds any hit, while
+///                     nearestToCamera will check ALL pixels in the selection
+///                     region, and return the hit that has the lowest z
 /// - "unique"  returns the set of unique hit prims, keeping only the nearest
 ///             depth per prim.
 /// - "all"     returns all hit points, possibly including multiple hits per
 ///             prim.
 #define HDX_INTERSECTION_MODE_TOKENS           \
-    (nearest)                                  \
+    (nearestToCamera)                          \
+    (nearestToCenter)                          \
     (unique)                                   \
     (all)
 
