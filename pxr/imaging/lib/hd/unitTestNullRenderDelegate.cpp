@@ -271,10 +271,6 @@ public:
             delegate->GetVisible(id);
         }
 
-        if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
-            delegate->GetVisible(id);
-        }
-
         // Normals is a primvar
 
         if (HdChangeTracker::IsDoubleSidedDirty(*dirtyBits, id)) {
