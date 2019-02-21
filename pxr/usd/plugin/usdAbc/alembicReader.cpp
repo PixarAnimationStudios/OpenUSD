@@ -946,6 +946,17 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
         usedRootNames.insert(name);
     }
 
+    // Fetch authored timeCodesPerSecond early so that we can use it 
+    // for rescaling timeSamples.
+    if (const PropertyHeader* property =
+            root.getProperties().getPropertyHeader("Usd")) {
+        const MetaData& metadata = property->getMetaData();
+        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 24.0;
+       _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
+                           SdfFieldKeys->TimeCodesPerSecond);
+       _timeScale = _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond].Get<double>();
+    }
+
     // Collect instancing information.
     // Skipping this step makes later code expand instances.
     if (!IsFlagSet(UsdAbc_AlembicContextFlagNames->expandInstances)) {
@@ -992,10 +1003,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
             *_allTimeSamples.begin();
         _pseudoRoot->metadata[SdfFieldKeys->EndTimeCode]   =
             *_allTimeSamples.rbegin();
-
-        // The time ordinate is in seconds in alembic files.
-        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 1.0;
-        _pseudoRoot->metadata[SdfFieldKeys->FramesPerSecond] = 24.0;
     }
 
     // If no upAxis is authored, pretend that it was authored as 'Y'.  This
@@ -1014,8 +1021,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->EndTimeCode);
 
-        _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
-                           SdfFieldKeys->TimeCodesPerSecond);
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->FramesPerSecond);
 

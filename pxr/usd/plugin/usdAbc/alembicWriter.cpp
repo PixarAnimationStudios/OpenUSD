@@ -671,8 +671,19 @@ public:
     /// Returns the writer schema.
     const _WriterSchema& GetSchema() const { return *_schema; }
 
-    /// Returns the Usd data.
-    void SetData(const SdfAbstractDataConstPtr& data) { _data = data; }
+    /// Set the Usd data that we will translate.  Also resets _timeScale to
+    /// data's timeCodesPerSecond
+    void SetData(const SdfAbstractDataConstPtr& data) { 
+        _data = data; 
+        VtValue tcps;
+        SdfPath path = SdfPath::AbsoluteRootPath();
+        if (data->Has(SdfAbstractDataSpecId(&path),
+                      SdfFieldKeys->TimeCodesPerSecond, &tcps)){
+            if (tcps.IsHolding<double>()){
+                _timeScale = tcps.UncheckedGet<double>();
+            }
+        }
+    }
 
     /// Returns the Usd data.
     const SdfAbstractData& GetData() const { return *boost::get_pointer(_data);}
@@ -2484,7 +2495,7 @@ _WriteRoot(_PrimWriterContext* context)
     _SetDoubleMetadata(&metadata, *context, SdfFieldKeys->StartTimeCode);
     _SetDoubleMetadata(&metadata, *context, SdfFieldKeys->EndTimeCode);
 
-    // Always author a value for timeCodesPerSecond and frameCodesPerSecond 
+    // Always author a value for timeCodesPerSecond and framesPerSecond 
     // to preserve proper round-tripping from USD->alembic->USD.
     // 
     // First, set them to the corresponding fallback values, then overwrite them 

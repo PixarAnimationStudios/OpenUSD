@@ -2,9 +2,7 @@
 (
     defaultPrim = "rootNode"
     endTimeCode = 24
-    framesPerSecond = 24
     startTimeCode = 0
-    timeCodesPerSecond = 1
     upAxis = "Y"
 )
 
