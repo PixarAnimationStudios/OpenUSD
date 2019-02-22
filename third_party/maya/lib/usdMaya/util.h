@@ -212,6 +212,13 @@ MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
 PXRUSDMAYA_API
 MPlug GetMayaTimePlug();
 
+/// Get the MPlug for the shaders attribute of Maya's defaultShaderList
+///
+/// This is an accessor for the "defaultShaderList1.shaders" plug.  Similar to
+/// GetMayaTimePlug(), it will traverse through MFn::kShaderList objects.
+PXRUSDMAYA_API
+MPlug GetMayaShaderListPlug();
+
 PXRUSDMAYA_API
 bool isAncestorDescendentRelationship(
         const MDagPath& path1,

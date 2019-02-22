@@ -205,6 +205,35 @@ UsdMayaUtil::GetMayaTimePlug()
     return timePlug;
 }
 
+MPlug
+UsdMayaUtil::GetMayaShaderListPlug()
+{
+    MPlug shadersPlug;
+    MStatus status;
+
+    MItDependencyNodes iter(MFn::kShaderList, &status);
+    CHECK_MSTATUS_AND_RETURN(status, shadersPlug);
+
+    while (!shadersPlug && !iter.isDone()) {
+        MObject node = iter.thisNode();
+        iter.next();
+
+        MFnDependencyNode depNodeFn(node, &status);
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
+        MPlug outShadersPlug = depNodeFn.findPlug("shaders", true, &status);
+        if (status != MS::kSuccess || !outShadersPlug) {
+            continue;
+        }
+
+        shadersPlug = outShadersPlug;
+    }
+
+    return shadersPlug;
+}
+
 bool
 UsdMayaUtil::isAncestorDescendentRelationship(
         const MDagPath& path1,

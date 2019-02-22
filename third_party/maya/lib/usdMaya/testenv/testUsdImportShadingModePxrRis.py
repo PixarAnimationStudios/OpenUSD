@@ -77,6 +77,8 @@ class testUsdImportShadingModePxrRis(unittest.TestCase):
         """
         meshFn = self._GetMayaMesh('|MarbleCube|Geom|Cube|CubeShape')
 
+        self.assertTrue('MarbleShader' in cmds.listConnections('defaultShaderList1.s'))
+
         # Validate the shadingEngine connected to the mesh.
         objectArray = OpenMaya.MObjectArray()
         indexArray = OpenMaya.MIntArray()
