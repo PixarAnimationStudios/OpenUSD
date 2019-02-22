@@ -274,27 +274,31 @@ def RunCMake(context, force, extraArgs = None):
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
-    # We use -DCMAKE_BUILD_TYPE=Release for single-configuration
-    # generators (Ninja, make), and --config Release for multi-configuration
-    # generators (Visual Studio); technically we don't need BOTH at the same
+    # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
+    # (Ninja, make), and --config for multi-configuration generators 
+    # (Visual Studio); technically we don't need BOTH at the same
     # time, but specifying both is simpler than branching
+    config=("Debug" if context.buildDebug else "Release")
+
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
-            '-DCMAKE_BUILD_TYPE=Release '
+            '-DCMAKE_BUILD_TYPE={config} '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
                     depsInstDir=context.instDir,
+                    config=config,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config Release --target install -- {multiproc}"
-            .format(multiproc=("/M:{procs}"
+        Run("cmake --build . --config {config} --target install -- {multiproc}"
+            .format(config=config,
+                    multiproc=("/M:{procs}"
                                if generator and "Visual Studio" in generator
                                else "-j{procs}")
                               .format(procs=context.numJobs)))
@@ -554,7 +558,8 @@ def InstallBoost(context, force, buildArgs):
             'link=shared',
             'runtime-link=shared',
             'threading=multi', 
-            'variant=release',
+            'variant={variant}'
+                .format(variant="debug" if context.buildDebug else "release"),
             '--with-atomic',
             '--with-program_options',
             '--with-regex'
@@ -1073,6 +1078,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DBUILD_SHARED_LIBS=ON')
         elif context.buildMonolithic:
             extraArgs.append('-DPXR_BUILD_MONOLITHIC=ON')
+
+        if context.buildDebug:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
+        else:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
         
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
@@ -1284,6 +1294,9 @@ subgroup.add_argument("--build-monolithic", dest="build_type",
                       action="store_const", const=MONOLITHIC_LIB,
                       help="Build a single monolithic shared library")
 
+group.add_argument("--debug", dest="build_debug", action="store_true",
+                    help="Build with debugging information")
+
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tests", dest="build_tests", action="store_true",
                       default=False, help="Build unit tests")
@@ -1462,6 +1475,7 @@ class InstallContext:
             self.buildArgs.setdefault(depName.lower(), []).append(arg)
 
         # Build type
+        self.buildDebug = args.build_debug;
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
@@ -1719,6 +1733,7 @@ Building with settings:
   Downloader                    {downloader}
 
   Building                      {buildType}
+    Config                      {buildConfig}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenImageIO support:      {buildOIIO} 
@@ -1766,6 +1781,7 @@ summaryMsg = summaryMsg.format(
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
+    buildConfig=("Debug" if context.buildDebug else "Release"),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
