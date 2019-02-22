@@ -150,19 +150,25 @@ Hd_SortedIds::Remove(const SdfPath &id)
                 _ids.pop_back();
                 _afterLastDeletePoint = idToRemove - _ids.begin();
                 ++_afterLastDeletePoint;
+
+                // As we've moved an element from the end into the middle
+                // the list is now only sorted up to the place where the element
+                // was removed.
+
+                _sortedCount = std::min(_sortedCount,
+                                        static_cast<size_t>(
+                                                  (idToRemove - _ids.begin())));
             } else {
                 _ids.pop_back();
                 _afterLastDeletePoint = INVALID_DELETE_POINT;
+
+                // As we've removed an element from the end of the list
+                // the list remains in the same sort state, so
+                // trim the length if necessary.
+                // Note: Can't use the idToRemove iterator as that has
+                // been invalidated.
+                _sortedCount = std::min(_sortedCount, _ids.size());
             }
-
-            // As we've moved an element from the end into the middle
-            // the list is now only sorted up to the place where the element
-            // was removed.
-
-
-            _sortedCount = std::min(_sortedCount,
-                                    static_cast<size_t>(
-                                              (idToRemove - _ids.begin())));
         }
     }
 }
