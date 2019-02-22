@@ -103,7 +103,7 @@ public:
     ///
     /// Note that SdfAssetPath only carries a resolved path if the creator of
     /// an instance supplied one to the constructor.  SdfAssetPath will never
-    /// call Rp itself.
+    /// perform any resolution itself.
     const std::string &GetResolvedPath() const {
         return _resolvedPath;
     }
