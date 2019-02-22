@@ -35,7 +35,7 @@ namespace {
 // Python type for the C++ TfToken type.  So we wrap this functor instead.
 class _WrapStaticToken {
 public:
-    explicit _WrapStaticToken(const TfToken* token) : _token(token) { }
+    _WrapStaticToken(const TfToken* token) : _token(token) { }
 
     std::string operator()() const
     {
