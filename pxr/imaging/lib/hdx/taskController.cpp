@@ -704,6 +704,10 @@ HdxTaskController::TestIntersection(
         if (!result.ResolveAll(allHits)) {
             return false;
         }
+    } else {
+        TF_CODING_ERROR("Unrecognized interesection mode '%s'",
+            intersectionMode.GetText());
+        return false;
     }
 
     return true;
