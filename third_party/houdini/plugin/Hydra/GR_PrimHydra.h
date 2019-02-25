@@ -77,6 +77,7 @@ private:
     bool updateSelection = true; // selection attribute needs to be updated
     bool hasRE = false; // true if any drawType == RE
     unsigned badPrims = 0; // number of null prims (these should not happen)
+    bool initRender();
     struct RE_Geo {
         std::unique_ptr<RE_Geometry> geo;
         unsigned prims; // number of prims in geo

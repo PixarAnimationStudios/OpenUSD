@@ -319,6 +319,93 @@ struct GR_PrimHydra::Hydra
     }
 };
 
+// One-time initialization to identify multiple instances, choose box/re/hydra DrawType for
+// each prim, and record transforms. Returns false if nothing should be drawn
+bool
+GR_PrimHydra::initRender()
+{
+    if (hasXform.size()) return true;
+    if (GT()->empty()) return false;
+
+    hasXform.setSize(size());
+    drawType.resize(size());
+    instanceOf.resize(size());
+    hasRE = false;
+    boxes.instances = 0;
+    boxes.update = true;
+    badPrims = 0;
+    std::map<size_t, size_t> hashToInstance; // match up instances
+
+    for (size_t i = 0; i < size(); ++i) {
+        pxr::UsdPrim prim(getUsdPrim(i));
+        if (not prim) {
+            ++badPrims;
+            drawType[i] = DrawType::HIDDEN;
+            continue;
+        }
+        pxr::UsdGeomImageable imageable(prim);
+        if (imageable &&
+            imageable.ComputeVisibility(pxr::UsdTimeCode(getFrame(i))) ==
+            pxr::UsdGeomTokens->invisible) {
+            drawType[i] = DrawType::HIDDEN;
+            continue;
+        }
+        switch (getViewportLOD(i)) {
+        case GEO_VIEWPORT_HIDDEN:
+        case GEO_VIEWPORT_POINTS:
+            drawType[i] = DrawType::HIDDEN;
+            continue;
+        case GEO_VIEWPORT_CENTROID:
+            drawType[i] = DrawType::CENTROID;
+            continue;
+        case GEO_VIEWPORT_BOX:
+            drawType[i] = DrawType::BOX;
+            boxes.instances++;
+            continue;
+        default:
+            break;
+        }
+        // Handle HYDRA_HOUDINI_DISABLE=2
+        if (disable) {
+            drawType[i] = DrawType::RE;
+            hasRE = true;
+            continue;
+        }
+        // Detect if a prim is drawn more than once, use instance drawing
+        size_t& iEntry(hashToInstance[hashValue(prim) + std::hash<double>()(getFrame(i))]);
+        if (iEntry) {
+            instanceOf[i] = instanceOf[iEntry-1] = iEntry;
+            drawType[i] = drawType[iEntry-1] = DrawType::RE;
+            hasRE = true;
+            continue;
+        }
+        iEntry = i+1; // record first of possible instances
+        // Any child of PointInstancer (such as a prototype) does not work in Hydra,
+        // See if they fix it as this check is expensive!
+        if (inPointInstancer(prim)) {
+            drawType[i] = DrawType::RE;
+            hasRE = true;
+            continue;
+        }
+        // we now know Hydra will be used
+        drawType[i] = DrawType::HYDRA;
+
+        // compute the inverse xforms needed to move USD transform to local transform
+        // getFullTransform4 is garbage for non-imageable, just ignore it
+        if (imageable) {
+            UT_Matrix4D hxform; getPrimPacked(i)->getFullTransform4(hxform);
+            const UT_Matrix4D& usdxform(getPackedUSD(i)->getUsdTransform());
+            if (not appxEqual(hxform, usdxform)) {
+                xforms.resize(size());
+                UT_Matrix4D inverse; usdxform.invert(inverse);
+                xforms[i] = inverse * hxform;
+                hasXform.setBitFast(i, true);
+            }
+        }
+    }
+    return true;
+}
+
 static int postPassId = -1;
 static std::vector<GR_PrimHydra::Hydra> hydras;
 static bool lightsSet = false;
@@ -329,89 +416,8 @@ GR_PrimHydra::render(RE_Render* r,
                      GR_RenderFlags flags,
                      GR_DrawParms dp)
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    if (hasXform.size() == 0) {
-        if (GT()->empty()) return;
-        // One-time initialization to identify multiple instances, choose box/re/hydra for
-        // each prim, and record transforms
-
-        hasXform.setSize(size());
-        drawType.resize(size());
-        instanceOf.resize(size());
-        hasRE = false;
-        boxes.instances = 0;
-        boxes.update = true;
-        badPrims = 0;
-        std::map<size_t, size_t> hashToInstance; // match up instances
-
-        for (size_t i = 0; i < size(); ++i) {
-            pxr::UsdPrim prim(getUsdPrim(i));
-            if (not prim) {
-                ++badPrims;
-                drawType[i] = DrawType::HIDDEN;
-                continue;
-            }
-            pxr::UsdGeomImageable imageable(prim);
-            if (imageable &&
-                imageable.ComputeVisibility(pxr::UsdTimeCode(getFrame(i))) ==
-                pxr::UsdGeomTokens->invisible) {
-                drawType[i] = DrawType::HIDDEN;
-                continue;
-            }
-            switch (getViewportLOD(i)) {
-            case GEO_VIEWPORT_HIDDEN:
-            case GEO_VIEWPORT_POINTS:
-                drawType[i] = DrawType::HIDDEN;
-                continue;
-            case GEO_VIEWPORT_CENTROID:
-                drawType[i] = DrawType::CENTROID;
-                continue;
-            case GEO_VIEWPORT_BOX:
-                drawType[i] = DrawType::BOX;
-                boxes.instances++;
-                continue;
-            default:
-                break;
-            }
-            // Handle HYDRA_HOUDINI_DISABLE=2
-            if (disable) {
-                drawType[i] = DrawType::RE;
-                hasRE = true;
-                continue;
-            }
-            // Detect if a prim is drawn more than once, use instance drawing
-            size_t& iEntry(hashToInstance[hashValue(prim) + std::hash<double>()(getFrame(i))]);
-            if (iEntry) {
-                instanceOf[i] = instanceOf[iEntry-1] = iEntry;
-                drawType[i] = drawType[iEntry-1] = DrawType::RE;
-                hasRE = true;
-                continue;
-            }
-            iEntry = i+1; // record first of possible instances
-            // Any child of PointInstancer (such as a prototype) does not work in Hydra,
-            // See if they fix it as this check is expensive!
-            if (inPointInstancer(prim)) {
-                drawType[i] = DrawType::RE;
-                hasRE = true;
-                continue;
-            }
-            // we now know Hydra will be used
-            drawType[i] = DrawType::HYDRA;
-
-            // compute the inverse xforms needed to move USD transform to local transform
-            // getFullTransform4 is garbage for non-imageable, just ignore it
-            if (imageable) {
-                UT_Matrix4D hxform; getPrimPacked(i)->getFullTransform4(hxform);
-                const UT_Matrix4D& usdxform(getPackedUSD(i)->getUsdTransform());
-                if (not appxEqual(hxform, usdxform)) {
-                    xforms.resize(size());
-                    UT_Matrix4D inverse; usdxform.invert(inverse);
-                    xforms[i] = inverse * hxform;
-                    hasXform.setBitFast(i, true);
-                }
-            }
-        }
-    }
+    if (not initRender())
+        return;
 
     ////////////////////////////////////////////////////////////////////////////////
     // Decide how to draw based on renderMode, set up Hydra params
@@ -1006,6 +1012,8 @@ GR_PrimHydra::renderPick(RE_Render* r,
                          bool has_pick_map)
 {
     if (pick_type != GR_PICK_PRIMITIVE)
+        return 0;
+    if (not initRender())
         return 0;
 
     // Pick buffer must be non-null for MULTI_VISIBLE or it crashes. It is
