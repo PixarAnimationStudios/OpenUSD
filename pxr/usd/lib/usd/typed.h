@@ -101,7 +101,7 @@ protected:
 
 private:
     USD_API
-    virtual const TfType &_GetTfType() const;
+    virtual const TfType &_GetTfType() const override;
 };
 
 
