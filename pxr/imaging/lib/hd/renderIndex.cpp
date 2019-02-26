@@ -1562,11 +1562,12 @@ HdRenderIndex::_AppendDrawItems(
                     const HdRprim::HdDrawItemPtrVector* drawItems =
                         rprim->GetDrawItems(reprToken);
 
-                    TF_VERIFY(drawItems);
+                    if (TF_VERIFY(drawItems)) {
 
-                    resultDrawItems.insert( resultDrawItems.end(),
-                                            drawItems->begin(),
-                                            drawItems->end() );
+                        resultDrawItems.insert(resultDrawItems.end(),
+                                               drawItems->begin(),
+                                               drawItems->end());
+                    }
                 }
             }
         }
