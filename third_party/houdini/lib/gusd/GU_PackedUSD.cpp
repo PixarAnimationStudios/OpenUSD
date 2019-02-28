@@ -499,7 +499,7 @@ GusdGU_PackedUSD::intrinsicType() const
 {
     // Return the USD prim type so it can be displayed in the spreadsheet.
     UsdPrim prim = getUsdPrim();
-    return UT_StringHolder( prim.GetTypeName().GetText() );
+    return GusdUSD_Utils::TokenToStringHolder( prim.GetTypeName() );
 }
 
 const UT_Matrix4D &
