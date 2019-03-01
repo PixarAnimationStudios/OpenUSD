@@ -661,24 +661,16 @@ GusdGU_PackedUSD::getBounds(UT_BoundingBox &box) const
     {
         TfTokenVector purposes = GusdPurposeSetToTokens(m_purposes);
 
-#if SYS_VERSION_FULL_INT >= 0x12000000
         if ( GusdBoundsCache::GetInstance().ComputeUntransformedBound(
                 prim,
                 UsdTimeCode( m_frame ),
                 purposes,
                 box )) {
+#if SYS_VERSION_FULL_INT < 0x12000000
+            m_boundsCache = box;
+#endif
             return true;
         }
-#else
-        if( GusdBoundsCache::GetInstance().ComputeUntransformedBound(
-                        prim,
-                        UsdTimeCode( m_frame ),
-                    purposes,
-                        m_boundsCache )) {
-                box = m_boundsCache;
-                return true;
-        }
-#endif
     }
     box.makeInvalid();
     return false;
