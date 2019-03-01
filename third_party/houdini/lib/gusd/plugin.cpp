@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 /**
- * \file houdinipkg/GUSD/plugin.cpp
+ * \file houdinipkg/gusd/plugin.cpp
  * \brief main plugin file
  */
 
