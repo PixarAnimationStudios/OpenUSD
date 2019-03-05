@@ -746,7 +746,7 @@ class AppController(QtCore.QObject):
 
             self._ui.actionFrame_Backwards.triggered.connect(self._retreatFrame)
 
-            self._ui.actionReset_View.triggered.connect(self._resetView)
+            self._ui.actionReset_View.triggered.connect(lambda: self._resetView())
 
             self._ui.topBottomSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
             self._ui.primStageSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
