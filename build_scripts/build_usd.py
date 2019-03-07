@@ -278,29 +278,27 @@ def RunCMake(context, force, extraArgs = None):
     # (Ninja, make), and --config for multi-configuration generators 
     # (Visual Studio); technically we don't need BOTH at the same
     # time, but specifying both is simpler than branching
-    config=("Debug" if context.buildDebug else "Release")
+    variant= BuildVariant(context)
 
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
-            '-DCMAKE_BUILD_TYPE={config} '
+            '-DCMAKE_BUILD_TYPE={variant} '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
                     depsInstDir=context.instDir,
-                    config=config,
+                    variant=variant,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
-        variant= BuildVariant(context)
-
-        Run("cmake --build . --config {config} --target install -- {multiproc}"
-            .format(config=config,
+        Run("cmake --build . --config {variant} --target install -- {multiproc}"
+            .format(variant=variant,
                     multiproc=("/M:{procs}"
                                if generator and "Visual Studio" in generator
                                else "-j{procs}")
@@ -948,14 +946,6 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # tbbmalloc, which can cause problems with the Maya plugin.
         extraArgs.append('-DNO_TBB=ON')
 
-        # set CMAKE_BUILD_TYPE based on build variant
-        if context.buildDebug:
-          extraArgs.append('-DCMAKE_BUILD_TYPE=Debug')
-        elif context.buildRelease:
-          extraArgs.append('-DCMAKE_BUILD_TYPE=Release')
-        elif context.buildRelWithDebug:
-          extraArgs.append('-DCMAKE_BUILD_TYPE=RelWithDebInfo')
-
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
@@ -1100,6 +1090,17 @@ def InstallUSD(context, force, buildArgs):
                                  .format(pyLibPath=pythonInfo[1]))
                 extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
                                  .format(pyIncPath=pythonInfo[2]))
+
+            # Many people on Windows may not have python with the 
+            # debugging symbol ( python27_d.lib ) installed, this is the commom case 
+            # where one downloads the python from official download website. Therefore we 
+            # can still let people decide to build USD with release version of python if 
+            # debugging into python land is not what they want which can be done by setting the 
+            # boostDebugPython
+            if context.buildDebug and context.boostDebugPython:
+                extraArgs.append('-DPXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
+            else:
+                extraArgs.append('-DPXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -1110,18 +1111,8 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildDebug:
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
-        else:
-            extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
-        
-        # set TBB_USE_DEBUG_BUILD and CMAKE_BUILD_TYPE based on build variant
-        if context.buildDebug:
-            extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
-            extraArgs.append('-DCMAKE_BUILD_TYPE=Debug')
         elif context.buildRelease:
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
-            extraArgs.append('-DCMAKE_BUILD_TYPE=Release')
-        else:
-            extraArgs.append('-DCMAKE_BUILD_TYPE=RelWithDebInfo')
 
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
@@ -1363,6 +1354,9 @@ subgroup.add_argument("--python", dest="build_python", action="store_true",
 subgroup.add_argument("--no-python", dest="build_python", action="store_false",
                       help="Do not build python based components")
 
+subgroup.add_argument("--boost-debug-python", dest="boostDebugPython", action="store_true",
+                      help="Define Boost Python Debug if your Python library comes with Debugging symbols.")
+
 (NO_IMAGING, IMAGING, USD_IMAGING) = (0, 1, 2)
 
 group = parser.add_argument_group(title="Imaging and USD Imaging Options")
@@ -1527,6 +1521,8 @@ class InstallContext:
         self.buildDebug = args.build_debug;
         self.buildRelease = args.build_release;
         self.buildRelWithDebug = args.build_relwithdebug;
+
+        self.boostDebugPython = args.boostDebugPython
 
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
@@ -1793,6 +1789,7 @@ Building with settings:
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
+      Boost Python Debug:       {boostDebugPython}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
@@ -1841,6 +1838,7 @@ summaryMsg = summaryMsg.format(
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
+    boostDebugPython=("On" if context.boostDebugPython else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),

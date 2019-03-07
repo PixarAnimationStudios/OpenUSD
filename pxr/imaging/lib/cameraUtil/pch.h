@@ -133,11 +133,5 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#ifdef _DEBUG
-  #undef _DEBUG
-  #include <Python.h>
-  #define _DEBUG
-#else
-  #include <Python.h>
-#endif
+#include <boost/python/detail/wrap_python.hpp>
 #endif // PXR_PYTHON_SUPPORT_ENABLED

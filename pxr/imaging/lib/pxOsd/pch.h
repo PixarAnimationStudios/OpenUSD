@@ -147,11 +147,5 @@
 #include <opensubdiv/far/topologyRefinerFactory.h>
 #include <tbb/atomic.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#ifdef _DEBUG
-  #undef _DEBUG
-  #include <Python.h>
-  #define _DEBUG
-#else
-  #include <Python.h>
-#endif
+#include <boost/python/detail/wrap_python.hpp>
 #endif // PXR_PYTHON_SUPPORT_ENABLED

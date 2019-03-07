@@ -24,13 +24,7 @@
 #ifndef TF_PYTRACING_H
 #define TF_PYTRACING_H
 
-#ifdef _DEBUG
-  #undef _DEBUG
-  #include <Python.h>
-  #define _DEBUG
-#else
-  #include <Python.h>
-#endif
+#include <boost/python/detail/wrap_python.hpp>
 
 #include "pxr/pxr.h"
 

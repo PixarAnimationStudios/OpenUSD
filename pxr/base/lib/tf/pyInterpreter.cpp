@@ -41,13 +41,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
-#ifdef _DEBUG
-  #undef _DEBUG
-  #include <Python.h>
-  #define _DEBUG
-#else
-  #include <Python.h>
-#endif
+#include <boost/python/detail/wrap_python.hpp>
 #include <signal.h>
 
 using std::string;

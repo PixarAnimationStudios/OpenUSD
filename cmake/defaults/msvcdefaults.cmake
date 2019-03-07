@@ -86,6 +86,10 @@ if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
 endif()
 
+if(${PXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    _add_define(BOOST_DEBUG_PYTHON)
+endif()
+
 # Need half::_toFloat and half::_eLut.
 _add_define("OPENEXR_DLL")
 
