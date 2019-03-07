@@ -1092,12 +1092,12 @@ def InstallUSD(context, force, buildArgs):
                                  .format(pyIncPath=pythonInfo[2]))
 
             # Many people on Windows may not have python with the 
-            # debugging symbol ( python27_d.lib ) installed, this is the commom case 
+            # debugging symbol ( python27_d.lib ) installed, this is the common case 
             # where one downloads the python from official download website. Therefore we 
             # can still let people decide to build USD with release version of python if 
             # debugging into python land is not what they want which can be done by setting the 
-            # boostDebugPython
-            if context.buildDebug and context.boostDebugPython:
+            # --debug-python flag
+            if context.buildDebug and context.debugPython:
                 extraArgs.append('-DPXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
             else:
                 extraArgs.append('-DPXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
@@ -1354,7 +1354,7 @@ subgroup.add_argument("--python", dest="build_python", action="store_true",
 subgroup.add_argument("--no-python", dest="build_python", action="store_false",
                       help="Do not build python based components")
 
-subgroup.add_argument("--boost-debug-python", dest="boostDebugPython", action="store_true",
+subgroup.add_argument("--debug-python", dest="debug_python", action="store_true",
                       help="Define Boost Python Debug if your Python library comes with Debugging symbols.")
 
 (NO_IMAGING, IMAGING, USD_IMAGING) = (0, 1, 2)
@@ -1522,7 +1522,7 @@ class InstallContext:
         self.buildRelease = args.build_release;
         self.buildRelWithDebug = args.build_relwithdebug;
 
-        self.boostDebugPython = args.boostDebugPython
+        self.debugPython = args.debug_python
 
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
@@ -1789,7 +1789,7 @@ Building with settings:
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
-      Boost Python Debug:       {boostDebugPython}
+      Python Debug:             {debugPython}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
@@ -1838,7 +1838,7 @@ summaryMsg = summaryMsg.format(
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
-    boostDebugPython=("On" if context.boostDebugPython else "Off"),
+    debugPython=("On" if context.debugPython else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
