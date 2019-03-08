@@ -42,8 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class TfToken;
-class HdRprimCollection;
-class HdRenderIndex;
 
 /// \class HdChangeTracker
 ///
