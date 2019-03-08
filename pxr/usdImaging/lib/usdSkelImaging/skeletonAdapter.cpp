@@ -77,6 +77,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     // gpu compute kernels
     (skinPointsLBSKernel)
     (skinPointsSimpleKernel)
+
+    // skel primvar names
+    ((skelJointIndices,  "skel:jointIndices"))
+    ((skelJointWeights,   "skel:jointWeights"))
+    ((skelGeomBindXform, "skel:geomBindTransform"))
+
 );
 
 TF_DEFINE_ENV_SETTING(USDSKELIMAGING_FORCE_CPU_COMPUTE, 0,
@@ -436,8 +442,8 @@ UsdSkelImagingSkeletonAdapter::MarkRefineLevelDirty(const UsdPrim& prim,
 
 void
 UsdSkelImagingSkeletonAdapter::MarkReprDirty(const UsdPrim& prim,
-                                                   const SdfPath& cachePath,
-                                                   UsdImagingIndexProxy* index)
+                                             const SdfPath& cachePath,
+                                             UsdImagingIndexProxy* index)
 {
     if (_IsCallbackForSkeleton(prim) ||
         _IsSkinnedPrimPath(cachePath)) {
@@ -453,8 +459,8 @@ UsdSkelImagingSkeletonAdapter::MarkReprDirty(const UsdPrim& prim,
 
 void
 UsdSkelImagingSkeletonAdapter::MarkCullStyleDirty(const UsdPrim& prim,
-                                                   const SdfPath& cachePath,
-                                                   UsdImagingIndexProxy* index)
+                                                  const SdfPath& cachePath,
+                                                  UsdImagingIndexProxy* index)
 {
     if (_IsCallbackForSkeleton(prim) ||
         _IsSkinnedPrimPath(cachePath)) {
@@ -533,8 +539,8 @@ UsdSkelImagingSkeletonAdapter::MarkVisibilityDirty(const UsdPrim& prim,
 
 void
 UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
-                                                  const SdfPath& cachePath,
-                                                  UsdImagingIndexProxy* index)
+                                                 const SdfPath& cachePath,
+                                                 UsdImagingIndexProxy* index)
 {
     if (_IsCallbackForSkeleton(prim) ||
         _IsSkinnedPrimPath(cachePath)) {
@@ -560,6 +566,8 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
     SdfPath const& computationPath,
     HdExtComputationContext* context)
 {
+    HD_TRACE_FUNCTION();
+
     VtValue restPoints
         = context->GetInputValue(_tokens->restPoints);
     VtValue geomBindXform
@@ -1502,6 +1510,11 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
         pointsType.type = HdTypeFloatVec3;
         pointsType.count = 1;
         
+        TF_DEBUG(USDIMAGING_COMPUTATIONS).Msg(
+                "[SkeletonAdapter::_UpdateSkinnedPrimForTime] Adding "
+                " points as a computed primvar for prim %s\n",
+                skinnedPrimPath.GetText());
+
         HdExtComputationPrimvarDescriptorVector compPrimvars;
         compPrimvars.emplace_back(
                         HdTokens->points,
@@ -1524,6 +1537,26 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
     UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(skinnedPrim);
     adapter->UpdateForTime(skinnedPrim, skinnedPrimPath,
                         time, requestedBits, instancerContext);
+
+    
+    // Don't publish skinning related primvars since they're consumed only by
+    // the computations.
+    // XXX: The usage of elementSize for jointWeights/Indices primvars to have
+    // multiple values per-vertex is not supported yet in Hydra.
+    if (requestedBits & HdChangeTracker::DirtyPrimvar) {
+        UsdImagingValueCache* valueCache = _GetValueCache();
+        HdPrimvarDescriptorVector& primvars =
+            valueCache->GetPrimvars(skinnedPrimPath);
+        for (auto it = primvars.begin(); it != primvars.end(); ) {
+            if (it->name == _tokens->skelJointIndices ||
+                it->name == _tokens->skelJointWeights  ||
+                it->name == _tokens->skelGeomBindXform) {
+                it = primvars.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------- //

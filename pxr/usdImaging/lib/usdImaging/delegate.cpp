@@ -2949,7 +2949,9 @@ UsdImagingDelegate::GetExtComputationPrimvarDescriptors(
     // Filter the stored primvars to just ones of the requested type.
     HdExtComputationPrimvarDescriptorVector primvars;
     HdExtComputationPrimvarDescriptorVector allPrimvars;
-    if (!_valueCache.ExtractExtComputationPrimvars(usdPath, &allPrimvars)) {
+    // Use Find and not Extract, since this may be called multiple times
+    // (with different interp for example).
+    if (!_valueCache.FindExtComputationPrimvars(usdPath, &allPrimvars)) {
         TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation primvar "
                                    "descriptor fetch for %s\n", 
                                    computationId.GetText());
@@ -2960,7 +2962,7 @@ UsdImagingDelegate::GetExtComputationPrimvarDescriptors(
         
         // Don't use a verify below because it is often the case that there are
         // no computated primvars on an rprim.
-        _valueCache.ExtractExtComputationPrimvars(usdPath, &allPrimvars);
+        _valueCache.FindExtComputationPrimvars(usdPath, &allPrimvars);
     }
 
     if (allPrimvars.empty()) {
