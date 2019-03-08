@@ -349,24 +349,6 @@ string __repr__(VtArray<T> const &self)
         return TF_PY_REPR_PREFIX +
             TfStringPrintf("%s()", GetVtArrayName<VtArray<T> >().c_str());
 
-    Vt_ShapeData const *shapeData = self._GetShapeData();
-    
-    string shapeStr;
-    size_t lastDimSize = 0;
-    unsigned int rank =
-        Vt_ComputeEffectiveRankAndLastDimSize(shapeData, &lastDimSize);
-    if (rank > 1) {
-        shapeStr = "(";
-        for (size_t i = 0; i != rank-1; ++i) {
-            shapeStr += TfStringPrintf(
-                i ? ", %d" : "%d", shapeData->otherDims[i]);
-        }
-        shapeStr += TfStringPrintf(", %zu), ", lastDimSize);
-    }
-    else {
-        shapeStr = TfStringPrintf("%zd, ", self.size());
-    }
-
     std::ostringstream stream;
     stream.precision(17);
     stream << "(";
@@ -375,11 +357,35 @@ string __repr__(VtArray<T> const &self)
         streamValue(stream, self[i]);
     }
     stream << (self.size() == 1 ? ",)" : ")");
-    
-    return TF_PY_REPR_PREFIX +
-        TfStringPrintf("%s(%s%s)",
+
+    const std::string repr = TF_PY_REPR_PREFIX +
+        TfStringPrintf("%s(%zd, %s)",
                        GetVtArrayName<VtArray<T> >().c_str(),
-                       shapeStr.c_str(), stream.str().c_str());
+                       self.size(), stream.str().c_str());
+
+    // XXX: This is to deal with legacy shaped arrays and should be removed
+    // once all shaped arrays have been eliminated.
+    // There is no nice way to make an eval()able __repr__ for shaped arrays
+    // that preserves the shape information, so put it in <> to make it
+    // clearly not eval()able. That has the advantage that, if somebody passes
+    // the repr into eval(), it'll raise a SyntaxError that clearly points to
+    // the beginning of the __repr__.
+    Vt_ShapeData const *shapeData = self._GetShapeData();
+    size_t lastDimSize = 0;
+    unsigned int rank =
+        Vt_ComputeEffectiveRankAndLastDimSize(shapeData, &lastDimSize);
+    if (rank > 1) {
+        std::string shapeStr = "(";
+        for (size_t i = 0; i != rank-1; ++i) {
+            shapeStr += TfStringPrintf(
+                i ? ", %d" : "%d", shapeData->otherDims[i]);
+        }
+        shapeStr += TfStringPrintf(", %zu)", lastDimSize);
+        return TfStringPrintf("<%s with shape %s>",
+                              repr.c_str(), shapeStr.c_str());
+    }
+
+    return repr;
 }
 
 template <typename T>
