@@ -118,6 +118,8 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
                        delegate->GetMaterialId(GetId()));
+
+        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
     }
 
     // Check if either the material or geometric shaders need updating for
@@ -1524,6 +1526,22 @@ HdStMesh::_UseFlatNormals(const HdMeshReprDesc &desc) const
         return false;
     }
     return true;
+}
+
+const TfToken&
+HdStMesh::_GetMaterialTag(const HdRenderIndex &renderIndex) const
+{
+    const HdStMaterial *material =
+        static_cast<const HdStMaterial *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material,
+                                     GetMaterialId()));
+
+    if (material) {
+        return material->GetMaterialTag();
+    }
+
+    // A material may have been unbound, we should clear the old tag
+    return HdMaterialTagTokens->defaultMaterialTag;
 }
 
 static std::string

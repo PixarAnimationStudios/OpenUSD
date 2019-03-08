@@ -110,6 +110,8 @@ protected:
 
     bool _UseFlatNormals(const HdMeshReprDesc &desc) const;
 
+    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
+
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,

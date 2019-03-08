@@ -112,6 +112,9 @@ public:
     // Returns true if the material has a displacement terminal.
     inline bool HasDisplacement() const;
 
+    // Returns the material's render pass tag.
+    inline const TfToken& GetMaterialTag() const;
+
     /// Replaces the shader code object with an externally created one
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
@@ -126,6 +129,8 @@ private:
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
 
+    TfToken _GetMaterialTag(VtDictionary const & metadata) const;
+
     void _InitFallbackShader();
 
     static HioGlslfx                  *_fallbackSurfaceShader;
@@ -136,6 +141,8 @@ private:
     bool                               _hasPtex : 1;
     bool                               _hasLimitSurfaceEvaluation : 1;
     bool                               _hasDisplacement : 1;
+
+    TfToken                            _materialTag;
 };
 
 inline std::string
@@ -189,6 +196,11 @@ inline bool HdStMaterial::HasLimitSurfaceEvaluation() const
 inline bool HdStMaterial::HasDisplacement() const
 {
     return _hasDisplacement;
+}
+
+inline const TfToken& HdStMaterial::GetMaterialTag() const
+{
+    return _materialTag;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

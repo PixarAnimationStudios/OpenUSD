@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/textureResource.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
@@ -122,6 +123,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
+ , _materialTag()
 {
     TF_DEBUG(HDST_MATERIAL_ADDED).Msg("HdStMaterial Created: %s\n",
                                       id.GetText());
@@ -188,6 +190,15 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
         if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
             _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
+            needsRprimMaterialStateUpdate = true;
+        }
+
+        TfToken materialTag =
+           _GetMaterialTag(materialMetadata);
+
+        if (_materialTag != materialTag) {
+            _materialTag = materialTag;
+            _surfaceShader->SetMaterialTag(_materialTag);
             needsRprimMaterialStateUpdate = true;
         }
 
@@ -433,6 +444,27 @@ HdStMaterial::_GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const
                                        _tokens->limitSurfaceEvaluation,
                                        VtValue());
     return value.IsHolding<bool>() && value.Get<bool>();
+}
+
+TfToken
+HdStMaterial::_GetMaterialTag(VtDictionary const & metadata) const
+{
+    VtValue value = TfMapLookupByValue(metadata,
+                                       HdShaderTokens->materialTag,
+                                       VtValue());
+
+    // A string when the materialTag is hardcoded in the glslfx.
+    // A token if the materialTag is auto-determined in MaterialAdapter.
+    if (value.IsHolding<TfToken>()) {
+        return value.UncheckedGet<TfToken>();
+    } else if (value.IsHolding<std::string>()) {
+        return TfToken(value.UncheckedGet<std::string>());
+    }
+
+    // An empty materialTag on the HdRprimCollection level means: 'ignore all
+    // materialTags and add everything to the collection'. Instead we return a
+    // default token because we do want materialTags to drive HdSt collections.
+    return HdMaterialTagTokens->defaultMaterialTag;
 }
 
 // virtual

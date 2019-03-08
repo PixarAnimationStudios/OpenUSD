@@ -621,9 +621,18 @@ _DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const HdRprimCollection &collection = filterParam->collection;
     const HdRenderIndex *renderIndex    = filterParam->renderIndex;
 
-   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID))) {
-       return true;
-   }
+    if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID))) {
+        // Filter out rprims that do not match the collection's materialTag.
+        // E.g. We may want to gather only opaque or translucent prims.
+        // An empty materialTag on collection means: ignore material-tags.
+        // This is important for tasks such as the selection-task which wants
+        // to ignore materialTags and receive all prims in its collection.
+        TfToken const& collectionMatTag = collection.GetMaterialTag();
+        if (collectionMatTag.IsEmpty() ||
+            renderIndex->GetMaterialTag(rprimID) == collectionMatTag) {
+            return true;
+        }
+    }
 
    return false;
 }
@@ -694,6 +703,17 @@ HdRenderIndex::GetRenderTag(SdfPath const& id) const
     }
 
     return info->rprim->GetRenderTag(info->sceneDelegate);
+}
+
+TfToken
+HdRenderIndex::GetMaterialTag(SdfPath const& id) const
+{
+    _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
+    if (info == nullptr) {
+        return HdMaterialTagTokens->defaultMaterialTag;
+    }
+
+    return info->rprim->GetMaterialTag();
 }
 
 SdfPathVector
@@ -1563,10 +1583,9 @@ HdRenderIndex::_AppendDrawItems(
                         rprim->GetDrawItems(reprToken);
 
                     if (TF_VERIFY(drawItems)) {
-
-                        resultDrawItems.insert(resultDrawItems.end(),
-                                               drawItems->begin(),
-                                               drawItems->end());
+                        resultDrawItems.insert( resultDrawItems.end(),
+                                                drawItems->begin(),
+                                                drawItems->end() );
                     }
                 }
             }

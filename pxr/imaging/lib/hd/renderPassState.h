@@ -181,6 +181,12 @@ public:
     HdCompareFunction GetDepthFunc() const { return _depthFunc; }
 
     HD_API
+    void SetEnableDepthMask(bool state);
+
+    HD_API
+    bool GetEnableDepthMash();
+
+    HD_API
     void SetStencil(HdCompareFunction func, int ref, int mask,
                     HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass);
     HdCompareFunction GetStencilFunc() const { return _stencilFunc; }
@@ -274,6 +280,7 @@ protected:
     float _depthBiasConstantFactor;
     float _depthBiasSlopeFactor;
     HdCompareFunction _depthFunc;
+    bool _depthMaskEnabled;
     HdCullStyle _cullStyle;
 
     // Stencil RenderPassState

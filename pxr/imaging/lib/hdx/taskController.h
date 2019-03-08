@@ -301,7 +301,7 @@ private:
     _Delegate _delegate;
 
     // Generated tasks.
-    SdfPath _renderTaskId;
+    SdfPathVector _renderTaskIds;
     SdfPath _selectionTaskId;
     SdfPath _simpleLightTaskId;
     SdfPath _shadowTaskId;

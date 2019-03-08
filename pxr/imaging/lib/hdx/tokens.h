@@ -81,6 +81,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_API, HDX_OPTION_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagsTokens, HDX_API, HDX_RENDERTAGS_TOKENS);
 
+#define HDX_MATERIALTAG_TOKENS   \
+    (translucent)
+
+TF_DECLARE_PUBLIC_TOKENS(HdxMaterialTagTokens, HDX_API, HDX_MATERIALTAG_TOKENS);
+
 #define HDX_COLOR_CORRECTION_TOKENS              \
     (disabled)                                  \
     (sRGB)                                      \

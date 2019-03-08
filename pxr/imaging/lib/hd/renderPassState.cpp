@@ -55,6 +55,7 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasConstantFactor(0.0f)
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
+    , _depthMaskEnabled(true)
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -236,6 +237,18 @@ void
 HdRenderPassState::SetDepthFunc(HdCompareFunction depthFunc)
 {
     _depthFunc = depthFunc;
+}
+
+void
+HdRenderPassState::SetEnableDepthMask(bool state)
+{
+    _depthMaskEnabled = state;
+}
+
+bool
+HdRenderPassState::GetEnableDepthMash()
+{
+    return _depthMaskEnabled;
 }
 
 void

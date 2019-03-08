@@ -53,7 +53,7 @@ public:
         return _geometricShader;
     }
 
-    HdStShaderCodeSharedPtr GetMaterialShader() const {
+    HdStShaderCodeSharedPtr const &GetMaterialShader() const {
         return _materialShader;
     }
 

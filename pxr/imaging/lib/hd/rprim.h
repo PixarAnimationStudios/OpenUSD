@@ -191,6 +191,12 @@ public:
     /// this identifier.
     SdfPath const& GetMaterialId() const { return _materialId; }
 
+    /// The MaterialTag allows rprims to be organized into different
+    /// collections based on properties of the prim's material.
+    /// E.g. A renderer may wish to organize opaque and translucent prims 
+    /// into different collections so they can be rendered seperately.
+    TfToken const& GetMaterialTag() const { return _sharedData.materialTag; }
+
     HdReprSelector const& GetReprSelector() const {
         return _authoredReprSelector;
     }

@@ -160,6 +160,7 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     renderPassState->SetDepthBias(params.depthBiasConstantFactor,
                                   params.depthBiasSlopeFactor);
     renderPassState->SetDepthFunc(params.depthFunc);
+    renderPassState->SetEnableDepthMask(params.depthMaskEnable);
 
     // stencil
     renderPassState->SetStencilEnabled(params.stencilEnable);
@@ -183,6 +184,7 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     renderPassState->SetAlphaToCoverageUseDefault(
         delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
     renderPassState->SetAlphaToCoverageEnabled(
+        params.enableAlphaToCoverage &&
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
@@ -316,6 +318,7 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.blendAlphaDstFactor << " "
         << pv.blendConstantColor << " "
         << pv.blendEnable << " "
+        << pv.enableAlphaToCoverage << ""
         << pv.cullStyle << " "
         << pv.camera << " "
         << pv.viewport << " ";
@@ -361,6 +364,7 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.blendAlphaDstFactor     == rhs.blendAlphaDstFactor     &&
            lhs.blendConstantColor      == rhs.blendConstantColor      &&
            lhs.blendEnable             == rhs.blendEnable             &&
+           lhs.enableAlphaToCoverage   == rhs.enableAlphaToCoverage   &&
            lhs.cullStyle               == rhs.cullStyle               &&
            lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&

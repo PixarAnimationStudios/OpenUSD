@@ -89,6 +89,11 @@ void HdStMixinShaderCode::AddBindings(HdBindingRequestVector *customBindings)
     _baseShader->AddBindings(customBindings);
 }
 
+TfToken HdStMixinShaderCode::GetMaterialTag() const
+{
+    return _baseShader->GetMaterialTag();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 

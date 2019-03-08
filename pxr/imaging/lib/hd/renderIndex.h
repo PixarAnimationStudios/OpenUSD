@@ -229,6 +229,10 @@ public:
     HD_API
     TfToken GetRenderTag(SdfPath const& id) const;
 
+    /// Return the material tag for the given rprim
+    HD_API
+    TfToken GetMaterialTag(SdfPath const& id) const;
+
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
     HD_API

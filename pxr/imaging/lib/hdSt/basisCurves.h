@@ -138,6 +138,8 @@ private:
     bool _SupportsRefinement(int refineLevel);
     bool _SupportsUserWidths(HdStDrawItem* drawItem);
     bool _SupportsUserNormals(HdStDrawItem* drawItem);
+    
+    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
