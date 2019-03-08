@@ -373,10 +373,12 @@ CreateEntryFn::operator()(
             // into the groups space.
 
             UT_Matrix4D invGroupXform;
-            GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                    prim, time, invGroupXform ); 
-            invGroupXform.invert();
-
+            if (GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+                    prim, time, invGroupXform )) {
+                invGroupXform.invert();
+            } else {
+                invGroupXform.identity();
+            }
 
             // Iterate though all the prims and find matching instances.
             for( auto it = gprims.begin(); it != gprims.end(); ++it ) 
@@ -410,8 +412,10 @@ CreateEntryFn::operator()(
 
                     UsdPrim p = usdPrims[0];
                     UT_Matrix4D gprimXform;
-                    GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                            p, time, gprimXform ); 
+                    if (!GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+                            p, time, gprimXform )) {
+                        gprimXform.identity();
+                    }
 
                     UT_Matrix4D m = gprimXform * invGroupXform;
 
@@ -426,8 +430,10 @@ CreateEntryFn::operator()(
                     for( auto const &p : usdPrims ) {
 
                         UT_Matrix4D gprimXform;
-                        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                                p, time, gprimXform ); 
+                        if (!GusdUSD_XformCache::GetInstance()
+                            .GetLocalToWorldTransform(p, time, gprimXform )) {
+                            gprimXform.identity();
+                        }
 
                         UT_Matrix4D m = gprimXform * invGroupXform;
 

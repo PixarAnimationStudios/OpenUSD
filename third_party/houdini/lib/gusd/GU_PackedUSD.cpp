@@ -485,7 +485,7 @@ GusdGU_PackedUSD::getIntrinsicPurposes( UT_StringArray& purposes ) const
 void 
 GusdGU_PackedUSD::setIntrinsicPurposes( const UT_StringArray& purposes )
 {
-    // always includ default purpose
+    // always include default purpose
     setPurposes(GusdPurposeSet(GusdPurposeSetFromArray(purposes)|
                                GUSD_PURPOSE_DEFAULT));
 }
@@ -508,18 +508,16 @@ GusdGU_PackedUSD::getUsdTransform() const
 
     if( !prim ) {
         TF_WARN( "Invalid prim! %s", m_primPath.GetText() );
-        m_transformCache = UT_Matrix4D(1);
+        m_transformCache.identity();
         return m_transformCache;
     }
 
-    if( prim.IsA<UsdGeomXformable>() )
-    {
-        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-             prim, m_frame, m_transformCache );
+    if (GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+            prim, m_frame, m_transformCache)) {
         m_transformCacheValid = true;
+    } else {
+        m_transformCache.identity();
     }
-    else
-        m_transformCache = UT_Matrix4D(1);
 
     return m_transformCache;
 }
