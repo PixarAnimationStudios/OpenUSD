@@ -110,7 +110,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -154,7 +154,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
