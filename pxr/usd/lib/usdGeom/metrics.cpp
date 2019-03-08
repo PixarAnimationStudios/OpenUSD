@@ -179,6 +179,8 @@ constexpr double UsdGeomLinearUnits::kilometers;
 constexpr double UsdGeomLinearUnits::lightYears;
 constexpr double UsdGeomLinearUnits::inches;
 constexpr double UsdGeomLinearUnits::feet;
+constexpr double UsdGeomLinearUnits::yards;
+constexpr double UsdGeomLinearUnits::miles;
 
 double 
 UsdGeomGetStageMetersPerUnit(const UsdStageWeakPtr &stage)

@@ -208,6 +208,8 @@ public:
 
     static constexpr double inches = 0.0254;
     static constexpr double feet   = 0.3048;
+    static constexpr double yards  = 0.9144;
+    static constexpr double miles  = 1609.344;
 };
 
 /// @}
