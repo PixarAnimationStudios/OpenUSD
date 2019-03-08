@@ -2440,9 +2440,10 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
-    // Filter the stored primvars to just ones of the requested type.
     HdPrimvarDescriptorVector primvars;
     HdPrimvarDescriptorVector allPrimvars;
+    // We expect to populate an entry always (i.e., we don't use a slow path
+    // fetch)
     if (!TF_VERIFY(_valueCache.FindPrimvars(usdPath, &allPrimvars), 
                    "<%s> interpolation: %s", usdPath.GetText(),
                    TfEnum::GetName(interpolation).c_str())) {
@@ -2450,6 +2451,7 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
     }
     // It's valid to have no authored primvars (they could be computed)
     for (HdPrimvarDescriptor const& pv: allPrimvars) {
+        // Filter the stored primvars to just ones of the requested type.
         if (pv.interpolation == interpolation) {
             primvars.push_back(pv);
         }
@@ -2946,30 +2948,19 @@ UsdImagingDelegate::GetExtComputationPrimvarDescriptors(
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(computationId);
 
-    // Filter the stored primvars to just ones of the requested type.
-    HdExtComputationPrimvarDescriptorVector primvars;
     HdExtComputationPrimvarDescriptorVector allPrimvars;
-    // Use Find and not Extract, since this may be called multiple times
-    // (with different interp for example).
-    if (!_valueCache.FindExtComputationPrimvars(usdPath, &allPrimvars)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation primvar "
-                                   "descriptor fetch for %s\n", 
-                                   computationId.GetText());
-        
-        // XXX: May be we ought to have an additional dirty bit for this, like
-        // DirtyComputedPrimvar, rather than using DirtyPrimvar?
-        _UpdateSingleValue(usdPath, HdChangeTracker::DirtyPrimvar);
-        
-        // Don't use a verify below because it is often the case that there are
-        // no computated primvars on an rprim.
-        _valueCache.FindExtComputationPrimvars(usdPath, &allPrimvars);
-    }
-
+    // We don't require an entry to be populated.
+    _valueCache.FindExtComputationPrimvars(usdPath, &allPrimvars);
+    
+    // Don't use a verify below because it is often the case that there are
+    // no computed primvars on an rprim.
     if (allPrimvars.empty()) {
-        return primvars;
+        return allPrimvars;
     }
 
+    HdExtComputationPrimvarDescriptorVector primvars;
     for (const auto& pv : allPrimvars) {
+        // Filter the stored primvars to just ones of the requested type.
         if (pv.interpolation == interpolation) {
             primvars.push_back(pv);
         }
