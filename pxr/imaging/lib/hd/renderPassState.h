@@ -184,7 +184,7 @@ public:
     void SetEnableDepthMask(bool state);
 
     HD_API
-    bool GetEnableDepthMash();
+    bool GetEnableDepthMask();
 
     HD_API
     void SetStencil(HdCompareFunction func, int ref, int mask,

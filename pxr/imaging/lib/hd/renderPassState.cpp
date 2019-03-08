@@ -246,7 +246,7 @@ HdRenderPassState::SetEnableDepthMask(bool state)
 }
 
 bool
-HdRenderPassState::GetEnableDepthMash()
+HdRenderPassState::GetEnableDepthMask()
 {
     return _depthMaskEnabled;
 }
