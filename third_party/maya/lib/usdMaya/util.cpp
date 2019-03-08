@@ -37,6 +37,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/metrics.h"
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
@@ -78,6 +79,67 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+double
+UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(
+    const MDistance::Unit mdistanceUnit)
+{
+    switch (mdistanceUnit) {
+        case MDistance::kInches:
+            return UsdGeomLinearUnits::inches;
+        case MDistance::kFeet:
+            return UsdGeomLinearUnits::feet;
+        case MDistance::kYards:
+            return UsdGeomLinearUnits::yards;
+        case MDistance::kMiles:
+            return UsdGeomLinearUnits::miles;
+        case MDistance::kMillimeters:
+            return UsdGeomLinearUnits::millimeters;
+        case MDistance::kCentimeters:
+            return UsdGeomLinearUnits::centimeters;
+        case MDistance::kKilometers:
+            return UsdGeomLinearUnits::kilometers;
+        case MDistance::kMeters:
+            return UsdGeomLinearUnits::meters;
+        default:
+            TF_CODING_ERROR("Invalid MDistance unit %d. Assuming centimeters", 
+                mdistanceUnit);
+            return UsdGeomLinearUnits::centimeters;
+    }
+}
+
+MDistance::Unit
+UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(
+    const double linearUnit)
+{
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::millimeters)) {
+        return MDistance::kMillimeters;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::centimeters)) {
+        return MDistance::kCentimeters;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::meters)) {
+        return MDistance::kMeters;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::kilometers)) {
+        return MDistance::kKilometers;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::inches)) {
+        return MDistance::kInches;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::feet)) {
+        return MDistance::kFeet;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::yards)) {
+        return MDistance::kYards;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::miles)) {
+        return MDistance::kMiles;
+    }
+
+    TF_CODING_ERROR("Invalid UsdGeomLinearUnit %f. Assuming centimeters", 
+        linearUnit);
+    return MDistance::kCentimeters;
+}
 
 std::string
 UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
