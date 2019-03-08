@@ -60,5 +60,7 @@ void wrapMetrics()
         .def_readonly("kilometers", UsdGeomLinearUnits::kilometers)
         .def_readonly("lightYears", UsdGeomLinearUnits::lightYears)
         .def_readonly("inches", UsdGeomLinearUnits::inches)
-        .def_readonly("feet", UsdGeomLinearUnits::feet);
+        .def_readonly("feet", UsdGeomLinearUnits::feet)
+        .def_readonly("yards", UsdGeomLinearUnits::yards)
+        .def_readonly("miles", UsdGeomLinearUnits::miles);
 }

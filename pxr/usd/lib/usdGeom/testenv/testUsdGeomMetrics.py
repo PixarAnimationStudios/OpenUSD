@@ -69,6 +69,14 @@ class TestUsdGeomMetrics(unittest.TestCase):
         self.assertNotEqual(authored, fromInches)
         self.assertTrue(UsdGeom.LinearUnitsAre(authored, fromInches))
 
+        # similar test for feet to yards
+        self.assertTrue(UsdGeom.SetStageMetersPerUnit(stage,
+                                                      UsdGeom.LinearUnits.yards))
+        authored = UsdGeom.GetStageMetersPerUnit(stage)
+        fromFeet = 3 * UsdGeom.LinearUnits.feet
+        self.assertNotEqual(authored, fromFeet)
+        self.assertTrue(UsdGeom.LinearUnitsAre(authored, fromFeet))
+
 
 if __name__ == "__main__":
     unittest.main()
