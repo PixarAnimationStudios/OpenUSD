@@ -607,57 +607,64 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
     // expanded values.
     VtIntArray ji(jointIndices.UncheckedGet<VtIntArray>());
     VtFloatArray jw(jointWeights.UncheckedGet<VtFloatArray>());
-    {
-        size_t numInfluences = ji.size();
-        size_t numInfluencesPerPoint_ =
-            size_t(numInfluencesPerPoint.UncheckedGet<int>());
-        size_t numPoints = skinnedPoints.size();
-        size_t numExpectedInfluences = numPoints * numInfluencesPerPoint_;
-        if (numInfluences != numExpectedInfluences) {
-            TF_VERIFY(hasConstantInfluences.UncheckedGet<bool>());
 
-            VtIntArray const& jiOrig = jointIndices.UncheckedGet<VtIntArray>();
-            VtFloatArray const& jwOrig =
-                jointWeights.UncheckedGet<VtFloatArray>();
+    bool success = false;
 
-            ji.resize(numExpectedInfluences);
-            for (size_t ii = 0; ii < numPoints; ii++) {
-                for (size_t jj = 0; jj < numInfluencesPerPoint_; jj++) {
-                    ji[ii * numInfluencesPerPoint_ + jj] = jiOrig[jj];
-                }
-            }
-
-            jw.resize(numExpectedInfluences);
-            for (size_t ii = 0; ii < numPoints; ii++) {
-                for (size_t jj = 0; jj < numInfluencesPerPoint_; jj++) {
-                    jw[ii * numInfluencesPerPoint_ + jj] = jwOrig[jj];
-                }
-            }
-        }
-
-    }
-
-    bool success = UsdSkelSkinPointsLBS(
+    if (!hasConstantInfluences.UncheckedGet<bool>()) {
+        
+        success = UsdSkelSkinPointsLBS(
             geomBindXform.UncheckedGet<GfMatrix4d>(),
             skinningXforms.UncheckedGet<VtMatrix4dArray>(),
             ji,
             jw,
             numInfluencesPerPoint.UncheckedGet<int>(),
-            &skinnedPoints);
-    
-    if (success) {
-        // The points returned above are in skel space, and need to be xformed 
-        // to prim local space.
-        GfMatrix4d skelToPrimLocal =
-            skelLocalToWorld.UncheckedGet<GfMatrix4d>() *
-            primWorldToLocal.UncheckedGet<GfMatrix4d>();
+            skinnedPoints);
+
+        if (success) {
+            // The points returned above are in skel space, and need to be
+            // xformed to prim local space.
+            const GfMatrix4d skelToPrimLocal =
+                skelLocalToWorld.UncheckedGet<GfMatrix4d>() *
+                primWorldToLocal.UncheckedGet<GfMatrix4d>();
         
-        for (auto& pt : skinnedPoints) {
-            pt = skelToPrimLocal.TransformAffine(pt);
+            for (auto& pt : skinnedPoints) {
+                pt = skelToPrimLocal.Transform(pt);
+            }
+        } else {
+            // Nothing to do. We initialized skinnedPoints to the restPoints,
+            // so just return that.
         }
+
     } else {
-        // Nothing to do. We initialized skinnedPoints to the restPoints,
-        // so just return that.
+
+        // Have constant influences. Compute a rigid deformation.
+        GfMatrix4d skinnedTransform;
+        if (UsdSkelSkinTransformLBS(
+                geomBindXform.UncheckedGet<GfMatrix4d>(),
+                skinningXforms.UncheckedGet<VtMatrix4dArray>(),
+                ji, jw, &skinnedTransform)) {
+            
+            // The computed skinnedTransform is the transform which, when
+            // applied to the points of the skinned prim, results in skinned
+            // points in *skel* space, and need to be xformed to prim
+            // local space.
+
+            const GfMatrix4d restToPrimLocalSkinnedXf =
+                skinnedTransform*skelLocalToWorld.UncheckedGet<GfMatrix4d>()*
+                primWorldToLocal.UncheckedGet<GfMatrix4d>();
+
+            // XXX: Ideally we would modify the xform of the skinned prim,
+            // rather than its underlying points (which is particularly
+            // important if we want to preserve instancing!).
+            // For now, bake the rigid deformation into the points.
+            
+            for (auto& pt : skinnedPoints) {
+                pt = restToPrimLocalSkinnedXf.Transform(pt);
+            }
+        } else {
+            // Nothing to do. We initialized skinnedPoints to the restPoints,
+            // so just return that.
+        }
     }
 
     context->SetOutputValue(_tokens->skinnedPoints, VtValue(skinnedPoints));
@@ -1170,10 +1177,13 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
         if (!_IsEnabledAggregatorComputation()) {
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->restPoints) = restPoints;
-            
-            UsdAttribute attr = binding.GetGeomBindTransformAttr();
-            GfMatrix4d geomBindXform;
-            TF_VERIFY(attr.Get<GfMatrix4d>(&geomBindXform));
+
+            // read (optional) geomBindTransform property.
+            // If unauthored, it is identity.
+            GfMatrix4d geomBindXform(1);
+            if (UsdAttribute attr = binding.GetGeomBindTransformAttr()) {
+                attr.Get(&geomBindXform);
+            }
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->geomBindXform) = geomBindXform;
         }
@@ -1333,9 +1343,12 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->restPoints) = restPoints;
             
-            UsdAttribute attr = binding.GetGeomBindTransformAttr();
-            GfMatrix4d geomBindXform;
-            TF_VERIFY(attr.Get<GfMatrix4d>(&geomBindXform));
+            // read (optional) geomBindTransform property.
+            // If unauthored, it is identity.
+            GfMatrix4d geomBindXform(1);
+            if (UsdAttribute attr = binding.GetGeomBindTransformAttr()) {
+                attr.Get(&geomBindXform);
+            }
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->geomBindXform) = geomBindXform;
         }
@@ -1343,6 +1356,7 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
         // jointIndices, jointWeights,
         // numInfluencesPerPoint, hasConstantInfluences
         {
+            // TODO: Inherited primvars?
             UsdGeomPrimvar ji = binding.GetJointIndicesPrimvar();
             VtValue vji;
             if (ji.ComputeFlattened(&vji, time)) {
