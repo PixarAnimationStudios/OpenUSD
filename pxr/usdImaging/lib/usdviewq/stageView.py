@@ -2136,11 +2136,22 @@ class StageView(QtOpenGL.QGLWidget):
     def glDraw(self):
         # override glDraw so we can time it.
         with Timer() as t:
-            # Make sure the renderer is created
-            if not self._getRenderer():
-                # error has already been issued
-                return
             QtOpenGL.QGLWidget.glDraw(self)
+
+        # Render creation is a deferred operation, so the render may not
+        # be initialized on entry to the function.
+        #
+        # This function itself can not create the render, as to create the
+        # renderer we need a valid GL context, which QT has not made current
+        # yet.
+        #
+        # So instead check that the render has been created after the fact.
+        # The point is to avoid reporting an invalid first image time.
+        
+        if not self._renderer:
+            # error has already been issued
+            return
+
 
         self._renderTime = t.interval
 
