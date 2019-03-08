@@ -219,13 +219,9 @@ class TestSdfParsing(unittest.TestCase):
 
         # Create a temporary file for diffs and choose where to get test data.
         import tempfile
-        if os.environ.get('SDF_WRITE_OLD_TYPENAMES') == '1':
+        if os.environ.get('SDF_CONVERT_TO_NEW_TYPENAMES') == "1":
             layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingOld1.sdf', delete=False)
             layerDir = os.path.join(os.getcwd(), 'testSdfParsingOld.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline')
-        elif os.environ.get('SDF_CONVERT_TO_NEW_TYPENAMES') == "1":
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingNew1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsingNew.testenv')
             baselineDir = os.path.join(layerDir, 'baseline_newtypes')
         else:
             layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf', delete=False)

@@ -270,11 +270,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testSdfParsingOld.testenv
-    DEST testSdfParsingNew/testSdfParsingNew.testenv
-)
-
-pxr_install_test_dir(
     SRC testenv/testSdfParsing.testenv
     DEST testSdfParsing/testSdfParsing.testenv
 )
@@ -331,13 +326,6 @@ pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
 )
 
-pxr_register_test(testSdfParsingNew
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
-    ENV
-        SDF_CONVERT_TO_NEW_TYPENAMES=1
-)
-
 pxr_register_test(testSdfParsing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
@@ -347,7 +335,7 @@ pxr_register_test(testSdfParsingOld
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
     ENV
-        SDF_WRITE_OLD_TYPENAMES=1
+        SDF_CONVERT_TO_NEW_TYPENAMES=1
 )
 
 pxr_register_test(testSdfPath
