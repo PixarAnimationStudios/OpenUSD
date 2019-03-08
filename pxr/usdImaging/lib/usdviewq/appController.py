@@ -26,7 +26,6 @@ from qt import QtCore, QtGui, QtWidgets
 
 # Stdlib components
 import re, sys, os, cProfile, pstats, traceback
-from bisect import bisect_left
 from itertools import groupby
 from time import time, sleep
 from collections import deque, OrderedDict
@@ -1814,19 +1813,13 @@ class AppController(QtCore.QObject):
             int: The closest matching frame index or 0 if one cannot be
             found.
         """
-        closestIndex = bisect_left(self._timeSamples, timeSample)
+        closestIndex = int((timeSample - self._timeSamples[0]) / self.step)
 
-        # Return if index is the first or last
-        if closestIndex == 0 :
-            return closestIndex
-        if closestIndex == len(self._timeSamples):
-            return closestIndex - 1
+        # Bounds checking
+        # 0 <= closestIndex <= number of time samples - 1
+        closestIndex = max(0, closestIndex)
+        closestIndex = min(len(self._timeSamples) - 1, closestIndex)
 
-        # If not, check for the closest value either side
-        before = self._timeSamples[closestIndex - 1]
-        after = self._timeSamples[closestIndex]
-        if after - timeSample > timeSample - before:
-            closestIndex = closestIndex - 1
         return closestIndex
 
     def _rangeBeginChanged(self):
