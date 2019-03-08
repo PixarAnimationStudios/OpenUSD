@@ -106,6 +106,8 @@ GusdInit()
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("Xform"), &GusdXformWrapper::defineForRead);
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
+            TfToken("SkelRoot"), &GusdXformWrapper::defineForRead);
+    GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("PointInstancer"), &GusdInstancerWrapper::defineForRead);
 
     GusdUSD_TraverseTable::GetInstance().SetDefault("std:components");
