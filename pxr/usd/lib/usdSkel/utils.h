@@ -536,17 +536,6 @@ UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
 USDSKEL_API
 bool
 UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
-                        const VtMatrix4dArray& jointXforms,
-                        const VtIntArray& jointIndices,
-                        const VtFloatArray& jointWeights,
-                        GfMatrix4d* xform);
-
-
-/// \overload
-/// \deprecated Use form that takes TfSpan arguments.
-USDSKEL_API
-bool
-UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         const GfMatrix4d* jointXforms,
                         size_t numJoints,
                         const int* jointIndices,

@@ -1491,20 +1491,6 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 }
 
 
-/// \deprecated
-bool
-UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
-                        const VtMatrix4dArray& jointXforms,
-                        const VtIntArray& jointIndices,
-                        const VtFloatArray& jointWeights,
-                        GfMatrix4d* xform)
-{
-    return UsdSkel_SkinTransformLBS<GfMatrix4d>(
-        geomBindTransform, jointXforms,
-        jointIndices, jointWeights, xform);
-}
-
-
 namespace {
 
 
