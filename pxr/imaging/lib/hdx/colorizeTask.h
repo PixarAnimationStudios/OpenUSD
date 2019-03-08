@@ -84,6 +84,8 @@ private:
     bool _converged;
 
     HdxCompositor _compositor;
+    bool _needsValidation;
+
 
     HdxColorizeTask() = delete;
     HdxColorizeTask(const HdxColorizeTask &) = delete;

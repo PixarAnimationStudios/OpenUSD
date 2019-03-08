@@ -38,6 +38,7 @@ HdxColorizeTask::HdxColorizeTask(HdSceneDelegate* delegate, SdfPath const& id)
  , _outputBufferSize(0)
  , _converged(false)
  , _compositor()
+ , _needsValidation(false)
 {
 }
 
@@ -169,22 +170,36 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    bool validate = false;
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxColorizeTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
             _aovName = params.aovName;
             _renderBufferId = params.renderBuffer;
-            validate = true;
+            _needsValidation = true;
         }
     }
+    *dirtyBits = HdChangeTracker::Clean;
+}
 
-    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+void
+HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
+{
+    // An empty _renderBufferId disables the task
+    if (_renderBufferId.IsEmpty()) {
+        _renderBuffer = nullptr;
+        return;
+    }
+
     _renderBuffer = static_cast<HdRenderBuffer*>(
-        renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer, _renderBufferId));
+        renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer, _renderBufferId));
 
-    if (validate) {
+    if (!TF_VERIFY(_renderBuffer)) {
+        return;
+    }
+
+
+    if (_needsValidation) {
         bool match = false;
         for (auto& colorizer : _colorizerTable) {
             if (_aovName == colorizer.aovName &&
@@ -202,14 +217,9 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
                 _aovName.GetText(),
                 TfEnum::GetName(_renderBuffer->GetFormat()).c_str());
         }
+        _needsValidation = false;
     }
 
-    *dirtyBits = HdChangeTracker::Clean;
-}
-
-void
-HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
-{
 }
 
 void
@@ -218,7 +228,11 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!TF_VERIFY(_renderBuffer)) {
+    // _renderBuffer is null if the task is disabled
+    // because _renderBufferId is empty or
+    // we failed to look up the renderBuffer in the render index,
+    // in which case the error was previously reported
+    if (!_renderBuffer) {
         return;
     }
 
