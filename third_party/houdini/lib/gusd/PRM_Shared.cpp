@@ -38,6 +38,7 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
@@ -259,6 +260,32 @@ PRM_Name* _GetPurposeNames()
 }
 
 
+UT_String
+_ComputeFileFormatExtensionsPattern()
+{
+    UT_WorkBuffer buf;
+    
+    const auto extensions = SdfFileFormat::FindAllFileFormatExtensions();
+    
+    if (!extensions.empty()) {
+
+        auto it = extensions.begin();
+
+        buf.append("*."_UTsh);
+        buf.append(*it);
+
+        for (++it; it != extensions.end(); ++it) {
+            buf.append(",*."_UTsh);
+            buf.append(*it);
+        }
+    }
+    
+    UT_String str;
+    buf.stealIntoString(str);
+    return str;
+}
+
+
 } /*namespace*/
 
 
@@ -269,7 +296,7 @@ GusdPRM_Shared::GusdPRM_Shared()
 
 
 GusdPRM_Shared::Components::Components() :
-    filePattern("*.usd,*.usda,*.usdb,*.usdc"),
+    filePattern(_ComputeFileFormatExtensionsPattern()),
     usdFileROData(
         PRM_SpareArgs()
         << PRM_SpareToken(PRM_SpareData::getFileChooserPatternToken(),
