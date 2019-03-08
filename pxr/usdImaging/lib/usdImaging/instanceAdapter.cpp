@@ -40,19 +40,11 @@
 
 #include "pxr/base/gf/matrix4f.h"
 
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
 
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-// // XXX: These should come from Hd or UsdImaging
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (instance)
-);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
