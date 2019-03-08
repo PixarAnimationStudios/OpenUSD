@@ -313,7 +313,7 @@ HdPrimGather::_GatherPaths(const SdfPathVector &paths)
         // thus producing the same results as when safe mode is off.
     }
 
-    _gatheredRanges.empty();
+    _gatheredRanges.clear();
 
     if (paths.empty()) {
         return;
