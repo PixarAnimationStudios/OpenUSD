@@ -195,6 +195,7 @@ pxr_test_scripts(
     testenv/testUsdStageCache.py
     testenv/testUsdStageLoadUnload.py
     testenv/testUsdStagePopulationMasks.py
+    testenv/testUsdTimeCodeRepr.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
     testenv/testUsdUsdzFileFormat.py
@@ -298,6 +299,14 @@ pxr_build_test(testUsdThreadedAuthoring
         usd
     CPPFILES
         testenv/testUsdThreadedAuthoring.cpp
+)
+
+pxr_build_test(testUsdTimeCodeStream
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdTimeCodeStream.cpp
 )
 
 pxr_build_test(testUsdSchemaBase
@@ -681,10 +690,20 @@ pxr_register_test(testUsdThreadedAuthoring
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdThreadedAuthoring"
     EXPECTED_RETURN_CODE 0
 )
+pxr_register_test(testUsdTimeCodeStream
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeCodeStream"
+    EXPECTED_RETURN_CODE 0
+)
 
 pxr_register_test(testUsdStage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStage"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeCodeRepr
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeCodeRepr"
     EXPECTED_RETURN_CODE 0
 )
 
