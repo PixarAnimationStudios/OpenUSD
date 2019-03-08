@@ -379,9 +379,9 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template USD_API bool UsdAttribute::_Get(                           \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*, UsdTimeCode) const;         \
+        SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttribute::_Get(                           \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*, UsdTimeCode) const;
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET

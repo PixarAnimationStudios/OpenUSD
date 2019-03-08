@@ -1802,8 +1802,8 @@ AddTestCasesToPrim(const UsdPrim& prim)
     size_t numTestCasesAdded = 0;
 #define ADD_TEST_CASE(r, unused, tup)                                   \
     {                                                                   \
-        typedef SDF_VALUE_TRAITS_TYPE(tup)::Type Type;                  \
-        typedef SDF_VALUE_TRAITS_TYPE(tup)::ShapedType ShapedType;      \
+        typedef SDF_VALUE_CPP_TYPE(tup) Type;                           \
+        typedef SDF_VALUE_CPP_ARRAY_TYPE(tup) ShapedType;               \
         TestCase<Type>::AddTestCase(prim);                              \
         TestCase<ShapedType>::AddTestCase(prim);                        \
                                                                         \
@@ -1849,8 +1849,8 @@ RunInterpolationTests(const UsdPrim& prim)
 
 #define RUN_LINEAR_INTERPOLATION_TEST(r, unused, tup)                   \
     {                                                                   \
-        typedef SDF_VALUE_TRAITS_TYPE(tup)::Type Type;                  \
-        typedef SDF_VALUE_TRAITS_TYPE(tup)::ShapedType ShapedType;      \
+        typedef SDF_VALUE_CPP_TYPE(tup) Type;                           \
+        typedef SDF_VALUE_CPP_ARRAY_TYPE(tup) ShapedType;               \
         TestCase<Type>::TestLinearInterpolation(prim);                  \
         TestCase<ShapedType>::TestLinearInterpolation(prim);            \
     }
@@ -1864,8 +1864,8 @@ RunInterpolationTests(const UsdPrim& prim)
 
 #define RUN_HELD_INTERPOLATION_TEST(r, unused, tup)                     \
     {                                                                   \
-        typedef SDF_VALUE_TRAITS_TYPE(tup)::Type Type;                  \
-        typedef SDF_VALUE_TRAITS_TYPE(tup)::ShapedType ShapedType;      \
+        typedef SDF_VALUE_CPP_TYPE(tup) Type;                           \
+        typedef SDF_VALUE_CPP_ARRAY_TYPE(tup) ShapedType;               \
         TestCase<Type>::TestHeldInterpolation(prim);                    \
         TestCase<ShapedType>::TestHeldInterpolation(prim);              \
     }

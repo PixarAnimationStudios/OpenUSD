@@ -64,20 +64,11 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/mpl/joint_view.hpp>
-#include <boost/mpl/transform_view.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/list/fold_left.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
-#include <boost/preprocessor/list/size.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/selection/max.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/seq.hpp>
-#include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/shared_ptr.hpp>
 #include <iosfwd>
@@ -342,122 +333,69 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
 // When doing so, the type must be declared using the SDF_DECLARE_VALUE_TYPE
 // macro below. The type must also be registered in the associated schema using
 // SdfSchema::_RegisterValueType(s).
-#define _SDF_SCALAR_VALUE_TYPES                     \
-((Bool,       bool,       bool,           ()     )) \
-((UChar,      uchar,      unsigned char,  ()     )) \
-((Int,        int,        int,            ()     )) \
-((UInt,       uint,       unsigned int,   ()     )) \
-((Int64,      int64,      int64_t,        ()     )) \
-((UInt64,     uint64,     uint64_t,       ()     )) \
-((Half,       half,       GfHalf,         ()     )) \
-((Float,      float,      float,          ()     )) \
-((Double,     double,     double,         ()     )) \
-((String,     string,     std::string,    ()     )) \
-((Token,      token,      TfToken,        ()     )) \
-((AssetPath,  asset,      SdfAssetPath,   ()     ))
+#define _SDF_SCALAR_VALUE_TYPES                        \
+    ((Bool,       bool,       bool,           ()    )) \
+    ((UChar,      uchar,      unsigned char,  ()    )) \
+    ((Int,        int,        int,            ()    )) \
+    ((UInt,       uint,       unsigned int,   ()    )) \
+    ((Int64,      int64,      int64_t,        ()    )) \
+    ((UInt64,     uint64,     uint64_t,       ()    )) \
+    ((Half,       half,       GfHalf,         ()    )) \
+    ((Float,      float,      float,          ()    )) \
+    ((Double,     double,     double,         ()    )) \
+    ((String,     string,     std::string,    ()    )) \
+    ((Token,      token,      TfToken,        ()    )) \
+    ((Asset,      asset,      SdfAssetPath,   ()    ))
 
-#define _SDF_DIMENSIONED_VALUE_TYPES                \
-((Matrix2d,   Matrix2d,   GfMatrix2d,     (2, 2) )) \
-((Matrix3d,   Matrix3d,   GfMatrix3d,     (3, 3) )) \
-((Matrix4d,   Matrix4d,   GfMatrix4d,     (4, 4) )) \
-((Quatd,      Quatd,      GfQuatd,        (4)    )) \
-((Quatf,      Quatf,      GfQuatf,        (4)    )) \
-((Quath,      Quath,      GfQuath,        (4)    )) \
-((Vec2d,      Vec2d,      GfVec2d,        (2)    )) \
-((Vec2f,      Vec2f,      GfVec2f,        (2)    )) \
-((Vec2h,      Vec2h,      GfVec2h,        (2)    )) \
-((Vec2i,      Vec2i,      GfVec2i,        (2)    )) \
-((Vec3d,      Vec3d,      GfVec3d,        (3)    )) \
-((Vec3f,      Vec3f,      GfVec3f,        (3)    )) \
-((Vec3h,      Vec3h,      GfVec3h,        (3)    )) \
-((Vec3i,      Vec3i,      GfVec3i,        (3)    )) \
-((Vec4d,      Vec4d,      GfVec4d,        (4)    )) \
-((Vec4f,      Vec4f,      GfVec4f,        (4)    )) \
-((Vec4h,      Vec4h,      GfVec4h,        (4)    )) \
-((Vec4i,      Vec4i,      GfVec4i,        (4)    ))
+#define _SDF_DIMENSIONED_VALUE_TYPES                   \
+    ((Matrix2d,   matrix2d,   GfMatrix2d,     (2,2) )) \
+    ((Matrix3d,   matrix3d,   GfMatrix3d,     (3,3) )) \
+    ((Matrix4d,   matrix4d,   GfMatrix4d,     (4,4) )) \
+    ((Quath,      quath,      GfQuath,        (4)   )) \
+    ((Quatf,      quatf,      GfQuatf,        (4)   )) \
+    ((Quatd,      quatd,      GfQuatd,        (4)   )) \
+    ((Int2,       int2,       GfVec2i,        (2)   )) \
+    ((Half2,      half2,      GfVec2h,        (2)   )) \
+    ((Float2,     float2,     GfVec2f,        (2)   )) \
+    ((Double2,    double2,    GfVec2d,        (2)   )) \
+    ((Int3,       int3,       GfVec3i,        (3)   )) \
+    ((Half3,      half3,      GfVec3h,        (3)   )) \
+    ((Float3,     float3,     GfVec3f,        (3)   )) \
+    ((Double3,    double3,    GfVec3d,        (3)   )) \
+    ((Int4,       int4,       GfVec4i,        (4)   )) \
+    ((Half4,      half4,      GfVec4h,        (4)   )) \
+    ((Float4,     float4,     GfVec4f,        (4)   )) \
+    ((Double4,    double4,    GfVec4d,        (4)   ))
 
 #define SDF_VALUE_TYPES _SDF_SCALAR_VALUE_TYPES _SDF_DIMENSIONED_VALUE_TYPES
 
 // Accessors for individual elements in the value types tuples.
-#define SDF_VALUE_TAG(tup) BOOST_PP_TUPLE_ELEM(4, 0, tup)
-#define SDF_VALUE_TYPENAME(tup) BOOST_PP_TUPLE_ELEM(4, 1, tup)
 #define SDF_VALUE_CPP_TYPE(tup) BOOST_PP_TUPLE_ELEM(4, 2, tup)
-#define SDF_VALUE_TUPLE_DIM(tup) \
-    TF_PP_TUPLE_TO_LIST(BOOST_PP_TUPLE_ELEM(4, 3, tup))
-#define SDF_VALUE_TRAITS_TYPE(tup) \
-    BOOST_PP_CAT(SdfValueType, SDF_VALUE_TAG(tup))
+#define SDF_VALUE_CPP_ARRAY_TYPE(tup) VtArray<BOOST_PP_TUPLE_ELEM(4, 2, tup)> 
 
 template <class T>
 struct SdfValueTypeTraits {
     static const bool IsValueType = false;
 };
 
-#define _SDF_ADD_DIMENSION(r, unused, elem) \
-        dimensions.d[dimensions.size++] = elem;
-
-#define SDF_DECLARE_VALUE_TYPE_TRAITS(elem)                                 \
-template <>                                                                 \
-struct SdfValueTypeTraits<SDF_VALUE_CPP_TYPE(elem)>                         \
-    : public SDF_VALUE_TRAITS_TYPE(elem) {                                  \
-    static const bool IsValueType = true;                                   \
-};                                                                          \
-template <>                                                                 \
-struct SdfValueTypeTraits<VtArray<SDF_VALUE_CPP_TYPE(elem)> >               \
-    : public SDF_VALUE_TRAITS_TYPE(elem) {                                  \
-    static const bool IsValueType = true;                                   \
-};
-
-#define SDF_DECLARE_VALUE_TYPE(r, unused, elem)                             \
-struct SDF_VALUE_TRAITS_TYPE(elem) {                                        \
-    typedef SDF_VALUE_CPP_TYPE(elem) Type;                                  \
-    typedef VtArray< SDF_VALUE_CPP_TYPE(elem) > ShapedType;                 \
-    static std::string Name() {                                             \
-        return BOOST_PP_STRINGIZE(SDF_VALUE_TYPENAME(elem));                \
-    }                                                                       \
-    static std::string ShapedName() {                                       \
-        return Name() + std::string("[]");                                  \
-    }                                                                       \
-    static SdfTupleDimensions Dimensions() {                                \
-        SdfTupleDimensions dimensions;                                      \
-        static_assert(                                                      \
-            BOOST_PP_LIST_SIZE(SDF_VALUE_TUPLE_DIM(elem)) <= 2,             \
-            "Tuple dimensions cannot exceed 2.");                           \
-        BOOST_PP_LIST_FOR_EACH(                                             \
-                _SDF_ADD_DIMENSION, ~, SDF_VALUE_TUPLE_DIM(elem));          \
-        return dimensions;                                                  \
-    }                                                                       \
-};                                                                          \
-SDF_DECLARE_VALUE_TYPE_TRAITS(elem)
-
-#define SDF_DECLARE_VALUE_TYPE_S(r, unused, elem)                           \
-struct SDF_VALUE_TRAITS_TYPE(elem) {                                        \
-    typedef SDF_VALUE_CPP_TYPE(elem) Type;                                  \
-    typedef VtArray< SDF_VALUE_CPP_TYPE(elem) > ShapedType;                 \
-    static std::string Name() {                                             \
-        return BOOST_PP_STRINGIZE(SDF_VALUE_TYPENAME(elem));                \
-    }                                                                       \
-    static std::string ShapedName() {                                       \
-        return Name() + std::string("[]");                                  \
-    }                                                                       \
-    static SdfTupleDimensions Dimensions() {                                \
-        SdfTupleDimensions dimensions;                                      \
-        return dimensions;                                                  \
-    }                                                                       \
-};                                                                          \
-SDF_DECLARE_VALUE_TYPE_TRAITS(elem)
-
-
-BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE_S, ~, _SDF_SCALAR_VALUE_TYPES);
-BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE, ~, _SDF_DIMENSIONED_VALUE_TYPES);
-#undef _SDF_ADD_DIMENSION
-
 // Allow character arrays to be treated as Sdf value types.
 // Sdf converts character arrays to strings for scene description.
 template <int N>
-struct SdfValueTypeTraits<char[N]> 
-    : public SdfValueTypeString {
+struct SdfValueTypeTraits<char[N]> {
     static const bool IsValueType = true;
 };
+
+#define SDF_DECLARE_VALUE_TYPE_TRAITS(r, unused, elem)                      \
+template <>                                                                 \
+struct SdfValueTypeTraits<SDF_VALUE_CPP_TYPE(elem)> {                       \
+    static const bool IsValueType = true;                                   \
+};                                                                          \
+template <>                                                                 \
+struct SdfValueTypeTraits<SDF_VALUE_CPP_ARRAY_TYPE(elem)> {                 \
+    static const bool IsValueType = true;                                   \
+};
+
+BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE_TRAITS, ~, SDF_VALUE_TYPES);
 
 #define SDF_VALUE_ROLE_NAME_TOKENS              \
     (Point)                                     \
@@ -472,59 +410,6 @@ struct SdfValueTypeTraits<char[N]>
     (TextureCoordinate)
 
 TF_DECLARE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_API, SDF_VALUE_ROLE_NAME_TOKENS);
-
-#define _SDF_WRITE_VALUE_TRAITS_TYPE(r, unused, elem) \
-BOOST_PP_COMMA() SDF_VALUE_TRAITS_TYPE(elem)
-
-/// An mpl sequence of all available traits types for value types
-/// defined by Sdf.
-typedef ::boost::mpl::vector<
-    SDF_VALUE_TRAITS_TYPE(BOOST_PP_SEQ_HEAD(_SDF_SCALAR_VALUE_TYPES))
-    BOOST_PP_SEQ_FOR_EACH(_SDF_WRITE_VALUE_TRAITS_TYPE, ~,
-                          BOOST_PP_SEQ_TAIL(_SDF_SCALAR_VALUE_TYPES))
-    > Sdf_ScalarValueTraitsTypesVector;
-typedef ::boost::mpl::vector<
-    SDF_VALUE_TRAITS_TYPE(BOOST_PP_SEQ_HEAD(_SDF_DIMENSIONED_VALUE_TYPES))
-    BOOST_PP_SEQ_FOR_EACH(_SDF_WRITE_VALUE_TRAITS_TYPE, ~,
-                          BOOST_PP_SEQ_TAIL(_SDF_DIMENSIONED_VALUE_TYPES))
-    > Sdf_DimensionedValueTraitsTypesVector;
-
-typedef ::boost::mpl::joint_view<
-    Sdf_ScalarValueTraitsTypesVector, Sdf_DimensionedValueTraitsTypesVector
-    > SdfValueTraitsTypesVector;
-
-#undef _SDF_WRITE_VALUE_TRAITS_TYPE
-
-/// A metafunction that returns the underlying C++ type given a traits type.
-struct SdfGetCppType {
-    template <class TraitsType>
-    struct apply { typedef typename TraitsType::Type type; };
-};
-
-/// A metafunction that returns the underlying shaped C++ type given a traits
-/// type.
-struct SdfGetShapedCppType {
-    template <class TraitsType>
-    struct apply { typedef typename TraitsType::ShapedType type; };
-};
-
-
-/// A sequence of the C++ types associated with the value types defined
-/// by Sdf.
-typedef boost::mpl::transform_view<
-    SdfValueTraitsTypesVector, SdfGetCppType
-    > SdfValueCppTypesVector;
-
-/// A sequence of the shaped C++ types associated with the value types.
-typedef boost::mpl::transform_view<
-    SdfValueTraitsTypesVector, SdfGetShapedCppType
-    > SdfValueShapedCppTypesVector;
-
-/// A sequence of all the underlying C++ types associated with the value
-/// types.
-typedef boost::mpl::joint_view<
-    SdfValueCppTypesVector, SdfValueShapedCppTypesVector
-    > SdfValueAllCppTypesVector;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 

@@ -216,8 +216,8 @@ UsdSkelAnimMapper::Remap(const VtValue& source,
                          const VtValue& defaultValue) const
 {
 #define _UNTYPED_REMAP(r, unused, elem)                                 \
-    if(source.IsHolding<SDF_VALUE_TRAITS_TYPE(elem)::ShapedType>()) {   \
-        return _UntypedRemap<SDF_VALUE_TRAITS_TYPE(elem)::Type>(        \
+    if(source.IsHolding<SDF_VALUE_CPP_ARRAY_TYPE(elem)>()) {            \
+        return _UntypedRemap<SDF_VALUE_CPP_TYPE(elem)>(                 \
             source, target, elementSize, defaultValue);                 \
     }
 

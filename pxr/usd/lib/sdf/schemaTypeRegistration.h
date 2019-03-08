@@ -159,13 +159,11 @@ SdfRegisterTypes(Registrar* reg)
 #undef _SDF_REGISTER_TYPES
 
    // Also register all of the C++ value types for value types.
-#define _SDF_REGISTER_VALUE_TYPES(r, unused, elem)       \
-    {                                                   \
-        typedef SDF_VALUE_TRAITS_TYPE(elem) T;                          \
-        reg->template RegisterType<typename T::Type>();                 \
-        reg->template RegisterType<typename T::ShapedType>();           \
+#define _SDF_REGISTER_VALUE_TYPES(r, unused, elem)                     \
+    {                                                                  \
+        reg->template RegisterType<SDF_VALUE_CPP_TYPE(elem)>();        \
+        reg->template RegisterType<SDF_VALUE_CPP_ARRAY_TYPE(elem)>();  \
     }
-
     BOOST_PP_SEQ_FOR_EACH(_SDF_REGISTER_VALUE_TYPES, ~, SDF_VALUE_TYPES)
 #undef _SDF_REGISTER_VALUE_TYPES
 
