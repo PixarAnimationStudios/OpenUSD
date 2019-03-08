@@ -77,8 +77,6 @@ public:
     void SyncCamera(HdSceneDelegate* delegate);
     HDX_API
     void SyncAovBindings(HdSceneDelegate* delegate);
-    HDX_API
-    void SyncRenderPassState(HdSceneDelegate* delegate);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;

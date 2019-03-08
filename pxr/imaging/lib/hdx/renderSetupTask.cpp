@@ -86,7 +86,6 @@ HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
 
     SyncAovBindings(delegate);
     SyncCamera(delegate);
-    SyncRenderPassState(delegate);
 
     *dirtyBits = HdChangeTracker::Clean;
 }
@@ -95,6 +94,12 @@ void
 HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
+    // Render pass state should have been created by Sync.
+    if (!TF_VERIFY(_renderPassState)) {
+        return;
+    }
+
+    _renderPassState->Prepare(renderIndex->GetResourceRegistry());
 }
 
 void
@@ -106,16 +111,6 @@ HdxRenderSetupTask::Execute(HdTaskContext* ctx)
     // set raster state to TaskContext
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
     (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
-}
-
-
-void
-HdxRenderSetupTask::SyncRenderPassState(HdSceneDelegate* delegate)
-{
-    HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
-
-    renderPassState->Sync(
-        delegate->GetRenderIndex().GetResourceRegistry());
 }
 
 void

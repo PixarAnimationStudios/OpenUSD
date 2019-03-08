@@ -87,7 +87,7 @@ HdRenderPassState::~HdRenderPassState()
 
 /* virtual */
 void
-HdRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
+HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
 }
 

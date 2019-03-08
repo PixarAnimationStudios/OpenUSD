@@ -58,7 +58,7 @@ public:
 
     HDST_API
     virtual void
-    Sync(HdResourceRegistrySharedPtr const &resourceRegistry) override;
+    Prepare(HdResourceRegistrySharedPtr const &resourceRegistry) override;
 
     /// Apply the GL states.
     /// Following states may be changed and restored to
