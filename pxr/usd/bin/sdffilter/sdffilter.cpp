@@ -98,8 +98,6 @@ void VErr(char const *fmt, va_list ap) {
             ArchVStringPrintf(fmt, ap).c_str());
 }
 
-void VPrint(char const *fmt, va_list ap) { vprintf(fmt, ap); }
-
 void Err(char const *fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
 void Err(char const *fmt, ...) {
     va_list ap; va_start(ap, fmt); VErr(fmt, ap); va_end(ap);
@@ -109,11 +107,6 @@ void ErrExit(char const *fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
 void ErrExit(char const *fmt, ...) {
     va_list ap; va_start(ap, fmt); VErr(fmt, ap); va_end(ap);
     exit(1);
-}
-
-void Print(char const *fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
-void Print(char const *fmt, ...) {
-    va_list ap; va_start(ap, fmt); VPrint(fmt, ap); va_end(ap);
 }
 
 // The sorting key for 'outline' output.
