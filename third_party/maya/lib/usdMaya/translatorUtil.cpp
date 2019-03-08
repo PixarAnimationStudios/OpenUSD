@@ -36,6 +36,7 @@
 #include "pxr/usd/usdGeom/xformable.h"
 
 #include <maya/MDagModifier.h>
+#include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
@@ -243,6 +244,26 @@ UsdMayaTranslatorUtil::CreateShaderNode(
 
         UsdMayaUtil::Connect(msgPlug, shaderListPlug, false);
     }
+
+    return true;
+}
+
+/* static */
+bool
+UsdMayaTranslatorUtil::ConnectDefaultLightNode(
+        MObject& lightNode,
+        MStatus* status)
+{
+    MObject lightSetObject = UsdMayaUtil::GetDefaultLightSetObject();
+    if (lightSetObject.isNull()) {
+        return false;
+    }
+
+    MFnSet setFn(lightSetObject, status);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    *status = setFn.addMember(lightNode);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
 
     return true;
 }

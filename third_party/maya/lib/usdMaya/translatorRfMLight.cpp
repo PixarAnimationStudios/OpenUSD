@@ -1923,6 +1923,16 @@ UsdMayaTranslatorRfMLight::Read(
                             lightSchema.GetPath());
     }
 
+    if (!UsdMayaTranslatorUtil::ConnectDefaultLightNode(
+            mayaNodeTransformObj,
+            &status)) {
+        return _ReportError(
+            TfStringPrintf(
+                "Could not connect %s as a default light",
+                mayaLightTypeToken.GetText()),
+            lightSchema.GetPath());
+    }
+
     const std::string nodePath = lightSchema.GetPath().AppendChild(
         TfToken(nodeName.asChar())).GetString();
     context->RegisterNewMayaNode(nodePath, lightObj);

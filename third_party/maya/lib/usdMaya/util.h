@@ -219,6 +219,11 @@ MPlug GetMayaTimePlug();
 PXRUSDMAYA_API
 MPlug GetMayaShaderListPlug();
 
+/// Get the MObject for the DefaultLightSet, which should add any light nodes
+/// as members for them to take effect in the scene
+PXRUSDMAYA_API
+MObject GetDefaultLightSetObject();
+
 PXRUSDMAYA_API
 bool isAncestorDescendentRelationship(
         const MDagPath& path1,

@@ -131,6 +131,20 @@ struct UsdMayaTranslatorUtil
             MStatus* status,
             MObject* shaderObj);
 
+    /// \brief Helper to set up a light node as a default light.  
+    /// This is intended to mimic the mel command "shadingNode ... -asLight".
+    ///
+    /// In particular, this makes sure the light nodes are members of the
+    /// "defaultLightSet" which allows lights to be recognized on the stage
+    ///
+    /// If there are other side-effects of using "shadingNode" (as opposed to
+    /// "createNode" directly), this should be updated accordingly.
+    PXRUSDMAYA_API
+    static bool
+    ConnectDefaultLightNode(
+            MObject& lightNode,
+            MStatus* status);
+
     /// Gets an API schema of the requested type for the given \p usdPrim.
     ///
     /// This ensures that the USD prim has the API schema applied to it if it

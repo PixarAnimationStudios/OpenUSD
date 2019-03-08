@@ -234,6 +234,32 @@ UsdMayaUtil::GetMayaShaderListPlug()
     return shadersPlug;
 }
 
+MObject
+UsdMayaUtil::GetDefaultLightSetObject()
+{
+    MObject node;
+    MStatus status;
+
+    MItDependencyNodes setIter(MFn::kSet, &status);
+    CHECK_MSTATUS_AND_RETURN(status, node);
+
+    while(!setIter.isDone()) {
+        node = setIter.thisNode();
+        setIter.next();
+
+        MFnSet setFn(node, &status);
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
+        if (setFn.name() == MString("defaultLightSet")) {
+            break;
+        }
+    }
+
+    return node;
+}
+
 bool
 UsdMayaUtil::isAncestorDescendentRelationship(
         const MDagPath& path1,
