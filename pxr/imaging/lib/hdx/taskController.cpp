@@ -181,10 +181,10 @@ HdxTaskController::_CreateRenderTask()
             renderParams.blendEnable = true;
             renderParams.blendColorOp = HdBlendOpAdd;
             renderParams.blendAlphaOp = HdBlendOpAdd;
-            renderParams.blendColorSrcFactor = HdBlendFactorSrcAlpha;
+            renderParams.blendColorSrcFactor = HdBlendFactorOne;
             renderParams.blendColorDstFactor = HdBlendFactorOne;
-            renderParams.blendAlphaDstFactor = HdBlendFactorSrcAlpha;
             renderParams.blendAlphaSrcFactor = HdBlendFactorOne;
+            renderParams.blendAlphaDstFactor = HdBlendFactorOne;
 
             // Translucent objects should not block each other in depth buffer
             renderParams.depthMaskEnable = false;
