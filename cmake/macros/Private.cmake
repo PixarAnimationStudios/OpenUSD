@@ -1304,13 +1304,20 @@ function(_pxr_library NAME)
         else()
             install(
                 TARGETS ${NAME}
+                EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
                 PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
             )
+
+            export(TARGETS ${NAME}
+                APPEND
+                FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
+            )
         endif()
     endif()
+
     _install_resource_files(
         ${NAME}
         "${pluginInstallPrefix}"

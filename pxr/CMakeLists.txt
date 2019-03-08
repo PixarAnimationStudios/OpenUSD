@@ -21,6 +21,4 @@ install(FILES
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
 )
 
-if(BUILD_SHARED_LIBS AND NOT PXR_BUILD_MONOLITHIC)
-	install(EXPORT pxrTargets DESTINATION "cmake")
-endif()
+install(EXPORT pxrTargets DESTINATION "cmake")
