@@ -797,6 +797,13 @@ private:
         // subsequent call to Remap.
         std::string Remap(const std::string& filePath)
         {
+            if (ArIsPackageRelativePath(filePath)) {
+                std::pair<std::string, std::string> packagePath = 
+                    ArSplitPackageRelativePathOuter(filePath);
+                return ArJoinPackageRelativePath(
+                    Remap(packagePath.first), packagePath.second);
+            }
+
             const std::string pathName = TfGetPathName(filePath);
             if (pathName.empty()) {
                 return filePath;
@@ -1143,12 +1150,30 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
             continue;
         }
 
-        std::string inArchivePath = writer.AddFile(srcPath, destPath);
-        if (inArchivePath.empty()) {
-            // XXX: Should we discard the usdz file and return early here?
-            TF_WARN("Failed to add file '%s' to the package at path '%s'.",
+        // If the file is a package or inside a package, copy the
+        // entire package. We could extract the package and copy only the 
+        // dependencies, but this could get very complicated.
+        if (ArIsPackageRelativePath(destPath)) {
+            std::string packagePath = ArSplitPackageRelativePathOuter(
+                    srcPath).first;
+            std::string destPackagePath = ArSplitPackageRelativePathOuter(
+                    destPath).first;
+            if (!packagePath.empty()) {
+                std::string inArchivePath = writer.AddFile(packagePath,
+                    destPackagePath);
+                if (inArchivePath.empty()) {
+                    success = false;
+                }
+            }
+        }
+        else {
+            std::string inArchivePath = writer.AddFile(srcPath, destPath);
+            if (inArchivePath.empty()) {
+                // XXX: Should we discard the usdz file and return early here?
+                TF_WARN("Failed to add file '%s' to the package at path '%s'.",
                     srcPath.c_str(), usdzFilePath.c_str());
-            success = false;
+                success = false;
+            }
         }
     }
 
