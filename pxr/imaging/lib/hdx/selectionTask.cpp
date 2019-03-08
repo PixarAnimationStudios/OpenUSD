@@ -64,22 +64,33 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
 {
     HD_TRACE_FUNCTION();
 
-    SdfPath const& id = GetId();
-    HdRenderIndex& index = delegate->GetRenderIndex();
-    HdChangeTracker& changeTracker = index.GetChangeTracker();
-    HdDirtyBits bits = changeTracker.GetTaskDirtyBits(id);
-    HdResourceRegistrySharedPtr const& resourceRegistry = 
-        index.GetResourceRegistry();
-
-    bool paramsChanged = bits & HdChangeTracker::DirtyParams;
-    if (paramsChanged) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         _GetTaskParams(delegate, &_params);
+
+        // We track the version of selection tracker in the task
+        // to see if we need need to update the uniform buffers.
+        // As the params have changed, we also need to force an
+        // update of the uniform buffers.  We don't have access to
+        // the selection tracker (as it is in the task context)
+        // so we reset the version to -1 to cause a version mismatch
+        // and force the uniform update.
+        _lastVersion = -1;
     }
 
+    *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdxSelectionTask::Prepare(HdTaskContext* ctx,
+                          HdRenderIndex* renderIndex)
+{
     HdxSelectionTrackerSharedPtr sel;
     if (_GetTaskContextData(ctx, HdxTokens->selectionState, &sel)) {
-        sel->Sync(&index);
+        sel->Prepare(renderIndex);
     }
+
+    HdResourceRegistrySharedPtr const& resourceRegistry =
+        renderIndex->GetResourceRegistry();
 
     // If the resource registry doesn't support uniform or single bars,
     // there's nowhere to put selection state, so don't compute it.
@@ -88,7 +99,7 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
         return;
     }
 
-    if (sel && (paramsChanged || sel->GetVersion() != _lastVersion)) {
+    if (sel && (sel->GetVersion() != _lastVersion)) {
 
         _lastVersion = sel->GetVersion();
         
@@ -142,7 +153,7 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
         // Offsets
         //
         VtIntArray offsets;
-        _hasSelection = sel->GetSelectionOffsetBuffer(&index, &offsets);
+        _hasSelection = sel->GetSelectionOffsetBuffer(renderIndex, &offsets);
         HdBufferSourceSharedPtr offsetSource(
                 new HdVtBufferSource(HdxTokens->hdxSelectionBuffer,
                                      VtValue(offsets)));
@@ -167,14 +178,6 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
         (*ctx)[HdxTokens->selectionUniforms] = VtValue();
         (*ctx)[HdxTokens->selectionPointColors] = VtValue();
     }
-
-    *dirtyBits = HdChangeTracker::Clean;
-}
-
-void
-HdxSelectionTask::Prepare(HdTaskContext* ctx,
-                          HdRenderIndex* renderIndex)
-{
 }
 
 void

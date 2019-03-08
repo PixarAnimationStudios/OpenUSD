@@ -110,7 +110,7 @@ public:
     /// Update dirty bits in the ChangeTracker and compute required primvars for
     /// later consumption.
     HDX_API
-    virtual void Sync(HdRenderIndex *index);
+    virtual void Prepare(HdRenderIndex *index);
 
     /// Encodes the selection state (HdxSelection) as an integer array. This is
     /// uploaded to the GPU and decoded in the fragment shader to provide
