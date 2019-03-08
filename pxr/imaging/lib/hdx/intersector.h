@@ -122,7 +122,7 @@ public:
         Params() 
             : hitMode(HitFirst)
             , pickTarget(PickPrimsAndInstances)
-            , pickThrough(false)
+            , doUnpickablesOcclude(false)
             , projectionMatrix(1)
             , viewMatrix(1)
             , alphaThreshold(0.0f)
@@ -134,7 +134,7 @@ public:
 
         HitMode hitMode;
         PickTarget pickTarget;
-        bool pickThrough;
+        bool doUnpickablesOcclude;
         GfMatrix4d projectionMatrix;
         GfMatrix4d viewMatrix;
         float alphaThreshold;
