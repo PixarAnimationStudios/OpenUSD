@@ -249,8 +249,15 @@ class VtArray : public Vt_ArrayBase {
     /// VtArray<T> v;
     /// v.assign(first, last);
     /// \endcode
-    template <typename ForwardIterator>
-    VtArray(ForwardIterator first, ForwardIterator last) : VtArray() {
+    ///
+    /// Note we use enable_if with a dummy parameter here to avoid clashing
+    /// with our other constructor with the following signature:
+    ///
+    /// VtArray(size_t n, value_type const &value = value_type())
+    template <typename LegacyInputIterator>
+    VtArray(LegacyInputIterator first, LegacyInputIterator last,
+            typename std::enable_if<!std::is_same<size_t, LegacyInputIterator>::value, void>::type* = nullptr) 
+        : VtArray() {
         assign(first, last); 
     }
 
