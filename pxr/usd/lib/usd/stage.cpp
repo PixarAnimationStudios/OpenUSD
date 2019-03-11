@@ -1239,6 +1239,18 @@ UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath,
         return false;
     }
 
+    if (primPath.IsRootPrimPath()) {
+        return true;
+    } else {
+        SdfPath parentPath = primPath.GetParentPath();
+        if (!GetPrimAtPath(parentPath).IsActive()) {
+            TF_CODING_ERROR("Failed to create UsdPrim <%s>. "
+                            "Cannot author a UsdPrim under an inactive ancestor <%s>.", 
+                            primPath.GetText(), parentPath.GetText());
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -3181,20 +3193,10 @@ UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
     }
 
     // Define all ancestors.
-    auto parentPath = path.GetParentPath();
-    if (!_DefinePrim(parentPath, TfToken())) {
+    if (!_DefinePrim(path.GetParentPath(), TfToken())) {
         return UsdPrim();
     }
 
-    // Disallow authoring a prim under an inactive ancestor
-    // Note that GetPrimAtPath() is safe here due to the way _DefinePrim
-    // recurses up to the toplevel prim at 3167.
-    if (!GetPrimAtPath(parentPath).IsActive()) {
-        TF_WARN("Failed to create UsdPrim <%s>. "
-                "Cannot author a UsdPrim under an inactive ancestor <%s>.", 
-                path.GetText(), parentPath.GetText());
-        return UsdPrim();
-    }
     
     // Now author scene description for this prim.
     TfErrorMark m;

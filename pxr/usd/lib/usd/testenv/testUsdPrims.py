@@ -439,6 +439,36 @@ class TestUsdPrim(unittest.TestCase):
             p3 = s.DefinePrim(p3Path)
             self.assertTrue(p3)
 
+            print 'Test defining under inactive ...'
+            s = Usd.Stage.CreateInMemory('OverrideOverInactive.'+fmt)
+
+            p1Path = '/f'
+            p1 = s.OverridePrim(p1Path)
+
+            p1.SetActive(False)
+            p2Path = '/f/g'
+            p2 = s.OverridePrim(p2Path)
+            self.assertFalse(p2)
+            
+            p1.SetActive(True)
+            p2 = s.OverridePrim('/f/g')
+            self.assertTrue(p2)
+
+            p1.SetActive(False)
+            p3Path = '/f/g/h'
+            p3 = s.OverridePrim(p3Path)
+            self.assertFalse(p3)
+
+            p1.SetActive(True)
+            p2 = s.GetPrimAtPath(p2Path)
+            p2.SetActive(False)
+            p3 = s.OverridePrim(p3Path)
+            self.assertFalse(p3)    
+
+            p2.SetActive(True)
+            p3 = s.OverridePrim(p3Path)
+            self.assertTrue(p3)
+
     def test_ChangeTypeName(self):
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('ChangeTypeName.'+fmt)
