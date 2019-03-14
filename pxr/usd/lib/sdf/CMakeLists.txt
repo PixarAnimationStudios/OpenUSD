@@ -266,7 +266,7 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testSdfParsingOld.testenv
-    DEST testSdfParsingOld/testSdfParsingOld.testenv
+    DEST testSdfParsingOld/testSdfParsing.testenv
 )
 
 pxr_install_test_dir(
@@ -334,8 +334,6 @@ pxr_register_test(testSdfParsing
 pxr_register_test(testSdfParsingOld
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
-    ENV
-        SDF_CONVERT_TO_NEW_TYPENAMES=1
 )
 
 pxr_register_test(testSdfPath
