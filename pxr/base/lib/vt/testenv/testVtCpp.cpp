@@ -768,8 +768,6 @@ TF_REGISTRY_FUNCTION(TfEnum)
 static void testValue() {
     {
         // Test that we can create values holding non-streamable types. 
-        static_assert(!Vt_IsOutputStreamable<_NotStreamable>::value,
-                      "_NotStreamable must not satisfy Vt_IsOutputStreamable.");
         _NotStreamable n;
         VtValue v(n);
         VtValue copy = v;
