@@ -212,24 +212,19 @@ UsdGeomPointBased::SetNormalsInterpolation(TfToken const &interpolation)
     return false;
 }
 
-bool
-UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
-    VtVec3fArray* extent)
+namespace {
+template <typename Reduction>
+bool 
+_ComputeExtentImpl(const VtVec3fArray& points, VtVec3fArray* extent,
+                   Reduction&& reduction)
 {
-    // Create Sized Extent
     extent->resize(2);
 
     // Calculate bounds
     GfRange3d bbox = WorkParallelReduceN(
         GfRange3d(),
         points.size(),
-        [&points](size_t b, size_t e, GfRange3d init){
-            for (auto i = b; i != e; ++i) {
-                init.UnionWith(points[i]);
-            }
-
-            return init;
-        },
+        std::forward<Reduction>(reduction),
         [](GfRange3d lhs, GfRange3d rhs){
             return GfRange3d::GetUnion(lhs, rhs);
         },
@@ -241,26 +236,34 @@ UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
 
     return true;
 }
+} // end anonymous namespace
+
+bool
+UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
+    VtVec3fArray* extent)
+{
+    return _ComputeExtentImpl(points, extent,
+        [&points](size_t b, size_t e, GfRange3d init){
+            for (size_t i = b; i != e; ++i) {
+                init.UnionWith(points[i]);
+            }
+            return init;
+        }
+    );
+}
 
 bool
 UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
     const GfMatrix4d& transform, VtVec3fArray* extent)
 {
-    // Create Sized Extent
-    extent->resize(2);
-
-    // Calculate bounds
-    GfRange3d bbox;
-    TF_FOR_ALL(pointsItr, points) {
-        GfVec3f point = *pointsItr;
-        point = transform.Transform(point);
-        bbox.UnionWith(point);
-    }
-
-    (*extent)[0] = GfVec3f(bbox.GetMin());
-    (*extent)[1] = GfVec3f(bbox.GetMax());
-
-    return true;
+    return _ComputeExtentImpl(points, extent,
+        [&points, &transform](size_t b, size_t e, GfRange3d init){
+            for (size_t i = b; i != e; ++i) {
+                init.UnionWith(transform.Transform(points[i]));
+            }
+            return init;
+        }
+    );
 }
 
 static bool
