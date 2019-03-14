@@ -69,14 +69,14 @@ public:
     virtual ~HdxRenderSetupTask();
 
 
-    // APIs used from HdxRenderTask to manage the sync process.
+    // APIs used from HdxRenderTask to manage the sync/prepare process.
     HDX_API
     void SyncParams(HdSceneDelegate* delegate,
                     HdxRenderTaskParams const &params);
     HDX_API
-    void SyncCamera(HdSceneDelegate* delegate);
+    void PrepareCamera(HdRenderIndex* renderIndex);
     HDX_API
-    void SyncAovBindings(HdSceneDelegate* delegate);
+    void PrepareAovBindings(HdRenderIndex* renderIndex);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
@@ -117,7 +117,7 @@ private:
     void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
                                  HdStRenderPassState *renderPassState);
 
-    HdRenderPassStateSharedPtr &_GetRenderPassState(HdSceneDelegate* delegate);
+    HdRenderPassStateSharedPtr &_GetRenderPassState(HdRenderIndex* renderIndex);
 
 
     HdxRenderSetupTask() = delete;

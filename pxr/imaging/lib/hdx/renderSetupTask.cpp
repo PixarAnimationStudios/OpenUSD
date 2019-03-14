@@ -84,9 +84,6 @@ HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
         SyncParams(delegate, params);
     }
 
-    SyncAovBindings(delegate);
-    SyncCamera(delegate);
-
     *dirtyBits = HdChangeTracker::Clean;
 }
 
@@ -94,12 +91,14 @@ void
 HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
-    // Render pass state should have been created by Sync.
-    if (!TF_VERIFY(_renderPassState)) {
-        return;
-    }
 
-    _renderPassState->Prepare(renderIndex->GetResourceRegistry());
+    PrepareAovBindings(renderIndex);
+    PrepareCamera(renderIndex);
+
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
+
+    renderPassState->Prepare(renderIndex->GetResourceRegistry());
 }
 
 void
@@ -136,7 +135,9 @@ void
 HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
                                HdxRenderTaskParams const &params)
 {
-    HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(&renderIndex);
 
     renderPassState->SetOverrideColor(params.overrideColor);
     renderPassState->SetWireframeColor(params.wireframeColor);
@@ -194,31 +195,30 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
 }
 
 void
-HdxRenderSetupTask::SyncAovBindings(HdSceneDelegate* delegate)
+HdxRenderSetupTask::PrepareAovBindings(HdRenderIndex* renderIndex)
 {
     // Walk the aov bindings, resolving the render index references as they're
     // encountered.
-    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdRenderPassAovBindingVector aovBindings = _aovBindings;
     for (size_t i = 0; i < aovBindings.size(); ++i)
     {
         if (aovBindings[i].renderBuffer == nullptr) {
             aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
-                renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer,
+                renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
                 aovBindings[i].renderBufferId));
         }
     }
 
-    HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
     renderPassState->SetAovBindings(aovBindings);
 }
 
 void
-HdxRenderSetupTask::SyncCamera(HdSceneDelegate* delegate)
+HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 {
-    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     const HdCamera *camera = static_cast<const HdCamera *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
+        renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
 
     if (camera) {
         VtValue modelViewVt  = camera->Get(HdCameraTokens->worldToViewMatrix);
@@ -242,7 +242,8 @@ HdxRenderSetupTask::SyncCamera(HdSceneDelegate* delegate)
             vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 
         // sync render pass state
-        HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
+        HdRenderPassStateSharedPtr &renderPassState =
+                _GetRenderPassState(renderIndex);
         renderPassState->SetCamera(modelView, projection, _viewport);
         renderPassState->SetClipPlanes(clipPlanes);
     }
@@ -265,11 +266,11 @@ HdxRenderSetupTask::_CreateOverrideShader()
 
 
 HdRenderPassStateSharedPtr &
-HdxRenderSetupTask::_GetRenderPassState(HdSceneDelegate* delegate)
+HdxRenderSetupTask::_GetRenderPassState(HdRenderIndex* renderIndex)
 {
     if (!_renderPassState) {
-        HdRenderIndex &index = delegate->GetRenderIndex();
-        _renderPassState = index.GetRenderDelegate()->CreateRenderPassState();
+        HdRenderDelegate *renderDelegate = renderIndex->GetRenderDelegate();
+        _renderPassState = renderDelegate->CreateRenderPassState();
     }
 
     return _renderPassState;

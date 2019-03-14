@@ -132,11 +132,6 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
-    if (_setupTask) {
-        _setupTask->SyncAovBindings(delegate);
-        _setupTask->SyncCamera(delegate);
-    }
-
     // sync render passes
     TF_FOR_ALL (it, _passes){
         HdRenderPassSharedPtr const &pass = (*it);
