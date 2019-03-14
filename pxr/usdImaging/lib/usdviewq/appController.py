@@ -1829,9 +1829,10 @@ class AppController(QtCore.QObject):
             self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _stepSizeChanged(self):
-        stepStr = self._ui.stepSize.text()
-        self.step = float(stepStr)
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.stepSize.text())
+        if value != self.step:
+            self.step = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _rangeEndChanged(self):
         value = float(self._ui.rangeEnd.text())
