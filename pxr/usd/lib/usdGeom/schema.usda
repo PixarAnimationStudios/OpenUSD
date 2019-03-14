@@ -1946,7 +1946,7 @@ class "GeomModelAPI"
                  set, apply an alternate imaging mode to this prim. See
                  \\ref UsdGeomModelAPI_drawMode."""
     )
-    uniform Vec3f model:drawModeColor (
+    uniform float3 model:drawModeColor (
         doc = """The base color of imaging prims inserted for alternate
                  imaging modes. For \\em origin and \\em bounds modes, this
                  controls line color; for \\em cards mode, this controls the
