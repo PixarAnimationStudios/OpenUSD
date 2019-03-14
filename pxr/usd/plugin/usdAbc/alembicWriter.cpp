@@ -985,7 +985,7 @@ private:
 
     _WriterContext& _context;
     Parent _parent;
-    const SdfAbstractDataSpecId& _id;
+    SdfAbstractDataSpecId _id;
     std::string _suffix;
     UsdAbc_TimeSamples _sampleTimes;
     TfTokenVector _unextracted;
