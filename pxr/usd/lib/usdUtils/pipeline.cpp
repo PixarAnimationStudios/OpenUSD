@@ -28,8 +28,11 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -58,6 +61,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdUtilsPipeline)
         (MaterialsScopeName)
+        (PrimaryCameraName)
         (RegisteredVariantSets)
             (selectionExportPolicy)
                 // lowerCamelCase of the enums.
@@ -66,6 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
                 (always)
 
     ((DefaultMaterialsScopeName, "Looks"))
+    ((DefaultPrimaryCameraName, "main_cam"))
 );
 
 
@@ -248,64 +253,90 @@ TfToken UsdUtilsGetPrefName()
     return TfToken("pref");
 }
 
-TF_MAKE_STATIC_DATA(TfToken, _materialsScopeName)
+using _TokenToTokenMap = TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
+
+/// Looks through the metadata dictionaries of all registered plugins for
+/// string values that match the key path:
+///     [UsdUtilsPipeline][<identifierKey>]
+///
+/// A string value will be looked up for each of the tokens in identifierKeys.
+///
+/// The first valid string value identifier found for each identifierKey, if
+/// any, is inserted into the returned map.
+static
+_TokenToTokenMap
+_GetPipelineIdentifierTokens(const TfTokenVector& identifierKeys)
 {
-    PlugPluginPtrVector plugs = PlugRegistry::GetInstance().GetAllPlugins();
+    const TfToken metadataDictKey = _tokens->UsdUtilsPipeline;
+
+    _TokenToTokenMap identifierMap;
+
+    const PlugPluginPtrVector plugs =
+        PlugRegistry::GetInstance().GetAllPlugins();
     for (const PlugPluginPtr plug : plugs) {
         JsObject metadata = plug->GetMetadata();
-        JsValue pipelineUtilsDictValue;
-        if (!TfMapLookup(
-                metadata,
-                _tokens->UsdUtilsPipeline,
-                &pipelineUtilsDictValue)) {
+        JsValue metadataDictValue;
+        if (!TfMapLookup(metadata, metadataDictKey, &metadataDictValue)) {
             continue;
         }
 
-        if (!pipelineUtilsDictValue.Is<JsObject>()) {
+        if (!metadataDictValue.Is<JsObject>()) {
             TF_CODING_ERROR(
                 "%s[%s] was not a dictionary.",
                 plug->GetName().c_str(),
-                _tokens->UsdUtilsPipeline.GetText());
+                metadataDictKey.GetText());
             continue;
         }
 
-        JsObject pipelineUtilsDict = pipelineUtilsDictValue.Get<JsObject>();
+        JsObject metadataDict = metadataDictValue.Get<JsObject>();
 
-        JsValue materialsScopeNameValue;
-        if (!TfMapLookup(
-                pipelineUtilsDict,
-                _tokens->MaterialsScopeName,
-                &materialsScopeNameValue)) {
-            continue;
+        for (const TfToken& identifierKey : identifierKeys) {
+            JsValue stringJsValue;
+            if (!TfMapLookup(metadataDict, identifierKey, &stringJsValue)) {
+                continue;
+            }
+
+            if (!stringJsValue.IsString()) {
+                TF_CODING_ERROR(
+                    "%s[%s][%s] was not a string.",
+                    plug->GetName().c_str(),
+                    metadataDictKey.GetText(),
+                    identifierKey.GetText());
+                continue;
+            }
+
+            const std::string valueString = stringJsValue.GetString();
+            if (!SdfPath::IsValidIdentifier(valueString)) {
+                TF_CODING_ERROR(
+                    "%s[%s][%s] was not a valid identifier: \"%s\".",
+                    plug->GetName().c_str(),
+                    metadataDictKey.GetText(),
+                    identifierKey.GetText(),
+                    valueString.c_str());
+                continue;
+            }
+
+            identifierMap.insert({identifierKey, TfToken(valueString)});
         }
 
-        if (!materialsScopeNameValue.IsString()) {
-            TF_CODING_ERROR(
-                "%s[%s][%s] was not a string.",
-                plug->GetName().c_str(),
-                _tokens->UsdUtilsPipeline.GetText(),
-                _tokens->MaterialsScopeName.GetText());
-            continue;
+        if (identifierMap.size() == identifierKeys.size()) {
+            // We got an identifier for all of the given keys, so stop looking
+            // through plugin metadata.
+            break;
         }
-
-        const std::string materialsScopeNameString =
-            materialsScopeNameValue.GetString();
-        if (!SdfPath::IsValidIdentifier(materialsScopeNameString)) {
-            TF_CODING_ERROR(
-                "%s[%s][%s] was not a valid identifier: \"%s\".",
-                plug->GetName().c_str(),
-                _tokens->UsdUtilsPipeline.GetText(),
-                _tokens->MaterialsScopeName.GetText(),
-                materialsScopeNameString.c_str());
-            continue;
-        }
-
-        *_materialsScopeName = TfToken(materialsScopeNameString);
     }
 
-    if (_materialsScopeName->IsEmpty()) {
-        *_materialsScopeName = _tokens->DefaultMaterialsScopeName;
-    }
+    return identifierMap;
+}
+
+TF_MAKE_STATIC_DATA(_TokenToTokenMap, _pipelineIdentifiersMap)
+{
+    const TfTokenVector identifierKeys({
+        _tokens->MaterialsScopeName,
+        _tokens->PrimaryCameraName
+    });
+
+    *_pipelineIdentifiersMap = _GetPipelineIdentifierTokens(identifierKeys);
 }
 
 TfToken
@@ -316,7 +347,23 @@ UsdUtilsGetMaterialsScopeName(const bool forceDefault)
         return _tokens->DefaultMaterialsScopeName;
     }
 
-    return *_materialsScopeName;
+    return TfMapLookupByValue(
+        *_pipelineIdentifiersMap,
+        _tokens->MaterialsScopeName,
+        _tokens->DefaultMaterialsScopeName);
+}
+
+TfToken
+UsdUtilsGetPrimaryCameraName(const bool forceDefault)
+{
+    if (forceDefault) {
+        return _tokens->DefaultPrimaryCameraName;
+    }
+
+    return TfMapLookupByValue(
+        *_pipelineIdentifiersMap,
+        _tokens->PrimaryCameraName,
+        _tokens->DefaultPrimaryCameraName);
 }
 
 

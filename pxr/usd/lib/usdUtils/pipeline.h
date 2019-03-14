@@ -35,6 +35,7 @@
 #include "pxr/usd/usdUtils/registeredVariantSet.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/common.h"
@@ -139,6 +140,23 @@ TfToken UsdUtilsGetPrefName();
 /// for unit testing purposes as a way to ignore any site-based configuration.
 USDUTILS_API
 TfToken UsdUtilsGetMaterialsScopeName(const bool forceDefault = false);
+
+/// Get the name of the USD prim representing the primary camera.
+/// By default the name is "main_cam".
+///
+/// The camera name can be configured in the metadata of a plugInfo.json file
+/// like so:
+/// \code{json}
+///    "UsdUtilsPipeline": {
+///        "PrimaryCameraName": "SomeCameraName"
+///    }
+/// \endcode
+///
+/// If \p forceDefault is true, any value specified in a plugInfo.json will be
+/// ignored and the built-in default will be returned. This is primarily used
+/// for unit testing purposes as a way to ignore any site-based configuration.
+USDUTILS_API
+TfToken UsdUtilsGetPrimaryCameraName(const bool forceDefault = false);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
