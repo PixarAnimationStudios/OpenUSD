@@ -21,29 +21,29 @@ const float EPS = 1e-5;
 void compute(int index)
 {
     // model space -> bind space
-    mat4 geomBindXform = mat4( HdGet_geomBindXform() );
+    mat4 geomBindXform = HdGet_geomBindXform();
     vec4 initP = geomBindXform * vec4(HdGet_restPoints(index),1);
     
-    int numInfluencesPerPoint = HdGet_numInfluencesPerPoint();
+    int numInfluencesPerComponent = HdGet_numInfluencesPerComponent();
     bool constantPointInfluence = HdGet_hasConstantInfluences();
-    int offset = constantPointInfluence? 0 : numInfluencesPerPoint*index;
+    int offset = constantPointInfluence? 0 : numInfluencesPerComponent*index;
 
     vec3 p = vec3(0,0,0);
-    for (int i = 0; i < numInfluencesPerPoint; i++) {
-        float jointWeight = HdGet_jointWeights(offset + i);
+    for (int i = 0; i < numInfluencesPerComponent; i++) {
+        vec2 influence = HdGet_influences(offset + i);
+        float jointWeight = influence.y;
 
         if (jointWeight > EPS) {
-            int jointIdx = HdGet_jointIndices(offset + i);
-            
-            // XXX: Cast to mat4 below are necessasry becausae the matrices
-            // passed down use doubles and not floats.
-            mat4 skinningXform = mat4( HdGet_skinningXforms(jointIdx) );
+            int jointIdx = int( influence.x );
+            mat4 skinningXform = HdGet_skinningXforms(jointIdx);
             
             p += ((skinningXform * initP) * jointWeight).xyz;
         }
     }
 
     // skel space -> world space -> model space
+    // XXX: Casts to mat4 below are necessary because the matrices passed
+    // down use doubles and not floats.
     mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
                            mat4( HdGet_skelLocalToWorld() );
     p = (skelToPrimLocal * vec4(p,1)).xyz;
@@ -57,17 +57,17 @@ void compute(int index)
 void compute(int index)
 {
     // This is simple joint-constraint skinning model.
-    // XXX: Casts to mat4 below are necessasry becausae the matrices passed
-    // down use doubles and not floats.
 
-    mat4 geomBindXform = mat4( HdGet_geomBindXform() );
-    int jointIndex = HdGet_jointIndices(index);
-    mat4 skinningXform = mat4( HdGet_skinningXforms(jointIndex) );
+    mat4 geomBindXform = HdGet_geomBindXform();
+    int jointIndex = int( HdGet_influences(index).x );
+    mat4 skinningXform = HdGet_skinningXforms(jointIndex);
     
     // model space -> bind space -> skel space
     vec4 p = skinningXform * geomBindXform * vec4(HdGet_restPoints(index), 1);
     
     // skel space -> world space -> model space
+    // XXX: Casts to mat4 below are necessary because the matrices passed
+    // down use doubles and not floats.
     mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
                            mat4( HdGet_skelLocalToWorld() );
     p = skelToPrimLocal * p;

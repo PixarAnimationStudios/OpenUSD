@@ -178,10 +178,25 @@ _ResizeInfluences(VtArray<T>& array,
 
 template <typename Matrix4>
 Matrix4
-_SkinTransformLBS(const Matrix4& geomBindTransform,
-                  TfSpan<const Matrix4> jointXforms,
-                  TfSpan<const int> jointIndices,
-                  TfSpan<const float> jointWeights)
+_InterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
+                             TfSpan<const Matrix4> jointXforms,
+                             TfSpan<const GfVec2f> influences)
+{
+    Matrix4 xform;
+    if (!UsdSkelSkinTransformLBS(geomBindTransform, jointXforms,
+                                 influences, &xform)) {
+        xform = geomBindTransform;
+    }
+    return xform;
+}
+
+
+template <typename Matrix4>
+Matrix4
+_NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
+                                TfSpan<const Matrix4> jointXforms,
+                                TfSpan<const int> jointIndices,
+                                TfSpan<const float> jointWeights)
 {
     Matrix4 xform;
     if (!UsdSkelSkinTransformLBS(geomBindTransform, jointXforms,
@@ -240,7 +255,24 @@ void _WrapUtilsT()
          arg("points"),
          arg("inSerial")=true));
 
-    def("SkinTransformLBS", &_SkinTransformLBS<Matrix4>,
+    def("SkinPointsLBS",
+        static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
+                             TfSpan<const GfVec2f>, int,
+                             TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinPointsLBS),
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences"),
+         arg("numInfluencesPerPoint"),
+         arg("points"),
+         arg("inSerial")=true));
+
+    def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences")));
+
+    def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
         (arg("geomBindTransform"),
          arg("jointXforms"),
          arg("jointIndices"),
@@ -311,6 +343,10 @@ void wrapUsdSkelUtils()
         (arg("array"),
          arg("srcNumInfluencesPerComponent"),
          arg("newNumInfluencesPerComponent")));
+
+    def("InterleaveInfluences", &UsdSkelInterleaveInfluences,
+        (arg("indices"), arg("weights"),
+         arg("interleavedInfluences")));
 
     def("ApplyBlendShape", &UsdSkelApplyBlendShape,
         (arg("weight"),

@@ -444,6 +444,14 @@ UsdSkelResizeInfluences(VtFloatArray* weights,
                         int srcNumInfluencesPerComponent,
                         int newNumInfluencesPerComponent);
 
+/// Combine arrays of joint indices and weights into interleaved
+/// (index,weight) vectors.
+USDSKEL_API
+bool
+UsdSkelInterleaveInfluences(const TfSpan<const int>& indices,
+                            const TfSpan<const float>& weights,
+                            TfSpan<GfVec2f> interleavedInfluences);
+
 
 /// @}
 
@@ -476,6 +484,27 @@ UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
                      TfSpan<const GfMatrix4f> jointXforms,
                      TfSpan<const int> jointIndices,
                      TfSpan<const float> jointWeights,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> points,
+                     bool inSerial=false);
+
+
+/// Skin points using linear blend skinning, with interleaved influences.
+USDSKEL_API
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
+                     TfSpan<const GfMatrix4d> jointXforms,
+                     TfSpan<const GfVec2f> influences,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> points,
+                     bool inSerial=false);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
+                     TfSpan<const GfMatrix4f> jointXforms,
+                     TfSpan<const GfVec2f> influences,
                      int numInfluencesPerPoint,
                      TfSpan<GfVec3f> points,
                      bool inSerial=false);
@@ -529,6 +558,23 @@ UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
                         TfSpan<const GfMatrix4f> jointXforms,
                         TfSpan<const int> jointIndices,
                         TfSpan<const float> jointWeights,
+                        GfMatrix4f* xform);
+
+/// Overload taking interleaved joint influences.
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
+                        TfSpan<const GfMatrix4d> jointXforms,
+                        TfSpan<const GfVec2f> influences,
+                        GfMatrix4d* xform);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
+                        TfSpan<const GfMatrix4f> jointXforms,
+                        TfSpan<const GfVec2f> influences,
                         GfMatrix4f* xform);
 
 /// \overload

@@ -1176,33 +1176,72 @@ UsdSkelResizeInfluences(VtFloatArray* weights,
 }
 
 
+bool
+UsdSkelInterleaveInfluences(const TfSpan<const int>& indices,
+                            const TfSpan<const float>& weights,
+                            TfSpan<GfVec2f> interleavedInfluences)
+{
+    TRACE_FUNCTION();
+
+    if (weights.size() != indices.size()) {
+        TF_WARN("Size of weights [%td] != size of indices [%td]",
+                weights.size(), indices.size());
+        return false;
+    }
+
+    if (interleavedInfluences.size() != indices.size()) {
+        TF_WARN("Size of interleavedInfluences [%td] != size of indices [%td]",
+                interleavedInfluences.size(), indices.size());
+        return false;
+    }
+
+    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+        interleavedInfluences[i] =
+            GfVec2f(static_cast<float>(indices[i]), weights[i]);
+    }
+    return true;
+}
+
+
 namespace {
 
 
-template <typename Matrix4>
+/// Functor for extracting influence indices and weights from influences
+/// stored on separate index and weight arrays.
+struct _NonInterleavedInfluencesFn {
+    TfSpan<const int> indices;
+    TfSpan<const float> weights;
+
+    int         GetIndex(size_t index) const { return indices[index]; }
+    float       GetWeight(size_t index) const { return weights[index]; }
+    ptrdiff_t   size() const { return indices.size(); }
+};
+
+
+/// Functor for extracting influence indices and weights from
+/// interleaved influences, stored as an array of (index,weight) vectors.
+struct _InterleavedInfluencesFn {
+    TfSpan<const GfVec2f> influences;
+
+    int         GetIndex(size_t index) const
+                { return static_cast<int>(influences[index][0]); }
+
+    float       GetWeight(size_t index) const { return influences[index][1]; }
+
+    ptrdiff_t   size() const { return influences.size(); }
+};
+    
+
+template <typename Matrix4, typename InfluenceFn>
 bool
 _SkinPointsLBS(const Matrix4& geomBindTransform,
                TfSpan<const Matrix4> jointXforms,
-               TfSpan<const int> jointIndices,
-               TfSpan<const float> jointWeights,
+               const InfluenceFn& influenceFn,
                int numInfluencesPerPoint,
                TfSpan<GfVec3f> points,
                bool inSerial)
 {
     TRACE_FUNCTION();
-
-    if (jointIndices.size() != jointWeights.size()) {
-        TF_WARN("Size of jointIndices [%td] != size of jointWeights [%td]",
-                jointIndices.size(), jointWeights.size());
-        return false;
-    }
-    
-    if (jointIndices.size() != (points.size()*numInfluencesPerPoint)) {
-        TF_WARN("Size of jointIndices [%td] != "
-                "(points.size() [%td] * numInfluencesPerPoint [%d]).",
-                jointIndices.size(), points.size(), numInfluencesPerPoint);
-        return false;
-    }
 
     // Flag for marking error state from within threads.
     std::atomic_bool errors(false);
@@ -1218,12 +1257,12 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
                 
                 for (int wi = 0; wi < numInfluencesPerPoint; ++wi) {
                     const size_t influenceIdx = pi*numInfluencesPerPoint + wi;
-                    const int jointIdx = jointIndices[influenceIdx];
+                    const int jointIdx = influenceFn.GetIndex(influenceIdx);
 
                     if (jointIdx >= 0 &&
                        static_cast<ptrdiff_t>(jointIdx) < jointXforms.size()) {
 
-                        float w = jointWeights[influenceIdx];
+                        const float w = influenceFn.GetWeight(influenceIdx);
                         if (w != 0.0f) {
                             // Since joint transforms are encoded in terms of
                             // t,r,s components, it shouldn't be possible to
@@ -1273,6 +1312,57 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
 }
 
 
+template <typename Matrix4>
+bool
+_InterleavedSkinPointsLBS(const Matrix4& geomBindTransform,
+                          TfSpan<const Matrix4> jointXforms,
+                          TfSpan<const GfVec2f> influences,
+                          int numInfluencesPerPoint,
+                          TfSpan<GfVec3f> points,
+                          bool inSerial)
+{
+    if (influences.size() != (points.size()*numInfluencesPerPoint)) {
+        TF_WARN("Size of influences [%td] != "
+                "(points.size() [%td] * numInfluencesPerPoint [%d]).",
+                influences.size(), points.size(), numInfluencesPerPoint);
+        return false;
+    }
+
+    const _InterleavedInfluencesFn influenceFn{influences};
+    return _SkinPointsLBS(geomBindTransform, jointXforms, influenceFn,
+                          numInfluencesPerPoint, points, inSerial);
+}
+
+
+template <typename Matrix4>
+bool
+_NonInterleavedSkinPointsLBS(const Matrix4& geomBindTransform,
+                             TfSpan<const Matrix4> jointXforms,
+                             TfSpan<const int> jointIndices,
+                             TfSpan<const float> jointWeights,
+                             int numInfluencesPerPoint,
+                             TfSpan<GfVec3f> points,
+                             bool inSerial)
+{
+    if (jointIndices.size() != jointWeights.size()) {
+        TF_WARN("Size of jointIndices [%td] != size of jointWeights [%td]",
+                jointIndices.size(), jointWeights.size());
+        return false;
+    }
+    
+    if (jointIndices.size() != (points.size()*numInfluencesPerPoint)) {
+        TF_WARN("Size of jointIndices [%td] != "
+                "(points.size() [%td] * numInfluencesPerPoint [%d]).",
+                jointIndices.size(), points.size(), numInfluencesPerPoint);
+        return false;
+    }
+
+    const _NonInterleavedInfluencesFn influenceFn{jointIndices, jointWeights};
+    return _SkinPointsLBS(geomBindTransform, jointXforms, influenceFn,
+                          numInfluencesPerPoint, points, inSerial);
+}
+
+
 } // namespace
 
 
@@ -1285,9 +1375,10 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      TfSpan<GfVec3f> points,
                      bool inSerial)
 {
-    return _SkinPointsLBS(geomBindTransform, jointXforms,
-                          jointIndices, jointWeights, numInfluencesPerPoint,
-                          points, inSerial);
+    return _NonInterleavedSkinPointsLBS(
+        geomBindTransform, jointXforms,
+        jointIndices, jointWeights, numInfluencesPerPoint,
+        points, inSerial);
 }
 
 
@@ -1300,9 +1391,38 @@ UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
                      TfSpan<GfVec3f> points,
                      bool inSerial)
 {
-    return _SkinPointsLBS(geomBindTransform, jointXforms,
-                          jointIndices, jointWeights, numInfluencesPerPoint,
-                          points, inSerial);
+    return _NonInterleavedSkinPointsLBS(
+        geomBindTransform, jointXforms,
+        jointIndices, jointWeights, numInfluencesPerPoint,
+        points, inSerial);
+}
+
+
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
+                     TfSpan<const GfMatrix4d> jointXforms,
+                     TfSpan<const GfVec2f> influences,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> points,
+                     bool inSerial)
+{
+    return _InterleavedSkinPointsLBS(geomBindTransform, jointXforms,
+                                     influences, numInfluencesPerPoint,
+                                     points, inSerial);
+}
+
+
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
+                     TfSpan<const GfMatrix4f> jointXforms,
+                     TfSpan<const GfVec2f> influences,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> points,
+                     bool inSerial)
+{
+    return _InterleavedSkinPointsLBS(geomBindTransform, jointXforms,
+                                     influences, numInfluencesPerPoint,
+                                     points, inSerial);
 }
 
 
@@ -1354,12 +1474,11 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
 namespace {
 
 
-template <typename Matrix4>
+template <typename Matrix4, typename InfluencesFn>
 bool
 UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
                          TfSpan<const Matrix4> jointXforms,
-                         TfSpan<const int> jointIndices,
-                         TfSpan<const float> jointWeights,
+                         const InfluencesFn& influencesFn,
                          Matrix4* xform)
 {
     TRACE_FUNCTION();
@@ -1369,16 +1488,11 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
         return false;
     }
 
-    if (jointIndices.size() != jointWeights.size()) {
-        TF_WARN("Size of jointIndices [%td] != size of jointWeights [%td]",
-                jointIndices.size(), jointWeights.size());
-        return false;
-    }
-
     // Early-out for the common case where an object is rigidly
     // bound to a single joint.
-    if (jointIndices.size() == 1 && GfIsClose(jointWeights[0], 1.0f, 1e-6)) {
-        const int jointIdx = jointIndices[0];
+    if (influencesFn.size() == 1 &&
+        GfIsClose(influencesFn.GetWeight(0), 1.0f, 1e-6)) {
+        const int jointIdx = influencesFn.GetIndex(0);
         if (jointIdx >= 0 &&
             static_cast<ptrdiff_t>(jointIdx) < jointXforms.size()) {
             *xform = geomBindTransform*jointXforms[jointIdx];
@@ -1416,11 +1530,11 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
         const GfVec3f initialP = framePoints[pi];
 
         GfVec3f p(0,0,0);
-        for (ptrdiff_t wi = 0; wi < jointIndices.size(); ++wi) {
-            const int jointIdx = jointIndices[wi];
+        for (ptrdiff_t wi = 0; wi < influencesFn.size(); ++wi) {
+            const int jointIdx = influencesFn.GetIndex(wi);
             if (jointIdx >= 0 &&
                 static_cast<ptrdiff_t>(jointIdx) < jointXforms.size()) {
-                const float w = jointWeights[wi];
+                const float w = influencesFn.GetWeight(wi);
                 if (w != 0.0f) {
                     // XXX: See the notes from _SkinPointsLBS():
                     // affine transforms should be okay.
@@ -1445,6 +1559,26 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
 }
 
 
+template <typename Matrix4>
+bool
+UsdSkel_NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
+                                       TfSpan<const Matrix4> jointXforms,
+                                       TfSpan<const int> jointIndices,
+                                       TfSpan<const float> jointWeights,
+                                       Matrix4* xform)
+{
+    if (jointIndices.size() != jointWeights.size()) {
+        TF_WARN("Size of jointIndices [%td] != size of jointWeights [%td]",
+                jointIndices.size(), jointWeights.size());
+        return false;
+    }
+
+    const _NonInterleavedInfluencesFn influencesFn{jointIndices, jointWeights};
+    return UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
+                                    influencesFn, xform);
+}
+
+
 } // namespace
 
 
@@ -1455,8 +1589,8 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         TfSpan<const float> jointWeights,
                         GfMatrix4d* xform)
 {
-    return UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
-                                    jointIndices, jointWeights, xform);
+    return UsdSkel_NonInterleavedSkinTransformLBS(
+        geomBindTransform, jointXforms, jointIndices, jointWeights, xform);
 }
 
 
@@ -1467,8 +1601,32 @@ UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
                         TfSpan<const float> jointWeights,
                         GfMatrix4f* xform)
 {
+    return UsdSkel_NonInterleavedSkinTransformLBS(
+        geomBindTransform, jointXforms, jointIndices, jointWeights, xform);
+}
+
+
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
+                        TfSpan<const GfMatrix4d> jointXforms,
+                        TfSpan<const GfVec2f> influences,
+                        GfMatrix4d* xform)
+{
+    const _InterleavedInfluencesFn influencesFn{influences};
     return UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
-                                    jointIndices, jointWeights, xform);
+                                    influencesFn, xform);
+}
+
+
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
+                        TfSpan<const GfMatrix4f> jointXforms,
+                        TfSpan<const GfVec2f> influences,
+                        GfMatrix4f* xform)
+{
+    const _InterleavedInfluencesFn influencesFn{influences};
+    return UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
+                                    influencesFn, xform);
 }
 
 
@@ -1482,7 +1640,7 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         size_t numInfluences,
                         GfMatrix4d* xform)
 {
-    return UsdSkel_SkinTransformLBS(
+    return UsdSkel_NonInterleavedSkinTransformLBS(
         geomBindTransform,
         TfSpan<const GfMatrix4d>(jointXforms, numJoints),
         TfSpan<const int>(jointIndices, numInfluences),
