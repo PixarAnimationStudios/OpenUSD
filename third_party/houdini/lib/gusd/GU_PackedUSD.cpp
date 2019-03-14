@@ -302,7 +302,9 @@ GusdGU_PackedUSD::GusdGU_PackedUSD( const GusdGU_PackedUSD &src )
     , m_frame( src.m_frame )
     , m_purposes( src.m_purposes )
     , m_usdPrim( src.m_usdPrim )
+#if SYS_VERSION_FULL_INT < 0x12000000
     , m_boundsCache( src.m_boundsCache )
+#endif
     , m_transformCacheValid( src.m_transformCacheValid )
     , m_transformCache( src.m_transformCache )
     , m_masterPathCacheValid( src.m_masterPathCacheValid )
@@ -342,7 +344,9 @@ GusdGU_PackedUSD::typeId()
 void
 GusdGU_PackedUSD::resetCaches()
 {
+#if SYS_VERSION_FULL_INT < 0x12000000
     m_boundsCache.makeInvalid();
+#endif
     m_usdPrim = UsdPrim();
     m_transformCacheValid = false;
     m_gtPrimCache = GT_PrimitiveHandle();
@@ -636,38 +640,48 @@ GusdGU_PackedUSD::save(UT_Options &options, const GA_SaveMap &map) const
 bool
 GusdGU_PackedUSD::getBounds(UT_BoundingBox &box) const
 {
+    // Box caching is handled in getBoundsCached()
+#if SYS_VERSION_FULL_INT < 0x12000000
     if( m_boundsCache.isValid() )
     {
         box = m_boundsCache;
         return true;
     }
+#endif
 
     UsdPrim prim = getUsdPrim();
 
     if( !prim ) {
-        cerr << "Invalid prim " << m_primPath << endl;
+        UT_ASSERT_MSG(0, "Invalid USD prim");
     }
 
     if(UsdGeomImageable visPrim = UsdGeomImageable(prim))
     {
         TfTokenVector purposes = GusdPurposeSetToTokens(m_purposes);
 
-        if( GusdBoundsCache::GetInstance().ComputeUntransformedBound( 
-                        prim, 
-                        UsdTimeCode( m_frame ), 
-                    purposes,
-                        m_boundsCache )) {
-                box = m_boundsCache;
-                return true;          
+        if ( GusdBoundsCache::GetInstance().ComputeUntransformedBound(
+                prim,
+                UsdTimeCode( m_frame ),
+                purposes,
+                box )) {
+#if SYS_VERSION_FULL_INT < 0x12000000
+            m_boundsCache = box;
+#endif
+            return true;
         }
     }
+    box.makeInvalid();
     return false;
 }
 
 bool
 GusdGU_PackedUSD::getRenderingBounds(UT_BoundingBox &box) const
 {
+#if SYS_VERSION_FULL_INT >= 0x12000000
+    return getBoundsCached(box);
+#else
     return getBounds(box);
+#endif
 }
 
 void
