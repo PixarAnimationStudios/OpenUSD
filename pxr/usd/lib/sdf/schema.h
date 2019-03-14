@@ -581,7 +581,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((Instanceable, "instanceable"))                         \
     ((Kind, "kind"))                                         \
     ((MapperArgValue, "value"))                              \
-    ((Marker, "marker"))                                     \
     ((PrimOrder, "primOrder"))                               \
     ((NoLoadHint, "noLoadHint"))                             \
     ((Owner, "owner"))                                       \

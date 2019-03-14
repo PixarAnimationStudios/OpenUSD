@@ -80,7 +80,7 @@ class TestSdfParsing(unittest.TestCase):
         177_bad_empty_lists.sdf
         176_empty_lists.sdf
         175_asset_path_with_colons.sdf
-        164_attr_mappers_and_markers.sdf
+        164_attr_mappers.sdf
         163_bad_variant_selection2.sdf
         162_bad_variant_selection1.sdf
         161_bad_variant_name2.sdf
@@ -139,7 +139,6 @@ class TestSdfParsing(unittest.TestCase):
         82_bad_tuple_dimensions1.sdf
         81_namespace_reorder.sdf
         80_bad_hidden.sdf
-        77_connections_at_markers.sdf
         76_relationship_customData.sdf
         75_attribute_customData.sdf
         74_prim_customData.sdf

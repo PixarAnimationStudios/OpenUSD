@@ -447,7 +447,6 @@ class TestSdfCopyUtils(unittest.TestCase):
         attrSpec.connectionPathList.explicitItems = \
             [ "/Test/Child.attr2", "/Test/Child/Subchild.attr3", 
               "/Test/Sibling.attr" ]
-        attrSpec.SetConnectionMarker("/Test/Child.attr2", "final")
         Sdf.MapperSpec(attrSpec, "/Test/Child.attr2", "mapper")
 
         # Copy root prim and verify that connections on the child prim that
@@ -463,8 +462,6 @@ class TestSdfCopyUtils(unittest.TestCase):
               "/TestCopy/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(dstAttrSpec.connectionMarkers["/TestCopy/Child.attr2"], 
-                         "final")
 
         # Copy prim with attribute and verify that connections that point
         # to objects beneath the source /Test/Child prim are remapped to
@@ -479,8 +476,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Dest.attr2", "/Dest/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(
-            dstAttrSpec.connectionMarkers["/Dest.attr2"], "final")
         self.assertTrue(
             dstAttrSpec.connectionMappers["/Dest.attr2"].typeName, "mapper")
 
@@ -498,8 +493,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Variant.attr2", "/Variant/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(
-            dstAttrSpec.connectionMarkers["/Variant.attr2"], "final")
         self.assertTrue(
             dstAttrSpec.connectionMappers["/Variant.attr2"].typeName, "mapper")
 
@@ -515,8 +508,6 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(
-            dstAttrSpec.connectionMarkers["/Variant.attr2"], "final")
         self.assertTrue(
             dstAttrSpec.connectionMappers["/Variant.attr2"].typeName, "mapper")
 
@@ -529,7 +520,6 @@ class TestSdfCopyUtils(unittest.TestCase):
         relSpec.targetPathList.explicitItems = \
             [ "/Test/Child.attr2", "/Test/Child/Subchild.attr3", 
               "/Test/Sibling.attr" ]
-        relSpec.SetTargetMarker("/Test/Child.attr2", "final")
 
         # Copy root prim and verify that targets on the child prim that
         # point to objects beneath /Test are remapped to /TestCopy.
@@ -544,8 +534,6 @@ class TestSdfCopyUtils(unittest.TestCase):
               "/TestCopy/Sibling.attr" ]
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/TestCopy/Child.attr2"], 
-                         "final")
 
         # Copy prim with relationship and verify that targets that point
         # to objects beneath the source /Test/Child prim are remapped to
@@ -560,7 +548,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Dest.attr2", "/Dest/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/Dest.attr2"], "final")
 
         # Same as above, but copy to variant to ensure that variant selection
         # paths aren't authored into the connection list.
@@ -576,7 +563,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Variant.attr2", "/Variant/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/Variant.attr2"], "final")
 
         # Copy from variant to variant, again to ensure that variant selection
         # paths aren't authored into the connection list.
@@ -590,7 +576,6 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/Variant.attr2"], "final")
 
     def test_InheritsAndSpecializesRemapping(self):
         def _TestRemapping(fieldName):

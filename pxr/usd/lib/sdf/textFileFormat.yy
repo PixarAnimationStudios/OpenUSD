@@ -2397,7 +2397,7 @@ prim_attribute:
     ;
 
 //--------------------------------------------------------------------
-// Attribute connections, markers, and mappers
+// Attribute connections and mappers
 //--------------------------------------------------------------------
 
 // TODO: handle mapper expressions here, as TOK_STRING
@@ -2486,25 +2486,6 @@ connect_list:
 connect_item:
     prim_or_property_scene_path {
             _AttributeAppendConnectionPath(context);
-        }
-    | property_path {
-            _AttributeAppendConnectionPath(context);
-        } '@' marker {
-            // XXX: See comment in relationship_target_and_opt_marker about
-            //      markers in reorder/delete statements.
-            if (context->connParsingAllowConnectionData) {
-                const SdfPath specPath = context->path.AppendTarget(
-                    context->connParsingTargetPaths.back());
-
-                // Create the connection spec object if one doesn't already
-                // exist to parent the marker data.
-                if (!_HasSpec(specPath, context)) {
-                    _CreateSpec(specPath, SdfSpecTypeConnection, context);
-                }
-
-                _SetField(
-                    specPath, SdfFieldKeys->Marker, context->marker, context);
-            }
         }
     ;
 
@@ -3122,35 +3103,10 @@ relationship_target_list:
     ;
 
 relationship_target:
-    relationship_target_and_opt_marker relational_attributes_opt
-    ;
-
-relationship_target_and_opt_marker:
     TOK_PATHREF {
             _RelationshipAppendTargetPath($1, context);
         }
-    | TOK_PATHREF '@' marker {
-            _RelationshipAppendTargetPath($1, context);
-
-            // Markers on relationship targets in reorder or delete statements
-            // shouldn't cause a relationship target spec to be created.
-            //
-            // XXX: This probably should be a parser error; markers in these
-            //      statements don't make any sense. However, doing this
-            //      would require a staged process for backwards compatibility.
-            //      For now, we silently ignore markers in unwanted places.
-            //      The next stages would be to stop writing out markers in
-            //      reorders/deletes, then finally making this an error.
-            if (context->relParsingAllowTargetData) {
-                const SdfPath specPath = context->path.AppendTarget( 
-                    context->relParsingTargetPaths->back() );
-                _RelationshipInitTarget(context->relParsingTargetPaths->back(),
-                                        context);
-                _SetField(
-                    specPath, SdfFieldKeys->Marker, VtValue(context->marker), 
-                    context);
-            }
-        }
+    relational_attributes_opt
     ;
 
 relational_attributes_opt:
@@ -3238,15 +3194,6 @@ prim_or_property_scene_path:
     TOK_PATHREF {
             _PathSetPrimOrPropertyScenePath($1, context);
         }
-    ;
-
-marker:
-    prim_path {
-            context->marker = context->savedPath.GetString();
-        } 
-    | name {
-            context->marker = $1.Get<std::string>();
-        }     
     ;
 
 // A generic name, used to name prims, mappers, mapper parameters, etc.

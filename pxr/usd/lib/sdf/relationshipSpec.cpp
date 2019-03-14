@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/markerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/schema.h"
@@ -237,15 +236,7 @@ SdfRelationshipSpec::ReplaceTargetPath(
         SdfPath newTargetSpecPath = relPath.AppendTarget(newTargetPath);
 
         if (layer->HasSpec(newTargetSpecPath)) {
-            // Target already exists.  That could be simply because it
-            // has a marker but it could be because there's already a
-            // relationship target.  Unfortunately there's no way to
-            // tell the difference between an explicitly created
-            // relationship target with a marker but no relational
-            // attributes and a target created just to hang a marker
-            // off of it.
-            //
-            // We decide not to care.  If the target has no attributes
+            // Target already exists.  If the target has no attributes
             // then we'll allow the replacement.  If it does have
             // attributes then we must refuse.
             if (!GetAttributesForTargetPath(newTargetPath).empty()) {
@@ -568,87 +559,6 @@ SdfRelationshipSpec::ApplyAttributeOrderForTargetPath(
     if (editor) {
         editor->ApplyEdits(vec);
     }
-}
-
-//
-// Markers
-//
-
-SdfSpecHandle 
-SdfRelationshipSpec::_FindOrCreateChildSpecForMarker(const SdfPath& key)
-{
-    return _FindOrCreateTargetSpec(key);
-
-/* YYY
-    if (child) {
-        // Insert key into list editor if it's not there.  We must
-        // add it because the menva syntax does not support expressing
-        // a marker without expressing existence of the corresponding
-        // relationship target.
-        GetTargetPathList().Add(key);
-    }
-
-    return child;
-*/
-}
-
-std::string 
-SdfRelationshipSpec::GetTargetMarker(const SdfPath& path) const
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-    return Sdf_MarkerUtils<SdfRelationshipSpec>::GetMarker(
-        static_cast<const SdfRelationshipSpec&>(*this), targetPath);
-}
-
-void 
-SdfRelationshipSpec::SetTargetMarker(
-    const SdfPath& path, const std::string& marker)
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-    Sdf_MarkerUtils<SdfRelationshipSpec>::SetMarker(
-        static_cast<SdfRelationshipSpec*>(this), targetPath, marker);
-}
-
-void 
-SdfRelationshipSpec::ClearTargetMarker(const SdfPath& path)
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-    Sdf_MarkerUtils<SdfRelationshipSpec>::ClearMarker(
-        static_cast<SdfRelationshipSpec*>(this), targetPath);
-}
-
-SdfPathVector 
-SdfRelationshipSpec::GetTargetMarkerPaths() const
-{
-    return Sdf_MarkerUtils<SdfRelationshipSpec>::GetMarkerPaths(
-        static_cast<const SdfRelationshipSpec&>(*this));
-}
-
-SdfRelationshipSpec::TargetMarkerMap
-SdfRelationshipSpec::GetTargetMarkers() const
-{
-    TargetMarkerMap result;
-
-    const SdfPathVector& targetMarkerPaths = GetTargetMarkerPaths();
-    TF_FOR_ALL(i, targetMarkerPaths) {
-        const SdfPath& path = *i;
-        result[path] = GetTargetMarker(path);
-    }
-
-    return result;
-}
-
-void
-SdfRelationshipSpec::SetTargetMarkers(
-    const TargetMarkerMap &markers)
-{
-    Sdf_MarkerUtils<SdfRelationshipSpec>::MarkerMap m;
-    TF_FOR_ALL(it, markers) {
-        m[_CanonicalizeTargetPath(it->first)] = it->second;
-    }
-
-    Sdf_MarkerUtils<SdfRelationshipSpec>::SetMarkers(
-        static_cast<SdfRelationshipSpec*>(this), m);
 }
 
 //

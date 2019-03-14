@@ -412,26 +412,9 @@ Sdf_FileIOUtility::WriteDefaultValue(
 
 void
 Sdf_FileIOUtility::WriteSdfPath(ostream &out, 
-            size_t indent, const SdfPath &path, const string &markerName) {
-
-    if (ARCH_LIKELY(markerName.empty())) {
-        Write(out, indent, "<%s>", path.GetString().c_str());
-    } else {
-        // Unexpected! That used to mean, an explicitly authored current marker.
-        if (markerName == "None") {
-            TF_RUNTIME_ERROR(
-                "Encountered 'None' marker, this should not happen.");
-            WriteSdfPath(out, indent, path, "current");
-        } else if (markerName == "authored") {
-            TF_RUNTIME_ERROR("Authored markers can't be authored in menva as "
-                             "by object modelling.");
-            WriteSdfPath(out, indent, path);
-        } else {
-            const char *fmt = SdfPath::IsBuiltInMarker(markerName)
-                ? "<%s> @ %s" : "<%s> @ <%s>";
-            Write(out, indent, fmt, path.GetText(), markerName.c_str());
-        }
-    }
+            size_t indent, const SdfPath &path) 
+{
+    Write(out, indent, "<%s>", path.GetString().c_str());
 }
 
 template <class StrType>

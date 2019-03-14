@@ -524,7 +524,6 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->InheritPaths, SdfPathListOp())
         .ListValueValidator(&_ValidateInheritPath);
     _DoRegisterField(SdfFieldKeys->Kind, TfToken());
-    _DoRegisterField(SdfFieldKeys->Marker, "");
     _DoRegisterField(SdfFieldKeys->MapperArgValue, VtValue())
         .ValueValidator(&_ValidateIsSceneDescriptionValue);
     _DoRegisterField(SdfFieldKeys->Owner, "");
@@ -740,8 +739,7 @@ SdfSchemaBase::_RegisterStandardFields()
                        SdfMetadataDisplayGroupTokens->core)
         ;
 
-    _Define(SdfSpecTypeConnection)
-        .Field(SdfFieldKeys->Marker);
+    _Define(SdfSpecTypeConnection);
 
     _Define(SdfSpecTypeMapper)
         .Field(SdfFieldKeys->TypeName, /* required = */ true)
@@ -764,8 +762,7 @@ SdfSchemaBase::_RegisterStandardFields()
 
     _Define(SdfSpecTypeRelationshipTarget)
         .Field(SdfChildrenKeys->PropertyChildren)
-        .Field(SdfFieldKeys->PropertyOrder)
-        .Field(SdfFieldKeys->Marker);
+        .Field(SdfFieldKeys->PropertyOrder);
 
     _Define(SdfSpecTypeVariantSet)
         .Field(SdfChildrenKeys->VariantChildren);

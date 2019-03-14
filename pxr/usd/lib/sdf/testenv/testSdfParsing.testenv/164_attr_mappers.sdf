@@ -1,23 +1,30 @@
 #sdf 1.4.32
 (
-    "Test parsing of attribute connections with both mappers and markers."
-    framePrecision = 3
+    """Test parsing of attribute connections with mappers."""
     framesPerSecond = 24
+    framePrecision = 3
 )
 
-def MfScope "mapper_marker_tests"
+def MfScope "mapper_tests"
 {
     custom double a0
-    double a0.connect = </mapper_marker_tests/Foo/Bar.blah> @ final
+    double a0.connect = </mapper_marker_tests/Foo/Bar.blah>
     double a0.mapper[ </mapper_marker_tests/Foo/Bar.blah> ] = TestMapper
     custom double a1
-    double a1.connect = </mapper_tests/Foo/Bar.blah> @ </mapper_marker_tests/Foo/Bar>
+    double a1.connect = </mapper_tests/Foo/Bar.blah>
     double a1.mapper[ </mapper_tests/Foo/Bar.blah> ] = TestMapper
     custom double a2
     double a2.connect = [
-        </mapper_tests/Test/Type.bool> @ final,
-        </mapper_tests/Test/Type.int> @ </Foo/Bar>,
+        </mapper_tests/Test/Type.bool>,
+        </mapper_tests/Test/Type.int>,
     ]
+    double a2.mapper[ </mapper_tests/Test/Type.int> ] = TestMapper {
+        int i0 = 0
+        int i1 = 1
+        int[] i2 = [0, 1, 2, 3, 4]
+        int[] i3 = [0, 1, 2, 3]
+        int[] i4 = [0, 1, 3, 5, 7, 0]
+    }
     double a2.mapper[ </mapper_tests/Test/Type.bool> ] = TestMapper {
         bool b0 = 0
         bool b1 = 1
@@ -31,13 +38,6 @@ def MfScope "mapper_marker_tests"
         double[] f4 = [0, 1.2, 3.4, 5.6, 7800000000, 0]
         double[] f5 = [0, 1.2, 3.4, 5.6, 7800000000, 0]
         double[] f6 = [0, 1.2, 3.4, 5.6, 7800000000, 0]
-    }
-    double a2.mapper[ </mapper_tests/Test/Type.int> ] = TestMapper {
-        int i0 = 0
-        int i1 = 1
-        int[] i2 = [0, 1, 2, 3, 4]
-        int[] i3 = [0, 1, 2, 3]
-        int[] i4 = [0, 1, 3, 5, 7, 0]
     }
 }
 

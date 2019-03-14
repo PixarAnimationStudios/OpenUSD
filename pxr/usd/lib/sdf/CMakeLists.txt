@@ -82,7 +82,6 @@ pxr_library(sdf
         pyListOp
         pyListProxy
         pyMapEditProxy
-        pyMarkerProxy
         pySpec
         pyUtils
 
@@ -103,7 +102,6 @@ pxr_library(sdf
         fileIO_Common
         layerRegistry
         listOpListEditor
-        markerUtils
         parserHelpers
         parserValueContext
         pathParser
