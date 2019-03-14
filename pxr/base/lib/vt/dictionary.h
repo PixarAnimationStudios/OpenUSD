@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
-#include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/hash.h"
@@ -562,27 +561,6 @@ struct VtDictionaryHash {
         return hash_value(dict);
     }
 };
-
-/// In-place creation of a VtDictionary.
-///
-/// Creates a VtDictionary from a set of VtKeyValue pairs.
-///
-/// \ingroup group_vtdict_functions
-template <typename... KeyValue>
-inline VtDictionary VtMakeDictionary(
-    KeyValue&&... keyValue)
-{
-    VtDictionary dictionary;
-
-    std::initializer_list<VtKeyValue> elems = {
-        std::forward<KeyValue>(keyValue)...
-    };
-    for (const VtKeyValue &elem : elems) {
-        dictionary[elem.GetKey()] = elem.GetValue();
-    }
-
-    return dictionary;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -19,7 +19,6 @@ pxr_library(vt
         dictionary
         functions
         hash
-        keyValue
         streamOut
         types
         value

@@ -427,21 +427,21 @@ static void testDictionary() {
     dictionary2["key2"] = VtValue(s);
 
     // In-place creation and code coverage for equality operator.
-    if ( VtMakeDictionary(VtKeyValue("key1", d), VtKeyValue("key2", b)) !=
+    if ( VtDictionary{{"key1", VtValue(d)}, {"key2", VtValue(b)}} !=
          dictionary) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
-    if ( VtMakeDictionary(VtKeyValue("key1", d), VtKeyValue("key2X", b)) ==
+    if ( VtDictionary{{"key1", VtValue(d)}, {"key2X", VtValue(b)}} ==
          dictionary ) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
-    if ( VtMakeDictionary(VtKeyValue("key1", d), VtKeyValue("key2", true)) ==
+    if ( VtDictionary{{"key1", VtValue(d)}, {"key2", VtValue(true)}} ==
          dictionary ) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
-    if ( VtMakeDictionary(VtKeyValue("key1", d)) ==
+    if ( VtDictionary{{"key1", VtValue(d)}} ==
          dictionary ) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
 
     // Composite dictionary2 over dictionary.
@@ -601,23 +601,23 @@ testDictionaryIterators()
     // Test iterator-related things that might break if one were to attempt a
     // copy-on-write implementation for VtDictionary.
 
-    VtKeyValue key1("key1", false);
-    VtKeyValue key2("key2", true);
-    VtKeyValue key3("key3", VtValue());
+    VtDictionary::value_type key1("key1", VtValue(false));
+    VtDictionary::value_type key2("key2", VtValue(true));
+    VtDictionary::value_type key3("key3", VtValue());
 
     // Check that copy + insertion + destruction does not invalidate iterators.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary::iterator i = a.find(key2.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary::iterator i = a.find(key2.first);
 
         {
             boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
-            a.insert(std::make_pair(key3.GetKey(), key3.GetValue()));
+            a.insert(std::make_pair(key3.first, key3.second));
         }
 
         a.erase(i);
 
-        VtDictionary expected = VtMakeDictionary(key1, key3);
+        VtDictionary expected = {key1, key3};
         if (a != expected) {
             die("VtDictionary::erase(Iterator) - failed after copy");
         }
@@ -625,10 +625,10 @@ testDictionaryIterators()
 
     // Check that copy + insertion does not result in invalid iterators.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary::const_iterator i = a.find(key2.GetKey());
-        a.insert(std::make_pair(key3.GetKey(), key3.GetValue()));
-        VtDictionary::const_iterator j = a.find(key2.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary::const_iterator i = a.find(key2.first);
+        a.insert(std::make_pair(key3.first, key3.second));
+        VtDictionary::const_iterator j = a.find(key2.first);
         if (i != j) {
             die("VtDictionary - iterators to same element do not compare "
                 "equal");
@@ -638,13 +638,13 @@ testDictionaryIterators()
     // Check that iterator distance is preserved across a making a copy and
     // destroying it.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary expected = VtMakeDictionary(key1, key2);
-        VtDictionary::const_iterator i = a.find(key2.GetKey());
-        VtDictionary::const_iterator j = expected.find(key2.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary expected = {key1, key2};
+        VtDictionary::const_iterator i = a.find(key2.first);
+        VtDictionary::const_iterator j = expected.find(key2.first);
         {
             boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
-            VtDictionary::value_type v(key3.GetKey(), key3.GetValue());
+            VtDictionary::value_type v(key3.first, key3.second);
             a.insert(v);
             expected.insert(v);
         }
@@ -658,14 +658,14 @@ testDictionaryIterators()
     // Check that iterators who point to same keys in a container, also
     // dereference to equal values.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary::const_iterator i = a.find(key1.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary::const_iterator i = a.find(key1.first);
         {
             boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
-            a[key1.GetKey()] = VtValue(12);
+            a[key1.first] = VtValue(12);
         }
 
-        VtDictionary::const_iterator j = a.find(key1.GetKey());
+        VtDictionary::const_iterator j = a.find(key1.first);
         if (i != j) {
             die("VtDictionary - iterators to same item do not compare equal");
         }
