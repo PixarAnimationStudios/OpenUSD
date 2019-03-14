@@ -159,7 +159,20 @@ class testUsdExportSkeleton(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,
                        exportSkels='auto')
-        
+
+    def testSkelWithJointsAtSceneRoot(self):
+        """
+        Tests that exporting joints at the scene root errors, since joints need
+        to be encapsulated inside a transform or other node that can be
+        converted into a SkelRoot.
+        """
+        cmds.file(os.path.abspath('UsdExportSkeletonAtSceneRoot.ma'),
+                  open=True, force=True)
+        usdFile = os.path.abspath('UsdExportSkeletonAtSceneRoot.usda')
+        with self.assertRaises(RuntimeError):
+            cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+                           shadingMode='none', exportSkels='auto')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -84,8 +84,8 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
         // This is necessary because UsdSkel doesn't handle nested skel roots
         // very well currently; this restriction may be loosened in the future.
         if (UsdSkelRoot root2 = UsdSkelRoot::Find(root.GetPrim().GetParent())) {
-            TF_WARN("The SkelRoot <%s> is nested inside another SkelRoot <%s>. "
-                    "This might cause unexpected behavior.",
+            TF_RUNTIME_ERROR("The SkelRoot <%s> is nested inside another "
+                    "SkelRoot <%s>. This might cause unexpected behavior.",
                     root.GetPath().GetText(), root2.GetPath().GetText());
             return SdfPath();
         }
@@ -106,9 +106,26 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
             return root.GetPath();
         }
         else {
-            TF_WARN("Could not find a UsdGeomXform or ancestor of "
-                    "prim <%s> that can be converted to a SkelRoot.",
-                    path.GetText());
+            if (path.IsRootPrimPath()) {
+                // This is the most common problem when we can't obtain a
+                // SkelRoot.
+                // Show a nice error with useful information about root prims.
+                TF_RUNTIME_ERROR("The prim <%s> is a root prim, so it has no "
+                        "ancestors that can be converted to a SkelRoot. (USD "
+                        "requires that skinned meshes and skeletons be "
+                        "encapsulated under a SkelRoot.) Try grouping this "
+                        "prim under a parent group.",
+                        path.GetText());
+            }
+            else {
+                // Show generic error as a last resort if we don't know exactly
+                // what went wrong.
+                TF_RUNTIME_ERROR("Could not find an ancestor of the prim <%s> "
+                        "that can be converted to a SkelRoot. (USD requires "
+                        "that skinned meshes and skeletons be encapsulated "
+                        "under a SkelRoot.)",
+                        path.GetText());
+            }
             return SdfPath();
         }
     }
