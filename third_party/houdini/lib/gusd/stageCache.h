@@ -297,6 +297,16 @@ public:
     void    FindStages(const UT_StringSet& paths,
                        UT_Set<UsdStageRefPtr>& stages);
 
+    /// Insert a stage into our cache. The lifetime of this stage is not
+    /// fully controlled by this cache. The cache is just a holder for the
+    /// stage for as long as the gusd library is allowed access to it (until
+    /// it is destroyed by the external owner, which must then call Clear
+    /// with the same path.
+    void    InsertStage(UsdStageRefPtr &stage,
+                        const UT_StringRef& path,
+                        const GusdStageOpts& opts,
+                        const GusdStageEditPtr& edit);
+
     /// \section GusdStageCacheWriter_ReloadAndClear Reloading And Clearing
     ///
     /// During active sessions, the contents of a cache may be refreshed
