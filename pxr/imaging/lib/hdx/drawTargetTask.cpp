@@ -107,9 +107,6 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    TRACE_FUNCTION();
-    TfAutoMallocTag2 tag("GlimRg", __ARCH_PRETTY_FUNCTION__);
-
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;
 
@@ -321,6 +318,15 @@ void
 HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
 {
+    size_t numRenderPasses = _renderPassesInfo.size();
+    for (size_t renderPassIdx = 0;
+         renderPassIdx < numRenderPasses;
+         ++renderPassIdx) {
+
+        HdxDrawTargetRenderPass *renderPass =
+            _renderPasses[renderPassIdx].get();
+        renderPass->Prepare();
+    }
 }
 
 void
