@@ -21,15 +21,15 @@ def Xform "World" (
         {
             def Points "points"
             {
-                Vec3f[] extent
-                PointFloat[] points
+                float3[] extent
+                point3f[] points
                 custom int[] primvars:id (
                     elementSize = 1
                     interpolation = "varying"
                 )
-                VectorFloat[] velocities
+                vector3f[] velocities
                 float[] widths
-                custom Matrix4d xformOp:transform
+                custom matrix4d xformOp:transform
                 uniform token[] xformOpOrder = ["xformOp:transform"]
             }
         }
