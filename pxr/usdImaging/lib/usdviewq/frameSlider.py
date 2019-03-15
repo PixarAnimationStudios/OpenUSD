@@ -27,49 +27,41 @@ from qt import QtCore, QtGui, QtWidgets
 class FrameSlider(QtWidgets.QSlider):
     """Custom QSlider class to allow scrubbing on left-click."""
 
+    PAUSE_TIMER_INTERVAL = 500
+
+    def __init__(self, parent=None):
+        super(FrameSlider, self).__init__(parent=parent)
+        # Create a mouse pause timer to trigger an update if the slider
+        # scrubbing pauses.
+        self._mousePauseTimer = QtCore.QTimer(self)
+        self._mousePauseTimer.setInterval(self.PAUSE_TIMER_INTERVAL)
+        self._mousePauseTimer.timeout.connect(self.mousePaused)
+
+    def mousePaused(self):
+        """Slot called when the slider scrubbing is paused."""
+        self._mousePauseTimer.stop()
+        self.valueChanged.emit(self.sliderPosition())
+
     def mousePressEvent(self, event):
-        # If the slider has no range, or the event button isn't valid,
-        # ignore the event.
-        if (self.maximum() == self.minimum() or
-                event.buttons() ^ event.button()):
-            event.ignore()
-            return
-
-        event.accept()
-
         if event.button() == QtCore.Qt.LeftButton:
-            # Set the slider down property.
-            # This tells the slider to obey the tracking state.
-            self.setSliderDown(True)
             # Get the slider value from the event position.
             value = QtGui.QStyle.sliderValueFromPosition(
                 self.minimum(), self.maximum(), event.x(), self.width()
             )
-            # Set the slider value
+            # Set the slider value.
             self.setSliderPosition(value)
 
+        super(FrameSlider, self).mousePressEvent(event)
+
     def mouseMoveEvent(self, event):
-        # If the slider isn't currently being pressed, ignore the event.
-        if not self.isSliderDown():
-            event.ignore()
-            return
+        super(FrameSlider, self).mouseMoveEvent(event)
 
-        event.accept()
-
-        # Get the slider value from the event position.
-        value = QtGui.QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), event.x(), self.width()
-        )
-        # Set the slider value.
-        self.setSliderPosition(value)
+        # Start the pause timer if tracking is disabled.
+        if not self.hasTracking():
+            self._mousePauseTimer.start()
 
     def mouseReleaseEvent(self, event):
-        # If the slider isn't currently being pressed, ignore the event.
-        if (not self.isSliderDown()) or event.buttons():
-            event.ignore()
-            return
+        # Stop the pause timer.
+        self._mousePauseTimer.stop()
 
-        event.accept()
-
-        # Unset the slider down property.
-        self.setSliderDown(False)
+        super(FrameSlider, self).mouseReleaseEvent(event)

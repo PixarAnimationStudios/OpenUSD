@@ -733,7 +733,7 @@ class AppController(QtCore.QObject):
 
             self._ui.frameSlider.valueChanged.connect(self.setFrame)
             self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
-            self._ui.frameSlider.sliderReleased.connect(self._updateOnFrameChangeFinish)
+            self._ui.frameSlider.sliderReleased.connect(self._updateGUIForFrameChange)
 
             self._ui.frameField.editingFinished.connect(self._frameStringChanged)
 
@@ -1248,7 +1248,8 @@ class AppController(QtCore.QObject):
                 self._ui.frameSlider.setValue(0)
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
-            self._ui.playButton.setChecked(False)
+            # Ensure the play button state respects the current playback state
+            self._ui.playButton.setChecked(self._dataModel.playing)
 
     def _clearCaches(self, preserveCamera=False):
         """Clears value and computation caches maintained by the controller.
@@ -3211,7 +3212,7 @@ class AppController(QtCore.QObject):
         if (self._dataModel.currentFrame != frameAtStart) or forceUpdate:
             self._updateOnFrameChange()
 
-    def _updateOnFrameChangeFinish(self):
+    def _updateGUIForFrameChange(self):
         """Called when the frame changes have finished.
         e.g When the playback/scrubbing has stopped.
         """
@@ -3232,7 +3233,7 @@ class AppController(QtCore.QObject):
         """Called when the frame changes, updates the renderer and such"""
         # do not update HUD/BBOX if scrubbing or playing
         if not (self._dataModel.playing or self._ui.frameSlider.isSliderDown()):
-            self._updateOnFrameChangeFinish()
+            self._updateGUIForFrameChange()
         if self._stageView:
             # this is the part that renders
             if self._dataModel.playing:
