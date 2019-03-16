@@ -199,6 +199,20 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             }
         }
     }
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
+        UsdGeomBasisCurves curves(prim);
+        VtVec3fArray velocities;
+        if (curves.GetVelocitiesAttr().Get(&velocities, time)) {
+            // Expose velocities as a primvar.
+            _MergePrimvar(
+                &primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath,
+                UsdGeomTokens->velocities) = VtValue(velocities);
+        }
+    }
 }
 
 

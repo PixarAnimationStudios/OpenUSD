@@ -184,6 +184,21 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
             }
         }
     }
+
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
+        UsdGeomPoints points(prim);
+        VtVec3fArray velocities;
+        if (points.GetVelocitiesAttr().Get(&velocities, time)) {
+            // Expose velocities as a primvar.
+            _MergePrimvar(
+                &primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath,
+                UsdGeomTokens->velocities) = VtValue(velocities);
+        }
+    }
 }
 
 

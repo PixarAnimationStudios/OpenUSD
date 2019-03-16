@@ -294,6 +294,20 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             }
         }
     }
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
+        UsdGeomMesh mesh(prim);
+        VtVec3fArray velocities;
+        if (mesh.GetVelocitiesAttr().Get(&velocities, time)) {
+            // Expose velocities as a primvar.
+            _MergePrimvar(
+                &primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath,
+                UsdGeomTokens->velocities) = VtValue(velocities);
+        }
+    }
 
     // Subdiv tags are only needed if the mesh is refined.  So
     // there's no need to fetch the data if the prim isn't refined.
