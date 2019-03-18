@@ -91,7 +91,13 @@ GlfRegisterDefaultDebugOutputMessageCallback()
 {
 #if defined(GL_KHR_debug)
     if (glDebugMessageCallbackARB) {
-        glDebugMessageCallbackARB((GLDEBUGPROCARB)GlfDefaultDebugOutputMessageCallback, 0);
+        glDebugMessageCallbackARB(
+            (GLDEBUGPROCARB)GlfDefaultDebugOutputMessageCallback, 0);
+        // Disable push/pop group messages; we don't want to print these.
+        glDebugMessageControlARB(GL_DONT_CARE, GL_DEBUG_TYPE_PUSH_GROUP,
+            GL_DONT_CARE, 0, nullptr, GL_FALSE);
+        glDebugMessageControlARB(GL_DONT_CARE, GL_DEBUG_TYPE_POP_GROUP,
+            GL_DONT_CARE, 0, nullptr, GL_FALSE);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     }
 #endif
