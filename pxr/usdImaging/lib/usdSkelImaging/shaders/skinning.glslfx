@@ -25,20 +25,26 @@ void compute(int index)
     vec4 initP = geomBindXform * vec4(HdGet_restPoints(index),1);
     
     int numInfluencesPerComponent = HdGet_numInfluencesPerComponent();
-    bool constantPointInfluence = HdGet_hasConstantInfluences();
-    int offset = constantPointInfluence? 0 : numInfluencesPerComponent*index;
+    vec3 p;
+    if (numInfluencesPerComponent > 0) {
+        p = vec3(0,0,0);
 
-    vec3 p = vec3(0,0,0);
-    for (int i = 0; i < numInfluencesPerComponent; i++) {
-        vec2 influence = HdGet_influences(offset + i);
-        float jointWeight = influence.y;
+        bool constantPointInfluence = HdGet_hasConstantInfluences();
+        int offset = constantPointInfluence? 0 : numInfluencesPerComponent*index;
 
-        if (jointWeight > EPS) {
-            int jointIdx = int( influence.x );
-            mat4 skinningXform = HdGet_skinningXforms(jointIdx);
-            
-            p += ((skinningXform * initP) * jointWeight).xyz;
+        for (int i = 0; i < numInfluencesPerComponent; i++) {
+            vec2 influence = HdGet_influences(offset + i);
+            float jointWeight = influence.y;
+
+            if (jointWeight > EPS) {
+                int jointIdx = int( influence.x );
+                mat4 skinningXform = HdGet_skinningXforms(jointIdx);
+
+                p += ((skinningXform * initP) * jointWeight).xyz;
+            }
         }
+    } else {
+        p = initP.xyz;
     }
 
     // skel space -> world space -> model space
