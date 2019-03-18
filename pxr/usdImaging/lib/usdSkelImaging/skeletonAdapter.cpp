@@ -829,7 +829,6 @@ UsdSkelImagingSkeletonAdapter::_TrackBoneMeshVariability(
         return;
     }
 
-    UsdTimeCode time(1.0);
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     if (!_IsVarying(prim,
@@ -872,7 +871,6 @@ UsdSkelImagingSkeletonAdapter::_TrackBoneMeshVariability(
                         UsdImagingTokens->usdVaryingXform,
                         timeVaryingBits);
 
-    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
     // Discover time-varying visibility.
     _IsVarying(prim,
                UsdGeomTokens->visibility,

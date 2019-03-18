@@ -354,12 +354,6 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
 
-    // Why is this OK?
-    // Either the value is unvarying, in which case the time ordinate doesn't
-    // matter; or the value is varying, in which case we will update it upon
-    // first call to Delegate::SetTime().
-    UsdTimeCode time(1.0);
-
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     // Discover time-varying transforms.
@@ -368,7 +362,6 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             UsdImagingTokens->usdVaryingXform,
             timeVaryingBits);
 
-    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
     // Discover time-varying visibility.
     _IsVarying(prim,
             UsdGeomTokens->visibility,
@@ -377,7 +370,7 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits,
             true);
 
-    TfToken purpose = _GetPurpose(prim, time);
+    TfToken purpose = _GetPurpose(prim, UsdTimeCode(1.0));
     // Empty purpose means there is no opinion, fall back to geom.
     if (purpose.IsEmpty())
         purpose = UsdGeomTokens->default_;

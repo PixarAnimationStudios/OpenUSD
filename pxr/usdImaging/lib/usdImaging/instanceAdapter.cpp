@@ -453,17 +453,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    // XXX: This is no good: if an attribute has exactly one time sample, the
-    // default value will get cached and never updated. However, if we use an
-    // arbitrary time here, attributes which have valid default values and 1
-    // time sample will get cached with the wrong result. The solution is to
-    // stop guessing about what time to read, which will be done in a future
-    // change, which requires a much larger structure change to UsdImaging.
-    //
-    // Here we choose to favor correctness of the time sample, since we must
-    // ensure the correct image is produced for final render.
-    UsdTimeCode time(1.0);
-
     if (_IsChildPrim(prim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
         _ProtoRprim & rproto = const_cast<_ProtoRprim&>(
@@ -492,7 +481,10 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         if (!(rproto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
             // the rprim prototype over all time.
-            rproto.visible = GetVisible(protoPrim, time);
+            // XXX: The usage of _GetTimeWithOffset here is super-sketch, but
+            // it avoids blowing up the inherited visibility cache... We should
+            // let this be initialized by the first UpdateForTime instead.
+            rproto.visible = GetVisible(protoPrim, _GetTimeWithOffset(0.0));
         }
 
         // If any of the instances varies over time, we should flag the 
