@@ -546,6 +546,52 @@ struct UsdImaging_VisStrategy {
 };
 
 // -------------------------------------------------------------------------- //
+// Purpose Cache
+// -------------------------------------------------------------------------- //
+
+struct UsdImaging_PurposeStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_PurposeStrategy> 
+    UsdImaging_PurposeCache;
+
+struct UsdImaging_PurposeStrategy {
+    typedef TfToken value_type; // purpose, inherited
+    typedef UsdAttributeQuery query_type;
+
+    static
+    value_type MakeDefault() { return UsdGeomTokens->default_; }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        UsdGeomImageable im = UsdGeomImageable(prim);
+        return im ? query_type(im.GetPurposeAttr()) : query_type();
+    }
+
+    static 
+    value_type
+    Inherit(UsdImaging_PurposeCache const* owner, 
+            UsdPrim prim,
+            query_type const* query)
+    { 
+
+        value_type v = *owner->_GetValue(prim.GetParent());
+
+        if (v != UsdGeomTokens->default_)
+            return v;
+
+        if (*query)
+            query->Get(&v);
+        return v;
+    }
+
+    static
+    value_type
+    ComputePurpose(UsdPrim const& prim)
+    {
+        return UsdGeomImageable(prim).ComputePurpose();
+    }
+};
+
+// -------------------------------------------------------------------------- //
 // Hydra MaterialBinding Cache
 // -------------------------------------------------------------------------- //
 

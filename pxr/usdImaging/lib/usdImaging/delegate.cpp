@@ -115,6 +115,7 @@ UsdImagingDelegate::UsdImagingDelegate(
                                GetMaterialBindingPurpose())
     , _materialBindingCache(GetTime(), &_materialBindingImplData)
     , _visCache(GetTime())
+    , _purposeCache() // note that purpose is uniform, so no GetTime()
     , _drawModeCache(GetTime())
     , _displayGuides(true)
     , _enableUsdDrawModes(true)
@@ -880,6 +881,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _materialBindingImplData.ClearCaches();
     _materialBindingCache.Clear();
     _visCache.Clear();
+    _purposeCache.Clear();
     _drawModeCache.Clear();
 
     UsdImagingDelegate::_Worker worker;

@@ -183,10 +183,6 @@ private:
 
     /// Returns the doubleSided state for a given prim.
     bool _GetDoubleSided(UsdPrim const& prim) const;
-
-    /// Returns the UsdGeomImagable "purpose" for this prim, including any
-    /// inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time) const;
 };
 
 

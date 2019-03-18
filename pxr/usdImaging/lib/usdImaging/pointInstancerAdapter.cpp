@@ -563,7 +563,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
         return;
     } else {
-        TfToken purpose = UsdGeomImageable(prim).ComputePurpose();
+        TfToken purpose = GetPurpose(prim);
         // Empty purpose means there is no opinion, fall back to default.
         if (purpose.IsEmpty())
             purpose = UsdGeomTokens->default_;

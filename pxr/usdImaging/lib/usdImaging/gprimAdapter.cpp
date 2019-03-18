@@ -181,7 +181,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                true);
 
-    TfToken purpose = _GetPurpose(prim, UsdTimeCode(1.0));
+    TfToken purpose = GetPurpose(prim);
     // Empty purpose means there is no opinion, fall back to geom.
     if (purpose.IsEmpty())
         purpose = UsdGeomTokens->default_;
@@ -614,14 +614,6 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
         *opacity = VtValue(result);
     }
     return true;
-}
-
-TfToken
-UsdImagingGprimAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time) const
-{
-    HD_TRACE_FUNCTION();
-    // PERFORMANCE: Make this more efficient, see http://bug/90497
-    return UsdGeomImageable(prim).ComputePurpose();
 }
 
 bool 

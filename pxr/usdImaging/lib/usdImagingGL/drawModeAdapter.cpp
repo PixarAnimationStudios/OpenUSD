@@ -370,7 +370,7 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits,
             true);
 
-    TfToken purpose = _GetPurpose(prim, UsdTimeCode(1.0));
+    TfToken purpose = GetPurpose(prim);
     // Empty purpose means there is no opinion, fall back to geom.
     if (purpose.IsEmpty())
         purpose = UsdGeomTokens->default_;
@@ -1052,15 +1052,6 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
                                UsdGeomTokens->render };
     UsdGeomBBoxCache bboxCache(UsdTimeCode::EarliestTime(), purposes, true);
     return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
-}
-
-TfToken
-UsdImagingGLDrawModeAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time)
-    const
-{
-    HD_TRACE_FUNCTION();
-    // PERFORMANCE: Make this more efficient, see http://bug/90497
-    return UsdGeomImageable(prim).ComputePurpose();
 }
 
 HdTextureResource::ID

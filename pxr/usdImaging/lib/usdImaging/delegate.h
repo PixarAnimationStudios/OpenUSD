@@ -686,6 +686,7 @@ private:
     UsdImaging_MaterialBindingImplData _materialBindingImplData;
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
+    UsdImaging_PurposeCache _purposeCache;
     UsdImaging_DrawModeCache _drawModeCache;
     UsdImaging_CollectionCache _collectionCache;
 

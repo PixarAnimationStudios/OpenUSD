@@ -155,10 +155,6 @@ private:
     // animated), and they are computed for purposes default/proxy/render.
     GfRange3d _ComputeExtent(UsdPrim const& prim) const;
 
-    // Returns the UsdGeomImagable "purpose" for this prim, including any
-    // inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(UsdPrim const& prim, UsdTimeCode time) const;
-
     // Returns the draw mode surface shader.
     std::string _GetSurfaceShaderSource() const;
 
