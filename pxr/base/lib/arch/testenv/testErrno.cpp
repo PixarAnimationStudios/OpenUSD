@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-int main(int argc, char *argv[])
+int main(int /*argc*/, char** /*argv*/)
 {
     for (int i = -1; i < 10; i++) {
         const std::string msg = ArchStrerror(i);
