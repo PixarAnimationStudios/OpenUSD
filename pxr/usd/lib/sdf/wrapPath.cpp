@@ -268,9 +268,6 @@ void wrapPath() {
         .def("IsValidPathString", &_IsValidPathString)
              .staticmethod("IsValidPathString")
 
-        .def("IsBuiltInMarker", &This::IsBuiltInMarker)
-            .staticmethod("IsBuiltInMarker")             
-
         .def("FindPrefixedRange", _FindPrefixedRange)
             .staticmethod("FindPrefixedRange")
 

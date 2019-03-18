@@ -618,10 +618,6 @@ public:
     static bool IsValidPathString(const std::string &pathString,
                                   std::string *errMsg = 0);
 
-    /// Returns true, if \p marker denotes a built in marker.
-    SDF_API
-    static bool IsBuiltInMarker(const std::string &marker);
-
     /// @}
 
     /// \name Operators

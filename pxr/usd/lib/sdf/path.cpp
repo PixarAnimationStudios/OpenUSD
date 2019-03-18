@@ -1383,18 +1383,6 @@ SdfPath::IsValidPathString(const std::string &pathString,
 }
 
 bool
-SdfPath::IsBuiltInMarker(const std::string &marker)
-{
-    // XXX seems a little strange that this knowledge would live
-    // in SdfPath, which knows nothing else about "markers"
-    return (marker == ""         || 
-            marker == "current"  || 
-            marker == "authored" || 
-            marker == "final"    || 
-            marker == "initial");
-}
-
-bool
 SdfPath::_LessThanInternal(Sdf_PathNodeConstRefPtr const &lhsRefPtr,
                            Sdf_PathNodeConstRefPtr const &rhsRefPtr)
 {
