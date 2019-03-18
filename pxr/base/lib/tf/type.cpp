@@ -836,11 +836,12 @@ TfType::Declare(const string &typeName,
         }
 
         // Update base types.
-        vector<TfType> &bases = t._info->baseTypes;
+        const vector<TfType> &haveBases = t._info->baseTypes;
 
         // If this type already directly inherits from root, then
         // prohibit adding any new bases.
-        if (!newBases.empty() && bases == vector<TfType>(1, GetRoot())) {
+        if (!newBases.empty() &&
+            haveBases.size() == 1 && haveBases.front() == GetRoot()) {
             errorsToEmit.push_back(
                 TfStringPrintf("Type '%s' has been declared to have 0 bases, "
                                "and therefore inherits directly from the root "
@@ -850,39 +851,13 @@ TfType::Declare(const string &typeName,
         }
 
         if (newBases.empty()) {
-            if (bases.empty()) {
+            if (haveBases.empty()) {
                 // If we don't have any bases yet, add the root type.
-                t._AddBase(GetRoot());
+                t._AddBases(TypeVector(1, GetRoot()), &errorsToEmit);
             }
         } else {
             // Otherwise, add the new bases.
-
-            // First, check that all previously-declared bases are included.
-            TF_FOR_ALL(it, bases) {
-                if (std::find(newBases.begin(), newBases.end(), *it) ==
-                    newBases.end())
-                {
-                    string newBasesStr;
-                    TF_FOR_ALL(it2, newBases)
-                        newBasesStr += it2->GetTypeName() + " ";
-
-                    errorsToEmit.push_back(
-                        TfStringPrintf("TfType '%s' was previously declared to "
-                                       "have '%s' as a base, but subsequent "
-                                       "declaration does not include this as a "
-                                       "base.  The newly given bases were: "
-                                       "(%s).  If this is a type declared in a "
-                                       "plugin, check that the plugin metadata "
-                                       "is correct.",
-                                       t.GetTypeName().c_str(),
-                                       it->GetTypeName().c_str(),
-                                       newBasesStr.c_str()));
-                }
-            }
-
-            TF_FOR_ALL(it, newBases)
-                t._AddBase(*it);
-
+            t._AddBases(newBases, &errorsToEmit);
         }
 
         if (definitionCallback) {
@@ -955,20 +930,93 @@ TfType::_DefineCppType(const std::type_info & typeInfo,
 }
 
 void
-TfType::_AddBase(TfType base) const
+TfType::_AddBases(
+    const TypeVector &newBases, vector<string> *errorsToEmit) const
 {
     // Callers must hold _info write lock.
-    if (base.IsUnknown()) {
-        TF_CODING_ERROR("Specified base type is unknown, skipping");
-        return;
+    TypeVector &haveBases = _info->baseTypes;
+
+    // Also we check that all previously-declared bases are included and make 
+    // sure that a subsequent registration of base types doesn't change the 
+    // order. 
+    TypeVector::const_iterator lastNewBaseIter = newBases.begin();
+
+    for(const TfType &haveBase : haveBases) {
+        
+        const TypeVector::const_iterator newIter =
+            std::find(newBases.begin(), newBases.end(), haveBase);
+
+        // Repeated base declaration must include all previous bases.
+        if (newIter == newBases.end()) {
+
+            string newBasesStr;
+            for(const TfType &newBase : newBases) {
+                newBasesStr += newBasesStr.empty() ? "" : ", ";
+                newBasesStr += newBase.GetTypeName();
+            }
+
+            errorsToEmit->push_back(TfStringPrintf(
+                "TfType '%s' was previously declared to have '%s' as a base, "
+                "but a subsequent declaration does not include this as a base.  "
+                "The newly given bases were: (%s).  If this is a type declared "
+                "in a plugin, check that the plugin metadata is correct.",
+                GetTypeName().c_str(),
+                haveBase.GetTypeName().c_str(),
+                newBasesStr.c_str()));
+
+        } else {
+        
+            // Make sure the new bases are also ordered strictly monotonically
+            // increasing so that it matches the old order.
+
+            if (lastNewBaseIter > newIter) {
+
+                std::string haveStr, newStr;
+                for(const TfType &t : haveBases) {
+                    haveStr += haveStr.empty() ? "" : ", ";
+                    haveStr += t.GetTypeName();
+                }
+                for(const TfType &t : newBases) {
+                    newStr += newStr.empty() ? "" : ", ";
+                    newStr += t.GetTypeName();
+                }
+                errorsToEmit->push_back(TfStringPrintf(
+                    "Specified base type order differs for %s: had (%s), now "
+                    "(%s).  If this is a type declared in a plugin, check that "
+                    "the plugin metadata is correct.",
+                    GetTypeName().c_str(), haveStr.c_str(), newStr.c_str()));
+            }
+
+            lastNewBaseIter = newIter;
+        }
     }
-    vector<TfType> & bases = _info->baseTypes;
-    if (std::find(bases.begin(), bases.end(), base) == bases.end()) {
-        // Add the new base.
-        bases.push_back(base);
-        // Tell the new base that it has a new derived type.
-        ScopedLock baseLock(base._info->mutex, /*write=*/true);
-        base._info->derivedTypes.push_back(*this);
+
+    // If we now have more base types, we use the new, longer vector of base
+    // types to define the order.  Note that we don't need to register any
+    // derived types in that case, because we just ensured we only expanding
+    // the set of bases.
+
+    if (newBases.size() > haveBases.size()) {
+
+        for(const TfType &newBase : newBases) {
+            if (newBase.IsUnknown()) {
+                errorsToEmit->push_back(
+                    "Specified base type is unknown, skipping.");
+                continue;
+            }
+            if (std::find(haveBases.begin(), haveBases.end(), newBase) ==
+                haveBases.end()) {
+    
+                // Tell the new base that it has a new derived type.
+                ScopedLock baseLock(newBase._info->mutex, /*write=*/true);
+                newBase._info->derivedTypes.push_back(*this);
+            }
+        }
+    
+        // Fully replace the list of existing bases if needed.  This is so that 
+        // we set the order even if we register bases for a type (partially) 
+        // multiple times. 
+        _info->baseTypes = newBases;
     }
 }
 
