@@ -868,7 +868,10 @@ std::string UsdKatanaCache::_ComputeCacheKey(
     FnAttribute::GroupAttribute sessionAttr,
     const std::string& rootLocation) {
     return FnAttribute::GroupAttribute(
-        "s", sessionAttr, "r", FnAttribute::StringAttribute(rootLocation), true)
+        // replace invalid sessionAttr with empty valid group for consistency
+        // with external queries based on "info.usd.outputSession"
+        "s", sessionAttr.isValid() ? sessionAttr : FnAttribute::GroupAttribute(true),
+        "r", FnAttribute::StringAttribute(rootLocation), true)
         .getHash()
         .str();
 }
