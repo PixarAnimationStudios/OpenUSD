@@ -68,7 +68,8 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
     static GlfImageSharedPtr NULL_IMAGE;
 
     // Lookup the plug-in type name based on the filename.
-    TfToken fileExtension(ArGetResolver().GetExtension(filename));
+    TfToken fileExtension(
+            TfStringToLower(ArGetResolver().GetExtension(filename)));
 
     TfType const & pluginType = _typeMap->Find(fileExtension);
 
