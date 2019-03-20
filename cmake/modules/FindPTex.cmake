@@ -67,6 +67,10 @@ else ()
             "${PTEX_LOCATION}/include/wdas"
             "$ENV{PTEX_LOCATION}/include"
             "$ENV{PTEX_LOCATION}/include/wdas"
+            "${PTEX_LOCATION}/include/Ptex"
+            "${PTEX_LOCATION}/include/wdas"
+            "$ENV{PTEX_LOCATION}/include/Ptex"
+            "$ENV{PTEX_LOCATION}/include/wdas"
         PATHS
             /usr/include
             /usr/local/include
