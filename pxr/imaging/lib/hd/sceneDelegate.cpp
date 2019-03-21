@@ -219,8 +219,7 @@ HdSceneDelegate::GetInstanceIndices(SdfPath const &instancerId,
 
 /*virtual*/
 GfMatrix4d
-HdSceneDelegate::GetInstancerTransform(SdfPath const &instancerId,
-                                         SdfPath const &prototypeId)
+HdSceneDelegate::GetInstancerTransform(SdfPath const &instancerId)
 {
     return GfMatrix4d(1);
 }
@@ -228,14 +227,13 @@ HdSceneDelegate::GetInstancerTransform(SdfPath const &instancerId,
 /*virtual*/
 size_t
 HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
-                                          SdfPath const &prototypeId,
                                           size_t maxSampleCount,
                                           float *times,
                                           GfMatrix4d *samples)
 {
     if (maxSampleCount > 0) {
         times[0] = 0;
-        samples[0] = GetInstancerTransform(instancerId, prototypeId);
+        samples[0] = GetInstancerTransform(instancerId);
         return 1;
     }
     return 0;

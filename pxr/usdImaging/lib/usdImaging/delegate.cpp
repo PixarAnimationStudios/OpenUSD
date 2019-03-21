@@ -2510,8 +2510,7 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
 
 /*virtual*/
 GfMatrix4d
-UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId,
-                                          SdfPath const &prototypeId)
+UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId)
 {
     HD_TRACE_FUNCTION();
 
@@ -2538,7 +2537,6 @@ UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId,
 /*virtual*/
 size_t
 UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId,
                                              size_t maxSampleCount,
                                              float *times,
                                              GfMatrix4d *samples)

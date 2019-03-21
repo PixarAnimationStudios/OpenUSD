@@ -159,8 +159,8 @@ public:
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
                                           SdfPath const& prototypeId);
 
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
-                                             SdfPath const& prototypeId);
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) 
+        override;
     virtual HdDisplayStyle GetDisplayStyle(SdfPath const& id) override;
     virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
 

@@ -793,8 +793,7 @@ Hdx_UnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
 
 /*virtual*/
 GfMatrix4d
-Hdx_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
-                                           SdfPath const& prototypeId)
+Hdx_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId)
 {
     HD_TRACE_FUNCTION();
     if (_Instancer *instancer = TfMapLookupPtr(_instancers, instancerId)) {
