@@ -109,9 +109,9 @@ UsdCollectionAPI::IsCollectionAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == UsdTokens->collection) {
+        && tokens[0] == _schemaTokens->collection) {
         *name = TfToken(propertyName.substr(
-            UsdTokens->collection.GetString().size() + 1));
+            _schemaTokens->collection.GetString().size() + 1));
         return true;
     }
 

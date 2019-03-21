@@ -60,8 +60,8 @@ UsdContrivedMultipleApplyAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     }
     TfToken name;
     if (!IsMultipleApplyAPIPath(path, &name)) {
-        TF_CODING_ERROR("Invalid collection path <%s>.", path.GetText());
-        return UsdCollectionAPI();
+        TF_CODING_ERROR("Invalid test path <%s>.", path.GetText());
+        return UsdContrivedMultipleApplyAPI();
     }
     return UsdContrivedMultipleApplyAPI(stage->GetPrimAtPath(path.GetPrimPath()), name);
 }
@@ -107,9 +107,9 @@ UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == UsdTokens->test) {
+        && tokens[0] == _schemaTokens->test) {
         *name = TfToken(propertyName.substr(
-            UsdTokens->test.GetString().size() + 1));
+            _schemaTokens->test.GetString().size() + 1));
         return true;
     }
 
