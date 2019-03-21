@@ -1278,7 +1278,7 @@ function(_pxr_library NAME)
                 DESTINATION ${headerInstallPrefix}
             )
         endif()
-    elseif(NOT PXR_BUILD_MONOLITHIC)
+    else()
         if(BUILD_SHARED_LIBS)
             install(
                 TARGETS ${NAME}
