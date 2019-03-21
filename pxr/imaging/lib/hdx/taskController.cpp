@@ -181,6 +181,12 @@ HdxTaskController::_CreateRenderTask()
             renderParams.blendEnable = true;
             renderParams.blendColorOp = HdBlendOpAdd;
             renderParams.blendAlphaOp = HdBlendOpAdd;
+
+            // We are setting all factors to ONE, This means we are expecting
+            // pre-multiplied alpha coming out of the shader: vec4(rgb*a, a).
+            // Setting ColorSrc to HdBlendFactorSourceAlpha would give less
+            // control on the shader side, since it means we would force a
+            // pre-multiplied alpha step on the color coming out of the shader.
             renderParams.blendColorSrcFactor = HdBlendFactorOne;
             renderParams.blendColorDstFactor = HdBlendFactorOne;
             renderParams.blendAlphaSrcFactor = HdBlendFactorOne;

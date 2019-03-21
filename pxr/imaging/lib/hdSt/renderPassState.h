@@ -107,6 +107,8 @@ public:
     size_t GetShaderHash() const;
 
 private:
+    bool _UseAlphaMask() const;
+
     // ---------------------------------------------------------------------- //
     // Shader Objects
     // ---------------------------------------------------------------------- //
@@ -117,6 +119,7 @@ private:
 
     HdBufferArrayRangeSharedPtr _renderPassStateBar;
     size_t _clipPlanesBufferSize;
+    float _alphaThresholdCurrent;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
