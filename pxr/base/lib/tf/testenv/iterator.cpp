@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/iterator.h"
 #include <vector>
 #include <map>
@@ -159,10 +160,40 @@ static bool TestRefsAndTempsForAll() {
     return true;
 }    
 
+static bool TestPointerIterators() {
+    // Ensure that TF_FOR_ALL works with iterators that are raw pointers.
+
+    static const int data[] = { 3, 2, 1 };
+    TfSpan<const int> span(data, TfArraySize(data));
+
+    int sum = 0;
+    int count = 0;
+    TF_FOR_ALL(it, span) {
+        sum += *it;
+        ++count;
+    }
+    TF_AXIOM(sum == 6);
+    TF_AXIOM(count == 3);
+
+    TfSpan<std::string> empty(nullptr, nullptr);
+
+    sum = 0;
+    count = 0;
+    TF_FOR_ALL(it, empty) {
+        sum += it->size();
+        ++count;
+    }
+    TF_AXIOM(sum == 0);
+    TF_AXIOM(count == 0);
+
+    return true;
+}
+
 static bool
 Test_TfIterator()
 {
-    return TestNonConst() && TestConst() && TestRefsAndTempsForAll();
+    return TestNonConst() && TestConst() && TestRefsAndTempsForAll()
+        && TestPointerIterators();
 }
 
 TF_ADD_REGTEST(TfIterator);
