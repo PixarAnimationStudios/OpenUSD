@@ -54,6 +54,11 @@ public:
     /// Construct a null mapper.
     USDSKEL_API
     UsdSkelAnimMapper();
+
+    /// Construct an identity mapper for remapping a range of \p size elems.
+    /// An identity mapper is used to indicate that no remapping is required.
+    USDSKEL_API
+    UsdSkelAnimMapper(size_t size);
     
     /// Construct a mapper for mapping data from \p sourceOrder to
     /// \p targetOrder.

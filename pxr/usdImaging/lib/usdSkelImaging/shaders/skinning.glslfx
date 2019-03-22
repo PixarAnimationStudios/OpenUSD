@@ -22,7 +22,20 @@ void compute(int index)
 {
     // model space -> bind space
     mat4 geomBindXform = HdGet_geomBindXform();
+
     vec4 initP = geomBindXform * vec4(HdGet_restPoints(index),1);
+
+    // apply blend shapes
+    int numBlendShapeOffsetRanges = HdGet_numBlendShapeOffsetRanges();
+    if (index < numBlendShapeOffsetRanges) {
+        ivec2 blendShapeOffsetRange = HdGet_blendShapeOffsetRanges(index);
+        for (int i = blendShapeOffsetRange.x; i < blendShapeOffsetRange.y; ++i) {
+            vec4 offset = HdGet_blendShapeOffsets(i);
+            int shapeIndex = int(offset.w);
+            float weight = HdGet_blendShapeWeights(shapeIndex);
+            initP += vec4(offset.xyz, 1) * weight;
+        }
+    }
     
     int numInfluencesPerComponent = HdGet_numInfluencesPerComponent();
     vec3 p;

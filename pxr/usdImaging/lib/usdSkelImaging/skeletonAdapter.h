@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/meshTopology.h"
 
 #include "pxr/usd/usdSkel/binding.h"
+#include "pxr/usd/usdSkel/blendShapeQuery.h"
 #include "pxr/usd/usdSkel/cache.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
@@ -192,7 +193,7 @@ private:
     // ---------------------------------------------------------------------- //
     /// Common utitily methods for skinning computations & skinned prims
     // ---------------------------------------------------------------------- //
-    bool _IsAffectedByTimeVaryingJointXforms(const SdfPath& skinnedPrimPath)
+    bool _IsAffectedByTimeVaryingSkelAnim(const SdfPath& skinnedPrimPath)
         const;
 
     // ---------------------------------------------------------------------- //
@@ -287,8 +288,27 @@ private:
     
     UsdSkelCache _skelCache;
     using _SkelDataMap =
-        boost::unordered_map<SdfPath,std::shared_ptr<_SkelData> >;
+        std::unordered_map<SdfPath, std::shared_ptr<_SkelData>, SdfPath::Hash>;
     _SkelDataMap _skelDataCache;
+
+    // Data for each skinned prim.
+    struct _SkinnedPrimData {
+        _SkinnedPrimData() = default;
+        _SkinnedPrimData(const UsdSkelSkeletonQuery& skelQuery,
+                         const UsdSkelSkinningQuery& skinningQuery);
+
+        std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
+        UsdSkelAnimMapper jointMapper;
+        UsdSkelAnimMapper blendShapeMapper;
+        SdfPath skelPath;
+        bool hasJointInfluences = false;
+    };
+
+    const _SkinnedPrimData* _GetSkinnedPrimData(const SdfPath& cachePath) const;
+
+    using _SkinnedPrimDataMap =
+        std::unordered_map<SdfPath, _SkinnedPrimData, SdfPath::Hash>;
+    _SkinnedPrimDataMap _skinnedPrimDataCache;
 
     // ---------------------------------------------------------------------- //
     /// Skeleton -> Skinned Prim(s) state
@@ -297,14 +317,6 @@ private:
     using _SkelBindingMap =
         std::unordered_map<SdfPath, UsdSkelBinding, SdfPath::Hash>;
     _SkelBindingMap _skelBindingMap;
-
-    // ---------------------------------------------------------------------- //
-    /// Skinned Prim -> Skeleton
-    /// (Updated locally)
-    // ---------------------------------------------------------------------- //
-    using _SkinnedPrimToSkelMap =
-        std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
-    _SkinnedPrimToSkelMap _skinnedPrimToSkelMap;
 };
 
 

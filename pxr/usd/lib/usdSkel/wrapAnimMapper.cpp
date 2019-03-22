@@ -79,6 +79,8 @@ void wrapUsdSkelAnimMapper()
     class_<This,UsdSkelAnimMapperRefPtr>("AnimMapper", no_init)
 
         .def(init<>())
+
+        .def(init<size_t>())
         
         .def(init<VtTokenArray,VtTokenArray>(
                  (arg("sourceOrder"), arg("targetOrder"))))

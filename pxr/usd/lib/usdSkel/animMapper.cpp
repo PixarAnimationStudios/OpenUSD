@@ -59,6 +59,11 @@ UsdSkelAnimMapper::UsdSkelAnimMapper()
 {}
 
 
+UsdSkelAnimMapper::UsdSkelAnimMapper(size_t size)
+    : _targetSize(size), _offset(0), _flags(_IdentityMap)
+{}
+
+
 UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
                                      const VtTokenArray& targetOrder)
     : UsdSkelAnimMapper(sourceOrder.cdata(), sourceOrder.size(),
