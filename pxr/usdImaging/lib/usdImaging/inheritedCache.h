@@ -33,6 +33,8 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/work/utils.h"
+
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
@@ -96,6 +98,12 @@ public:
         , _cacheVersion(1)
     {
     }
+
+    ~UsdImaging_InheritedCache()
+    {
+        WorkSwapDestroyAsync(_cache);
+    }
+
 
     /// Compute the inherited value for the given \p prim, including the value
     /// authored on the Prim itself, if present.
