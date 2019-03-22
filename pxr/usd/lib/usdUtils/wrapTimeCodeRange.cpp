@@ -52,13 +52,24 @@ namespace {
 
 static
 std::string
-_Repr(const UsdUtilsTimeCodeRange& timeCodeRange)
+_FrameSpec(const UsdUtilsTimeCodeRange& timeCodeRange)
 {
     std::ostringstream ostream;
     ostream << timeCodeRange;
     return ostream.str();
 }
 
+static
+std::string
+_Repr(const UsdUtilsTimeCodeRange& timeCodeRange)
+{
+    if (timeCodeRange.empty()) {
+        return TF_PY_REPR_PREFIX + "TimeCodeRange()";
+    }
+
+    return TF_PY_REPR_PREFIX + "TimeCodeRange.CreateFromFrameSpec('" +
+            _FrameSpec(timeCodeRange) + "')";
+}
 
 class UsdUtils_PyTimeCodeRangeIterator
 {
@@ -135,6 +146,7 @@ void wrapTimeCodeRange()
         .add_property("startTimeCode", &This::GetStartTimeCode)
         .add_property("endTimeCode", &This::GetEndTimeCode)
         .add_property("stride", &This::GetStride)
+        .add_property("frameSpec", _FrameSpec)
 
         .def("empty", &This::empty)
         .def("IsValid", &This::IsValid)

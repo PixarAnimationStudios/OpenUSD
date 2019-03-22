@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/api.h"
 
+#include "pxr/base/gf/math.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -73,16 +74,16 @@ class UsdUtilsTimeCodeRange
 {
 public:
 
-    /// \class iterator
+    /// \class const_iterator
     ///
     /// A forward iterator into a UsdUtilsTimeCodeRange.
-    class iterator
+    class const_iterator
     {
     public:
         using iterator_category = std::forward_iterator_tag;
         using value_type = UsdTimeCode;
-        using reference = UsdTimeCode&;
-        using pointer = UsdTimeCode*;
+        using reference = const UsdTimeCode&;
+        using pointer = const UsdTimeCode*;
         using difference_type = std::ptrdiff_t;
 
         /// Returns the UsdTimeCode referenced by this iterator.
@@ -99,11 +100,13 @@ public:
         /// UsdTimeCode in the range.
         ///
         /// This iterator is returned.
-        iterator& operator++() {
+        const_iterator& operator++() {
             if (_timeCodeRange) {
+                ++_currStep;
                 _currTimeCode =
                     UsdTimeCode(
-                        _currTimeCode.GetValue() + _timeCodeRange->_stride);
+                        _timeCodeRange->_startTimeCode.GetValue() +
+                        _timeCodeRange->_stride * _currStep);
             }
             _InvalidateIfExhausted();
             return *this;
@@ -113,39 +116,42 @@ public:
         /// UsdTimeCode in the range.
         ///
         /// A copy of this iterator prior to the increment is returned.
-        iterator operator++(int) {
-            iterator preAdvanceIter = *this;
+        const_iterator operator++(int) {
+            const_iterator preAdvanceIter = *this;
             ++(*this);
             return preAdvanceIter;
         }
 
         /// Return true if this iterator is equivalent to \p other.
-        bool operator ==(const iterator& other) const {
+        bool operator ==(const const_iterator& other) const {
             return _timeCodeRange == other._timeCodeRange &&
-                _currTimeCode == other._currTimeCode;
+                _currStep == other._currStep;
         }
 
         /// Return true if this iterator is not equivalent to \p other.
-        bool operator !=(const iterator& other) const {
+        bool operator !=(const const_iterator& other) const {
             return !(*this == other);
         }
 
     private:
         friend class UsdUtilsTimeCodeRange;
 
-        iterator(const UsdUtilsTimeCodeRange* timeCodeRange) :
-            iterator(
-                timeCodeRange,
-                timeCodeRange ? timeCodeRange->_startTimeCode.GetValue() : 0.0)
-        {
-        }
-
-        iterator(
-                const UsdUtilsTimeCodeRange* timeCodeRange,
-                const double currTime) :
+        const_iterator(const UsdUtilsTimeCodeRange* timeCodeRange) :
             _timeCodeRange(timeCodeRange),
-            _currTimeCode(currTime)
+            _currStep(0u),
+            _maxSteps(0u),
+            _currTimeCode()
         {
+            if (_timeCodeRange) {
+                const double startVal = _timeCodeRange->_startTimeCode.GetValue();
+                const double endVal = _timeCodeRange->_endTimeCode.GetValue();
+                const double stride = _timeCodeRange->_stride;
+
+                _maxSteps = static_cast<size_t>(
+                    GfFloor((endVal - startVal + stride) / stride));
+                _currTimeCode = _timeCodeRange->_startTimeCode;
+            }
+
             _InvalidateIfExhausted();
         }
 
@@ -153,29 +159,25 @@ public:
             bool finished = false;
             if (!_timeCodeRange) {
                 finished = true;
-            } else {
-                if (_timeCodeRange->_stride >= 0.0) {
-                    if (_currTimeCode > _timeCodeRange->_endTimeCode) {
-                        finished = true;
-                    }
-                } else {
-                    if (_currTimeCode < _timeCodeRange->_endTimeCode) {
-                        finished = true;
-                    }
-                }
+            } else if (_currStep >= _maxSteps) {
+                finished = true;
             }
 
             if (finished) {
                 _timeCodeRange = nullptr;
+                _currStep = 0u;
+                _maxSteps = 0u;
                 _currTimeCode = UsdTimeCode();
             }
         }
 
         const UsdUtilsTimeCodeRange* _timeCodeRange;
+        size_t _currStep;
+        size_t _maxSteps;
         UsdTimeCode _currTimeCode;
     };
 
-    using const_iterator = iterator;
+    using iterator = const_iterator;
 
     /// Create a time code range from \p frameSpec.
     ///
@@ -330,7 +332,7 @@ public:
 
     /// Return a const_iterator to the start of this range.
     const_iterator cbegin() const {
-        return iterator(this);
+        return const_iterator(this);
     }
 
     /// Return the past-the-end iterator for this range.
@@ -340,7 +342,7 @@ public:
 
     /// Return the past-the-end const_iterator for this range.
     const_iterator cend() const {
-        return iterator(nullptr);
+        return const_iterator(nullptr);
     }
 
     /// Return true if this range contains no time codes, or false otherwise.

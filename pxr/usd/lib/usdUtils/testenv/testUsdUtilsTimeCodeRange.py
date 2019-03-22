@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from pxr import Gf
 from pxr import Tf
 from pxr import Usd
 from pxr import UsdUtils
@@ -36,13 +37,24 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         self.assertEqual(UsdUtils.TimeCodeRange.Tokens.RangeSeparator, ':')
         self.assertEqual(UsdUtils.TimeCodeRange.Tokens.StrideSeparator, 'x')
 
+    def _ValidateFrameSpecAndRepr(self, timeCodeRange, frameSpec=None):
+        rangeRepr = repr(timeCodeRange)
+
+        if frameSpec is None:
+            self.assertEqual(timeCodeRange.frameSpec, 'NONE')
+            self.assertEqual(rangeRepr, 'UsdUtils.TimeCodeRange()')
+        else:
+            self.assertEqual(timeCodeRange.frameSpec, frameSpec)
+            self.assertEqual(rangeRepr,
+                "UsdUtils.TimeCodeRange.CreateFromFrameSpec('%s')" % frameSpec)
+
     def testDefaultTimeCodeRange(self):
         """
         Validates a default constructed time code range.
         """
         timeCodeRange = UsdUtils.TimeCodeRange()
 
-        self.assertEqual(repr(timeCodeRange), 'NONE')
+        self._ValidateFrameSpecAndRepr(timeCodeRange)
 
         self.assertFalse(timeCodeRange.IsValid())
         self.assertEqual(list(timeCodeRange), [])
@@ -53,7 +65,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         """
         timeCodeRange = UsdUtils.TimeCodeRange(123.0)
 
-        self.assertEqual(repr(timeCodeRange), '123')
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '123')
 
         self.assertEqual(timeCodeRange.startTimeCode, 123.0)
         self.assertEqual(timeCodeRange.endTimeCode, 123.0)
@@ -63,7 +75,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         self.assertEqual(list(timeCodeRange), [Usd.TimeCode(123.0)])
 
         frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
-            repr(timeCodeRange))
+            timeCodeRange.frameSpec)
         self.assertEqual(frameSpecRange, timeCodeRange)
 
     def testAscendingTimeCodeRange(self):
@@ -73,7 +85,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         """
         timeCodeRange = UsdUtils.TimeCodeRange(101.0, 105.0)
 
-        self.assertEqual(repr(timeCodeRange), '101:105')
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '101:105')
 
         self.assertEqual(timeCodeRange.startTimeCode, 101.0)
         self.assertEqual(timeCodeRange.endTimeCode, 105.0)
@@ -88,7 +100,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
             Usd.TimeCode(105.0)])
 
         frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
-            repr(timeCodeRange))
+            timeCodeRange.frameSpec)
         self.assertEqual(frameSpecRange, timeCodeRange)
 
     def testDescendingTimeCodeRange(self):
@@ -98,7 +110,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         """
         timeCodeRange = UsdUtils.TimeCodeRange(105.0, 101.0)
 
-        self.assertEqual(repr(timeCodeRange), '105:101')
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '105:101')
 
         self.assertEqual(timeCodeRange.startTimeCode, 105.0)
         self.assertEqual(timeCodeRange.endTimeCode, 101.0)
@@ -113,7 +125,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
             Usd.TimeCode(101.0)])
 
         frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
-            repr(timeCodeRange))
+            timeCodeRange.frameSpec)
         self.assertEqual(frameSpecRange, timeCodeRange)
 
     def testTwosTimeCodeRange(self):
@@ -123,7 +135,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         """
         timeCodeRange = UsdUtils.TimeCodeRange(101.0, 109.0, 2.0)
 
-        self.assertEqual(repr(timeCodeRange), '101:109x2')
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '101:109x2')
 
         self.assertEqual(timeCodeRange.startTimeCode, 101.0)
         self.assertEqual(timeCodeRange.endTimeCode, 109.0)
@@ -138,14 +150,14 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
             Usd.TimeCode(109.0)])
 
         frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
-            repr(timeCodeRange))
+            timeCodeRange.frameSpec)
         self.assertEqual(frameSpecRange, timeCodeRange)
 
         # Make sure we yield the same time codes if the endTimeCode does not
         # align with the last time code in the range based on the stride.
         timeCodeRange = UsdUtils.TimeCodeRange(101.0, 110.0, 2.0)
 
-        self.assertEqual(repr(timeCodeRange), '101:110x2')
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '101:110x2')
 
         self.assertEqual(timeCodeRange.startTimeCode, 101.0)
         self.assertEqual(timeCodeRange.endTimeCode, 110.0)
@@ -160,7 +172,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
             Usd.TimeCode(109.0)])
 
         frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
-            repr(timeCodeRange))
+            timeCodeRange.frameSpec)
         self.assertEqual(frameSpecRange, timeCodeRange)
 
     def testFractionalStrideTimeCodeRange(self):
@@ -170,7 +182,7 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
         """
         timeCodeRange = UsdUtils.TimeCodeRange(101.0, 104.0, 0.5)
 
-        self.assertEqual(repr(timeCodeRange), '101:104x0.5')
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '101:104x0.5')
 
         self.assertEqual(timeCodeRange.startTimeCode, 101.0)
         self.assertEqual(timeCodeRange.endTimeCode, 104.0)
@@ -187,7 +199,110 @@ class TestUsdUtilsTimeCodeRange(unittest.TestCase):
             Usd.TimeCode(104.0)])
 
         frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
-            repr(timeCodeRange))
+            timeCodeRange.frameSpec)
+        self.assertEqual(frameSpecRange, timeCodeRange)
+
+    def testFloatingPointErrorStrideRange(self):
+        """
+        Validates a time code range with a floating point, non-power-of-two
+        stride value that will introduce small bits of error when iterated.
+        """
+        timeCodeRange = UsdUtils.TimeCodeRange(0.0, 7.0, 0.7)
+
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '0:7x0.7')
+
+        self.assertEqual(timeCodeRange.startTimeCode, 0.0)
+        self.assertEqual(timeCodeRange.endTimeCode, 7.0)
+        self.assertEqual(timeCodeRange.stride, 0.7)
+
+        self.assertTrue(timeCodeRange.IsValid())
+
+        timeCodes = list(timeCodeRange)
+
+        expectedTimeCodes = [
+            Usd.TimeCode(0.0),
+            Usd.TimeCode(0.7),
+            Usd.TimeCode(1.4),
+            Usd.TimeCode(2.1),
+            Usd.TimeCode(2.8),
+            Usd.TimeCode(3.5),
+            Usd.TimeCode(4.2),
+            Usd.TimeCode(4.9),
+            Usd.TimeCode(5.6),
+            Usd.TimeCode(6.3),
+            Usd.TimeCode(7.0)]
+
+        self.assertEqual(len(timeCodes), len(expectedTimeCodes))
+
+        for i in range(len(expectedTimeCodes)):
+            self.assertTrue(
+                Gf.IsClose(timeCodes[i].GetValue(),
+                    expectedTimeCodes[i].GetValue(), 1e-9))
+
+        frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
+            timeCodeRange.frameSpec)
+        self.assertEqual(frameSpecRange, timeCodeRange)
+
+    def testFloatingPointErrorValuesRange(self):
+        """
+        Validates a time code range with floating point, non-power-of-two
+        values for all of startTimeCode, endTimeCode, and stride that will
+        introduce small bits of error when iterated.
+        """
+        timeCodeRange = UsdUtils.TimeCodeRange(456.7, 890.1, 108.35)
+
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '456.7:890.1x108.35')
+
+        self.assertEqual(timeCodeRange.startTimeCode, 456.7)
+        self.assertEqual(timeCodeRange.endTimeCode, 890.1)
+        self.assertEqual(timeCodeRange.stride, 108.35)
+
+        self.assertTrue(timeCodeRange.IsValid())
+
+        timeCodes = list(timeCodeRange)
+
+        expectedTimeCodes = [
+            Usd.TimeCode(456.7),
+            Usd.TimeCode(565.05),
+            Usd.TimeCode(673.4),
+            Usd.TimeCode(781.75),
+            Usd.TimeCode(890.1)]
+
+        self.assertEqual(len(timeCodes), len(expectedTimeCodes))
+
+        for i in range(len(expectedTimeCodes)):
+            self.assertTrue(
+                Gf.IsClose(timeCodes[i].GetValue(),
+                    expectedTimeCodes[i].GetValue(), 1e-9))
+
+        frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
+            timeCodeRange.frameSpec)
+        self.assertEqual(frameSpecRange, timeCodeRange)
+
+    def testFloatingPointErrorStrideLongRange(self):
+        """
+        Validates a long time code range with a floating point,
+        non-power-of-two stride value that will introduce small bits of error
+        when iterated.
+        """
+        timeCodeRange = UsdUtils.TimeCodeRange(0.0, 9999.9, 0.1)
+
+        self._ValidateFrameSpecAndRepr(timeCodeRange, '0:9999.9x0.1')
+
+        self.assertEqual(timeCodeRange.startTimeCode, 0.0)
+        self.assertEqual(timeCodeRange.endTimeCode, 9999.9)
+        self.assertEqual(timeCodeRange.stride, 0.1)
+
+        self.assertTrue(timeCodeRange.IsValid())
+
+        numTimeCodes = 0
+        for timeCode in timeCodeRange:
+            self.assertEqual(timeCode.GetValue(), numTimeCodes * 0.1)
+            numTimeCodes += 1
+        self.assertEqual(numTimeCodes, 100000)
+
+        frameSpecRange = UsdUtils.TimeCodeRange.CreateFromFrameSpec(
+            timeCodeRange.frameSpec)
         self.assertEqual(frameSpecRange, timeCodeRange)
 
     def testBadConstructions(self):

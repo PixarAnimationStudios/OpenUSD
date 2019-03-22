@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 
+#include "pxr/base/gf/math.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdUtils/timeCodeRange.h"
@@ -40,7 +41,8 @@ static
 bool
 _ValidateIteration(
         const UsdUtilsTimeCodeRange& timeCodeRange,
-        const std::vector<UsdTimeCode>& timeCodes)
+        const std::vector<UsdTimeCode>& timeCodes,
+        const bool useIsClose=false)
 {
     std::vector<UsdTimeCode> iterTimeCodes;
 
@@ -48,7 +50,26 @@ _ValidateIteration(
         iterTimeCodes.push_back(timeCode);
     }
 
-    return iterTimeCodes == timeCodes;
+    if (!useIsClose) {
+        return iterTimeCodes == timeCodes;
+    }
+
+    if (iterTimeCodes.size() != timeCodes.size()) {
+        return false;
+    } else {
+        constexpr double epsilon = 1e-9;
+
+        for (size_t i = 0u; i < iterTimeCodes.size(); ++i) {
+            if (!GfIsClose(
+                    iterTimeCodes[i].GetValue(),
+                    timeCodes[i].GetValue(),
+                    epsilon)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 static
@@ -194,6 +215,61 @@ main(int argc, char* argv[])
     TF_AXIOM(frameSpec == "101:104x0.5");
     frameSpecRange = _GetTimeCodeRangeByStreamExtraction(frameSpec);
     TF_AXIOM(frameSpecRange == fractionalStrideRange);
+
+    const UsdUtilsTimeCodeRange floatErrorStrideRange(
+        UsdTimeCode(0.0),
+        UsdTimeCode(7.0),
+        0.7);
+    TF_AXIOM(
+        _ValidateIteration(floatErrorStrideRange, {
+            UsdTimeCode(0.0),
+            UsdTimeCode(0.7),
+            UsdTimeCode(1.4),
+            UsdTimeCode(2.1),
+            UsdTimeCode(2.8),
+            UsdTimeCode(3.5),
+            UsdTimeCode(4.2),
+            UsdTimeCode(4.9),
+            UsdTimeCode(5.6),
+            UsdTimeCode(6.3),
+            UsdTimeCode(7.0)},
+            /* useIsClose = */ true));
+    frameSpec = _GetStringByStreamInsertion(floatErrorStrideRange);
+    TF_AXIOM(frameSpec == "0:7x0.7");
+    frameSpecRange = _GetTimeCodeRangeByStreamExtraction(frameSpec);
+    TF_AXIOM(frameSpecRange == floatErrorStrideRange);
+
+    const UsdUtilsTimeCodeRange floatErrorValuesRange(
+        UsdTimeCode(456.7),
+        UsdTimeCode(890.1),
+        108.35);
+    TF_AXIOM(
+        _ValidateIteration(floatErrorValuesRange, {
+            UsdTimeCode(456.7),
+            UsdTimeCode(565.05),
+            UsdTimeCode(673.4),
+            UsdTimeCode(781.75),
+            UsdTimeCode(890.1)},
+            /* useIsClose = */ true));
+    frameSpec = _GetStringByStreamInsertion(floatErrorValuesRange);
+    TF_AXIOM(frameSpec == "456.7:890.1x108.35");
+    frameSpecRange = _GetTimeCodeRangeByStreamExtraction(frameSpec);
+    TF_AXIOM(frameSpecRange == floatErrorValuesRange);
+
+    const UsdUtilsTimeCodeRange floatErrorStrideLongRange(
+        UsdTimeCode(0.0),
+        UsdTimeCode(9999.9),
+        0.1);
+    size_t numTimeCodes = 0u;
+    for (const UsdTimeCode& timeCode : floatErrorStrideLongRange) {
+        TF_AXIOM(timeCode.GetValue() == numTimeCodes * 0.1);
+        ++numTimeCodes;
+    }
+    TF_AXIOM(numTimeCodes == 100000);
+    frameSpec = _GetStringByStreamInsertion(floatErrorStrideLongRange);
+    TF_AXIOM(frameSpec == "0:9999.9x0.1");
+    frameSpecRange = _GetTimeCodeRangeByStreamExtraction(frameSpec);
+    TF_AXIOM(frameSpecRange == floatErrorStrideLongRange);
 
 
     // Now test bad constructions and make sure we get an empty invalid range

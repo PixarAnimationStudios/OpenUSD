@@ -93,6 +93,7 @@ pxr_build_test(testUsdUtilsStitchCpp
 
 pxr_build_test(testUsdUtilsTimeCodeRangeCpp
     LIBRARIES
+        gf
         tf
         usd
         usdUtils
