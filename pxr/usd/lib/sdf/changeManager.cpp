@@ -425,9 +425,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             }
         }
     }
-    else if (field == SdfFieldKeys->Script) {
-        changes[layer].DidChangeAttributeConnection(path.GetParentPath());
-    }
     else if (field == SdfFieldKeys->Variability ||
              field == SdfFieldKeys->Custom ||
              field == SdfFieldKeys->Specifier) {

@@ -561,7 +561,6 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->Relocates, SdfRelocatesMap())
         .MapKeyValidator(&_ValidateRelocatesPath)
         .MapValueValidator(&_ValidateRelocatesPath);
-    _DoRegisterField(SdfFieldKeys->Script, "");
     _DoRegisterField(SdfFieldKeys->Specifier, SdfSpecifierOver);
     _DoRegisterField(SdfFieldKeys->StartFrame, 0.0);
     _DoRegisterField(SdfFieldKeys->StartTimeCode, 0.0);

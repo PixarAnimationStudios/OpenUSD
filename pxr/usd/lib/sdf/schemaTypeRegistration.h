@@ -89,7 +89,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->TargetPaths,             SdfPathListOp))                 \
 ((SdfFieldKeys->TimeSamples,             SdfTimeSampleMap))              \
 ((SdfFieldKeys->Relocates,               SdfRelocatesMap))               \
-((SdfFieldKeys->Script,                  std::string))                   \
 ((SdfFieldKeys->Specializes,             SdfPathListOp))                 \
 ((SdfFieldKeys->Specifier,               SdfSpecifier))                  \
 ((SdfFieldKeys->StartFrame,              double))                        \
