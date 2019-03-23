@@ -1,8 +1,6 @@
 #usda 1.0
 (
     defaultPrim = "TestPlane"
-    doc = """Generated from Composed Stage of root layer /home/pkanyuk/tools/blendshapes/pkTestCbase.usd
-"""
     endTimeCode = 131
     startTimeCode = 1
     upAxis = "Z"
