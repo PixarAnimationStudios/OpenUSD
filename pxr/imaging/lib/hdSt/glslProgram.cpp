@@ -44,6 +44,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_CONTEXT_CHECK, 0,
 HdStGLSLProgram::HdStGLSLProgram(TfToken const &role)
     : _program(role), _uniformBuffer(role)
 {
+    static size_t globalDebugID = 0;
+    _debugID = globalDebugID++;
 }
 
 HdStGLSLProgram::~HdStGLSLProgram()
@@ -130,11 +132,27 @@ HdStGLSLProgram::CompileShader(GLenum type,
     glShaderSource(shader, sizeof(shaderSources)/sizeof(const char *), shaderSources, NULL);
     glCompileShader(shader);
 
+    std::string fname;
+    if (TfDebug::IsEnabled(HD_DUMP_SHADER_SOURCEFILE)) {
+        std::stringstream fnameStream;
+        static size_t debugShaderID = 0;
+        fnameStream << "program" << _debugID << "_shader" << debugShaderID++
+                << "_" << shaderType << ".glsl";
+        fname = fnameStream.str();
+        std::fstream output(fname.c_str(), std::ios::out);
+        output << shaderSource;
+        output.close();
+
+        std::cout << "Write " << fname << " (size=" << shaderSource.size() << ")\n";
+    }
+
     std::string logString;
     if (!HdStGLUtils::GetShaderCompileStatus(shader, &logString)) {
         // XXX:validation
+        const char* programName = fname.empty() ? shaderType : fname.c_str();
+
         TF_WARN("Failed to compile shader (%s): %s",
-                shaderType, logString.c_str());
+                programName, logString.c_str());
 
         // shader is no longer needed.
         glDeleteShader(shader);
@@ -206,9 +224,8 @@ HdStGLSLProgram::Link()
         GLsizei len;
         GLenum format;
         glGetProgramBinary(program, size, &len, &format, &bin[0]);
-        static int id = 0;
         std::stringstream fname;
-        fname << "program" << id++ << ".bin";
+        fname << "program" << _debugID << ".bin";
 
         std::fstream output(fname.str().c_str(), std::ios::out|std::ios::binary);
         output.write(&bin[0], size);
