@@ -28,7 +28,6 @@
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdUtils/timeCodeRange.h"
 
-#include <cassert>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -92,21 +91,6 @@ _GetTimeCodeRangeByStreamExtraction(const std::string& rangeString)
     stream >> timeCodeRange;
 
     return timeCodeRange;
-}
-
-static
-void
-_AssertIsDefaultRange(const UsdUtilsTimeCodeRange& timeCodeRange)
-{
-    const UsdUtilsTimeCodeRange defaultRange;
-
-    // XXX: Using TF_AXIOM here tickles a strange bug in Apple's clang 9.0.0
-    // that causes compilation to fail with an error that looks like this:
-    //
-    // fatal error: error in backend: unsupported relocation of undefined symbol 'LBB0_-1'
-    //
-    // As a result, we use assert here instead.
-    assert(timeCodeRange == defaultRange);
 }
 
 
@@ -272,115 +256,67 @@ main(int argc, char* argv[])
     TF_AXIOM(frameSpecRange == floatErrorStrideLongRange);
 
 
-    // Now test bad constructions and make sure we get an empty invalid range
-    // (equivalent to defaultRange from above).
+    // Now test bad constructions and make sure we get an empty invalid range.
+    UsdUtilsTimeCodeRange badRange;
 
     // EarliestTime and Default cannot be used as the start or end.
-    {
-        const UsdUtilsTimeCodeRange badRange(
-            UsdTimeCode::EarliestTime(), 104.0);
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(UsdTimeCode::EarliestTime(), 104.0);
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange(
-            UsdTimeCode::Default(), 104.0);
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(UsdTimeCode::Default(), 104.0);
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange(
-            101.0, UsdTimeCode::EarliestTime());
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(101.0, UsdTimeCode::EarliestTime());
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange(
-            101.0, UsdTimeCode::Default());
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(101.0, UsdTimeCode::Default());
+    TF_AXIOM(!badRange.IsValid());
 
     // The end must be greater than the start with a positive stride
-    {
-        const UsdUtilsTimeCodeRange badRange(104.0, 101.0, 1.0);
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(104.0, 101.0, 1.0);
+    TF_AXIOM(!badRange.IsValid());
 
     // The end must be less than the start with a negative stride
-    {
-        const UsdUtilsTimeCodeRange badRange(101.0, 104.0, -1.0);
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(101.0, 104.0, -1.0);
+    TF_AXIOM(!badRange.IsValid());
 
     // The stride cannot be zero.
-    {
-        const UsdUtilsTimeCodeRange badRange(101.0, 104.0, 0.0);
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange(101.0, 104.0, 0.0);
+    TF_AXIOM(!badRange.IsValid());
 
 
     // Finally, test some bad FrameSpecs and make sure we get an invalid empty
     // range (equivalent to defaultRange from above).
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("foobar");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("foobar");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:102:103");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:102:103");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101foobar:104");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101foobar:104");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("foobar101:104");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("foobar101:104");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:104foobar");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:104foobar");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:foobar104");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:foobar104");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101x2.0");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101x2.0");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:109x2.0x3.0");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:109x2.0x3.0");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:109x2.0foobar");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:109x2.0foobar");
+    TF_AXIOM(!badRange.IsValid());
 
-    {
-        const UsdUtilsTimeCodeRange badRange =
-            UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:109xfoobar2.0");
-        _AssertIsDefaultRange(badRange);
-    }
+    badRange = UsdUtilsTimeCodeRange::CreateFromFrameSpec("101:109xfoobar2.0");
+    TF_AXIOM(!badRange.IsValid());
 
     return EXIT_SUCCESS;
 }
