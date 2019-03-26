@@ -664,7 +664,7 @@ HdSt_CodeGen::Compile()
     // prep interstage plumbing function
     _procVS  << "void ProcessPrimvars() {\n";
     _procTCS << "void ProcessPrimvars() {\n";
-    _procTES << "void ProcessPrimvars(float u, float v, int i0, int i1, int i2, int i3) {\n";
+    _procTES << "void ProcessPrimvars(vec4 basis, int i0, int i1, int i2, int i3) {\n";
     // geometry shader plumbing
     switch(_geometricShader->GetPrimitiveType())
     {
@@ -2346,13 +2346,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
                 << " = " << name << ";\n";
         _procTCS << "  outPrimvars[gl_InvocationID]." << name
                  << " = inPrimvars[gl_InvocationID]." << name << ";\n";
-        // procTES linearly interpolate vertex/varying primvars here.
-        // XXX: needs smooth interpolation for vertex primvars?
-        _procTES << "  outPrimvars." << name
-                 << " = mix(mix(inPrimvars[i3]." << name
-                 << "         , inPrimvars[i2]." << name << ", u),"
-                 << "       mix(inPrimvars[i1]." << name
-                 << "         , inPrimvars[i0]." << name << ", u), v);\n";
+       _procTES << "  outPrimvars." << name
+                 << " = basis[0] * inPrimvars[i0]." << name
+                 << " + basis[1] * inPrimvars[i1]." << name
+                 << " + basis[2] * inPrimvars[i2]." << name
+                 << " + basis[3] * inPrimvars[i3]." << name << ";\n";
+
         _procGS  << "  outPrimvars." << name
                  << " = inPrimvars[index]." << name << ";\n";
     }

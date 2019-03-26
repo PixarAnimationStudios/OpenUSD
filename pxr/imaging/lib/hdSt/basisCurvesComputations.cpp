@@ -197,24 +197,32 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
+    const TfToken basis = _topology->GetCurveBasis();
+    const bool skipFirstAndLastSegs = (basis == HdTokens->catmullRom);
+
     std::vector<GfVec2i> indices;
+    // primIndices stores the curve index that generated each line segment.
     std::vector<int> primIndices;
     const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
-    int vertexIndex = 0;
-    int curveIndex = 0;
+    int vertexIndex = 0; // Index of next vertex to emit
+    int curveIndex = 0;  // Index of next curve to emit
+    // For each curve
     TF_FOR_ALL(itCounts, vertexCounts) {
         int v0 = vertexIndex;
         int v1;
         // Store first vert index incase we are wrapping
-        int firstVert = v0;
+        const int firstVert = v0;
         ++ vertexIndex;
         for(int i = 1;i < *itCounts; ++i) {
             v1 = vertexIndex;
             ++ vertexIndex;
-            indices.push_back(GfVec2i(v0, v1));
+            if (!skipFirstAndLastSegs || (i > 1 && i < (*itCounts)-1)) {
+                indices.push_back(GfVec2i(v0, v1));
+                // Map this line segment back to the curve it came from
+                primIndices.push_back(curveIndex);
+            }
             v0 = v1;
-            primIndices.push_back(curveIndex);
         }
         if(wrap) {
             indices.push_back(GfVec2i(v0, firstVert));

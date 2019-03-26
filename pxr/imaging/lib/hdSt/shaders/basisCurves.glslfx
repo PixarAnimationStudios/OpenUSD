@@ -442,16 +442,22 @@ void main()
 
     outData.Peye = pos;
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+
     ApplyClipPlanes(outData.Peye);
 
-    // XXX: needs more work.
-    ProcessPrimvars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+    ProcessPrimvars(basis, 0, 1, 2, 3); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.Patch
 
 layout(quads, fractional_odd_spacing, ccw) in;
+
+struct Coeffs
+{
+  vec4 basis;
+  vec4 tangent_basis;
+};
 
 in CurveVertexData
 {
@@ -473,6 +479,9 @@ out float v;
 
 void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
               out float width, out vec3 normal);
+
+Coeffs evaluateBasis(float u, float u2, float u3);
+
 // it's the responsibility of orient to store Neye, usually with either
 // the computed normal or the tangent (from which the normal will be computed
 // in the fragment shader.)
@@ -481,6 +490,9 @@ void main()
 {
     u = gl_TessCoord.y;
     v = gl_TessCoord.x;
+
+    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    vec4 basis = coeffs.basis;
 
     vec4 position;
     vec4 tangent;
@@ -501,8 +513,7 @@ void main()
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    // XXX: needs more work.
-    ProcessPrimvars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+    ProcessPrimvars(basis, 0, 1, 2, 3); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
@@ -686,14 +697,14 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 {
   vec4 basis; vec4 tangent_basis;
   basis[0] = u;
-  basis[1] = 0;
+  basis[1] = 1.0 - u;
   basis[2] = 0;
-  basis[3] = 1.0 - u;
+  basis[3] = 0.0;
 
   tangent_basis[0] = 1;
-  tangent_basis[1] = 0;
+  tangent_basis[1] = -1;
   tangent_basis[2] = 0;
-  tangent_basis[3] = -1;
+  tangent_basis[3] = 0;
   return Coeffs(basis, tangent_basis);
 }
 

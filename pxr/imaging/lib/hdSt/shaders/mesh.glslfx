@@ -181,7 +181,12 @@ void main(void)
     tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
     tesTessCoord = UV;
 
-    ProcessPrimvars(UV.x, UV.y, 10, 9, 6, 5);
+    // Bilinear basis
+    vec4 basis = vec4(
+        (1.0-UV.x) * (1.0-UV.y), UV.x * (1.0-UV.y),
+        (1.0-UV.x) * UV.y, UV.x * UV.y );
+
+    ProcessPrimvars(basis, 5, 6, 9, 10);
 }
 
 --- --------------------------------------------------------------------------
