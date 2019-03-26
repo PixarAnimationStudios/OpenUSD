@@ -394,10 +394,8 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
                                          UsdImagingIndexProxy* index)
 {
     if (_IsCallbackForSkeleton(prim)) {
-
         // Mark the bone mesh dirty
         index->MarkRprimDirty(cachePath, dirty);
-
     } else if (_IsSkinnedPrimPath(cachePath)) {
 
         // Since The SkeletonAdapter hijacks skinned prims (see SkelRootAdapter),
@@ -444,14 +442,13 @@ UsdSkelImagingSkeletonAdapter::MarkRefineLevelDirty(const UsdPrim& prim,
                                                     const SdfPath& cachePath,
                                                     UsdImagingIndexProxy* index)
 {
-    if (_IsCallbackForSkeleton(prim) ||
-        _IsSkinnedPrimPath(cachePath)) {
-
-        // Since The SkeletonAdapter hijacks the bone mesh and any skinned prim,
+    if (_IsCallbackForSkeleton(prim)) {
+        // Complexity changes shouldn't affect the bone visualization.
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkRefineLevelDirty(prim, cachePath, index);
-
     }
     // Nothing to do otherwise.
 }
@@ -461,10 +458,10 @@ UsdSkelImagingSkeletonAdapter::MarkReprDirty(const UsdPrim& prim,
                                              const SdfPath& cachePath,
                                              UsdImagingIndexProxy* index)
 {
-    if (_IsCallbackForSkeleton(prim) ||
-        _IsSkinnedPrimPath(cachePath)) {
-
-        // Since The SkeletonAdapter hijacks the bone mesh and any skinned prim,
+    if (_IsCallbackForSkeleton(prim)) {
+        // The bone mesh doesn't have a repr opinion. Use the viewer opinion.
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkReprDirty(prim, cachePath, index);
@@ -478,10 +475,10 @@ UsdSkelImagingSkeletonAdapter::MarkCullStyleDirty(const UsdPrim& prim,
                                                   const SdfPath& cachePath,
                                                   UsdImagingIndexProxy* index)
 {
-    if (_IsCallbackForSkeleton(prim) ||
-        _IsSkinnedPrimPath(cachePath)) {
-
-        // Since The SkeletonAdapter hijacks the bone mesh and any skinned prim,
+    if (_IsCallbackForSkeleton(prim)) {
+        // Cullstyle changes shouldn't affect the bone visualization.
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkCullStyleDirty(prim, cachePath, index);
@@ -495,10 +492,10 @@ UsdSkelImagingSkeletonAdapter::MarkTransformDirty(const UsdPrim& prim,
                                                   const SdfPath& cachePath,
                                                   UsdImagingIndexProxy* index)
 {
-    if (_IsCallbackForSkeleton(prim) ||
-        _IsSkinnedPrimPath(cachePath)) {
-
-        // Since The SkeletonAdapter hijacks the bone mesh and any skinned prim,
+    if (_IsCallbackForSkeleton(prim)) {
+        index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyTransform);
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkTransformDirty(prim, cachePath, index);
@@ -523,10 +520,10 @@ UsdSkelImagingSkeletonAdapter::MarkVisibilityDirty(const UsdPrim& prim,
                                                    const SdfPath& cachePath,
                                                    UsdImagingIndexProxy* index)
 {
-    if (_IsCallbackForSkeleton(prim) ||
-        _IsSkinnedPrimPath(cachePath)) {
-
-        // Since The SkeletonAdapter hijacks the bone mesh and any skinned prim,
+    if (_IsCallbackForSkeleton(prim)) {
+        index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyVisibility);
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkVisibilityDirty(prim, cachePath, index);
@@ -558,10 +555,10 @@ UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
                                                  const SdfPath& cachePath,
                                                  UsdImagingIndexProxy* index)
 {
-    if (_IsCallbackForSkeleton(prim) ||
-        _IsSkinnedPrimPath(cachePath)) {
-
-        // Since The SkeletonAdapter hijacks the bone mesh and any skinned prim,
+    if (_IsCallbackForSkeleton(prim)) {
+        // The bone mesh uses the fallback material.
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkMaterialDirty(prim, cachePath, index);
