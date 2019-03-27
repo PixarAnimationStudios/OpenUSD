@@ -25,10 +25,11 @@
 
 from pxr import Gf
 
-# Remove any unwanted visuals from the view.
+# Remove any unwanted visuals from the view, and enable autoClip
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
 # Set the clipping plane overrides and update the view.
 def _setClippingPlaneOverrides(appController, near=None, far=None):

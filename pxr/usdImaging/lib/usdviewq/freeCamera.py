@@ -38,13 +38,13 @@ class FreeCamera(QtCore.QObject):
     signalFrustumChanged = QtCore.Signal()
 
     defaultNear = 1
-    defaultFar = 1000000
+    defaultFar = 2000000
     # Experimentally on Nvidia M6000, if Far/Near is greater than this,
     # then geometry in the back half of the volume will disappear
     maxSafeZResolution = 1e6
     # Experimentally on Nvidia M6000, if Far/Near is greater than this,
     # then we will often see Z-fighting artifacts even for geometry that
-    # is close to camera
+    # is close to camera, when rendering for picking
     maxGoodZResolution = 5e4
 
     def __init__(self, isZUp):
@@ -54,10 +54,10 @@ class FreeCamera(QtCore.QObject):
         self._camera = Gf.Camera()
         self._camera.SetPerspectiveFromAspectRatioAndFieldOfView(
             1.0, 60, Gf.Camera.FOVVertical)
-        self._camera.clippingRange = Gf.Range1f(FreeCamera.defaultNear,
-                                                FreeCamera.defaultFar)
         self._overrideNear = None
         self._overrideFar = None
+        self.resetClippingPlanes()
+
         self._isZUp = isZUp
 
         self._cameraTransformDirty = True
@@ -300,12 +300,24 @@ class FreeCamera(QtCore.QObject):
 
         self._camera.clippingRange = Gf.Range1f(near, far)
 
-    def computeGfCamera(self, stageBBox):
+    def computeGfCamera(self, stageBBox, autoClip=False):
         """Makes sure the FreeCamera's computed parameters are up-to-date, and
-        returns the GfCamera object."""
+        returns the GfCamera object.  If 'autoClip' is True, then compute
+        "optimal" positions for the near/far clipping planes based on the
+        current closestVisibleDist, in order to maximize Z-buffer resolution"""
         self._pushToCameraTransform()
-        self.setClippingPlanes(stageBBox)
+        if autoClip:
+            self.setClippingPlanes(stageBBox)
+        else:
+            self.resetClippingPlanes()
         return self._camera
+
+    def resetClippingPlanes(self):
+        """Set near and far back to their uncomputed defaults."""
+        near = self._overrideNear or FreeCamera.defaultNear
+        far  = self._overrideFar  or FreeCamera.defaultFar
+        self._camera.clippingRange = Gf.Range1f(near, far)
+
 
     def frameSelection(self, selBBox, frameFit):
         # needs to be recomputed
@@ -350,7 +362,7 @@ class FreeCamera(QtCore.QObject):
         self.signalFrustumChanged.emit()
 
     def AdjustDistance(self, scaleFactor):
-        '''Scales the distance of the freeCamera from it's center typically be
+        '''Scales the distance of the freeCamera from it's center typically by
         scaleFactor unless it puts the camera into a "stuck" state.'''
 
         # When dist gets very small, you can get stuck and not be able to

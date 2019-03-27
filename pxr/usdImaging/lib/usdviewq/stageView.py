@@ -682,6 +682,10 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams = params
 
     @property
+    def autoClip(self):
+        return self._dataModel.viewSettings.autoComputeClippingPlanes
+
+    @property
     def showReticles(self):
         return ((self._dataModel.viewSettings.showReticles_Inside or self._dataModel.viewSettings.showReticles_Outside)
                 and self._dataModel.viewSettings.cameraPrim != None)
@@ -839,7 +843,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
         self._hud.addGroup("TopRight",    140, 32)   # Hydra: Enabled
         self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
-        self._hud.addGroup("BottomRight", 200, 32)   # Camera, Complexity
+        self._hud.addGroup("BottomRight", 210, 32)   # Camera, Complexity
 
         self._stageIsZup = True
         self._cameraMode = "none"
@@ -1405,7 +1409,7 @@ class StageView(QtOpenGL.QGLWidget):
         camera = self.computeGfCameraForCurrentCameraPrim()
         if not camera:
             self.switchToFreeCamera()
-            camera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox)
+            camera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox, autoClip=self.autoClip)
 
         cameraAspectRatio = camera.aspectRatio
 
@@ -1790,14 +1794,14 @@ class StageView(QtOpenGL.QGLWidget):
         # Complexity
         if self._dataModel.viewSettings.showHUD_Complexity:
             # Camera name
-            camName = "Free"
+            camName = "Free%s" % (" AutoClip" if self.autoClip else "")
             if self._dataModel.viewSettings.cameraPrim:
                 camName = self._dataModel.viewSettings.cameraPrim.GetName()
 
             toPrint = {"Complexity" : self._dataModel.viewSettings.complexity.name,
                        "Camera" : camName}
             self._hud.updateGroup("BottomRight",
-                                  self.width()-200, self.height()-self._hud._HUDLineSpacing*2,
+                                  self.width()-210, self.height()-self._hud._HUDLineSpacing*2,
                                   col, toPrint)
         else:
             self._hud.updateGroup("BottomRight", 0, 0, col, {})
@@ -2181,8 +2185,9 @@ class StageView(QtOpenGL.QGLWidget):
 
         defcam = UsdGeom.Camera.Define(stage, '/'+defcamName)
 
-        # Map free camera params to usd camera.
-        gfCamera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox)
+        # Map free camera params to usd camera.  We do **not** want to burn
+        # auto-clipping near/far into our exported camera
+        gfCamera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox, autoClip=False)
 
         targetAspect = float(imgWidth) / max(1.0, imgHeight)
         CameraUtil.ConformWindow(

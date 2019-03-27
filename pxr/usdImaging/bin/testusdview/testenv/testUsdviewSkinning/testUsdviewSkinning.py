@@ -27,10 +27,11 @@
 from pxr.Usdviewq.common import RenderModes, Complexities
 
 
-# Remove any unwanted visuals from the view.
+# Remove any unwanted visuals from the view, and enable autoClip
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
     # Make image differences clear.
     appController._dataModel.viewSettings.renderMode = RenderModes.WIREFRAME
