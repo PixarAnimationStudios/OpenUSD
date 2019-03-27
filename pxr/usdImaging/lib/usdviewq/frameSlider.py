@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
+from qt import QtCore, QtWidgets
 
 
 class FrameSlider(QtWidgets.QSlider):
@@ -43,13 +43,31 @@ class FrameSlider(QtWidgets.QSlider):
         self.valueChanged.emit(self.sliderPosition())
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            # Get the slider value from the event position.
-            value = QtGui.QStyle.sliderValueFromPosition(
-                self.minimum(), self.maximum(), event.x(), self.width()
-            )
-            # Set the slider value.
-            self.setSliderPosition(value)
+        # This is a temporary solution that should revisited in future.
+        #
+        # The issue is that the current QStyle on the application
+        # only allows the slider position to be set on a MiddleButton
+        # MouseEvent.
+        #
+        # The correct solution is for us to create a QProxyStyle for the
+        # application so we can edit the value of the
+        # QStyle.SH_Slider_AbsoluteSetButtons property (to include
+        # LeftButton). Unfortunately QProxyStyle is not yet available
+        # in this version of PySide.
+        #
+        # Instead, we are forced to duplicate the MouseEvent as a
+        # MiddleButton event. This creates the exact behavior we
+        # want to see from the QSlider.
+        styleHint = QtWidgets.QStyle.SH_Slider_AbsoluteSetButtons
+        if self.style().styleHint(styleHint) == QtCore.Qt.MiddleButton:
+            if event.button() == QtCore.Qt.LeftButton:
+                event = QtWidgets.QMouseEvent(
+                    event.type(),
+                    event.pos(),
+                    QtCore.Qt.MiddleButton,
+                    QtCore.Qt.MiddleButton,
+                    event.modifiers()
+                )
 
         super(FrameSlider, self).mousePressEvent(event)
 
