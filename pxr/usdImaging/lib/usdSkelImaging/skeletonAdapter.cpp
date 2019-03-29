@@ -918,9 +918,12 @@ UsdSkelImagingSkeletonAdapter::_TrackBoneMeshVariability(
                timeVaryingBits,
                true);
 
-    // Tie the bone mesh to the 'proxy' purpose, so we have a way to disable
-    // rendering of ALL bone meshes.
-    valueCache->GetPurpose(cachePath) = UsdGeomTokens->proxy;
+    TfToken purpose = skelData->ComputePurpose();
+    // Empty purpose means there is no opinion. Fall back to default.
+    if (purpose.IsEmpty()) {
+        purpose = UsdGeomTokens->default_;
+    }
+    valueCache->GetPurpose(cachePath) = purpose;
 }
 
 
@@ -1809,9 +1812,11 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
     }
 }
 
+
 // ---------------------------------------------------------------------- //
 /// _SkelData
 // ---------------------------------------------------------------------- //
+
 UsdSkelImagingSkeletonAdapter::_SkelData*
 UsdSkelImagingSkeletonAdapter::_GetSkelData(const SdfPath& cachePath) const
 {
@@ -1910,6 +1915,15 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputePoints(
 }
 
 
+TfToken
+UsdSkelImagingSkeletonAdapter::_SkelData::ComputePurpose() const
+{
+    HD_TRACE_FUNCTION();
+    // PERFORMANCE: Make this more efficient, see http://bug/90497
+    return skelQuery.GetSkeleton().ComputePurpose();
+}
+
+
 // ---------------------------------------------------------------------- //
 /// _SkinnedPrimData
 // ---------------------------------------------------------------------- //
@@ -1967,7 +1981,7 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
             blendShapeQuery.reset();
         }
    }
-}    
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -274,7 +274,9 @@ private:
         HdMeshTopology ComputeTopologyAndRestState();
 
         /// Compute animated  bone mesh points.
-        VtVec3fArray ComputePoints(UsdTimeCode time) const; 
+        VtVec3fArray ComputePoints(UsdTimeCode time) const;
+
+        TfToken ComputePurpose() const;
 
     private:
         // Cache of a mesh for a skeleton (at rest)
