@@ -21,6 +21,7 @@ pxr_library(usdGeom
         tokens
         bboxCache
         constraintTarget
+        coordSysAPI
         xformCache
         basisCurves
         boundable
@@ -67,6 +68,7 @@ pxr_library(usdGeom
         wrapConstraintTarget.cpp
         wrapCapsule.cpp
         wrapCone.cpp
+        wrapCoordSysAPI.cpp
         wrapCube.cpp
         wrapCurves.cpp
         wrapCylinder.cpp
@@ -109,6 +111,7 @@ pxr_test_scripts(
     testenv/testUsdGeomComputeAtTime.py
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
+    testenv/testUsdGeomCoordSysAPI.py
     testenv/testUsdGeomCurves.py
     testenv/testUsdGeomExtentTransform.py
     testenv/testUsdGeomMesh.py
@@ -194,6 +197,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdGeomComputeAtTime
     DEST testUsdGeomComputeAtTime
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomCoordSysAPI
+    DEST testUsdGeomCoordSysAPI
 )
 
 pxr_register_test(testUsdGeomBasisCurves
@@ -322,5 +330,11 @@ pxr_register_test(testUsdGeomExtentTransform
 pxr_register_test(testUsdGeomComputeAtTime
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomComputeAtTime"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomCoordSysAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCoordSysAPI"
     EXPECTED_RETURN_CODE 0
 )

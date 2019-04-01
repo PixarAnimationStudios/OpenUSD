@@ -1,0 +1,38 @@
+#usda 1.0
+
+def Xform "World"
+{
+    double3 xformOp:translate = (5, 0, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+
+    rel coordSys:worldSpace = </World/Space>
+
+    def Xform "Model"
+    {
+        rel coordSys:modelSpace = </World/Model/Geom>
+        rel coordSys:instanceSpace = </World/Model>
+        rel coordSys:paintSpace = </World/Model/Place3dTexture>
+
+        double3 xformOp:translate = (2, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Place3dTexture"
+        {
+            double3 xformOp:translate = (0, -10, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Geom"
+        {
+            def Cube "Box"
+            {
+                double3 xformOp:translate = (0, 0, 3)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    def Xform "Space"
+    {
+    }
+}
