@@ -89,7 +89,7 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
     os.system(usdcatCmd + ' ' + usdFileName + '> ' + usdaFileName)
 
     if readOnly:
-        os.chmod(usdaFileName, 0444)
+        os.chmod(usdaFileName, 444)
      
     # Thrown if failed to open temp file Could be caused by 
     # failure to read USD file

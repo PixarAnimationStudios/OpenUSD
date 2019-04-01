@@ -321,7 +321,7 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
     # So, ensure that the bits we expect to see are there instead of doing 
     # an equality check.
     nodeMetadata = node.GetMetadata()
-    for i,j in metadata.iteritems():
+    for i,j in metadata.items():
         assert i in nodeMetadata
         assert nodeMetadata[i] == metadata[i]
 

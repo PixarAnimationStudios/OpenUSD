@@ -27,11 +27,11 @@ import textwrap, unittest
 
 class TestSdfCopyUtils(unittest.TestCase):
     def _VerifyExpectedData(self, layer, expected):
-        for (path, fieldValues) in expected.items():
+        for (path, fieldValues) in list(expected.items()):
             spec = layer.GetObjectAtPath(path)
             self.assertTrue(spec)
 
-            for (field, value) in fieldValues.items():
+            for (field, value) in list(fieldValues.items()):
                 self.assertEqual(spec.GetInfo(field), value)
                 
             for field in spec.ListInfoKeys():

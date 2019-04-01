@@ -52,7 +52,7 @@ class TestVtValue(unittest.TestCase):
         self.assertEqual(Vt._test_Str((1,2,3)), str((1,2,3)))
         self.assertEqual(Vt._test_Str(Vt.DoubleArray()), str(Vt.DoubleArray()))
         self.assertEqual(Vt._test_Str(1.234), str(1.234))
-        self.assertEqual(Vt._test_Str(u'unicode'), 'unicode')
+        self.assertEqual(Vt._test_Str('unicode'), 'unicode')
 
     def test_ValueTypeName(self):
         self.assertEqual(Vt._test_ValueTypeName(True), 'bool')
@@ -80,7 +80,7 @@ class TestVtValue(unittest.TestCase):
                 'key4' : ['four', 'five', { 'six' : 7, 'eight' : [ {'nine':9} ] } ],
                 'key5' : { 'key6' : 'value' },
                 'key5' : None,
-                'key6' : u'value',
+                'key6' : 'value',
                 }
 
         bad1 = {1 : 2}

@@ -179,7 +179,7 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
     
         # Test ComputeInterfaceInputConsumersMap.
         inputConsumersMap = nodeGraph.ComputeInterfaceInputConsumersMap()
-        for shadeInput, consumers in inputConsumersMap.iteritems():
+        for shadeInput, consumers in inputConsumersMap.items():
             if shadeInput.GetBaseName() == "InputOne":
                 self.assertEqual(len(consumers), 1)
                 self.assertEqual(consumers[0].GetFullName(), "inputs:ParamOne")

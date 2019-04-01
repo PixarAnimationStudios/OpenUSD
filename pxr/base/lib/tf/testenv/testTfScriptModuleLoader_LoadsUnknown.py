@@ -25,4 +25,4 @@ from pxr import Tf
 
 Tf.ScriptModuleLoader()._LoadModulesForLibrary('LoadsUnknown')
 
-import testTfScriptModuleLoader_Unknown
+from . import testTfScriptModuleLoader_Unknown

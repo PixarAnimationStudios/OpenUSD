@@ -72,7 +72,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
 
         skelOrder = Vt.TokenArray(["/A", "/A/B", "/A/B/C",
                                    "/D", "/D/E/F"])
-        A,AB,ABC,D,DEF = list(xrange(len(skelOrder)))
+        A,AB,ABC,D,DEF = list(range(len(skelOrder)))
 
         # Configure the skel.
         skel.GetJointsAttr().Set(skelOrder)
@@ -87,7 +87,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         skel.GetRestTransformsAttr().Set(restXforms)
 
         # Configure root xforms.
-        rootXforms = [_RandomXf() for _ in xrange(numFrames)]
+        rootXforms = [_RandomXf() for _ in range(numFrames)]
         rootXfAttr = skelRoot.MakeMatrixXform()
         for frame,xf in enumerate(rootXforms):
             rootXfAttr.Set(xf, frame)
@@ -98,9 +98,9 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         anim.GetJointsAttr().Set(animOrder)
 
         # Apply joint animations.
-        animXforms = {i:[_RandomXf() for _ in xrange(len(animOrder))]
-                      for i in xrange(numFrames)}
-        for frame,xforms in animXforms.items():
+        animXforms = {i:[_RandomXf() for _ in range(len(animOrder))]
+                      for i in range(numFrames)}
+        for frame,xforms in list(animXforms.items()):
             anim.SetTransforms(Vt.Matrix4dArray(xforms), frame)
 
         #
@@ -122,7 +122,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         xfCache = UsdGeom.XformCache()
 
         # Validate joint xforms computations.
-        for t in xrange(numFrames):
+        for t in range(numFrames):
 
             xforms = animXforms[t]
 

@@ -79,7 +79,7 @@ def _generateDocs(pxrSourceRoot, thirdSourceRoot, pxrBuildRoot, installLoc,
                     os.chmod(path, stat.S_IWRITE)
                     func(path)
                 except Exception as exc:
-                    print >>sys.stderr, "Failed to remove %s: %s" % (path, str(exc))
+                    print("Failed to remove %s: %s" % (path, str(exc)), file=sys.stderr)
             shutil.rmtree(target, onerror=_removeReadOnly)
         shutil.copytree(mod, target) 
 
@@ -110,7 +110,7 @@ def _generateDocs(pxrSourceRoot, thirdSourceRoot, pxrBuildRoot, installLoc,
                                  stderr=subprocess.STDOUT)
     output = proc.communicate()[0]
     if proc.wait() != 0:
-        print >>sys.stderr, output.replace('\r\n', '\n')
+        print(output.replace('\r\n', '\n'), file=sys.stderr)
         sys.exit('Error: doxygen failed to complete; '
                  'exit code %d.' % proc.returncode)
 

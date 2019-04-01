@@ -61,7 +61,7 @@ class TestUsdFlattenProperties(unittest.TestCase):
             self.assertTrue(field in expectedFields, 
                             "{0} not in expected fields".format(field))
 
-        for (field, value) in expectedFields.items():
+        for (field, value) in list(expectedFields.items()):
             self.assertTrue(field in attrSpec.ListInfoKeys(),
                             "{0} not in property fields".format(field))
             self.assertEqual(attrSpec.GetInfo(field), value,

@@ -139,7 +139,7 @@ class TestUsdSkelCache(unittest.TestCase):
 
         cache = UsdSkel.Cache()
         root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
-        print "Expect warnings about invalid skel:skeletonInstance targets"
+        print("Expect warnings about invalid skel:skeletonInstance targets")
         self.assertTrue(cache.Populate(root))
 
         def _GetSkelQuery(path):
@@ -221,7 +221,7 @@ class TestUsdSkelCache(unittest.TestCase):
         assert query
         assert query.IsRigidlyDeformed()
         assert query.GetJointMapper()
-        self.assertEquals(query.GetJointOrder(),
+        self.assertEqual(query.GetJointOrder(),
                           Vt.TokenArray(["A", "B", "C"]))
 
         query = _GetSkinningQuery(rootPath+"/Model1/NonRigidScope1/B")
@@ -233,7 +233,7 @@ class TestUsdSkelCache(unittest.TestCase):
         assert query
         assert query.IsRigidlyDeformed()
         assert query.GetJointMapper()
-        self.assertEquals(query.GetJointOrder(),
+        self.assertEqual(query.GetJointOrder(),
                           Vt.TokenArray(["A", "B", "C"]))
 
         query = _GetSkinningQuery(rootPath+"/Model1/NonRigidScope2/B")

@@ -38,4 +38,4 @@ def TestBug119633():
 
 if __name__ == "__main__":
     TestBug119633()
-    print 'OK'
+    print('OK')

@@ -53,28 +53,28 @@ def PartialTrace():
     gc.EndEvent('B')
     gc.EndEvent('A')
 
-print "Test Complete Trace"
+print("Test Complete Trace")
 gc.enabled = True
 FullTrace()
 gc.enabled = False
 gr.Report()
 gr.ClearTree()
 
-print "Test Begin Only Trace"
+print("Test Begin Only Trace")
 gc.enabled = True
 BeginOnlyTrace()
 gc.enabled = False
 gr.Report()
 gr.ClearTree()
 
-print "Test End Only Trace"
+print("Test End Only Trace")
 gc.enabled = True
 EndOnlyTrace()
 gc.enabled = False
 gr.Report()
 gr.ClearTree()
 
-print "Test Partial Trace"
+print("Test Partial Trace")
 gc.enabled = True
 PartialTrace()
 gc.enabled = False
@@ -82,28 +82,28 @@ gr.Report()
 gr.ClearTree()
 
 
-print "\nTest Complete Trace Chrome"
+print("\nTest Complete Trace Chrome")
 gc.enabled = True
 FullTrace()
 gc.enabled = False
 gr.ReportChromeTracing()
 gr.ClearTree()
 
-print "\nTest Begin Only Trace Chrome"
+print("\nTest Begin Only Trace Chrome")
 gc.enabled = True
 BeginOnlyTrace()
 gc.enabled = False
 gr.ReportChromeTracing()
 gr.ClearTree()
 
-print "\nTest End Only Trace Chrome"
+print("\nTest End Only Trace Chrome")
 gc.enabled = True
 EndOnlyTrace()
 gc.enabled = False
 gr.ReportChromeTracing()
 gr.ClearTree()
 
-print "\nTest Partial Trace Chrome"
+print("\nTest Partial Trace Chrome")
 gc.enabled = True
 PartialTrace()
 gc.enabled = False

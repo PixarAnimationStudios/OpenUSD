@@ -173,19 +173,19 @@ private:
         class_<_Iterator<_ExtractItem> >
             ((name + "_Iterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
-            .def("next", &This::template _Iterator<_ExtractItem>::GetNext)
+            .def(PyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
         class_<_Iterator<_ExtractKey> >
             ((name + "_KeyIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
-            .def("next", &This::template _Iterator<_ExtractKey>::GetNext)
+            .def(PyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
         class_<_Iterator<_ExtractValue> >
             ((name + "_ValueIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
-            .def("next", &This::template _Iterator<_ExtractValue>::GetNext)
+            .def(PyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
             ;
     }
 

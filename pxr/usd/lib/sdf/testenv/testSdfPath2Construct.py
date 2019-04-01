@@ -248,12 +248,14 @@ class TestSdfPath2Construct(unittest.TestCase):
             self.assertEqual(path.GetPrefixes(), prefixes)
             self.assertEqual(path.pathString, str)
             repr = path.__repr__()
-            exec "newPath = %s"%repr
-            self.assertEqual(newPath, path)
+            g = { 'path' : path, 'Sdf' : Sdf }
+            exec("newPath = %s"%repr, g)
+            self.assertEqual(g['newPath'], path)
 
         repr = Sdf.Path.emptyPath.__repr__()
-        exec "newPath = %s"%repr
-        self.assertEqual(newPath, Sdf.Path.emptyPath)
+        g = { 'Sdf' : Sdf }
+        exec("newPath = %s"%repr, g)
+        self.assertEqual(g['newPath'], Sdf.Path.emptyPath)
 
     def test_BadPaths(self):
         for str in badPathStrings:

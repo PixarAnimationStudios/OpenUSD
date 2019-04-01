@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 import argparse
 import glob 
 import os
@@ -39,7 +40,7 @@ def _Stream(path, *args, **kwargs):
             yield fp
 
 def _Print(stream, msg):
-    print >>stream, msg
+    print(msg, file=stream)
 
 def _Err(msg):
     sys.stderr.write(msg + '\n')
@@ -77,7 +78,7 @@ def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, checkCompliance, verbose):
                 filesToAdd += filesInDir
             else:
                 if verbose:
-                    print('.. adding: %s' % f)
+                    print(('.. adding: %s' % f))
                 if os.path.getsize(f) > 0:
                     fileList.append(f)
                 else:
@@ -210,12 +211,12 @@ def main():
 
         if args.verbose:
             if os.path.exists(usdzFile):
-                print("File at path '%s' already exists. Overwriting file." % 
-                        usdzFile)
+                print(("File at path '%s' already exists. Overwriting file." % 
+                        usdzFile))
             
             if args.inputFiles:
-                print('Creating package \'%s\' with files %s.' % 
-                      (usdzFile, inputFiles))
+                print(('Creating package \'%s\' with files %s.' % 
+                      (usdzFile, inputFiles)))
 
             if args.asset or args.arkitAsset:
                 Tf.Debug.SetDebugSymbolsByName("USDUTILS_CREATE_USDZ_PACKAGE", 1)

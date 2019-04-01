@@ -154,10 +154,12 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
 // This structure serves to instantiate a PyBufferProcs instance with pointers
 // to the right buffer protocol functions.
 static PyBufferProcs bufferProcs = {
+#if PY_MAJOR_VERSION == 2
     (readbufferproc) getreadbuf,   /*bf_getreadbuffer*/
     (writebufferproc) getwritebuf, /*bf_getwritebuffer*/
     (segcountproc) getsegcount,    /*bf_getsegcount*/
     (charbufferproc) getcharbuf,   /*bf_getcharbuffer*/
+#endif
     (getbufferproc) getbuffer,
     (releasebufferproc) 0,
 };
@@ -285,13 +287,13 @@ struct GfMatrix4d_Pickle_Suite : boost::python::pickle_suite
 
 static size_t __hash__(GfMatrix4d const &m) { return hash_value(m); }
 
+static boost::python::tuple dimension() { return make_tuple(4, 4); }
+
 } // anonymous namespace 
 
 void wrapMatrix4d()
 {    
     typedef GfMatrix4d This;
-
-    static const tuple _dimension = make_tuple(4, 4);
 
     def("IsClose", (bool (*)(const GfMatrix4d &m1, const GfMatrix4d &m2, double))
         GfIsClose);
@@ -326,7 +328,7 @@ void wrapMatrix4d()
 
         .def( TfTypePythonClass() )
 
-        .def_readonly( "dimension", _dimension )
+        .add_static_property("dimension", dimension)
         .def( "__len__", __len__, "Return number of rows" )
 
         .def( "__getitem__", __getitem__double )

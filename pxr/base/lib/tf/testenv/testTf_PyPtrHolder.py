@@ -24,7 +24,7 @@
 #
 
 import sys
-from pxr.Tf.import *
+from pxr.Tf import *
 
 status = 0
 
@@ -81,7 +81,7 @@ try:
     assert TestWeakObject.GetNumInstances() == 0, err("weak sharing")
     assert q.expired and p.expired, err("weak ptr expiry")
     try:
-        print q.getName()
+        print(q.getName())
     except:
         pass
     else:
@@ -127,13 +127,13 @@ try:
         assert False, err('bad injected method on WeakObject2')
         
 
-except Exception, e:
+except Exception as e:
     status += 1
-    print e
+    print(e)
 
 if status != 0:
-    print "Test FAILED"
+    print("Test FAILED")
 else:
-    print "Test SUCCEEDED"
+    print("Test SUCCEEDED")
 
 sys.exit(status)

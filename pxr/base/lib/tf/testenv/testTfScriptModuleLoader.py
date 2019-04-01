@@ -46,7 +46,7 @@ Tf.Debug.SetDebugSymbolsByName('TF_SCRIPT_MODULE_LOADER', True)
 prefix = Tf.__package__ + '.testenv.testTfScriptModuleLoader_'
 
 def Import(name):
-    exec "import " + prefix + name
+    exec("import " + prefix + name)
 
 # Declare libraries.
 def Register(libs):

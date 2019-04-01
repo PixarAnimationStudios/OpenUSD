@@ -389,7 +389,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
         c.add_property("expired", _IsPtrExpired<UnwrappedPtrType>,
                        (const char *)
                        "True if this object has expired, False otherwise.");
-        c.def("__nonzero__", _IsPtrValid<UnwrappedPtrType>,
+        c.def(PyBoolBuiltinFuncName, _IsPtrValid<UnwrappedPtrType>,
               (char const *)
               "True if this object has not expired.  False otherwise.");
         c.def("__eq__", _ArePtrsEqual<UnwrappedPtrType>,

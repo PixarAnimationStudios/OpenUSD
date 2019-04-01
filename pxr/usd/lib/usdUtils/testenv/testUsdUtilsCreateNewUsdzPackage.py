@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
 from pxr import Ar, Sdf, Usd, UsdUtils
 
 import argparse, contextlib, sys
@@ -66,7 +67,7 @@ if __name__ == '__main__':
 
     with stream(args.outfile, 'w') as ofp:
         for fileName in zipFile.GetFileNames():
-            print >>ofp, fileName
+            print(fileName, file=ofp)
 
     # Validate that the usdz file can be opened on a stage.
     stage = Usd.Stage.Open(args.usdzFile)
@@ -81,7 +82,7 @@ if __name__ == '__main__':
             failedChecks = checker.GetFailedChecks()
             errors = checker.GetErrors()
             for msg in failedChecks + errors:
-                print >>sys.stderr, msg
+                print(msg, file=sys.stderr)
             assert args.numFailedChecks == len(failedChecks)
             assert args.numErrors == len(errors)
 

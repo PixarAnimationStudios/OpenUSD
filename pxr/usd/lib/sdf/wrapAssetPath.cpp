@@ -91,7 +91,7 @@ void wrapAssetPath()
         .def(init<const std::string &, const std::string &>())
 
         .def("__repr__", _Repr)
-        .def("__nonzero__", _Nonzero)
+        .def(PyBoolBuiltinFuncName, _Nonzero)
         .def("__hash__", _Hash)
 
         .def( self == self )

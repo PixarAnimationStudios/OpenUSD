@@ -204,7 +204,7 @@ class TestUsdStageCache(unittest.TestCase):
 
         cache = Usd.StageCache()
 
-        ids = map(cache.Insert, allStages)
+        ids = list(map(cache.Insert, allStages))
         assert all(ids)
 
         for stage, i in zip(allStages, ids):

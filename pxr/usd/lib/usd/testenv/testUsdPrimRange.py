@@ -218,7 +218,7 @@ class TestUsdPrimRange(unittest.TestCase):
     def test_RoundTrip(self):
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestRoundTrip.'+fmt)
-            prims = map(stage.DefinePrim, ['/foo', '/bar', '/baz'])
+            prims = list(map(stage.DefinePrim, ['/foo', '/bar', '/baz']))
 
             treeRange = Usd.PrimRange(stage.GetPseudoRoot())
             tripped = Usd._TestPrimRangeRoundTrip(treeRange)

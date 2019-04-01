@@ -72,7 +72,7 @@ struct TfPyAnnotatedBoolResult :
         using namespace boost::python;
         TfPyLock lock;
         return class_<Derived>(name, no_init)
-            .def("__nonzero__", &Derived::GetValue)
+            .def(PyBoolBuiltinFuncName, &Derived::GetValue)
             .def("__repr__", &Derived::GetRepr)
             .def(self == bool())
             .def(self != bool())

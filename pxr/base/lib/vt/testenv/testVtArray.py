@@ -43,7 +43,7 @@ class TestVtArray(unittest.TestCase):
             Vt.DoubleArray(('foo', 'bar'), (1,2,3))
 
         d = Vt.DoubleArray(10)
-        d[...] = range(10)
+        d[...] = list(range(10))
         d = d[::-1]
         self.assertIsInstance(d, Vt.DoubleArray)
         for i in range(10):
@@ -59,7 +59,7 @@ class TestVtArray(unittest.TestCase):
     def test_TooFewElements(self):
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
-            d[...] = range(3)
+            d[...] = list(range(3))
 
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
@@ -68,7 +68,7 @@ class TestVtArray(unittest.TestCase):
     def test_ZeroElements(self):
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
-            d[...] = range(0)
+            d[...] = list(range(0))
 
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
@@ -101,8 +101,8 @@ class TestVtArray(unittest.TestCase):
         '''Validate VtArray slicing against python list slicing for all
            particular index combinations of one dimensional length 4 arrays.'''
         a = Vt.IntArray(4)
-        a[...] = range(4)
-        l = range(4)
+        a[...] = list(range(4))
+        l = list(range(4))
         for start in range(-2, 7):
             for stop in range(-2, 7):
                 for step in range(-5, 6):
@@ -248,7 +248,7 @@ class TestVtArray(unittest.TestCase):
         # Support non-contiguous numpy arrays -- slicing numpy arrays is a
         # convenient way to get these.
         self.assertEqual(Vt.FloatArray.FromNumpy(
-            numpy.array(Vt.FloatArray(range(33)))[::4]),
+            numpy.array(Vt.FloatArray(list(range(33))))[::4]),
                 Vt.FloatArray(9, (0, 4, 8, 12, 16, 20, 24, 28, 32)))
         self.assertEqual(Vt.Vec3dArray.FromNumpy(
             numpy.array(Vt.Vec3fArray([(1,2,3),(4,5,6),(7,8,9)]))[::-2]),
@@ -262,7 +262,7 @@ class TestVtArray(unittest.TestCase):
             numpy.array([1,2,3,4])), Vt.Vec4dArray([(1,2,3,4)]))
 
         # Simple 1-d double array.
-        da = Vt.DoubleArray(10, range(10))
+        da = Vt.DoubleArray(10, list(range(10)))
         self.assertEqual(Vt.DoubleArray(numpy.array(da)), da)
 
         # Vec3dArray.

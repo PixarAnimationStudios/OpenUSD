@@ -109,7 +109,7 @@ with displayColor.GetVariantEditContext():
 assert sarah_ref.GetAttribute('color').Get() == Gf.Vec3d(2,2,2)
 
 def TestNewPayloadAutoLoading():
-    print 'TestNewPayloadAutoLoading'
+    print('TestNewPayloadAutoLoading')
     
     # Test that switching a variant that introduces a payload causes the payload
     # to be included if the parent is loaded, and vice versa.
@@ -158,5 +158,5 @@ def TestNewPayloadAutoLoading():
 
 TestNewPayloadAutoLoading()
 
-print 'OK'
+print('OK')
 

@@ -275,4 +275,4 @@ gc.EndEventAtTime('A', 8.0)
 
 WriteReport(gr, gc, "recursion_marker_merge.out")
 
-print "Test SUCCEEDED"
+print("Test SUCCEEDED")

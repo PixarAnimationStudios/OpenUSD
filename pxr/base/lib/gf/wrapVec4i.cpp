@@ -145,10 +145,12 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
 // This structure serves to instantiate a PyBufferProcs instance with pointers
 // to the right buffer protocol functions.
 static PyBufferProcs bufferProcs = {
+#if PY_MAJOR_VERSION == 2
     (readbufferproc) getreadbuf,   /*bf_getreadbuffer*/
     (writebufferproc) getwritebuf, /*bf_getwritebuffer*/
     (segcountproc) getsegcount,    /*bf_getsegcount*/
     (charbufferproc) getcharbuf,   /*bf_getcharbuffer*/
+#endif
     (getbufferproc) getbuffer,
     (releasebufferproc) 0,
 };

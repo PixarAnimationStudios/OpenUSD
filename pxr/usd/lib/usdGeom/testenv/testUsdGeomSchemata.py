@@ -478,8 +478,8 @@ class TestUsdGeomSchemata(unittest.TestCase):
         # We need to map the contents of extremeExtentArr to floats from
         # num.float32s due to the way Gf.Vec3f is wrapped out
         # XXX: This is awful, it'd be nice to not do it
-        extremeExtentRange = Gf.Range3f(Gf.Vec3f(*map(float, extremeExtentArr[0])),
-                                        Gf.Vec3f(*map(float, extremeExtentArr[1])))
+        extremeExtentRange = Gf.Range3f(Gf.Vec3f(*list(map(float, extremeExtentArr[0]))),
+                                        Gf.Vec3f(*list(map(float, extremeExtentArr[1]))))
         self.assertTrue(extremeExtentRange.IsEmpty())
 
         # PointBased Test

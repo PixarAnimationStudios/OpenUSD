@@ -37,7 +37,7 @@ class TestSdfPayload(unittest.TestCase):
         ]
         payloads = []
         for values in itertools.product(*[a[1] for a in args]):
-            argvalues = zip([a[0] for a in args], values)
+            argvalues = list(zip([a[0] for a in args], values))
             kw = {}
             for (arg, value) in argvalues:
                 if value:
@@ -49,7 +49,7 @@ class TestSdfPayload(unittest.TestCase):
 
             # Test property access
             for arg, value in argvalues:
-                if kw.has_key(arg):
+                if arg in kw:
                     self.assertEqual( getattr(payload, arg), value )
                 else:
                     self.assertEqual( getattr(payload, arg), getattr(emptyPayload, arg) )

@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import _usdKatana
+from . import _usdKatana
 from pxr import Tf
 Tf.PrepareModule(_usdKatana, locals())
 del Tf

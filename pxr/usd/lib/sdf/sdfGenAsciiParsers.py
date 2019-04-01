@@ -56,7 +56,7 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
         exit('*** Missing files:\n' + '\n'.join(installedNames - generatedNames))
 
     diffs = {}
-    for i in xrange(0, len(installedFiles)):
+    for i in range(0, len(installedFiles)):
         with open(installedFiles[i], 'r') as installedFile,\
              open(generatedFiles[i], 'r') as generatedFile:
             
@@ -72,24 +72,24 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
 
             if diffs and failOnDiff:
                 exit('*** Differing Generated Files:\n' +
-                     '\n'.join(diffs.values()))
+                     '\n'.join(list(diffs.values())))
 
     return diffs
 
 def _copyGeneratedFiles(installedFiles, generatedFiles, diffs):
-    baseNames = map(basename, installedFiles)
+    baseNames = list(map(basename, installedFiles))
     for baseName, generatedFile, installedFile in zip(baseNames, 
                                                       generatedFiles, 
                                                       installedFiles):
         if baseName in diffs:
-            print('Changed: ' + baseName)
-            print(diffs[baseName])
+            print(('Changed: ' + baseName))
+            print((diffs[baseName]))
             if not access(installedFile, W_OK):
-                print('Cannot author ' + installedFile + ', (no write access).')
+                print(('Cannot author ' + installedFile + ', (no write access).'))
             else:
                 copyfile(generatedFile, installedFile) 
         else:
-            print('Unchanged: ' + baseName)
+            print(('Unchanged: ' + baseName))
 
 # -----------------------------------------------------------------------------
 # Code generation functions.
@@ -132,10 +132,10 @@ def _runBisonAndFlexCommands(configuration):
                                   + [flexFiles[index]])
     
     for index, base in enumerate(bases):
-        print 'Running bison on %s' % (base + '.yy')
+        print('Running bison on %s' % (base + '.yy'))
         call(bisonCommand(index))
 
-        print 'Running flex on %s' % (base + '.ll')
+        print('Running flex on %s' % (base + '.ll'))
         with open(flexGenSources[index], 'w') as outputFile:
             call(flexCommand(index), stdout=outputFile)
 
@@ -214,7 +214,7 @@ def _canonicalizeFiles(sourceFiles, generatedFiles):
         replacements.append((oldFileName, newFileName))
 
     for renamedFile in renamed:
-        print 'Fixing line directives in ' + basename(renamedFile)
+        print('Fixing line directives in ' + basename(renamedFile))
 
         with open(renamedFile, 'r+') as inputFile:
             data = inputFile.read()
@@ -279,8 +279,8 @@ def _getConfiguration():
     if not arguments.bases:
         allFiles = listdir(arguments.srcDir)
         validExts = ['.yy', '.ll']
-        relevantFiles = filter(lambda f: splitext(f)[1] in validExts, allFiles)
-        bases = list(set(map(lambda f: splitext(f)[0], relevantFiles)))
+        relevantFiles = [f for f in allFiles if splitext(f)[1] in validExts]
+        bases = list(set([splitext(f)[0] for f in relevantFiles]))
 
         if not bases:
             exit('*** Unable to find source files for parser. Ensure that they '
@@ -344,7 +344,7 @@ def _getCMakeBuildEnvSetting(environmentVariable, configuration):
     # point CMake to it to find the cached variables.
     srcRootDir = configuration[SRC_DIR]
 
-    foundPxr = lambda d: 'pxr' in map(basename, listdir(d))
+    foundPxr = lambda d: 'pxr' in list(map(basename, listdir(d)))
     while exists(srcRootDir) and (not foundPxr(srcRootDir)):
         srcRootDir = dirname(srcRootDir)
 
@@ -355,7 +355,7 @@ def _getCMakeBuildEnvSetting(environmentVariable, configuration):
 
     command = [find_executable('cmake'), '-LA', '-N', srcRootDir]
     output, _ = Popen(command, stdout=PIPE).communicate()
-    line = filter(lambda o: environmentVariable in o, output.split('\n'))[0]
+    line = [o for o in output.split('\n') if environmentVariable in o][0]
     _, envSettingValue = line.strip().split('=')
 
     if not envSettingValue:
@@ -384,9 +384,9 @@ def _getBison(configuration):
 # -----------------------------------------------------------------------------
 
 def _printSection(sectionInfo):
-    print '+-------------------------------------------------+'
-    print sectionInfo
-    print '+-------------------------------------------------+'
+    print('+-------------------------------------------------+')
+    print(sectionInfo)
+    print('+-------------------------------------------------+')
 
 if __name__ == '__main__':
     configuration = _getConfiguration()

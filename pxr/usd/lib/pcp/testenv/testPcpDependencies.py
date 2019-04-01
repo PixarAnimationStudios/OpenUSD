@@ -78,14 +78,14 @@ class TestPcpDependencies(unittest.TestCase):
         a = sorted(deps_lhs, _LessThan)
         b = sorted(deps_rhs, _LessThan)
         if a != b:
-            print 'Only in a:'
+            print('Only in a:')
             for i in a:
                 if i not in b:
-                    print i
-            print 'Only in b:'
+                    print(i)
+            print('Only in b:')
             for i in b:
                 if i not in a:
-                    print i
+                    print(i)
             self.assertEqual(a,b)
 
     def test_Basic(self):

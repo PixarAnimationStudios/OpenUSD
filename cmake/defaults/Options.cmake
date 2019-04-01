@@ -40,6 +40,7 @@ option(PXR_BUILD_MATERIALX_PLUGIN "Build the MaterialX plugin for USD" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
 option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
+option(PXR_PYTHON_MAJOR_3 "Build python bindings against for python 3 major version" OFF)
 option(PXR_ENABLE_MULTIVERSE_SUPPORT "Enable Multiverse backend in the Alembic plugin for USD" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" ON)
 option(PXR_ENABLE_OSL_SUPPORT "Enable OSL (OpenShadingLanguage) based components" OFF)
@@ -134,6 +135,11 @@ if (${PXR_BUILD_USDVIEW})
         message(STATUS
             "Setting PXR_BUILD_USDVIEW=OFF because "
             "PXR_ENABLE_GL_SUPPORT=OFF")
+        set(PXR_BUILD_USDVIEW "OFF" CACHE BOOL "" FORCE)
+    elseif (${PXR_PYTHON_MAJOR_3})
+        message(STATUS
+            "Setting PXR_BUILD_USDVIEW=OFF because "
+            "PXR_PYTHON_MAJOR_3=ON")
         set(PXR_BUILD_USDVIEW "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()

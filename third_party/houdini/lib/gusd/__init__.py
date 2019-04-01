@@ -27,7 +27,7 @@
 # GusdStageOpts uses UsdStage::LoadAll as a default value, so we need to
 # ensure this is present before import.
 from pxr import Usd
-import _gusd
+from . import _gusd
 del Usd
 
 from pxr import Tf

@@ -34,7 +34,7 @@ def PrepareModule(module, result):
                         '__doc__', '__file__', '__path__'])
     newModuleName = result.get('__name__')
 
-    for key, value in module.__dict__.items():
+    for key, value in list(module.__dict__.items()):
         if not key in ignore:
             result[key] = value
 
@@ -42,7 +42,7 @@ def PrepareModule(module, result):
             if newModuleName and hasattr(value, '__module__'):
                 try:
                     setattr(value, '__module__', newModuleName)
-                except AttributeError, e:
+                except AttributeError as e:
                     # The __module__ attribute of Boost.Python.function
                     # objects is not writable, so we get this exception
                     # a lot.  Just ignore it.  We're really only concerned

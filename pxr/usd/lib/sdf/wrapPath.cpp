@@ -279,7 +279,7 @@ void wrapPath() {
             make_function(&This::GetString, 
                 return_value_policy<return_by_value>()))
 
-        .def("__nonzero__", __nonzero__)
+        .def(PyBoolBuiltinFuncName, __nonzero__)
 
         .def(self == self)
         .def(self != self)

@@ -56,4 +56,4 @@ def TestBug141491():
 
 if __name__ == "__main__":
     TestBug141491()
-    print 'OK'
+    print('OK')

@@ -27,7 +27,7 @@ import unittest
 
 class TestSdfFileFormat(unittest.TestCase):
     def test_StaticMethods(self):
-        print 'Testing static methods on SdfFileFormat...'
+        print('Testing static methods on SdfFileFormat...')
 
         # FindById
         # Note that the id and extension are the same in our case

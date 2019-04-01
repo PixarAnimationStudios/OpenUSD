@@ -169,7 +169,7 @@ class TestUsdZipFile(unittest.TestCase):
         # Create .usdz files with two files, where the size of the first file 
         # varies from 1 byte to 64 bytes, then verify that the second file's 
         # data is aligned to 64 bytes.
-        for i in xrange(1, 65):
+        for i in range(1, 65):
             with open("test_align_1.txt", "wb") as f:
                 f.write("a" * i)
 

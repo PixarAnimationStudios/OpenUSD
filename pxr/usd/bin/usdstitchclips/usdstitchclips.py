@@ -67,7 +67,7 @@ assert results.clipPath is not None, "must specify a clip path(--clipPath)"
 assert results.usdFiles is not None, "must specify clip files"
 
 if os.path.isfile(results.out):
-    print "Warning: merging with current result layer"
+    print("Warning: merging with current result layer")
 
 outLayerGenerated = False
 topologyLayerGenerated = False

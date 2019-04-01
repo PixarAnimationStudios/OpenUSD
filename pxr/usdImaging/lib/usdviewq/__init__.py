@@ -21,6 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 import sys, argparse, os
 
 from qt import QtWidgets
@@ -219,6 +220,13 @@ class Launcher(object):
                 if not camPath.IsAbsolutePath():
                     # perhaps we should error here? For now just pre-pending
                     # root, and printing warning...
+                    print >> sys.stderr, "WARNING: camera path %r was not " \
+                                         "absolute, prepending %r to make " \
+                                         "it absolute" % \
+                                         (str(camPath),
+                                          str(Sdf.Path.absoluteRootPath))
+                    camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
+                arg_parse_result.camera = camPath
                     from pxr import Sdf
                     print >> sys.stderr, (
                         "WARNING: camera path %r was not absolute, prepending "
@@ -226,6 +234,13 @@ class Launcher(object):
                             str(Sdf.Path.absoluteRootPath)))
                     arg_parse_result.camera = camPath.MakeAbsolutePath(
                         Sdf.Path.absoluteRootPath)
+                    print("WARNING: camera path %r was not " \
+                                         "absolute, prepending %r to make " \
+                                         "it absolute" % \
+                                         (str(camPath),
+                                          str(Sdf.Path.absoluteRootPath)), file=sys.stderr)
+                    camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
+                arg_parse_result.camera = camPath
 
         if arg_parse_result.clearSettings and arg_parse_result.defaultSettings:
             raise InvalidUsdviewOption(

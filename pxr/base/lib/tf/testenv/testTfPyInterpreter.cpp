@@ -25,8 +25,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyInterpreter.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include <boost/python/handle.hpp>
+
 
 #include <string>
 
@@ -50,15 +52,15 @@ testInterpreter(bool verbose)
     
     handle<> result = TfPyRunString("'hello'\n", Py_eval_input);
     if (!result || !PyString_Check(result.get()) ||
-        (strcmp(PyString_AsString(result.get()), "hello") != 0)) {
+        (strcmp(PyString_AsStdString(result.get()).c_str(), "hello") != 0)) {
         if (!result) {
             printf("ERROR: TfPyRunString, no result.\n");
         } else if (result.get() == Py_None) {
             printf("ERROR: TfPyRunString, result is None.\n");
         } else if (!PyString_Check(result.get())) {
             printf("ERROR: TfPyRunString, result not a string.\n");
-        } else if (strcmp(PyString_AsString(result.get()), "hello") != 0) {
-            printf("ERROR: TfPyRunString, string not expected (%s).\n", PyString_AsString(result.get()));
+        } else if (strcmp(PyString_AsStdString(result.get()).c_str(), "hello") != 0) {
+            printf("ERROR: TfPyRunString, string not expected (%s).\n", PyString_AsStdString(result.get()).c_str());
         }
         //PyObject_Print(result, fdopen(STDOUT_FILENO, "w"), 0);
         numErrors++;

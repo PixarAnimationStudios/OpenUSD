@@ -31,7 +31,7 @@ class TestSdfPath(unittest.TestCase):
         # Test SdfPath creation and pathString
         # ========================================================================
         
-        print '\nTest creating bad paths: warnings expected'
+        print('\nTest creating bad paths: warnings expected')
         
         # XXX: Here are a couple bad paths that are 
         # currently allowed...  add these to the test cases when they are properly 
@@ -66,8 +66,8 @@ class TestSdfPath(unittest.TestCase):
             self.assertTrue(Sdf.Path(badPath).isEmpty)
             self.assertEqual(Sdf.Path(badPath), Sdf.Path())
             self.assertEqual(Sdf.Path(badPath), Sdf.Path.emptyPath)
-            self.assertFalse(Sdf.Path.IsValidPathString(badPath))
-        print '\tPassed'
+            self.assertFalse(Sdf.Path.IsValidPathString(badPath)[0])
+        print('\tPassed')
         
         # Test lessthan
         self.assertTrue(Sdf.Path('aaa') < Sdf.Path('aab'))
@@ -80,7 +80,7 @@ class TestSdfPath(unittest.TestCase):
         # Test SdfPath other queries
         # ========================================================================
         
-        print '\nTest scenepath queries'
+        print('\nTest scenepath queries')
         testPathStrings = [
             "/Foo/Bar.baz",
             "Foo",
@@ -147,7 +147,7 @@ class TestSdfPath(unittest.TestCase):
                 elements[-1] += ':this:has:namespaces'
                 BasicTest(testPaths[-1], elements)
         
-        print '\tPassed'
+        print('\tPassed')
         
         # ========================================================================
         # Test SdfPath hashing
@@ -188,7 +188,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         # Test converting relative paths to absolute paths
         # ========================================================================
-        print "Test converting relative paths to absolute paths"
+        print("Test converting relative paths to absolute paths")
         
         anchor = Sdf.Path("/A/B/E/F/G")
         relPath = Sdf.Path("../../../C/D")
@@ -211,12 +211,12 @@ class TestSdfPath(unittest.TestCase):
         
         # test on an absolute path
         self.assertEqual(anchor.MakeAbsolutePath( anchor ), anchor)
-        print '\tPassed'
+        print('\tPassed')
         
         # ========================================================================
         # Test converting absolute paths to relative paths
         # ========================================================================
-        print "Test converting absolute paths to relative paths"
+        print("Test converting absolute paths to relative paths")
         
         anchor = Sdf.Path("/A/B/E/F/G")
         absPath = Sdf.Path("/A/B/C/D")
@@ -237,12 +237,12 @@ class TestSdfPath(unittest.TestCase):
         # test passing a property path as the anchor
         self.assertEqual(absPath.MakeRelativePath( Sdf.Path( "/A/B.radius") ), "")
         
-        print '\tPassed'
+        print('\tPassed')
         
         # ========================================================================
         # Test converting sub-optimal relative paths to optimal relative paths
         # ========================================================================
-        print "Test converting sub-optimal relative paths to optimal relative paths"
+        print("Test converting sub-optimal relative paths to optimal relative paths")
         
         anchor = Sdf.Path("/A/B/C")
         relPath = Sdf.Path("../../B/C/D")
@@ -250,12 +250,12 @@ class TestSdfPath(unittest.TestCase):
         
         relPath = Sdf.Path("../../../A")
         self.assertEqual(relPath.MakeRelativePath( anchor ), "../..")
-        print '\tPassed'
+        print('\tPassed')
         
         # ========================================================================
         # Test GetPrimPath
         # ========================================================================
-        print "Test GetPrimPath"
+        print("Test GetPrimPath")
         
         primPath = Sdf.Path("/A/B/C").GetPrimPath()
         self.assertEqual(primPath, Sdf.Path("/A/B/C"))
@@ -291,7 +291,7 @@ class TestSdfPath(unittest.TestCase):
         primPath = Sdf.Path("../.foo[target].bar:baz").GetPrimPath()
         self.assertEqual(primPath, Sdf.Path(".."))
         
-        print '\tPassed'
+        print('\tPassed')
         
         # ========================================================================
         # Test GetPrimOrPrimVariantSelectionPath
@@ -326,7 +326,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         # Test HasPrefix and ReplacePrefix
         # ========================================================================
-        print "Test hasPrefix and replacePrefix"
+        print("Test hasPrefix and replacePrefix")
         
         # Test HasPrefix
         self.assertFalse( Sdf.Path.emptyPath.HasPrefix('A') )
@@ -378,7 +378,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         # Test RemoveCommonSuffix
         # ========================================================================
-        print "Test RemoveCommonSuffix"
+        print("Test RemoveCommonSuffix")
         
         aPath = Sdf.Path('/A/B/C')
         bPath = Sdf.Path('/X/Y/Z')
@@ -581,7 +581,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         # Test GetTargetPath
         # ========================================================================
-        print "Test targetPath"
+        print("Test targetPath")
         
         aPath = Sdf.Path("/Lights/Lkey.shinesOn[/Chars/Buzz/Helmet].intensity")
         self.assertEqual( aPath.targetPath, Sdf.Path("/Chars/Buzz/Helmet") )
@@ -603,7 +603,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         # Test GetAllTargetPathsRecursively
         # ========================================================================
-        print "Test GetAllTargetPathsRecursively"
+        print("Test GetAllTargetPathsRecursively")
         
         aPath = Sdf.Path("/Lights/Lkey.shinesOn[/Chars/Buzz/Helmet].intensity")
         self.assertEqual( aPath.GetAllTargetPathsRecursively(), 
@@ -637,7 +637,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test AppendChild
         # =======================================================================
-        print "Test appendChild"
+        print("Test appendChild")
         
         aPath = Sdf.Path("/foo")
         self.assertEqual( aPath.AppendChild("bar"), Sdf.Path("/foo/bar") )
@@ -650,7 +650,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test AppendProperty
         # =======================================================================
-        print "Test appendProperty"
+        print("Test appendProperty")
         
         aPath = Sdf.Path("/foo")
         self.assertEqual( aPath.AppendProperty("prop"), Sdf.Path("/foo.prop") )
@@ -663,7 +663,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test AppendPath
         # =======================================================================
-        print "Test AppendPath"
+        print("Test AppendPath")
         
         # append to empty path -> empty path
         with self.assertRaises(Tf.ErrorException):
@@ -686,7 +686,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test AppendTarget
         # =======================================================================
-        print "Test appendTarget"
+        print("Test appendTarget")
         
         aPath = Sdf.Path("/foo.rel")
         self.assertEqual( aPath.AppendTarget("/Bar/Baz"), Sdf.Path("/foo.rel[/Bar/Baz]") )
@@ -697,7 +697,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test AppendRelationalAttribute
         # =======================================================================
-        print "Test appendRelationalAttribute"
+        print("Test appendRelationalAttribute")
         
         aPath = Sdf.Path("/foo.rel[/Bar/Baz]")
         self.assertEqual( aPath.AppendRelationalAttribute("attr"), Sdf.Path("/foo.rel[/Bar/Baz].attr") )
@@ -710,7 +710,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test GetParentPath and GetName
         # =======================================================================
-        print "Test parentPath, name, and replaceName"
+        print("Test parentPath, name, and replaceName")
         
         self.assertEqual(Sdf.Path("/foo/bar/baz").GetParentPath(), Sdf.Path("/foo/bar"))
         self.assertEqual(Sdf.Path("/foo").GetParentPath(), Sdf.Path("/"))
@@ -793,7 +793,7 @@ class TestSdfPath(unittest.TestCase):
         # =======================================================================
         # Test GetConciseRelativePaths
         # =======================================================================
-        print "Test GetConciseRelativePaths"
+        print("Test GetConciseRelativePaths")
         
         aPath = Sdf.Path("/foo/bar")
         bPath = Sdf.Path("/foo/baz")
@@ -833,7 +833,7 @@ class TestSdfPath(unittest.TestCase):
         # Test RemoveDescendentPaths
         # =======================================================================
         
-        print "Test RemoveDescendentPaths"
+        print("Test RemoveDescendentPaths")
         
         paths = [Sdf.Path(x) for x in
                  ['/a/b/c', '/q', '/a/b/c/d/e/f/g', '/r/s/t', '/a/b', 
@@ -852,7 +852,7 @@ class TestSdfPath(unittest.TestCase):
         # Test RemoveAncestorPaths
         # =======================================================================
         
-        print "Test RemoveAncestorPaths"
+        print("Test RemoveAncestorPaths")
         
         paths = [Sdf.Path(x) for x in
                  ['/a/b/c', '/q', '/a/b/c/d/e/f/g', '/r/s/t', '/a/b', 
@@ -872,13 +872,13 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         
         def testFindPrefixedRangeAndFindLongestPrefix():
-            print "Test FindPrefixedRange and FindLongestPrefix"
+            print("Test FindPrefixedRange and FindLongestPrefix")
         
             import random, time
             rgen = random.Random()
             seed = int(time.time())
             rgen.seed(seed)
-            print 'random seed', seed
+            print('random seed', seed)
         
             letters = [chr(x) for x in range(ord('a'), ord('d')+1)]
             maxLen = 8
@@ -932,7 +932,7 @@ class TestSdfPath(unittest.TestCase):
                 testFindLongestPrefix(testp, paths)
         
             # Do a few simple cases directly.
-            paths = map(Sdf.Path, ['/a', '/a/b/c/d', '/b/a', '/b/c/d/e'])
+            paths = list(map(Sdf.Path, ['/a', '/a/b/c/d', '/b/a', '/b/c/d/e']))
             flp = Sdf.Path.FindLongestPrefix
             self.assertEqual(flp(paths, '/x'), None)
             self.assertEqual(flp(paths, '/a'), Sdf.Path('/a'))
@@ -951,9 +951,9 @@ class TestSdfPath(unittest.TestCase):
         
         Sdf._DumpPathStats()
         
-        print '\tPassed'
+        print('\tPassed')
         
-        print 'Test SUCCEEDED'
+        print('Test SUCCEEDED')
 
 if __name__ == "__main__":
     unittest.main()

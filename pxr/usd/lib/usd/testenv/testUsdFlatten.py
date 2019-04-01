@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
 import os, shutil, sys, unittest
 from pxr import Usd, Sdf, Tf
 
@@ -55,11 +56,11 @@ def _CompareMetadata(composed, flat, indent):
 
     cdata = composed.GetAllMetadata()
     fdata = flat.GetAllMetadata()
-    for cKey in cdata.keys():
+    for cKey in list(cdata.keys()):
         if cKey in exclude:
             continue
 
-        print (" " * indent) + ":",cKey
+        print((" " * indent) + ":",cKey)
         assert cKey in fdata, str(composed.GetPath()) + " : " + cKey
         assert composed.GetMetadata(cKey) == flat.GetMetadata(cKey), "GetMetadata -- " + str(composed.GetPath()) + " : " + cKey
         assert cdata[cKey] == fdata[cKey], str(composed.GetPath()) + " : " + cKey
@@ -74,7 +75,7 @@ class TestUsdFlatten(unittest.TestCase):
         assert flat.GetPrimAtPath("/Foo").GetAttribute("size").Get(3.0) == 1.0
 
         for pc in composed.Traverse():
-            print pc.GetPath()
+            print(pc.GetPath())
 
             # We elide deactivated prims, so skip the check.
             if not pc.IsActive():
@@ -86,7 +87,7 @@ class TestUsdFlatten(unittest.TestCase):
             _CompareMetadata(pc, pf, 1)
 
             for attr in pf.GetAttributes():
-                print "    Attr:" , attr.GetName()
+                print("    Attr:" , attr.GetName())
                 assert attr.IsDefined()
 
                 attrc = pc.GetAttribute(attr.GetName())
@@ -99,19 +100,19 @@ class TestUsdFlatten(unittest.TestCase):
                 ts_f = attr.GetTimeSamples()
                 self.assertEqual(ts_f, ts_c)
                 if len(ts_c):
-                    print ((" "*12) + "["),
+                    print(((" "*12) + "["), end=' ')
                 for t in ts_c:
                     self.assertEqual(attrc.Get(t), attr.Get(t))
-                    print ("%.1f," % t),
+                    print(("%.1f," % t), end=' ')
                 if len(ts_c):
-                    print "]"
+                    print("]")
 
                 # Compare defaults.
                 self.assertEqual(attrc.Get(), attr.Get())
-                print " "*12 + 'default =', attr.Get()
+                print(" "*12 + 'default =', attr.Get())
 
             for rel in pf.GetRelationships():
-                print "    Rel:" , rel.GetName()
+                print("    Rel:" , rel.GetName())
                 assert rel and rel.IsDefined()
                 _CompareMetadata(pc.GetRelationship(rel.GetName()), rel, 10)
 
@@ -155,16 +156,16 @@ class TestUsdFlatten(unittest.TestCase):
         # verify that flattening a valid clip range works
         assert _CompareFlattened("clips/root.usd", 
                                  "/World/fx/Particles_Splash/points",
-                                 range(101, 105))
+                                 list(range(101, 105)))
 
         assert _CompareFlattened("hole_clips/root.usd", 
                                 "/World/fx/Particles_Splash/points",
-                                range(101, 105))
+                                list(range(101, 105)))
 
         # verify that flattening with a sparse topology works
         assert _CompareFlattened("sparse_topology_clips/root.usda",
                                 "/World/fx/Particles_Splash/points",
-                                range(101, 105))
+                                list(range(101, 105)))
 
     def test_FlattenBadMetadata(self):
         # Shouldn't fail with unknown fields.

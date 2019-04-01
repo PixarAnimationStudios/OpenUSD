@@ -29,7 +29,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
     def test_Compute(self):
         stage = Usd.Stage.CreateInMemory()
 
-        print "Ensuring non-imageable prims with no opinions evaluate to defaults"
+        print("Ensuring non-imageable prims with no opinions evaluate to defaults")
 
         ni_Root  = stage.DefinePrim("/ni_Root")
         ni_sub   =  stage.DefinePrim("/ni_Root/ni_Sub")
@@ -54,7 +54,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
                 UsdGeom.Tokens.default_, 
                 img.GetPrim().GetPath())
         
-        print "Ensuring non-imageable prims WITH opinions STILL evaluate to defaults"
+        print("Ensuring non-imageable prims WITH opinions STILL evaluate to defaults")
         ni_sub.CreateAttribute(UsdGeom.Tokens.visibility, Sdf.ValueTypeNames.Token).Set(UsdGeom.Tokens.invisible)
         ni_sub.CreateAttribute(UsdGeom.Tokens.purpose, Sdf.ValueTypeNames.Token).Set(UsdGeom.Tokens.render)
         
@@ -69,7 +69,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(img.ComputePurpose(), UsdGeom.Tokens.default_, 
                     img.GetPrim().GetPath())
         
-        print "Ensuring imageable leaf prim can have opinions"
+        print("Ensuring imageable leaf prim can have opinions")
         i_Root  = UsdGeom.Scope.Define(stage,  "/i_Root")
         i_sub   =  UsdGeom.Scope.Define(stage, "/i_Root/i_Sub")
         i_leaf  =  UsdGeom.Scope.Define(stage, "/i_Root/i_Sub/i_leaf")
@@ -85,7 +85,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(i_leaf.ComputePurpose(), UsdGeom.Tokens.guide, 
                     i_leaf.GetPrim().GetPath())
         
-        print "Ensuring imageable leaf prim is shadowed by Imageable parent opinions"
+        print("Ensuring imageable leaf prim is shadowed by Imageable parent opinions")
         i_leaf.GetVisibilityAttr().Set(UsdGeom.Tokens.inherited)
         i_sub.GetPurposeAttr().Set(UsdGeom.Tokens.proxy)
         i_sub.GetVisibilityAttr().Set(UsdGeom.Tokens.invisible)
@@ -95,7 +95,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(i_leaf.ComputePurpose(), UsdGeom.Tokens.proxy, 
                     i_leaf.GetPrim().GetPath())
         
-        print "Ensuring imageable leaf prim is NOT shadowed by non-Imageable parent opinions"
+        print("Ensuring imageable leaf prim is NOT shadowed by non-Imageable parent opinions")
         i_sub.GetPrim().SetTypeName('')
         
         self.assertEqual(i_leaf.ComputeVisibility(), UsdGeom.Tokens.inherited, 
@@ -103,7 +103,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(i_leaf.ComputePurpose(), UsdGeom.Tokens.guide, 
                     i_leaf.GetPrim().GetPath())
         
-        print "Ensuring imageable most ancestral imageable opinion wins when there are many"
+        print("Ensuring imageable most ancestral imageable opinion wins when there are many")
         i_sub.GetPrim().SetTypeName('Scope')
         # The fallbacks are special, let's make sure authoring them doesn't change 
         # results - i.e. values authored on i_sub should win
@@ -144,7 +144,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(root.ComputeVisibility(), UsdGeom.Tokens.inherited,
                     root.GetPrim().GetPath())
 
-        print 'Test that making a root invisible makes all the prims invisible.'
+        print('Test that making a root invisible makes all the prims invisible.')
         root.MakeInvisible()
         self.assertEqual(root.ComputeVisibility(), UsdGeom.Tokens.invisible,
                     root.GetPrim().GetPath())
@@ -153,7 +153,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(leaf.ComputeVisibility(), UsdGeom.Tokens.invisible,
                     leaf.GetPrim().GetPath())
 
-        print 'Test that making the leaf visible causes everything to become visible.'
+        print('Test that making the leaf visible causes everything to become visible.')
         leaf.MakeVisible(Usd.TimeCode.Default())
         self.assertEqual(root.ComputeVisibility(), UsdGeom.Tokens.inherited,
                     root.GetPrim().GetPath())
@@ -162,7 +162,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(leaf.ComputeVisibility(), UsdGeom.Tokens.inherited,
                     leaf.GetPrim().GetPath())
         
-        print 'Test that making the subscope invisible causes only the subscope and the leaf to be invisisible. Not the root.'
+        print('Test that making the subscope invisible causes only the subscope and the leaf to be invisisible. Not the root.')
         sub.MakeInvisible()
         self.assertEqual(root.ComputeVisibility(), UsdGeom.Tokens.inherited,
                     root.GetPrim().GetPath())
@@ -171,7 +171,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(leaf.ComputeVisibility(), UsdGeom.Tokens.invisible,
                     leaf.GetPrim().GetPath())
 
-        print 'Test invising just the leaf.'
+        print('Test invising just the leaf.')
         leaf.MakeInvisible()
         sub.MakeVisible()
         self.assertEqual(root.ComputeVisibility(), UsdGeom.Tokens.inherited,
@@ -181,7 +181,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(leaf.ComputeVisibility(), UsdGeom.Tokens.invisible,
                     leaf.GetPrim().GetPath())
 
-        print 'Test vising everything again.'
+        print('Test vising everything again.')
         root.MakeVisible()
         leaf.MakeVisible()
         self.assertEqual(root.ComputeVisibility(), UsdGeom.Tokens.inherited,
@@ -191,7 +191,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(leaf.ComputeVisibility(), UsdGeom.Tokens.inherited,
                     leaf.GetPrim().GetPath())
 
-        print 'Test with a couple of new subtrees.'
+        print('Test with a couple of new subtrees.')
         root2  =  UsdGeom.Scope.Define(stage, "/Root2")
         sub2   =  UsdGeom.Scope.Define(stage, "/Root/Sub2")
         leaf2  =  UsdGeom.Scope.Define(stage, "/Root/Sub2/Leaf2")
@@ -227,7 +227,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         #     |
         #     E
         # Make A invisible and then make E visible. Test that D remains invisible.
-        print 'Test preservation of visibility state.'
+        print('Test preservation of visibility state.')
         a = UsdGeom.Scope.Define(stage, "/A")
         b = UsdGeom.Scope.Define(stage, "/A/B")
         c = UsdGeom.Scope.Define(stage, "/A/B/C")
@@ -241,7 +241,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(d.ComputeVisibility(), UsdGeom.Tokens.invisible, d.GetPath())
         self.assertEqual(e.ComputeVisibility(), UsdGeom.Tokens.inherited, e.GetPath())
 
-        print 'Test non-default visibility authoring.'
+        print('Test non-default visibility authoring.')
         d.MakeVisible()
         a.MakeInvisible(1.0)
         e.MakeVisible(1.0)
@@ -266,7 +266,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         # with: C has purpose 'render' and proxyPrim targets D
         #       D has purpose proxy
         #       F has purpose render and proxyPrim targets B (which is default)
-        print 'Test authoring and computing renderProxy.'
+        print('Test authoring and computing renderProxy.')
         a = UsdGeom.Scope.Define(stage, "/A")
         b = UsdGeom.Scope.Define(stage, "/A/B")
         c = UsdGeom.Scope.Define(stage, "/A/B/C")

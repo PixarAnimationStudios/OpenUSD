@@ -75,7 +75,7 @@ def main():
         _Err("Failed to resolve '%s'" % args.inputPath)
         exitCode = 1
     else:
-        print resolved
+        print(resolved)
     
     return exitCode
 

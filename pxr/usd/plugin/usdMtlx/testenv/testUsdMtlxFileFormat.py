@@ -115,7 +115,7 @@ class TestFileFormat(unittest.TestCase):
 
         stage = UsdMtlx._TestFile('NodeGraphs.mtlx', nodeGraphs=True)
         with open('NodeGraphs.usda', 'w') as f:
-            print >>f, stage.GetRootLayer().ExportToString()
+            print(stage.GetRootLayer().ExportToString(), file=f)
 
     def test_Looks(self):
         """
@@ -124,7 +124,7 @@ class TestFileFormat(unittest.TestCase):
 
         stage = UsdMtlx._TestFile('Looks.mtlx')
         with open('Looks.usda', 'w') as f:
-            print >>f, stage.GetRootLayer().ExportToString()
+            print(stage.GetRootLayer().ExportToString(), file=f)
 
 if __name__ == '__main__':
     unittest.main()

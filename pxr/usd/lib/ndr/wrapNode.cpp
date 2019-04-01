@@ -44,7 +44,7 @@ void wrapNode()
 
     class_<This, ThisPtr, boost::noncopyable>("Node", no_init)
         .def("__repr__", &This::GetInfoString)
-        .def("__nonzero__", &This::IsValid)
+        .def(PyBoolBuiltinFuncName, &This::IsValid)
         .def("GetIdentifier", &This::GetIdentifier, copyRefPolicy)
         .def("GetVersion", &This::GetVersion)
         .def("GetName", &This::GetName, copyRefPolicy)

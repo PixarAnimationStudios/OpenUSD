@@ -26,6 +26,7 @@
 
 # Usage: python -m pxr.Trace [-o OUTPUT] [-c "command" | FILE]
 
+from __future__ import print_function
 import argparse, sys
 
 parser = argparse.ArgumentParser(description='Trace script execution.')
@@ -43,11 +44,11 @@ parser.add_argument('file', metavar="FILE",
 args = parser.parse_args()
 
 if not args.cmd and not args.file:
-    print >>sys.stderr, "Must specify a command or script to trace"
+    print("Must specify a command or script to trace", file=sys.stderr)
     sys.exit(1)
 
 if args.cmd and args.file:
-    print >>sys.stderr, "Only one of -c or FILE may be specified"
+    print("Only one of -c or FILE may be specified", file=sys.stderr)
     sys.exit(1)
 
 from pxr import Trace
@@ -59,11 +60,11 @@ env = {}
 if args.file:
     @Trace.TraceFunction
     def Main():
-        execfile(args.file, env)
+        exec(compile(open(args.file).read(), args.file, 'exec'), env)
 else:
     @Trace.TraceFunction
     def Main():
-        exec args.cmd in env
+        exec(args.cmd, env)
 
 try:
     Trace.Collector().enabled = True

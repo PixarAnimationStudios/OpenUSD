@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import _sdrOsl
+from . import _sdrOsl
 from pxr import Tf
 Tf.PrepareModule(_sdrOsl, locals())
 del Tf

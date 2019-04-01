@@ -60,5 +60,5 @@ def Main(argv):
 
 if __name__ == "__main__":
     Main(sys.argv)
-    print 'OK'
+    print('OK')
 

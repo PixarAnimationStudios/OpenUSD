@@ -50,10 +50,10 @@ def GetReferenceAssemblies(parentNodes=None):
     ASSEMBLY_NODE_TYPE = 'pxrUsdReferenceAssembly'
 
     if parentNodes:
-        refAssemblies = cmds.ls(parentNodes, dagObjects=True, long=True,
+        refAssemblies = cmds.ls(parentNodes, dagObjects=True, int=True,
             type=ASSEMBLY_NODE_TYPE)
     else:
-        refAssemblies = cmds.ls(dagObjects=True, long=True,
+        refAssemblies = cmds.ls(dagObjects=True, int=True,
             type=ASSEMBLY_NODE_TYPE)
 
     return refAssemblies or []
@@ -92,7 +92,7 @@ def LoadReferenceAssemblies(parentNodes=None):
             isInterruptable=True, minValue=0, maxValue=numRefAssemblies,
             status='Loading USD reference assemblies...')
 
-    for i in xrange(numRefAssemblies):
+    for i in range(numRefAssemblies):
         refAssembly = refAssemblies[i]
 
         if mainProgressBar:

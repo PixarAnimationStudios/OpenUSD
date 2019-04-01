@@ -332,10 +332,12 @@ struct Vt_ArrayBufferProcs
 };
 template <class T>
 PyBufferProcs Vt_ArrayBufferProcs<T>::procs = {
+#if PY_MAJOR_VERSION == 2
     (readbufferproc) Vt_getreadbuf<T>,   /*bf_getreadbuffer*/
     (writebufferproc) Vt_getwritebuf<T>, /*bf_getwritebuffer*/
     (segcountproc) Vt_getsegcount<T>,    /*bf_getsegcount*/
     (charbufferproc) Vt_getcharbuf<T>,   /*bf_getcharbuffer*/
+#endif
     (getbufferproc) Vt_getbuffer<T>,
     (releasebufferproc) Vt_releasebuffer<T>,
 };

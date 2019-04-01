@@ -65,8 +65,8 @@ class testUsdGeomSubset(unittest.TestCase):
         for familyName in invalidFamilies:
             (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName=familyName)
-            print "Face-subset family '%s' should be invalid because: %s" % \
-                (familyName, reason)
+            print("Face-subset family '%s' should be invalid because: %s" % \
+                (familyName, reason))
             self.assertFalse(valid)
             self.assertTrue(len(reason) > 0)
 

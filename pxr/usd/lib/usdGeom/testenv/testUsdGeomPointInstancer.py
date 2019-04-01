@@ -70,7 +70,7 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
 
         self.assertEqual(len(xforms), len(expectedXforms))
 
-        for i in xrange(len(xforms)):
+        for i in range(len(xforms)):
             xf = xforms[i]
             ex = expectedXforms[i]
             for a, b in zip(xf, ex):
@@ -315,7 +315,7 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
         UsdGeom.Xformable(instancer).AddTranslateOp().Set((11,11,11))
 
         positions = [Gf.Vec3f(0,0,0)]*4
-        indices = range(4)
+        indices = list(range(4))
         self._SetTransformComponentsAndIndices(
             instancer, positions=positions, indices=indices)
         
@@ -357,20 +357,20 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
 
         # vectorized
         for i, wbox in enumerate(bboxCache.ComputePointInstanceWorldBounds(
-                instancer, xrange(4))):
+                instancer, range(4))):
             self.assertEqual(wbox, Gf.BBox3d(unitBox, cases[i][1]*
                                              instancerxf*parentxf*worldxf))
         for i, wbox in enumerate(bboxCache.ComputePointInstanceRelativeBounds(
-                instancer, xrange(4), world.GetPrim())):
+                instancer, range(4), world.GetPrim())):
             self.assertEqual(wbox, Gf.BBox3d(unitBox, cases[i][1]*
                                              instancerxf*parentxf)) 
         for i, wbox in enumerate(bboxCache.ComputePointInstanceLocalBounds(
-                instancer, xrange(4))):
+                instancer, range(4))):
             self.assertEqual(wbox, Gf.BBox3d(unitBox, cases[i][1]*
                                              instancerxf))
         for i, wbox in enumerate(
                 bboxCache.ComputePointInstanceUntransformedBounds(
-                    instancer, xrange(4))):
+                    instancer, range(4))):
             self.assertEqual(wbox, Gf.BBox3d(unitBox, cases[i][1]))
 
 

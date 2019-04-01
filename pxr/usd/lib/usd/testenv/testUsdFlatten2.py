@@ -42,4 +42,4 @@ if args.session:
     sessionLayer = Sdf.Layer.FindOrOpen(sessionLayerPath)
 
 usd = Usd.Stage.Open(rootLayer, sessionLayer)
-print usd.ExportToString(addSourceFileComment=False)
+print(usd.ExportToString(addSourceFileComment=False))

@@ -129,8 +129,8 @@ def _stripPath(f, pathPattern):
 
 def _cleanOutput(pathPattern, fileName, verbose):
     if verbose:
-        print "stripping path pattern {0} from file {1}".format(pathPattern, 
-                                                                fileName)
+        print("stripping path pattern {0} from file {1}".format(pathPattern, 
+                                                                fileName))
     _stripPath(fileName, pathPattern)
     return True
 
@@ -145,7 +145,7 @@ def _diff(fileName, baselineDir, verbose):
         diff = '/usr/bin/diff'
     cmd = [diff, _resolvePath(baselineDir, fileName), fileName]
     if verbose:
-        print "diffing with {0}".format(cmd)
+        print("diffing with {0}".format(cmd))
 
     # This will print any diffs to stdout which is a nice side-effect
     return subprocess.call(cmd) == 0
@@ -189,7 +189,7 @@ def _runCommand(raw_command, stdout_redir, stderr_redir, env,
     cmd = _splitCmd(raw_command)
     fout, ferr = _getRedirects(stdout_redir, stderr_redir)
     try:
-        print "cmd: %s" % (cmd, )
+        print("cmd: %s" % (cmd, ))
         retcode = _convertRetCode(subprocess.call(cmd, shell=False, env=env,
                                   stdout=(fout or sys.stdout), 
                                   stderr=(ferr or sys.stderr)))
@@ -225,13 +225,13 @@ if __name__ == '__main__':
     testDir = tempfile.mkdtemp()
     os.chdir(testDir)
     if args.verbose:
-        print "chdir: {0}".format(testDir)
+        print("chdir: {0}".format(testDir))
 
     # Copy the contents of the testenv directory into our test run directory so
     # the test has it's own copy that it can reference and possibly modify.
     if args.testenv_dir and os.path.isdir(args.testenv_dir):
         if args.verbose:
-            print "copying testenv dir: {0}".format(args.testenv_dir)
+            print("copying testenv dir: {0}".format(args.testenv_dir))
         try:
             _copyTree(args.testenv_dir, os.getcwd())
         except Exception as e:
@@ -281,7 +281,7 @@ if __name__ == '__main__':
     if args.files_exist:        
         for f in args.files_exist:
             if args.verbose:
-                print 'checking if {0} exists.'.format(f)
+                print('checking if {0} exists.'.format(f))
             if not os.path.exists(f):
                 sys.stderr.write('Error: {0} does not exist '
                                  '(FILES_EXIST).'.format(f))
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     if args.files_dont_exist:
         for f in args.files_dont_exist:
             if args.verbose:
-                print 'checking if {0} does not exist.'.format(f)
+                print('checking if {0} does not exist.'.format(f))
             if os.path.exists(f):
                 sys.stderr.write('Error: {0} does exist '
                                  '(FILES_DONT_EXIST).'.format(f))

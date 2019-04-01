@@ -33,10 +33,10 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
         # Confirm that the tag makde it into the display name.
         self.assertTrue('test.usda' in layer.GetDisplayName())
 
-        print '#'*72
-        print 'Flattened layer:'
-        print layer.ExportToString()
-        print '#'*72
+        print('#'*72)
+        print('Flattened layer:')
+        print(layer.ExportToString())
+        print('#'*72)
 
         # Run the same set of queries against the src and dest stages.
         # They should yield the same results.

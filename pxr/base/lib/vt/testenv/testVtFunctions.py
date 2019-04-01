@@ -32,7 +32,7 @@ class TestVtFunctions(unittest.TestCase):
 
     def test_Constructors(self):
         v = Vt.FloatArray((1,2,3,4,5,6))
-        w = Vt.FloatArray(range(9))
+        w = Vt.FloatArray(list(range(9)))
 
     def test_Cat(self):
         v = Vt.FloatArray((1,2,3,4,5,6))

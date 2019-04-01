@@ -36,6 +36,7 @@ namespace {
 static void
 _SetOutputFile(object const &file)
 {
+#if PY_MAJOR_VERSION == 2
     FILE *fp = PyFile_AsFile(file.ptr());
     if (!fp)
         TfPyThrowTypeError("expected file object");
@@ -55,6 +56,9 @@ _SetOutputFile(object const &file)
     }
 
     TfDebug::SetOutputFile(fp);
+#else 
+    TfPyThrowTypeError("_SetOutputFile is unsupported on python3");
+#endif
 }
 
 } // anonymous namespace 

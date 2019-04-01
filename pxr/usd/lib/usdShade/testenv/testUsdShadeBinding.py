@@ -69,7 +69,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         # the weaker binding to shine through
         UsdShade.MaterialBindingAPI(gps).GetDirectBindingRel().ClearTargets(True)
 
-        print rl.ExportToString()
+        print(rl.ExportToString())
 
         self.assertEqual(lb.GetTargets(), [Sdf.Path("/composed/look1")])
 

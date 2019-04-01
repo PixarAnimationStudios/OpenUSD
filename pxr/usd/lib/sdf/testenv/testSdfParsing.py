@@ -32,6 +32,7 @@
 # same.  This is to detect any accumulative error, such as quoting or
 # escaping errors.
 
+from __future__ import print_function
 import sys, os, difflib, unittest
 from pxr import Tf, Sdf
 
@@ -227,7 +228,7 @@ class TestSdfParsing(unittest.TestCase):
         # we don't close our handle.
         layerFileOut.close()
 
-        print "LAYERDIR: %s"%layerDir
+        print("LAYERDIR: %s"%layerDir)
 
         # Register test plugin containing plugin metadata definitions.
         from pxr import Plug
@@ -246,7 +247,7 @@ class TestSdfParsing(unittest.TestCase):
                     layer.Export(exportFile)
 
                 except:
-                    print 'Unable to export layer %s to %s' % (layerFile, exportFile)
+                    print('Unable to export layer %s to %s' % (layerFile, exportFile))
 
         # Helper code to generate baseline layers. Uncomment to export 'good' layers
         # in the test list to the specified directory.
@@ -266,51 +267,51 @@ class TestSdfParsing(unittest.TestCase):
                 layerFile = "%s/%s"%(layerDir, file)
 
             if (file == "") or ('_bad_' in file):
-                print '\nTest bad file "%s"' % layerFile
-                print '\tReading "%s"' % layerFile
+                print('\nTest bad file "%s"' % layerFile)
+                print('\tReading "%s"' % layerFile)
                 try:
                     layer = Sdf.Layer.FindOrOpen( layerFile )
                 except Tf.ErrorException:
                     # Parsing errors should always be Tf.ErrorExceptions
-                    print '\tErrors encountered, as expected'
-                    print '\tPassed'
+                    print('\tErrors encountered, as expected')
+                    print('\tPassed')
                     continue
                 except:
                     # Empty file fails with a different error, and that's ok
                     if file != "":
-                        print '\tNon-TfError encountered'
-                        print '\tFAILED'
-                        raise RuntimeError, "failure to load '%s' should cause Tf.ErrorException, not some other failure" % layerFile
+                        print('\tNon-TfError encountered')
+                        print('\tFAILED')
+                        raise RuntimeError("failure to load '%s' should cause Tf.ErrorException, not some other failure" % layerFile)
                     else:
-                        print '\tErrors encountered, as expected'
-                        print '\tPassed'
+                        print('\tErrors encountered, as expected')
+                        print('\tPassed')
                         continue
                 else:
-                    raise RuntimeError, "should not be able to load '%s'" % layerFile
+                    raise RuntimeError("should not be able to load '%s'" % layerFile)
 
-            print '\nTest %s' % layerFile
+            print('\nTest %s' % layerFile)
 
-            print '\tReading...'
+            print('\tReading...')
             layer = Sdf.Layer.FindOrOpen(layerFile)
             self.assertTrue(layer is not None,
                             "failed to open @%s@" % layerFile)
-            print '\tWriting...'
+            print('\tWriting...')
             try:
                 self.assertTrue(layer.Export( layerFileOut.name ))
             except Exception as e:
                 if '_badwrite_' in file:
                     # Write errors should always be Tf.ErrorExceptions
-                    print '\tErrors encountered during write, as expected'
-                    print '\tPassed'
+                    print('\tErrors encountered during write, as expected')
+                    print('\tPassed')
                     continue
                 else:
-                    raise RuntimeError, "failure to write '%s': %s" % (layerFile, e)
+                    raise RuntimeError("failure to write '%s': %s" % (layerFile, e))
 
             # Compare the exported layer against baseline results. Note that we can't
             # simply compare against the original layer, because exporting may have
             # applied formatting and other changes that cause the files to be different,
             # even though the scene description is the same.
-            print '\tComparing against expected results...'
+            print('\tComparing against expected results...')
 
             expectedFile = "%s/%s" % (baselineDir, file)
 
@@ -325,19 +326,19 @@ class TestSdfParsing(unittest.TestCase):
                 layerData, expectedLayerData,
                 layerFileOut.name, expectedFile))
             if diff:
-                print "ERROR: '%s' and '%s' are different." % \
-                    (layerFileOut.name, expectedFile)
+                print("ERROR: '%s' and '%s' are different." % \
+                    (layerFileOut.name, expectedFile))
                 for line in diff:
-                    print line,
+                    print(line, end=' ')
                 sys.exit(1)
 
-            print '\tPassed'
+            print('\tPassed')
 
         removeFiles(layerFileOut.name)
 
         self.assertEqual(None, Sdf.Layer.FindOrOpen(''))
 
-        print '\nTest SUCCEEDED'
+        print('\nTest SUCCEEDED')
 
 if __name__ == "__main__":
     unittest.main()

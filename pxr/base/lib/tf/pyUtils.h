@@ -381,4 +381,65 @@ void TfPyPrintError();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+// Python 3 migrating helpers:
+#if PY_MAJOR_VERSION >= 3
+#define PyString_Check(a) (PyBytes_Check(a) || PyUnicode_Check(a))
+
+inline std::string PyString_AsStdString(PyObject* str)
+{
+    std::string res;
+
+    if (PyUnicode_Check(str)) {
+        PyObject * temp_bytes = PyUnicode_AsEncodedString(str, "UTF-8", "strict"); // Owned reference
+        if (temp_bytes != NULL) {
+            res = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+            Py_DECREF(temp_bytes);
+        }
+        else {
+            // TODO: Handle encoding error.
+        }
+    }
+    else if (PyBytes_Check(str)) {
+        res = PyBytes_AS_STRING(str); // Borrowed pointer
+    }
+    return res;
+}
+
+
+#define Py_TPFLAGS_HAVE_NEWBUFFER 0
+#define Py_TPFLAGS_HAVE_GETCHARBUFFER 0
+
+/* PyInt -> PyLong remapping */
+#define PyInt_AsLong PyLong_AsLong
+#define PyInt_Check PyLong_Check
+#define PyInt_FromString PyLong_FromString
+#define PyInt_FromUnicode PyLong_FromUnicode
+#define PyInt_FromLong PyLong_FromLong
+#define PyInt_FromSize_t PyLong_FromSize_t
+#define PyInt_FromSsize_t PyLong_FromSsize_t
+#define PyInt_AsLong PyLong_AsLong
+// Note: Slightly different semantics, the macro does not do any error checking
+#define PyInt_AS_LONG PyLong_AsLong
+#define PyInt_AsSsize_t PyLong_AsSsize_t
+#define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
+#define PyInt_AsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
+
+#define PyIteratorNextMethodName "__next__"
+#define PyClassMethodFuncName "__func__"
+#define PyBoolBuiltinFuncName "__bool__"
+
+#else
+
+#define PyIteratorNextMethodName "next"
+#define PyClassMethodFuncName "im_func"
+#define PyBoolBuiltinFuncName "__nonzero__"
+
+inline std::string PyString_AsStdString(PyObject* str)
+{
+    return std::string(PyString_AsString(str));
+}
+
+#endif
+
+
 #endif // TF_PYUTILS_H

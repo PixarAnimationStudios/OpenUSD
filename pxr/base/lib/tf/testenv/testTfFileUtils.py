@@ -85,12 +85,12 @@ class TestFileUtils(unittest.TestCase):
         self.log.info("Creating test directory structure...")
         for path, dirs, files in structure:
             if not os.path.isdir(path):
-                print 'os.makedirs(%s)' % path
+                print('os.makedirs(%s)' % path)
                 os.makedirs(path)
         
             for d in [os.path.join(path, d) for d in dirs]:
                 if not os.path.isdir(d):
-                    print 'os.makedirs(%s)' % d
+                    print('os.makedirs(%s)' % d)
                     os.makedirs(d)
         
             for f in [os.path.join(path, f) for f in files]:

@@ -132,7 +132,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         try:
             UsdUtils.StitchClips(rootLayer, self.layerFileNames, clipPath)
         except Tf.ErrorException as tfError:
-            print "Caught expected exception %s" %tfError
+            print("Caught expected exception %s" %tfError)
         else:
             self.assertTrue(False, "Failed to raise runtime error on unwritable file." )
         finally:

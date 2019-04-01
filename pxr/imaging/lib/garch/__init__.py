@@ -26,7 +26,7 @@ garch
 
 """
 
-import _garch
+from . import _garch
 from pxr import Tf
 Tf.PrepareModule(_garch, locals())
 del _garch, Tf

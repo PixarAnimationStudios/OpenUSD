@@ -234,29 +234,29 @@ class TestPlug(unittest.TestCase):
         self.assertIsNotNone(plugin)
         metadata = plugin.metadata
         self.assertIsNotNone(metadata)
-        self.assertTrue(metadata.has_key('Types'))
-        self.assertTrue(metadata['Types'].has_key('TestPlugUnloadable'))
+        self.assertTrue('Types' in metadata)
+        self.assertTrue('TestPlugUnloadable' in metadata['Types'])
 
         md = metadata['Types']['TestPlugUnloadable']
 
         self.assertTrue(md == 
             plugin.GetMetadataForType(Tf.Type.FindByName('TestPlugUnloadable')))
 
-        self.assertTrue(md.has_key('bases'))
+        self.assertTrue('bases' in md)
         self.assertTrue(md['bases'] == ['_TestPlugBase<1>'])
-        self.assertTrue(md.has_key('description'))
+        self.assertTrue('description' in md)
         self.assertTrue(md['description'] == 'unloadable plugin')
-        self.assertTrue(md.has_key('notLoadable'))
+        self.assertTrue('notLoadable' in md)
         self.assertTrue(md['notLoadable'] == True)
-        self.assertTrue(md.has_key('vectorInt'))
+        self.assertTrue('vectorInt' in md)
         self.assertTrue(md['vectorInt'] == [ 1, 2, 3 ])
-        self.assertTrue(md.has_key('vectorString'))
+        self.assertTrue('vectorString' in md)
         self.assertTrue(md['vectorString'] == [ "f", "l", "o" ])
-        self.assertTrue(md.has_key('vectorDouble'))
+        self.assertTrue('vectorDouble' in md)
         self.assertTrue(md['vectorDouble'] == [ 1.1, 2.2, 3.3 ])
-        self.assertTrue(md.has_key('Int'))
+        self.assertTrue('Int' in md)
         self.assertTrue(md['Int'] == 4711)
-        self.assertTrue(md.has_key('Double'))
+        self.assertTrue('Double' in md)
         self.assertTrue(Gf.IsClose(md['Double'], 0.815, 1e-6))
 
 
