@@ -33,6 +33,8 @@
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/registry.h"
+
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
 
 #include <boost/functional/hash.hpp>
@@ -673,11 +675,10 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
         return;
     }
 
-    std::set<TfType> discoveryPluginTypes;
-
     // Find all of the available discovery plugins
-    const TfType& discoveryPluginType = TfType::Find<NdrDiscoveryPlugin>();
-    discoveryPluginType.GetAllDerivedTypes(&discoveryPluginTypes);
+    std::set<TfType> discoveryPluginTypes;
+    PlugRegistry::GetInstance().GetAllDerivedTypes<NdrDiscoveryPlugin>(
+        &discoveryPluginTypes);
 
     // Instantiate any discovery plugins that were found
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
@@ -693,11 +694,10 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 void
 NdrRegistry::_FindAndInstantiateParserPlugins()
 {
-    std::set<TfType> parserPluginTypes;
-
     // Find all of the available parser plugins
-    const TfType& parserPluginType = TfType::Find<NdrParserPlugin>();
-    parserPluginType.GetAllDerivedTypes(&parserPluginTypes);
+    std::set<TfType> parserPluginTypes;
+    PlugRegistry::GetInstance().GetAllDerivedTypes<NdrParserPlugin>(
+        &parserPluginTypes);
 
     // Instantiate any parser plugins that were found
     for (const TfType& parserPluginType : parserPluginTypes) {
