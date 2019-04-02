@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class SdfMapperSpec : public SdfSpec 
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeMapper, SdfMapperSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfMapperSpec, SdfSpec);
 
 public:
     typedef SdfMapperSpec This;

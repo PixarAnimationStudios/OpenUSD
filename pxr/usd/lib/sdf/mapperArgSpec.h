@@ -45,8 +45,7 @@ SDF_DECLARE_HANDLES(SdfMapperSpec);
 ///
 class SdfMapperArgSpec : public SdfSpec 
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeMapperArg,
-                     SdfMapperArgSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfMapperArgSpec, SdfSpec);
 
 public:
     typedef SdfMapperArgSpec This;

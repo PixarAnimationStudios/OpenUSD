@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define SDF_ACCESSOR_READ_PREDICATE(key_)    SDF_NO_PREDICATE
 #define SDF_ACCESSOR_WRITE_PREDICATE(key_)   SDF_NO_PREDICATE
 
-SDF_DEFINE_SPEC(SdfMapperArgSpec, SdfSpec);
+SDF_DEFINE_SPEC(SdfSchema, SdfSpecTypeMapperArg, SdfMapperArgSpec, SdfSpec);
 
 SdfMapperArgSpecHandle
 SdfMapperArgSpec::New(

@@ -39,7 +39,7 @@ using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfVariantSpec, SdfSpec);
+SDF_DEFINE_SPEC(SdfSchema, SdfSpecTypeVariant, SdfVariantSpec, SdfSpec);
 
 SdfVariantSpecHandle
 SdfVariantSpec::New(

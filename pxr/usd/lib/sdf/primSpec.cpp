@@ -56,7 +56,7 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfPrimSpec, SdfSpec);
+SDF_DEFINE_SPEC(SdfSchema, SdfSpecTypePrim, SdfPrimSpec, SdfSpec);
 
 // register types
 TF_REGISTRY_FUNCTION(TfType)

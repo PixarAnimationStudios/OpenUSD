@@ -75,7 +75,7 @@ template <class TypePolicy> class Sdf_ListEditor;
 ///
 class SdfPrimSpec : public SdfSpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypePrim, SdfPrimSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfPrimSpec, SdfSpec);
 
 public:
     typedef SdfPrimSpecView NameChildrenView;

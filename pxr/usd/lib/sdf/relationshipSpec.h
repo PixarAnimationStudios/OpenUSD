@@ -52,8 +52,7 @@ template <class TypePolicy> class Sdf_ListEditor;
 ///
 class SdfRelationshipSpec : public SdfPropertySpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeRelationship,
-                     SdfRelationshipSpec, SdfPropertySpec);
+    SDF_DECLARE_SPEC(SdfRelationshipSpec, SdfPropertySpec);
 
 public:
     typedef SdfRelationshipSpec This;

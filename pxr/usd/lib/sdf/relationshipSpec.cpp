@@ -43,7 +43,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfRelationshipSpec, SdfPropertySpec);
+SDF_DEFINE_SPEC(
+    SdfSchema, SdfSpecTypeRelationship, SdfRelationshipSpec, SdfPropertySpec);
 
 //
 // Primary API

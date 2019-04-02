@@ -55,8 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class SdfAttributeSpec : public SdfPropertySpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeAttribute,
-                     SdfAttributeSpec, SdfPropertySpec);
+    SDF_DECLARE_SPEC(SdfAttributeSpec, SdfPropertySpec);
 
 public:
     typedef SdfAttributeSpec This;

@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_ABSTRACT_SPEC(SdfPropertySpec, SdfSpec);
+SDF_DEFINE_ABSTRACT_SPEC(SdfSchema, SdfPropertySpec, SdfSpec);
 
 //
 // Name

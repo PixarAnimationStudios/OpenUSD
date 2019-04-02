@@ -42,7 +42,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfAttributeSpec, SdfPropertySpec);
+SDF_DEFINE_SPEC(
+    SdfSchema, SdfSpecTypeAttribute, SdfAttributeSpec, SdfPropertySpec);
 
 SdfAttributeSpecHandle
 SdfAttributeSpec::New(
