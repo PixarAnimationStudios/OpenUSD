@@ -78,7 +78,6 @@ pxr_shared_library(${PXR_PACKAGE}
         USD_XformCache
         USD_VisCache
         UT_TypeTraits
-        visitor
         writeCtrlFlags
         xformWrapper
 
