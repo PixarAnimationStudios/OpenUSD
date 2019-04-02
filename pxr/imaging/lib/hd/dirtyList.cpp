@@ -91,21 +91,33 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
 
+    // After exploration, it was determined that the vast majority of cases
+    // if we calculated the union of all the collections used in generating
+    // a frame, the entire render index got Sync'ed.
+    //
+    // With the issue of some tasks needing Sprims to be Sync'ed before they
+    // can know the include/exclude paths.  It be was decided to remove
+    // the task based include/exclude filter.
+    //
+    // We still use the prim gather system to obtain the path list and
+    // run the predicate filter.  As the include path is root and an empty
+    // exclude path.  This should hit the filter's fast path.
+    static const SdfPathVector includePaths = {SdfPath::AbsoluteRootPath()};
+    static const SdfPathVector excludePaths;
     
     const SdfPathVector &paths        = _renderIndex.GetRprimIds();
-    const SdfPathVector &includePaths = _collection.GetRootPaths();
-    const SdfPathVector &excludePaths = _collection.GetExcludePaths();
+
 
     _FilterParam filterParam = {_collection, _renderIndex, mask};
 
     HdPrimGather gather;
 
     gather.PredicatedFilter(paths,
-                  includePaths,
-                  excludePaths,
-                  _DirtyListFilterPredicate,
-                  &filterParam,
-                  ids);
+                            includePaths,
+                            excludePaths,
+                            _DirtyListFilterPredicate,
+                            &filterParam,
+                            ids);
 }
 
 void
@@ -155,128 +167,8 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
         return false;
     }
 
-    // Also don't attempt to fix-up dirty lists when the collection is radically
-    // different in terms of root paths; here a heuristic of 100 root paths is
-    // used as a threshold for when we will stop attempting to fix the list.
-    if (std::abs(int(col.GetRootPaths().size()) -
-                 int(_collection.GetRootPaths().size())) > 100) {
-        return false;
-    }
-
-    // If the either the old or new collection has Exclude paths do
-    // the full rebuild.
-    if (!col.GetExcludePaths().empty() ||
-        !_collection.GetExcludePaths().empty()) {
-        return false;
-    }
-
-    // If the varying state has changed - Rebuild the base list
-    // before adding the new items
-    HdChangeTracker &changeTracker = _renderIndex.GetChangeTracker();
-
-    unsigned int currentVaryingStateVersion =
-                                         changeTracker.GetVaryingStateVersion();
-
-    if (_varyingStateVersion != currentVaryingStateVersion) {
-           TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): varying state changed "
-                   "(%s, %d -> %d)\n",
-                   (void*)this,
-                   _collection.GetName().GetText(),
-                   _varyingStateVersion,
-                   currentVaryingStateVersion);
-
-           // populate only varying prims in the collection
-           _UpdateIDs(&_dirtyIds, HdChangeTracker::Varying);
-           _varyingStateVersion = currentVaryingStateVersion;
-    }
-
-    SdfPathVector added, removed;
-    typedef SdfPathVector::const_iterator ITR;
-    ITR newI = col.GetRootPaths().cbegin();
-    ITR newEnd = col.GetRootPaths().cend();
-    ITR oldI = _collection.GetRootPaths().cbegin();
-    ITR oldEnd = _collection.GetRootPaths().cend();
-    HdRenderIndex& index = _renderIndex;
-
-    TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): ApplyEdit\n", (void*)this);
-
-    if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
-        std::cout << "  Old Collection: " << std::endl;
-        for (auto const& i : _collection.GetRootPaths()) {
-            std::cout << "    " << i << std::endl;
-        }
-        std::cout << "  Old _dirtyIds: " << std::endl;
-        for (auto const& i : _dirtyIds) {
-            std::cout << "    " << i << std::endl;
-        }
-    }
-
-    const SdfPathVector &paths = _renderIndex.GetRprimIds();
-
-    while (newI != newEnd || oldI != oldEnd) {
-        if (newI != newEnd && oldI != oldEnd && *newI == *oldI) {
-            ++newI;
-            ++oldI;
-            continue;
-        }
-        // If any paths in the two sets are prefixed by one another, the logic
-        // below doesn't work, since the subtree has to be fixed up (it's not
-        // just a simple prefix scan). In these cases, we'll just rebuild the
-        // entire list.
-        if (newI != newEnd && oldI != oldEnd && newI->HasPrefix(*oldI)) {
-            return false;          
-        }
-        if (newI != newEnd && oldI != oldEnd && oldI->HasPrefix(*newI)) {
-            return false;          
-        }
-        if (newI != newEnd && (oldI == oldEnd || *newI < *oldI)) {
-            HdPrimGather gather;
-
-            SdfPathVector newPaths;
-            gather.Subtree(paths, *newI, &newPaths);
-
-            size_t numNewPaths = newPaths.size();
-            for (size_t newPathNum = 0;
-                        newPathNum < numNewPaths;
-                      ++newPathNum) {
-                const SdfPath &newPath = newPaths[newPathNum];
-
-                if (col.HasRenderTag(index.GetRenderTag(newPath))) {
-                    _dirtyIds.push_back(newPath);
-                    changeTracker.MarkRprimDirty(newPath,
-                                                 HdChangeTracker::InitRepr);
-                }
-            }
-            ++newI;
-        } else if (oldI != oldEnd) { 
-            // oldI < newI: Item removed in new list
-            SdfPath const& oldPath = *oldI;
-            _dirtyIds.erase(std::remove_if(_dirtyIds.begin(), _dirtyIds.end(), 
-                  [&oldPath](SdfPath const& p){return p.HasPrefix(oldPath);}),
-                  _dirtyIds.end());
-            ++oldI;
-        }
-    }
-
-    _collection = col;
-    _collectionVersion
-                    = changeTracker.GetCollectionVersion(_collection.GetName());
-
-
-    // make sure the next GetDirtyRprims() picks up the updated list.
-    _isEmpty = false;
-
-    if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
-        std::cout << "  New Collection: " << std::endl;
-        for (auto const& i : _collection.GetRootPaths()) {
-            std::cout << "    " << i << std::endl;
-        }
-        std::cout << "  New _dirtyIds: " << std::endl;
-        for (auto const& i : _dirtyIds) {
-            std::cout << "    " << i << std::endl;
-        }
-    }
-
+    // As we don't do path filtering, changes to paths have no effect on the
+    // dirtylist
     return true;
 }
 
