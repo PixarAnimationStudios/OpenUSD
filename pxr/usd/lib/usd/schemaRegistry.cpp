@@ -437,7 +437,8 @@ UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
 
 TfType
 UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
-    return (*_schemaBaseType).FindDerivedByName(typeName);
+    return PlugRegistry::GetInstance().FindDerivedTypeByName(
+        *_schemaBaseType, typeName.GetString());
 }
 
 
