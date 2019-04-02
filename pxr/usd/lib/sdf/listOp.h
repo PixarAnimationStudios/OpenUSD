@@ -100,6 +100,9 @@ public:
         return _orderedItems.size() != 0;
     }
 
+    /// Returns \c true if the given item is in any of the item lists.
+    SDF_API bool HasItem(const T& item) const;
+
     /// Returns \c true if the list is explicit.
     bool IsExplicit() const
     {
