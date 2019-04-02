@@ -182,8 +182,13 @@ static boost::optional<SdfPath>
 _ReplacePath(
     const SdfPath &oldPath, const SdfPath &newPath, const SdfPath &path)
 {
+    // Replace oldPath with newPath, and also remove any existing
+    // newPath entries in the list op.
     if (path == oldPath) {
         return newPath;
+    }
+    if (path == newPath) {
+        return boost::none;
     }
     return path;
 }
@@ -216,22 +221,19 @@ SdfRelationshipSpec::ReplaceTargetPath(
 	layer->GetFieldAs<std::vector<SdfPath> >(
             relPath, SdfChildrenKeys->RelationshipTargetChildren);
 
-    // Replace the path in the targets list
-    bool targetSpecExists = false;
-    TF_FOR_ALL(i, siblingPaths) {
-	if (*i == oldTargetPath) {
-	    *i = newTargetPath;
-            targetSpecExists = true;
-	    break;
-	}
+    int oldTargetSpecIndex = -1;
+    int newTargetSpecIndex = -1;
+    for (size_t i = 0, n = siblingPaths.size(); i != n; ++i) {
+        if (siblingPaths[i] == oldTargetPath) {
+            oldTargetSpecIndex = i;
+        }
+        else if (siblingPaths[i] == newTargetPath) {
+            newTargetSpecIndex = i;
+        }
     }
     
     // If there is a target spec, then update the children field.
-    if (targetSpecExists) {
-        // Set the siblings
-        layer->SetField(relPath, SdfChildrenKeys->RelationshipTargetChildren,
-            siblingPaths);
-
+    if (oldTargetSpecIndex != -1) {
         SdfPath oldTargetSpecPath = relPath.AppendTarget(oldTargetPath);
         SdfPath newTargetSpecPath = relPath.AppendTarget(newTargetPath);
 
@@ -261,6 +263,15 @@ SdfRelationshipSpec::ReplaceTargetPath(
                 newTargetPath.GetText());
             return;
         }
+
+        // Update and set the siblings
+        siblingPaths[oldTargetSpecIndex] = newTargetPath;
+        if (newTargetSpecIndex != -1) {
+            siblingPaths.erase(siblingPaths.begin() + newTargetSpecIndex);
+        }
+        
+        layer->SetField(relPath, SdfChildrenKeys->RelationshipTargetChildren,
+            siblingPaths);
     }
 
     // Get the list op.
@@ -268,9 +279,10 @@ SdfRelationshipSpec::ReplaceTargetPath(
         layer->GetFieldAs<SdfPathListOp>(relPath, SdfFieldKeys->TargetPaths);
 
     // Update the list op.
-    if (targetsListOp.ModifyOperations(
+    if (targetsListOp.HasItem(oldTargetPath)) {
+        targetsListOp.ModifyOperations(
             std::bind(_ReplacePath, oldTargetPath, newTargetPath,
-                      std::placeholders::_1))) {
+                std::placeholders::_1));
         layer->SetField(relPath, SdfFieldKeys->TargetPaths, targetsListOp);
     }
 }
