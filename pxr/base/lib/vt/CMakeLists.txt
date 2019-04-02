@@ -26,7 +26,6 @@ pxr_library(vt
     PYTHON_PUBLIC_CLASSES
         arrayPyBuffer
         valueFromPython
-        pyDictionaryUtils
         wrapArray
 
     PUBLIC_HEADERS
