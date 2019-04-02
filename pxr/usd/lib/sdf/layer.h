@@ -238,20 +238,27 @@ public:
     /// Creates a new \e anonymous layer with an optional \p tag. An anonymous
     /// layer is a layer with a system assigned identifier, that cannot be
     /// saved to disk via Save(). Anonymous layers have an identifier, but no
-    /// repository, overlay, real path, or other asset information fields.
+    /// real path or other asset information fields.
+    ///
     /// Anonymous layers may be tagged, which can be done to aid debugging
     /// subsystems that make use of anonymous layers.  The tag becomes the
     /// display name of an anonymous layer, and is also included in the
     /// generated identifier. Untagged anonymous layers have an empty display
     /// name.
+    ///
+    /// Additional arguments may be supplied via the \p args parameter.
+    /// These arguments may control behavior specific to the layer's
+    /// file format.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
-        const std::string& tag = std::string());
+        const std::string& tag = std::string(),
+        const FileFormatArguments& args = FileFormatArguments());
 
     /// Create an anonymous layer with a specific \p format.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
-        const std::string &tag, const SdfFileFormatConstPtr &format);
+        const std::string &tag, const SdfFileFormatConstPtr &format,
+        const FileFormatArguments& args = FileFormatArguments());
 
     /// Returns true if this layer is an anonymous layer.
     SDF_API
@@ -1420,10 +1427,6 @@ public:
     // @}
 
 protected:
-    static SdfLayerRefPtr _CreateAnonymousWithFormat(
-        const SdfFileFormatConstPtr &fileFormat,
-        const std::string& tag = std::string());
-
     // Private constructor -- use New(), FindOrCreate(), etc.
     // Precondition: _layerRegistryMutex must be locked.
     SdfLayer(const SdfFileFormatConstPtr& fileFormat,
@@ -1448,6 +1451,11 @@ private:
         const std::string& realPath,
         const ArAssetInfo& assetInfo = ArAssetInfo(),
         const FileFormatArguments& args = FileFormatArguments());
+
+    static SdfLayerRefPtr _CreateAnonymousWithFormat(
+        const SdfFileFormatConstPtr &fileFormat,
+        const std::string& tag,
+        const FileFormatArguments& args);
 
     // Finish initializing this layer (which may have succeeded or not)
     // and publish the results to other threads by unlocking the mutex.

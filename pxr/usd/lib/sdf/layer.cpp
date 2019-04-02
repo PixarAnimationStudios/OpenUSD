@@ -251,45 +251,64 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     return _initializationWasSuccessful.get();
 }
 
-SdfLayerRefPtr
-SdfLayer::CreateAnonymous(const string& tag)
+static SdfFileFormatConstPtr
+_GetFileFormatForExtension(
+    const std::string &ext, const SdfLayer::FileFormatArguments &args)
 {
-    // XXX: 
-    // It would be nice to use the _GetFileFormatForPath helper function 
-    // from below, but that function expects a layer identifier and the 
-    // tag is supposed to be just a helpful debugging aid; the fact that
-    // one can specify an underlying layer file format by specifying an
-    // extension was unintended.
-    SdfFileFormatConstPtr fileFormat;
-    const string suffix = TfStringGetSuffix(tag);
-    if (!suffix.empty()) {
-        fileFormat = SdfFileFormat::FindById(TfToken(suffix));
-    }
+    // Find a file format that can handle this extension and the
+    // specified target (if any).
+    const std::string* target = 
+        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
 
-    return CreateAnonymous(tag, fileFormat);
+    return SdfFileFormat::FindByExtension(
+        ext, (target ? *target : std::string()));
 }
 
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
-    const string &tag, const SdfFileFormatConstPtr &format)
+    const string& tag, const FileFormatArguments& args)
 {
-    SdfFileFormatConstPtr fmt = format;
-    
-    if (!fmt) {
-        fmt = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+    // XXX: 
+    // It would be nice to use the _GetFileFormatForPath helper function 
+    // below but that function expects a layer identifier and the 
+    // tag is supposed to be just a helpful debugging aid; the fact that
+    // one can specify an underlying layer file format by specifying an
+    // extension was unintended.
+    SdfFileFormatConstPtr fileFormat;
+    string suffix = TfStringGetSuffix(tag);
+    if (!suffix.empty()) {
+        fileFormat = _GetFileFormatForExtension(suffix, args);
     }
 
-    if (!fmt) {
+    if (!fileFormat) {
+        fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+    }
+
+    if (!fileFormat) {
         TF_CODING_ERROR("Cannot determine file format for anonymous SdfLayer");
         return SdfLayerRefPtr();
     }
 
-    return _CreateAnonymousWithFormat(fmt, tag);
+    return _CreateAnonymousWithFormat(fileFormat, tag, args);
+}
+
+SdfLayerRefPtr
+SdfLayer::CreateAnonymous(
+    const string &tag, const SdfFileFormatConstPtr &format,
+    const FileFormatArguments &args)
+{
+    if (!format) {
+        TF_CODING_ERROR("Invalid file format for anonymous SdfLayer");
+        return SdfLayerRefPtr();
+    }
+
+    return _CreateAnonymousWithFormat(format, tag, args);
 }
 
 SdfLayerRefPtr
 SdfLayer::_CreateAnonymousWithFormat(
-    const SdfFileFormatConstPtr &fileFormat, const std::string& tag)
+    const SdfFileFormatConstPtr &fileFormat, const std::string& tag,
+    const FileFormatArguments &args)
 {
     if (fileFormat->IsPackage()) {
         TF_CODING_ERROR("Cannot create anonymous layer: creating package %s "
@@ -302,7 +321,8 @@ SdfLayer::_CreateAnonymousWithFormat(
 
     SdfLayerRefPtr layer =
         _CreateNewWithFormat(
-            fileFormat, Sdf_GetAnonLayerIdentifierTemplate(tag), string());
+            fileFormat, Sdf_GetAnonLayerIdentifierTemplate(tag), 
+            string(), ArAssetInfo(), args);
 
     // No layer initialization required, so initialization is complete.
     layer->_FinishInitialization(/* success = */ true);
@@ -362,17 +382,7 @@ _GetFileFormatForPath(const std::string &filePath,
 {
     // Determine which file extension to use.
     const string ext = Sdf_GetExtension(filePath);
-    if (ext.empty()) {
-        return TfNullPtr;
-    }
-
-    // Find a file format that can handle this extension and the
-    // specified target (if any).
-    const std::string* target = 
-        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
-
-    return SdfFileFormat::FindByExtension(
-        ext, (target ? *target : std::string()));
+    return ext.empty() ? TfNullPtr : _GetFileFormatForExtension(ext, args);
 }
 
 SdfLayerRefPtr
