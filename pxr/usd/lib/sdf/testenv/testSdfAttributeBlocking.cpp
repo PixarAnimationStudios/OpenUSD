@@ -105,10 +105,12 @@ int main(int argc, char** argv) {
     defAttr->SetDefaultValue(VtValue("visible"));
 
     // Test the templated layer API
-    layer->SetField<SdfValueBlock>(defAttr->GetPath(), visToken,typedValue);
-    TF_AXIOM(layer->HasField<SdfValueBlock>(defAttr->GetPath(), visToken,
+    layer->SetField<SdfValueBlock>(defAttr->GetPath(), SdfFieldKeys->Default, 
+                                   typedValue);
+    TF_AXIOM(layer->HasField<SdfValueBlock>(defAttr->GetPath(), 
+                                            SdfFieldKeys->Default,
                                             &typedValue));
-    layer->GetFieldAs<SdfValueBlock>(defAttr->GetPath(), visToken);
+    layer->GetFieldAs<SdfValueBlock>(defAttr->GetPath(), SdfFieldKeys->Default);
 
     printf(">>> Test SUCCEEDED\n");
 }
