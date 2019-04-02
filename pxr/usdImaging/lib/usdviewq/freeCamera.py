@@ -328,11 +328,16 @@ class FreeCamera(QtCore.QObject):
         self._selSize = max(*selRange.GetSize())
         if self.orthographic:
             self.fov = self._selSize * Gf.Camera.APERTURE_UNIT * frameFit
-            self.dist = self._selSize
+            self.dist = self._selSize + FreeCamera.defaultNear
         else:
             halfFov = self.fov*0.5 or 0.5 # don't divide by zero
-            self.dist = ((self._selSize * frameFit * 0.5)
-                         / atan(rad(halfFov)))
+            lengthToFit = self._selSize * frameFit * 0.5
+            self.dist = lengthToFit / atan(rad(halfFov))
+            # Very small objects that fill out their bounding boxes (like cubes)
+            # may well pierce our 1 unit default near-clipping plane. Make sure
+            # that doesn't happen.
+            if self.dist < FreeCamera.defaultNear + self._selSize * 0.5:
+                self.dist = FreeCamera.defaultNear + lengthToFit
 
     def setClosestVisibleDistFromPoint(self, point):
         frustum = self._camera.frustum
