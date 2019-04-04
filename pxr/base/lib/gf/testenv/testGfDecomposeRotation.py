@@ -95,7 +95,7 @@ class TestGfDecomposeRotation(unittest.TestCase):
 
         # Do a special test for the passed in rotation order if expectedResult
         # was passed in for checking.
-        if expectedResult != None:
+        if expectedResult is not None:
             result = \
                 Gf.Rotation.DecomposeRotation(rot,
                                               twAxis = axes[rotOrder][2],

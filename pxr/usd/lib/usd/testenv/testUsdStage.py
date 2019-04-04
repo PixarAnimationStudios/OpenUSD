@@ -184,7 +184,7 @@ class TestUsdStage(unittest.TestCase):
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.MuteLayer(sublayer_1.identifier)
-            assert attr.Get() == None
+            assert attr.Get() is None
             assert set(stage.GetUsedLayers()) == set([refLayer, rootLayer])
             assert set(stage.GetMutedLayers()) == set([sublayer_1.identifier])
             assert stage.IsLayerMuted(sublayer_1.identifier)
@@ -210,7 +210,7 @@ class TestUsdStage(unittest.TestCase):
 
             stage.MuteAndUnmuteLayers([sublayer_1.identifier],
                                       [refLayer.identifier])
-            assert attr.Get() == None
+            assert attr.Get() is None
             assert set(stage.GetUsedLayers()) == set([refLayer, rootLayer])
             assert set(stage.GetMutedLayers()) == set([sublayer_1.identifier])
             assert stage.IsLayerMuted(sublayer_1.identifier)

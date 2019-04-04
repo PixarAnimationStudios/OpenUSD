@@ -439,7 +439,7 @@ class Controller(QtCore.QObject):
 
         completions = []
         p = self.completer.Complete(token,len(completions))
-        while p != None:
+        while p is not None:
             completions.append(p)
             p = self.completer.Complete(token, len(completions))
 
@@ -544,7 +544,7 @@ class Controller(QtCore.QObject):
     def _NextSlot(self):
         if len(self.history):
             # if we have no history pointer, we can't go forward..
-            if (self.historyPointer == None):
+            if (self.historyPointer is None):
                 return
             # if we are at the end of our history stack, we can't go forward
             elif (self.historyPointer == len(self.history) - 1):
@@ -559,7 +559,7 @@ class Controller(QtCore.QObject):
         if len(self.history):
             # if we have no history pointer, set it to the most recent
             # item in the history stack, and stash away our current input
-            if (self.historyPointer == None):
+            if (self.historyPointer is None):
                 self.historyPointer = len(self.history)
                 self.historyInput = self._GetInputLine()
             # if we are at the end of our history, beep

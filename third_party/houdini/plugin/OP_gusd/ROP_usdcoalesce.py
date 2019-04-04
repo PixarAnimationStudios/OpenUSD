@@ -86,7 +86,7 @@ def coalesceFiles(
     # try opening all files
     openedFiles = [Sdf.Layer.FindOrOpen(fname) for fname in sortedFiles]
     # grab the index of all, if any, files which failed to open
-    unopened = [i for i, unopened in enumerate(openedFiles) if unopened == None ]
+    unopened = [i for i, unopened in enumerate(openedFiles) if unopened is None]
     # grab the filenames of the failed files for error messaging
     erroredFiles = ' '.join([sortedFiles[i] for i in unopened])
     # if we failed to open any files, error out

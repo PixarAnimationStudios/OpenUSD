@@ -41,7 +41,7 @@ parser.add_argument('usdFiles', nargs='+')
 parser.add_argument('-o', '--out', action='store',
                     help='specify a file to write out to')
 results = parser.parse_args()
-assert results.out != None, "must specify output file"
+assert results.out is not None, "must specify output file"
 
 if os.path.isfile(results.out):
     print "Warning: overwriting pre-existing file"
@@ -55,7 +55,7 @@ outLayer = Sdf.Layer.CreateNew(results.out)
 # try opening all files
 openedFiles = [Sdf.Layer.FindOrOpen(fname) for fname in results.usdFiles]
 # grab the index of all, if any, files which failed to open
-unopened = [i for i, unopened in enumerate(openedFiles) if unopened == None ]
+unopened = [i for i, unopened in enumerate(openedFiles) if unopened is None]
 # grab the filenames of the failed files for error messaging
 erroredFiles = ' '.join([results.usdFiles[i] for i in unopened])
 # if we failed to open any files, error out
