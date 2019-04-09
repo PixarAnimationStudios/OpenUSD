@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
@@ -68,16 +69,14 @@ public:
     virtual ~HdxRenderSetupTask();
 
 
-    // APIs used from HdxRenderTask to manage the sync process.
+    // APIs used from HdxRenderTask to manage the sync/prepare process.
     HDX_API
     void SyncParams(HdSceneDelegate* delegate,
                     HdxRenderTaskParams const &params);
     HDX_API
-    void SyncCamera(HdSceneDelegate* delegate);
+    void PrepareCamera(HdRenderIndex* renderIndex);
     HDX_API
-    void SyncAovBindings(HdSceneDelegate* delegate);
-    HDX_API
-    void SyncRenderPassState(HdSceneDelegate* delegate);
+    void PrepareAovBindings(HdRenderIndex* renderIndex);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
@@ -91,6 +90,11 @@ public:
     virtual void Sync(HdSceneDelegate* delegate,
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits) override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
 
     /// Execute render pass task
     HDX_API
@@ -113,7 +117,7 @@ private:
     void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
                                  HdStRenderPassState *renderPassState);
 
-    HdRenderPassStateSharedPtr &_GetRenderPassState(HdSceneDelegate* delegate);
+    HdRenderPassStateSharedPtr &_GetRenderPassState(HdRenderIndex* renderIndex);
 
 
     HdxRenderSetupTask() = delete;
@@ -145,6 +149,7 @@ struct HdxRenderTaskParams
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
+        , depthMaskEnable(true)
         , stencilFunc(HdCmpFuncAlways)
         , stencilRef(0)
         , stencilMask(~0)
@@ -160,6 +165,7 @@ struct HdxRenderTaskParams
         , blendAlphaDstFactor(HdBlendFactorZero)
         , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
         , blendEnable(false)
+        , enableAlphaToCoverage(true)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
         , aovBindings()
         , camera()
@@ -191,6 +197,7 @@ struct HdxRenderTaskParams
     float depthBiasSlopeFactor;
 
     HdCompareFunction depthFunc;
+    bool depthMaskEnable;
 
     // Stencil
     HdCompareFunction stencilFunc;
@@ -210,6 +217,9 @@ struct HdxRenderTaskParams
     HdBlendFactor blendAlphaDstFactor;
     GfVec4f blendConstantColor;
     bool blendEnable;
+
+    // AlphaToCoverage
+    bool enableAlphaToCoverage;
 
     // Viewer's Render Style
     HdCullStyle cullStyle;

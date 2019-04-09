@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -671,8 +671,19 @@ public:
     /// Returns the writer schema.
     const _WriterSchema& GetSchema() const { return *_schema; }
 
-    /// Returns the Usd data.
-    void SetData(const SdfAbstractDataConstPtr& data) { _data = data; }
+    /// Set the Usd data that we will translate.  Also resets _timeScale to
+    /// data's timeCodesPerSecond
+    void SetData(const SdfAbstractDataConstPtr& data) { 
+        _data = data; 
+        VtValue tcps;
+        SdfPath path = SdfPath::AbsoluteRootPath();
+        if (data->Has(SdfAbstractDataSpecId(&path),
+                      SdfFieldKeys->TimeCodesPerSecond, &tcps)){
+            if (tcps.IsHolding<double>()){
+                _timeScale = tcps.UncheckedGet<double>();
+            }
+        }
+    }
 
     /// Returns the Usd data.
     const SdfAbstractData& GetData() const { return *boost::get_pointer(_data);}
@@ -944,6 +955,9 @@ public:
     /// in Usd property order.
     TfTokenVector GetUnextractedNames() const;
 
+    /// Return the _WriterContext associated with this prim.
+    _WriterContext& GetWriterContext() const;
+
 private:
     UsdSamples _ExtractSamples(const TfToken& name);
     
@@ -971,7 +985,7 @@ private:
 
     _WriterContext& _context;
     Parent _parent;
-    const SdfAbstractDataSpecId& _id;
+    SdfAbstractDataSpecId _id;
     std::string _suffix;
     UsdAbc_TimeSamples _sampleTimes;
     TfTokenVector _unextracted;
@@ -1124,6 +1138,12 @@ TfTokenVector
 _PrimWriterContext::GetUnextractedNames() const
 {
     return _unextracted;
+}
+
+_WriterContext&
+_PrimWriterContext::GetWriterContext() const
+{
+    return _context;
 }
 
 // ----------------------------------------------------------------------------
@@ -1932,7 +1952,6 @@ _CopyPointIds(const VtValue& src)
     return _SampleForAlembic(std::vector<uint64_t>(value.begin(), value.end()));
 }
 
-
 // ----------------------------------------------------------------------------
 
 //
@@ -2476,7 +2495,7 @@ _WriteRoot(_PrimWriterContext* context)
     _SetDoubleMetadata(&metadata, *context, SdfFieldKeys->StartTimeCode);
     _SetDoubleMetadata(&metadata, *context, SdfFieldKeys->EndTimeCode);
 
-    // Always author a value for timeCodesPerSecond and frameCodesPerSecond 
+    // Always author a value for timeCodesPerSecond and framesPerSecond 
     // to preserve proper round-tripping from USD->alembic->USD.
     // 
     // First, set them to the corresponding fallback values, then overwrite them 
@@ -2881,6 +2900,78 @@ _WritePolyMesh(_PrimWriterContext* context)
 
     // Alembic doesn't need this since it knows it's a PolyMesh.
     context->ExtractSamples(UsdGeomTokens->subdivisionScheme);
+
+    // Set the time sampling.
+    object->getSchema().setTimeSampling(
+        context->AddTimeSampling(context->GetSampleTimesUnion()));
+}
+
+static
+void
+_WriteFaceSet(_PrimWriterContext* context)
+{
+    typedef OFaceSet Type;
+
+    const _WriterSchema& schema = context->GetSchema();
+
+    // Create the object and make it the parent.
+    shared_ptr<Type> object(new Type(context->GetParent(),
+                                     context->GetAlembicPrimName(),
+                                     _GetPrimMetadata(*context)));
+    context->SetParent(object);
+
+    // Collect the properties we need.
+    context->SetSampleTimesUnion(UsdAbc_TimeSamples());
+
+    UsdSamples indices =
+        context->ExtractSamples(UsdGeomTokens->indices,
+                                SdfValueTypeNames->IntArray);
+
+    // The familyType is contained in the parent prim, so we 
+    // contruct a new _PrimWriterContext to access it.
+    SdfPath parentPath = context->GetPath().GetParentPath();
+    SdfAbstractDataSpecId parentSpecId(&parentPath);
+    _PrimWriterContext parentPrimContext(context->GetWriterContext(),
+                                         context->GetParent(),
+                                         parentSpecId);
+
+    UsdSamples familyType = parentPrimContext.ExtractSamples(
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
+        SdfValueTypeNames->Token);
+
+    // Copy all the samples.
+    typedef Type::schema_type::Sample SampleT;
+    SampleT sample;
+
+    for (double time : context->GetSampleTimesUnion()) {
+        // Build the sample.
+        sample.reset();
+        _SampleForAlembic alembicFaces =
+        _Copy(schema,
+              time, indices,
+              &sample, &SampleT::setFaces);
+
+        // Write the sample.
+        object->getSchema().set(sample);
+    }
+
+    // It's possible that our default family name "materialBind", is not 
+    // set on the prim. In that case, use kFaceSetNonExclusive.
+    FaceSetExclusivity faceSetExclusivity = kFaceSetNonExclusive;
+    if (!familyType.IsEmpty())
+    {
+        double time = UsdTimeCode::EarliestTime().GetValue();
+        const TfToken& value = familyType.Get(time).UncheckedGet<TfToken>();
+        if (!value.IsEmpty() && 
+            (value == UsdGeomTokens->partition || 
+             value == UsdGeomTokens->nonOverlapping)) {
+            faceSetExclusivity = kFaceSetExclusive;
+        }
+    }
+
+    // Face set exclusivity is not a property of the sample. Instead, it's set 
+    // on the object schema and not time sampled.
+    object->getSchema().setFaceExclusivity(faceSetExclusivity);
 
     // Set the time sampling.
     object->getSchema().setTimeSampling(
@@ -3471,6 +3562,9 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         .AppendWriter(_WriteArbGeomParams)
         .AppendWriter(_WriteUserProperties)
         .AppendWriter(_WriteOther)
+        ;
+    schema.AddType(UsdAbcPrimTypeNames->GeomSubset)
+        .AppendWriter(_WriteFaceSet)
         ;
 
     // This handles the root.

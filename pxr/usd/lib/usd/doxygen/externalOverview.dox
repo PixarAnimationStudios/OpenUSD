@@ -219,9 +219,13 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   architecture-specific functionality that may pull in imaging-related
   dependencies.
 
-- \b Glf : The Gl Foundations module provides access to textures, ptextures,
-  and glslfx files.  It also provides some basic glsl shaders upon which Hd
-  behaviors are built.
+- \b Glf : The GL Foundations module provides access to textures, ptextures 
+  and GL resources (such as draw targets).
+  It also provides some basic glsl shaders used by hdSt.
+
+- \b Hio : The Hydra Resource I/O module provides resource loaders used by
+  Hydra, such as Pixar's shader container format (glslfx). It will eventually 
+  house the infrastructure for image loading that is currently parked in Glf.
 
 - \b CameraUtil The Camera Utilities module provides a small but important set of 
   common camera-related computations that don't really belong in the core

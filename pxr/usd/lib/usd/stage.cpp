@@ -7787,17 +7787,17 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                \
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                         \
                                                                         \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                      
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                      
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET

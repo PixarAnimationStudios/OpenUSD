@@ -211,8 +211,11 @@ public:
 
 class Hd_NullRprim final : public HdRprim {
 public:
-    Hd_NullRprim(SdfPath const& id, SdfPath const& instancerId)
+    Hd_NullRprim(TfToken const& typeId,
+                 SdfPath const& id,
+                 SdfPath const& instancerId)
      : HdRprim(id, instancerId)
+     , _typeId(typeId)
     {
 
     }
@@ -224,6 +227,85 @@ public:
                       HdDirtyBits     *dirtyBits,
                       TfToken const   &reprToken) override
     {
+        // A render delegate would typically pull values for each
+        // dirty bit.  Some tests depend on this behaviour to either
+        // update perf counters or test scene delegate getter workflow.
+        SdfPath const& id = GetId();
+
+        // PrimId dirty bit is internal to Hydra.
+
+        if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
+            GetExtent(delegate);
+        }
+
+        if (HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
+            delegate->GetDisplayStyle(id);
+        }
+
+        // Points is a primvar
+
+        if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+            _SyncPrimvars(delegate, *dirtyBits);
+        }
+
+        // Material Id doesn't have a change tracker test
+        if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+            delegate->GetMaterialId(id);
+        }
+
+        if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
+            // The topology getter depends on prim type
+            if (_typeId == HdPrimTypeTokens->mesh) {
+                delegate->GetMeshTopology(id);
+            } else if (_typeId == HdPrimTypeTokens->basisCurves) {
+                delegate->GetBasisCurvesTopology(id);
+            }
+            // Other prim types don't have a topology
+        }
+
+        if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+            delegate->GetTransform(id);
+        }
+
+        if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+            delegate->GetVisible(id);
+        }
+
+        // Normals is a primvar
+
+        if (HdChangeTracker::IsDoubleSidedDirty(*dirtyBits, id)) {
+            delegate->GetDoubleSided(id);
+        }
+
+        if (HdChangeTracker::IsCullStyleDirty(*dirtyBits, id)) {
+            delegate->GetCullStyle(id);
+        }
+
+        // Subddiv tags only apply to refined geom
+        // if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
+        //    delegate->GetSubdivTags(id);
+        //}
+
+        // Widths is a primvar
+
+        if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
+            // Instancer Dirty doesn't have a corrispoinding scene delegate pull
+        }
+
+        // InstanceIndex applies to Instancer's not Rprim
+
+        if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
+            delegate->GetReprSelector(id);
+        }
+
+        // RenderTag doesn't have a change tracker test
+        if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+            delegate->GetRenderTag(id);
+        }
+
+        // DirtyComputationPrimvarDesc not used
+        // DirtyCategories not used
+
         *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
     }
 
@@ -253,6 +335,34 @@ protected:
     }
 
 private:
+    TfToken _typeId;
+
+    void _SyncPrimvars(HdSceneDelegate *delegate,
+                       HdDirtyBits      dirtyBits)
+    {
+        SdfPath const &id = GetId();
+        for (size_t interpolation = HdInterpolationConstant;
+                    interpolation < HdInterpolationCount;
+                  ++interpolation) {
+            HdPrimvarDescriptorVector primvars =
+                    GetPrimvarDescriptors(delegate,
+                            static_cast<HdInterpolation>(interpolation));
+
+            size_t numPrimVars = primvars.size();
+            for (size_t primVarNum = 0;
+                        primVarNum < numPrimVars;
+                      ++primVarNum) {
+                HdPrimvarDescriptor const &primvar = primvars[primVarNum];
+
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits,
+                                                    id,
+                                                    primvar.name)) {
+                    GetPrimvar(delegate, primvar.name);
+                }
+            }
+        }
+    }
+
     Hd_NullRprim()                                 = delete;
     Hd_NullRprim(const Hd_NullRprim &)             = delete;
     Hd_NullRprim &operator =(const Hd_NullRprim &) = delete;
@@ -348,12 +458,27 @@ Hd_UnitTestNullRenderDelegate::CreateRenderPass(HdRenderIndex *index,
         new Hd_UnitTestNullRenderPass(index, collection));
 }
 
+HdInstancer *
+Hd_UnitTestNullRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
+                                               SdfPath const& id,
+                                               SdfPath const& instancerId)
+{
+    return new HdInstancer(delegate, id, instancerId);
+}
+
+void
+Hd_UnitTestNullRenderDelegate::DestroyInstancer(HdInstancer *instancer)
+{
+    delete instancer;
+}
+
+
 HdRprim *
 Hd_UnitTestNullRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId,
                                     SdfPath const& instancerId)
 {
-    return new Hd_NullRprim(rprimId, instancerId);
+    return new Hd_NullRprim(typeId, rprimId, instancerId);
 }
 
 void

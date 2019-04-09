@@ -89,9 +89,10 @@ public:
     /// Compute joint transforms in joint-local space.
     /// Transforms are returned in the order specified by the joint ordering
     /// of the animation primitive itself.
+    template <typename Matrix4>
     USDSKEL_API
     bool ComputeJointLocalTransforms(
-             VtMatrix4dArray* xforms,
+             VtArray<Matrix4>* xforms,
              UsdTimeCode time=UsdTimeCode::Default()) const;
 
     /// Compute translation,rotation,scale components of the joint transforms
@@ -139,6 +140,29 @@ public:
     /// \sa UsdAttribute::ValueMightBeTimeVayring
     USDSKEL_API
     bool JointTransformsMightBeTimeVarying() const;
+
+    /// Get the time samples at which values contributing to blend shape weights
+    /// have been set.
+    ///
+    /// \sa UsdAttribute::GetTimeSamples
+    USDSKEL_API
+    bool GetBlendShapeWeightTimeSamples(std::vector<double>* attrs) const;
+
+    /// Get the time samples at which values contributing to blend shape weights
+    /// are set, over \p interval.
+    ///
+    /// \sa UsdAttribute::GetTimeSamplesInInterval
+    USDSKEL_API
+    bool GetBlendShapeWeightTimeSamplesInInterval(const GfInterval& interval,
+                                                  std::vector<double>* times) const;
+
+    /// Return true if it possible, but not certain, that the blend shape
+    /// weights computed through this animation query change over time,
+    /// false otherwise.
+    ///
+    /// \sa UsdAttribute::ValueMightBeTimeVayring
+    USDSKEL_API
+    bool BlendShapeWeightsMightBeTimeVarying() const;
 
     /// Returns an array of tokens describing the ordering of joints in the
     /// animation.

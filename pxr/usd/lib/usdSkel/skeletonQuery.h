@@ -130,8 +130,9 @@ public:
     /// from the rest pose as a fallback value.
     /// If valid transforms cannot be computed for the animation source, the
     /// \p xforms are instead set to the rest transforms.
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
+    bool ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                      UsdTimeCode time,
                                      bool atRest=false) const;
 
@@ -140,8 +141,9 @@ public:
     /// ComputeJointLocalTransforms(). If \p atRest is true, any bound animation
     /// source is ignored, and transforms are computed from the rest pose.
     /// The skeleton-space transforms of the rest pose are cached internally.
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
+    bool ComputeJointSkelTransforms(VtArray<Matrix4>* xforms,
                                     UsdTimeCode time,
                                     bool atRest=false) const;
 
@@ -151,8 +153,9 @@ public:
     /// \code
     ///     restRelativeTransform * restTransform = jointLocalTransform
     /// \endcode
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeJointRestRelativeTransforms(VtMatrix4dArray* xforms,
+    bool ComputeJointRestRelativeTransforms(VtArray<Matrix4>* xforms,
                                             UsdTimeCode time) const;
 
     /// Compute joint transforms in world space, at whatever time is configured
@@ -162,8 +165,9 @@ public:
     /// by the local-to-world transform of the Skeleton prim.
     /// If \p atRest is true, any bound animation source is ignored, and
     /// transforms are computed from the rest pose.
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
+    bool ComputeJointWorldTransforms(VtArray<Matrix4>* xforms,
                                      UsdGeomXformCache* xfCache,
                                      bool atRest=false) const;
 
@@ -176,13 +180,15 @@ public:
     /// \endcode
     ///
     /// These are the transforms usually required for skinning.
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinningTransforms(VtMatrix4dArray* xforms,
+    bool ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
                                    UsdTimeCode time) const;
 
     /// Returns the world space joint transforms at bind time.
+    template <typename Matrix4>
     USDSKEL_API
-    bool GetJointWorldBindTransforms(VtMatrix4dArray* xforms) const;
+    bool GetJointWorldBindTransforms(VtArray<Matrix4>* xforms) const;
 
     USDSKEL_API
     std::string GetDescription() const;
@@ -195,15 +201,18 @@ private:
 
     bool _HasMappableAnim() const;
 
-    bool _ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
+    template <typename Matrix4>
+    bool _ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                       UsdTimeCode time,
                                       bool atRest=false) const;
 
-    bool _ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
+    template <typename Matrix4>
+    bool _ComputeJointSkelTransforms(VtArray<Matrix4>* xforms,
                                      UsdTimeCode time,
                                      bool atRest=false) const;
 
-    bool _ComputeSkinningTransforms(VtMatrix4dArray* xforms,
+    template <typename Matrix4>
+    bool _ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
                                     UsdTimeCode time) const;
 
 private:

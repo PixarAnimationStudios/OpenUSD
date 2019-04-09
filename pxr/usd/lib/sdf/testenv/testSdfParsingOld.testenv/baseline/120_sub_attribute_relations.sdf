@@ -8,7 +8,7 @@
 
 def Scope "World"
 {
-    Point[] points
+    point3d[] points
     rel test = </World.points> {
         uniform int[] indices = [0, 1]
         corresponding double[] weight = [0, 1]

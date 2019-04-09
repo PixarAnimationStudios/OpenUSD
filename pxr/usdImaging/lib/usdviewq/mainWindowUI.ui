@@ -1185,7 +1185,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1233,6 +1233,9 @@
    <widget class="QMenu" name="menuView">
     <property name="title">
      <string>&amp;View</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
     </property>
     <widget class="QMenu" name="menuHUD">
      <property name="title">
@@ -1406,7 +1409,7 @@
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
-    <addaction name="actionRecompute_Clipping_Planes"/>
+    <addaction name="actionAuto_Compute_Clipping_Planes"/>
     <addaction name="actionAdjust_Clipping"/>
     <addaction name="actionAdjust_Default_Material"/>
     <addaction name="menuComplexity"/>
@@ -2514,9 +2517,15 @@
     <string>Shift+I</string>
    </property>
   </action>
-  <action name="actionRecompute_Clipping_Planes">
+  <action name="actionAuto_Compute_Clipping_Planes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Recompute Clipping Planes</string>
+    <string>Auto Compute Clipping Planes</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;Auto Clipping&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Expansive scenes may show &amp;quot;Z-fighting&amp;quot;, where nearby surfaces pop or shimmer.  &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Auto Compute Clipping Planes&lt;/span&gt;&lt;span style=&quot; font-weight:400;&quot;&gt; adjusts the camera's clipping planes to fix this.  When enabled, the &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Frame Selected&lt;/span&gt;&lt;span style=&quot; font-weight:400;&quot;&gt; command readjusts clip planes too.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Leaving and then re-entering this mode will reset the view used to optimize the clipping planes.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Auto clipping is not useful in all situations, such as animated scenes in which the &amp;quot;extent&amp;quot; of the scene changes over time, and for close-up work.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="shortcut">
     <string>C</string>

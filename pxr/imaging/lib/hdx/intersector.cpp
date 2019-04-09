@@ -149,7 +149,7 @@ HdxIntersector::_ConfigureSceneMaterials(bool enableSceneMaterials,
     } else {
         if (!_overrideShader) {
             _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                HioGlslfxSharedPtr(new HioGlslfx(
                     HdStPackageFallbackSurfaceShader()))));
         }
         renderPassState->SetOverrideShader(_overrideShader);
@@ -261,8 +261,14 @@ public:
                       HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
+    }
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(renderIndex->GetResourceRegistry());
     }
 
     virtual void Execute(HdTaskContext* ctx) override
@@ -422,78 +428,28 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         // multi-task usage below.
         HdTaskSharedPtrVector tasks;
 
-        // The picking operation is composed of one or more ceonceptual passes 
-        // as follows:
+        // The picking operation is composed of one or more conceptual passes:
         // (i) [optional] depth-only pass for "unpickable" prims: This ensures 
-        // that occlusion is honored during picking. We swap the include
-        // and exclude paths of the input collection and render the resulting
-        // prims into the depth buffer.
-        // We currently skip this pass when "picking through" prims.
-        // XXX: This shouldn't be tied to pick through; it should be a separate
-        // knob.
+        // that occlusion stemming for unpickable prims is honored during 
+        // picking.
         //
-        // (ii) [optional] depth-only hull pass for "pickable" prims: This is
-        // relevant only when picking points, when pickThrough isn't set.
-        // To ensure hidden points aren't picked, we render the hull of the 
-        // pickable prims to the depth buffer.
-        //
-        // (iii) [mandatory] id render for "pickable" prims: This writes out the
+        // (ii) [mandatory] id render for "pickable" prims: This writes out the
         // various id's for prims that pass the depth test.
 
-        if (!params.pickThrough) {
-            const bool pickPoints =
-                (params.pickTarget == HdxIntersector::PickPoints);
-            const bool hasUnpickables =
-                (!pickablesCol.GetExcludePaths().empty());
+        if (params.doUnpickablesOcclude &&
+            !pickablesCol.GetExcludePaths().empty()) {
+            // Pass (i) from above
+            HdRprimCollection occluderCol =
+                pickablesCol.CreateInverseCollection();
+            _occluderRenderPass->SetRprimCollection(occluderCol);
 
-            if (pickPoints) {
-                // Passes (i) and (ii) are combined into a single occlusion pass
-                HdRprimCollection occluderCol = pickablesCol;
-
-                // While we'd prefer not to override/use repr's configured by 
-                // Hydra (in HdRenderIndex::_ConfigureReprs), we make an 
-                // exception here.  Point picking support is limited to 
-                // unrefined meshes currently, and so we can use 'hull' to do 
-                // the depth-only pass w/ both pickables and unpickables.
-                occluderCol.SetReprSelector(
-                                HdReprSelector(HdReprTokens->hull,
-                                               HdReprTokens->disabled,
-                                               HdReprTokens->disabled));
-                if (!occluderCol.GetExcludePaths().empty()) {
-                    // add the "unpickables" to the prims rendered to the depth
-                    // buffer
-                    SdfPathVector netIncludePaths = occluderCol.GetRootPaths();
-                    SdfPathVector const& excludePaths = 
-                        occluderCol.GetExcludePaths();
-                    netIncludePaths.insert(netIncludePaths.end(),
-                                           excludePaths.begin(),
-                                           excludePaths.end());
-                    occluderCol.SetRootPaths(netIncludePaths);
-                }
-
-                _occluderRenderPass->SetRprimCollection(occluderCol);
-
-                tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                        _occluderRenderPass,
-                        _occluderRenderPassState,
-                        params.renderTags));
-            }
-            else if (hasUnpickables) {
-                // Pass (i) from above
-                HdRprimCollection occluderCol =
-                    pickablesCol.CreateInverseCollection();
-                _occluderRenderPass->SetRprimCollection(occluderCol);
-
-                tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                        _occluderRenderPass,
-                        _occluderRenderPassState,
-                        params.renderTags));
-            }
+            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                    _occluderRenderPass,
+                    _occluderRenderPassState,
+                    params.renderTags));
         }
 
-        // 
-        // Pass (iii) from above
-        //
+        // Pass (ii) from above
         _pickableRenderPass->SetRprimCollection(pickablesCol);
         tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
                 _pickableRenderPass,

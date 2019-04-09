@@ -134,7 +134,7 @@ public:
 
     /// returns all HdStDrawTargets in the render index
     HDST_API
-    static void GetDrawTargets(HdSceneDelegate *sceneDelegate,
+    static void GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrConstVector *drawTargets);
 
 

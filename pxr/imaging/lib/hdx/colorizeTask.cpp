@@ -38,6 +38,7 @@ HdxColorizeTask::HdxColorizeTask(HdSceneDelegate* delegate, SdfPath const& id)
  , _outputBufferSize(0)
  , _converged(false)
  , _compositor()
+ , _needsValidation(false)
 {
 }
 
@@ -72,7 +73,7 @@ static void _colorizeNdcDepth(uint8_t* dest, uint8_t* src, size_t nPixels)
             std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
         uint8_t value = (uint8_t)(255.0f * valuef);
         // special case 1.0 (far plane) as all black.
-        if (depthBuffer[i] == 1.0f) {
+        if (depthBuffer[i] >= 1.0f) {
             value = 0;
         }
         dest[i*4+0] = value;
@@ -157,6 +158,8 @@ static _Colorizer _colorizerTable[] = {
     { HdAovTokens->Neye, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->normal, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->primId, HdFormatInt32, _colorizeId },
+    { HdAovTokens->elementId, HdFormatInt32, _colorizeId },
+    { HdAovTokens->instanceId, HdFormatInt32, _colorizeId },
 };
 
 void
@@ -167,22 +170,36 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    bool validate = false;
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxColorizeTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
             _aovName = params.aovName;
             _renderBufferId = params.renderBuffer;
-            validate = true;
+            _needsValidation = true;
         }
     }
+    *dirtyBits = HdChangeTracker::Clean;
+}
 
-    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+void
+HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
+{
+    // An empty _renderBufferId disables the task
+    if (_renderBufferId.IsEmpty()) {
+        _renderBuffer = nullptr;
+        return;
+    }
+
     _renderBuffer = static_cast<HdRenderBuffer*>(
-        renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer, _renderBufferId));
+        renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer, _renderBufferId));
 
-    if (validate) {
+    if (!TF_VERIFY(_renderBuffer)) {
+        return;
+    }
+
+
+    if (_needsValidation) {
         bool match = false;
         for (auto& colorizer : _colorizerTable) {
             if (_aovName == colorizer.aovName &&
@@ -200,9 +217,9 @@ HdxColorizeTask::Sync(HdSceneDelegate* delegate,
                 _aovName.GetText(),
                 TfEnum::GetName(_renderBuffer->GetFormat()).c_str());
         }
+        _needsValidation = false;
     }
 
-    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void
@@ -211,7 +228,11 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!TF_VERIFY(_renderBuffer)) {
+    // _renderBuffer is null if the task is disabled
+    // because _renderBufferId is empty or
+    // we failed to look up the renderBuffer in the render index,
+    // in which case the error was previously reported
+    if (!_renderBuffer) {
         return;
     }
 

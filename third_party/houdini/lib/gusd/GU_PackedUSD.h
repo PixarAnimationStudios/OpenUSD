@@ -309,7 +309,9 @@ private:
 
     // caches    
     mutable UsdPrim             m_usdPrim;
+#if SYS_VERSION_FULL_INT < 0x12000000
     mutable UT_BoundingBox      m_boundsCache;
+#endif
     mutable bool                m_transformCacheValid;
     mutable UT_Matrix4D         m_transformCache;
     mutable GT_PrimitiveHandle  m_gtPrimCache;

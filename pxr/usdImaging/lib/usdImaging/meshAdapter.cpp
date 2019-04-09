@@ -239,7 +239,8 @@ UsdImagingMeshAdapter::_RemovePrim(SdfPath const& cachePath,
 bool
 UsdImagingMeshAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
 {
-    return (primvarName == UsdImagingTokens->primvarsNormals);
+    return (primvarName == HdTokens->normals) ||
+        UsdImagingGprimAdapter::_IsBuiltinPrimvar(primvarName);
 }
 
 void

@@ -25,43 +25,9 @@
 from pxr import Sdf, Pcp
 import os, unittest
 
-class Decorator(Pcp.PayloadDecorator):
-    def __init__(self):
-        super(Decorator, self).__init__()
-    def _GetArgs(self, context):
-        class Composer(object):
-            def __init__(self):
-                super(Composer, self).__init__()
-                self.value = None
-            def Compose(self, value):
-                self.value = value
-                return True
-
-        c = Composer()
-        context.ComposeValue('documentation', c.Compose)
-        doc = c.value if c.value else 'none'
-            
-        c = Composer()
-        context.ComposeValue('kind', c.Compose)
-        kind = c.value if c.value else 'none'
-        return {'doc':doc, 'kind':kind}
-
-    def _DecoratePayload(self, primIndexPath, payload, context):
-        return self._GetArgs(context)
-    def _IsFieldRelevantForDecoration(self, field):
-        return (field == "documentation" or
-                field == "kind")
-    def _IsFieldChangeRelevantForDecoration(self, primIndexPath, 
-                                            siteLayer, sitePath, 
-                                            field, oldVal, newVal):
-        assert (field == "documentation" or
-                field == "kind")
-        return True
-
 class TestPcpPayloadDecorator(unittest.TestCase):
-    def _CreatePcpCache(self, rootLayer, decorator):
-        layerStackId = Pcp.LayerStackIdentifier(rootLayer)
-        return Pcp.Cache(layerStackId, payloadDecorator=decorator)
+    def _CreatePcpCache(self, rootLayer):
+        return Pcp._TestPayloadDecorator.CreatePcpCacheWithTestDecorator(rootLayer)
 
     def test_Basic(self):
         '''Test that composing a prim with payloads causes
@@ -72,7 +38,7 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         rootLayerFile = 'basic/root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
 
-        cache = self._CreatePcpCache(rootLayer, Decorator())
+        cache = self._CreatePcpCache(rootLayer)
         cache.RequestPayloads(['/Instance'], [])
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
@@ -154,7 +120,7 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         rootLayerFile = 'basic_payload_list/root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
 
-        cache = self._CreatePcpCache(rootLayer, Decorator())
+        cache = self._CreatePcpCache(rootLayer)
         cache.RequestPayloads(['/Instance'], [])
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
@@ -213,7 +179,7 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         rootLayerFile = os.path.join(testDir, 'root.sdf')
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
 
-        cache = self._CreatePcpCache(rootLayer, Decorator())
+        cache = self._CreatePcpCache(rootLayer)
         cache.RequestPayloads(['/Instance', '/Instance/Child'], [])
         (pi, err) = cache.ComputePrimIndex('/Instance/Child')
         assert not err
@@ -238,7 +204,7 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         rootLayerFile = os.path.join(testDir, 'root.sdf')
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
 
-        cache = self._CreatePcpCache(rootLayer, Decorator())
+        cache = self._CreatePcpCache(rootLayer)
         cache.RequestPayloads(['/Instance'], [])
         (pi, err) = cache.ComputePrimIndex('/Instance')
         assert not err
@@ -251,33 +217,16 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         '''Test that the appropriate prim indexes are recomposed based
         on whether Pcp.PayloadDecorator decides a change is relevant to
         payload decoration.'''
-        class TestChangeDecorator(Pcp.PayloadDecorator):
-            def __init__(self):
-                super(TestChangeDecorator, self).__init__()
-
-            def _DecoratePayload(self, primIndexPath, payload, context):
-                # This test case doesn't care about the actual decoration.
-                return {}
-            def _IsFieldRelevantForDecoration(self, field):
-                return field == 'documentation'
-            def _IsFieldChangeRelevantForDecoration(self, primIndexPath, 
-                                                    siteLayer, sitePath, 
-                                                    field, oldVal, newVal):
-                assert field == 'documentation'
-                assert primIndexPath == '/Instance'
-                return oldVal == 'instance' and newVal == 'foo'
 
         testLayerFile = 'basic/root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(testLayerFile)
 
-        cache = self._CreatePcpCache(rootLayer, TestChangeDecorator())
+        cache = self._CreatePcpCache(rootLayer)
         cache.RequestPayloads(['/Instance'], [])
         (pi1, err) = cache.ComputePrimIndex('/Instance')
         assert not err
 
-        # The test decorator only marks changes to the 'documentation'
-        # field from 'instance' to 'foo' as relevant and requiring a
-        # significant change.
+        # Changing documentation to "foo" is a relevant change.
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'foo')
             assert cp.GetSignificantChanges() == ['/Instance'], \
@@ -287,16 +236,48 @@ class TestPcpPayloadDecorator(unittest.TestCase):
             assert cp.GetPrimChanges() == [], \
                 "Got prim changes %s" % cp.GetPrimChanges()
 
-        # Other changes aren't relevant, so no changes should be
-        # reported.
+        (pi1, err) = cache.ComputePrimIndex('/Instance')
+        assert not err
+
+        # The test decorator is implemented to treat fields as case insensitive
+        # so a case only change to documentation is not a relevant change.
         with Pcp._TestChangeProcessor(cache) as cp:
-            rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'bar')
+            rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'FOO')
             assert cp.GetSignificantChanges() == [], \
                 "Got significant changes %s" % cp.GetSignificantChanges()
             assert cp.GetSpecChanges() == [], \
                 "Got spec changes %s" % cp.GetSpecChanges()
             assert cp.GetPrimChanges() == [], \
                 "Got prim changes %s" % cp.GetPrimChanges()
+
+        (pi1, err) = cache.ComputePrimIndex('/Instance')
+        assert not err
+
+        # Changing documentation to "BAR" is a relevant change though.
+        with Pcp._TestChangeProcessor(cache) as cp:
+            rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'BAR')
+            assert cp.GetSignificantChanges() == ['/Instance'], \
+                "Got significant changes %s" % cp.GetSignificantChanges()
+            assert cp.GetSpecChanges() == [], \
+                "Got spec changes %s" % cp.GetSpecChanges()
+            assert cp.GetPrimChanges() == [], \
+                "Got prim changes %s" % cp.GetPrimChanges()
+
+        (pi1, err) = cache.ComputePrimIndex('/Instance')
+        assert not err
+
+        # But a case only change again will not be relevant.
+        with Pcp._TestChangeProcessor(cache) as cp:
+            rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'Bar')
+            assert cp.GetSignificantChanges() == [], \
+                "Got significant changes %s" % cp.GetSignificantChanges()
+            assert cp.GetSpecChanges() == [], \
+                "Got spec changes %s" % cp.GetSpecChanges()
+            assert cp.GetPrimChanges() == [], \
+                "Got prim changes %s" % cp.GetPrimChanges()
+
+        (pi1, err) = cache.ComputePrimIndex('/Instance')
+        assert not err
 
 if __name__ == "__main__":
     unittest.main()

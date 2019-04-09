@@ -420,7 +420,6 @@ public:
     HD_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples);
 
@@ -429,10 +428,9 @@ public:
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
         out->count = SampleInstancerTransform(
-            instancerId, prototypeId, CAPACITY, out->times, out->values);
+            instancerId, CAPACITY, out->times, out->values);
     }
 
     /// Store up to \a maxSampleCount primvar samples in \a *samples.
@@ -483,8 +481,7 @@ public:
 
     /// Returns the instancer transform.
     HD_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId);
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId);
 
 
     /// Resolves a pair of rprimPath and instanceIndex back to original

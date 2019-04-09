@@ -2,6 +2,7 @@
 (
     defaultPrim = "cubeRig"
     endTimeCode = 5
+    metersPerUnit = 0.01
     startTimeCode = 1
     upAxis = "Z"
 )

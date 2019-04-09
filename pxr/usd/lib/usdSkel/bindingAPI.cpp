@@ -474,4 +474,24 @@ UsdSkelBindingAPI::GetInheritedAnimationSource() const
 }
 
 
+bool
+UsdSkelBindingAPI::ValidateJointIndices(TfSpan<const int> indices,
+                                        size_t numJoints,
+                                        std::string* reason)
+{
+    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+        const int jointIndex = indices[i];
+        if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= numJoints) {
+            if (reason) {
+                *reason = TfStringPrintf(
+                    "Index [%d] at element %td is not in the range [0,%zu)",
+                    jointIndex, i, numJoints);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

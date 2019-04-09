@@ -1923,6 +1923,16 @@ UsdMayaTranslatorRfMLight::Read(
                             lightSchema.GetPath());
     }
 
+    if (!UsdMayaTranslatorUtil::ConnectDefaultLightNode(
+            mayaNodeTransformObj,
+            &status)) {
+        return _ReportError(
+            TfStringPrintf(
+                "Could not connect %s as a default light",
+                mayaLightTypeToken.GetText()),
+            lightSchema.GetPath());
+    }
+
     const std::string nodePath = lightSchema.GetPath().AppendChild(
         TfToken(nodeName.asChar())).GetString();
     context->RegisterNewMayaNode(nodePath, lightObj);
@@ -1957,105 +1967,6 @@ UsdMayaTranslatorRfMLight::Read(
     _ReadLightShadowAPI(lightSchema, depFn);
 
     return true;
-}
-
-
-// Declare/define the Maya type name for RenderMan for Maya light types as a
-// dummy class so that we can register writers for them.
-
-class PxrAovLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrAovLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrDiskLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrDiskLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrDistantLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrDistantLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrDomeLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrDomeLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxDomeLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrEnvDayLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrEnvDayLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrMeshLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrMeshLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrRectLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrRectLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
-}
-
-
-class PxrSphereLight {};
-PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 

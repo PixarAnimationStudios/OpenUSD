@@ -280,6 +280,12 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
+                            HdRenderIndex* renderIndex)
+{
+}
+
+void
 HdxSimpleLightTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();

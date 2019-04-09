@@ -4028,7 +4028,7 @@ class "GeomModelAPI" (
                  has kind component. See \\ref UsdGeomModelAPI_drawMode
                  for mode descriptions."""
     )
-    uniform Vec3f model:drawModeColor (
+    uniform float3 model:drawModeColor (
         doc = """The base color of imaging prims inserted for alternate
                  imaging modes. For origin and bounds modes, this
                  controls line color; for cards mode, this controls the

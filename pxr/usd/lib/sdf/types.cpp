@@ -47,12 +47,6 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(SDF_WRITE_OLD_TYPENAMES, false,
-                      "Write values using old type-name alias");
-
-TF_DEFINE_ENV_SETTING(SDF_CONVERT_TO_NEW_TYPENAMES, false,
-                      "Force all serialized type-names to the new style");
-
 TF_DEFINE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -462,19 +456,10 @@ TfToken
 Sdf_ValueTypeNamesType::GetSerializationName(
     const SdfValueTypeName& typeName) const
 {
-    if (TfGetEnvSetting(SDF_WRITE_OLD_TYPENAMES)) {
-        // Return the last registered alias, which is the old type name.
-        const TfToken name = typeName.GetAliasesAsTokens().back();
-        if (!name.IsEmpty()) {
-            return name;
-        }
-    }
-    if (TfGetEnvSetting(SDF_CONVERT_TO_NEW_TYPENAMES)) {
-        // Return the first registered alias, which is the new type name.
-        const TfToken name = typeName.GetAliasesAsTokens().front();
-        if (!name.IsEmpty()) {
-            return name;
-        }
+    // Return the first registered alias, which is the new type name.
+    const TfToken name = typeName.GetAliasesAsTokens().front();
+    if (!name.IsEmpty()) {
+        return name;
     }
         
     return typeName.GetAsToken();

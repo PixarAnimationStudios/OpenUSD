@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
@@ -42,6 +43,7 @@ struct HdxShaderInputs {
     VtDictionary         textures;
     VtDictionary         textureFallbackValues;
     std::vector<TfToken> attributes;
+    VtDictionary         metaData;
 };
 
 HDX_API

@@ -34,7 +34,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdUsdzFileFormat);
-TF_DECLARE_WEAK_PTRS(SdfLayerBase);
 
 #define USD_USDZ_FILE_FORMAT_TOKENS  \
     ((Id,      "usdz"))              \
@@ -53,11 +52,11 @@ public:
     using SdfFileFormat::FileFormatArguments;
 
     USD_API
-    virtual bool IsPackage() const;
+    virtual bool IsPackage() const override;
 
     USD_API
     virtual std::string GetPackageRootLayerPath(
-        const std::string& resolvedPath) const;
+        const std::string& resolvedPath) const override;
 
     USD_API
     virtual SdfAbstractDataRefPtr
@@ -68,25 +67,25 @@ public:
 
     USD_API
     virtual bool Read(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& resolvedPath,
         bool metadataOnly) const override;
 
     USD_API
     virtual bool WriteToFile(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
     USD_API
     virtual bool ReadFromString(
-        const SdfLayerBasePtr& layerBase,
+        SdfLayer* layer,
         const std::string& str) const override;
 
     USD_API
     virtual bool WriteToString(
-        const SdfLayerBase* layerBase,
+        const SdfLayer& layer,
         std::string* str,
         const std::string& comment = std::string()) const override;
 
@@ -103,7 +102,7 @@ private:
     UsdUsdzFileFormat();
     virtual ~UsdUsdzFileFormat();
 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const override;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

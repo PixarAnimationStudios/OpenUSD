@@ -30,11 +30,14 @@
 
 #include "pxr/imaging/hd/meshTopology.h"
 
+#include "pxr/usd/usdSkel/binding.h"
+#include "pxr/usd/usdSkel/blendShapeQuery.h"
 #include "pxr/usd/usdSkel/cache.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 
 #include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -102,6 +105,21 @@ public:
                    UsdImagingIndexProxy* index) override;
 
     USDSKELIMAGING_API
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
     void MarkTransformDirty(const UsdPrim& prim,
                             const SdfPath& cachePath,
                             UsdImagingIndexProxy* index) override;
@@ -115,27 +133,137 @@ public:
     void MarkMaterialDirty(const UsdPrim& prim,
                            const SdfPath& cachePath,
                            UsdImagingIndexProxy* index) override;
+                           
+    // ---------------------------------------------------------------------- //
+    /// \name Computation API
+    // ---------------------------------------------------------------------- //
+    USDSKELIMAGING_API
+    void InvokeComputation(SdfPath const& computationPath,
+                           HdExtComputationContext* context) override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Non-virtual public API
+    // ---------------------------------------------------------------------- //
+
+    USDSKELIMAGING_API
+    void RegisterSkelBinding(UsdSkelBinding const& binding);
 
 protected:
-
+    // ---------------------------------------------------------------------- //
+    /// \name Utility methods
+    // ---------------------------------------------------------------------- //
     void _RemovePrim(const SdfPath& cachePath,
                      UsdImagingIndexProxy* index) override;
 
+private:
+    // ---------------------------------------------------------------------- //
+    /// Handlers for the Bone Mesh
+    // ---------------------------------------------------------------------- //
+    bool _IsCallbackForSkeleton(const UsdPrim& prim) const;
+    
+    /// Note: Methods below have been lifted from GprimAdapter.
     /// Reads the extent from the given prim. If the extent is not authored,
     /// an empty GfRange3d is returned, the extent will not be computed.
     GfRange3d _GetExtent(const UsdPrim& prim, UsdTimeCode time) const;
 
-    /// Returns the UsdGeomImagable "purpose" for this prim, including any
-    /// inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(const UsdPrim & prim, UsdTimeCode time) const;
-
-    /// Returns a value holding color, opacity for \p prim,
+    /// Returns a value holding color for \p prim,
     /// taking into account explicitly authored color on the prim.
-    GfVec4f _GetColorAndOpacity(const UsdPrim& prim, UsdTimeCode time) const;
+    GfVec3f _GetSkeletonDisplayColor(const UsdPrim& prim,
+                                     UsdTimeCode time) const;
 
-private:
+    /// Returns a value holding opacity for \p prim,
+    /// taking into account explicitly authored opacity on the prim.
+    float _GetSkeletonDisplayOpacity(const UsdPrim& prim,
+                                     UsdTimeCode time) const;
+    
+     void _TrackBoneMeshVariability(
+            const UsdPrim& prim,
+            const SdfPath& cachePath,
+            HdDirtyBits* timeVaryingBits,
+            const UsdImagingInstancerContext* 
+                instancerContext = nullptr) const;
 
+    void _UpdateBoneMeshForTime(
+            const UsdPrim& prim,
+            const SdfPath& cachePath, 
+            UsdTimeCode time,
+            HdDirtyBits requestedBits,
+            const UsdImagingInstancerContext* instancerContext=nullptr) const;
+
+    // ---------------------------------------------------------------------- //
+    /// Common utitily methods for skinning computations & skinned prims
+    // ---------------------------------------------------------------------- //
+    bool _IsAffectedByTimeVaryingSkelAnim(const SdfPath& skinnedPrimPath)
+        const;
+
+    // ---------------------------------------------------------------------- //
+    /// Handlers for the skinning computations
+    // ---------------------------------------------------------------------- //
+    bool _IsSkinningComputationPath(const SdfPath& cachePath) const;
+    
+    bool
+    _IsSkinningInputAggregatorComputationPath(const SdfPath& cachePath)const;
+
+    void _TrackSkinningComputationVariability(
+            const UsdPrim& skinnedPrim,
+            const SdfPath& computationPath,
+            HdDirtyBits* timeVaryingBits,
+            const UsdImagingInstancerContext* 
+                instancerContext = nullptr) const;
+    
+    VtVec3fArray _GetSkinnedPrimPoints(const UsdPrim& skinnedPrim,
+                                       const SdfPath& skinnedPrimCachePath,
+                                       UsdTimeCode time) const;
+
+    void _UpdateSkinningComputationForTime(
+            const UsdPrim& skinnedPrim,
+            const SdfPath& computationPath, 
+            UsdTimeCode time,
+            HdDirtyBits requestedBits,
+            const UsdImagingInstancerContext* instancerContext=nullptr) const;
+
+    void _UpdateSkinningInputAggregatorComputationForTime(
+            const UsdPrim& skinnedPrim,
+            const SdfPath& computationPath, 
+            UsdTimeCode time,
+            HdDirtyBits requestedBits,
+            const UsdImagingInstancerContext* instancerContext=nullptr) const;
+    
+    SdfPath _GetSkinningComputationPath(const SdfPath& skinnedPrimPath) const;
+
+    SdfPath _GetSkinningInputAggregatorComputationPath(
+        const SdfPath& skinnedPrimPath) const;
+
+    // Static helper methods
+    static
+    std::string _LoadSkinningComputeKernel();
+
+    static
+    const std::string& _GetSkinningComputeKernel();
+ 
+    // ---------------------------------------------------------------------- //
+    /// Handlers for the skinned prim
+    // ---------------------------------------------------------------------- //
+    bool _IsSkinnedPrimPath(const SdfPath& cachePath) const;
+
+    void _TrackSkinnedPrimVariability(
+            const UsdPrim& prim,
+            const SdfPath& cachePath,
+            HdDirtyBits* timeVaryingBits,
+            const UsdImagingInstancerContext* 
+                instancerContext = nullptr) const;
+    
+    void _UpdateSkinnedPrimForTime(
+            const UsdPrim& prim,
+            const SdfPath& cachePath, 
+            UsdTimeCode time,
+            HdDirtyBits requestedBits,
+            const UsdImagingInstancerContext* instancerContext=nullptr) const;
+
+
+    // ---------------------------------------------------------------------- //
+    /// Populated skeleton state
+    // ---------------------------------------------------------------------- //
     /// Data for a skel instance.
     struct _SkelData {
 
@@ -148,6 +276,8 @@ private:
         /// Compute animated  bone mesh points.
         VtVec3fArray ComputePoints(UsdTimeCode time) const;
 
+        TfToken ComputePurpose() const;
+
     private:
         // Cache of a mesh for a skeleton (at rest)
         // TODO: Dedupe this infromation across UsdSkelSkeleton instances.
@@ -157,16 +287,42 @@ private:
     };
 
     _SkelData*  _GetSkelData(const SdfPath& cachePath) const;
-
-    using _SkelDataMap =
-        boost::unordered_map<SdfPath,std::shared_ptr<_SkelData> >;
-
-private:
+    
     UsdSkelCache _skelCache;
+    using _SkelDataMap =
+        std::unordered_map<SdfPath, std::shared_ptr<_SkelData>, SdfPath::Hash>;
     _SkelDataMap _skelDataCache;
+
+    // Data for each skinned prim.
+    struct _SkinnedPrimData {
+        _SkinnedPrimData() = default;
+        _SkinnedPrimData(const UsdSkelSkeletonQuery& skelQuery,
+                         const UsdSkelSkinningQuery& skinningQuery);
+
+        std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
+        UsdSkelAnimMapper jointMapper;
+        UsdSkelAnimMapper blendShapeMapper;
+        SdfPath skelPath;
+        bool hasJointInfluences = false;
+    };
+
+    const _SkinnedPrimData* _GetSkinnedPrimData(const SdfPath& cachePath) const;
+
+    using _SkinnedPrimDataMap =
+        std::unordered_map<SdfPath, _SkinnedPrimData, SdfPath::Hash>;
+    _SkinnedPrimDataMap _skinnedPrimDataCache;
+
+    // ---------------------------------------------------------------------- //
+    /// Skeleton -> Skinned Prim(s) state
+    /// (Populated via UsdSkelImagingSkelRootAdapter::Populate)
+    // ---------------------------------------------------------------------- //
+    using _SkelBindingMap =
+        std::unordered_map<SdfPath, UsdSkelBinding, SdfPath::Hash>;
+    _SkelBindingMap _skelBindingMap;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDSKELIMAGING_SKELETONADAPTER
+ 

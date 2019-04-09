@@ -108,16 +108,11 @@ UsdMtlxFileFormat::CanRead(const std::string& filePath) const
 
 bool
 UsdMtlxFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
-
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
 
     auto stage = UsdStage::CreateInMemory();
     if (!_Read(stage,
@@ -133,7 +128,7 @@ UsdMtlxFileFormat::Read(
 
 bool
 UsdMtlxFileFormat::WriteToFile(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     const std::string& filePath,
     const std::string& comment,
     const FileFormatArguments& args) const
@@ -143,15 +138,10 @@ UsdMtlxFileFormat::WriteToFile(
 
 bool 
 UsdMtlxFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
     TRACE_FUNCTION();
-
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
 
     auto stage = UsdStage::CreateInMemory();
     if (!_Read(stage,
@@ -167,12 +157,12 @@ UsdMtlxFileFormat::ReadFromString(
 
 bool 
 UsdMtlxFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
-        WriteToString(layerBase, str, comment);
+        WriteToString(layer, str, comment);
 }
 
 bool
@@ -187,7 +177,7 @@ UsdMtlxFileFormat::WriteToStream(
 
 bool 
 UsdMtlxFileFormat::_IsStreamingLayer(
-    const SdfLayerBase& layer) const
+    const SdfLayer& layer) const
 {
     return false;
 }

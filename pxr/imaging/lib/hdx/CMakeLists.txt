@@ -82,7 +82,7 @@ pxr_library(hdx
         shaders/simpleLightingShader.glslfx
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND)
 pxr_build_test(testHdxRenderTask
     LIBRARIES
         hdx

@@ -554,10 +554,10 @@ Arch_InitDebuggerAttach()
                 ++i;
             }
             else if (i[0] == '%' && i[1] == 'e') {
-                // Write the process id.
+                // Write the executable path
                 strcat(a, link.c_str());
 
-                // Skip past the written process path.
+                // Skip past the written executable path
                 a += link.size();
 
                 // Skip over the '%e'.

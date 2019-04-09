@@ -64,8 +64,6 @@ pxr_library(glf
         diagnostic
         drawTarget
         glew
-        glslfx
-        glslfxConfig
         glContext
         glRawContext
         image
@@ -103,7 +101,6 @@ pxr_library(glf
         stb/stb_image_write.h
 
     CPPFILES
-        dictionary.cpp
         ${optionalCppFiles}
         stbImage.cpp
 

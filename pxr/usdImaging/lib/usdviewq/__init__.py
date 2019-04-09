@@ -83,6 +83,8 @@ class Launcher(object):
         '''
         register optional arguments on the ArgParser
         '''
+        from pxr import UsdUtils
+
         parser.add_argument('--renderer', action='store',
                             type=str, dest='renderer',
                             choices=AppController.GetRendererOptionChoices(),
@@ -96,8 +98,9 @@ class Launcher(object):
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
 
-        parser.add_argument('--camera', action='store', default="main_cam",
-                            type=str, help="Which camera to set the view to on "
+        parser.add_argument('--camera', action='store',
+                            default=UsdUtils.GetPrimaryCameraName(), type=str,
+                            help="Which camera to set the view to on "
                             "open - may be given as either just the camera's "
                             "prim name (ie, just the last element in the prim "
                             "path), or as a full prim path.  Note that if only "
@@ -163,7 +166,15 @@ class Launcher(object):
         parser.add_argument('--quitAfterStartup', action='store_true',
                             dest='quitAfterStartup',
                             help='quit immediately after start up')
-
+                            
+        parser.add_argument('--sessionLayer', default=None, type=str,
+                            help= "If specified, the stage will be opened "
+                            "with the 'sessionLayer' in place of the default "
+                            "anonymous layer. As this changes the session "
+                            "layer from anonymous to persistent, be "
+                            "aware that layers saved from Export Overrides "
+                            "will include the opinions in the persistent "
+                            "session layer.")
 
     def ParseOptions(self, parser):
         '''

@@ -40,7 +40,6 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/function.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -135,12 +134,12 @@ public:
         FieldDefinition& ReadOnly();
         FieldDefinition& AddInfo(const TfToken& tok, const JsValue& val);
 
-        typedef boost::function<
-            SdfAllowed(const SdfSchemaBase&, const VtValue&)> Validator;
-        FieldDefinition& ValueValidator(const Validator& v);
-        FieldDefinition& ListValueValidator(const Validator& v);
-        FieldDefinition& MapKeyValidator(const Validator& v);
-        FieldDefinition& MapValueValidator(const Validator& v);
+        using Validator =
+            SdfAllowed (*) (const SdfSchemaBase&, const VtValue&);
+        FieldDefinition& ValueValidator(Validator v);
+        FieldDefinition& ListValueValidator(Validator v);
+        FieldDefinition& MapKeyValidator(Validator v);
+        FieldDefinition& MapValueValidator(Validator v);
 
         /// @}
 
@@ -581,7 +580,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((Instanceable, "instanceable"))                         \
     ((Kind, "kind"))                                         \
     ((MapperArgValue, "value"))                              \
-    ((Marker, "marker"))                                     \
     ((PrimOrder, "primOrder"))                               \
     ((NoLoadHint, "noLoadHint"))                             \
     ((Owner, "owner"))                                       \
@@ -592,7 +590,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((PropertyOrder, "propertyOrder"))                       \
     ((References, "references"))                             \
     ((Relocates, "relocates"))                               \
-    ((Script, "script"))                                     \
     ((SessionOwner, "sessionOwner"))                         \
     ((Specializes, "specializes"))                           \
     ((Specifier, "specifier"))                               \

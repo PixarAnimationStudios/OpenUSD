@@ -563,7 +563,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
         return;
     } else {
-        TfToken purpose = UsdGeomImageable(prim).ComputePurpose();
+        TfToken purpose = GetPurpose(prim);
         // Empty purpose means there is no opinion, fall back to default.
         if (purpose.IsEmpty())
             purpose = UsdGeomTokens->default_;
@@ -1518,8 +1518,11 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(UsdPrim const& instancerPrim)
     {
         // When the instancer visibility doesn't vary over time, pre-cache
         // visibility to avoid fetching it on frame change.
+        // XXX: The usage of _GetTimeWithOffset here is super-sketch, but
+        // it avoids blowing up the inherited visibility cache... We should let
+        // this be initialized by the first UpdateForTime instead.
         instrData.visible = _GetInstancerVisible(instancerPrim.GetPath(),
-                                                 /*time doesn't matter*/1.0);
+            _GetTimeWithOffset(0.0));
     }
 
     // These _IsVarying calls are chained to short circuit as soon as we find

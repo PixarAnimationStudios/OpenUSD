@@ -28,6 +28,7 @@
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
 #include "usdMaya/shadingModePxrRis_rfm_map.h"
 #include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -73,7 +74,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
 
-    ((RmanPlugPreferenceName, "rfmShadingEngineUsePrmanPlugs"))
+    ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
 
     ((RmanVolumeShaderPlugName, "volumeShader"))
 );
@@ -395,14 +396,16 @@ namespace {
 
 static
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const bool asShader,
         UsdMayaShadingModeImportContext* context);
 
 static
 MObject
 _GetOrCreateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const bool asShader,
         UsdMayaShadingModeImportContext* context)
 {
     MObject shaderObj;
@@ -414,7 +417,7 @@ _GetOrCreateShaderObject(
         return shaderObj;
     }
 
-    shaderObj = _CreateShaderObject(shaderSchema, context);
+    shaderObj = _CreateAndPopulateShaderObject(shaderSchema, asShader, context);
     return context->AddCreatedObject(shaderSchema.GetPrim(), shaderObj);
 }
 
@@ -445,8 +448,9 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
 
 // Should only be called by _GetOrCreateShaderObject, no one else.
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const bool asShader,
         UsdMayaShadingModeImportContext* context)
 {
     TfToken shaderId;
@@ -463,12 +467,15 @@ _CreateShaderObject(
     }
 
     MStatus status;
+    MObject shaderObj;
     MFnDependencyNode depFn;
-    MObject shaderObj =
-        depFn.create(MString(mayaTypeName.GetText()),
-                     MString(shaderSchema.GetPrim().GetName().GetText()),
-                     &status);
-    if (status != MS::kSuccess) {
+    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
+                MString(shaderSchema.GetPrim().GetName().GetText()),
+                mayaTypeName.GetText(),
+                asShader,
+                &status,
+                &shaderObj) 
+            && depFn.setObject(shaderObj))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'. "
@@ -502,8 +509,12 @@ _CreateShaderObject(
             continue;
         }
 
-        MObject sourceObj = _GetOrCreateShaderObject(sourceShaderSchema,
-                                                     context);
+        MObject sourceObj = _GetOrCreateShaderObject(
+            sourceShaderSchema,
+            // any "nested" shader objects are not "shaders"
+            false, 
+            context);
+
         MFnDependencyNode sourceDepFn(sourceObj, &status);
         if (status != MS::kSuccess) {
             continue;
@@ -569,9 +580,9 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
         displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
     }
 
-    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, context);
-    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, context);
-    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, context);
+    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, true, context);
+    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, true, context);
+    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, true, context);
 
     if (surfaceShaderObj.isNull() &&
             volumeShaderObj.isNull() &&

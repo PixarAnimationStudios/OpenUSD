@@ -28,7 +28,6 @@
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/pyMarkerProxy.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -41,39 +40,6 @@
 #include <boost/python/slice.hpp>
 
 using namespace boost::python;
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-template <>
-class Sdf_PyMarkerPolicy<SdfRelationshipSpec> 
-{
-public:
-    static SdfPathVector GetMarkerPaths(const SdfRelationshipSpecHandle& spec)
-    {
-        return spec->GetTargetMarkerPaths();
-    }
-
-    static std::string GetMarker(const SdfRelationshipSpecHandle& spec,
-                                 const SdfPath& path)
-    {
-        return spec->GetTargetMarker(path);
-    }
-
-    static void SetMarker(const SdfRelationshipSpecHandle& spec,
-                          const SdfPath& path, const std::string& marker)
-    {
-        spec->SetTargetMarker(path, marker);
-    }
-
-    static void SetMarkers(const SdfRelationshipSpecHandle& spec,
-                           const std::map<SdfPath, std::string>& markers)
-    {
-        SdfRelationshipSpec::TargetMarkerMap m(markers.begin(), markers.end());
-        spec->SetTargetMarkers(m);
-    }
-};
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -1102,37 +1068,6 @@ _WrapSetTargetAttributeOrders(
 ////////////////////////////////////////////////////////////////////////////////
 
 static
-SdfPyMarkerProxy<SdfRelationshipSpec>
-_WrapGetMarkers(const SdfRelationshipSpec& spec)
-{
-    SdfRelationshipSpecHandle rel(spec);
-    return SdfPyMarkerProxy<SdfRelationshipSpec>(rel);
-}
-
-static
-void
-_WrapSetMarkers(
-    SdfRelationshipSpec& rel,
-    const dict& d)
-{
-    SdfRelationshipSpec::TargetMarkerMap markers;
-
-    list keys = d.keys();
-    int numKeys = len(d);
-
-    for (int i = 0; i < numKeys; i++) {
-        SdfPath key = extract<SdfPath>(keys[i]);
-        std::string val = extract<std::string>(d[keys[i]]);
-
-        markers[key] = val;
-    }
-
-    rel.SetTargetMarkers(markers);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-static
 SdfPath
 _WrapGetTargetPathForAttribute(
     SdfRelationshipSpec& rel,
@@ -1219,14 +1154,6 @@ void wrapRelationshipSpec()
             "A dictionary of relational attribute order name lists for each "
             "target path, keyed by path.\n\n")
 
-        .add_property("targetMarkers",
-            &_WrapGetMarkers,
-            &_WrapSetMarkers,
-            "The markers for this relationship in a map proxy\n"
-            "keyed by target path.\n\n"
-            "The returned proxy can be used to set or remove the\n"
-            "marker for a given path or to access the markers.")
-
         .add_property("noLoadHint",
             &This::GetNoLoadHint,
             &This::SetNoLoadHint,
@@ -1250,11 +1177,6 @@ void wrapRelationshipSpec()
              &This::GetOrCreateAttributeOrderForTargetPath)
         .def("GetAttributeOrderTargetPaths",
              &This::GetAttributeOrderTargetPaths)
-
-        .def("GetTargetMarker", &This::GetTargetMarker)
-        .def("SetTargetMarker", &This::SetTargetMarker)
-        .def("ClearTargetMarker", &This::ClearTargetMarker)
-        .def("GetTargetMarkerPaths", &This::GetTargetMarkerPaths)
 
         // property keys
         .setattr("TargetsKey", SdfFieldKeys->TargetPaths)

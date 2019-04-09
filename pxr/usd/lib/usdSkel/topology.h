@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
 
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -45,8 +46,7 @@ class UsdSkelTopology
 {
 public:
     /// Construct an empty topology.
-    USDSKEL_API
-    UsdSkelTopology();
+    UsdSkelTopology() = default;
 
     /// Construct a skel topology from \p paths, an array holding ordered joint
     /// paths as tokens.
@@ -54,21 +54,11 @@ public:
     /// objects are already accessible, it is more efficient to use the
     /// construct taking an SdfPath array.
     USDSKEL_API
-    UsdSkelTopology(const VtTokenArray& paths);
-
-    /// Construct a skel topology from \p paths, an array of size \p size,
-    /// holding ordered joint paths as tokens.
-    USDSKEL_API
-    UsdSkelTopology(const TfToken* paths, size_t size);
+    UsdSkelTopology(TfSpan<const TfToken> paths);
 
     /// Construct a skel topology from \p paths, an array of joint paths.
     USDSKEL_API
-    UsdSkelTopology(const SdfPathVector& paths);
-
-    /// Construct a skel topology from \p paths, an array of joints paths
-    /// of size \p size.
-    USDSKEL_API
-    UsdSkelTopology(const SdfPath* paths, size_t size);
+    UsdSkelTopology(TfSpan<const SdfPath> paths);
 
     /// Construct a skel topology from an array of parent indices.
     /// For each joint, this provides the parent index of that
@@ -82,16 +72,18 @@ public:
     USDSKEL_API
     bool Validate(std::string* reason=nullptr) const;
 
-    inline const VtIntArray& GetParentIndices() const;
+    const VtIntArray& GetParentIndices() const { return _parentIndices; }
 
-    inline size_t GetNumJoints() const;
+    size_t GetNumJoints() const { return size(); }
+
+    size_t size() const { return _parentIndices.size(); }
 
     /// Returns the parent joint of the \p index'th joint,
     /// Returns -1 for joints with no parent (roots).
     inline int GetParent(size_t index) const;
 
     /// Returns true if the \p index'th joint is a root joint.
-    inline bool IsRoot(size_t index) const;
+    bool IsRoot(size_t index) const { return GetParent(index) < 0; }
 
     bool operator==(const UsdSkelTopology& o) const;
 
@@ -101,36 +93,14 @@ public:
 
 private:
     VtIntArray _parentIndices;
-    const int* _parentIndicesData;
 };
-
-
-const VtIntArray&
-UsdSkelTopology::GetParentIndices() const
-{
-    return _parentIndices;
-}
-
-
-size_t
-UsdSkelTopology::GetNumJoints() const
-{
-    return _parentIndices.size();
-}
 
 
 int
 UsdSkelTopology::GetParent(size_t index) const
 {
     TF_DEV_AXIOM(index < _parentIndices.size());
-    return _parentIndicesData[index];
-}
-
-
-bool
-UsdSkelTopology::IsRoot(size_t index) const
-{
-    return GetParent(index) < 0;
+    return _parentIndices[index];
 }
 
 

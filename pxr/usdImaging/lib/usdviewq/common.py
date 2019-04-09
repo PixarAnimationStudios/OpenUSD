@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
-import os, time, sys, platform
+import os, time, sys, platform, math
 from pxr import Ar, Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
@@ -314,6 +314,18 @@ def GetShortString(prop, frame):
         result = str(val)
 
     return result[:500]
+
+# Return a string that reports size in metric units (units of 1000, not 1024).
+def ReportMetricSize(sizeInBytes):
+    if sizeInBytes == 0:
+       return "0 B"
+    sizeSuffixes = ("B", "KB", "MB", "GB", "TB", "PB", "EB")
+    i = int(math.floor(math.log(sizeInBytes, 1000)))
+    if i >= len(sizeSuffixes):
+        i = len(sizeSuffixes) - 1
+    p = math.pow(1000, i)
+    s = round(sizeInBytes / p, 2)
+    return "%s %s" % (s, sizeSuffixes[i])
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.

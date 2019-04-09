@@ -40,6 +40,7 @@ class HdRprim;
 class HdSprim;
 class HdBprim;
 class HdSceneDelegate;
+class HdRenderIndex;
 class HdRenderPass;
 class HdInstancer;
 

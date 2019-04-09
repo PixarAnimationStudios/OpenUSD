@@ -12,6 +12,14 @@
                             "UsdGeomNurbsPatch",
                             "UsdGeomScope",
                             "UsdGeomXform",
+                            "UsdLuxDiskLight",
+                            "UsdLuxDistantLight",
+                            "UsdLuxDomeLight",
+                            "UsdLuxGeometryLight",
+                            "UsdLuxRectLight",
+                            "UsdLuxSphereLight",
+                            "UsdRiPxrAovLight",
+                            "UsdRiPxrEnvDayLight",
                             "UsdShadeMaterial",
                             "UsdSkelRoot",
                             "UsdSkelSkeleton"
@@ -29,7 +37,15 @@
                             "nParticle",
                             "nurbsCurve",
                             "nurbsSurface",
-                            "particle"
+                            "particle",
+                            "PxrAovLight",
+                            "PxrDiskLight",
+                            "PxrDistantLight",
+                            "PxrDomeLight",
+                            "PxrEnvDayLight",
+                            "PxrMeshLight",
+                            "PxrRectLight",
+                            "PxrSphereLight"
                         ]
                     }
                 }

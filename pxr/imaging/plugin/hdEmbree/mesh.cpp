@@ -28,11 +28,14 @@
 #include "pxr/imaging/hdEmbree/instancer.h"
 #include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
+#include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
+
+#include <algorithm> // sort
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -366,6 +369,58 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
     }
 }
 
+TfTokenVector
+HdEmbreeMesh::_UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate,
+                                            HdDirtyBits dirtyBits)
+{
+    HD_TRACE_FUNCTION();
+    
+    SdfPath const& id = GetId();
+
+    // Get all the dirty computed primvars
+    HdExtComputationPrimvarDescriptorVector dirtyCompPrimvars;
+    for (size_t i=0; i < HdInterpolationCount; ++i) {
+        HdExtComputationPrimvarDescriptorVector compPrimvars;
+        HdInterpolation interp = static_cast<HdInterpolation>(i);
+        compPrimvars = sceneDelegate->GetExtComputationPrimvarDescriptors
+                                    (GetId(),interp);
+
+        for (auto const& pv: compPrimvars) {
+            if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
+                dirtyCompPrimvars.emplace_back(pv);
+            }
+        }
+    }
+
+    if (dirtyCompPrimvars.empty()) {
+        return TfTokenVector();
+    }
+    
+    HdExtComputationUtils::ValueStore valueStore
+        = HdExtComputationUtils::GetComputedPrimvarValues(
+            dirtyCompPrimvars, sceneDelegate);
+
+    TfTokenVector compPrimvarNames;
+    // Update local primvar map and track the ones that were computed
+    for (auto const& compPrimvar : dirtyCompPrimvars) {
+        auto const it = valueStore.find(compPrimvar.name);
+        if (!TF_VERIFY(it != valueStore.end())) {
+            continue;
+        }
+        
+        compPrimvarNames.emplace_back(compPrimvar.name);
+        if (compPrimvar.name == HdTokens->points) {
+            _points = it->second.Get<VtVec3fArray>();
+            _normalsValid = false;
+        } else {
+            _primvarSourceMap[compPrimvar.name] = {it->second,
+                                                compPrimvar.interpolation};
+        }
+    }
+
+    return compPrimvarNames;
+}
+
 void
 HdEmbreeMesh::_CreatePrimvarSampler(TfToken const& name, VtValue const& data,
                                     HdInterpolation interpolation,
@@ -451,8 +506,14 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
 
     ////////////////////////////////////////////////////////////////////////
     // 1. Pull scene data.
+    TfTokenVector computedPrimvars =
+        _UpdateComputedPrimvarSources(sceneDelegate, *dirtyBits);
 
-    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
+    bool pointsIsComputed =
+        std::find(computedPrimvars.begin(), computedPrimvars.end(),
+                  HdTokens->points) != computedPrimvars.end();
+    if (!pointsIsComputed &&
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
         VtValue value = sceneDelegate->Get(id, HdTokens->points);
         _points = value.Get<VtVec3fArray>();
         _normalsValid = false;
@@ -579,6 +640,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         rtcSetUserData(_rtcMeshScene, _rtcMeshId,
             new HdEmbreePrototypeContext);
         _GetPrototypeContext()->rprim = this;
+        _GetPrototypeContext()->primitiveParams = (_refined ?
+            _trianglePrimitiveParams : VtIntArray());
 
         // Add _EmbreeCullFaces as a filter function for backface culling.
         rtcSetIntersectionFilterFunction(_rtcMeshScene, _rtcMeshId,
@@ -752,6 +815,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, matf.GetArray());
             // Update the transform in the instance context.
             _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
+            _GetInstanceContext(scene, i)->instanceId = i;
             // Mark the instance as updated in the BVH.
             rtcUpdate(scene, _rtcInstanceIds[i]);
         }
@@ -776,6 +840,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, _transform.GetArray());
             // Update the transform in the render context.
             _GetInstanceContext(scene, 0)->objectToWorldMatrix = _transform;
+            _GetInstanceContext(scene, 0)->instanceId = 0;
         }
         if (newInstance || newMesh ||
             HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||

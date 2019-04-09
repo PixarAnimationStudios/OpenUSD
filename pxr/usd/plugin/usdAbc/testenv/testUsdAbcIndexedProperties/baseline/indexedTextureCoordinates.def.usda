@@ -3,9 +3,7 @@
     defaultPrim = "Cube"
     doc = "untitled"
     endTimeCode = 0
-    framesPerSecond = 24
     startTimeCode = 0
-    timeCodesPerSecond = 1
     upAxis = "Y"
 )
 

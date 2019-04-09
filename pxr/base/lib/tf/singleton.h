@@ -135,7 +135,12 @@ public:
     /// (for example, letting only one thread at a time call a member
     /// function) are the responsibility of the class author.
     inline static T& GetInstance() {
+        ARCH_PRAGMA_PUSH
+        // Suppress warnings from clang. TfSingletons are explicitly
+        // instantiated, so the warning around this usage is a false positive.
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         return ARCH_LIKELY(_instance) ? *_instance : _CreateInstance();
+        ARCH_PRAGMA_POP
     }
 
     /// Return whether or not the single object of type \c T is currently in

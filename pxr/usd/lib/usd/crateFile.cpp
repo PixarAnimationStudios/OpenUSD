@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #include "pxr/pxr.h"
 #include "crateFile.h"
 #include "integerCoding.h"
@@ -321,7 +322,8 @@ struct CrateFile::Version
     }
 
     std::string AsString() const {
-        return TfStringPrintf("%d.%d.%d", majver, minver, patchver);
+        return TfStringPrintf("%" PRId8 ".%" PRId8 ".%" PRId8,
+                              majver, minver, patchver);
     }
 
     bool IsValid() const { return AsInt() != 0; }
@@ -2216,7 +2218,8 @@ CrateFile::~CrateFile()
         printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
                "page map for %s\n"
-               "%zd pages, %zd used (%.1f%%), %zd in mem (%.1f%%)\n"
+               "%" PRId64 " pages, %" PRId64 " used (%.1f%%), %" PRId64
+               " in mem (%.1f%%)\n"
                "used %.1f%% of pages in mem\n"
                "legend: '+': in mem & used,     '-': in mem & unused\n"
                "        '!': not in mem & used, ' ': not in mem & unused\n"

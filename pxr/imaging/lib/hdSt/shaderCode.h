@@ -116,6 +116,13 @@ public:
     static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
                              HdStShaderCodeSharedPtr const &shaderB);
 
+    /// Material tags can be set in the meta-data of a glslfx file to control
+    /// what rprim collection that prims using this shader should go into.
+    /// E.g. We can use it to split opaque and translucent prims into different
+    /// collections. When no material tags are specified in the shader, a empty
+    /// token is returned.
+    HDST_API
+    virtual TfToken GetMaterialTag() const;
 
 private:
 

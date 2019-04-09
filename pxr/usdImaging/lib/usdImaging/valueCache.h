@@ -89,7 +89,11 @@ public:
 
     private:
         static Key Color(SdfPath const& path) {
-            static TfToken attr("color");
+            static TfToken attr("displayColor");
+            return Key(path, attr);
+        }
+        static Key Opacity(SdfPath const& path) {
+            static TfToken attr("displayOpacity");
             return Key(path, attr);
         }
         static Key DoubleSided(SdfPath const& path) {
@@ -319,6 +323,7 @@ public:
     /// Clear all data associated with a specific path.
     void Clear(SdfPath const& path) {
         _Erase<VtValue>(Key::Color(path));
+        _Erase<VtValue>(Key::Opacity(path));
         _Erase<bool>(Key::DoubleSided(path));
         _Erase<HdCullStyle>(Key::CullStyle(path));
         _Erase<GfRange3d>(Key::Extent(path));
@@ -390,6 +395,9 @@ public:
 
     VtValue& GetColor(SdfPath const& path) const {
         return _Get<VtValue>(Key::Color(path));
+    }
+    VtValue& GetOpacity(SdfPath const& path) const {
+        return _Get<VtValue>(Key::Opacity(path));
     }
     bool& GetDoubleSided(SdfPath const& path) const {
         return _Get<bool>(Key::DoubleSided(path));
@@ -493,6 +501,9 @@ public:
     bool FindColor(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Color(path), value);
     }
+    bool FindOpacity(SdfPath const& path, VtValue* value) const {
+        return _Find(Key::Opacity(path), value);
+    }
     bool FindDoubleSided(SdfPath const& path, bool* value) const {
         return _Find(Key::DoubleSided(path), value);
     }
@@ -590,6 +601,9 @@ public:
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Color(path), value);
+    }
+    bool ExtractOpacity(SdfPath const& path, VtValue* value) {
+        return _Extract(Key::Opacity(path), value);
     }
     bool ExtractDoubleSided(SdfPath const& path, bool* value) {
         return _Extract(Key::DoubleSided(path), value);

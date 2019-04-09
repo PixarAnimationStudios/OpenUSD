@@ -85,7 +85,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define< SdfLayer, TfType::Bases<SdfLayerBase> >();
+    TfType::Define<SdfLayer>();
 }
 
 // Muted Layers stores the paths of layers that should be muted.  The stored
@@ -119,17 +119,18 @@ SdfLayer::SdfLayer(
     const string &identifier,
     const string &realPath,
     const ArAssetInfo& assetInfo,
-    const FileFormatArguments &args) :
-    SdfLayerBase(fileFormat, args),
-    _idRegistry(SdfLayerHandle(this)),
-    _data(fileFormat->InitData(args)),
-    _stateDelegate(SdfSimpleLayerStateDelegate::New()),
-    _lastDirtyState(false),
-    _assetInfo(new Sdf_AssetInfo),
-    _mutedLayersRevisionCache(0),
-    _isMutedCache(false),
-    _permissionToEdit(true),
-    _permissionToSave(true)
+    const FileFormatArguments &args)
+    : _fileFormat(fileFormat)
+    , _fileFormatArgs(args)
+    , _idRegistry(SdfLayerHandle(this))
+    , _data(fileFormat->InitData(args))
+    , _stateDelegate(SdfSimpleLayerStateDelegate::New())
+    , _lastDirtyState(false)
+    , _assetInfo(new Sdf_AssetInfo)
+    , _mutedLayersRevisionCache(0)
+    , _isMutedCache(false)
+    , _permissionToEdit(true)
+    , _permissionToSave(true)
 {
     const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
@@ -157,7 +158,6 @@ SdfLayer::SdfLayer(
     _MarkCurrentStateAsClean();
 }
 
-// CODE_COVERAGE_OFF
 SdfLayer::~SdfLayer()
 {
     TF_DEBUG(SDF_LAYER).Msg(
@@ -187,11 +187,18 @@ SdfLayer::~SdfLayer()
     // case.
     _layerRegistry->Erase(SdfCreateHandle(this));
 }
-// CODE_COVERAGE_ON
 
-// ---
-// SdfLayer static functions and data
-// ---
+SdfFileFormatConstPtr
+SdfLayer::GetFileFormat() const
+{
+    return _fileFormat;
+}
+
+const SdfLayer::FileFormatArguments& 
+SdfLayer::GetFileFormatArguments() const
+{
+    return _fileFormatArgs;
+}
 
 SdfLayerRefPtr
 SdfLayer::_CreateNewWithFormat(
@@ -206,7 +213,7 @@ SdfLayer::_CreateNewWithFormat(
     // This method should be called with the layerRegistryMutex already held.
 
     // Create and return a new layer with _initializationMutex locked.
-    return fileFormat->NewLayer<SdfLayer>(
+    return fileFormat->NewLayer(
         fileFormat, identifier, realPathFinal, assetInfo, args);
 }
 
@@ -955,7 +962,7 @@ SdfLayer::Import(const string &layerPath)
 bool
 SdfLayer::ImportFromString(const std::string &s)
 {
-    return GetFileFormat()->ReadFromString(SdfLayerBasePtr(this), s);
+    return GetFileFormat()->ReadFromString(this, s);
 }
 
 bool
@@ -988,7 +995,7 @@ SdfLayer::_Read(
             identifier.c_str(), resolvedPath.c_str());
     }
 
-    return format->Read(SdfLayerBasePtr(this), resolvedPath, metadataOnly);
+    return format->Read(this, resolvedPath, metadataOnly);
 }
 
 /*static*/
@@ -2817,48 +2824,26 @@ SdfLayer::UpdateExternalReference(
     return true;
 }
 
-// SdfReferenceListEditor::ModifyItemEdits() callback that updates a reference's
-// asset path.
-//
-static boost::optional<SdfReference>
-_UpdateReferencePath(
+// ModifyItemEdits() callback that updates a reference's or payload's
+// asset path for SdfReferenceListEditor and SdfPayloadListEditor.
+template <class RefOrPayloadType>
+static boost::optional<RefOrPayloadType>
+_UpdateRefOrPayloadPath(
     const string &oldLayerPath,
     const string &newLayerPath,
-    const SdfReference &reference)
+    const RefOrPayloadType &refOrPayload)
 {
-    if (reference.GetAssetPath() == oldLayerPath) {
+    if (refOrPayload.GetAssetPath() == oldLayerPath) {
         // Delete if new layer path is empty, otherwise rename.
         if (newLayerPath.empty()) {
-            return boost::optional<SdfReference>();
+            return boost::optional<RefOrPayloadType>();
         } else {
-            SdfReference ref = reference;
-            ref.SetAssetPath(newLayerPath);
-            return ref;
+            RefOrPayloadType updatedRefOrPayload = refOrPayload;
+            updatedRefOrPayload.SetAssetPath(newLayerPath);
+            return updatedRefOrPayload;
         }
     }
-    return reference;
-}
-
-// SdfPayloadListEditor::ModifyItemEdits() callback that updates a payload's
-// asset path.
-//
-static boost::optional<SdfPayload>
-_UpdatePayloadPath(
-    const string &oldLayerPath,
-    const string &newLayerPath,
-    const SdfPayload &payload)
-{
-    if (payload.GetAssetPath() == oldLayerPath) {
-        // Delete if new layer path is empty, otherwise rename.
-        if (newLayerPath.empty()) {
-            return boost::optional<SdfPayload>();
-        } else {
-            SdfPayload pload = payload;
-            pload.SetAssetPath(newLayerPath);
-            return pload;
-        }
-    }
-    return payload;
+    return refOrPayload;
 }
 
 void
@@ -2871,11 +2856,13 @@ SdfLayer::_UpdateReferencePaths(
     
     // Prim references
     prim->GetReferenceList().ModifyItemEdits(std::bind(
-        &_UpdateReferencePath, oldLayerPath, newLayerPath, ph::_1));
+        &_UpdateRefOrPayloadPath<SdfReference>, oldLayerPath, newLayerPath,
+        ph::_1));
 
     // Prim payloads
     prim->GetPayloadList().ModifyItemEdits(std::bind(
-        &_UpdatePayloadPath, oldLayerPath, newLayerPath, ph::_1));
+        &_UpdateRefOrPayloadPath<SdfPayload>, oldLayerPath, newLayerPath, 
+        ph::_1));
 
     // Prim variants
     SdfVariantSetsProxy variantSetMap = prim->GetVariantSets();
@@ -4034,7 +4021,7 @@ SdfLayer::ExportToString( std::string *result ) const
 
     TF_DESCRIBE_SCOPE("Writing layer @%s@", GetIdentifier().c_str());
 
-    return GetFileFormat()->WriteToString(this, result);
+    return GetFileFormat()->WriteToString(*this, result);
 }
 
 bool 
@@ -4096,7 +4083,7 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
     
-    bool ok = fileFormat->WriteToFile(this, newFileName, comment, args);
+    bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);
 
     // If we wrote to the backing file then we're now clean.
     if (ok && newFileName == GetRealPath())

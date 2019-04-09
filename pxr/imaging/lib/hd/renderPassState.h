@@ -63,9 +63,10 @@ public:
     /// Schedule to update renderPassState parameters.
     /// e.g. camera matrix, override color, id blend factor.
 
-    // Sync, called once per frame after RenderPassState is filled in.
+    /// Prepare, called once per frame after the sync phase, but prior to
+    /// the commit phase.
     HD_API
-    virtual void Sync(HdResourceRegistrySharedPtr const &resourceRegistry);
+    virtual void Prepare(HdResourceRegistrySharedPtr const &resourceRegistry);
 
     // Bind, called once per frame before drawing.
     HD_API
@@ -181,6 +182,12 @@ public:
     HdCompareFunction GetDepthFunc() const { return _depthFunc; }
 
     HD_API
+    void SetEnableDepthMask(bool state);
+
+    HD_API
+    bool GetEnableDepthMask();
+
+    HD_API
     void SetStencil(HdCompareFunction func, int ref, int mask,
                     HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass);
     HdCompareFunction GetStencilFunc() const { return _stencilFunc; }
@@ -274,6 +281,7 @@ protected:
     float _depthBiasConstantFactor;
     float _depthBiasSlopeFactor;
     HdCompareFunction _depthFunc;
+    bool _depthMaskEnabled;
     HdCullStyle _cullStyle;
 
     // Stencil RenderPassState

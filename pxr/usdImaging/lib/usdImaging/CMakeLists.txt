@@ -1,7 +1,6 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImaging)
 
-# Note: both python include directives are included for compatibility.
 pxr_library(usdImaging
     LIBRARIES
         gf
@@ -19,13 +18,9 @@ pxr_library(usdImaging
         usdShade
         usdVol
         ar
-        ${Boost_PYTHON_LIBRARY}
-        ${PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_PATH}
-        ${PYTHON_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES

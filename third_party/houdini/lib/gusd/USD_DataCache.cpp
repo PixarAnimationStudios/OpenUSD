@@ -59,8 +59,18 @@ GusdUSD_DataCache::ShouldClearPrim(
         // Always clear expired prims.
         return true;
     }
-    const std::string& path = prim.GetStage()->GetRootLayer()->GetRealPath();
-    return stagesToClear.contains(path);
+    if (prim.GetStage()->GetRootLayer()->IsAnonymous())
+    {
+	const std::string& path =
+	    prim.GetStage()->GetRootLayer()->GetIdentifier();
+	return stagesToClear.contains(path);
+    }
+    else
+    {
+	const std::string& path =
+	    prim.GetStage()->GetRootLayer()->GetRealPath();
+	return stagesToClear.contains(path);
+    }
 }
 
 

@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void
+bool
 UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
                                   UsdPrim const& usdPrim,
                                   UsdImagingPrimAdapterSharedPtr const& adapter)
@@ -44,12 +44,12 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
             TF_CODING_ERROR("No adapter was found for <%s> (type: %s)\n",
                 cachePath.GetText(),
                 usdPrim ? usdPrim.GetTypeName().GetText() : "<expired prim>");
-            return;
+            return false;
         }
     }
 
     TF_DEBUG(USDIMAGING_CHANGES).Msg(
-        "[Adding Prim Info] <%s> adapter=%s\n",
+        "[Add Prim Info] <%s> adapter=%s\n",
         cachePath.GetText(),
         TfType::GetCanonicalTypeName(typeid(*(adapterToInsert.get()))).c_str());
 
@@ -64,22 +64,24 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
 
     UsdImagingDelegate::_PrimInfo &primInfo = it->second;
 
-    if (!inserted) {
-        // Native Instancing can add the same prim twice, because it
-        // reuses the first prim as the master.  This is ok if adapter
-        // and prim are the same (i.e. it's a no-op); in this case we
-        // silently ignore the collision.  Otherwise it's an error.
-        if ((adapterToInsert != primInfo.adapter) ||
-            (usdPrim         != primInfo.usdPrim)) {
+    if (!inserted) { // Entry already exists.
 
-            TF_CODING_ERROR("Different prim added at same location: "
-                            "path = <%s>, "
-                            "new prim = <%s>, old prim = <%s>\n",
-                            cachePath.GetText(),
-                            usdPrim.GetPath().GetText(),
-                            primInfo.usdPrim.GetPath().GetText());
+        if (primInfo.adapter) {
+            // For hijacking purposes, it is possible to have another adapter
+            // registered for a prim. If that's the case, we don't override
+            // the prim Info state, and simply return.
+            TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                "[Add Prim Info] Prim Info entry already exists for "
+                " <%s> with adapter=%s \n",
+                cachePath.GetText(), TfType::GetCanonicalTypeName(
+                    typeid(*(primInfo.adapter.get()))).c_str());
+                
+        } else {
+            TF_CODING_ERROR("Found prim info entry for %s "
+                            "with unassigned adapter.", cachePath.GetText());
         }
-        return;
+
+        return false;
     }
 
 
@@ -94,6 +96,8 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
     SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
     _delegate->_cache2indexPath[cachePath] = indexPath;
     _delegate->_index2cachePath[indexPath] = cachePath;
+
+    return true;
 }
 
 void
@@ -110,12 +114,13 @@ UsdImagingIndexProxy::InsertRprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    _delegate->GetRenderIndex().InsertRprim(primType, _delegate,
-        _delegate->GetPathForIndex(cachePath),
-        _delegate->GetPathForIndex(parentPath));
+    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+        _delegate->GetRenderIndex().InsertRprim(primType, _delegate,
+            _delegate->GetPathForIndex(cachePath),
+            _delegate->GetPathForIndex(parentPath));
 
-    AddPrimInfo(cachePath, usdPrim, adapter);
-    _AddTask(cachePath);
+        _AddTask(cachePath);
+    }
 }
 
 void
@@ -125,11 +130,12 @@ UsdImagingIndexProxy::InsertSprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    _delegate->GetRenderIndex().InsertSprim(primType, _delegate,
-        _delegate->GetPathForIndex(cachePath));
+    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+        _delegate->GetRenderIndex().InsertSprim(primType, _delegate,
+            _delegate->GetPathForIndex(cachePath));
 
-    AddPrimInfo(cachePath, usdPrim, adapter);
-    _AddTask(cachePath);
+        _AddTask(cachePath);
+    }
 }
 
 void
@@ -139,11 +145,12 @@ UsdImagingIndexProxy::InsertBprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    _delegate->GetRenderIndex().InsertBprim(primType, _delegate,
-        _delegate->GetPathForIndex(cachePath));
+    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+        _delegate->GetRenderIndex().InsertBprim(primType, _delegate,
+            _delegate->GetPathForIndex(cachePath));
 
-    AddPrimInfo(cachePath, usdPrim, adapter);
-    _AddTask(cachePath);
+        _AddTask(cachePath);
+    }
 }
 void
 UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
@@ -346,20 +353,21 @@ UsdImagingIndexProxy::InsertInstancer(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    _delegate->GetRenderIndex().InsertInstancer(_delegate,
-        _delegate->GetPathForIndex(cachePath),
-        _delegate->GetPathForIndex(parentPath));
+    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+        _delegate->GetRenderIndex().InsertInstancer(_delegate,
+            _delegate->GetPathForIndex(cachePath),
+            _delegate->GetPathForIndex(parentPath));
 
-    _delegate->_instancerPrimPaths.insert(cachePath);
+        _delegate->_instancerPrimPaths.insert(cachePath);
 
-    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-        "[Instancer Inserted] %s, parent = %s, adapter = %s\n",
-        cachePath.GetText(), parentPath.GetText(),
-        adapter ? TfType::GetCanonicalTypeName(typeid(*adapter)).c_str()
-                : "none");
+        TF_DEBUG(USDIMAGING_INSTANCER).Msg(
+            "[Instancer Inserted] %s, parent = %s, adapter = %s\n",
+            cachePath.GetText(), parentPath.GetText(),
+            adapter ? TfType::GetCanonicalTypeName(typeid(*adapter)).c_str()
+                    : "none");
 
-    AddPrimInfo(cachePath, usdPrim, adapter);
-    _AddTask(cachePath);
+        _AddTask(cachePath);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

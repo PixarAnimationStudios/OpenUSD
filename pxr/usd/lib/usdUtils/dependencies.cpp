@@ -208,14 +208,11 @@ private:
     VtValue _UpdateAssetValue(const VtValue &val);
 
     // Callback function that's passed into SdfPayloadsProxy::ModifyItemEdits()
-    // to update all payloads.
-    boost::optional<SdfPayload> _RemapSdfPayload(
-            const SdfPayload &payload);
-
-    // Callback function that's passed into SdfReferencesProxy::ModifyItemEdits()
-    // to update all references.
-    boost::optional<SdfReference> _RemapSdfReference(
-            const SdfReference &reference);
+    // or SdfReferencesProxy::ModifyItemEdits() to update all payloads or 
+    // references.
+    template <class RefOrPayloadType, _DepType DEP_TYPE>
+    boost::optional<RefOrPayloadType> _RemapRefOrPayload(
+        const RefOrPayloadType &refOrPayload);
 
     // Resolved path to the file.
     std::string _filePath;
@@ -308,34 +305,37 @@ _FileAnalyzer::_ProcessSublayers()
     }
 }
 
-boost::optional<SdfPayload>
-_FileAnalyzer::_RemapSdfPayload(const SdfPayload &payload) 
+template <class RefOrPayloadType, _DepType DEP_TYPE>
+boost::optional<RefOrPayloadType> 
+_FileAnalyzer::_RemapRefOrPayload(const RefOrPayloadType &refOrPayload)
 {
-    // If this is a local (or self) payload, there's no asset path to update.
-    if (payload.GetAssetPath().empty()) {
-        return payload;
+    // If this is a local (or self) reference or payload, there's no asset path 
+    // to update.
+    if (refOrPayload.GetAssetPath().empty()) {
+        return refOrPayload;
     }
 
-    std::string remappedPayloadPath = _ProcessDependency(payload.GetAssetPath(),
-            _DepType::Payload);
+    std::string remappedPath = 
+        _ProcessDependency(refOrPayload.GetAssetPath(), DEP_TYPE);
     // If the path was not remapped to a different path, then return the 
     // incoming payload unmodifed.
-    if (remappedPayloadPath == payload.GetAssetPath())
-        return payload;
+    if (remappedPath == refOrPayload.GetAssetPath())
+        return refOrPayload;
 
-    // The payload path was remapped, hence construct a new SdfPayload
-    // object with the remapped path.
-    SdfPayload remappedPayload = payload;
-    remappedPayload.SetAssetPath(remappedPayloadPath);
-    return remappedPayload;
+    // The payload or reference path was remapped, hence construct a new 
+    // SdfPayload or SdfReference object with the remapped path.
+    RefOrPayloadType remappedRefOrPayload = refOrPayload;
+    remappedRefOrPayload.SetAssetPath(remappedPath);
+    return remappedRefOrPayload;
 }
 
 void
 _FileAnalyzer::_ProcessPayloads(const SdfPrimSpecHandle &primSpec)
 {
     SdfPayloadsProxy payloadList = primSpec->GetPayloadList();
-    payloadList.ModifyItemEdits(std::bind(&_FileAnalyzer::_RemapSdfPayload, 
-            this, std::placeholders::_1));
+    payloadList.ModifyItemEdits(std::bind(
+        &_FileAnalyzer::_RemapRefOrPayload<SdfPayload, _DepType::Payload>, 
+        this, std::placeholders::_1));
 }
 
 void
@@ -515,34 +515,13 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
     }
 }
 
-boost::optional<SdfReference>
-_FileAnalyzer::_RemapSdfReference(const SdfReference &reference) 
-{
-    // If this is a local (or self) reference, there's no asset path to update.
-    if (reference.GetAssetPath().empty()) {
-        return reference;
-    }
-
-    std::string remappedRefPath = _ProcessDependency(reference.GetAssetPath(),
-            _DepType::Reference);
-    // If the path was not remapped to a different path, then return the 
-    // incoming reference unmodifed.
-    if (remappedRefPath == reference.GetAssetPath())
-        return reference;
-
-    // The reference path was remapped, hence construct a new SdfReference
-    // object with the remapped path.
-    SdfReference remappedRef = reference;
-    remappedRef.SetAssetPath(remappedRefPath);
-    return remappedRef;
-}
-
 void
 _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
 {
     SdfReferencesProxy refList = primSpec->GetReferenceList();
-    refList.ModifyItemEdits(std::bind(&_FileAnalyzer::_RemapSdfReference, 
-            this, std::placeholders::_1));
+    refList.ModifyItemEdits(std::bind(
+        &_FileAnalyzer::_RemapRefOrPayload<SdfReference, _DepType::Reference>, 
+        this, std::placeholders::_1));
 }
 
 void
@@ -818,6 +797,13 @@ private:
         // subsequent call to Remap.
         std::string Remap(const std::string& filePath)
         {
+            if (ArIsPackageRelativePath(filePath)) {
+                std::pair<std::string, std::string> packagePath = 
+                    ArSplitPackageRelativePathOuter(filePath);
+                return ArJoinPackageRelativePath(
+                    Remap(packagePath.first), packagePath.second);
+            }
+
             const std::string pathName = TfGetPathName(filePath);
             if (pathName.empty()) {
                 return filePath;
@@ -1125,7 +1111,7 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
             if (TfDynamic_cast<UsdUsdFileFormatConstPtr>(fileFormat)) {
                 args[UsdUsdFileFormatTokens->FormatArg] = 
                         UsdUsdFileFormat::GetUnderlyingFormatForLayer(
-                            boost::get_pointer(layer));
+                            *get_pointer(layer));
             }
             
             std::string tmpLayerExportPath = TfStringCatPaths(tmpDirPath, 
@@ -1164,12 +1150,30 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
             continue;
         }
 
-        std::string inArchivePath = writer.AddFile(srcPath, destPath);
-        if (inArchivePath.empty()) {
-            // XXX: Should we discard the usdz file and return early here?
-            TF_WARN("Failed to add file '%s' to the package at path '%s'.",
+        // If the file is a package or inside a package, copy the
+        // entire package. We could extract the package and copy only the 
+        // dependencies, but this could get very complicated.
+        if (ArIsPackageRelativePath(destPath)) {
+            std::string packagePath = ArSplitPackageRelativePathOuter(
+                    srcPath).first;
+            std::string destPackagePath = ArSplitPackageRelativePathOuter(
+                    destPath).first;
+            if (!packagePath.empty()) {
+                std::string inArchivePath = writer.AddFile(packagePath,
+                    destPackagePath);
+                if (inArchivePath.empty()) {
+                    success = false;
+                }
+            }
+        }
+        else {
+            std::string inArchivePath = writer.AddFile(srcPath, destPath);
+            if (inArchivePath.empty()) {
+                // XXX: Should we discard the usdz file and return early here?
+                TF_WARN("Failed to add file '%s' to the package at path '%s'.",
                     srcPath.c_str(), usdzFilePath.c_str());
-            success = false;
+                success = false;
+            }
         }
     }
 
@@ -1187,10 +1191,12 @@ UsdUtilsCreateNewUsdzPackage(const SdfAssetPath &assetPath,
 bool
 UsdUtilsCreateNewARKitUsdzPackage(
     const SdfAssetPath &assetPath,
-    const std::string &usdzFilePath,
+    const std::string &inUsdzFilePath,
     const std::string &firstLayerName)
 {
     auto &resolver = ArGetResolver();
+
+    std::string usdzFilePath = ArchNormPath(inUsdzFilePath);
 
     const std::string resolvedPath = resolver.Resolve(assetPath.GetAssetPath());
     if (resolvedPath.empty()) {

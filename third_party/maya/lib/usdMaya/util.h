@@ -46,6 +46,7 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
+#include <maya/MDistance.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
@@ -170,6 +171,18 @@ ConvertCMToMM(const double cm)
     return cm * MillimetersPerCentimeter;
 }
 
+/// Converts the given value \p mdistance in Maya's MDistance units to the 
+/// equivalent value in USD's metersPerUnit.
+PXRUSDMAYA_API
+double ConvertMDistanceUnitToUsdGeomLinearUnit(
+    const MDistance::Unit mdistanceUnit);
+
+/// Coverts the given value \p linearUnit in USD's metersPerUnit to the 
+/// equivalent value in Maya's MDistance units.
+PXRUSDMAYA_API
+MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(
+    const double linearUnit);
+
 /// Get the full name of the Maya node \p mayaNode.
 ///
 /// If \p mayaNode refers to a DAG node (i.e. supports the MFnDagNode function
@@ -211,6 +224,18 @@ MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
 /// an invalid plug is returned.
 PXRUSDMAYA_API
 MPlug GetMayaTimePlug();
+
+/// Get the MPlug for the shaders attribute of Maya's defaultShaderList
+///
+/// This is an accessor for the "defaultShaderList1.shaders" plug.  Similar to
+/// GetMayaTimePlug(), it will traverse through MFn::kShaderList objects.
+PXRUSDMAYA_API
+MPlug GetMayaShaderListPlug();
+
+/// Get the MObject for the DefaultLightSet, which should add any light nodes
+/// as members for them to take effect in the scene
+PXRUSDMAYA_API
+MObject GetDefaultLightSetObject();
 
 PXRUSDMAYA_API
 bool isAncestorDescendentRelationship(

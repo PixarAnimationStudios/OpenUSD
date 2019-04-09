@@ -61,13 +61,13 @@ over "GLOBAL" (
                 of purpose tokens returned by 
                 UsdGeomImageable::GetOrderedPurposeTokens."""
             }
-            dictionary faceSet = {
-                string doc = """<Deprecated> This is the namespace prefix used by 
-                UsdGeomFaceSetAPI for authoring faceSet attributes."""
-            }
             dictionary upAxis = {
                 string doc = """Stage-level metadata that encodes a scene's
                 orientation as a token whose value can be "Y" or "Z"."""
+            }
+            dictionary metersPerUnit = {
+                string doc = """Stage-level metadata that encodes a scene's
+                linear unit of measure as meters per encoded unit."""
             }
             dictionary inactiveIds = {
                 string doc = """int64listop prim metadata that specifies
@@ -1946,7 +1946,7 @@ class "GeomModelAPI"
                  set, apply an alternate imaging mode to this prim. See
                  \\ref UsdGeomModelAPI_drawMode."""
     )
-    uniform Vec3f model:drawModeColor (
+    uniform float3 model:drawModeColor (
         doc = """The base color of imaging prims inserted for alternate
                  imaging modes. For \\em origin and \\em bounds modes, this
                  controls line color; for \\em cards mode, this controls the

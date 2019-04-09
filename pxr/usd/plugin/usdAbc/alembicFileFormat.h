@@ -32,7 +32,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 #define USDABC_ALEMBIC_FILE_FORMAT_TOKENS  \
     ((Id,      "abc"))                  \
     ((Version, "1.0"))                  \
@@ -41,31 +40,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(UsdAbcAlembicFileFormatTokens, USDABC_ALEMBIC_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdAbcAlembicFileFormat);
-TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
 
 /// \class UsdAbcAlembicFileFormat
 ///
 class UsdAbcAlembicFileFormat : public SdfFileFormat {
 public:
     // SdfFileFormat overrides
-    virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const;
-    virtual bool CanRead(const std::string &file) const;
-    virtual bool Read(const SdfLayerBasePtr& layerBase,
+    virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const override;
+    virtual bool CanRead(const std::string &file) const override;
+    virtual bool Read(SdfLayer* layer,
                       const std::string& resolvedPath,
-                      bool metadataOnly) const;
-    virtual bool WriteToFile(const SdfLayerBase* layerBase,
+                      bool metadataOnly) const override;
+    virtual bool WriteToFile(const SdfLayer& layer,
                              const std::string& filePath,
                              const std::string& comment = std::string(),
                              const FileFormatArguments& args = 
-                                 FileFormatArguments()) const;
-    virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
-                                const std::string& str) const;
-    virtual bool WriteToString(const SdfLayerBase* layerBase,
+                                 FileFormatArguments()) const override;
+    virtual bool ReadFromString(SdfLayer* layer,
+                                const std::string& str) const override;
+    virtual bool WriteToString(const SdfLayer& layer,
                                std::string* str,
-                               const std::string& comment=std::string()) const;
+                               const std::string& comment=std::string()) 
+                               const override;
     virtual bool WriteToStream(const SdfSpecHandle &spec,
                                std::ostream& out,
-                               size_t indent) const;
+                               size_t indent) const override;
 
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
@@ -75,12 +74,11 @@ protected:
     UsdAbcAlembicFileFormat();
 
 private:
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 
 private:
     SdfFileFormatConstPtr _usda;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

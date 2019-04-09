@@ -16,7 +16,7 @@ def GprimSphere "Sphere"
     }
     double empty.timeSamples = {
     }
-    Point[] points.timeSamples = {
+    point3d[] points.timeSamples = {
         0: [(0, 158.785, 79.57), (-67.82, 75.581, 80.12)],
         1: [(1, 158.785, 79.57), (-67.82, 75.581, 80.12)],
         2: [(2, 158.785, 79.57), (-67.82, 75.581, 80.12)],

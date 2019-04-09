@@ -193,7 +193,7 @@ My_TestGLDrawing::_SetPickParams()
     pParams.engine         = &_engine;
     pParams.pickablesCol   = &_pickablesCol;
     pParams.highlightMode  = HdSelection::HighlightModeSelect;
-
+    // unpickable occlusion is false by default.
     _picker.SetPickParams(pParams);
 }
 
@@ -236,6 +236,7 @@ My_TestGLDrawing::OffscreenTest()
     // make cube0 unpickable; it should not let us pick cube1 since it occludes
     SdfPathVector excludePaths = {SdfPath("/cube0")};
     _pickablesCol.SetExcludePaths(excludePaths);
+    _picker.SetDoUnpickablesOcclude(true);
     _picker.Pick(GfVec2i(319,221), GfVec2i(320,222));
     DrawScene();
     WriteToFile("color", "color3_cube0_unpickable.png");

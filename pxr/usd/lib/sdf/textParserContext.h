@@ -87,7 +87,7 @@ public:
     SdfPath savedPath;
 
     // Whether the current relationship target being parsed is allowed to
-    // have data like markers or relational attributes.
+    // have data like relational attributes.
     bool relParsingAllowTargetData;
     // relationship target paths that will be saved in a list op
     // (use a boost::optional to track whether we have seen an opinion at all.)
@@ -99,9 +99,6 @@ public:
     // helpers for connection path parsing
     SdfPathVector connParsingTargetPaths;
     bool connParsingAllowConnectionData;
-
-    // Relationship target or attribute connection marker
-    std::string marker;
 
     // helpers for inherit path parsing
     SdfPathVector inheritParsingTargetPaths;

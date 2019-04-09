@@ -39,4 +39,5 @@ TF_WRAP_MODULE
     TF_WRAP( StageCache );
     TF_WRAP( Stitch );
     TF_WRAP( StitchClips );
+    TF_WRAP( TimeCodeRange );
 }

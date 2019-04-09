@@ -67,6 +67,7 @@ pxr_test_scripts(
     testenv/testUsdAbcCamera.py
     testenv/testUsdAbcConversionBasisCurves.py
     testenv/testUsdAbcConversionSubdiv.py
+    testenv/testUsdAbcFaceset.py
     testenv/testUsdAbcIndexedProperties.py
     testenv/testUsdAbcInstancing.py
     testenv/testUsdAbcUvReadWrite.py
@@ -96,6 +97,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcConversionSubdiv
     DEST testUsdAbcConversionSubdiv
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcFaceset
+    DEST testUsdAbcFaceset
 )
 
 pxr_install_test_dir(
@@ -162,6 +168,12 @@ pxr_register_test(testUsdAbcConversionSubdiv
 pxr_register_test(testUsdAbcConversionBasisCurves
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionBasisCurves"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcFaceset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcFaceset"
     EXPECTED_RETURN_CODE 0
 )
 

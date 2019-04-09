@@ -13,13 +13,13 @@ def MfScope "foo"
     rel complex_rel = [
         </foo/Foo/Bar> {
             double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            color3d rgb = (0.2, 0.3, 0.4)
+            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
         },
         </foo/Blah/Blah> {
             double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            color3d rgb = (0.2, 0.3, 0.4)
+            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
         },
     ] (
         "Exercise full syntax"
@@ -115,13 +115,13 @@ def MfScope "customFoo"
     custom rel complex_rel = [
         </foo/Foo/Bar> {
             double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            color3d rgb = (0.2, 0.3, 0.4)
+            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
         },
         </foo/Blah/Blah> {
             double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            color3d rgb = (0.2, 0.3, 0.4)
+            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
         },
     ] (
         "Exercise full syntax"

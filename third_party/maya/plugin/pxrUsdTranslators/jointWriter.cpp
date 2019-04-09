@@ -170,13 +170,26 @@ PxrUsdTranslators_JointWriter::GetJointNames(
     _GetJointHierarchyComponents(rootDagPath, &skelXformPath,
                                  &jointHierarchyRootPath);
 
-    // Get paths relative to the root of the joint hierarchy.
+    // Get paths relative to the root of the joint hierarchy or the scene root.
     // Joints have to be transforms, so mergeTransformAndShape
     // shouldn't matter here. (Besides, we're not actually using these
     // to point to prims.)
-    SdfPath rootPath = UsdMayaUtil::MDagPathToUsdPath(
-            jointHierarchyRootPath, /*mergeTransformAndShape*/ false,
-            stripNamespaces);
+    SdfPath rootPath;
+    if (jointHierarchyRootPath.length() == 0) {
+        // Joint name relative to the scene root.
+        // Note that, in this case, the export will eventually error when trying
+        // to obtain the SkelRoot. But it's better that we not error here and
+        // only error inside the UsdMaya_SkelBindingsProcessor so that we
+        // consolidate the SkelRoot-related errors in one place.
+        rootPath = SdfPath::AbsoluteRootPath();
+    }
+    else {
+        // Joint name relative to joint root.
+        rootPath = UsdMayaUtil::MDagPathToUsdPath(
+                jointHierarchyRootPath,
+                /*mergeTransformAndShape*/ false,
+                stripNamespaces);
+    }
 
     VtTokenArray result;
     for (const MDagPath& joint : joints) {

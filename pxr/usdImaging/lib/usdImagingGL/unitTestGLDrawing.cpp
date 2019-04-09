@@ -25,6 +25,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
@@ -100,6 +101,8 @@ UsdImagingGL_UnitTestWindow::OnInitializeGL()
 {
     GlfGlewInit();
     GlfRegisterDefaultDebugOutputMessageCallback();
+    GlfContextCaps::InitInstance();
+
 
     //
     // Create an offscreen draw target which is the same size as this

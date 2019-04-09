@@ -33,6 +33,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
 
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdSkel/skeleton.h" 
 
@@ -134,7 +135,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDSKEL_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -146,7 +147,7 @@ private:
 
     // override SchemaBase virtuals.
     USDSKEL_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -405,6 +406,16 @@ public:
     /// its ancestors.
     USDSKEL_API
     UsdPrim GetInheritedAnimationSource() const;
+
+    /// Validate an array  of joint indices.
+    /// This ensures that all indices are the in the range [0, numJoints).
+    /// Returns true if the indices are valid, or false otherwise.
+    /// If invalid and \p reason is non-null, an error message describing
+    /// the first validation error will be set.
+    USDSKEL_API
+    static bool ValidateJointIndices(TfSpan<const int> indices,
+                                     size_t numJoints,
+                                     std::string* reason=nullptr);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -137,7 +137,7 @@ SdfTextFileFormat::CanRead(const string& filePath) const
 
 bool
 SdfTextFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const string& resolvedPath,
     bool metadataOnly) const
 {
@@ -145,11 +145,6 @@ SdfTextFileFormat::Read(
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
     if (!asset) {
-        return false;
-    }
-
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
         return false;
     }
 
@@ -162,7 +157,7 @@ SdfTextFileFormat::Read(
         return false;
     }
 
-    SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     if (!Sdf_ParseMenva(
             resolvedPath, asset, GetFormatId(), GetVersionString(), 
             metadataOnly, TfDynamic_cast<SdfDataRefPtr>(data))) {
@@ -298,7 +293,7 @@ _WriteLayerToMenva(
 
 bool
 SdfTextFileFormat::WriteToFile(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     const std::string& filePath,
     const std::string& comment,
     const FileFormatArguments& args) const
@@ -311,7 +306,7 @@ SdfTextFileFormat::WriteToFile(
         return false;
     }
 
-    bool ok = Write(layerBase, wrapper.GetStream(), comment);
+    bool ok = Write(layer, wrapper.GetStream(), comment);
 
     if (ok && !wrapper.Commit(&reason)) {
         TF_RUNTIME_ERROR(reason);
@@ -323,15 +318,10 @@ SdfTextFileFormat::WriteToFile(
 
 bool 
 SdfTextFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
-    SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     if (!Sdf_ParseMenvaFromString(str, 
                                   GetFormatId(),
                                   GetVersionString(),
@@ -345,12 +335,12 @@ SdfTextFileFormat::ReadFromString(
 
 bool 
 SdfTextFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     std::stringstream ostr;
-    if (!Write(layerBase, ostr, comment)) {
+    if (!Write(layer, ostr, comment)) {
         return false;
     }
 
@@ -360,29 +350,24 @@ SdfTextFileFormat::WriteToString(
 
 bool
 SdfTextFileFormat::WriteToStream(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::ostream& ostr) const
 {
-    return Write(layerBase, ostr);
+    return Write(layer, ostr);
 }
 
 bool
 SdfTextFileFormat::Write(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::ostream& ostr,
     const string& commentOverride) const
 {
     TRACE_FUNCTION();
 
-    const SdfLayer *layer = dynamic_cast<const SdfLayer *>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
     string comment = commentOverride.empty() ?
-        layer->GetComment() : commentOverride;
+        layer.GetComment() : commentOverride;
 
-    return _WriteLayerToMenva(layer, ostr, GetFileCookie(),
+    return _WriteLayerToMenva(&layer, ostr, GetFileCookie(),
                               GetVersionString(), comment);
 
     return false;
@@ -404,7 +389,7 @@ SdfTextFileFormat::_ShouldSkipAnonymousReload() const
 }
 
 bool 
-SdfTextFileFormat::_IsStreamingLayer(const SdfLayerBase& layer) const
+SdfTextFileFormat::_IsStreamingLayer(const SdfLayer& layer) const
 {
     return false;
 }

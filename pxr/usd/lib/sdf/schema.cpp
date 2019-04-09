@@ -75,7 +75,11 @@ SdfSchemaBase::FieldDefinition::FieldDefinition(
       _fallbackValue(fallbackValue),
       _isPlugin(false),
       _isReadOnly(false),
-      _holdsChildren(false)
+      _holdsChildren(false),
+      _valueValidator(nullptr),
+      _listValueValidator(nullptr),
+      _mapKeyValidator(nullptr),
+      _mapValueValidator(nullptr)
 {
 }
 
@@ -150,28 +154,28 @@ SdfSchemaBase::FieldDefinition::AddInfo(const TfToken& tok, const JsValue& val) 
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::ValueValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::ValueValidator(Validator v)
 {
     _valueValidator = v;
     return *this;
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::ListValueValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::ListValueValidator(Validator v)
 {
     _listValueValidator = v;
     return *this;
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::MapKeyValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::MapKeyValidator(Validator v)
 {
     _mapKeyValidator = v;
     return *this;
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::MapValueValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::MapValueValidator(Validator v)
 {
     _mapValueValidator = v;
     return *this;
@@ -524,7 +528,6 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->InheritPaths, SdfPathListOp())
         .ListValueValidator(&_ValidateInheritPath);
     _DoRegisterField(SdfFieldKeys->Kind, TfToken());
-    _DoRegisterField(SdfFieldKeys->Marker, "");
     _DoRegisterField(SdfFieldKeys->MapperArgValue, VtValue())
         .ValueValidator(&_ValidateIsSceneDescriptionValue);
     _DoRegisterField(SdfFieldKeys->Owner, "");
@@ -558,7 +561,6 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->Relocates, SdfRelocatesMap())
         .MapKeyValidator(&_ValidateRelocatesPath)
         .MapValueValidator(&_ValidateRelocatesPath);
-    _DoRegisterField(SdfFieldKeys->Script, "");
     _DoRegisterField(SdfFieldKeys->Specifier, SdfSpecifierOver);
     _DoRegisterField(SdfFieldKeys->StartFrame, 0.0);
     _DoRegisterField(SdfFieldKeys->StartTimeCode, 0.0);
@@ -740,8 +742,7 @@ SdfSchemaBase::_RegisterStandardFields()
                        SdfMetadataDisplayGroupTokens->core)
         ;
 
-    _Define(SdfSpecTypeConnection)
-        .Field(SdfFieldKeys->Marker);
+    _Define(SdfSpecTypeConnection);
 
     _Define(SdfSpecTypeMapper)
         .Field(SdfFieldKeys->TypeName, /* required = */ true)
@@ -764,8 +765,7 @@ SdfSchemaBase::_RegisterStandardFields()
 
     _Define(SdfSpecTypeRelationshipTarget)
         .Field(SdfChildrenKeys->PropertyChildren)
-        .Field(SdfFieldKeys->PropertyOrder)
-        .Field(SdfFieldKeys->Marker);
+        .Field(SdfFieldKeys->PropertyOrder);
 
     _Define(SdfSpecTypeVariantSet)
         .Field(SdfChildrenKeys->VariantChildren);
@@ -1128,9 +1128,8 @@ SdfSchemaBase::IsValidReference(const SdfReference& ref)
     const SdfPath& path = ref.GetPrimPath();
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Reference prim path <" +
-                          ref.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute prim path");
+        return SdfAllowed("Reference prim path <" + path.GetString() + 
+                          "> must be either empty or an absolute prim path");
     }
 
     return true;
@@ -1142,9 +1141,8 @@ SdfSchemaBase::IsValidPayload(const SdfPayload& p)
     const SdfPath& path = p.GetPrimPath();
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Payload prim path <" + 
-                          p.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute prim path");
+        return SdfAllowed("Payload prim path <" + path.GetString() + 
+                          "> must be either empty or an absolute prim path");
     }
 
     return true;

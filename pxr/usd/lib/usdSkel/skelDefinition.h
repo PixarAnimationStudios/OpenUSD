@@ -29,6 +29,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/refBase.h"
@@ -73,30 +76,60 @@ public:
     const UsdSkelTopology& GetTopology() const { return _topology; }
 
     /// Returns rest pose joint transforms in joint-local space.
-    bool GetJointLocalRestTransforms(VtMatrix4dArray* xforms);
+    template <typename Matrix4>
+    bool GetJointLocalRestTransforms(VtArray<Matrix4>* xforms);
 
     /// Returns rest pose joint transforms in skel space.
-    bool GetJointSkelRestTransforms(VtMatrix4dArray* xforms);
+    template <typename Matrix4>
+    bool GetJointSkelRestTransforms(VtArray<Matrix4>* xforms);
 
     /// Returns bind pose joint transforms in world space.
-    bool GetJointWorldBindTransforms(VtMatrix4dArray* xforms);
+    template <typename Matrix4>
+    bool GetJointWorldBindTransforms(VtArray<Matrix4>* xforms);
 
     /// Returns the inverse of the world-space joint bind transforms.
-    bool GetJointWorldInverseBindTransforms(VtMatrix4dArray* xforms);
+    template <typename Matrix4>
+    bool GetJointWorldInverseBindTransforms(VtArray<Matrix4>* xforms);
 
     /// Returns the inverse of the local-space rest transforms.
-    bool GetJointLocalInverseRestTransforms(VtMatrix4dArray* xforms);
+    template <typename Matrix4>
+    bool GetJointLocalInverseRestTransforms(VtArray<Matrix4>* xforms);
 
 private:
     UsdSkel_SkelDefinition();
 
     bool _Init(const UsdSkelSkeleton& skel);
 
-    void _ComputeJointSkelRestTransforms();
-    
-    void _ComputeJointWorldInverseBindTransforms();
+    template <int ComputeFlag, typename Matrix4>
+    bool _GetJointSkelRestTransforms(VtArray<Matrix4>* xforms);
 
-    void _ComputeJointLocalInverseRestTransforms();
+    template <int ComputeFlag, typename Matrix4>
+    bool _GetJointWorldInverseBindTransforms(VtArray<Matrix4>* xforms);
+
+    template <int ComputeFlag, typename Matrix4>
+    bool _GetJointLocalInverseRestTransforms(VtArray<Matrix4>* xforms);
+
+    template <int ComputeFlag, typename Matrix4>
+    bool _ComputeJointSkelRestTransforms();
+    
+    template <int ComputeFlag, typename Matrix4>
+    bool _ComputeJointWorldInverseBindTransforms();
+
+    template <int ComputeFlag, typename Matrix4>
+    bool _ComputeJointLocalInverseRestTransforms();
+
+    /// Helper for managing a set of cached transforms
+    /// with both float and double precision.
+    struct _XformHolder {
+        template <typename Matrix4>
+        VtArray<Matrix4>& Get();
+
+        template <typename Matrix4>
+        const VtArray<Matrix4>& Get() const;
+
+        VtMatrix4dArray xforms4d;
+        VtMatrix4fArray xforms4f;
+    };
 
 private:
     UsdSkelSkeleton _skel;
@@ -109,9 +142,10 @@ private:
     // consumption tasks generally require different transforms.    
     // They are cached on the definition in order to provide cache
     // sharing across instanced skeletons.
-    VtMatrix4dArray _jointSkelRestXforms;
-    VtMatrix4dArray _jointWorldInverseBindXforms;
-    VtMatrix4dArray _jointLocalInverseRestXforms;
+    _XformHolder _jointSkelRestXforms;
+    _XformHolder _jointWorldInverseBindXforms;
+    _XformHolder _jointLocalInverseRestXforms;
+
     std::atomic<int> _flags;
     std::mutex _mutex;
 };

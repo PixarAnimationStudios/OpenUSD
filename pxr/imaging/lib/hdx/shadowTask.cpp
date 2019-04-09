@@ -198,12 +198,22 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             shadows->GetProjectionMatrix(passId),
             GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]));
 
-        _renderPassStates[passId]->Sync(
-            renderIndex.GetResourceRegistry());
         _passes[passId]->Sync();
     }
 
     *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdxShadowTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+    HdResourceRegistrySharedPtr resourceRegistry =
+        renderIndex->GetResourceRegistry();
+
+    for(size_t passId = 0; passId < _passes.size(); passId++) {
+        _renderPassStates[passId]->Prepare(resourceRegistry);
+    }
 }
 
 void
@@ -273,7 +283,7 @@ HdxShadowTask::_CreateOverrideShader()
         std::lock_guard<std::mutex> lock(shaderCreateLock);
         if (!_overrideShader) {
             _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                HioGlslfxSharedPtr(new HioGlslfx(
                     HdStPackageFallbackSurfaceShader()))));
         }
     }

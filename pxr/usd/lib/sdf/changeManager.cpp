@@ -327,20 +327,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
     else if (field == SdfFieldKeys->TargetPaths) {
         changes[layer].DidChangeRelationshipTargets(path);
     }
-    else if (field == SdfFieldKeys->Marker) {
-        const SdfSpecType specType = layer->GetSpecType(path);
-
-        if (specType == SdfSpecTypeConnection) {
-            changes[layer].DidChangeAttributeConnection(path.GetParentPath());
-        }
-        else if (specType == SdfSpecTypeRelationshipTarget) {
-            changes[layer].DidChangeRelationshipTargets(path.GetParentPath());
-        }
-        else {
-            TF_CODING_ERROR("Unknown spec type for marker value change at "
-                            "path <%s>", path.GetText());
-        }
-    }
     else if (field == SdfFieldKeys->SubLayers) {
         std::vector<std::string> addedLayers, removedLayers;
         {        
@@ -438,9 +424,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
                 changes[layer].DidChangeInfo(path, field, oldVal, newVal);
             }
         }
-    }
-    else if (field == SdfFieldKeys->Script) {
-        changes[layer].DidChangeAttributeConnection(path.GetParentPath());
     }
     else if (field == SdfFieldKeys->Variability ||
              field == SdfFieldKeys->Custom ||

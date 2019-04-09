@@ -54,6 +54,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/span.h"
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -250,6 +251,49 @@ static void testArray() {
         };
         testImplicit({1,2,3}, 3);
     }
+
+    {
+        // Test VtArray -> TfSpan conversions.
+
+        const VtIntArray constData({1,2,3,4,5});
+        
+        {
+            VtIntArray copy(constData);
+
+            TfSpan<const int> span = copy;
+            // Make sure we didn't detach.
+            TF_AXIOM(span.data() == constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+        {
+            VtIntArray copy(constData);
+
+            auto span = TfMakeConstSpan(copy);
+            // Make sure we didn't detach.
+            TF_AXIOM(span.data() == constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+
+        {
+            VtIntArray copy(constData);
+
+            TfSpan<int> span = copy;
+            // Should have detached.
+            TF_AXIOM(span.data() == copy.cdata() &&
+                     span.data() != constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+
+        {
+            VtIntArray copy(constData);
+            
+            auto span = TfMakeSpan(copy);
+            // Should have detached.
+            TF_AXIOM(span.data() == copy.cdata() &&
+                     span.data() != constData.cdata());
+            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+        }
+    }
 }
 
 static void testArrayOperators() {
@@ -383,21 +427,21 @@ static void testDictionary() {
     dictionary2["key2"] = VtValue(s);
 
     // In-place creation and code coverage for equality operator.
-    if ( VtMakeDictionary(VtKeyValue("key1", d), VtKeyValue("key2", b)) !=
+    if ( VtDictionary{{"key1", VtValue(d)}, {"key2", VtValue(b)}} !=
          dictionary) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
-    if ( VtMakeDictionary(VtKeyValue("key1", d), VtKeyValue("key2X", b)) ==
+    if ( VtDictionary{{"key1", VtValue(d)}, {"key2X", VtValue(b)}} ==
          dictionary ) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
-    if ( VtMakeDictionary(VtKeyValue("key1", d), VtKeyValue("key2", true)) ==
+    if ( VtDictionary{{"key1", VtValue(d)}, {"key2", VtValue(true)}} ==
          dictionary ) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
-    if ( VtMakeDictionary(VtKeyValue("key1", d)) ==
+    if ( VtDictionary{{"key1", VtValue(d)}} ==
          dictionary ) {
-        die("VtMakeDictionary");
+        die("VtDictionary");
     }
 
     // Composite dictionary2 over dictionary.
@@ -557,23 +601,23 @@ testDictionaryIterators()
     // Test iterator-related things that might break if one were to attempt a
     // copy-on-write implementation for VtDictionary.
 
-    VtKeyValue key1("key1", false);
-    VtKeyValue key2("key2", true);
-    VtKeyValue key3("key3", VtValue());
+    VtDictionary::value_type key1("key1", VtValue(false));
+    VtDictionary::value_type key2("key2", VtValue(true));
+    VtDictionary::value_type key3("key3", VtValue());
 
     // Check that copy + insertion + destruction does not invalidate iterators.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary::iterator i = a.find(key2.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary::iterator i = a.find(key2.first);
 
         {
             boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
-            a.insert(std::make_pair(key3.GetKey(), key3.GetValue()));
+            a.insert(std::make_pair(key3.first, key3.second));
         }
 
         a.erase(i);
 
-        VtDictionary expected = VtMakeDictionary(key1, key3);
+        VtDictionary expected = {key1, key3};
         if (a != expected) {
             die("VtDictionary::erase(Iterator) - failed after copy");
         }
@@ -581,10 +625,10 @@ testDictionaryIterators()
 
     // Check that copy + insertion does not result in invalid iterators.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary::const_iterator i = a.find(key2.GetKey());
-        a.insert(std::make_pair(key3.GetKey(), key3.GetValue()));
-        VtDictionary::const_iterator j = a.find(key2.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary::const_iterator i = a.find(key2.first);
+        a.insert(std::make_pair(key3.first, key3.second));
+        VtDictionary::const_iterator j = a.find(key2.first);
         if (i != j) {
             die("VtDictionary - iterators to same element do not compare "
                 "equal");
@@ -594,13 +638,13 @@ testDictionaryIterators()
     // Check that iterator distance is preserved across a making a copy and
     // destroying it.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary expected = VtMakeDictionary(key1, key2);
-        VtDictionary::const_iterator i = a.find(key2.GetKey());
-        VtDictionary::const_iterator j = expected.find(key2.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary expected = {key1, key2};
+        VtDictionary::const_iterator i = a.find(key2.first);
+        VtDictionary::const_iterator j = expected.find(key2.first);
         {
             boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
-            VtDictionary::value_type v(key3.GetKey(), key3.GetValue());
+            VtDictionary::value_type v(key3.first, key3.second);
             a.insert(v);
             expected.insert(v);
         }
@@ -614,14 +658,14 @@ testDictionaryIterators()
     // Check that iterators who point to same keys in a container, also
     // dereference to equal values.
     {
-        VtDictionary a = VtMakeDictionary(key1, key2);
-        VtDictionary::const_iterator i = a.find(key1.GetKey());
+        VtDictionary a = {key1, key2};
+        VtDictionary::const_iterator i = a.find(key1.first);
         {
             boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
-            a[key1.GetKey()] = VtValue(12);
+            a[key1.first] = VtValue(12);
         }
 
-        VtDictionary::const_iterator j = a.find(key1.GetKey());
+        VtDictionary::const_iterator j = a.find(key1.first);
         if (i != j) {
             die("VtDictionary - iterators to same item do not compare equal");
         }
@@ -707,15 +751,6 @@ struct _NotDefaultConstructible
     }
 };
 
-// Currently the default implementation of TfMoveTo is the only thing that
-// requires default constructibility for types stored in VtValue, so we provide
-// an overload here that doesn't invoke it.
-void
-TfMoveTo(_NotDefaultConstructible *location, _NotDefaultConstructible &value)
-{
-    new (location) _NotDefaultConstructible(value);
-}
-
 enum Vt_TestEnum {
     Vt_TestEnumVal1,
     Vt_TestEnumVal2
@@ -733,8 +768,6 @@ TF_REGISTRY_FUNCTION(TfEnum)
 static void testValue() {
     {
         // Test that we can create values holding non-streamable types. 
-        static_assert(!Vt_IsOutputStreamable<_NotStreamable>::value,
-                      "_NotStreamable must not satisfy Vt_IsOutputStreamable.");
         _NotStreamable n;
         VtValue v(n);
         VtValue copy = v;

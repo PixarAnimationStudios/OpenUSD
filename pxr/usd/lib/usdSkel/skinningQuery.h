@@ -63,15 +63,25 @@ public:
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
                          const UsdAttribute& geomBindTransform,
-                         const UsdAttribute& joints);
+                         const UsdAttribute& joints,
+                         const UsdAttribute& blendShapes,
+                         const UsdRelationship& blendShapeTargets);
 
     /// Returns true if this query is valid.
-    bool IsValid() const { return _valid; }
+    bool IsValid() const { return bool(_prim); }
     
-    /// Boolena conversion operator. Equivalent to IsValid().
+    /// Boolean conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
 
     const UsdPrim& GetPrim() const { return _prim; }
+
+    /// Returns true if there are blend shapes associated with this prim.    
+    USDSKEL_API
+    bool HasBlendShapes() const;
+
+    /// Returns true if joint influence data is associated with this prim.
+    USDSKEL_API
+    bool HasJointInfluences() const;
 
     /// Returns the number of influences encoded for each component.
     /// If the prim defines rigid joint influences, then this returns
@@ -99,6 +109,14 @@ public:
 
     const UsdGeomPrimvar& GetJointWeightsPrimvar() const {
         return _jointWeightsPrimvar;
+    }
+
+    const UsdAttribute& GetBlendShapesAttr() const {
+        return _blendShapes;
+    }
+
+    const UsdRelationship& GetBlendShapeTargetsRel() const {
+        return _blendShapeTargets;
     }
 
     /// Return the mapper for this target, if any.
@@ -156,8 +174,9 @@ public:
     /// at time \p time (which will typically be unvarying).
     ///
     /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinnedPoints(const VtMatrix4dArray& xforms,
+    bool ComputeSkinnedPoints(const VtArray<Matrix4>& xforms,
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -170,9 +189,10 @@ public:
     /// no transform will be computed, and the function will return false.
     ///
     /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
-                                 GfMatrix4d* xform,
+    bool ComputeSkinnedTransform(const VtArray<Matrix4>& xforms,
+                                 Matrix4* xform,
                                  UsdTimeCode time=UsdTimeCode::Default()) const;
 
     /// Helper for computing an *approximate* padding for use in extents
@@ -181,8 +201,9 @@ public:
     /// at rest -- and the extents of the skinned primitive.
     /// This is intended to provide a suitable, constant metric for padding
     /// joint extents as computed by UsdSkelComputeJointsExtent.
+    template <typename Matrix4>
     USDSKEL_API
-    float ComputeExtentsPadding(const VtMatrix4dArray& skelRestXforms,
+    float ComputeExtentsPadding(const VtArray<Matrix4>& skelRestXforms,
                                 const UsdGeomBoundable& boundable) const;
 
     USDSKEL_API
@@ -193,14 +214,25 @@ public:
     std::string GetDescription() const;
 
 private:
+
+    void _InitializeJointInfluenceBindings(
+             const UsdAttribute& jointIndices,
+             const UsdAttribute& jointWeights);
+
+    void _InitializeBlendShapeBindings(
+             const UsdAttribute& blendShapes,
+             const UsdRelationship& blendShapeTargets);
+
     UsdPrim _prim;
-    bool _valid;
-    int _numInfluencesPerComponent;
+    int _numInfluencesPerComponent = 1;
+    int _flags = 0;
     TfToken _interpolation;
 
     UsdGeomPrimvar _jointIndicesPrimvar;
     UsdGeomPrimvar _jointWeightsPrimvar;
     UsdAttribute _geomBindTransformAttr;
+    UsdAttribute _blendShapes;
+    UsdRelationship _blendShapeTargets;
     UsdSkelAnimMapperRefPtr _mapper;
     boost::optional<VtTokenArray> _jointOrder;
 };

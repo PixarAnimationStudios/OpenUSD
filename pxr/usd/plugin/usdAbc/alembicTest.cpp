@@ -397,7 +397,7 @@ UsdAbc_WriteAlembic(const std::string& srcPathname, const std::string& dstPathna
     // Write the file back out in the cwd.
     return
         SdfFileFormat::FindByExtension(".abc")->
-            WriteToFile(boost::get_pointer(layer), dstPathname);
+            WriteToFile(*get_pointer(layer), dstPathname);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -65,7 +65,7 @@ namespace
     void
     _LogAndSetError(
         PxrUsdKatanaAttrMap& attrs,
-        const std::string message)
+        const std::string& message)
     {
         FnLogError(message);
         attrs.set("errorMessage",
@@ -77,7 +77,7 @@ namespace
     void
     _LogAndSetWarning(
         PxrUsdKatanaAttrMap &attrs,
-        const std::string message)
+        const std::string& message)
     {
         FnLogWarn(message);
         attrs.set("warningMessage",
@@ -98,7 +98,7 @@ namespace
         const VtIntArray& protoIndices,
         const SdfPathVector& protoPaths,
         const _PathToPrimMap& primCache,
-        const std::vector<bool> mask)
+        const std::vector<bool>& mask)
     {
         GfRange3d extentRange;
 
@@ -560,20 +560,18 @@ PxrUsdKatanaReadPointInstancer(
 
 #if KATANA_VERSION_MAJOR >= 3
     // If motion is backwards, make sure to reverse time samples.
-    std::vector<float> attrSampleTimes(motionSampleTimes.size());
-    std::transform(motionSampleTimes.begin(), motionSampleTimes.end(),
-        attrSampleTimes.begin(), [&data](double relSampleTime){
-            return data.IsMotionBackward()
-                ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
-                : relSampleTime;
-        });
-    if (data.IsMotionBackward()){
-        std::reverse(attrSampleTimes.begin(), attrSampleTimes.end());
-        std::reverse(xformSamples.begin(), xformSamples.end());
+    std::map<float, VtArray<GfMatrix4d>> timeToSampleMap;
+    for (size_t a = 0; a < numXformSamples; ++a) {
+        double relSampleTime = motionSampleTimes[a];
+        timeToSampleMap.insert(
+            {data.IsMotionBackward()
+                 ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                 : relSampleTime,
+             xformSamples[a]});
     }
-    auto instanceMatrixAttr = VtKatanaMapOrCopy(attrSampleTimes, xformSamples);
-    instancesBldr.setAttrAtLocation("instances",
-            "geometry.instanceMatrix", instanceMatrixAttr);
+    auto instanceMatrixAttr = VtKatanaMapOrCopy(timeToSampleMap);
+    instancesBldr.setAttrAtLocation("instances", "geometry.instanceMatrix",
+                                    instanceMatrixAttr);
 #else
     FnKat::DoubleBuilder instanceMatrixBldr(16);
     for (size_t a = 0; a < numXformSamples; ++a) {

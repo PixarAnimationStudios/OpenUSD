@@ -31,6 +31,7 @@
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/transformWriter.h"
 #include "usdMaya/translatorMaterial.h"
+#include "usdMaya/util.h"
 
 #include "usdMaya/chaser.h"
 #include "usdMaya/chaserRegistry.h"
@@ -62,6 +63,7 @@
 
 #include <maya/MAnimControl.h>
 #include <maya/MComputation.h>
+#include <maya/MDistance.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnRenderLayer.h>
 #include <maya/MGlobal.h>
@@ -511,6 +513,21 @@ UsdMaya_WriteJob::_FinishWriting()
         upAxis = UsdGeomTokens->z;
     }
     UsdGeomSetStageUpAxis(mJobCtx.mStage, upAxis);
+
+    // XXX Currently all distance values are written directly to USD, and will
+    // be in centimeters (Maya's internal unit) despite what the users UIUnit
+    // preference is. Future work could include converting exported values to 
+    // the UIUnit setting and writing that unit to metadata. 
+    MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
+    if (mayaInternalUnit != MDistance::uiUnit()) {
+        TF_WARN("Distance unit conversion is not yet supported. "
+            "All distance values will be exported in Maya's internal "
+            "distance unit.");
+    }
+    UsdGeomSetStageMetersPerUnit(
+        mJobCtx.mStage, 
+        UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+
     if (usdRootPrim){
         // We have already decided above that 'usdRootPrim' is the important
         // prim for the export... usdVariantRootPrimPath

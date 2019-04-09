@@ -36,8 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class T> class Sdf_MarkerUtils;
-
 /// \class SdfAttributeSpec
 ///
 /// A subclass of SdfPropertySpec that holds typed data.
@@ -136,35 +134,6 @@ public:
     void ChangeMapperPath(const SdfPath& oldPath, const SdfPath& newPath);
 
     /// @}
-    /// \name Markers
-    /// @{
-
-    typedef std::map<SdfPath, std::string,
-                     SdfPath::FastLessThan> ConnectionMarkerMap;
-
-    /// Sets all the connection markers for this attribute.
-    SDF_API
-    void SetConnectionMarkers(const ConnectionMarkerMap& markers);
-
-    /// Returns the marker for the given connection path.
-    /// If no marker exists, returns the empty string.
-    SDF_API
-    std::string GetConnectionMarker(const SdfPath& path) const;
-
-    /// Sets the marker for the given connection path.
-    /// Clears the marker if an empty string is given.
-    SDF_API
-    void SetConnectionMarker(const SdfPath& path, const std::string& marker);
-
-    /// Clears the marker for the given connection path.
-    SDF_API
-    void ClearConnectionMarker(const SdfPath& path);
-
-    /// Returns all connection paths on which markers are specified.
-    SDF_API
-    SdfPathVector GetConnectionMarkerPaths() const;
-
-    /// @}
     /// \name Attribute value API
     /// @{
 
@@ -252,10 +221,7 @@ private:
 
     SdfPath _CanonicalizeConnectionPath(const SdfPath& connectionPath) const;
 
-    SdfSpecHandle _FindOrCreateChildSpecForMarker(const SdfPath& key);
-
     friend class SdfMapperSpec;
-    friend class Sdf_MarkerUtils<SdfAttributeSpec>;
     friend class Sdf_PyAttributeAccess;
 };
 

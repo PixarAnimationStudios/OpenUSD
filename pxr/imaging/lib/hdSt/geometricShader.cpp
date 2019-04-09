@@ -30,7 +30,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -69,7 +69,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     }
 
     std::stringstream ss(glslfxString);
-    _glslfx.reset(new GlfGLSLFX(ss));
+    _glslfx.reset(new HioGlslfx(ss));
     boost::hash_combine(_hash, _glslfx->GetHash());
     boost::hash_combine(_hash, cullingPass);
     boost::hash_combine(_hash, primType);

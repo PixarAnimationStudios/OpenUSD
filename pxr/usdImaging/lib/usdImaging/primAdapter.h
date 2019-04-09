@@ -366,6 +366,11 @@ public:
     USDIMAGING_API
     bool GetVisible(UsdPrim const& prim, UsdTimeCode time) const;
 
+    /// Returns the purpose token for \p prim.
+    ///
+    USDIMAGING_API
+    TfToken GetPurpose(UsdPrim const& prim) const;
+
     /// Fetches the transform for the given prim at the given time from a
     /// pre-computed cache of prim transforms. Requesting transforms at
     /// incoherent times is currently inefficient.

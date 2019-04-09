@@ -380,7 +380,8 @@ class AppController(QtCore.QObject):
 
             # read the stage here
             stage = self._openStage(
-                self._parserData.usdFile, self._parserData.populationMask)
+                self._parserData.usdFile, self._parserData.sessionLayer,
+                self._parserData.populationMask)
             if not stage:
                 sys.exit(0)
 
@@ -768,8 +769,8 @@ class AppController(QtCore.QObject):
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
             if self._stageView:
-                self._ui.actionRecompute_Clipping_Planes.triggered.connect(
-                    self._stageView.detachAndReClipFromCurrentCamera)
+                self._ui.actionAuto_Compute_Clipping_Planes.triggered.connect(
+                    self._toggleAutoComputeClippingPlanes)
 
             self._ui.actionAdjust_Clipping.triggered[bool].connect(
                 self._adjustClippingPlanes)
@@ -1093,7 +1094,7 @@ class AppController(QtCore.QObject):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath, populationMaskPaths):
+    def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1121,14 +1122,30 @@ class AppController(QtCore.QObject):
                     [err.commentary.strip() for err in e.args]))
                 sys.exit(1)
 
+            if sessionFilePath:
+                try:
+                    sessionLayer = Sdf.Layer.Find(sessionFilePath)
+                    if sessionLayer:
+                        sessionLayer.Reload()
+                    else:
+                        sessionLayer = Sdf.Layer.FindOrOpen(sessionFilePath)
+                except Tf.ErrorException as e:
+                    sys.stderr.write(_GetFormattedError(
+                        [err.commentary.strip() for err in e.args]))
+                    sys.exit(1)
+            else:
+                sessionLayer = Sdf.Layer.CreateAnonymous()
+
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, 
+                stage = Usd.Stage.OpenMasked(layer,
+                                             sessionLayer,
                                              self._resolverContextFn(usdFilePath),
                                              popMask, loadSet)
             else:
                 stage = Usd.Stage.Open(layer,
+                                       sessionLayer,
                                        self._resolverContextFn(usdFilePath), 
                                        loadSet)
 
@@ -1786,43 +1803,46 @@ class AppController(QtCore.QObject):
             return
         self._ui.frameSlider.retreatFrame()
 
-    def _findIndexOfFieldContents(self, field):
-        # don't convert string to float directly because of rounding error
-        frameString = str(field.text())
+    def _findClosestFrameIndex(self, timeSample):
+        """Find the closest frame index for the given `timeSample`.
 
-        if frameString.count(".") == 0:
-            frameString += ".0"
-        elif frameString[-1] == ".":
-            frameString += "0"
+        Args:
+            timeSample (float): A time sample value.
 
-        field.setText(frameString)
+        Returns:
+            int: The closest matching frame index or 0 if one cannot be
+            found.
+        """
+        closestIndex = int((timeSample - self._timeSamples[0]) / self.step)
 
-        # Find the index of the closest valid frame
-        dist = None
-        closestIndex = Usd.TimeCode.Default()
+        # Bounds checking
+        # 0 <= closestIndex <= number of time samples - 1
+        closestIndex = max(0, closestIndex)
+        closestIndex = min(len(self._timeSamples) - 1, closestIndex)
 
-        for i in range(len(self._timeSamples)):
-            newDist = abs(self._timeSamples[i] - float(frameString))
-            if dist is None or newDist < dist:
-                dist = newDist
-                closestIndex = i
         return closestIndex
 
     def _rangeBeginChanged(self):
-        self.realStartTimeCode = float(self._ui.rangeBegin.text())
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.rangeBegin.text())
+        if value != self.realStartTimeCode:
+            self.realStartTimeCode = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _stepSizeChanged(self):
-        stepStr = self._ui.stepSize.text()
-        self.step = float(stepStr)
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.stepSize.text())
+        if value != self.step:
+            self.step = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _rangeEndChanged(self):
-        self.realEndTimeCode = float(self._ui.rangeEnd.text())
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.rangeEnd.text())
+        if value != self.realEndTimeCode:
+            self.realEndTimeCode = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
-        indexOfFrame = self._findIndexOfFieldContents(self._ui.frameField)
+        timeSample = float(self._ui.frameField.text())
+        indexOfFrame = self._findClosestFrameIndex(timeSample)
 
         if (indexOfFrame != Usd.TimeCode.Default()):
             self.setFrame(indexOfFrame, forceUpdate=True)
@@ -2140,6 +2160,13 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.showBBoxPlayback = (
             self._ui.showBBoxPlayback.isChecked())
 
+    def _toggleAutoComputeClippingPlanes(self):
+        autoClip = self._ui.actionAuto_Compute_Clipping_Planes.isChecked()
+        self._dataModel.viewSettings.autoComputeClippingPlanes = autoClip
+        if autoClip:
+            self._stageView.detachAndReClipFromCurrentCamera()
+        
+
     def _setUseExtentsHint(self):
         self._dataModel.useExtentsHint = self._ui.useExtentsHint.isChecked()
 
@@ -2288,13 +2315,22 @@ class AppController(QtCore.QObject):
             t.PrintTime('tear down the UI')
 
     def _openFile(self):
-        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self._mainWindow, "Select file",".")
+        extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
+        builtInFiles = lambda f: f.startswith(".usd")
+        notBuiltInFiles = lambda f: not f.startswith(".usd")
+        extensions = filter(builtInFiles, extensions) + filter(notBuiltInFiles, extensions)
+        fileFilter = "USD Compatible Files (" + " ".join("*." + e for e in extensions) + ")" 
+        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
+            self._mainWindow,
+            caption="Select file",
+            dir=".",
+            filter=fileFilter,
+            selectedFilter=fileFilter)
+
         if len(filename) > 0:
-
             self._parserData.usdFile = str(filename)
-            self._reopenStage()
-
             self._mainWindow.setWindowTitle(filename)
+            self._reopenStage()
 
     def _getSaveFileName(self, caption, recommendedFilename):
         (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(
@@ -2376,6 +2412,9 @@ class AppController(QtCore.QObject):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
+            # Pause the stage view while we update
+            self._stageView.setUpdatesEnabled(False)
+
             # Clear out any Usd objects that may become invalid.
             self._dataModel.selection.clear()
             self._currentSpec = None
@@ -2385,7 +2424,8 @@ class AppController(QtCore.QObject):
             # while trying to open another stage.
             self._closeStage()
             stage = self._openStage(
-                self._parserData.usdFile, self._parserData.populationMask)
+                self._parserData.usdFile, self._parserData.sessionLayer,
+                self._parserData.populationMask)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
@@ -2398,6 +2438,7 @@ class AppController(QtCore.QObject):
 
             self._stepSizeChanged()
             self._stepSizeChanged()
+            self._stageView.setUpdatesEnabled(True)
         except Exception as err:
             self.statusMessage('Error occurred reopening Stage: %s' % err)
             traceback.print_exc()
@@ -4594,6 +4635,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.displayPrimId)
         self._ui.actionCull_Backfaces.setChecked(
             self._dataModel.viewSettings.cullBackfaces)
+        self._ui.actionAuto_Compute_Clipping_Planes.setChecked(
+            self._dataModel.viewSettings.autoComputeClippingPlanes)
 
     def _refreshHUDMenu(self):
         self._ui.actionHUD.setChecked(self._dataModel.viewSettings.showHUD)

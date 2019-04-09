@@ -75,9 +75,11 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_GLSLFX_CONFIG,
         "Print composed GLSLFX configuration");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCE,
-        "Print generated shader code");
+        "Print generated shader source code");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCEFILE,
+        "Write out generated shader source code to files");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_BINARY,
-        "Write out compiled GLSL shader binary");
+        "Write out compiled GLSL shader binary to files");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_ENGINE_PHASE_INFO,
         "Report the execution phase of the Hydra engine");
@@ -88,6 +90,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Report when ExtComputations are removed");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_UPDATED,
         "Report when ExtComputations are updated");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_EXECUTION,
+        "Report when ExtComputations are executed");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_FREEZE_CULL_FRUSTUM,
         "Freeze the frustum used for culling at it's current value");

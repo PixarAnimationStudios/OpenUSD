@@ -124,7 +124,7 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
     // Look for generatedSchema in Resources.
     const string fname = TfStringCatPaths(plugin->GetResourcePath(),
                                           "generatedSchema.usda");
-    return TfIsFile(fname) ? SdfLayer::OpenAsAnonymous(fname) : TfNullPtr;
+    return SdfLayer::OpenAsAnonymous(fname);
 }
 
 void

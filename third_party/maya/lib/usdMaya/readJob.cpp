@@ -30,6 +30,7 @@
 #include "usdMaya/translatorMaterial.h"
 #include "usdMaya/translatorModelAssembly.h"
 #include "usdMaya/translatorXformable.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"
 
@@ -41,6 +42,7 @@
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdUtils/pipeline.h"
@@ -49,6 +51,7 @@
 #include <maya/MAnimControl.h>
 #include <maya/MDagModifier.h>
 #include <maya/MDGModifier.h>
+#include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -123,6 +126,22 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
 
     stage->SetEditTarget(stage->GetSessionLayer());
+
+    // XXX Currently all distance values are set directly from USD and will be 
+    // interpreted as centimeters (Maya's internal distance unit). Future work
+    // could include converting distance values based on the specified meters-
+    // per-unit in the USD stage metadata. For now, simply warn. 
+    if (UsdGeomStageHasAuthoredMetersPerUnit(stage)) {
+        MDistance::Unit mdistanceUnit = 
+            UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(
+                UsdGeomGetStageMetersPerUnit(stage));
+
+        if (mdistanceUnit != MDistance::internalUnit()) {
+            TF_WARN("Distance unit conversion is not yet supported. "
+                "All distance values will be imported in Maya's internal "
+                "distance unit.");
+        }
+    }
 
     // If the import time interval isn't empty, we expand the Min/Max time
     // sliders to include the stage's range if necessary.

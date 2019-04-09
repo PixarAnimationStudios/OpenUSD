@@ -46,6 +46,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationUtils
         field
         flatNormals
         geomSubset

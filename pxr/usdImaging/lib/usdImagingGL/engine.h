@@ -411,6 +411,7 @@ protected:
 
     // Create a hydra collection given root paths and render params.
     // Returns true if the collection was updated.
+    USDIMAGINGGL_API
     static bool _UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
                           UsdImagingGLRenderParams const& params,

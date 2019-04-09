@@ -309,8 +309,8 @@ public:
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
                                           SdfPath const &prototypeId) override;
     USDIMAGING_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId) override;
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId) 
+        override;
 
     // Motion samples
     USDIMAGING_API
@@ -320,7 +320,6 @@ public:
     USDIMAGING_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples) override;
     USDIMAGING_API
@@ -686,6 +685,7 @@ private:
     UsdImaging_MaterialBindingImplData _materialBindingImplData;
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
+    UsdImaging_PurposeCache _purposeCache;
     UsdImaging_DrawModeCache _drawModeCache;
     UsdImaging_CollectionCache _collectionCache;
 

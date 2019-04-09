@@ -189,10 +189,11 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 
             TES[0] = _tokens->instancing;
             TES[1] = _tokens->curvesTessEvalPatch;
-            TES[2] = _tokens->curvesTessEvalLinearPatch;
-            TES[3] = oriented ? _tokens->curvesTessEvalRibbonOriented
+            TES[2] = _tokens->curvesFallback;
+            TES[3] = _tokens->curvesTessEvalLinearPatch;
+            TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
                             : _tokens->curvesTessEvalRibbonImplicit;
-            TES[4] = TfToken();
+            TES[5] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::HALFTUBE:
@@ -204,9 +205,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 
             TES[0] = _tokens->instancing;
             TES[1] = _tokens->curvesTessEvalPatch;
-            TES[2] = _tokens->curvesTessEvalLinearPatch;
-            TES[3] = _tokens->curvesTessEvalHalfTube;
-            TES[4] = TfToken();
+            TES[2] = _tokens->curvesFallback;
+            TES[3] = _tokens->curvesTessEvalLinearPatch;
+            TES[4] = _tokens->curvesTessEvalHalfTube;
+            TES[5] = TfToken();
             break;
         }
         default:

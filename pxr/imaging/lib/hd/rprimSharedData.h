@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -55,6 +56,7 @@ struct HdRprimSharedData {
         , instancerLevels(-1)
         , visible(true)
         , rprimID()
+        , materialTag(HdMaterialTagTokens->defaultMaterialTag)
     { }
 
     HdRprimSharedData(int barContainerSize,
@@ -64,6 +66,7 @@ struct HdRprimSharedData {
         , instancerLevels(-1)
         , visible(visible)
         , rprimID()
+        , materialTag(HdMaterialTagTokens->defaultMaterialTag)
     { }
 
     // BufferArrayRange array
@@ -80,6 +83,9 @@ struct HdRprimSharedData {
 
     // The owning Rprim's identifier.
     SdfPath rprimID;
+
+    // Used to organize drawItems into collections based on material properties.
+    TfToken materialTag;
 };
 
 

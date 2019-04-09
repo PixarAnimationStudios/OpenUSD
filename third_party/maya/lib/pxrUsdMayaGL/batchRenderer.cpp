@@ -54,6 +54,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
@@ -117,6 +118,7 @@ void
 UsdMayaGLBatchRenderer::Init()
 {
     GlfGlewInit();
+    GlfContextCaps::InitInstance();
 
     GetInstance();
 }
