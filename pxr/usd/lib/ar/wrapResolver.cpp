@@ -55,6 +55,7 @@ wrapResolver()
         .def("Resolve", &This::Resolve)
 
         .def("GetExtension", &This::GetExtension)
+        .def("RefreshContext", &This::RefreshContext)
         ;
 
     def("GetResolver", ArGetResolver,
