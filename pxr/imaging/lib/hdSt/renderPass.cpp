@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/glf/contextCaps.h"
 
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -201,7 +202,7 @@ HdSt_RenderPass::_Cull(
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
 
     const bool 
-       skipCulling = TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING) ||
+       skipCulling = TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING) ||
            (caps.multiDrawIndirectEnabled
                && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
     bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
