@@ -47,9 +47,6 @@ typedef SdfListEditorProxy<SdfReferenceTypePolicy> SdfReferenceEditorProxy;
 
 typedef SdfChildrenView<Sdf_AttributeChildPolicy,
             SdfAttributeViewPredicate> SdfAttributeSpecView;
-typedef SdfChildrenView<Sdf_MapperChildPolicy,
-            SdfConnectionMapperViewPredicate> SdfConnectionMappersView;
-typedef SdfChildrenView<Sdf_MapperArgChildPolicy> SdfMapperArgSpecView;
 typedef SdfChildrenView<Sdf_PrimChildPolicy> SdfPrimSpecView;
 typedef SdfChildrenView<Sdf_PropertyChildPolicy> SdfPropertySpecView;
 typedef SdfChildrenView<Sdf_AttributeChildPolicy > SdfRelationalAttributeSpecView;
@@ -57,9 +54,6 @@ typedef SdfChildrenView<Sdf_RelationshipChildPolicy, SdfRelationshipViewPredicat
             SdfRelationshipSpecView;
 typedef SdfChildrenView<Sdf_VariantChildPolicy> SdfVariantView;
 typedef SdfChildrenView<Sdf_VariantSetChildPolicy> SdfVariantSetView;
-
-typedef SdfChildrenProxy<SdfConnectionMappersView> SdfConnectionMappersProxy;
-typedef SdfChildrenProxy<SdfMapperArgSpecView> SdfMapperArgsProxy;
 typedef SdfChildrenProxy<SdfVariantSetView> SdfVariantSetsProxy;
 
 typedef SdfNameOrderProxy SdfNameChildrenOrderProxy;

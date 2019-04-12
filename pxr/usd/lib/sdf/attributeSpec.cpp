@@ -29,8 +29,6 @@
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/mapperArgSpec.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
@@ -153,95 +151,6 @@ void
 SdfAttributeSpec::ClearConnectionPaths()
 {
     GetConnectionPathList().ClearEdits();
-}
-
-//
-// Mappers
-//
-
-SdfConnectionMappersProxy
-SdfAttributeSpec::GetConnectionMappers() const
-{
-    return SdfConnectionMappersProxy(SdfConnectionMappersView(
-            GetLayer(), GetPath(), SdfChildrenKeys->MapperChildren,
-            SdfPathKeyPolicy(SdfCreateHandle(this))),
-        "connection mappers",
-        SdfConnectionMappersProxy::CanErase);
-}
-
-SdfPath
-SdfAttributeSpec::GetConnectionPathForMapper(
-    const SdfMapperSpecHandle& mapper)
-{
-    if (mapper->GetAttribute() == SdfCreateHandle(this)) {
-        return mapper->GetConnectionTargetPath();
-    }
-    return SdfPath();
-}
-
-void
-SdfAttributeSpec::ChangeMapperPath(
-    const SdfPath& oldPath, const SdfPath& newPath)
-{
-    if (!PermissionToEdit()) {
-        TF_CODING_ERROR("Change mapper path: Permission denied.");
-        return;
-    }
-
-    const SdfPath& attrPath = GetPath();
-
-    // Absolutize.
-    SdfPath oldAbsPath = oldPath.MakeAbsolutePath(attrPath.GetPrimPath());
-    SdfPath newAbsPath = newPath.MakeAbsolutePath(attrPath.GetPrimPath());
-
-    // Validate.
-    if (oldAbsPath == newAbsPath) {
-        // Nothing to do.
-        return;
-    }
-    if (!newAbsPath.IsPropertyPath()) {
-        TF_CODING_ERROR("cannot change connection path for attribute %s's "
-                        "mapper at connection path <%s> to <%s> because it's "
-                        "not a property path",
-                        attrPath.GetString().c_str(),
-                        oldAbsPath.GetString().c_str(),
-                        newAbsPath.GetString().c_str());
-        return;
-    }
-    
-    SdfPathVector mapperPaths = 
-        GetFieldAs<SdfPathVector>(SdfChildrenKeys->MapperChildren);
-
-    // Check that a mapper actually exists at the old path.
-    SdfPathVector::iterator mapperIt = 
-        std::find(mapperPaths.begin(), mapperPaths.end(), oldAbsPath);
-    if (mapperIt == mapperPaths.end()) {
-        TF_CODING_ERROR("Change mapper path: No mapper exists for "
-            "connection path <%s>.", oldAbsPath.GetText());
-        return;
-    }
-
-    // Check that no mapper already exists at the new path.
-    const bool mapperExistsAtNewPath = 
-        (std::find(mapperPaths.begin(), mapperPaths.end(), newAbsPath) != 
-            mapperPaths.end());
-    if (mapperExistsAtNewPath) {
-        TF_CODING_ERROR("Change mapper path: Mapper already exists for "
-            "connection path <%s>.", newAbsPath.GetText());
-        return;
-    }
-
-    // Things look OK -- let's go ahead and move the mapper over to the
-    // new path.
-    SdfChangeBlock block;
-        
-    const SdfPath oldMapperSpecPath = attrPath.AppendMapper(oldAbsPath);
-    const SdfPath newMapperSpecPath = attrPath.AppendMapper(newAbsPath);
-    _MoveSpec(oldMapperSpecPath, newMapperSpecPath);
-
-    *mapperIt = newAbsPath;
-    SetField(SdfChildrenKeys->MapperChildren, VtValue(mapperPaths));
-
 }
 
 //

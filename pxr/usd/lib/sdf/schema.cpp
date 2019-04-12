@@ -746,8 +746,6 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->InheritPaths, SdfPathListOp())
         .ListValueValidator(&_ValidateInheritPath);
     _DoRegisterField(SdfFieldKeys->Kind, TfToken());
-    _DoRegisterField(SdfFieldKeys->MapperArgValue, VtValue())
-        .ValueValidator(&_ValidateIsSceneDescriptionValue);
     _DoRegisterField(SdfFieldKeys->Owner, "");
     _DoRegisterField(SdfFieldKeys->PrimOrder, std::vector<TfToken>())
         .ListValueValidator(&_ValidateIdentifierToken);
@@ -951,7 +949,6 @@ SdfSchemaBase::_RegisterStandardFields()
         .Field(SdfFieldKeys->TypeName,                /* required = */ true)
 
         .Field(SdfChildrenKeys->ConnectionChildren)
-        .Field(SdfChildrenKeys->MapperChildren)
         .Field(SdfFieldKeys->ConnectionPaths)
         .Field(SdfFieldKeys->DisplayUnit)
         .MetadataField(SdfFieldKeys->AllowedTokens,
@@ -961,16 +958,8 @@ SdfSchemaBase::_RegisterStandardFields()
         ;
 
     _Define(SdfSpecTypeConnection);
-
-    _Define(SdfSpecTypeMapper)
-        .Field(SdfFieldKeys->TypeName, /* required = */ true)
-        .Field(SdfChildrenKeys->MapperArgChildren)
-        .MetadataField(SdfFieldKeys->SymmetryArguments,
-                       SdfMetadataDisplayGroupTokens->symmetry);
-
-    _Define(SdfSpecTypeMapperArg)
-        .Field(SdfFieldKeys->MapperArgValue);
-
+    _Define(SdfSpecTypeMapper);
+    _Define(SdfSpecTypeMapperArg);
     _Define(SdfSpecTypeExpression);
 
     _Define(SdfSpecTypeRelationship)

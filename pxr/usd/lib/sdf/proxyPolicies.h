@@ -35,7 +35,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfReference;
-class SdfMapperSpec;
 
 /// \class SdfNameKeyPolicy
 ///
@@ -212,26 +211,6 @@ public:
     {
         return x;
     }
-};
-
-/// \class SdfConnectionMapperViewPredicate
-///
-/// Predicate for connection mappers.  Don't include connections that don't
-/// have a mapper.
-///
-class SdfConnectionMapperViewPredicate {
-public:
-    SDF_API bool operator()(const SdfHandle<SdfMapperSpec>& x) const;
-};
-
-/// \class SdfConnectionMapperValuePolicy
-///
-/// Value policy for connection mappers.
-///
-class SdfConnectionMapperValuePolicy {
-public:
-    typedef SdfHandle<SdfMapperSpec> value_type;
-
 };
 
 /// \class SdfRelocatesMapProxyValuePolicy

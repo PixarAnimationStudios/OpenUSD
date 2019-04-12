@@ -98,27 +98,6 @@ public:
     void ClearConnectionPaths();
 
     /// @}
-    /// \name Mappers
-    /// @{
-
-    /// Returns the mappers for this attribute.
-    ///
-    /// Returns an editable map whose keys are connection paths and whose
-    /// values are mappers.  Mappers may be removed from the map.  Mappers
-    /// are added by directly constructing them.
-    SDF_API
-    SdfConnectionMappersProxy GetConnectionMappers() const;
-
-    /// Returns the target path that mapper \p mapper is associated with.
-    SDF_API
-    SdfPath GetConnectionPathForMapper(const SdfMapperSpecHandle& mapper);
-
-    /// Changes the path a mapper is associated with from \p oldPath to
-    /// \p newPath.
-    SDF_API
-    void ChangeMapperPath(const SdfPath& oldPath, const SdfPath& newPath);
-
-    /// @}
     /// \name Attribute value API
     /// @{
 
@@ -198,7 +177,6 @@ private:
 
     SdfPath _CanonicalizeConnectionPath(const SdfPath& connectionPath) const;
 
-    friend class SdfMapperSpec;
     friend class Sdf_PyAttributeAccess;
 };
 

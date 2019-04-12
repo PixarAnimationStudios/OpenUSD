@@ -29,7 +29,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pyChildrenProxy.h"
 #include "pxr/usd/sdf/pySpec.h"
@@ -61,14 +60,6 @@ _WrapSetAllowedTokens(
     VtTokenArray tokenArray;
     tokenArray.assign(tokens.begin(), tokens.end());
     spec.SetAllowedTokens(tokenArray);
-}
-
-static
-SdfPyChildrenProxy<SdfConnectionMappersView>
-_WrapGetConnectionMappersProxy(const SdfAttributeSpec& self)
-{
-    return SdfPyChildrenProxy<SdfConnectionMappersView>(
-        self.GetConnectionMappers());
 }
 
 } // anonymous namespace 
@@ -112,9 +103,6 @@ void wrapAttributeSpec()
                  arg("variability") = SdfVariabilityVarying,
                  arg("declaresCustom") = false))
 
-        .def("GetConnectionPathForMapper", &This::GetConnectionPathForMapper)
-        .def("ChangeMapperPath", &This::ChangeMapperPath)
-        
         // XXX valueType and typeName are actually implemented on PropertySpec,
         //     but are only exposed on AttributeSpec for some reason
         .add_property("valueType",
@@ -142,15 +130,6 @@ void wrapAttributeSpec()
             "value or as a set of list editing operations.  See GdListEditor "
             "for more information.")
 
-        .add_property("connectionMappers",
-            &_WrapGetConnectionMappersProxy,
-            "The mappers for this attribute in a map proxy keyed by "
-            "connection path.\n\n"
-            "The returned proxy can be used to remove the mapper for a given "
-            "path (using erase) or to access the mappers.  Create a mapper "
-            "with this attribute as its owner and the desired connection path "
-            "to assign a mapper.")
-              
 	.add_property("allowedTokens",
 	    &_WrapGetAllowedTokens,
 	    &_WrapSetAllowedTokens,

@@ -573,7 +573,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((InheritPaths, "inheritPaths"))                         \
     ((Instanceable, "instanceable"))                         \
     ((Kind, "kind"))                                         \
-    ((MapperArgValue, "value"))                              \
     ((PrimOrder, "primOrder"))                               \
     ((NoLoadHint, "noLoadHint"))                             \
     ((Owner, "owner"))                                       \

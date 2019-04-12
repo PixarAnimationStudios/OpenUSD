@@ -42,8 +42,6 @@ pxr_library(sdf
         listEditor
         listEditorProxy
         listOp
-        mapperArgSpec
-        mapperSpec
         mapEditProxy
         mapEditor
         namespaceEdit
@@ -133,8 +131,6 @@ pxr_library(sdf
         wrapLayer.cpp
         wrapLayerOffset.cpp
         wrapLayerTree.cpp
-        wrapMapperSpec.cpp
-        wrapMapperArgSpec.cpp
         wrapNamespaceEdit.cpp
         wrapNotice.cpp
         wrapPath.cpp
