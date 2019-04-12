@@ -96,6 +96,7 @@ class PropertyIndex(ConstantGroup):
 
 class DebugTypes(ConstantGroup):
     # Tf Debug entries to include in debug menu
+    HDST = "HDST"
     HD = "HD"
     HDX = "HDX"
     USD = "USD"
