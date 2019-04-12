@@ -191,8 +191,6 @@ class VtValue
     struct _Counted {
         explicit _Counted(T const &obj) : _obj(obj) {
             _refCount = 0;
-            TF_AXIOM(static_cast<void const *>(this) ==
-                     static_cast<void const *>(&_obj));
         }
         bool IsUnique() const { return _refCount == 1; }
         T const &Get() const { return _obj; }
@@ -200,14 +198,16 @@ class VtValue
 
     private:
         T _obj;
-        mutable tbb::atomic<int> _refCount;
+        mutable std::atomic<int> _refCount;
 
         friend inline void intrusive_ptr_add_ref(_Counted const *d) {
-            ++d->_refCount;
+            d->_refCount.fetch_add(1, std::memory_order_relaxed);
         }
         friend inline void intrusive_ptr_release(_Counted const *d) {
-            if (d->_refCount.fetch_and_decrement() == 1)
+            if (d->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
+                std::atomic_thread_fence(std::memory_order_acquire);
                 delete d;
+            }
         }
     };
 
