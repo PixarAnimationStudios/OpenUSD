@@ -23,9 +23,9 @@
 # language governing permissions and limitations under the Apache License.
 
 import sys, unittest
-from pxr import Usd, UsdGeom, Sdf
+from pxr import Usd, UsdShade, UsdGeom, Sdf
 
-class TestUsdGeomCoordSysAPI(unittest.TestCase):
+class TestUsdShadeCoordSysAPI(unittest.TestCase):
     def test_CoordSys(self):
         stage = Usd.Stage.Open('test.usda')
 
@@ -34,10 +34,10 @@ class TestUsdGeomCoordSysAPI(unittest.TestCase):
         geom = stage.GetPrimAtPath('/World/Model/Geom')
         box = stage.GetPrimAtPath('/World/Model/Geom/Box')
 
-        worldCoords = UsdGeom.CoordSysAPI(world)
-        modelCoords = UsdGeom.CoordSysAPI(model)
-        geomCoords = UsdGeom.CoordSysAPI(geom)
-        boxCoords = UsdGeom.CoordSysAPI(box)
+        worldCoords = UsdShade.CoordSysAPI(world)
+        modelCoords = UsdShade.CoordSysAPI(model)
+        geomCoords = UsdShade.CoordSysAPI(geom)
+        boxCoords = UsdShade.CoordSysAPI(box)
 
         # Bindings
         self.assertEqual(
@@ -76,7 +76,7 @@ class TestUsdGeomCoordSysAPI(unittest.TestCase):
              ('worldSpace', Sdf.Path('/World/Space'))])
 
         # Bind
-        relName = UsdGeom.CoordSysAPI.GetCoordSysRelationshipName('boxSpace')
+        relName = UsdShade.CoordSysAPI.GetCoordSysRelationshipName('boxSpace')
         self.assertFalse(geom.HasRelationship(relName))
         geomCoords.Bind('boxSpace', box.GetPath())
         self.assertTrue(geom.HasRelationship(relName))
@@ -102,7 +102,7 @@ class TestUsdGeomCoordSysAPI(unittest.TestCase):
         self.assertFalse(geom.HasRelationship(relName))
 
         # Bindings to a non-Xformable are not resolved
-        relName = UsdGeom.CoordSysAPI.GetCoordSysRelationshipName('invalid')
+        relName = UsdShade.CoordSysAPI.GetCoordSysRelationshipName('invalid')
         scope = UsdGeom.Scope.Define(stage, '/World/Model/Geom/Scope')
         geomCoords.Bind('invalid', scope.GetPath())
         self.assertTrue(geom.HasRelationship(relName))

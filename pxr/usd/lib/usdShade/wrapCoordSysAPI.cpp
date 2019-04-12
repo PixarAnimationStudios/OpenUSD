@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdGeom/coordSysAPI.h"
+#include "pxr/usd/usdShade/coordSysAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -51,9 +51,9 @@ WRAP_CUSTOM;
 
 } // anonymous namespace
 
-void wrapUsdGeomCoordSysAPI()
+void wrapUsdShadeCoordSysAPI()
 {
-    typedef UsdGeomCoordSysAPI This;
+    typedef UsdShadeCoordSysAPI This;
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("CoordSysAPI");
@@ -108,18 +108,18 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("GetCoordinateSystems",
-             &UsdGeomCoordSysAPI::GetCoordinateSystems,
+             &UsdShadeCoordSysAPI::GetCoordinateSystems,
              return_value_policy<TfPySequenceToList>())
         .def("FindCoordinateSystemsWithInheritance",
-             &UsdGeomCoordSysAPI::FindCoordinateSystemsWithInheritance,
+             &UsdShadeCoordSysAPI::FindCoordinateSystemsWithInheritance,
              return_value_policy<TfPySequenceToList>())
-        .def("GetLocalBindings", &UsdGeomCoordSysAPI::GetLocalBindings,
+        .def("GetLocalBindings", &UsdShadeCoordSysAPI::GetLocalBindings,
              return_value_policy<TfPySequenceToList>())
-        .def("Bind", &UsdGeomCoordSysAPI::Bind)
-        .def("ClearBinding", &UsdGeomCoordSysAPI::ClearBinding)
-        .def("BlockBinding", &UsdGeomCoordSysAPI::BlockBinding)
+        .def("Bind", &UsdShadeCoordSysAPI::Bind)
+        .def("ClearBinding", &UsdShadeCoordSysAPI::ClearBinding)
+        .def("BlockBinding", &UsdShadeCoordSysAPI::BlockBinding)
         .def("GetCoordSysRelationshipName",
-            &UsdGeomCoordSysAPI::GetCoordSysRelationshipName)
+            &UsdShadeCoordSysAPI::GetCoordSysRelationshipName)
         .staticmethod("GetCoordSysRelationshipName")
         ;
 

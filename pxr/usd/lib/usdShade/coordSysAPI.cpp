@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdGeom/coordSysAPI.h"
+#include "pxr/usd/usdShade/coordSysAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/tokens.h"
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdGeomCoordSysAPI,
+    TfType::Define<UsdShadeCoordSysAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
@@ -45,38 +45,38 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 /* virtual */
-UsdGeomCoordSysAPI::~UsdGeomCoordSysAPI()
+UsdShadeCoordSysAPI::~UsdShadeCoordSysAPI()
 {
 }
 
 /* static */
-UsdGeomCoordSysAPI
-UsdGeomCoordSysAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdShadeCoordSysAPI
+UsdShadeCoordSysAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdGeomCoordSysAPI();
+        return UsdShadeCoordSysAPI();
     }
-    return UsdGeomCoordSysAPI(stage->GetPrimAtPath(path));
+    return UsdShadeCoordSysAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaType UsdGeomCoordSysAPI::_GetSchemaType() const {
-    return UsdGeomCoordSysAPI::schemaType;
+UsdSchemaType UsdShadeCoordSysAPI::_GetSchemaType() const {
+    return UsdShadeCoordSysAPI::schemaType;
 }
 
 /* static */
 const TfType &
-UsdGeomCoordSysAPI::_GetStaticTfType()
+UsdShadeCoordSysAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdGeomCoordSysAPI>();
+    static TfType tfType = TfType::Find<UsdShadeCoordSysAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdGeomCoordSysAPI::_IsTypedSchema()
+UsdShadeCoordSysAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -84,14 +84,14 @@ UsdGeomCoordSysAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdGeomCoordSysAPI::_GetTfType() const
+UsdShadeCoordSysAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdGeomCoordSysAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdShadeCoordSysAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
@@ -121,24 +121,24 @@ TF_DEFINE_PRIVATE_TOKENS(
     (coordSys)
 );
 
-std::vector<UsdGeomCoordSysAPI::CoordinateSystem>
-UsdGeomCoordSysAPI::GetCoordinateSystems() const
+std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
+UsdShadeCoordSysAPI::GetCoordinateSystems() const
 {
-    std::vector<UsdGeomCoordSysAPI::CoordinateSystem> result;
+    std::vector<UsdShadeCoordSysAPI::CoordinateSystem> result;
     _ResolveCoordinateSystems(&result, false);
     return result;
 }
 
-std::vector<UsdGeomCoordSysAPI::CoordinateSystem>
-UsdGeomCoordSysAPI::FindCoordinateSystemsWithInheritance() const
+std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
+UsdShadeCoordSysAPI::FindCoordinateSystemsWithInheritance() const
 {
-    std::vector<UsdGeomCoordSysAPI::CoordinateSystem> result;
+    std::vector<UsdShadeCoordSysAPI::CoordinateSystem> result;
     _ResolveCoordinateSystems(&result, true);
     return result;
 }
 
-std::vector<UsdGeomCoordSysAPI::Binding> 
-UsdGeomCoordSysAPI::GetLocalBindings() const
+std::vector<UsdShadeCoordSysAPI::Binding> 
+UsdShadeCoordSysAPI::GetLocalBindings() const
 {
     std::vector<Binding> result;
     SdfPathVector targets;
@@ -146,7 +146,7 @@ UsdGeomCoordSysAPI::GetLocalBindings() const
          GetPrim().GetAuthoredPropertiesInNamespace(_tokens->coordSys)) {
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             targets.clear();
-            if (rel.GetTargets(&targets) && !targets.empty()) {
+            if (rel.GetForwardedTargets(&targets) && !targets.empty()) {
                 result.emplace_back(Binding(rel.GetBaseName(),
                                             targets.front()));
             }
@@ -156,7 +156,7 @@ UsdGeomCoordSysAPI::GetLocalBindings() const
 }
 
 bool 
-UsdGeomCoordSysAPI::Bind(TfToken const &name, SdfPath const &path) const
+UsdShadeCoordSysAPI::Bind(TfToken const &name, SdfPath const &path) const
 {
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().CreateRelationship(relName)) {
@@ -166,7 +166,7 @@ UsdGeomCoordSysAPI::Bind(TfToken const &name, SdfPath const &path) const
 }
 
 bool 
-UsdGeomCoordSysAPI::ClearBinding(TfToken const& name, bool removeSpec) const
+UsdShadeCoordSysAPI::ClearBinding(TfToken const& name, bool removeSpec) const
 {
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().GetRelationship(relName)) {
@@ -176,7 +176,7 @@ UsdGeomCoordSysAPI::ClearBinding(TfToken const& name, bool removeSpec) const
 }
 
 bool 
-UsdGeomCoordSysAPI::BlockBinding(const TfToken &name) const
+UsdShadeCoordSysAPI::BlockBinding(const TfToken &name) const
 {
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().CreateRelationship(relName)) {
@@ -186,18 +186,18 @@ UsdGeomCoordSysAPI::BlockBinding(const TfToken &name) const
 }
 
 TfToken
-UsdGeomCoordSysAPI::GetCoordSysRelationshipName(const std::string &coordSysName)
+UsdShadeCoordSysAPI::GetCoordSysRelationshipName(const std::string &coordSysName)
 {
     return TfToken(_tokens->coordSys.GetString() + ":" + coordSysName);
 }
 
 void
-UsdGeomCoordSysAPI::_ResolveCoordinateSystems(
-    std::vector<UsdGeomCoordSysAPI::CoordinateSystem> *result,
+UsdShadeCoordSysAPI::_ResolveCoordinateSystems(
+    std::vector<UsdShadeCoordSysAPI::CoordinateSystem> *result,
     bool includeInherited) const
 {
-    for (UsdGeomCoordSysAPI api = *this; api.GetPrim();
-         api = UsdGeomCoordSysAPI(api.GetPrim().GetParent())) {
+    for (UsdShadeCoordSysAPI api = *this; api.GetPrim();
+         api = UsdShadeCoordSysAPI(api.GetPrim().GetParent())) {
         for (Binding const& binding: api.GetLocalBindings()) {
             bool apply = true;
             // Prefer existing bindings with this name

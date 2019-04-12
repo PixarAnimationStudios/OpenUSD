@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDGEOM_GENERATED_COORDSYSAPI_H
-#define USDGEOM_GENERATED_COORDSYSAPI_H
+#ifndef USDSHADE_GENERATED_COORDSYSAPI_H
+#define USDSHADE_GENERATED_COORDSYSAPI_H
 
-/// \file usdGeom/coordSysAPI.h
+/// \file usdShade/coordSysAPI.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdGeom/api.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -51,9 +51,9 @@ class SdfAssetPath;
 // COORDSYSAPI                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdGeomCoordSysAPI
+/// \class UsdShadeCoordSysAPI
 ///
-/// UsdCoordSysAPI provides a way to designate, name,
+/// UsdShadeCoordSysAPI provides a way to designate, name,
 /// and discover coordinate systems.
 /// 
 /// Coordinate systems are implicitly established by UsdGeomXformable
@@ -72,18 +72,10 @@ class SdfAssetPath;
 /// paint across a collection of objects with a single shared
 /// paint coordinate system.
 /// 
-/// Conceptually, UsdGeomCoordSysAPI has similarities with
-/// UsdGeomConstraintTarget, in that both publish named coordinate
-/// systems.  The distinction is that UsdGeomCoordSysAPI designates
-/// the coordinate system as an Xformable prim target, and
-/// intends that binding to inherit to descendants; whereas
-/// the Constraint API stores time-sampled transformation
-/// matrices directly, and only on model prims.
-/// 
 /// This is a non-applied API schema.
 /// 
 ///
-class UsdGeomCoordSysAPI : public UsdAPISchemaBase
+class UsdShadeCoordSysAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -91,45 +83,45 @@ public:
     /// \sa UsdSchemaType
     static const UsdSchemaType schemaType = UsdSchemaType::NonAppliedAPI;
 
-    /// Construct a UsdGeomCoordSysAPI on UsdPrim \p prim .
-    /// Equivalent to UsdGeomCoordSysAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdShadeCoordSysAPI on UsdPrim \p prim .
+    /// Equivalent to UsdShadeCoordSysAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdGeomCoordSysAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdShadeCoordSysAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdGeomCoordSysAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdGeomCoordSysAPI(schemaObj.GetPrim()),
+    /// Construct a UsdShadeCoordSysAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdShadeCoordSysAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdGeomCoordSysAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdShadeCoordSysAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
-    USDGEOM_API
-    virtual ~UsdGeomCoordSysAPI();
+    USDSHADE_API
+    virtual ~UsdShadeCoordSysAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
-    USDGEOM_API
+    USDSHADE_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdGeomCoordSysAPI holding the prim adhering to this
+    /// Return a UsdShadeCoordSysAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdGeomCoordSysAPI(stage->GetPrimAtPath(path));
+    /// UsdShadeCoordSysAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    USDGEOM_API
-    static UsdGeomCoordSysAPI
+    USDSHADE_API
+    static UsdShadeCoordSysAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -137,19 +129,19 @@ protected:
     /// Returns the type of schema this class belongs to.
     ///
     /// \sa UsdSchemaType
-    USDGEOM_API
+    USDSHADE_API
     UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
-    USDGEOM_API
+    USDSHADE_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
-    USDGEOM_API
+    USDSHADE_API
     const TfType &_GetTfType() const override;
 
 public:
@@ -176,7 +168,7 @@ public:
     /// To be valid, a binding must target an Xformable prim.
     /// Invalid bindings will be silently skipped.
     USDGEOM_API
-    std::vector<UsdGeomCoordSysAPI::CoordinateSystem>
+    std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
     GetCoordinateSystems() const;
 
     /// Find the list of named coordinate systems that apply at
@@ -189,7 +181,7 @@ public:
     /// To be valid, a binding must target an Xformable prim.
     /// Invalid bindings will be silently skipped.
     USDGEOM_API
-    std::vector<UsdGeomCoordSysAPI::CoordinateSystem>
+    std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
     FindCoordinateSystemsWithInheritance() const;
 
     /// Get the list of coordinate system bindings local to this prim.
@@ -228,7 +220,7 @@ public:
 private:
     void
     _ResolveCoordinateSystems(
-        std::vector<UsdGeomCoordSysAPI::CoordinateSystem> *result,
+        std::vector<UsdShadeCoordSysAPI::CoordinateSystem> *result,
         bool includeInherited) const;
 };
 
