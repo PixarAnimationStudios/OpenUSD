@@ -656,23 +656,20 @@ std::string TfStringCatPaths( const std::string &prefix,
 /// that is, it must be at least one character long, must start with a letter
 /// or underscore, and must contain only letters, underscores, and numerals.
 inline bool
-TfIsValidIdentifier(const std::string &identifier)
+TfIsValidIdentifier(std::string const &identifier)
 {
     char const *p = identifier.c_str();
-    if (!*p || (!(('a' <= *p && *p <= 'z') || 
-                  ('A' <= *p && *p <= 'Z') || 
-                  *p == '_')))
+    auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
+    auto number = [](unsigned c) { return (c-'0') < 10; };
+    auto under = [](unsigned c) { return c == '_'; };
+    unsigned x = *p;
+    if (!x || number(x)) {
         return false;
-
-    for (++p; *p; ++p) {
-        if (!(('a' <= *p && *p <= 'z') || 
-              ('A' <= *p && *p <= 'Z') || 
-              ('0' <= *p && *p <= '9') || 
-              *p == '_')) {
-            return false;
-        }
     }
-    return true;
+    while (letter(x) || number(x) || under(x)) {
+        x = *p++;
+    };
+    return x == 0;
 }
 
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by
