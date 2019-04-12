@@ -21,37 +21,32 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_PACKAGE_H
-#define HDST_PACKAGE_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/imaging/hdSt/imageShaderShaderKey.h"
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HDST_API
-TfToken HdStPackageComputeShader();
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((baseGLSLFX,       "imageShader.glslfx"))
+    ((mainVS,           "ImageShader.Vertex"))
+    ((mainFS,           "ImageShader.Fragment"))
+);
 
-HDST_API
-TfToken HdStPackagePtexTextureShader();
+HdSt_ImageShaderShaderKey::HdSt_ImageShaderShaderKey()
+    : glslfx(_tokens->baseGLSLFX)
+{
+    VS[0] = _tokens->mainVS;
+    VS[1] = TfToken();
 
-HDST_API
-TfToken HdStPackageRenderPassShader();
+    FS[0] = _tokens->mainFS;
+    FS[1] = TfToken();
+}
 
-HDST_API
-TfToken HdStPackageFallbackLightingShader();
-
-HDST_API
-TfToken HdStPackageLightingIntegrationShader();
-
-HDST_API
-TfToken HdStPackageFallbackSurfaceShader();
-
-HDST_API
-TfToken HdStPackageImageShader();
+HdSt_ImageShaderShaderKey::~HdSt_ImageShaderShaderKey()
+{
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif

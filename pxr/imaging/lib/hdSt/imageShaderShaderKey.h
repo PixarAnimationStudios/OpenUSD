@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,36 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_PACKAGE_H
-#define HDST_PACKAGE_H
+#ifndef HDST_IMAGESHADER_SHADER_KEY_H
+#define HDST_IMAGESHADER_SHADER_KEY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HDST_API
-TfToken HdStPackageComputeShader();
+struct HdSt_ImageShaderShaderKey
+{
+    HdSt_ImageShaderShaderKey();
+    ~HdSt_ImageShaderShaderKey();
 
-HDST_API
-TfToken HdStPackagePtexTextureShader();
+    TfToken const &GetGlslfxFile() const { return glslfx; }
+    TfToken const *GetVS() const  { return VS; }
+    TfToken const *GetTCS() const { return nullptr; }
+    TfToken const *GetTES() const { return nullptr; }
+    TfToken const *GetGS() const  { return nullptr; }
+    TfToken const *GetFS() const  { return FS; }
 
-HDST_API
-TfToken HdStPackageRenderPassShader();
+    bool IsCullingPass() const { return false; }
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+        return HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES; 
+    }
+    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
+    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
+    float GetLineWidth() const { return 0.0f; }
 
-HDST_API
-TfToken HdStPackageFallbackLightingShader();
+    TfToken glslfx;
+    TfToken VS[2];
+    TfToken FS[2];
+};
 
-HDST_API
-TfToken HdStPackageLightingIntegrationShader();
-
-HDST_API
-TfToken HdStPackageFallbackSurfaceShader();
-
-HDST_API
-TfToken HdStPackageImageShader();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
