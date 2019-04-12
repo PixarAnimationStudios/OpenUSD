@@ -2287,6 +2287,15 @@ CrateFile::StartPacking(string const &fileName)
         // Get rid of our local list of specs, if we have one -- the client is
         // required to repopulate it.
         vector<Spec>().swap(_specs);
+        // If we have no tokens yet, insert a special token that cannot be used
+        // as a prim property path element so that it gets token index 0.
+        // There's a bug (github issue 811) in the compressed path code where it
+        // uses negative indexes to indicate prim property path elements.  That
+        // fails for index 0.  So inserting a token here that cannot be used as
+        // a property path element sidesteps this.
+        if (_tokens.empty()) {
+            _AddToken(TfToken(";-)"));
+        }
     }
     return Packer(this);
 }
