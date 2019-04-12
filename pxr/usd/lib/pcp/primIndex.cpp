@@ -1191,6 +1191,19 @@ _HasAncestorCycle(
             || childNodeSite.path.HasPrefix(parentNodeSite.path));
 }
 
+inline static bool
+_FindAncestorCycleInParentGraph(const PcpNodeRef &parentNode, 
+                                const PcpLayerStackSite& childNodeSite)
+{
+    // We compare the targeted site to each previously-visited site: 
+    for (PcpNodeRef node = parentNode; node; node = node.GetParentNode()) {
+        if (_HasAncestorCycle(node.GetSite(), childNodeSite)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool
 _IsImpliedClassBasedArc(
     PcpArcType arcType,
@@ -1245,12 +1258,58 @@ _CheckForCycle(
         return PcpErrorArcCyclePtr();
     }
 
-    // We compare the targeted site to each previously-visited site: 
     bool foundCycle = false;
-    for (PcpPrimIndex_StackFrameIterator i(parent, previousFrame); 
-         i.node; i.Next()) {
-        if (_HasAncestorCycle(i.node.GetSite(), childSite)) {
+
+    // If the the current graph is a subgraph that is being recursively built
+    // for another node, we have to crawl up the parent graph as well to check
+    // for cycles.
+    PcpLayerStackSite childSiteInStackFrame = childSite;
+    for (PcpPrimIndex_StackFrameIterator it(parent, previousFrame);
+         it.node; it.NextFrame()) {
+
+        // Check for a cycle in the parent's current graph.
+        if (_FindAncestorCycleInParentGraph(it.node, childSiteInStackFrame)) {
             foundCycle = true;
+            break;
+        }
+
+        // In some cases we need to convert the child site's path into the 
+        // path it will have when its owning subgraph is added to the parent
+        // graph in order to correctly check for cycles. This is best 
+        // explained with a simple example:
+        //
+        //    /A
+        //    /A/B
+        //    /A/C (ref = /D/B)
+        //
+        //    /D (ref = /A)
+        //
+        // If you compute the prim index /D/C it will have a reference arc 
+        // to /A/C because /D references /A. When the index then goes to
+        // to add the reference arc to /D/B from /A/C it initiates a 
+        // recursive subgraph computation of /D/B. 
+        // 
+        // When we build the subgraph prim index for /D/B, the first step
+        // is to compute its namespace ancestor which builds an index for
+        // /D. When the index for /D tries to add its reference arc to /A,
+        // we end up here in this function to check for cycles.
+        // 
+        // If we just checked for cycles using the child site's current 
+        // path, /A, we'd find an ancestor cycle when we go up to the parent
+        // graph for the node /A/C. However, the requested subgraph is for 
+        // /D/B not /D, so the child site will actually be /A/B instead of 
+        // /A when the subgraph reference arc is actually added for node 
+        // /A/C. Adding a node /A/B does not introduce any cycles.
+        if (it.previousFrame) {
+            const SdfPath& requestedPathForCurrentGraph = 
+                it.previousFrame->requestedSite.path;
+            const SdfPath& currentPathForCurrentGraph = 
+                it.node.GetRootNode().GetPath();
+
+            childSiteInStackFrame.path = 
+                requestedPathForCurrentGraph.ReplacePrefix(
+                    currentPathForCurrentGraph,
+                    childSiteInStackFrame.path);
         }
     }
 

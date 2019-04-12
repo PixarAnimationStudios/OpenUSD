@@ -501,6 +501,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceNonCycle.testenv
+    DEST testPcpMuseum_SubrootReferenceNonCycle
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyVariantAncestralSelection.testenv
     DEST testPcpMuseum_TrickyVariantAncestralSelection
 )
@@ -1068,6 +1073,13 @@ pxr_register_test(testPcpMuseum_TrickyInheritsInVariants2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsInVariants2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsInVariants2.txt
     DIFF_COMPARE compositionResults_TrickyInheritsInVariants2.txt 
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceNonCycle
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_SubrootReferenceNonCycle.txt SubrootReferenceNonCycle/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceNonCycle.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceNonCycle.txt compositionErrors_SubrootReferenceNonCycle.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantAncestralSelection
