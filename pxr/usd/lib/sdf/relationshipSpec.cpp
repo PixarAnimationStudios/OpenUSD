@@ -570,7 +570,7 @@ SdfRelationshipSpec::ApplyAttributeOrderForTargetPath(
     boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor = 
         _GetTargetAttributeOrderEditor(path);
     if (editor) {
-        editor->ApplyEdits(vec);
+        editor->ApplyEditsToList(vec);
     }
 }
 

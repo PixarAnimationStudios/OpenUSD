@@ -342,7 +342,7 @@ SdfPrimSpec::RemoveFromNameChildrenOrderByIndex(int index)
 void
 SdfPrimSpec::ApplyNameChildrenOrder(std::vector<TfToken>* vec) const
 {
-    _GetNameChildrenOrderEditor()->ApplyEdits(vec);
+    _GetNameChildrenOrderEditor()->ApplyEditsToList(vec);
 }
 
 //
@@ -470,7 +470,7 @@ void
 SdfPrimSpec::ApplyPropertyOrder(std::vector<TfToken>* vec) const
 {
     if (_ValidateEdit(SdfChildrenKeys->PropertyChildren)) {
-        _GetPropertyOrderEditor()->ApplyEdits(vec);
+        _GetPropertyOrderEditor()->ApplyEditsToList(vec);
     }
 }
 

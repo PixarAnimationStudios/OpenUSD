@@ -119,7 +119,7 @@ public:
     void ApplyEditsToList(value_vector_type* vec) const
     {
         if (_Validate()) {
-            _listEditor->ApplyEdits(vec, ApplyCallback());
+            _listEditor->ApplyEditsToList(vec, ApplyCallback());
         }
     }
 
@@ -132,7 +132,7 @@ public:
     void ApplyEditsToList(value_vector_type* vec, CB callback) const
     {
         if (_Validate()) {
-            _listEditor->ApplyEdits(vec, ApplyCallback(callback));
+            _listEditor->ApplyEditsToList(vec, ApplyCallback(callback));
         }
     }
 
@@ -299,7 +299,7 @@ public:
     {
         value_vector_type result;
         if (_Validate()) {
-            _listEditor->ApplyEdits(&result);
+            _listEditor->ApplyEditsToList(&result);
         }
         return result;
     }
