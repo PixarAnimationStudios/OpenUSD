@@ -804,13 +804,7 @@ UsdImagingGLEngine::SetRendererAov(TfToken const &id)
 
     TF_VERIFY(_renderIndex);
     if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
-        // For color, render straight to the viewport instead of rendering
-        // to an AOV and colorizing (which is the same, but more work).
-        if (id == HdAovTokens->color) {
-            _taskController->SetRenderOutputs(TfTokenVector());
-        } else {
-            _taskController->SetRenderOutputs({id});
-        }
+        _taskController->SetRenderOutputs({id});
         return true;
     }
     return false;

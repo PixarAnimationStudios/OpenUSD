@@ -89,7 +89,7 @@ public:
 
     /// Return the controller's scene-graph id (prefixed to any
     /// scene graph objects it creates).
-    SdfPath const& GetControllerId() { return _controllerId; }
+    SdfPath const& GetControllerId() const { return _controllerId; }
 
     /// -------------------------------------------------------
     /// Execution API
@@ -100,7 +100,7 @@ public:
     ///
     /// A vector of zero length indicates error.
     HDX_API
-    HdTaskSharedPtrVector const GetTasks();
+    HdTaskSharedPtrVector const GetTasks() const;
 
     /// -------------------------------------------------------
     /// Rendering API
@@ -239,15 +239,30 @@ private:
 
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.
+    void _CreateRenderGraph();
+
     void _CreateCamera();
-    void _CreateRenderTask();
-    void _CreateSelectionTask();
     void _CreateLightingTask();
     void _CreateShadowTask();
+    SdfPath _CreateRenderTask(TfToken const& materialTag);
+    void _CreateSelectionTask();
     void _CreateColorizeTask();
+    void _CreateColorizeSelectionTask();
     void _CreateColorCorrectionTask();
 
-    SdfPath _GetAovPath(TfToken const& aov);
+    void _SetBlendStateForMaterialTag(TfToken const& materialTag,
+                                      HdxRenderTaskParams *renderParams) const;
+
+    // Render graph topology control.
+    bool _ShadowsEnabled() const;
+    bool _SelectionEnabled() const;
+    bool _ColorizeSelectionEnabled() const;
+    bool _ColorCorrectionEnabled() const;
+    bool _AovsSupported() const;
+
+    // Helper function for renderbuffer management.
+    SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;
+    SdfPath _GetAovPath(TfToken const& aov) const;
 
     // A private scene delegate member variable backs the tasks this
     // controller generates. To keep _Delegate simple, the containing class
@@ -301,10 +316,11 @@ private:
     _Delegate _delegate;
 
     // Generated tasks.
-    SdfPathVector _renderTaskIds;
-    SdfPath _selectionTaskId;
     SdfPath _simpleLightTaskId;
     SdfPath _shadowTaskId;
+    SdfPathVector _renderTaskIds;
+    SdfPath _selectionTaskId;
+    SdfPath _colorizeSelectionTaskId;
     SdfPath _colorizeTaskId;
     SdfPath _colorCorrectionTaskId;
 
@@ -315,7 +331,9 @@ private:
     SdfPathVector _lightIds;
 
     // Generated renderbuffers
-    SdfPathVector _renderBufferIds;
+    SdfPathVector _aovBufferIds;
+    TfTokenVector _aovOutputs;
+    TfToken _viewportAov;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

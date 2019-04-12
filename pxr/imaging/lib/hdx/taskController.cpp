@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hdx/colorizeSelectionTask.h"
 #include "pxr/imaging/hdx/colorizeTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/intersector.h"
@@ -49,14 +50,19 @@ TF_DEFINE_PUBLIC_TOKENS(HdxIntersectionModeTokens, \
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (renderTask)
-    (translucencyRenderTask)
-    (selectionTask)
+
+    // tasks
     (simpleLightTask)
     (shadowTask)
+    (selectionTask)
     (colorizeTask)
+    (colorizeSelectionTask)
     (colorCorrectionTask)
+
+    // global camera
     (camera)
+
+    // For the internal delegate...
     (renderBufferDescriptor)
 );
 
@@ -108,6 +114,16 @@ HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
 // ---------------------------------------------------------------------------
 // Task controller implementation.
 
+static bool
+_IsStreamRenderingBackend(HdRenderIndex *index)
+{
+    if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
+        return false;
+    }
+
+    return true;
+}
+
 HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
                                      SdfPath const& controllerId)
     : _index(renderIndex)
@@ -115,17 +131,44 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     , _intersector(new HdxIntersector(renderIndex))
     , _delegate(renderIndex, controllerId)
 {
+    _CreateRenderGraph();
+}
+
+void
+HdxTaskController::_CreateRenderGraph()
+{
     // We create camera and tasks here, but lights are created lazily by
     // SetLightingState. Camera needs to be created first, since it's a
     // parameter of most tasks.
-
     _CreateCamera();
-    _CreateRenderTask();
-    _CreateSelectionTask();
-    _CreateLightingTask();
-    _CreateShadowTask();
-    _CreateColorizeTask();
-    _CreateColorCorrectionTask();
+
+    // XXX: The general assumption is that we have "stream" backends which are
+    // rasterization based and have their own rules, like multipass for
+    // transparency; and other backends are more single-pass.  As render
+    // delegate capabilities evolve, we'll need a more complicated switch
+    // than this...
+    if (_IsStreamRenderingBackend(GetRenderIndex())) {
+        _CreateLightingTask();
+        _CreateShadowTask();
+        _renderTaskIds.push_back(_CreateRenderTask(
+            HdMaterialTagTokens->defaultMaterialTag));
+        _renderTaskIds.push_back(_CreateRenderTask(
+            HdxMaterialTagTokens->translucent));
+        _CreateSelectionTask();
+        _CreateColorCorrectionTask();
+    } else {
+        _renderTaskIds.push_back(_CreateRenderTask(TfToken()));
+        if (_AovsSupported()) {
+            _CreateColorizeTask();
+            _CreateColorizeSelectionTask();
+
+            // Initialize the AOV system to render color. Note:
+            // SetRenderOutputs special-cases color to include support for
+            // depth-compositing and selection highlighting/picking.
+            SetRenderOutputs({HdAovTokens->color});
+        }
+        _CreateColorCorrectionTask();
+    }
 }
 
 void
@@ -146,75 +189,74 @@ HdxTaskController::_CreateCamera()
         VtValue(std::vector<GfVec4d>()));
 }
 
-void
-HdxTaskController::_CreateRenderTask()
+SdfPath
+HdxTaskController::_GetRenderTaskPath(TfToken const& materialTag) const
 {
-    // Avoid triggering double-rendering in render backends by only pushing
-    // the translucent task when the renderer is Stream.
-    // XXX This dependecy on HdSt can be removed once we have a better system
-    //     in-place to have per renderDelegate tasks.
-    HdStRenderDelegate* hdStRenderDelegate = dynamic_cast<HdStRenderDelegate*>(
-        GetRenderIndex()->GetRenderDelegate());
+    std::string str = TfStringPrintf("renderTask_%s",
+        materialTag.GetText());
+    std::replace(str.begin(), str.end(), ':', '_');
+    return GetControllerId().AppendChild(TfToken(str));
+}
 
-    TfTokenVector renderTasks;
-    renderTasks.push_back(_tokens->renderTask);
-    if (hdStRenderDelegate) {
-        renderTasks.push_back(_tokens->translucencyRenderTask);
+SdfPath
+HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
+{
+    SdfPath taskId = _GetRenderTaskPath(materialTag);
+
+    HdxRenderTaskParams renderParams;
+    renderParams.camera = _cameraId;
+    renderParams.viewport = GfVec4d(0,0,1,1);
+
+    // Set the blend state based on material tag.
+    _SetBlendStateForMaterialTag(materialTag, &renderParams);
+
+    HdRprimCollection collection(HdTokens->geometry,
+                                 HdReprSelector(HdReprTokens->smoothHull),
+                                 /*forcedRepr*/ false,
+                                 materialTag);
+    collection.SetRootPath(SdfPath::AbsoluteRootPath());
+
+    GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
+
+    _delegate.SetParameter(taskId, HdTokens->params, renderParams);
+    _delegate.SetParameter(taskId, HdTokens->collection, collection);
+
+    return taskId;
+}
+
+void
+HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
+                                        HdxRenderTaskParams *renderParams) const
+{
+    if (!TF_VERIFY(renderParams)) {
+        return;
     }
 
-    TfToken const materialTags[2] = {
-        HdMaterialTagTokens->defaultMaterialTag,
-        HdxMaterialTagTokens->translucent
-    };
+    if (materialTag == HdxMaterialTagTokens->translucent) {
+        // Additive blend -- so no sorting of drawItems is needed
+        renderParams->blendEnable = true;
+        // We are setting all factors to ONE, This means we are expecting
+        // pre-multiplied alpha coming out of the shader: vec4(rgb*a, a).
+        // Setting ColorSrc to HdBlendFactorSourceAlpha would give less
+        // control on the shader side, since it means we would force a
+        // pre-multiplied alpha step on the color coming out of the shader.
+        renderParams->blendColorOp = HdBlendOpAdd;
+        renderParams->blendAlphaOp = HdBlendOpAdd;
+        renderParams->blendColorSrcFactor = HdBlendFactorOne;
+        renderParams->blendColorDstFactor = HdBlendFactorOne;
+        renderParams->blendAlphaSrcFactor = HdBlendFactorOne;
+        renderParams->blendAlphaDstFactor = HdBlendFactorOne;
 
-    for (unsigned i=0; i<renderTasks.size(); i++) {
-        SdfPath renderTaskId = GetControllerId().AppendChild(renderTasks[i]);
-        _renderTaskIds.push_back(renderTaskId);
-        TfToken const& materialTag = materialTags[i];
+        // Translucent objects should not block each other in depth buffer
+        renderParams->depthMaskEnable = false;
 
-        HdxRenderTaskParams renderParams;
-        renderParams.camera = _cameraId;
-        renderParams.viewport = GfVec4d(0,0,1,1);
-
-        if (materialTag == HdxMaterialTagTokens->translucent) {
-            // Additive blend -- so no sorting of drawItems is needed
-            renderParams.blendEnable = true;
-            renderParams.blendColorOp = HdBlendOpAdd;
-            renderParams.blendAlphaOp = HdBlendOpAdd;
-
-            // We are setting all factors to ONE, This means we are expecting
-            // pre-multiplied alpha coming out of the shader: vec4(rgb*a, a).
-            // Setting ColorSrc to HdBlendFactorSourceAlpha would give less
-            // control on the shader side, since it means we would force a
-            // pre-multiplied alpha step on the color coming out of the shader.
-            renderParams.blendColorSrcFactor = HdBlendFactorOne;
-            renderParams.blendColorDstFactor = HdBlendFactorOne;
-            renderParams.blendAlphaSrcFactor = HdBlendFactorOne;
-            renderParams.blendAlphaDstFactor = HdBlendFactorOne;
-
-            // Translucent objects should not block each other in depth buffer
-            renderParams.depthMaskEnable = false;
-
-            // Since we are using alpha blending, we disable screen door
-            // transparency. However screen door transparency remains a valid
-            // transparency method for the opaque task so we only disable it
-            // during the translucent task.
-            renderParams.enableAlphaToCoverage = false;
-        }
-
-        HdRprimCollection collection(HdTokens->geometry,
-                                    HdReprSelector(HdReprTokens->smoothHull),
-                                    /*forcedRepr*/ false,
-                                    materialTag);
-        collection.SetRootPath(SdfPath::AbsoluteRootPath());
-
-        GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate,
-            renderTaskId);
-
-        _delegate.SetParameter(renderTaskId, HdTokens->params,
-            renderParams);
-        _delegate.SetParameter(renderTaskId, HdTokens->collection,
-            collection);
+        // Since we are using alpha blending, we disable screen door
+        // transparency for this renderpass.
+        renderParams->enableAlphaToCoverage = false;
+    } else {
+        renderParams->blendEnable = false;
+        renderParams->depthMaskEnable = true;
+        renderParams->enableAlphaToCoverage = true;
     }
 }
 
@@ -233,6 +275,25 @@ HdxTaskController::_CreateSelectionTask()
         _selectionTaskId);
 
     _delegate.SetParameter(_selectionTaskId, HdTokens->params,
+        selectionParams);
+}
+
+void
+HdxTaskController::_CreateColorizeSelectionTask()
+{
+    // Create a post-process selection highlighting task.
+    _colorizeSelectionTaskId = GetControllerId().AppendChild(
+        _tokens->colorizeSelectionTask);
+
+    HdxColorizeSelectionTaskParams selectionParams;
+    selectionParams.enableSelection = true;
+    selectionParams.selectionColor = GfVec4f(1,1,0,1);
+    selectionParams.locateColor = GfVec4f(0,0,1,1);
+
+    GetRenderIndex()->InsertTask<HdxColorizeSelectionTask>(&_delegate,
+        _colorizeSelectionTaskId);
+
+    _delegate.SetParameter(_colorizeSelectionTaskId, HdTokens->params,
         selectionParams);
 }
 
@@ -300,72 +361,74 @@ HdxTaskController::_CreateColorCorrectionTask()
 HdxTaskController::~HdxTaskController()
 {
     GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
-    for (SdfPath const& renderTaskId : _renderTaskIds) {
-        GetRenderIndex()->RemoveTask(renderTaskId);
-    }
     SdfPath const tasks[] = {
         _selectionTaskId,
         _simpleLightTaskId,
         _shadowTaskId,
+        _colorizeSelectionTaskId,
         _colorizeTaskId,
         _colorCorrectionTaskId
     };
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
-        GetRenderIndex()->RemoveTask(tasks[i]);
+        if (!tasks[i].IsEmpty()) {
+            GetRenderIndex()->RemoveTask(tasks[i]);
+        }
+    }
+    for (auto const& id : _renderTaskIds) {
+        GetRenderIndex()->RemoveTask(id);
     }
     for (auto const& id : _lightIds) {
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
     }
-    for (auto const& id : _renderBufferIds) {
+    for (auto const& id : _aovBufferIds) {
         GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
     }
 }
 
-HdTaskSharedPtrVector const
-HdxTaskController::GetTasks()
+bool
+HdxTaskController::_ShadowsEnabled() const
 {
-    HdTaskSharedPtrVector tasks;
+    if (_simpleLightTaskId.IsEmpty())
+        return false;
 
-    // Light - Only run simpleLightTask if the backend supports simpleLight...
-    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
-
-        // If shadows are enabled then we add the task to generate the 
-        // shadow maps.
-        const HdxSimpleLightTaskParams& simpleLightParams =
-            _delegate.GetParameter<HdxSimpleLightTaskParams>(
+    const HdxSimpleLightTaskParams& simpleLightParams =
+        _delegate.GetParameter<HdxSimpleLightTaskParams>(
                 _simpleLightTaskId, HdTokens->params);
 
-        if (simpleLightParams.enableShadows) {
-            tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
-        }
-    }
+    // Only enable the shadow task (which renders shadow maps) if shadows are
+    // enabled.
+    return simpleLightParams.enableShadows;
+}
 
-    // Render
-    for (SdfPath const& renderTaskId : _renderTaskIds) {
-        tasks.push_back(GetRenderIndex()->GetTask(renderTaskId));
-    }
+bool
+HdxTaskController::_SelectionEnabled() const
+{
+    if (_renderTaskIds.empty())
+        return false;
 
-    // Selection highlighting (overlay as long as this isn't an id render).
     const HdxRenderTaskParams& renderTaskParams =
         _delegate.GetParameter<HdxRenderTaskParams>(
             _renderTaskIds.front(), HdTokens->params);
 
-    if (!renderTaskParams.enableIdRender) {
-        tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
-    }
+    // Disable selection highlighting when we're rendering ID buffers.
+    return !renderTaskParams.enableIdRender;
+}
 
-    if (_renderBufferIds.size() > 0) {
-        HdxColorizeTaskParams colorizeParams =
-            _delegate.GetParameter<HdxColorizeTaskParams>(
-                    _colorizeTaskId, HdTokens->params);
-        if (!colorizeParams.aovName.IsEmpty()) {
-            tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
-        }
+bool
+HdxTaskController::_ColorizeSelectionEnabled() const
+{
+    if (_viewportAov == HdAovTokens->color) {
+        return true;
     }
+    return false;
+}
 
-    // -------------------------------------------------------------------------
-    // Color-Correction - should be LAST task in the list
+bool
+HdxTaskController::_ColorCorrectionEnabled() const
+{
+    if (_colorCorrectionTaskId.IsEmpty())
+        return false;
+
     const HdxColorCorrectionTaskParams& colorCorrectionParams =
         _delegate.GetParameter<HdxColorCorrectionTaskParams>(
             _colorCorrectionTaskId, HdTokens->params);
@@ -373,16 +436,64 @@ HdxTaskController::GetTasks()
     bool useColorCorrect = colorCorrectionParams.colorCorrectionMode != 
                            HdxColorCorrectionTokens->disabled &&
                            !colorCorrectionParams.colorCorrectionMode.IsEmpty();
+    return useColorCorrect;
+}
 
-    if (useColorCorrect) {
-        tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
+bool
+HdxTaskController::_AovsSupported() const
+{
+    return GetRenderIndex()->IsBprimTypeSupported(
+        HdPrimTypeTokens->renderBuffer);
+}
+
+HdTaskSharedPtrVector const
+HdxTaskController::GetTasks() const
+{
+    HdTaskSharedPtrVector tasks;
+
+    /* The superset of tasks we can run, in order, is:
+     * - simpleLightTaskId
+     * - shadowTaskId
+     * - renderTaskIds (There may be more than one)
+     * - selectionTaskId
+     * - colorizeTaskId
+     * - colorizeSelectionTaskId
+     * - colorCorrectionTaskId
+     *
+     * Some of these won't be populated, based on the backend type.
+     * Additionally, shadow, selection, and color correction can be
+     * conditionally disabled.
+     *
+     * See _CreateRenderGraph for more details.
+     */
+
+    if (!_simpleLightTaskId.IsEmpty())
+        tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
+
+    if (!_shadowTaskId.IsEmpty() && _ShadowsEnabled())
+        tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
+
+    for (auto const& id : _renderTaskIds) {
+        tasks.push_back(GetRenderIndex()->GetTask(id));
     }
+
+    if (!_selectionTaskId.IsEmpty() && _SelectionEnabled())
+        tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
+
+    if (!_colorizeTaskId.IsEmpty())
+        tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
+
+    if (!_colorizeSelectionTaskId.IsEmpty() && _ColorizeSelectionEnabled())
+        tasks.push_back(GetRenderIndex()->GetTask(_colorizeSelectionTaskId));
+
+    if (!_colorCorrectionTaskId.IsEmpty() && _ColorCorrectionEnabled())
+        tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
 
     return tasks;
 }
 
 SdfPath
-HdxTaskController::_GetAovPath(TfToken const& aov)
+HdxTaskController::_GetAovPath(TfToken const& aov) const
 {
     std::string str = TfStringPrintf("aov_%s", aov.GetText());
     std::replace(str.begin(), str.end(), ':', '_');
@@ -392,109 +503,100 @@ HdxTaskController::_GetAovPath(TfToken const& aov)
 void
 HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 {
-    if (!GetRenderIndex()->IsBprimTypeSupported(
-            HdPrimTypeTokens->renderBuffer)) {
+    if (!_AovsSupported() || _renderTaskIds.size() != 1) {
         return;
     }
+    SdfPath renderTaskId = _renderTaskIds.front();
 
-    // We currently assume all renderTasks use the same viewport dimensions and
-    // query only the first renderTask for the value.
-    HdxRenderTaskParams firstRenderParams =
-        _delegate.GetParameter<HdxRenderTaskParams>(_renderTaskIds.front(),
+    if (_aovOutputs == outputs) {
+        return;
+    }
+    _aovOutputs = outputs;
+
+    // When we're asked to render "color", we treat that as final color,
+    // complete with depth-compositing and selection, so we in-line add
+    // some extra buffers if they weren't already requested.
+    TfTokenVector localOutputs = outputs;
+    {
+        std::set<TfToken> mainRenderTokens;
+        for (auto const& aov : outputs) {
+            if (aov == HdAovTokens->color || aov == HdAovTokens->depth ||
+                aov == HdAovTokens->primId || aov == HdAovTokens->instanceId ||
+                aov == HdAovTokens->elementId) {
+                mainRenderTokens.insert(aov);
+            }
+        }
+        if (mainRenderTokens.count(HdAovTokens->color) > 0) {
+            if (mainRenderTokens.count(HdAovTokens->depth) == 0) {
+                localOutputs.push_back(HdAovTokens->depth);
+            }
+            if (mainRenderTokens.count(HdAovTokens->primId) == 0) {
+                localOutputs.push_back(HdAovTokens->primId);
+            }
+            if (mainRenderTokens.count(HdAovTokens->elementId) == 0) {
+                localOutputs.push_back(HdAovTokens->elementId);
+            }
+            if (mainRenderTokens.count(HdAovTokens->instanceId) == 0) {
+                localOutputs.push_back(HdAovTokens->instanceId);
+            }
+        }
+    }
+
+    // Delete the old renderbuffers.
+    for (size_t i = 0; i < _aovBufferIds.size(); ++i) {
+        GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer,
+            _aovBufferIds[i]);
+    }
+    _aovBufferIds.clear();
+
+    // Get the viewport dimensions (for renderbuffer allocation)
+    HdxRenderTaskParams renderParams =
+        _delegate.GetParameter<HdxRenderTaskParams>(renderTaskId,
             HdTokens->params);
-
-    GfVec3i dimensions = GfVec3i(firstRenderParams.viewport[2],
-            firstRenderParams.viewport[3], 1);
-
-    SdfPathVector oldRenderBufferIds;
-    std::swap(_renderBufferIds, oldRenderBufferIds);
+    GfVec3i dimensions = GfVec3i(renderParams.viewport[2],
+        renderParams.viewport[3], 1);
 
     // Get default AOV descriptors from the render delegate.
     HdAovDescriptorList outputDescs;
-    outputDescs.resize(outputs.size());
-    for (size_t i = 0; i < outputs.size(); ++i) {
+    outputDescs.resize(localOutputs.size());
+    for (size_t i = 0; i < localOutputs.size(); ++i) {
         outputDescs[i] = GetRenderIndex()->GetRenderDelegate()->
-            GetDefaultAovDescriptor(outputs[i]);
+            GetDefaultAovDescriptor(localOutputs[i]);
     }
 
-    // Insert renderbuffers for the list of outputs, with the name
+    // Add the new renderbuffers. _GetAovPath returns ids of the form
     // {controller_id}/aov_{name}.
-    //
-    // To minimize churn, if the renderbuffer already exists just reuse it.
-    // If it doesn't exist, insert it.  If any of the previously existing
-    // renderbuffers aren't in the new output list, reclaim them.
-    for (size_t i = 0; i < outputs.size(); ++i) {
-        SdfPath id = _GetAovPath(outputs[i]);
-        SdfPathVector::iterator it =
-            std::find(oldRenderBufferIds.begin(), oldRenderBufferIds.end(), id);
-        if (it != oldRenderBufferIds.end()) {
-            // If the AOV already exists, delete it from the old list so we
-            // don't reclaim it.
-            oldRenderBufferIds.erase(it);
-        } else {
-            // Otherwise add it to the render index.
-            GetRenderIndex()->InsertBprim(HdPrimTypeTokens->renderBuffer,
-                &_delegate, id);
-            _delegate.SetParameter(id, _tokens->renderBufferDescriptor,
-                HdRenderBufferDescriptor());
-            GetRenderIndex()->GetChangeTracker().MarkBprimDirty(id,
-                HdRenderBuffer::AllDirty);
-        }
-        _renderBufferIds.push_back(id);
-
-        // Insert the render buffer descriptor based on the aov descriptor.
-        HdRenderBufferDescriptor desc =
-            _delegate.GetParameter<HdRenderBufferDescriptor>(id,
-                _tokens->renderBufferDescriptor);
-
-        if (desc.dimensions != dimensions ||
-            desc.format != outputDescs[i].format ||
-            desc.multiSampled != outputDescs[i].multiSampled) {
-
-            desc.dimensions = dimensions;
-            desc.format = outputDescs[i].format;
-            desc.multiSampled = outputDescs[i].multiSampled;
-
-            _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
-            GetRenderIndex()->GetChangeTracker().MarkBprimDirty(
-                id, HdRenderBuffer::DirtyDescription);
-        }
+    for (size_t i = 0; i < localOutputs.size(); ++i) {
+        SdfPath aovId = _GetAovPath(localOutputs[i]);
+        GetRenderIndex()->InsertBprim(HdPrimTypeTokens->renderBuffer,
+            &_delegate, aovId);
+        HdRenderBufferDescriptor desc;
+        desc.dimensions = dimensions;
+        desc.format = outputDescs[i].format;
+        desc.multiSampled = outputDescs[i].multiSampled;
+        _delegate.SetParameter(aovId, _tokens->renderBufferDescriptor, desc);
+        GetRenderIndex()->GetChangeTracker().MarkBprimDirty(aovId,
+            HdRenderBuffer::DirtyDescription);
+        _aovBufferIds.push_back(aovId);
     }
-
-    // Clean up the old (no longer used) renderbuffers.
-    for (size_t i = 0; i < oldRenderBufferIds.size(); ++i) {
-        GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer,
-            oldRenderBufferIds[i]);
-    }
-    oldRenderBufferIds.clear();
 
     // Create the aov binding list and set it on the render task.
     HdRenderPassAovBindingVector aovBindings;
-    aovBindings.resize(outputs.size());
-    for (size_t i = 0; i < outputs.size(); ++i) {
-        SdfPath renderBufferId = _GetAovPath(outputs[i]);
-
-        aovBindings[i].aovName = outputs[i];
+    aovBindings.resize(localOutputs.size());
+    for (size_t i = 0; i < localOutputs.size(); ++i) {
+        aovBindings[i].aovName = localOutputs[i];
         aovBindings[i].clearValue = outputDescs[i].clearValue;
-        aovBindings[i].renderBufferId = renderBufferId;
+        aovBindings[i].renderBufferId = _GetAovPath(localOutputs[i]);
         aovBindings[i].aovSettings = outputDescs[i].aovSettings;
     }
 
-    for (SdfPath const& renderTaskId : _renderTaskIds) {
-        HdxRenderTaskParams renderParams =
-            _delegate.GetParameter<HdxRenderTaskParams>(renderTaskId,
-                HdTokens->params);
+    renderParams.aovBindings = aovBindings;
+    _delegate.SetParameter(renderTaskId, HdTokens->params,renderParams);
+    GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+        renderTaskId, HdChangeTracker::DirtyParams);
 
-        if (renderParams.aovBindings != aovBindings) {
-            renderParams.aovBindings = aovBindings;
-            _delegate.SetParameter(renderTaskId, HdTokens->params,renderParams);
-            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                renderTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
-    // If only one output was specified, send it to the viewer;
-    // otherwise, disable colorization.
+    // For AOV visualization, if only one output was specified, send it
+    // to the viewer; otherwise, disable colorization.
     if (outputs.size() == 1) {
         SetViewportRenderOutput(outputs[0]);
     } else {
@@ -505,36 +607,71 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 void
 HdxTaskController::SetViewportRenderOutput(TfToken const& name)
 {
-    if (!GetRenderIndex()->IsBprimTypeSupported(
-            HdPrimTypeTokens->renderBuffer)) {
+    if (!_AovsSupported()) {
         return;
     }
 
-    HdxColorizeTaskParams params;
-    if (name.IsEmpty()) {
-        params.aovName = name;
-        params.aovBufferPath = SdfPath::EmptyPath();
-    } else {
-        params.aovName = name;
-        params.aovBufferPath = _GetAovPath(name);
+    if (_viewportAov == name) {
+        return;
     }
+    _viewportAov = name;
 
-    HdxColorizeTaskParams oldParams =
-        _delegate.GetParameter<HdxColorizeTaskParams>(
-            _colorizeTaskId, HdTokens->params);
+    if (!_colorizeTaskId.IsEmpty()) {
+        HdxColorizeTaskParams params;
+        if (name.IsEmpty()) {
+            // Empty token means don't colorize anything.
+            params.aovName = name;
+            params.aovBufferPath = SdfPath::EmptyPath();
+            params.depthBufferPath = SdfPath::EmptyPath();
+        } else if (name == HdAovTokens->color) {
+            // Color is depth-composited...
+            params.aovName = name;
+            params.aovBufferPath = _GetAovPath(name);
+            params.depthBufferPath = _GetAovPath(HdAovTokens->depth);
+        } else {
+            // But AOV visualizations are not.
+            params.aovName = name;
+            params.aovBufferPath = _GetAovPath(name);
+            params.depthBufferPath = SdfPath::EmptyPath();
+        }
 
-    if (oldParams != params) {
         _delegate.SetParameter(_colorizeTaskId, HdTokens->params, params);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _colorizeTaskId, HdChangeTracker::DirtyParams);
+    }
+
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams selParams =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (name == HdAovTokens->color) {
+            // If we're rendering color, make sure the colorize selection task
+            // has the proper id buffers...
+            selParams.primIdBufferPath =
+                _GetAovPath(HdAovTokens->primId);
+            selParams.instanceIdBufferPath =
+                _GetAovPath(HdAovTokens->instanceId);
+            selParams.elementIdBufferPath =
+                _GetAovPath(HdAovTokens->elementId);
+        } else {
+            // Otherwise, clear the colorize selection task out.
+            selParams.primIdBufferPath = SdfPath::EmptyPath();
+            selParams.instanceIdBufferPath = SdfPath::EmptyPath();
+            selParams.elementIdBufferPath = SdfPath::EmptyPath();
+        }
+
+        _delegate.SetParameter(_colorizeSelectionTaskId, HdTokens->params,
+            selParams);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
 HdRenderBuffer*
 HdxTaskController::GetRenderOutput(TfToken const& name)
 {
-    if (!GetRenderIndex()->IsBprimTypeSupported(
-            HdPrimTypeTokens->renderBuffer)) {
+    if (!_AovsSupported()) {
         return nullptr;
     }
 
@@ -548,10 +685,10 @@ void
 HdxTaskController::SetRenderOutputSettings(TfToken const& name,
                                            HdAovDescriptor const& desc)
 {
-    if (!GetRenderIndex()->IsBprimTypeSupported(
-            HdPrimTypeTokens->renderBuffer)) {
+    if (!_AovsSupported() || _renderTaskIds.size() != 1) {
         return;
     }
+    SdfPath renderTaskId = _renderTaskIds.front();
 
     // Check if we're setting a value for a nonexistent AOV.
     SdfPath renderBufferId = _GetAovPath(name);
@@ -578,24 +715,22 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
             HdRenderBuffer::DirtyDescription);
     }
 
-    for (SdfPath const& renderTaskId : _renderTaskIds) {
-        HdxRenderTaskParams renderParams =
-            _delegate.GetParameter<HdxRenderTaskParams>(
-                renderTaskId, HdTokens->params);
+    HdxRenderTaskParams renderParams =
+        _delegate.GetParameter<HdxRenderTaskParams>(
+            renderTaskId, HdTokens->params);
 
-        for (size_t i = 0; i < renderParams.aovBindings.size(); ++i) {
-            if (renderParams.aovBindings[i].renderBufferId == renderBufferId) {
-                if (renderParams.aovBindings[i].clearValue != desc.clearValue ||
+    for (size_t i = 0; i < renderParams.aovBindings.size(); ++i) {
+        if (renderParams.aovBindings[i].renderBufferId == renderBufferId) {
+            if (renderParams.aovBindings[i].clearValue != desc.clearValue ||
                     renderParams.aovBindings[i].aovSettings != desc.aovSettings) {
-                    renderParams.aovBindings[i].clearValue = desc.clearValue;
-                    renderParams.aovBindings[i].aovSettings = desc.aovSettings;
-                    _delegate.SetParameter(renderTaskId, HdTokens->params,
-                                        renderParams);
-                    GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                        renderTaskId, HdChangeTracker::DirtyParams);
-                }
-                break;
+                renderParams.aovBindings[i].clearValue = desc.clearValue;
+                renderParams.aovBindings[i].aovSettings = desc.aovSettings;
+                _delegate.SetParameter(renderTaskId, HdTokens->params,
+                    renderParams);
+                GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                    renderTaskId, HdChangeTracker::DirtyParams);
             }
+            break;
         }
     }
 }
@@ -634,53 +769,48 @@ void
 HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
 {
     for (SdfPath const& renderTaskId : _renderTaskIds) {
+        HdRprimCollection collection =
+            _delegate.GetParameter<HdRprimCollection>(
+                renderTaskId, HdTokens->collection);
+
         HdxRenderTaskParams oldParams = 
             _delegate.GetParameter<HdxRenderTaskParams>(
                 renderTaskId, HdTokens->params);
 
-        // We explicitly ignore params.viewport and params.camera
+        // We explicitly ignore input camera, viewport, and aovBindings because
+        // these are internally managed.
         HdxRenderTaskParams mergedParams = params;
         mergedParams.camera = oldParams.camera;
         mergedParams.viewport = oldParams.viewport;
         mergedParams.aovBindings = oldParams.aovBindings;
 
-        // XXX For now we assume the app does not provide blending params for
-        //     the translucent pass since the app does not specifically add
-        //     the translucent pass.
-        mergedParams.blendEnable = oldParams.blendEnable;
-        mergedParams.blendColorOp = oldParams.blendColorOp;
-        mergedParams.blendAlphaOp = oldParams.blendAlphaOp;
-        mergedParams.blendColorSrcFactor = oldParams.blendColorSrcFactor;
-        mergedParams.blendColorDstFactor = oldParams.blendColorDstFactor;
-        mergedParams.blendAlphaDstFactor = oldParams.blendAlphaDstFactor;
-        mergedParams.blendAlphaSrcFactor = oldParams.blendAlphaSrcFactor;
-        mergedParams.depthMaskEnable = oldParams.depthMaskEnable;
+        // We also explicitly manage blend params, based on the render tag.
+        // XXX: Note: if params.enableIdRender is set, we want to use default
+        // blend params so that we don't try to additive blend ID buffers...
+        _SetBlendStateForMaterialTag(
+            params.enableIdRender ? TfToken() : collection.GetMaterialTag(),
+            &mergedParams);
 
         if (mergedParams != oldParams) {
-            _delegate.SetParameter(renderTaskId, HdTokens->params, mergedParams);
+            _delegate.SetParameter(renderTaskId,
+                HdTokens->params, mergedParams);
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                    renderTaskId, HdChangeTracker::DirtyParams);
+                renderTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
 
-            // Update shadow task in case materials have been enabled/disabled
-            if (GetRenderIndex()->IsSprimTypeSupported(
-                HdPrimTypeTokens->simpleLight)) {
+    // Update shadow task in case materials have been enabled/disabled
+    if (!_shadowTaskId.IsEmpty()) {
+        HdxShadowTaskParams oldShParams = 
+            _delegate.GetParameter<HdxShadowTaskParams>(
+                _shadowTaskId, HdTokens->params);
 
-                HdxShadowTaskParams oldShParams = 
-                    _delegate.GetParameter<HdxShadowTaskParams>(
-                    _shadowTaskId, HdTokens->params);
-
-                if (oldShParams.enableSceneMaterials != 
-                    mergedParams.enableSceneMaterials) {
-
-                    oldShParams.enableSceneMaterials = 
-                        mergedParams.enableSceneMaterials;
-                    _delegate.SetParameter(_shadowTaskId, 
-                        HdTokens->params, oldShParams);
-
-                    GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                        _shadowTaskId, HdChangeTracker::DirtyParams);
-                }
-            }
+        if (oldShParams.enableSceneMaterials != params.enableSceneMaterials) {
+            oldShParams.enableSceneMaterials = params.enableSceneMaterials;
+            _delegate.SetParameter(_shadowTaskId, 
+                HdTokens->params, oldShParams);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _shadowTaskId, HdChangeTracker::DirtyParams);
         }
     }
 }
@@ -688,7 +818,7 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
 void
 HdxTaskController::SetShadowParams(HdxShadowTaskParams const& params)
 {
-    if (!GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+    if (_shadowTaskId.IsEmpty()) {
         return;
     }
 
@@ -698,6 +828,8 @@ HdxTaskController::SetShadowParams(HdxShadowTaskParams const& params)
 
     HdxShadowTaskParams mergedParams = params;
     mergedParams.camera = oldParams.camera;
+    mergedParams.viewport = oldParams.viewport;
+    mergedParams.enableSceneMaterials = oldParams.enableSceneMaterials;
 
     if (mergedParams != oldParams) {
         _delegate.SetParameter(_shadowTaskId, HdTokens->params, mergedParams);
@@ -709,7 +841,7 @@ HdxTaskController::SetShadowParams(HdxShadowTaskParams const& params)
 void
 HdxTaskController::SetEnableShadows(bool enable)
 {
-    if (!GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+    if (_simpleLightTaskId.IsEmpty()) {
         return;
     }
 
@@ -728,30 +860,64 @@ HdxTaskController::SetEnableShadows(bool enable)
 void
 HdxTaskController::SetEnableSelection(bool enable)
 {
-    HdxSelectionTaskParams params =
-        _delegate.GetParameter<HdxSelectionTaskParams>(
-            _selectionTaskId, HdTokens->params);
+    if (!_selectionTaskId.IsEmpty()) {
+        HdxSelectionTaskParams params =
+            _delegate.GetParameter<HdxSelectionTaskParams>(
+                _selectionTaskId, HdTokens->params);
 
-    if (params.enableSelection != enable) {
-        params.enableSelection = enable;
-        _delegate.SetParameter(_selectionTaskId, HdTokens->params, params);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _selectionTaskId, HdChangeTracker::DirtyParams);
+        if (params.enableSelection != enable) {
+            params.enableSelection = enable;
+            _delegate.SetParameter(_selectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _selectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.enableSelection != enable) {
+            params.enableSelection = enable;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
     }
 }
 
 void
 HdxTaskController::SetSelectionColor(GfVec4f const& color)
 {
-    HdxSelectionTaskParams params =
-        _delegate.GetParameter<HdxSelectionTaskParams>(
-            _selectionTaskId, HdTokens->params);
+    if (!_selectionTaskId.IsEmpty()) {
+        HdxSelectionTaskParams params =
+            _delegate.GetParameter<HdxSelectionTaskParams>(
+                _selectionTaskId, HdTokens->params);
 
-    if (params.selectionColor != color) {
-        params.selectionColor = color;
-        _delegate.SetParameter(_selectionTaskId, HdTokens->params, params);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _selectionTaskId, HdChangeTracker::DirtyParams);
+        if (params.selectionColor != color) {
+            params.selectionColor = color;
+            _delegate.SetParameter(_selectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _selectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.selectionColor != color) {
+            params.selectionColor = color;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
     }
 }
 
@@ -813,10 +979,9 @@ HdxTaskController::TestIntersection(
 void
 HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 {
-    // If the backend doesn't support simpleLight, no need to set parameters
-    // for simpleLightTask, or create simpleLight prims for lights in the
-    // lighting context.
-    if (!GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+    // If simpleLightTask doesn't exist, no need to process the lighting
+    // context...
+    if (_simpleLightTaskId.IsEmpty()) {
         return;
     }
 
@@ -961,7 +1126,7 @@ HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
         return;
     }
 
-    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
+    if (!_shadowTaskId.IsEmpty()) {
         // The shadow and camera viewport should be the same
         // so we don't have to double check what the shadow task has.
         HdxShadowTaskParams params =
@@ -973,20 +1138,17 @@ HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
             _shadowTaskId, HdChangeTracker::DirtyParams);
     }
 
-    if (_renderBufferIds.size() > 0) {
-        GfVec3i dimensions = GfVec3i(viewport[2], viewport[3], 1);
-
-        for (auto const& id : _renderBufferIds) {
-            HdRenderBufferDescriptor desc =
-                _delegate.GetParameter<HdRenderBufferDescriptor>(id,
-                    _tokens->renderBufferDescriptor);
-            if (desc.dimensions != dimensions) {
-                desc.dimensions = dimensions;
-                _delegate.SetParameter(id, _tokens->renderBufferDescriptor,
-                    desc);
-                GetRenderIndex()->GetChangeTracker().MarkBprimDirty(id,
-                    HdRenderBuffer::DirtyDescription);
-            }
+    // Update all of the render buffer sizes as well.
+    GfVec3i dimensions = GfVec3i(viewport[2], viewport[3], 1);
+    for (auto const& id : _aovBufferIds) {
+        HdRenderBufferDescriptor desc =
+            _delegate.GetParameter<HdRenderBufferDescriptor>(id,
+                _tokens->renderBufferDescriptor);
+        if (desc.dimensions != dimensions) {
+            desc.dimensions = dimensions;
+            _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
+            GetRenderIndex()->GetChangeTracker().MarkBprimDirty(id,
+                HdRenderBuffer::DirtyDescription);
         }
     }
 }
@@ -1027,26 +1189,31 @@ HdxTaskController::SetCameraWindowPolicy(
 bool
 HdxTaskController::IsConverged() const
 {
-    // Pass this call through to HdxRenderTask's IsConverged().
-    if (_renderBufferIds.size() > 0) {
-        HdxColorizeTaskParams colorizeParams =
-            _delegate.GetParameter<HdxColorizeTaskParams>(
-                _colorizeTaskId, HdTokens->params);
-        if (!colorizeParams.aovName.IsEmpty()) {
-            return static_cast<HdxColorizeTask*>(
-                    GetRenderIndex()->GetTask(_colorizeTaskId).get())
-                ->IsConverged();
+    bool converged = true;
+
+    HdTaskSharedPtrVector tasks = GetTasks();
+    for (auto const& task : tasks) {
+        boost::shared_ptr<HdxProgressiveTask> progressiveTask =
+            boost::dynamic_pointer_cast<HdxProgressiveTask>(task);
+        if (progressiveTask) {
+            converged = converged && progressiveTask->IsConverged();
+            if (!converged) {
+                break;
+            }
         }
     }
-    return static_cast<HdxRenderTask*>(
-        GetRenderIndex()->GetTask(_renderTaskIds.front()).get())
-        ->IsConverged();
+
+    return converged;
 }
 
 void 
 HdxTaskController::SetColorCorrectionParams(
     HdxColorCorrectionTaskParams const& params)
 {
+    if (_colorCorrectionTaskId.IsEmpty()) {
+        return;
+    }
+
     HdxColorCorrectionTaskParams oldParams = 
         _delegate.GetParameter<HdxColorCorrectionTaskParams>(
             _colorCorrectionTaskId, HdTokens->params);
