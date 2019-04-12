@@ -33,10 +33,9 @@
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 
-#include <boost/mpl/logical.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/type_traits.hpp>
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
