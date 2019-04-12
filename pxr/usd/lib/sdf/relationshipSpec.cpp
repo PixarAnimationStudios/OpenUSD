@@ -34,7 +34,6 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/sdf/vectorListEditor.h"
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
@@ -461,19 +460,6 @@ SdfRelationshipSpec::GetTargetPathForAttribute(
 // Relational Attribute Ordering
 //
 
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-SdfRelationshipSpec::_GetTargetAttributeOrderEditor(const SdfPath& path) const
-{
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor;
-    SdfSpecHandle relTargetSpec = _GetTargetSpec(path);
-    if (relTargetSpec) {
-        editor.reset(new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>(
-                relTargetSpec, 
-                SdfFieldKeys->PropertyOrder, SdfListOpTypeOrdered));
-    }
-    return editor;
-}
-
 void
 SdfRelationshipSpec::SetTargetAttributeOrders(
     const AttributeOrderMap& orders)
@@ -517,8 +503,8 @@ SdfRelationshipSpec::GetAttributeOrderForTargetPath(const SdfPath& path) const
         return SdfNameOrderProxy(SdfListOpTypeOrdered);
     }
 
-    return SdfNameOrderProxy(_GetTargetAttributeOrderEditor(path),
-                            SdfListOpTypeOrdered);
+    return SdfGetNameOrderProxy(
+        _GetTargetSpec(path), SdfFieldKeys->PropertyOrder);
 }
 
 SdfNameOrderProxy 
@@ -541,8 +527,8 @@ SdfRelationshipSpec::GetOrCreateAttributeOrderForTargetPath(
         return SdfNameOrderProxy(SdfListOpTypeOrdered);
     }
 
-    return SdfNameOrderProxy(_GetTargetAttributeOrderEditor(path),
-                            SdfListOpTypeOrdered);
+    return SdfGetNameOrderProxy(
+        _GetTargetSpec(path), SdfFieldKeys->PropertyOrder);
 }
 
 SdfPathVector
@@ -567,10 +553,10 @@ SdfRelationshipSpec::ApplyAttributeOrderForTargetPath(
     const SdfPath& path,
     std::vector<TfToken>* vec) const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor = 
-        _GetTargetAttributeOrderEditor(path);
-    if (editor) {
-        editor->ApplyEditsToList(vec);
+    SdfNameOrderProxy proxy = SdfGetNameOrderProxy(
+        _GetTargetSpec(path), SdfFieldKeys->PropertyOrder);
+    if (proxy) {
+        proxy.ApplyEditsToList(vec);
     }
 }
 

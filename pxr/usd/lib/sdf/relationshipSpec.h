@@ -34,8 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class TypePolicy> class Sdf_ListEditor;
-
 /// \class SdfRelationshipSpec
 ///
 /// A property that contains a reference to one or more SdfPrimSpec instances.
@@ -212,9 +210,6 @@ private:
     SdfSpecHandle _GetTargetSpec(const SdfPath& path) const;
 
     SdfSpecHandle _FindOrCreateTargetSpec(const SdfPath& path);
-
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-    _GetTargetAttributeOrderEditor(const SdfPath& path) const;
 
     // Allow access to _GetTarget() for the  relational attribute c'tor
     friend class SdfAttributeSpec;
