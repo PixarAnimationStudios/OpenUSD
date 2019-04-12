@@ -31,6 +31,8 @@
 
 #include "pxr/base/tf/token.h"
 
+#include "pxr/usd/sdf/path.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStExtCompGpuPrimvarBufferSource>
@@ -43,10 +45,14 @@ class HdStExtCompGpuPrimvarBufferSource final : public HdNullBufferSource {
 public:
     HdStExtCompGpuPrimvarBufferSource(TfToken const & name,
                                       HdTupleType const & valueType,
-                                      int numElements);
+                                      int numElements,
+                                      SdfPath const& compId);
 
     HDST_API
     virtual ~HdStExtCompGpuPrimvarBufferSource() = default;
+
+    HDST_API
+    virtual size_t ComputeHash() const override;
 
     HDST_API
     virtual bool Resolve() override;
@@ -70,6 +76,7 @@ private:
     TfToken _name;
     HdTupleType _tupleType;
     size_t _numElements;
+    SdfPath _compId;
 
     HdStExtCompGpuPrimvarBufferSource()                = delete;
     HdStExtCompGpuPrimvarBufferSource(

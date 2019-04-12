@@ -31,11 +31,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStExtCompGpuPrimvarBufferSource::HdStExtCompGpuPrimvarBufferSource(
         TfToken const &name,
         HdTupleType const &valueType,
-        int numElements)
+        int numElements,
+        SdfPath const& compId)
  : HdNullBufferSource()
  , _name(name)
  , _tupleType(valueType)
  , _numElements(numElements)
+ , _compId(compId)
 {
 }
 
@@ -44,6 +46,19 @@ TfToken const &
 HdStExtCompGpuPrimvarBufferSource::GetName() const
 {
     return _name;
+}
+
+/* virtual */
+size_t
+HdStExtCompGpuPrimvarBufferSource::ComputeHash() const
+{
+    // Simply return a hash based on the computation and primvar names, 
+    // instead of hashing the contents of the inputs to the computation.
+    // This effectively disables primvar sharing when using computed primvars.
+    size_t hash = 0;
+    boost::hash_combine(hash, _compId);
+    boost::hash_combine(hash, _name);
+    return hash;
 }
 
 /* virtual */
