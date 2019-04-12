@@ -1312,6 +1312,11 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             HdSceneDelegate *delegate = dlgIt->first;
             delegate->PostSyncCleanup();
         }
+        const HdSceneDelegatePtrVector& sprimDelegates =
+            _sprimIndex.GetSceneDelegatesForDirtyPrims();
+        for (HdSceneDelegate* delegate : sprimDelegates) {
+            delegate->PostSyncCleanup();
+        }
 
         // Clear out the dirty list for future consumers.
         for (auto const& hdDirtyList : _syncQueue) {
