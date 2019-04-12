@@ -44,6 +44,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -346,7 +347,7 @@ public:
 
     /// Set of paths to prims that should have their payloads included
     /// during composition.
-    typedef TfHashSet<SdfPath, SdfPath::Hash> PayloadSet;
+    using PayloadSet = std::unordered_set<SdfPath, SdfPath::Hash>;
     PcpPrimIndexInputs& IncludedPayloads(const PayloadSet* payloadSet)
     { includedPayloads = payloadSet; return *this; }
 

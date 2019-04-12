@@ -41,6 +41,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -166,8 +167,9 @@ public:
     bool IsPayloadIncluded(const SdfPath &path) const;
 
     /// Returns the payloads requested for inclusion.
+    using PayloadSet = std::unordered_set<SdfPath, SdfPath::Hash>;
     PCP_API
-    SdfPathSet GetIncludedPayloads() const;
+    PayloadSet const &GetIncludedPayloads() const;
 
     /// Request payloads to be included or excluded from composition.
     /// \param pathsToInclude is a set of paths to add to the set for
@@ -686,8 +688,7 @@ private:
     // Modifiable evaluation parameters.
     // Anything that changes these should also yield a PcpChanges
     // value describing the necessary cache invalidation.
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _PayloadSet;
-    _PayloadSet _includedPayloads;
+    PayloadSet _includedPayloads;
     PcpVariantFallbackMap _variantFallbackMap;
 
     // Cached computation types.
