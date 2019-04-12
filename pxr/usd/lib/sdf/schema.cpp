@@ -958,9 +958,6 @@ SdfSchemaBase::_RegisterStandardFields()
         ;
 
     _Define(SdfSpecTypeConnection);
-    _Define(SdfSpecTypeMapper);
-    _Define(SdfSpecTypeMapperArg);
-    _Define(SdfSpecTypeExpression);
 
     _Define(SdfSpecTypeRelationship)
         .CopyFrom(property)

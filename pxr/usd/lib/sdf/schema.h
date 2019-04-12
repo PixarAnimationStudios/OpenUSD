@@ -441,8 +441,14 @@ protected:
         return _CreateField(fieldKey, VtValue(fallback), plugin);
     }
 
-    /// Returns the SpecDefinition for the given spec type. Subclasses may
-    /// then extend this definition by specifying additional fields.
+    /// Registers the given spec \p type with this schema and return a 
+    /// _SpecDefiner for specifying additional fields.
+    _SpecDefiner _Define(SdfSpecType type) {
+        return _SpecDefiner(this, &_specDefinitions[type]);
+    }
+
+    /// Returns a _SpecDefiner for the previously-defined spec \p type
+    /// for specifying additional fields.
     _SpecDefiner _ExtendSpecDefinition(SdfSpecType specType);
 
     /// Registers the standard fields.
@@ -480,11 +486,6 @@ private:
     friend class _SpecDefiner;
 
     void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
-
-    // Return a _SpecDefiner for the internal definition associated with \p type.
-    _SpecDefiner _Define(SdfSpecType type) {
-        return _SpecDefiner(this, &_specDefinitions[type]);
-    }
 
     // Return a _SpecDefiner for an existing spec definition, \p local.
     _SpecDefiner _Define(SpecDefinition *local) {
