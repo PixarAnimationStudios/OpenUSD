@@ -116,7 +116,15 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
 
     // Early out if no new bits are being set.
     if ((bits & (~it->second)) == 0) {
-        return;
+        // Can not early out if the change represents
+        // a change to the prim filter.  These need to
+        // trigger a re-evaluation of the dirty list so need
+        // certain version flags to be incremented.
+        // These may not be marked clean if the prim
+        // is filtered out, so don't early out!
+        if ((bits & (DirtyRenderTag | DirtyRepr)) == 0) {
+            return;
+        }
     }
 
     // used ensure the repr has been created. don't touch changeCount
@@ -143,12 +151,16 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
         ++_visChangeCount;
     }
 
-    if (bits & DirtyRenderTag) {
-        // Need to treat this like a scene edit
+    if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
+        // Need to treat these like a scene edits
+        // For Render Tag
         //  - DirtyLists will filter out prims that don't match render tag,
         //  - Batches filter out prim that don't match render tag,
+        // With Repr, it may require the new repr to be initialized
+        //  - DirtyLists manages repr initialization
+        //  - Batches gather only draw items that match the repr.
         // So both need to be rebuilt.
-        // So increment the render index version.
+        // So increment the render index version .
         ++_indexVersion;
     }
 }
@@ -705,7 +717,10 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
 
         HdDirtyBits &rprimDirtyBits = it->second;
 
-        if ((bits & (~rprimDirtyBits)) != 0) {
+        // If RenderTag or Repr are marked dirty, we always want to update
+        // the varying state (This matches the don't early out condition in
+        // MarkRprim dirty).
+        if ((bits & ((~rprimDirtyBits) | DirtyRenderTag | DirtyRepr)) != 0) {
             rprimDirtyBits |= bits;
 
             if ((rprimDirtyBits & HdChangeTracker::Varying) == 0) {
@@ -725,7 +740,7 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
     if (bits & DirtyVisibility) {
         ++_visChangeCount;
     }
-    if (bits & DirtyRenderTag) {
+    if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
         // Render tags affect dirty lists and batching, so they need to be
         // treated like a scene edit: see comment in MarkRprimDirty.
         ++_indexVersion;
