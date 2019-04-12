@@ -366,8 +366,9 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
             
             if (dirtyBits == HdChangeTracker::AllDirty) {
                 // XXX: We don't have access to the UsdImagingIndexProxy here,
-                // so We propagate the dirtyness to the computations in
-                // MarkDirty(..)
+                // so we can't propagate dirtyness to the computation Sprims
+                // here. Instead, we set the DirtyPrimvar bit on the skinned
+                // prim, and handle the dirtyness propagation in MarkDirty(..).
                 dirtyBits = HdChangeTracker::DirtyPrimvar;
             } else {
                 TF_WARN("Skinned prim %s needs to be resync'd because of a"
@@ -379,6 +380,12 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
         return dirtyBits;
     }
     
+    if (_IsSkinningComputationPath(cachePath) ||
+        _IsSkinningInputAggregatorComputationPath(cachePath)) {
+        // Nothing to do.
+        return HdChangeTracker::Clean;
+    }
+
     // We don't expect to get callbacks on behalf of any other prims on
     // the USD stage.
     TF_WARN("Unhandled ProcessPropertyChange callback for cachePath <%s> "
@@ -405,9 +412,12 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
 
         // Propagate dirtyness to the computations.
         // See related comment in ProcessPropertyChange(..)
-        if (dirty & HdChangeTracker::DirtyPoints ||
-            dirty & HdChangeTracker::DirtyTransform ||
+        if (dirty & HdChangeTracker::DirtyTransform ||
             dirty & HdChangeTracker::DirtyPrimvar) {
+          
+            TF_DEBUG(USDIMAGING_COMPUTATIONS).Msg(
+                "[SkeletonAdapter::MarkDirty] Propagating dirtyness from "
+                "skinned prim %s to its computations\n", cachePath.GetText());
             
             index->MarkSprimDirty(_GetSkinningComputationPath(cachePath),
                                   HdExtComputation::DirtySceneInput);
@@ -423,9 +433,9 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
               _IsSkinningInputAggregatorComputationPath(cachePath)) {
 
          TF_DEBUG(USDIMAGING_COMPUTATIONS).Msg(
-                "[SkeletonAdapter::Populate] Marking "
-                "computation %s for skinned prim %s as Dirty.\n",
-                cachePath.GetText(), prim.GetPath().GetText());
+                "[SkeletonAdapter::MarkDirty] Marking "
+                "computation %s for skinned prim %s as Dirty (bits = 0x%x\n",
+                cachePath.GetText(), prim.GetPath().GetText(), dirty);
 
         index->MarkSprimDirty(cachePath, dirty);
     
@@ -563,12 +573,8 @@ UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkMaterialDirty(prim, cachePath, index);
 
-    } else {
-        // We don't expect to get callbacks on behalf of computations or
-        // any other prims on the USD stage 
-         TF_WARN("Unhandled MarkDirty callback for cachePath <%s> "
-                 "in UsdSkelImagingSkelAdapter.", cachePath.GetText());
     }
+    // Nothing to do otherwise.
 }
 
 
