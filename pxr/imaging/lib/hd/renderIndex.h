@@ -166,7 +166,7 @@ public:
     /// data sources.
     /// This is the first phase in Hydra's execution. See HdEngine::Execute
     HD_API
-    void SyncAll(HdTaskSharedPtrVector const &tasks, HdTaskContext *taskContext);
+    void SyncAll(HdTaskSharedPtrVector *tasks, HdTaskContext *taskContext);
 
     // ---------------------------------------------------------------------- //
     /// \name Execution

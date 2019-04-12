@@ -1026,7 +1026,7 @@ HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList)
 }
 
 void
-HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
+HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
 {
     HD_TRACE_FUNCTION();
@@ -1056,17 +1056,25 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
     _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 
-    // could be in parallel... but how?
-    // may be just gathering dirtyLists at first, and then index->sync()?
-
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Task Sync
+    //
+    // could be in parallel...
+    //
     // These tasks will call Sync() adding dirty lists to _syncQueue for
     // processing below.
-    TF_FOR_ALL(it, tasks) {
-        if (!TF_VERIFY(*it)) {
+    //
+    size_t numTasks = tasks->size();
+    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+        HdTaskSharedPtr &task = (*tasks)[taskNum];
+
+        if (!TF_VERIFY(task)) {
+            TF_CODING_ERROR("Null Task in task list.  Entry Num: %zu", taskNum);
             continue;
         }
 
-        SdfPath taskId = (*it)->GetId();
+        SdfPath taskId = task->GetId();
 
         // Is this a tracked task?
         _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
@@ -1084,7 +1092,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             //
             // However, this is still a weird situation, so report the
             // issue as a verify so it can be addressed.
-            TF_VERIFY(taskInfo.task == (*it));
+            TF_VERIFY(taskInfo.task == task);
 
             HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
 
@@ -1099,9 +1107,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             HdDirtyBits taskDirtyBits = 0;
 
             // This is an untracked task, never added to the render index.
-            (*it)->Sync(nullptr,
-                        taskContext,
-                        &taskDirtyBits);
+            task->Sync(nullptr,
+                       taskContext,
+                       &taskDirtyBits);
         }
     }
 

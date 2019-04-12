@@ -1017,7 +1017,7 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
     _engine.SetTaskContextData(HdxTokens->renderTags, renderTags);
 
     HdTaskSharedPtrVector tasks = _taskController->GetTasks();
-    _engine.Execute(*_renderIndex, tasks);
+    _engine.Execute(_renderIndex, &tasks);
 
     if (isCoreProfileContext) {
 

@@ -301,7 +301,7 @@ void HdEmbree_TestGLDrawing::DrawTest()
     // Ask hydra to execute our render task (producing an image).
     HdTaskSharedPtr renderTask = _renderIndex->GetTask(SdfPath("/renderTask"));
     HdTaskSharedPtrVector tasks = { renderTask };
-    _engine.Execute(*_renderIndex, tasks);
+    _engine.Execute(_renderIndex, &tasks);
 
     // We don't support live-rendering of AOV output in this test...
 }
@@ -364,7 +364,7 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
     // For offline rendering, make sure we render to convergence.
     HdTaskSharedPtrVector tasks = { renderTask };
     do {
-        _engine.Execute(*_renderIndex, tasks);
+        _engine.Execute(_renderIndex, &tasks);
     } while (!renderTask->IsConverged());
    
     if (_aov.size() > 0) {

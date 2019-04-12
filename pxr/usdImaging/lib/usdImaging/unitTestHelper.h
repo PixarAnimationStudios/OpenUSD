@@ -191,7 +191,7 @@ public:
         HdTaskSharedPtrVector tasks = {
             boost::make_shared<UsdImaging_TestTask>(_geometryPass)
         };
-        _engine.Execute(_delegate->GetRenderIndex(), tasks);
+        _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
     }
     void SetTime(double time) {
         _delegate->SetTime(time);

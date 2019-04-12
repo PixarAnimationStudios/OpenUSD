@@ -195,7 +195,7 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
     HdTaskSharedPtrVector tasks = {
         boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState)
     };
-    _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 
     GLF_POST_PENDING_GL_ERRORS();
 }

@@ -456,7 +456,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                 _pickableRenderPassState,
                 params.renderTags));
 
-        engine->Execute(*_index, tasks);
+        engine->Execute(_index, &tasks);
 
         glDisable(GL_STENCIL_TEST);
 

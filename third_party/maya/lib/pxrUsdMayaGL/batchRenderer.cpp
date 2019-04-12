@@ -1244,7 +1244,7 @@ UsdMayaGLBatchRenderer::_Render(
     _hdEngine.SetTaskContextData(HdxTokens->selectionState,
                                  selectionTrackerValue);
 
-    _hdEngine.Execute(*_renderIndex, tasks);
+    _hdEngine.Execute(_renderIndex.get(), &tasks);
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 

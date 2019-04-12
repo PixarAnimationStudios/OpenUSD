@@ -172,7 +172,7 @@ Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
     HdTaskSharedPtrVector tasks = {
         boost::make_shared<Hd_DrawTask>(renderPass, _renderPassState)
     };
-    _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 }
 
 void

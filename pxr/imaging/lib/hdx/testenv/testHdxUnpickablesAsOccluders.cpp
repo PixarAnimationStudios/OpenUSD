@@ -283,7 +283,7 @@ My_TestGLDrawing::DrawScene()
     VtValue v(_picker.GetSelectionTracker());
     _engine.SetTaskContextData(HdxTokens->selectionState, v);
 
-    _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
 
     glBindVertexArray(0);
 }

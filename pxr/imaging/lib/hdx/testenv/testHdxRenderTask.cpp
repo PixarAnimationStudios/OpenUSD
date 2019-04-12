@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color1.png");
 
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color2.png");
 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color3.png");
 
