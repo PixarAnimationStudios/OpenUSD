@@ -186,7 +186,6 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     _compositor.Draw();
 
     glEnable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
     if (!blendEnabled) {
         glDisable(GL_BLEND);
     }

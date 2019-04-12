@@ -29,8 +29,6 @@
 #include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hdx/progressiveTask.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderBuffer;
@@ -64,7 +62,6 @@ public:
     virtual void Prepare(HdTaskContext* ctx,
                          HdRenderIndex* renderIndex) override;
 
-
     /// Execute the colorize task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
@@ -85,7 +82,6 @@ private:
 
     HdxCompositor _compositor;
     bool _needsValidation;
-
 
     HdxColorizeTask() = delete;
     HdxColorizeTask(const HdxColorizeTask &) = delete;
@@ -121,7 +117,6 @@ bool operator==(const HdxColorizeTaskParams& lhs,
 HDX_API
 bool operator!=(const HdxColorizeTaskParams& lhs,
                 const HdxColorizeTaskParams& rhs);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

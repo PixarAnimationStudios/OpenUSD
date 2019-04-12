@@ -250,12 +250,6 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    // Resolve the buffers before we read them.
-    _aovBuffer->Resolve();
-    if (_depthBuffer) {
-        _depthBuffer->Resolve();
-    }
-
     // Allocate the scratch space, if needed.  Don't allocate scratch space
     // if we're just passing along color data.
     size_t size = _aovBuffer->GetWidth() * _aovBuffer->GetHeight();
@@ -273,6 +267,12 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     _converged = _aovBuffer->IsConverged();
     if (_depthBuffer) {
         _converged = _converged && _depthBuffer->IsConverged();
+    }
+
+    // Resolve the buffers before we read them.
+    _aovBuffer->Resolve();
+    if (_depthBuffer) {
+        _depthBuffer->Resolve();
     }
 
     // XXX: Right now, we colorize on the CPU, before uploading data to the
@@ -338,7 +338,16 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     }
 
     // Blit!
+    GLboolean blendEnabled;
+    glGetBooleanv(GL_BLEND, &blendEnabled);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
     _compositor.Draw();
+
+    if (!blendEnabled) {
+        glDisable(GL_BLEND);
+    }
 }
 
 
