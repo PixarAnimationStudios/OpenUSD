@@ -149,8 +149,12 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     it->second = oldBits | bits;
     ++_sceneStateVersion;
 
-    if (bits & DirtyVisibility) {
+    if ((bits & DirtyVisibility) != 0) {
         ++_visChangeCount;
+    }
+
+    if ((bits & DirtyRenderTag) != 0) {
+        ++_renderTagVersion;
     }
 
     if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
@@ -303,6 +307,19 @@ HdChangeTracker::MarkTaskClean(SdfPath const& id, HdDirtyBits newBits)
         return;
     // preserve the variability bit
     it->second = (it->second & Varying) | newBits;
+}
+
+void
+HdChangeTracker::MarkRenderTagsDirty()
+{
+    ++_renderTagVersion;
+    ++_sceneStateVersion;
+}
+
+unsigned
+HdChangeTracker::GetRenderTagVersion() const
+{
+    return _renderTagVersion;
 }
 
 // -------------------------------------------------------------------------- //
@@ -756,8 +773,11 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
     // These counters get updated every time, even if no prims
     // have moved into the dirty state.
     ++_sceneStateVersion;
-    if (bits & DirtyVisibility) {
+    if ((bits & DirtyVisibility) != 0) {
         ++_visChangeCount;
+    }
+    if ((bits & DirtyRenderTag) != 0) {
+        ++_renderTagVersion;
     }
     if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
         // Render tags affect dirty lists and batching, so they need to be

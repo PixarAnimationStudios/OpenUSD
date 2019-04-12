@@ -342,6 +342,14 @@ public:
     HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
+    /// Set the flag when the set of render tags have changed.
+    HD_API
+    void MarkRenderTagsDirty();
+
+    /// Retrieve the current version number of the render tag set
+    HD_API
+    unsigned GetRenderTagVersion() const;
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Instancer State Tracking
@@ -614,6 +622,9 @@ private:
 
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
+
+    // Used to detect changes to the set of active render tags
+    unsigned _renderTagVersion;
 
     // Used to validate draw batches.
     std::atomic_uint _batchVersion;
