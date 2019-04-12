@@ -616,11 +616,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testPcpMuseum_TrickyRelationalAttributeOnRelocatedTarget.testenv
-    DEST testPcpMuseum_TrickyRelationalAttributeOnRelocatedTarget
-)
-
-pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyConnectionToRelocatedAttribute.testenv
     DEST testPcpMuseum_TrickyConnectionToRelocatedAttribute
 )
@@ -1227,13 +1222,6 @@ pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelection/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelection_pcp.txt
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelection_pcp.txt 
-)
-
-pxr_register_test(testPcpMuseum_TrickyRelationalAttributeOnRelocatedTarget
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelationalAttributeOnRelocatedTarget/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyRelationalAttributeOnRelocatedTarget.txt
-    DIFF_COMPARE compositionResults_TrickyRelationalAttributeOnRelocatedTarget.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute

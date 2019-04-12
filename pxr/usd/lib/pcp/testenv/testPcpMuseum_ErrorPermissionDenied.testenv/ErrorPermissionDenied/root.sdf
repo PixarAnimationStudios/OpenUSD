@@ -27,13 +27,7 @@ def "Root" (
     custom double localAttr = 3
 
     add rel privateRel = </Root.localAttr>
-    rel privateRel[</Root.A_attr>] {
-        string a = "root"
-    }
-
-    rel publicRel[</Root.A_attr>] {
-        string a = "root"
-    }
+    add rel publicRel = </Root.A_attr>
 }
 def "Parent" (
     add references = @./A.sdf@</Parent>

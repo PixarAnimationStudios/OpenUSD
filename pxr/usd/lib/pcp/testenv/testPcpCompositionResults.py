@@ -200,28 +200,6 @@ for layerPath in args.layer:
                 errors += targetErrors
                 if len(targets) > 0:
                     targetsMap[propPath] = targets
-
-                # Pcp doesn't provide any methods for composing relational
-                # attribute names, so fake it ourselves. Walk the property
-                # stack and find all relational attribute names, then add
-                # every possible composed relational attribute path to
-                # the list of properties to iterate over.
-                #
-                # XXX: This is really, really hacky.
-                relAttrsNames = set()
-                for relSpec in propIndex.propertyStack:
-                    for path, relAttrSpecs in relSpec.targetAttributes.items():
-                        for relAttrSpec in relAttrSpecs:
-                            relAttrsNames.add(relAttrSpec.name)
-                    
-                relAttrNames = sorted(list(relAttrsNames))
-                relAttrs = []
-
-                for name in relAttrsNames:
-                    for target in targets:
-                        relAttrs.append(propPath.AppendTarget(target)
-                                        .AppendRelationalAttribute(name))
-                properties = relAttrs + properties
             elif isinstance(propIndex.propertyStack[0], Sdf.AttributeSpec):
                 (conns, connErrors) = \
                     pcpCache.ComputeAttributeConnectionPaths(propPath)
