@@ -36,6 +36,7 @@ pxr_library(hdx
 
     PUBLIC_CLASSES
         colorizeTask
+        colorizeSelectionTask
         colorCorrectionTask
         compositor
         drawTargetRenderPass
