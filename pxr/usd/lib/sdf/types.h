@@ -538,7 +538,7 @@ public:
     TfToken GetSerializationName(const TfToken&) const;
 
 private:
-    friend class SdfSchema;
+    friend const Sdf_ValueTypeNamesType* Sdf_InitializeValueTypeNames();
     Sdf_ValueTypeNamesType();
 };
 

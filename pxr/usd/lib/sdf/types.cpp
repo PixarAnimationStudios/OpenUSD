@@ -446,10 +446,13 @@ Sdf_ValueTypeNamesType::~Sdf_ValueTypeNamesType()
     // Do nothing
 }
 
+// Defined in schema.cpp
+const Sdf_ValueTypeNamesType* Sdf_InitializeValueTypeNames();
+
 const Sdf_ValueTypeNamesType*
 Sdf_ValueTypeNamesType::_Init::New()
 {
-    return SdfSchema::GetInstance()._NewValueTypeNames();
+    return Sdf_InitializeValueTypeNames();
 }
 
 TfToken

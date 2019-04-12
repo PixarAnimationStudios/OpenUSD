@@ -371,61 +371,44 @@ protected:
         class Type
         {
         public:
+            ~Type();
+
             // Specify a type with the given name, default value, and default
             // array value of VtArray<T>.
             template <class T>
             Type(const std::string& name, const T& defaultValue)
-                : _name(name)
-                , _defaultValue(defaultValue)
-                , _defaultArrayValue(VtArray<T>())
+                : Type(name, VtValue(defaultValue), VtValue(VtArray<T>()))
             { }
 
             // Specify a type with the given name and underlying C++ type.
             // No default value or array value will be registered.
-            Type(const std::string& name, const TfType& type)
-                : _name(name)
-                , _type(type)
-            { }
+            Type(const std::string& name, const TfType& type);
 
             // Set C++ type name string for this type. Defaults to type name
             // from TfType.
-            Type& CPPTypeName(const std::string& cppTypeName)
-            {
-                _cppTypeName = cppTypeName;
-                if (!_defaultArrayValue.IsEmpty()) {
-                    _arrayCppTypeName = "VtArray<" + cppTypeName + ">";
-                }
-                return *this;
-            }
+            Type& CPPTypeName(const std::string& cppTypeName);
 
             // Set shape for this type. Defaults to shapeless.
-            Type& Dimensions(const SdfTupleDimensions& dims)
-            { _dimensions = dims; return *this; }
+            Type& Dimensions(const SdfTupleDimensions& dims);
 
             // Set default unit for this type. Defaults to dimensionless unit.
-            Type& DefaultUnit(TfEnum unit) { _unit = unit; return *this; }
+            Type& DefaultUnit(TfEnum unit);
 
             // Set role for this type. Defaults to no role.
-            Type& Role(const TfToken& role) { _role = role; return *this; }
+            Type& Role(const TfToken& role);
 
             // Indicate that arrays of this type are not supported.
-            Type& NoArrays() 
-            { 
-                _defaultArrayValue = VtValue(); 
-                _arrayCppTypeName = std::string();
-                return *this; 
-            }
+            Type& NoArrays();
 
         private:
-            friend class _ValueTypeRegistrar;
+            Type(const std::string& name, 
+                 const VtValue& defaultValue, 
+                 const VtValue& defaultArrayValue);
 
-            std::string _name;
-            TfType _type;
-            VtValue _defaultValue, _defaultArrayValue;
-            std::string _cppTypeName, _arrayCppTypeName;
-            TfEnum _unit;
-            TfToken _role;
-            SdfTupleDimensions _dimensions;
+            class _Impl;
+            std::unique_ptr<_Impl> _impl;
+
+            friend class _ValueTypeRegistrar;
         };
 
         /// Register a value type and its corresponding array value type.
@@ -436,6 +419,12 @@ protected:
     };
 
     SdfSchemaBase();
+    
+    /// Construct an SdfSchemaBase but does not populate it with standard
+    /// fields and types.
+    class EmptyTag {};
+    SdfSchemaBase(EmptyTag);
+
     virtual ~SdfSchemaBase();
 
     /// Creates and registers a new field named \p fieldKey with the fallback
@@ -459,6 +448,16 @@ protected:
     /// Registers the standard fields.
     void _RegisterStandardFields();
 
+    /// Registers plugin fields and sets up handling so that fields will
+    /// be added when additional plugins are registered.
+    void _RegisterPluginFields();
+
+    /// Registers standard attribute value types.
+    void _RegisterStandardTypes();
+
+    /// Registers legacy attribute value types.
+    void _RegisterLegacyTypes();
+
     /// Returns a type registrar.
     _ValueTypeRegistrar _GetTypeRegistrar() const;
 
@@ -479,6 +478,8 @@ protected:
 
 private:
     friend class _SpecDefiner;
+
+    void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
 
     // Return a _SpecDefiner for the internal definition associated with \p type.
     _SpecDefiner _Define(SdfSpecType type) {
@@ -539,13 +540,6 @@ private:
     friend class TfSingleton<SdfSchema>;
     SdfSchema();
     virtual ~SdfSchema();
-
-    static void _RegisterTypes(_ValueTypeRegistrar registry);
-
-    void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
-
-    const Sdf_ValueTypeNamesType* _NewValueTypeNames() const;
-    friend struct Sdf_ValueTypeNamesType::_Init;
 };
 
 SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
