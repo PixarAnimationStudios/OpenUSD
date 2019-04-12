@@ -800,13 +800,13 @@ Gusd_ConvertTupleArrayToGt(const UsdGeomPrimvar& primvar, const VtValue& val)
                 // A GT_Type has not been specified using template args.
                 // We can try to derive a type from the role on the primvar's 
                 // type name, but only worth doing for types that can
-                // actually have roles (eg., not PODs)
-                if (!SYSisPOD<ELEMTYPE>()) {
+                // actually have roles (eg., not scalars)
+                if (!std::is_scalar<ELEMTYPE>::value) {
                     type = Gusd_GetTypeFromRole(
                         primvar.GetTypeName().GetRole());
                 }
             }
-            
+
             if (elementSize == 1) {
                 return new GusdGT_VtArray<ELEMTYPE>(array, type);
             } else {
@@ -1093,7 +1093,7 @@ GusdPrimWrapper::loadPrimvars(
         {
             if( gtData->entries() < minVertex ) {
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
-                         "%zd values given for %d verticies.", 
+                         "%zd values given for %d vertices.", 
                          primPath.c_str(),
                          primvar.GetPrimvarName().GetText(), 
                          gtData->entries(), minVertex );
