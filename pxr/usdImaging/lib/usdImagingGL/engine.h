@@ -414,10 +414,11 @@ protected:
     USDIMAGINGGL_API
     static bool _UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
-                          UsdImagingGLRenderParams const& params,
-                          TfTokenVector *renderTags);
+                          UsdImagingGLRenderParams const& params);
     static HdxRenderTaskParams _MakeHydraUsdImagingGLRenderParams(
                           UsdImagingGLRenderParams const& params);
+    static void _ComputeRenderTags(UsdImagingGLRenderParams const& params,
+                          TfTokenVector *renderTags);
 
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
@@ -455,8 +456,6 @@ protected:
     SdfPathVector _excludedPrimPaths;
     SdfPathVector _invisedPrimPaths;
     bool _isPopulated;
-
-    TfTokenVector _renderTags;
 
     GfVec4i _restoreViewport;
     bool _useFloatPointDrawTarget;

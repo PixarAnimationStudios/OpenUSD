@@ -128,7 +128,6 @@ UsdImagingGLEngine::UsdImagingGLEngine()
     , _excludedPrimPaths()
     , _invisedPrimPaths()
     , _isPopulated(false)
-    , _renderTags()
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
@@ -169,7 +168,6 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
-    , _renderTags()
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
@@ -243,7 +241,7 @@ UsdImagingGLEngine::RenderBatch(
     TF_VERIFY(_taskController);
 
     _taskController->SetCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags);
+    _UpdateHydraCollection(&_renderCollection, paths, params);
     _taskController->SetCollection(_renderCollection);
 
     HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
@@ -270,7 +268,7 @@ UsdImagingGLEngine::Render(
     SdfPathVector roots(1, rootPath);
 
     _taskController->SetCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, roots, params, &_renderTags);
+    _UpdateHydraCollection(&_renderCollection, roots, params);
     _taskController->SetCollection(_renderCollection);
 
     HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
@@ -526,16 +524,17 @@ UsdImagingGLEngine::TestIntersection(
 
     SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
     SdfPathVector roots(1, rootPath);
-    _UpdateHydraCollection(&_intersectCollection, roots, params, &_renderTags);
+    _UpdateHydraCollection(&_intersectCollection, roots, params);
 
     HdxIntersector::HitVector allHits;
     HdxIntersector::Params qparams;
     qparams.viewMatrix = worldToLocalSpace * viewMatrix;
     qparams.projectionMatrix = projectionMatrix;
     qparams.alphaThreshold = params.alphaThreshold;
-    qparams.renderTags = _renderTags;
     qparams.cullStyle = HdCullStyleNothing;
     qparams.enableSceneMaterials = params.enableSceneMaterials;
+
+    _ComputeRenderTags(params, &qparams.renderTags);
 
     if (!_taskController->TestIntersection(
             &_engine,
@@ -1013,8 +1012,6 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
 
     VtValue selectionValue(_selTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
-    VtValue renderTags(_renderTags);
-    _engine.SetTaskContextData(HdxTokens->renderTags, renderTags);
 
     HdTaskSharedPtrVector tasks = _taskController->GetTasks();
     _engine.Execute(_renderIndex, &tasks);
@@ -1121,8 +1118,7 @@ bool
 UsdImagingGLEngine::_UpdateHydraCollection(
     HdRprimCollection *collection,
     SdfPathVector const& roots,
-    UsdImagingGLRenderParams const& params,
-    TfTokenVector *renderTags)
+    UsdImagingGLRenderParams const& params)
 {
     if (collection == nullptr) {
         TF_CODING_ERROR("Null passed to _UpdateHydraCollection");
@@ -1156,17 +1152,8 @@ UsdImagingGLEngine::_UpdateHydraCollection(
 
     // Calculate the rendertags needed based on the parameters passed by
     // the application
-    renderTags->clear();
-    renderTags->push_back(HdTokens->geometry);
-    if (params.showGuides) {
-        renderTags->push_back(HdxRenderTagsTokens->guide);
-    }
-    if (params.showProxy) {
-        renderTags->push_back(UsdGeomTokens->proxy);
-    }
-    if (params.showRender) {
-        renderTags->push_back(UsdGeomTokens->render);
-    } 
+    TfTokenVector renderTags;
+    _ComputeRenderTags(params, &renderTags);
 
     // By default our main collection will be called geometry
     TfToken colName = HdTokens->geometry;
@@ -1178,7 +1165,7 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     bool match = collection->GetName() == colName &&
                  oldRoots.size() == roots.size() &&
                  collection->GetReprSelector() == reprSelector &&
-                 collection->GetRenderTags().size() == renderTags->size();
+                 collection->GetRenderTags().size() == renderTags.size();
 
     // Only take the time to compare root paths if everything else matches.
     if (match) {
@@ -1196,7 +1183,7 @@ UsdImagingGLEngine::_UpdateHydraCollection(
         }
 
         // Compare if rendertags match
-        if (*renderTags != collection->GetRenderTags()) {
+        if (renderTags != collection->GetRenderTags()) {
             match = false;
         }
 
@@ -1207,7 +1194,7 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     // Recreate the collection.
     *collection = HdRprimCollection(colName, reprSelector);
     collection->SetRootPaths(roots);
-    collection->SetRenderTags(*renderTags);
+    collection->SetRenderTags(renderTags);
 
     return true;
 }
@@ -1263,11 +1250,34 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
 
     params.enableSceneMaterials = renderParams.enableSceneMaterials;
 
+    _ComputeRenderTags(renderParams, &params.renderTags);
+
     // We don't provide the following because task controller ignores them:
     // - params.camera
     // - params.viewport
 
     return params;
+}
+
+//static
+void
+UsdImagingGLEngine::_ComputeRenderTags(UsdImagingGLRenderParams const& params,
+                                       TfTokenVector *renderTags)
+{
+    // Calculate the rendertags needed based on the parameters passed by
+    // the application
+    renderTags->clear();
+    renderTags->reserve(4);
+    renderTags->push_back(HdTokens->geometry);
+    if (params.showGuides) {
+        renderTags->push_back(HdxRenderTagsTokens->guide);
+    }
+    if (params.showProxy) {
+        renderTags->push_back(UsdGeomTokens->proxy);
+    }
+    if (params.showRender) {
+        renderTags->push_back(UsdGeomTokens->render);
+    }
 }
 
 void
