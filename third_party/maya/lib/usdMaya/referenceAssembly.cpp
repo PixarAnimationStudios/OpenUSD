@@ -720,8 +720,8 @@ UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
             // typical to have enough models in a scene that share the same
             // set of edits in order to make that worthwhile.
             MObject assemObj = thisMObject();
-            MItEdits assemEdits(_GetEdits(assemObj));
-            if (!assemEdits.isDone()) {
+            MItEdits itAssemEdits(_GetEdits(assemObj));
+            if (!itAssemEdits.isDone()) {
                 _hasEdits = true;
                 SdfLayerRefPtr unsharedSessionLayer = SdfLayer::CreateAnonymous();
                 unsharedSessionLayer->TransferContent(sessionLayer);
@@ -1257,35 +1257,43 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     // unvarying time.
 
     MObject assemObj = getAssembly()->thisMObject();
-    UsdMayaReferenceAssembly* usdAssem = dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly());
-    MFnAssembly assemblyFn(assemObj);
-    MString assemblyPathStr = assemblyFn.partialPathName();
-    MItEdits assemEdits(_GetEdits(assemObj));
-    bool hasEdits = !assemEdits.isDone();
+    UsdMayaReferenceAssembly* usdAssem =
+        dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly());
+    const MFnAssembly assemblyFn(assemObj);
+    MItEdits itAssemEdits(_GetEdits(assemObj));
+    const bool hasEdits = !itAssemEdits.isDone();
     if (usdAssem->HasEdits() != hasEdits) {
         usdAssem->SetHasEdits(hasEdits);
 
         // If we now have edits but previous did not, or vice versa, make sure
         // we invalidate our UsdStage so that we are not sharing with other
         // model instances that do not have edits.
-        MGlobal::executeCommand("dgdirty " + assemblyPathStr);
+        MGlobal::executeCommand("dgdirty " + assemblyFn.partialPathName());
     }
 
-    UsdPrim proxyRootPrim = dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly())->usdPrim();
+    const UsdPrim proxyRootPrim = usdAssem->usdPrim();
     if (!proxyRootPrim) {
         return;
     }
-    UsdStagePtr stage = proxyRootPrim.GetStage();
 
-    UsdMayaEditUtil::PathEditMap refEdits;
-    std::vector< std::string > invalidEdits, failedEdits;
+    UsdMayaEditUtil::PathEditMap assemEdits;
+    std::vector<std::string> invalidEdits;
+    UsdMayaEditUtil::GetEditsForAssembly(assemObj, &assemEdits, &invalidEdits);
 
-    UsdMayaEditUtil::GetEditsForAssembly( assemObj, &refEdits, &invalidEdits );
+    if (!invalidEdits.empty()) {
+        TF_WARN(
+            "The following invalid assembly edits were found for "
+            "%s node '%s':\n"
+            "    %s",
+            UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText(),
+            assemblyFn.fullPathName().asChar(),
+            TfStringJoin(invalidEdits, "\n    ").c_str());
+    }
 
-    if( !refEdits.empty() )
-    {
+    if (!assemEdits.empty()) {
         // Create an anonymous layer to hold the assembly edit opinions, and
         // sublayer it into the stage's session layer.
+        const UsdStagePtr stage = proxyRootPrim.GetStage();
         _sessionSublayer = SdfLayer::CreateAnonymous();
         stage->GetSessionLayer()->GetSubLayerPaths().clear();
         stage->GetSessionLayer()->GetSubLayerPaths().push_back(
@@ -1296,23 +1304,22 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
         // same layer(s).
         UsdEditContext editContext(stage, _sessionSublayer);
 
-        UsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
-    }
+        std::vector<std::string> failedEdits;
+        UsdMayaEditUtil::ApplyEditsToProxy(
+            assemEdits,
+            proxyRootPrim,
+            &failedEdits);
 
-    if( !invalidEdits.empty() )
-    {
-        TF_WARN("The following edits could not be read from the proxy for '%s':"
-                "\n\t%s",
-                assemblyPathStr.asChar(),
-                TfStringJoin(invalidEdits, "\n\t").c_str());
-    }
-
-    if( !failedEdits.empty() )
-    {
-        TF_WARN("The following edits could not be pushed to the proxy for '%s':"
-                "\n\t%s",
-                assemblyPathStr.asChar(),
-                TfStringJoin(failedEdits, "\n\t").c_str());
+        if (!failedEdits.empty()) {
+            TF_WARN(
+                "The following assembly edits could not be applied under the "
+                "USD prim '%s' for %s node '%s':\n"
+                "    %s",
+                proxyRootPrim.GetPath().GetText(),
+                UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText(),
+                assemblyFn.fullPathName().asChar(),
+                TfStringJoin(failedEdits, "\n    ").c_str());
+        }
     }
 }
 
