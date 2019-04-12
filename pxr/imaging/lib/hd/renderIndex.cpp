@@ -313,10 +313,6 @@ HdRenderIndex::Clear()
         _tracker.TaskRemoved(it->first);
     }
     _taskMap.clear();
-
-    // After clearing the index, all collections must be invalidated to force
-    // any dependent state to be updated.
-    _tracker.MarkAllCollectionsDirty();
 }
 
 // -------------------------------------------------------------------------- //

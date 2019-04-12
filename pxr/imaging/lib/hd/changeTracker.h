@@ -466,10 +466,6 @@ public:
     HD_API
     void MarkCollectionDirty(TfToken const& collectionName);
 
-    /// Invalidates all collections by bumping a global version number.
-    HD_API
-    void MarkAllCollectionsDirty();
-
     /// Returns the current version of the named collection.
     HD_API
     unsigned GetCollectionVersion(TfToken const& collectionName) const;

@@ -360,14 +360,14 @@ void
 HdUnitTestDelegate::HideRprim(SdfPath const& id) 
 {
     _hiddenRprims.insert(id);
-    GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
+    MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
 }
 
 void
 HdUnitTestDelegate::UnhideRprim(SdfPath const& id) 
 {
     _hiddenRprims.erase(id);
-    GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
+    MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
 }
 
 void

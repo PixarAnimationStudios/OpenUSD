@@ -811,24 +811,6 @@ HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
     ++_changeCount;
 }
 
-void 
-HdChangeTracker::MarkAllCollectionsDirty()
-{
-    HD_TRACE_FUNCTION();
-    if (TfDebug::IsEnabled(HD_DIRTY_ALL_COLLECTIONS)) {
-        TfPrintStackTrace(std::cout, __ARCH_PRETTY_FUNCTION__);
-    }
-
-    ++_indexVersion;
-    ++_varyingStateVersion;
-
-    // Also force DirtyLists to refresh: 
-    // This is needed in the event that a collection changes due to changes in
-    // the delegate's scene graph, but those changes have no direct effect on
-    // the RenderIndex.
-    ++_changeCount;
-}
-
 unsigned
 HdChangeTracker::GetCollectionVersion(TfToken const& collectionName) const
 {
