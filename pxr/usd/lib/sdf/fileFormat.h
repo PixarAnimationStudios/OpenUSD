@@ -133,21 +133,6 @@ public:
     /// layers.
     SDF_API bool ShouldSkipAnonymousReload() const;
 
-    /// Return true if the \p layer produced by this file format
-    /// streams its data to and from its serialized data store on demand.
-    ///
-    /// Sdf will treat streaming layers differently to avoid pulling
-    /// in data unnecessarily. For example, reloading a streaming layer 
-    /// will not perform fine-grained change notification, since doing 
-    /// so would require the full contents of the layer to be loaded.
-    ///
-    /// Edits to a streaming layer are assumed to immediately affect
-    /// the serialized data without an explicit call to SdfLayer::Save.
-    ///
-    /// It is a coding error to call this function with a layer that was
-    /// not created with this file format.
-    SDF_API bool IsStreamingLayer(const SdfLayer& layer) const;
-
     /// Return true if layers produced by this file format are based
     /// on physical files on disk. If so, this file format requires
     /// layers to be serialized to and read from files on disk.
@@ -296,11 +281,6 @@ private:
     // reloading anonymous layers.  Default implementation returns true.
     SDF_API
     virtual bool _ShouldSkipAnonymousReload() const;
-
-    // File format subclasses must override this to determine whether the
-    // given layer is streaming or not. The file format of \p layer is 
-    // guaranteed to be an instance of this class.
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const = 0;
 
     /// File format subclasses may override this to specify whether
     /// their layers are backed by physical files on disk.

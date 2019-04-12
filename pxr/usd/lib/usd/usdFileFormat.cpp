@@ -373,14 +373,5 @@ UsdUsdFileFormat::WriteToStream(
             spec, out, indent);
 }
 
-bool 
-UsdUsdFileFormat::_IsStreamingLayer(
-    const SdfLayer& layer) const
-{
-    auto formatId = _GetUnderlyingFileFormatForLayer(layer)->GetFormatId();
-    return formatId == UsdUsdbFileFormatTokens->Id ||
-        formatId == UsdUsdcFileFormatTokens->Id;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

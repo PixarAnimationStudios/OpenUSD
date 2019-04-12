@@ -74,9 +74,6 @@ protected:
     UsdAbcAlembicFileFormat();
 
 private:
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
-
-private:
     SdfFileFormatConstPtr _usda;
 };
 

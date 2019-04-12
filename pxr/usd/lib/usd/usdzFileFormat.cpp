@@ -181,12 +181,5 @@ UsdUsdzFileFormat::WriteToStream(
         WriteToStream(spec, out, indent);
 }
 
-bool 
-UsdUsdzFileFormat::_IsStreamingLayer(
-    const SdfLayer& layer) const
-{
-    return true;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

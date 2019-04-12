@@ -115,8 +115,6 @@ private:
     
     static SdfFileFormatConstPtr 
     _GetUnderlyingFileFormatForLayer(const SdfLayer& layer);
-
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

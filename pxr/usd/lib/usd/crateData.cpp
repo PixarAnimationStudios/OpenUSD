@@ -202,6 +202,10 @@ public:
         return false;
     }
 
+    inline bool StreamsData() const {
+        return true;
+    }
+
     inline bool _GetTargetOrConnectionListOp(
         SdfPath const &path, SdfPathListOp *listOp) const {
         if (path.IsPrimPropertyPath()) {
@@ -1216,6 +1220,12 @@ Usd_CrateData::Open(const std::string &assetPath)
 // ------------------------------------------------------------------------- //
 // Abstract Data Implementation.
 //
+
+bool
+Usd_CrateData::StreamsData() const
+{
+    return _impl->StreamsData();
+}
 
 bool
 Usd_CrateData::HasSpec(const SdfAbstractDataSpecId &id) const

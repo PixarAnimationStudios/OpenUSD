@@ -388,10 +388,4 @@ SdfTextFileFormat::_ShouldSkipAnonymousReload() const
     return false;
 }
 
-bool 
-SdfTextFileFormat::_IsStreamingLayer(const SdfLayer& layer) const
-{
-    return false;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

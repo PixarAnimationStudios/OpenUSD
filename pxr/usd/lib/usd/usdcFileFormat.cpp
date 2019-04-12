@@ -152,11 +152,5 @@ UsdUsdcFileFormat::WriteToStream(const SdfSpecHandle &spec,
         WriteToStream(spec, out, indent);
 }
 
-bool 
-UsdUsdcFileFormat::_IsStreamingLayer(const SdfLayer& layer) const
-{
-    return true;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

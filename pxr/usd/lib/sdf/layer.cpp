@@ -2540,7 +2540,7 @@ SdfLayer::AddToMutedLayers(const string &path)
                 SdfFileFormatConstPtr format = layer->GetFileFormat();
                 SdfAbstractDataRefPtr initializedData = 
                     format->InitData(layer->GetFileFormatArguments());
-                if (format->IsStreamingLayer(*layer.operator->())) {
+                if (layer->_data->StreamsData()) {
                     // See the discussion in TransferContent()
                     // about streaming layers; the same concerns
                     // apply here.  We must swap out the actual data
@@ -2606,9 +2606,10 @@ SdfLayer::RemoveFromMutedLayers(const string &path)
                     }
                 }
                 if (TF_VERIFY(mutedData)) {
-                    // If IsStreamingLayer() is true, this re-takes ownership
-                    // of the mutedData object.  Otherwise, this mutates
-                    // the existing data container to match its contents.
+                    // If SdfAbstractData::StreamsData() is true, this re-takes 
+                    // ownership of the mutedData object.  Otherwise, this 
+                    // mutates the existing data container to match its 
+                    // contents.
                     layer->_SetData(mutedData);
                 }
                 TF_VERIFY(layer->IsDirty());
@@ -2637,10 +2638,13 @@ SdfLayer::Clear()
         return;
     }
 
+    const bool isStreamingLayer = _data->StreamsData();
+
     _SetData(GetFileFormat()->InitData(GetFileFormatArguments()));
 
-    if (GetFileFormat()->IsStreamingLayer(*this))
+    if (isStreamingLayer) {
         _stateDelegate->_MarkCurrentStateAsDirty();
+    }
 }
 
 bool
@@ -2736,7 +2740,7 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
     //
 
     bool notify = _ShouldNotify();
-    bool isStreamingLayer = GetFileFormat()->IsStreamingLayer(*this);
+    bool isStreamingLayer = _data->StreamsData();
     SdfAbstractDataRefPtr newData;
 
     if (!notify || isStreamingLayer) {
@@ -3326,7 +3330,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData)
     // the data in the layer to be streamed in from disk.
     // So, all we can do is move the new data into place and
     // notify the world that this layer may have changed arbitrarily.
-    if (GetFileFormat()->IsStreamingLayer(*this)) {
+    if (_data->StreamsData()) {
         _data = newData;
         Sdf_ChangeManager::Get()
             .DidReplaceLayerContent(SdfCreateHandle(this));

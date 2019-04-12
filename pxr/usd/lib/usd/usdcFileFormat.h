@@ -82,9 +82,6 @@ protected:
     UsdUsdcFileFormat();
     virtual ~UsdUsdcFileFormat();
 
-private:
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

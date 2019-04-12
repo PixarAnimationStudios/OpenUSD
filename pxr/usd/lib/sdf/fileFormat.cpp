@@ -130,19 +130,6 @@ SdfFileFormat::ShouldSkipAnonymousReload() const
     return _ShouldSkipAnonymousReload();
 }
 
-bool 
-SdfFileFormat::IsStreamingLayer(const SdfLayer& layer) const
-{
-    if (layer.GetFileFormat()->GetFormatId() != GetFormatId()) {
-        TF_CODING_ERROR(
-            "Layer does not use file format '%s'",
-            layer.GetFileFormat()->GetFormatId().GetText());
-        return true;
-    }
-
-    return _IsStreamingLayer(layer);
-}
-
 bool
 SdfFileFormat::LayersAreFileBased() const
 {
