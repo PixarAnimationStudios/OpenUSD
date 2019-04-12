@@ -33,9 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
-
 class HdRenderBuffer;
 
 /// \class HdxColorizeTask
@@ -75,8 +72,11 @@ public:
 private:
     // Incoming data
     TfToken _aovName;
-    SdfPath _renderBufferId;
-    HdRenderBuffer *_renderBuffer;
+    SdfPath _aovBufferPath;
+    SdfPath _depthBufferPath;
+
+    HdRenderBuffer *_aovBuffer;
+    HdRenderBuffer *_depthBuffer;
 
     // Ouptut data
     uint8_t *_outputBuffer;
@@ -100,15 +100,16 @@ struct HdxColorizeTaskParams
 {
     HdxColorizeTaskParams()
         : aovName()
-        , renderBuffer()
+        , aovBufferPath()
+        , depthBufferPath()
         {}
 
     // XXX: Right now the API is pretty basic: draw buffer X as aov Y
     // (e.g., colorize this buffer as float3 normals).  Lots of room for
-    // cool improvements here! For example, adding a depth attachment for
-    // deep compositing.
+    // cool improvements here!
     TfToken aovName;
-    SdfPath renderBuffer;
+    SdfPath aovBufferPath;
+    SdfPath depthBufferPath;
 };
 
 // VtValue requirements

@@ -513,10 +513,10 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
     HdxColorizeTaskParams params;
     if (name.IsEmpty()) {
         params.aovName = name;
-        params.renderBuffer = SdfPath::EmptyPath();
+        params.aovBufferPath = SdfPath::EmptyPath();
     } else {
         params.aovName = name;
-        params.renderBuffer = _GetAovPath(name);
+        params.aovBufferPath = _GetAovPath(name);
     }
 
     HdxColorizeTaskParams oldParams =
