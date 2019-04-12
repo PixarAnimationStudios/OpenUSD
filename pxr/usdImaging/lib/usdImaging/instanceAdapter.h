@@ -125,6 +125,9 @@ public:
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index) override;
 
+    virtual void MarkRenderTagDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,

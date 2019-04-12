@@ -396,6 +396,14 @@ UsdImagingGprimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
 }
 
 void
+UsdImagingGprimAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRenderTag);
+}
+
+void
 UsdImagingGprimAdapter::MarkTransformDirty(UsdPrim const& prim,
                                            SdfPath const& cachePath,
                                            UsdImagingIndexProxy* index)

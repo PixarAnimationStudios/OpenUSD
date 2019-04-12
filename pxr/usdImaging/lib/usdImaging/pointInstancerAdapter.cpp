@@ -1244,6 +1244,21 @@ UsdImagingPointInstancerAdapter::MarkCullStyleDirty(UsdPrim const& prim,
 }
 
 void
+UsdImagingPointInstancerAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                                    SdfPath const& cachePath,
+                                                    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkRenderTagDirty(prim, cachePath, index);
+    }
+}
+
+void
 UsdImagingPointInstancerAdapter::MarkTransformDirty(UsdPrim const& prim,
                                                     SdfPath const& cachePath,
                                                     UsdImagingIndexProxy* index)

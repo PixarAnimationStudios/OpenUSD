@@ -498,6 +498,23 @@ UsdSkelImagingSkeletonAdapter::MarkCullStyleDirty(const UsdPrim& prim,
 }
 
 void
+UsdSkelImagingSkeletonAdapter::MarkRenderTagDirty(const UsdPrim& prim,
+                                                  const SdfPath& cachePath,
+                                                  UsdImagingIndexProxy* index)
+{
+    if (_IsCallbackForSkeleton(prim)) {
+        // Cullstyle changes shouldn't affect the bone visualization.
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
+        // make sure to delegate to the actual adapter registered for the prim.
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
+        adapter->MarkRenderTagDirty(prim, cachePath, index);
+
+    }
+    // Nothing to do otherwise.
+}
+
+void
 UsdSkelImagingSkeletonAdapter::MarkTransformDirty(const UsdPrim& prim,
                                                   const SdfPath& cachePath,
                                                   UsdImagingIndexProxy* index)

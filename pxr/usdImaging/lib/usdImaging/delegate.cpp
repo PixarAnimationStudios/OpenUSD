@@ -1432,9 +1432,25 @@ UsdImagingDelegate::SetDisplayGuides(bool displayGuides)
 {
     _displayGuides = displayGuides;
     
-    // Geometry that was assigned to a command buffer to be rendered might
-    // now be hidden or the contrary, so we need to rebuild the collections.
-    GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
+    UsdImagingIndexProxy indexProxy(this, nullptr);
+
+    // _displayGuides changes a prims render tag.
+    // So we need to make sure all prims render tags get re-evaluated.
+    // XXX: Should be smarted and only invalidate prims whose
+    // purpose == UsdGeomTokens->guide.
+    // Look at GetRenderTag for complixity with this.
+    for (_PrimInfoMap::iterator it  = _primInfoMap.begin();
+                                it != _primInfoMap.end();
+                              ++it) {
+        const SdfPath &usdPath = it->first;
+        _PrimInfo &primInfo = it->second;
+
+        if (TF_VERIFY(primInfo.adapter, "%s", usdPath.GetText())) {
+            primInfo.adapter->MarkRenderTagDirty(primInfo.usdPrim,
+                                                 usdPath,
+                                                 &indexProxy);
+        }
+    }
 }
 
 void
@@ -1745,10 +1761,6 @@ UsdImagingDelegate::SetReprFallback(HdReprSelector const &repr)
                                             &indexProxy);
         }
     }
-
-    // XXX: currently we need to make collection dirty so that
-    // HdRenderPass::_PrepareCommandBuffer gathers new drawitem from scratch.
-    GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
 }
 
 void
@@ -1773,10 +1785,6 @@ UsdImagingDelegate::SetCullStyleFallback(HdCullStyle cullStyle)
                                                  &indexProxy);
         }
     }
-
-    // XXX: currently we need to make collection dirty so that
-    // HdRenderPass::_PrepareCommandBuffer gathers new drawitem from scratch.
-    GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
 }
 
 void

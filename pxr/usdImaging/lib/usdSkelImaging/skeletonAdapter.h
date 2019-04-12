@@ -120,6 +120,11 @@ public:
                                     UsdImagingIndexProxy* index) override;
 
     USDSKELIMAGING_API
+    virtual void MarkRenderTagDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
     void MarkTransformDirty(const UsdPrim& prim,
                             const SdfPath& cachePath,
                             UsdImagingIndexProxy* index) override;
