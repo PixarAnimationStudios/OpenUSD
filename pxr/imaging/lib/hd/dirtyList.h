@@ -120,11 +120,6 @@ public:
     HD_API
     SdfPathVector const& GetDirtyRprims();
 
-    /// Return the number of dirty prims in the list.
-    size_t GetSize() {
-        return GetDirtyRprims().size();
-    }
-
     /// Update the tracking state for this HdDirtyList with the new collection,
     /// if the update cannot be applied, return false.
     HD_API
