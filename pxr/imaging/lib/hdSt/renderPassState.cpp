@@ -85,7 +85,7 @@ HdStRenderPassState::_UseAlphaMask() const
 
 void
 HdStRenderPassState::Prepare(
-                            HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -95,8 +95,11 @@ HdStRenderPassState::Prepare(
     TF_FOR_ALL(it, _clipPlanes) {
         clipPlanes.push_back(GfVec4f(*it));
     }
-    if (clipPlanes.size() >= GL_MAX_CLIP_PLANES) {
-        clipPlanes.resize(GL_MAX_CLIP_PLANES);
+    GLint glMaxClipPlanes;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
+    size_t maxClipPlanes = (size_t)glMaxClipPlanes;
+    if (clipPlanes.size() >= maxClipPlanes) {
+        clipPlanes.resize(maxClipPlanes);
     }
 
     // allocate bar if not exists
@@ -377,8 +380,10 @@ HdStRenderPassState::Bind()
         }
     }
     glEnable(GL_PROGRAM_POINT_SIZE);
+    GLint glMaxClipPlanes;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
-        if (i >= GL_MAX_CLIP_PLANES) {
+        if (i >= (size_t)glMaxClipPlanes) {
             break;
         }
         glEnable(GL_CLIP_DISTANCE0 + i);
