@@ -70,8 +70,8 @@ HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
             _renderIndex.GetChangeTracker().GetCollectionVersion(_collection.GetName()) - 1)
         , _varyingStateVersion(
             _renderIndex.GetChangeTracker().GetVaryingStateVersion() - 1)
-        , _changeCount(
-            _renderIndex.GetChangeTracker().GetChangeCount() - 1)
+        , _sceneStateVersion(
+            _renderIndex.GetChangeTracker().GetSceneStateVersion() - 1)
         , _isEmpty(false)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyLists);
@@ -212,17 +212,17 @@ HdDirtyList::GetDirtyRprims()
         = changeTracker.GetCollectionVersion(_collection.GetName());
     unsigned int currentVaryingStateVersion
         = changeTracker.GetVaryingStateVersion();
-    unsigned int currentChangeCount
-        = changeTracker.GetChangeCount();
+    unsigned int currentSceneStateVersion
+        = changeTracker.GetSceneStateVersion();
 
     // if nothing changed, and if it's clean, returns empty.
-    if (_isEmpty && _changeCount == currentChangeCount) {
+    if (_isEmpty && _sceneStateVersion == currentSceneStateVersion) {
         static SdfPathVector _EMPTY;
         return _EMPTY;
     }
     // if nothing changed, but not yet cleaned, returns the cached result.
     // this list can be either initialization-set or varying-set
-    if (_changeCount == currentChangeCount) {
+    if (_sceneStateVersion == currentSceneStateVersion) {
         return _dirtyIds;
     }
 
@@ -255,7 +255,7 @@ HdDirtyList::GetDirtyRprims()
         // populate only varying prims in the collection
         _UpdateIDs(&_dirtyIds, HdChangeTracker::Varying);
         _varyingStateVersion = currentVaryingStateVersion;
-    } else if (_changeCount != currentChangeCount) {
+    } else if (_sceneStateVersion != currentSceneStateVersion) {
         // reuse the existing varying prims list.
         // note that the varying prims list may contain cleaned rprims,
         // clients still need to ask the actual dirtyBits to ChangeTracker
@@ -274,7 +274,7 @@ HdDirtyList::GetDirtyRprims()
 
 
     // this dirtyList reflects the latest state of change tracker.
-    _changeCount = currentChangeCount;
+    _sceneStateVersion = currentSceneStateVersion;
     _isEmpty = false;
 
     return _dirtyIds;

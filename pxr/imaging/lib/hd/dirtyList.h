@@ -138,7 +138,7 @@ private:
 
     unsigned int _collectionVersion;
     unsigned int _varyingStateVersion;
-    unsigned int _changeCount;
+    unsigned int _sceneStateVersion;
     bool _isEmpty;
 };
 
