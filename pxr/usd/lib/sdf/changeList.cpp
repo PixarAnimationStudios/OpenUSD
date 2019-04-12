@@ -96,8 +96,6 @@ std::ostream& operator<<(std::ostream &os, const SdfChangeList &cl)
             os << "   didChangeAttributeTimeSamples\n";
         if (entry.flags.didChangeAttributeConnection)
             os << "   didChangeAttributeConnection\n";
-        if (entry.flags.didChangeMapperArgument)
-            os << "   didChangeMapperArgument\n";
         if (entry.flags.didChangeRelationshipTargets)
             os << "   didChangeRelationshipTargets\n";
         if (entry.flags.didAddTarget)
@@ -361,12 +359,6 @@ void
 SdfChangeList::DidChangeAttributeConnection(const SdfPath &attrPath)
 {
     _GetEntry(attrPath).flags.didChangeAttributeConnection = true;
-}
-
-void
-SdfChangeList::DidChangeMapperArgument(const SdfPath &attrPath)
-{
-    _GetEntry(attrPath).flags.didChangeMapperArgument = true;
 }
 
 void
