@@ -87,5 +87,19 @@ HdxPackageColorCorrectionShader()
     return shader;
 }
 
+TfToken
+HdxPackageRenderPassOitShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassOitShader.glslfx");
+    return shader;
+}
+
+TfToken
+HdxPackageOitResolveImageShader()
+{
+    static TfToken shader = _GetShaderPath("oitResolveImageShader.glslfx");
+    return shader;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

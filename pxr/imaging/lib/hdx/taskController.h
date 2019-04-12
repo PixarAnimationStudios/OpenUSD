@@ -245,6 +245,7 @@ private:
     void _CreateLightingTask();
     void _CreateShadowTask();
     SdfPath _CreateRenderTask(TfToken const& materialTag);
+    void _CreateOitResolveTask();
     void _CreateSelectionTask();
     void _CreateColorizeTask();
     void _CreateColorizeSelectionTask();
@@ -319,6 +320,7 @@ private:
     SdfPath _simpleLightTaskId;
     SdfPath _shadowTaskId;
     SdfPathVector _renderTaskIds;
+    SdfPath _oitResolveTaskId;
     SdfPath _selectionTaskId;
     SdfPath _colorizeSelectionTaskId;
     SdfPath _colorizeTaskId;

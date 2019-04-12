@@ -32,6 +32,8 @@
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
+#include "pxr/imaging/hdx/oitRenderTask.h"
+#include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
@@ -57,6 +59,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (selectionTask)
     (colorizeTask)
     (colorizeSelectionTask)
+    (oitResolveTask)
     (colorCorrectionTask)
 
     // global camera
@@ -115,7 +118,7 @@ HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
 // Task controller implementation.
 
 static bool
-_IsStreamRenderingBackend(HdRenderIndex *index)
+_IsStreamRenderingBackend(HdRenderIndex const *index)
 {
     if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
         return false;
@@ -153,7 +156,10 @@ HdxTaskController::_CreateRenderGraph()
         _renderTaskIds.push_back(_CreateRenderTask(
             HdMaterialTagTokens->defaultMaterialTag));
         _renderTaskIds.push_back(_CreateRenderTask(
+            HdxMaterialTagTokens->additive));
+        _renderTaskIds.push_back(_CreateRenderTask(
             HdxMaterialTagTokens->translucent));
+        _CreateOitResolveTask();
         _CreateSelectionTask();
         _CreateColorCorrectionTask();
     } else {
@@ -216,7 +222,13 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
                                  materialTag);
     collection.SetRootPath(SdfPath::AbsoluteRootPath());
 
-    GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
+    if (materialTag == HdMaterialTagTokens->defaultMaterialTag || 
+        materialTag == HdxMaterialTagTokens->additive ||
+        materialTag.IsEmpty()) {
+        GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
+    } else if (materialTag == HdxMaterialTagTokens->translucent) {
+        GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
+    }
 
     _delegate.SetParameter(taskId, HdTokens->params, renderParams);
     _delegate.SetParameter(taskId, HdTokens->collection, collection);
@@ -232,7 +244,7 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         return;
     }
 
-    if (materialTag == HdxMaterialTagTokens->translucent) {
+    if (materialTag == HdxMaterialTagTokens->additive) {
         // Additive blend -- so no sorting of drawItems is needed
         renderParams->blendEnable = true;
         // We are setting all factors to ONE, This means we are expecting
@@ -253,11 +265,32 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         // Since we are using alpha blending, we disable screen door
         // transparency for this renderpass.
         renderParams->enableAlphaToCoverage = false;
+    } else if (materialTag == HdxMaterialTagTokens->translucent) {
+        // Order Independent Transparency blend state or its first render pass.
+        renderParams->blendEnable = false;
+        renderParams->enableAlphaToCoverage = false;
+        renderParams->depthMaskEnable = false;
     } else {
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
     }
+}
+
+void
+HdxTaskController::_CreateOitResolveTask()
+{
+    _oitResolveTaskId = GetControllerId().AppendChild(_tokens->oitResolveTask);
+
+    HdxRenderTaskParams params;
+    params.camera = _cameraId;
+    params.viewport = GfVec4d(0,0,1,1);
+
+    GetRenderIndex()->InsertTask<HdxOitResolveTask>(&_delegate,
+        _oitResolveTaskId);
+
+    _delegate.SetParameter(_oitResolveTaskId, HdTokens->params,
+        params);
 }
 
 void
@@ -362,6 +395,7 @@ HdxTaskController::~HdxTaskController()
 {
     GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
     SdfPath const tasks[] = {
+        _oitResolveTaskId,
         _selectionTaskId,
         _simpleLightTaskId,
         _shadowTaskId,
@@ -475,6 +509,10 @@ HdxTaskController::GetTasks() const
 
     for (auto const& id : _renderTaskIds) {
         tasks.push_back(GetRenderIndex()->GetTask(id));
+    }
+
+    if (!_oitResolveTaskId.IsEmpty()) {
+        tasks.push_back(GetRenderIndex()->GetTask(_oitResolveTaskId));
     }
 
     if (!_selectionTaskId.IsEmpty() && _SelectionEnabled())

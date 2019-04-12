@@ -190,7 +190,8 @@ _GetMaterialTag(const TfToken& inputName, const UsdAttribute& attr,
         }
 
         if (isTranslucent) {
-            *materialTag = HdxMaterialTagTokens->translucent;
+            // Default to our cheapest blending: unsorted additive
+            *materialTag = HdxMaterialTagTokens->additive;
         }
     }
 }

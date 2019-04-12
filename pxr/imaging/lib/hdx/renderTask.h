@@ -89,6 +89,9 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+protected:
+    HDX_API
+    HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 
 private:
     HdRenderPassSharedPtrVector _passes;
@@ -100,6 +103,9 @@ private:
     // XXX: This should be moved to hdSt!
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
+
+    // Gather the render tags
+    TfTokenVector _GetRenderTags(HdTaskContext *ctx) const;
 
     HdxRenderTask() = delete;
     HdxRenderTask(const HdxRenderTask &) = delete;

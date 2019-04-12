@@ -43,6 +43,8 @@ pxr_library(hdx
         drawTargetTask
         drawTargetResolveTask
         intersector
+        oitRenderTask
+        oitResolveTask
         package
         progressiveTask
         rendererPlugin
@@ -81,6 +83,8 @@ pxr_library(hdx
         shaders/renderPassShadowShader.glslfx
         shaders/selection.glslfx
         shaders/simpleLightingShader.glslfx
+        shaders/renderPassOitShader.glslfx
+        shaders/oitResolveImageShader.glslfx
 )
 
 if (X11_FOUND)
