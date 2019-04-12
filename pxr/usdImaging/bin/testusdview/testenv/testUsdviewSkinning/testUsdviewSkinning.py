@@ -24,7 +24,7 @@
 #
 
 
-from pxr.Usdviewq.common import RenderModes, Complexities
+from pxr.Usdviewq.common import RenderModes, Complexities, Usd, UsdGeom
 
 
 # Remove any unwanted visuals from the view, and enable autoClip
@@ -49,6 +49,30 @@ def _takeShot(appController, fileName):
 def _testChangeComplexity(appController):
     _setComplexity(appController, Complexities.MEDIUM)
     _takeShot(appController, "change_complexity.png")
+    _setComplexity(appController, Complexities.LOW)
+
+def _testInvisVisOnPlayback(appController):
+    # Start playback
+    appController.setFrame(4, forceUpdate=True)
+    appController._stageView.updateGL()
+    _takeShot(appController, "vis_frame_4.png")
+
+    stage = appController._dataModel.stage
+    skelRoot = UsdGeom.Imageable(stage.GetPrimAtPath("/Model"))
+    print("Invising skel root.")
+    skelRoot.MakeInvisible()
+    appController._stageView.updateGL()
+    _takeShot(appController, "invis_frame_4.png")
+    
+    print("Scrubbing a few frames ahead.")
+    appController.setFrame(5, forceUpdate=True)
+    appController.setFrame(6, forceUpdate=True)
+    appController.setFrame(7, forceUpdate=True)
+
+    print("Vising skel root.")
+    skelRoot.MakeVisible()
+    appController.setFrame(8, forceUpdate=True)
+    _takeShot(appController, "vis_frame_8.png")
 
 # Skinning makes use of adapter hijacking (for the skinned prims). Callbacks
 # for various operations need to be forwarded/processed correctly.
@@ -56,3 +80,4 @@ def _testChangeComplexity(appController):
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
     _testChangeComplexity(appController)
+    _testInvisVisOnPlayback(appController)
