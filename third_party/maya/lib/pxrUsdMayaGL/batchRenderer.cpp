@@ -409,7 +409,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _isSelectionPending(false),
         _objectSoftSelectEnabled(false),
         _softSelectOptionsCallbackId(0),
-        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false)
+        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
+        _selectionResolution(256)
 {
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
@@ -452,6 +453,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _viewport2RprimCollection.GetName());
 
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
+    SetSelectionResolution(_selectionResolution);
+
     _selectionTracker.reset(new HdxSelectionTracker());
 
     TfWeakPtr<UsdMayaGLBatchRenderer> me(this);
@@ -725,6 +728,22 @@ void UsdMayaGLBatchRenderer::DrawCustomCollection(
     _Render(viewMatrix, projectionMatrix, viewport, items);
 }
 
+GfVec2i
+UsdMayaGLBatchRenderer::GetSelectionResolution() const
+{
+    return _selectionResolution;
+}
+
+void
+UsdMayaGLBatchRenderer::SetSelectionResolution(const GfVec2i& widthHeight)
+{
+    _selectionResolution = widthHeight;
+
+    if (_intersector) {
+        _intersector->SetResolution(_selectionResolution);
+    }
+}
+
 const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
@@ -936,9 +955,6 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
-    const unsigned int pickResolution = 256u;
-    _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
-
     HdxIntersector::Params params;
     params.viewMatrix = viewMatrix;
     params.projectionMatrix = projectionMatrix;
@@ -1074,11 +1090,6 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         "(singleSelection = %s, %zu collection(s))\n",
         singleSelection ? "true" : "false",
         rprimCollections.size());
-
-    // We may miss very small objects with this setting, but it's faster.
-    const unsigned int pickResolution = 256u;
-
-    _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
 
     HdxIntersector::Params qparams;
     qparams.viewMatrix = viewMatrix;

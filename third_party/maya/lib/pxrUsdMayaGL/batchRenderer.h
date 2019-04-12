@@ -37,6 +37,7 @@
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/singleton.h"
@@ -181,6 +182,22 @@ public:
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport,
             const PxrMayaHdRenderParams& params = PxrMayaHdRenderParams());
+
+    /// Gets the resolution of the draw target used for computing selections.
+    ///
+    /// The resolution is specified as (width, height).
+    PXRUSDMAYAGL_API
+    GfVec2i GetSelectionResolution() const;
+
+    /// Sets the resolution of the draw target used for computing selections.
+    ///
+    /// The resolution should be specified as (width, height).
+    ///
+    /// Smaller values yield better performance but may miss selecting very
+    /// small objects. Larger values will be slower but more accurate. The
+    /// default resolution is (256, 256) for performance.
+    PXRUSDMAYAGL_API
+    void SetSelectionResolution(const GfVec2i& widthHeight);
 
     /// Tests the object from the given shape adapter for intersection with
     /// a given selection context in the legacy viewport.
@@ -456,6 +473,8 @@ private:
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
 
     std::unique_ptr<HdxIntersector> _intersector;
+    GfVec2i _selectionResolution;
+
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
     UsdMayaGLSoftSelectHelper _softSelectHelper;
