@@ -76,20 +76,6 @@ public:
         SdfVariability variability = SdfVariabilityVarying,
         bool custom = false);
 
-    /// Constructs a new relational attribute instance.
-    ///
-    /// Creates and returns a new attribute for the given relationship
-    /// and target. The \p owner will own the newly created attribute.
-    /// The new attribute will appear at the end of the target's
-    /// attribute list.
-    SDF_API
-    static SdfAttributeSpecHandle
-    New(const SdfRelationshipSpecHandle& owner,
-        const SdfPath& targetPath,
-        const std::string& name, const SdfValueTypeName& typeName,
-        SdfVariability variability = SdfVariabilityVarying,
-        bool custom = false);
-
     /// @}
 
 public:
@@ -206,14 +192,6 @@ private:
     static SdfAttributeSpecHandle
     _New(const SdfSpecHandle &owner,
          const SdfPath& attributePath,
-         const SdfValueTypeName& typeName,
-         SdfVariability variability,
-         bool custom);
-
-    static SdfAttributeSpecHandle
-    _New(const SdfRelationshipSpecHandle& owner,
-         const SdfPath& targetPath,
-         const std::string& name,
          const SdfValueTypeName& typeName,
          SdfVariability variability,
          bool custom);

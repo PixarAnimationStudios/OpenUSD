@@ -34,6 +34,7 @@
 #include "pxr/usd/sdf/pyChildrenProxy.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/base/tf/pyContainerConversions.h"
 
 #include <boost/python.hpp>
 
@@ -77,6 +78,10 @@ void wrapAttributeSpec()
     typedef SdfAttributeSpec This;
     typedef SdfAttributeSpecHandle ThisHandle;
 
+    TfPyContainerConversions::from_python_sequence<
+        std::vector< SdfAttributeSpecHandle >,
+        TfPyContainerConversions::variable_capacity_policy >();
+
     // Get function pointers to static New methods.
     ThisHandle (*wrapNewPrimAttr)(const SdfPrimSpecHandle&,
                                   const std::string&,
@@ -84,13 +89,6 @@ void wrapAttributeSpec()
                                   SdfVariability,
                                   bool) = &This::New;
                                 
-    ThisHandle (*wrapNewRelAttr)(const SdfRelationshipSpecHandle&,
-                                 const SdfPath&,
-                                 const std::string&,
-                                 const SdfValueTypeName&,
-                                 SdfVariability,
-                                 bool) = &This::New;
-
     class_<This, SdfHandle<This>, 
            bases<SdfPropertySpec>, boost::noncopyable>
         ("AttributeSpec", no_init)
@@ -114,27 +112,6 @@ void wrapAttributeSpec()
                  arg("variability") = SdfVariabilityVarying,
                  arg("declaresCustom") = false))
 
-        .def("__unused__",
-            SdfMakePySpecConstructor(wrapNewRelAttr,
-                "__init__(ownerRelationshipSpec, targetPath, name, typeName, "
-                "variability = Sd.VariabilityVarying, "
-                "declaresCustom = False)\n"
-                "ownerRelationshipSpec : RelationshipSpec\n"
-                "targetPath : Path\n"
-                "name : string\n"
-                "typeName : SdfValueTypeName\n"
-                "variability : SdfVariability\n"
-                "declaresCustom : bool\n\n"
-                "Create a custom attribute spec that is a relational attribute "
-                "of targetPath in ownerRelationshipSpec with the given name "
-                "and type."),
-                (arg("ownerRelationshipSpec"),
-                 arg("targetPath"),
-                 arg("name"),
-                 arg("typeName"),
-                 arg("variability") = SdfVariabilityVarying,
-                 arg("declaresCustom") = false))
-        
         .def("GetConnectionPathForMapper", &This::GetConnectionPathForMapper)
         .def("ChangeMapperPath", &This::ChangeMapperPath)
         

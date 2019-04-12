@@ -2187,29 +2187,29 @@ SdfLayer::RemovePropertyIfHasOnlyRequiredFields(SdfPropertySpecHandle prop)
     if (!(prop && prop->HasOnlyRequiredFields()))
         return;
 
-    // XXX -- This doesn't deal with relational attributes;  bug 20145.
     if (SdfPrimSpecHandle owner = 
         TfDynamic_cast<SdfPrimSpecHandle>(prop->GetOwner())) {
 
         owner->RemoveProperty(prop);
         _RemoveInertToRootmost(owner);
 
-    } else if (SdfRelationshipSpecHandle owner = 
-               TfDynamic_cast<SdfRelationshipSpecHandle>(prop->GetOwner())) {
-
-        if (SdfAttributeSpecHandle attr = 
-            TfDynamic_cast<SdfAttributeSpecHandle>(prop)) {
-
-            owner->RemoveAttributeForTargetPath(
-                owner->GetTargetPathForAttribute(attr), attr);
-
-            //XXX: We may want to do something like 
-            //     _RemoveInertToRootmost here, but that would currently 
-            //     exacerbate bug 23878. Until we have  a solution for that bug,
-            //     we won't automatically clean up our parent (and his parent, 
-            //     etc) when deleting a relational attribute.
-        }
+    } 
+    else if (SdfAttributeSpecHandle attr = 
+             TfDynamic_cast<SdfAttributeSpecHandle>(prop)) {
+        Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::RemoveChild(
+            SdfCreateHandle(this), 
+            attr->GetPath().GetParentPath(), attr->GetNameToken());
     }
+    else if (SdfRelationshipSpecHandle rel = 
+             TfDynamic_cast<SdfRelationshipSpecHandle>(prop)) {
+        Sdf_ChildrenUtils<Sdf_RelationshipChildPolicy>::RemoveChild(
+            SdfCreateHandle(this), 
+            rel->GetPath().GetParentPath(), rel->GetNameToken());
+    }
+    //XXX: We may want to do something like 
+    //     _RemoveInertToRootmost here, but that would currently 
+    //     exacerbate bug 23878. Until we have  a solution for that bug,
+    //     we won't automatically clean up our parents in this case.
 }
 
 void

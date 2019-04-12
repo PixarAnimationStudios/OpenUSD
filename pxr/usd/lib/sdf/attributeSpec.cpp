@@ -79,24 +79,6 @@ SdfAttributeSpec::New(
 }
 
 SdfAttributeSpecHandle
-SdfAttributeSpec::New(
-    const SdfRelationshipSpecHandle& owner,
-    const SdfPath& targetPath,
-    const std::string& name,
-    const SdfValueTypeName& typeName,
-    SdfVariability variability,
-    bool custom)
-{
-    TRACE_FUNCTION();
-
-    if (!owner) {
-        TF_CODING_ERROR("NULL owner relationship");
-        return TfNullPtr;
-    }
-    return _New(owner, targetPath, name, typeName, variability, custom);
-}
-
-SdfAttributeSpecHandle
 SdfAttributeSpec::_New(
     const SdfSpecHandle &owner,
     const SdfPath& attrPath,
@@ -129,71 +111,6 @@ SdfAttributeSpec::_New(
     SdfAttributeSpecHandle spec =
 	owner->GetLayer()->GetAttributeAtPath(attrPath);
 
-    // Avoid expensive dormancy checks in the case of binary-backed data.
-    SdfAttributeSpec *specPtr = get_pointer(spec);
-    if (TF_VERIFY(specPtr)) {
-        specPtr->SetField(SdfFieldKeys->Custom, custom);
-        specPtr->SetField(SdfFieldKeys->TypeName, typeName.GetAsToken());
-        specPtr->SetField(SdfFieldKeys->Variability, variability);
-    }
-
-    return spec;
-}
-
-SdfAttributeSpecHandle
-SdfAttributeSpec::_New(
-    const SdfRelationshipSpecHandle& owner,
-    const SdfPath& path,
-    const std::string& name,
-    const SdfValueTypeName& typeName,
-    SdfVariability variability,
-    bool custom)
-{
-    if (!owner) {
-        TF_CODING_ERROR("NULL owner");
-        return TfNullPtr;
-    }
-    if (!typeName) {
-        TF_CODING_ERROR("Cannot create attribute spec <%s> with invalid type",
-                        owner->GetPath().AppendTarget(path).
-                            AppendProperty(TfToken(name)).GetText());
-	return TfNullPtr;
-    }
-
-    SdfChangeBlock block;
-
-    // Determine the path of the relationship target
-    SdfPath absPath = path.MakeAbsolutePath(owner->GetPath().GetPrimPath());
-    SdfPath targetPath = owner->GetPath().AppendTarget(absPath);
-
-    // Check to make sure that the name is valid
-    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
-        TF_CODING_ERROR(
-            "Cannot create attribute on %s with invalid name: %s",
-            targetPath.GetText(), name.c_str());
-        return TfNullPtr;
-    }
-
-    // Create the relationship target if it doesn't already exist. Note
-    // that this does not automatically get added to the relationship's
-    // target path list.
-    SdfSpecHandle targetSpec = owner->_FindOrCreateTargetSpec(path);
-
-    // AttributeSpecs are considered initially to have only required fields 
-    // only if they are not custom.
-    bool hasOnlyRequiredFields = (!custom);
-
-    // Create the relational attribute spec
-    SdfPath attrPath = targetPath.AppendRelationalAttribute(TfToken(name));
-    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
-            owner->GetLayer(), attrPath, SdfSpecTypeAttribute, 
-            hasOnlyRequiredFields)) {
-        return TfNullPtr;
-    }
-
-    SdfAttributeSpecHandle spec =
-        owner->GetLayer()->GetAttributeAtPath(attrPath);
-    
     // Avoid expensive dormancy checks in the case of binary-backed data.
     SdfAttributeSpec *specPtr = get_pointer(spec);
     if (TF_VERIFY(specPtr)) {

@@ -118,7 +118,6 @@ class TestSdfParsing(unittest.TestCase):
         105_mapperMetadata.sdf
         104_uniformAttributes.sdf
         103_bad_attributeVariability.sdf
-        101_relationalAttrOverrides.sdf
         100_bad_roleNameChange.sdf
         99_bad_typeNameChange.sdf
         98_bad_valueType.sdf

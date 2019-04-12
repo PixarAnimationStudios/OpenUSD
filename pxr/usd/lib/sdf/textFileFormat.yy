@@ -640,10 +640,7 @@ _PrimInitAttribute(const Value &arg1, Sdf_TextParserContext *context)
         Err(context, "'%s' is not a valid attribute name", name.GetText());
     }
 
-    if (context->path.IsTargetPath())
-        context->path = context->path.AppendRelationalAttribute(name);
-    else
-        context->path = context->path.AppendProperty(name);
+    context->path = context->path.AppendProperty(name);
 
     // If we haven't seen this attribute before, then set the object type
     // and add it to the parent's list of properties. Otherwise both have
@@ -1215,7 +1212,6 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 %token TOK_ABSTRACT
 %token TOK_ADD
 %token TOK_APPEND
-%token TOK_ATTRIBUTES
 %token TOK_CLASS
 %token TOK_CONFIG
 %token TOK_CONNECT
@@ -1268,7 +1264,6 @@ keyword:
       TOK_ABSTRACT
     | TOK_ADD
     | TOK_APPEND
-    | TOK_ATTRIBUTES
     | TOK_CLASS
     | TOK_CONFIG
     | TOK_CONNECT
@@ -2979,13 +2974,6 @@ prim_relationship:
             _RelationshipInitTarget(context->relParsingTargetPaths->back(),
                                     context);
         }
-    relational_attributes {
-            // This clause only defines relational attributes for a target,
-            // it does not add to the relationship target list. However, we 
-            // do need to create a relationship target spec to associate the
-            // attributes with.
-            _PrimEndRelationship(context);
-        }
     | prim_relationship_time_samples
     | prim_relationship_default
     ;
@@ -3106,65 +3094,6 @@ relationship_target:
     TOK_PATHREF {
             _RelationshipAppendTargetPath($1, context);
         }
-    relational_attributes_opt
-    ;
-
-relational_attributes_opt:
-    /* empty */
-    | relational_attributes
-    ;
-
-relational_attributes:
-    '{' {
-            _RelationshipInitTarget(context->relParsingTargetPaths->back(), 
-                                    context);
-            context->path = context->path.AppendTarget( 
-                context->relParsingTargetPaths->back() );
-
-            context->propertiesStack.push_back(std::vector<TfToken>());
-
-            if (!context->relParsingAllowTargetData) {
-                Err(context, 
-                    "Relational attributes cannot be specified in lists of "
-                    "targets to be deleted or reordered");
-            }
-        }
-    newlines_opt relational_attributes_list_opt '}' {
-        if (!context->propertiesStack.back().empty()) {
-            _SetField(
-                context->path, SdfChildrenKeys->PropertyChildren, 
-                context->propertiesStack.back(), context);
-        }
-        context->propertiesStack.pop_back();
-
-        context->path = context->path.GetParentPath();
-    }
-    ;
-
-relational_attributes_list_opt:
-    /* empty */
-    | relational_attributes_list stmtsep_opt
-    ;
-
-relational_attributes_list:
-    relational_attributes_list_item
-    | relational_attributes_list stmtsep relational_attributes_list_item
-    ;
-
-/* XXX: the fact that relational_attribute uses prim_attribute is confusing */
-relational_attributes_list_item:
-    prim_attribute {
-        }
-    | relational_attributes_order_stmt
-    ;
-
-relational_attributes_order_stmt:
-    TOK_REORDER TOK_ATTRIBUTES '=' name_list {
-            _SetField(
-                context->path, SdfFieldKeys->PropertyOrder, 
-                context->nameVector, context);
-            context->nameVector.clear();
-        } 
     ;
 
 //--------------------------------------------------------------------

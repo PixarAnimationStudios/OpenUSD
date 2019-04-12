@@ -896,31 +896,6 @@ Sdf_WriteRelationshipTargetList(
             Sdf_FileIOUtility::Write(out, indent, "");
         }
         Sdf_FileIOUtility::WriteSdfPath( out, 0, targetPaths[i] );
-        if (flags & Sdf_WriteFlagAttributes) {
-
-            std::vector< SdfAttributeSpecHandle > attrs =
-                rel.GetAttributesForTargetPath( targetPaths[i] ).values();
-
-            std::vector< TfToken > attrOrderNames =
-                rel.GetAttributeOrderForTargetPath( targetPaths[i] );
-
-            if (!attrs.empty() || attrOrderNames.size() > 1 ) {
-
-                Sdf_FileIOUtility::Write(out, 0, " {\n");
-
-                if ( attrOrderNames.size() > 1 ) {
-                    Sdf_FileIOUtility::Write(
-                        out, indent+1, "reorder attributes = " );
-                    Sdf_FileIOUtility::WriteNameVector(
-                        out, indent+1, attrOrderNames );
-                    Sdf_FileIOUtility::Write( out, 0, "\n" );
-                }
-
-                TF_FOR_ALL(it, attrs)
-                    (*it)->WriteToStream(out, indent+1);
-                Sdf_FileIOUtility::Write(out, indent, "}");
-            }
-        }
         if (targetPaths.size() > 1) {
             Sdf_FileIOUtility::Write(out, 0,",\n");
         }
@@ -933,44 +908,6 @@ Sdf_WriteRelationshipTargetList(
     if (!(flags & Sdf_WriteFlagNoLastNewline)) {
         Sdf_FileIOUtility::Write(out, 0,"\n");
     }
-    return true;
-}
-
-static bool
-Sdf_WriteRelationalAttributesForTarget(
-    const SdfRelationshipSpec &rel,
-            const SdfPath &targetPath,
-            std::ostream &out, size_t indent)
-{
-    std::vector< SdfAttributeSpecHandle > attrs =
-        rel.GetAttributesForTargetPath( targetPath ).values();
-    std::vector< TfToken > attrOrderNames =
-        rel.GetAttributeOrderForTargetPath( targetPath );
-    if (!attrs.empty() || attrOrderNames.size() > 1) {
-        Sdf_FileIOUtility::Write(out, indent, "rel ");
-
-        Sdf_FileIOUtility::Write(
-            out, 0, rel.GetName().c_str());
-        Sdf_FileIOUtility::Write(
-            out, 0, "[");
-        Sdf_FileIOUtility::WriteSdfPath(
-            out, 0, targetPath);
-        Sdf_FileIOUtility::Write(
-            out, 0, "] {\n");
-
-        if ( attrOrderNames.size() > 1 ) {
-            Sdf_FileIOUtility::Write(
-                out, indent+1, "reorder attributes = " );
-            Sdf_FileIOUtility::WriteNameVector(
-                out, indent+1, attrOrderNames );
-            Sdf_FileIOUtility::Write( out, 0, "\n" );
-        }
-
-        TF_FOR_ALL(it, attrs)
-            (*it)->WriteToStream(out, indent+1);
-        Sdf_FileIOUtility::Write(out, indent, "}\n");
-    }
-
     return true;
 }
 
@@ -1031,32 +968,11 @@ Sdf_WriteRelationship(
     bool isVarying = (rel.GetVariability() == SdfVariabilityVarying);
     std::string varyingStr = isVarying ? "varying " : ""; // the space in "varying " is required...
 
-    // Figure out if there are any rel attrs to write
-    bool hasRelAttrs = false;
-    SdfPathVector attrTargetPaths = rel.GetAttributeTargetPaths();
-    SdfPathVector attrOrderTargetPaths = rel.GetAttributeOrderTargetPaths();
-    // Just combine the lists of paths with attrs and paths with attr orders
-    attrTargetPaths.insert(attrTargetPaths.end(), attrOrderTargetPaths.begin(),
-                attrOrderTargetPaths.end());
-    TF_FOR_ALL(pathIt, attrTargetPaths) {
-        hasRelAttrs =
-                    ((!rel.GetAttributesForTargetPath(*pathIt).empty()) ||
-                    (rel.GetAttributeOrderForTargetPath(*pathIt).size() > 1));
-        if (hasRelAttrs) {
-            break;
-        }
-    }
-
-    // We'll keep track of the target paths that we have written attribute
-    // blocks for (as part of explicit targets or added targets) so we'll
-    // know at the end which ones we need to write out as override blocks
-    // for targets we don't otherwise have opinions about.
-    std::set<SdfPath> targetsWhoseAttrsAreWritten;
 
     // Write the basic line if we have info or a default (i.e. explicit
     // targets) or if we have nothing else to write and we're not custom
     if (hasInfo || (hasTargets && hasExplicitTargets) ||
-        (!hasTargetListOps && !hasRelAttrs && !rel.IsCustom()))
+        (!hasTargetListOps && !rel.IsCustom()))
     {
 
         if (hasCustom) {
@@ -1078,8 +994,6 @@ Sdf_WriteRelationship(
                 // Write explicit targets
                 Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent,
                             Sdf_WriteFlagAttributes | Sdf_WriteFlagNoLastNewline);
-                targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),
-                            targetPaths.end());
             }
         }
 
@@ -1154,24 +1068,18 @@ Sdf_WriteRelationship(
             Sdf_FileIOUtility::Write( out, indent, "add %srel %s",
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagAttributes);
-            targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),
-                        targetPaths.end());
         }
         targetPaths = targetPathList.GetPrependedItems();
         if (!targetPaths.empty()) {
             Sdf_FileIOUtility::Write( out, indent, "prepend %srel %s",
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagAttributes);
-            targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),
-                        targetPaths.end());
         }
         targetPaths = targetPathList.GetAppendedItems();
         if (!targetPaths.empty()) {
             Sdf_FileIOUtility::Write( out, indent, "append %srel %s",
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagAttributes);
-            targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),
-                        targetPaths.end());
         }
 
         // Write ordered targets
@@ -1180,15 +1088,6 @@ Sdf_WriteRelationship(
             Sdf_FileIOUtility::Write( out, indent, "reorder %srel %s",
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagDefault);
-        }
-    }
-
-    // Write out relational attributes for targets we haven't handled above
-    TF_FOR_ALL(pathIt, attrTargetPaths) {
-        if (targetsWhoseAttrsAreWritten.count(*pathIt) == 0) {
-            // We have not written attributes for this one.
-            Sdf_WriteRelationalAttributesForTarget(rel, *pathIt, out, indent);
-            targetsWhoseAttrsAreWritten.insert(*pathIt);
         }
     }
 

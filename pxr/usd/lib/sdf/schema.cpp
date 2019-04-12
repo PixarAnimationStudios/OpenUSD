@@ -763,9 +763,7 @@ SdfSchemaBase::_RegisterStandardFields()
         .MetadataField(SdfFieldKeys->NoLoadHint,
                        SdfMetadataDisplayGroupTokens->core);
 
-    _Define(SdfSpecTypeRelationshipTarget)
-        .Field(SdfChildrenKeys->PropertyChildren)
-        .Field(SdfFieldKeys->PropertyOrder);
+    _Define(SdfSpecTypeRelationshipTarget);
 
     _Define(SdfSpecTypeVariantSet)
         .Field(SdfChildrenKeys->VariantChildren);
