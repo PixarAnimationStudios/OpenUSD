@@ -31,7 +31,6 @@ def Scope "Prim"
         1: 2,
         2: 4,
     }
-    double bar:argle.mapper[ </Prim.bar:baz> ] = TestMapper
     double bar:baz = 1.2
     double foo:argle = 3.4
     double foo:argle.connect = </Prim.foo:baz>

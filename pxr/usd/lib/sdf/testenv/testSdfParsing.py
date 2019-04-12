@@ -80,7 +80,6 @@ class TestSdfParsing(unittest.TestCase):
         177_bad_empty_lists.sdf
         176_empty_lists.sdf
         175_asset_path_with_colons.sdf
-        164_attr_mappers.sdf
         163_bad_variant_selection2.sdf
         162_bad_variant_selection1.sdf
         161_bad_variant_name2.sdf
@@ -115,7 +114,6 @@ class TestSdfParsing(unittest.TestCase):
         112_nested_dictionaries.sdf
         111_string_arrays.sdf
         108_bad_inheritPath.sdf
-        105_mapperMetadata.sdf
         104_uniformAttributes.sdf
         103_bad_attributeVariability.sdf
         100_bad_roleNameChange.sdf

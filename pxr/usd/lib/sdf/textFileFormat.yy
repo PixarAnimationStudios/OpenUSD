@@ -923,16 +923,6 @@ _PathSetPrim(const Value& arg1, Sdf_TextParserContext *context)
 }
 
 static void
-_PathSetProperty(const Value& arg1, Sdf_TextParserContext *context)
-{
-    const std::string& pathStr = arg1.Get<std::string>();
-    context->savedPath = SdfPath(pathStr);
-    if (!context->savedPath.IsPropertyPath()) {
-        Err(context, "'%s' is not a valid property path", pathStr.c_str());
-    }
-}
-
-static void
 _PathSetPrimOrPropertyScenePath(const Value& arg1,
                                 Sdf_TextParserContext *context)
 {
@@ -1225,7 +1215,6 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 %token TOK_DOC
 %token TOK_INHERITS
 %token TOK_KIND
-%token TOK_MAPPER
 %token TOK_NAMECHILDREN
 %token TOK_NONE
 %token TOK_OFFSET
@@ -1277,7 +1266,6 @@ keyword:
     | TOK_DOC
     | TOK_INHERITS
     | TOK_KIND
-    | TOK_MAPPER
     | TOK_NAMECHILDREN
     | TOK_NONE
     | TOK_OFFSET
@@ -2347,30 +2335,6 @@ prim_attribute_connect :
     }
     ;
 
-prim_attribute_mapper:
-    prim_attribute_full_type namespaced_name '.' TOK_MAPPER '[' property_path ']' '=' {
-        _PrimInitAttribute($2, context);
-        context->mapperTarget = context->savedPath;
-        context->path = context->path.AppendMapper(context->mapperTarget);
-    } 
-    attribute_mapper_rhs {
-        SdfPath targetPath = context->path.GetTargetPath();
-        context->path = context->path.GetParentPath(); // pop mapper
-
-        // Add this mapper to the list of mapper children (keyed by the mapper's
-        // connection path) on this attribute.
-        //
-        // XXX:
-        // Conceptually, this is incorrect -- mappers are children of attribute
-        // connections, not attributes themselves. This is OK for now and should
-        // be fixed by the introduction of real attribute connection specs in Sd.
-        _AppendVectorItem<SdfPath>(SdfChildrenKeys->MapperChildren, targetPath,
-                                  context);
-
-        context->path = context->path.GetParentPath(); // pop attr
-    }
-    ;
-
 prim_attribute_time_samples:
     prim_attribute_full_type namespaced_name '.' TOK_TIME_SAMPLES '=' {
             _PrimInitAttribute($2, context);
@@ -2387,84 +2351,12 @@ prim_attribute:
     prim_attribute_fallback
     | prim_attribute_default
     | prim_attribute_connect
-    | prim_attribute_mapper
     | prim_attribute_time_samples
     ;
 
 //--------------------------------------------------------------------
-// Attribute connections and mappers
+// Attribute connections
 //--------------------------------------------------------------------
-
-// TODO: handle mapper expressions here, as TOK_STRING
-attribute_mapper_rhs:
-    name {
-        const std::string mapperName($1.Get<std::string>());
-        if (_HasSpec(context->path, context)) {
-            Err(context, "Duplicate mapper");
-        }
-
-        _CreateSpec(context->path, SdfSpecTypeMapper, context);
-        _SetField(context->path, SdfFieldKeys->TypeName, mapperName, context);
-    } 
-    attribute_mapper_metadata_opt
-    //XXX: We want to allow optional newlines here, but adding this to
-    //     the attribute_mapper_params_opt production rule makes the
-    //     parser consume newlines even in the case there is no params
-    //     and it chokes later due to a missing separator...
-    attribute_mapper_params_opt
-    ;
-
-attribute_mapper_params_opt:
-    /* empty */
-    | '{' newlines_opt '}'
-    | '{' newlines_opt attribute_mapper_params_list stmtsep_opt '}' {
-        _SetField(
-            context->path, SdfChildrenKeys->MapperArgChildren, 
-            context->mapperArgsNameVector, context);
-        context->mapperArgsNameVector.clear();
-    }
-    ;
-
-attribute_mapper_params_list:
-    attribute_mapper_param
-    | attribute_mapper_params_list stmtsep attribute_mapper_param
-    ;
-
-attribute_mapper_param:
-    prim_attr_type name {
-            TfToken mapperParamName($2.Get<std::string>());
-            context->mapperArgsNameVector.push_back(mapperParamName);
-            context->path = context->path.AppendMapperArg(mapperParamName);
-
-            _CreateSpec(context->path, SdfSpecTypeMapperArg, context);
-
-        } '=' typed_value {
-            _SetField(
-                context->path, SdfFieldKeys->MapperArgValue, 
-                context->currentValue, context);
-            context->path = context->path.GetParentPath(); // pop mapper arg
-        }
-    ;
-
-attribute_mapper_metadata_opt:
-    /* empty */
-    | '(' newlines_opt ')'
-    | '(' newlines_opt attribute_mapper_metadata_list stmtsep_opt ')'
-    ;
-
-attribute_mapper_metadata_list:
-    attribute_mapper_metadata
-    | attribute_mapper_metadata_list stmtsep attribute_mapper_metadata
-    ;
-
-attribute_mapper_metadata:
-    TOK_SYMMETRYARGUMENTS '=' typed_dictionary {
-            _SetField(
-                context->path, SdfFieldKeys->SymmetryArgs, 
-                context->currentDictionaries[0], context);
-            context->currentDictionaries[0].clear();
-        }
-    ;
 
 connect_rhs:
     TOK_NONE
@@ -3113,19 +3005,13 @@ prim_path:
         }
     ;
 
-property_path:
-    TOK_PATHREF {
-            _PathSetProperty($1, context);
-        }
-    ;
-
 prim_or_property_scene_path:
     TOK_PATHREF {
             _PathSetPrimOrPropertyScenePath($1, context);
         }
     ;
 
-// A generic name, used to name prims, mappers, mapper parameters, etc.
+// A generic name, used to name prims, etc.
 //
 // We accept C/Python identifiers, C++ namespaced identifiers, and our
 // full set of keywords to ensure that we don't prevent people from using

@@ -22,7 +22,6 @@ def Scope "Prim"
         1: 2,
         2: 4,
     }
-    double bar:argle.mapper[ </Prim.bar:baz> ] = TestMapper
     rel argle:bargle = </Prim/Child>
     rel a:b:c.timeSamples = {
         1: </Prim>,

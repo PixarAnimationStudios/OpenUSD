@@ -31,8 +31,6 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerOffset.h"
-#include "pxr/usd/sdf/mapperSpec.h"
-#include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
@@ -708,13 +706,6 @@ Sdf_WriteAttribute(
     bool hasConnections       = attr.HasField(SdfFieldKeys->ConnectionPaths);
     bool hasTimeSamples       = attr.HasField(SdfFieldKeys->TimeSamples);
 
-    // The mapper children field contains all connection paths for which
-    // mappers exist, so for efficiency purposes we can directly grab that 
-    // field instead of going through the mapper proxy.
-    SdfPathVector mapperPaths = 
-        attr.GetFieldAs<SdfPathVector>(SdfChildrenKeys->MapperChildren);
-    bool hasMappers = !mapperPaths.empty();
-
     std::string typeName =
         SdfValueTypeNames->GetSerializationName(attr.GetTypeName()).GetString();
 
@@ -734,7 +725,7 @@ Sdf_WriteAttribute(
     // Write the basic line if we have info or a default or if we
     // have nothing else to write.
     if (hasInfo || hasDefault || hasCustomDeclaration ||
-        (!hasConnections && !hasMappers && !hasTimeSamples))
+        (!hasConnections && !hasTimeSamples))
     {
         VtValue value;
 
@@ -812,56 +803,6 @@ Sdf_WriteAttribute(
         Sdf_WriteConnectionList(out, indent, attr.GetConnectionPathList(),
                                variabilityStr, typeName,
                                attr.GetName(), &attr);
-    }
-
-    std::sort(mapperPaths.begin(), mapperPaths.end());
-    TF_FOR_ALL(it, mapperPaths) {
-        const SdfPath mapperPath = attr.GetPath().AppendMapper(*it);
-        const SdfMapperSpecHandle mapper = TfStatic_cast<SdfMapperSpecHandle>(
-            attr.GetLayer()->GetObjectAtPath(mapperPath));
-        if (!TF_VERIFY(mapper)) {
-            continue;
-        }
-
-        SdfMapperParametersMap params;
-        const SdfMapperArgsProxy args = mapper->GetArgs();
-        TF_FOR_ALL(argIt, args) {
-            const SdfMapperArgSpecHandle arg = argIt->second;
-            params[argIt->first] = arg->GetValue();
-        }
-        
-        const VtDictionary symmetryArgs = 
-            mapper->GetFieldAs<VtDictionary>(SdfFieldKeys->SymmetryArgs);
-
-        const std::string name = mapper->GetTypeName();
-
-        if (!name.empty()) {
-            Sdf_FileIOUtility::Write(out, indent, "%s%s %s.mapper[ ",
-                                    variabilityStr.c_str(),
-                                    typeName.c_str(), attr.GetName().c_str() );
-            Sdf_FileIOUtility::WriteSdfPath(out, 0, (*it));
-            Sdf_FileIOUtility::Write(out, 0, " ] = %s", name.c_str() );
-            if (!symmetryArgs.empty()) {
-                Sdf_FileIOUtility::Write(out, 0, " (\n");
-                Sdf_FileIOUtility::Write(out, indent+1, "symmetryArguments = ");
-                Sdf_FileIOUtility::WriteDictionary(out, indent+1,
-                                                  true, symmetryArgs);
-                Sdf_FileIOUtility::Write(out, indent, ")");
-            }
-            if (!params.empty()) {
-                Sdf_FileIOUtility::Write(out, 0, " {\n");
-                TF_FOR_ALL(paramIt, params) {
-                    const TfToken& name =
-                        SdfValueTypeNames->GetSerializationName(paramIt->second);
-                    Sdf_FileIOUtility::Write(out, indent+1, "%s %s = %s\n",
-                                            name.GetText(),
-                                            paramIt->first.c_str(),
-                                            Sdf_FileIOUtility::StringFromVtValue(paramIt->second).c_str() );
-                }
-                Sdf_FileIOUtility::Write(out, indent, "}");
-            }
-            Sdf_FileIOUtility::Write(out, 0, "\n");
-        }
     }
 
     return true;

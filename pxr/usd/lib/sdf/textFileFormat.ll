@@ -106,7 +106,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 "doc"                 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DOC; }
 "inherits"            { (*yylval_param) = std::string(yytext, yyleng); return TOK_INHERITS; }
 "kind"                { (*yylval_param) = std::string(yytext, yyleng); return TOK_KIND; }
-"mapper"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_MAPPER; }
 "nameChildren"        { (*yylval_param) = std::string(yytext, yyleng); return TOK_NAMECHILDREN; }
 "None"                { (*yylval_param) = std::string(yytext, yyleng); return TOK_NONE; }
 "offset"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_OFFSET; }
