@@ -25,6 +25,7 @@
 
 
 from pxr.Usdviewq.common import RenderModes, Complexities, Usd, UsdGeom
+from pxr import Vt, Gf
 
 
 # Remove any unwanted visuals from the view, and enable autoClip
@@ -74,6 +75,48 @@ def _testInvisVisOnPlayback(appController):
     appController.setFrame(8, forceUpdate=True)
     _takeShot(appController, "vis_frame_8.png")
 
+# Force the skinned prim to resync by modifying a built-in primvar (such
+# as displayColor).
+def _testResyncSkinnedPrim(appController):
+    appController._dataModel.viewSettings.renderMode = RenderModes.FLAT_SHADED
+    appController.setFrame(2, forceUpdate=True)
+    _takeShot(appController, "pre_skinned_prim_resync_frame_2.png")
+
+    stage = appController._dataModel.stage
+    arm = stage.GetPrimAtPath("/Model/Arm")
+    attr = arm.GetAttribute('primvars:displayColor')
+    # Changing the display color should trigger the resync
+    attr.Set(Vt.Vec3fArray(1, Gf.Vec3f(1.0,0.0,0.0)))
+
+    appController._stageView.updateGL()
+    _takeShot(appController, "post_skinned_prim_resync_frame_2.png")
+
+# Force the skeleton prim to resync by modifying its rest xform.
+def _testResyncSkeleton(appController):
+    appController._dataModel.viewSettings.renderMode = RenderModes.FLAT_SHADED
+    appController.setFrame(6, forceUpdate=True)
+    _takeShot(appController, "pre_skel_resync_frame_6.png")
+
+    stage = appController._dataModel.stage
+    arm = stage.GetPrimAtPath("/Model/Skel")
+    attr = arm.GetAttribute('restTransforms')
+    # Changing the rest xform should trigger the resync
+    attr.Set(Vt.Matrix4dArray(3, (Gf.Matrix4d(1.0, 0.0, 0.0, 0.0,
+                                              0.0, 1.0, 0.0, 0.0,
+                                              0.0, 0.0, 1.0, 0.0,
+                                              1.0, 2.0, 3.0, 1.0),
+                                  Gf.Matrix4d(1.0, 0.0, 0.0, 0.0,
+                                              0.0, 1.0, 0.0, 0.0,
+                                              0.0, 0.0, 1.0, 0.0,
+                                              3.0, 4.0, 3.0, 1.0),
+                                  Gf.Matrix4d(1.0, 0.0, 0.0, 0.0,
+                                              0.0, 1.0, 0.0, 0.0,
+                                              0.0, 0.0, 1.0, 0.0,
+                                              2.0, 0.0, 2.0, 1.0))))
+
+    appController._stageView.updateGL()
+    _takeShot(appController, "post_skel_resync_frame_6.png")
+
 # Skinning makes use of adapter hijacking (for the skinned prims). Callbacks
 # for various operations need to be forwarded/processed correctly.
 # This test attempts to capture these scenarios.
@@ -81,3 +124,5 @@ def testUsdviewInputFunction(appController):
     _modifySettings(appController)
     _testChangeComplexity(appController)
     _testInvisVisOnPlayback(appController)
+    _testResyncSkinnedPrim(appController)
+    _testResyncSkeleton(appController)

@@ -50,6 +50,13 @@ def SkelRoot "Model" {
             (-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0),
             (-0.5, 0.5, 2), (0.5, 0.5, 2), (0.5, -0.5, 2), (-0.5, -0.5, 2)
         ]
+        float3[] primvars:displayColor = [(0.5, 0.5, 0.5)] (
+            interpolation = "constant"
+        )
+        float[] primvars:displayOpacity = [1.0] (
+            interpolation = "constant"
+        )
+
         int[] primvars:skel:jointIndices = [
             2,2,2,2, 0,0,0,0, 1,1,1,1
         ] (
