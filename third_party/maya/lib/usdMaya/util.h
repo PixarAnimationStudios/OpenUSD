@@ -269,8 +269,8 @@ bool isRenderable(const MObject& object);
 /// Determine whether a Maya object can be saved to or exported from the Maya
 /// scene.
 ///
-/// Objects whose "do not write" status cannot be determined using the
-/// MFnDependencyNode function set are assumed to be writable.
+/// Objects whose "default node" or "do not write" status cannot be determined
+/// using the MFnDependencyNode function set are assumed to be writable.
 PXRUSDMAYA_API
 bool isWritable(const MObject& object);
 

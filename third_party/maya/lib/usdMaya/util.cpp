@@ -611,12 +611,17 @@ UsdMayaUtil::isWritable(const MObject& object)
         return true;
     }
 
-    const bool isWritableObj = depNodeFn.canBeWritten(&status);
+    const bool isDefaultNode = depNodeFn.isDefaultNode(&status);
     if (status != MS::kSuccess) {
         return true;
     }
 
-    return isWritableObj;
+    const bool canBeWritten = depNodeFn.canBeWritten(&status);
+    if (status != MS::kSuccess) {
+        return true;
+    }
+
+    return (!isDefaultNode && canBeWritten);
 }
 
 std::string
