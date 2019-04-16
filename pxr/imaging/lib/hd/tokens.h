@@ -108,6 +108,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (totalItemCount)                            \
     (transform)                                 \
     (transformInverse)                          \
+    (velocities)                                \
     (visibility)                                \
     (widths)
 

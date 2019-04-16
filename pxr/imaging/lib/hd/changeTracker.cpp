@@ -638,6 +638,8 @@ HdChangeTracker::IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
     bool isDirty = false;
     if (name == HdTokens->points) {
         isDirty = (dirtyBits & DirtyPoints) != 0;
+    } else if (name == HdTokens->velocities) {
+        isDirty = (dirtyBits & DirtyPoints) != 0;
     } else if (name == HdTokens->normals) {
         isDirty = (dirtyBits & DirtyNormals) != 0;
     } else if (name == HdTokens->widths) {
