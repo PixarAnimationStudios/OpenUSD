@@ -64,11 +64,9 @@ else ()
             Ptexture.h
         HINTS
             "${PTEX_LOCATION}/include"
-            "${PTEX_LOCATION}/include/wdas"
-            "$ENV{PTEX_LOCATION}/include"
-            "$ENV{PTEX_LOCATION}/include/wdas"
             "${PTEX_LOCATION}/include/Ptex"
             "${PTEX_LOCATION}/include/wdas"
+            "$ENV{PTEX_LOCATION}/include/"
             "$ENV{PTEX_LOCATION}/include/Ptex"
             "$ENV{PTEX_LOCATION}/include/wdas"
         PATHS
