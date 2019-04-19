@@ -691,12 +691,16 @@ UsdStageRefPtr UsdKatanaCache::GetStage(
         const UsdStage::InitialLoadSet load = 
             (forcePopulate ? UsdStage::LoadAll : UsdStage::LoadNone);
 
+        auto& resolver = ArGetResolver();
+        resolver.ConfigureResolverForAsset(fileName);
+        ArResolverContext resolverContext = resolver.CreateDefaultContextForAsset(fileName);
+
         auto result = stageCache.RequestStage(
                 PxrUsdIn_StageOpenRequest(
                     load,
                     rootLayer,
                     sessionLayer,
-                    ArGetResolver().GetCurrentContext(),
+                    resolverContext,
                     mask));
         
         UsdStageRefPtr stage = result.first;
