@@ -96,7 +96,6 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _limitNormals(false)
     , _sceneNormals(false)
     , _flatNormals(false)
-    , _pointsVisibilityAuthored(false)
     , _hasVaryingTopology(false)
 {
     /*NOTHING*/
