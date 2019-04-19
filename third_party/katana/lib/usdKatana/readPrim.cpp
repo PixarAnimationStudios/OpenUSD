@@ -955,7 +955,7 @@ PxrUsdKatanaReadPrim(
                     TfStringTokenize(schema.GetString(), ":");
                 if (tokenizedSchema.size() == 1){
                     apiSchemasBuilder.set(tokenizedSchema[0],
-                                          FnKat::StringAttribute());
+                                          FnKat::StringAttribute(""));
                 }
                 else if (tokenizedSchema.size() == 2){
                     apiSchemasBuilder.set(
