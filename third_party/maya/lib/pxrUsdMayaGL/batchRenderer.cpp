@@ -44,7 +44,6 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/singleton.h"
@@ -90,15 +89,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-// XXX: Supporting area selections in depth (where an object that is occluded
-// by another object in the selection is also selected) currently comes with a
-// significant performance penalty if the number of objects grows large, so for
-// now we only expose that behavior with an env setting.
-TF_DEFINE_ENV_SETTING(PXRMAYAHD_ENABLE_DEPTH_SELECTION,
-                      false,
-                      "Enables area selection of objects occluded in depth");
 
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -410,7 +400,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _objectSoftSelectEnabled(false),
         _softSelectOptionsCallbackId(0),
         _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
-        _selectionResolution(256)
+        _selectionResolution(256),
+        _enableDepthSelection(false)
 {
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
@@ -744,6 +735,18 @@ UsdMayaGLBatchRenderer::SetSelectionResolution(const GfVec2i& widthHeight)
     }
 }
 
+bool
+UsdMayaGLBatchRenderer::IsDepthSelectionEnabled() const
+{
+    return _enableDepthSelection;
+}
+
+void
+UsdMayaGLBatchRenderer::SetDepthSelectionEnabled(const bool enabled)
+{
+    _enableDepthSelection = enabled;
+}
+
 const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
@@ -1075,12 +1078,11 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
-    // If the enable depth selection env setting has not been turned on, then
-    // we can optimize area/marquee selections by handling collections
-    // similarly to a single selection, where we test intersections against the
-    // single, viewport renderer-based collection.
-    const bool useDepthSelection =
-        (!singleSelection && TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION));
+    // If depth selection has not been turned on, then we can optimize
+    // area/marquee selections by handling collections similarly to a single
+    // selection, where we test intersections against the single, viewport
+    // renderer-based collection.
+    const bool useDepthSelection = (!singleSelection && _enableDepthSelection);
 
     const HdRprimCollectionVector rprimCollections =
         _GetIntersectionRprimCollections(bucketsMap, view3d, useDepthSelection);

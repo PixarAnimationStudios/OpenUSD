@@ -199,6 +199,14 @@ public:
     PXRUSDMAYAGL_API
     void SetSelectionResolution(const GfVec2i& widthHeight);
 
+    /// Gets whether depth selection has been enabled.
+    PXRUSDMAYAGL_API
+    bool IsDepthSelectionEnabled() const;
+
+    /// Sets whether to enable depth selection.
+    PXRUSDMAYAGL_API
+    void SetDepthSelectionEnabled(const bool enabled);
+
     /// Tests the object from the given shape adapter for intersection with
     /// a given selection context in the legacy viewport.
     ///
@@ -474,6 +482,7 @@ private:
 
     std::unique_ptr<HdxIntersector> _intersector;
     GfVec2i _selectionResolution;
+    bool _enableDepthSelection;
 
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
