@@ -1589,9 +1589,7 @@ GusdInstancerWrapper::unpack(
                 continue;
             }
 
-            if( storage == GT_STORE_REAL16 ||
-                storage == GT_STORE_REAL32 ||
-                storage == GT_STORE_REAL64 ) {
+            if(GTisFloat(storage)) {
 
                 GA_RWAttributeRef attr = 
                     gdr.addFloatTuple( GA_ATTRIB_POINT,
@@ -1625,9 +1623,7 @@ GusdInstancerWrapper::unpack(
                     }
                 }
             }
-            else if( storage == GT_STORE_UINT8 ||
-                     storage == GT_STORE_INT32 ||
-                     storage == GT_STORE_INT64 ) {
+            else if(GTisInteger(storage)) {
 
                 GA_RWAttributeRef attr = 
                     gdr.addIntTuple( GA_ATTRIB_POINT, 

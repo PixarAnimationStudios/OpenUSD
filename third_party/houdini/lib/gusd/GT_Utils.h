@@ -45,10 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GfMatrix4d;
 class GusdContext;
 class SdfPath;
+class SdfValueTypeName;
 class TfToken;
 class UsdAttribute;
-class UsdGeomImageable;
 class UsdGeomBoundable;
+class UsdGeomImageable;
 class UsdGeomXformable;
 
 //------------------------------------------------------------------------------
@@ -102,14 +103,19 @@ public:
 
 public:
 
-    static bool setUsdAttribute(UsdAttribute& destAttr,
+    /// Returns the GT_Type corresponding to a USD type.
+    static GT_Type getType(const SdfValueTypeName& typeName);
+
+    /// Returns the USD role name corresponding to the given GT type.
+    static TfToken getRole(GT_Type type);
+
+    static bool setUsdAttribute(const UsdAttribute& destAttr,
                                 const GT_DataArrayHandle& sourceAttr,
                                 UsdTimeCode time=UsdTimeCode::Default());
 
-
     static GT_DataArrayHandle getExtentsArray(const GT_PrimitiveHandle& gtPrim);
 
-    static void setPrimvarSample( UsdGeomImageable& usdPrim, 
+    static bool setPrimvarSample( const UsdGeomImageable& usdPrim, 
                                   const TfToken &name, 
                                   const GT_DataArrayHandle& data, 
                                   const TfToken& interpolation,
@@ -118,14 +124,14 @@ public:
     static bool isDataConstant( const GT_DataArrayHandle& data );
 
     static void setCustomAttributesFromGTPrim(
-                       UsdGeomImageable &usdGeomPrim,
+                       const UsdGeomImageable &usdGeomPrim,
                        const GT_AttributeListHandle& gtAttrs,
                        std::set<std::string>& excludeSet,
                        UsdTimeCode time=UsdTimeCode::Default());
 
 
     // TODO remove
-    static bool setTransformFromGTArray(UsdGeomXformable& usdGeom,
+    static bool setTransformFromGTArray(const UsdGeomXformable& usdGeom,
                                         const GT_DataArrayHandle& xform,
                                         const TransformLevel transformLevel,
                                         UsdTimeCode time=UsdTimeCode::Default());
@@ -153,47 +159,9 @@ public:
 
     static std::string
     makeValidIdentifier(const TfToken& usdFilePath, const SdfPath& nodePath);
-
-
-    /** Struct for querying storage by POD type.
-        XXX: replace this with a constexpr in C++11 */
-    template <typename T>
-    struct StorageByType;
 }; 
 //------------------------------------------------------------------------------
 
-
-template <>
-struct GusdGT_Utils::StorageByType<bool>
-{ static const GT_Storage value = GT_STORE_UINT8; };
-
-template <>
-struct GusdGT_Utils::StorageByType<uint8>
-{ static const GT_Storage value = GT_STORE_UINT8; };
-
-template <>
-struct GusdGT_Utils::StorageByType<int32>
-{ static const GT_Storage value = GT_STORE_INT32; };
-
-template <>
-struct GusdGT_Utils::StorageByType<int64>
-{ static const GT_Storage value = GT_STORE_INT64; };
-
-template <>
-struct GusdGT_Utils::StorageByType<fpreal16>
-{ static const GT_Storage value = GT_STORE_REAL16; };
-
-template <>
-struct GusdGT_Utils::StorageByType<GfHalf>
-{ static const GT_Storage value = GT_STORE_REAL16; };
-
-template <>
-struct GusdGT_Utils::StorageByType<fpreal32>
-{ static const GT_Storage value = GT_STORE_REAL32; };
-
-template <>
-struct GusdGT_Utils::StorageByType<fpreal64>
-{ static const GT_Storage value = GT_STORE_REAL64; };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

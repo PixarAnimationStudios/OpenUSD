@@ -21,14 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/**
-   \file
-   \brief
-*/
 #ifndef _GUSD_UT_TYPETRAITS_H_
 #define _GUSD_UT_TYPETRAITS_H_
 
 #include <pxr/pxr.h>
+
 #include <SYS/SYS_Types.h>
 #include <SYS/SYS_TypeTraits.h>
 #include <SYS/SYS_Version.h>
@@ -38,56 +35,63 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/** Common type traits.
-    Some traits span both HDK and external types.*/
-class GusdUT_TypeTraits
+/// Traits for a POD tuple; fixed-size tuples of a single POD type.
+/// These are defined in order to have an API for type traits shared between
+/// both the Houdini's UT types and Gf types.
+/// Use GUSDUT_DECLARE_POD_TUPLE() to declare the type info for a new type.
+template <class T>
+struct GusdPodTupleTraits
 {
-public:
-    /** Traits for a POD tuple (a fixed-size tuple of a single POD type).
-        We wouldn't need these if only using UT types.
-        We define them in order to have an API to type traits common to both
-        the HDK and internal types.
-        Use GUSDUT_DECLARE_POD_TUPLE() to declare the type info for your own info.
-
-        TIP: Type traits can be declared against forward-declared classes.*/
-    template <class T>
-    struct PODTuple
-    {
-        static const bool   isSpecialized = false;
-    };
+    using ValueType = void;
+    static const int tupleSize = 1;
 };
 
 
-/** Helper for declaring a POD tuple.*/
-#define GUSDUT_DECLARE_POD_TUPLE(TYPE, VALUETYPE, TUPLESIZE)          \
-    template <>                                                       \
-    struct GusdUT_TypeTraits::PODTuple<TYPE> {                        \
-        static const bool   isSpecialized = true;                     \
-        static const int    tupleSize = TUPLESIZE;                    \
-        typedef VALUETYPE   ValueType;                                \
+/// Helper for declaring a POD tuple.
+#define GUSDUT_DECLARE_POD_TUPLE(TYPE, VALUETYPE, TUPLESIZE)    \
+    template <>                                                 \
+    struct GusdPodTupleTraits<TYPE> {                           \
+        static const int tupleSize = TUPLESIZE;                 \
+        using ValueType = VALUETYPE;                            \
     };
 
-/** Check if a type is a POD tuple.
-    TODO: replace these with a constexpr after moving to  C++11 */
-#define GUSDUT_IS_PODTUPLE(TYPE)                        \
-    (GusdUT_TypeTraits::PODTuple<TYPE>::isSpecialized)
 
-/** Check if two POD tuples are compatible
-    (I.e., same tuple size, not necessarily same types).
-    TODO: replace these with a constexpr after oving to C++11 */
-#define GUSDUT_PODTUPLES_ARE_COMPATIBLE(A,B)        \
-    (GusdUT_TypeTraits::PODTuple<A>::tupleSize ==   \
-        GusdUT_TypeTraits::PODTuple<B>::tupleSize)
-
-/** Check if a type is a POD tuple.
-    TODO: replace these with a constexpr after moving to C++11 */
-#define GUSDUT_PODTUPLES_ARE_BYTE_COMPATIBLE(A,B)                       \
-    (GUSDUT_PODTUPLES_ARE_COMPATIBLE(A,B) &&                            \
-     SYS_IsSame<typename GusdUT_TypeTraits::PODTuple<A>::ValueType, \
-                typename GusdUT_TypeTraits::PODTuple<B>::ValueType>::value)
+/// Returns true if a type is a POD tuple.
+template <typename T>
+constexpr bool GusdIsPodTuple()
+{
+    return !SYSisSame<typename GusdPodTupleTraits<T>::ValueType, void>();
+}
 
 
-/* Declare traits on core types. */   
+/// Returns the tuples ize of a POD tuple.
+template <typename T>
+constexpr int GusdGetTupleSize()
+{
+    return GusdPodTupleTraits<T>::tupleSize;
+}
+
+
+/// Returns true if two POD tuples are compatible
+/// (I.e., same tuple size, not necessarily same types).
+template <typename A, typename B>
+constexpr bool GusdPodTuplesAreCompatible()
+{   
+    return GusdGetTupleSize<A>() == GusdGetTupleSize<B>();
+}
+
+
+/// Returns true if two POD tuples have identical memory layouts.
+template <typename A, typename B>
+constexpr bool GusdPodTuplesAreBitwiseCompatible()
+{
+    return GusdPodTuplesAreCompatible<A,B>() &&
+           SYSisSame<typename GusdPodTupleTraits<A>::ValueType,
+                     typename GusdPodTupleTraits<B>::ValueType>();
+}
+
+
+/// Declare traits on core types.
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector2H, fpreal16, 2);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector3H, fpreal16, 3);
 GUSDUT_DECLARE_POD_TUPLE(UT_Vector4H, fpreal16, 4);
@@ -122,7 +126,7 @@ GUSDUT_DECLARE_POD_TUPLE(UT_Matrix2D, fpreal64, 4);
 GUSDUT_DECLARE_POD_TUPLE(UT_Matrix3D, fpreal64, 9);
 GUSDUT_DECLARE_POD_TUPLE(UT_Matrix4D, fpreal64, 16);
 
-/* Declare PODs as POD tuples of tupleSize=1.*/
+/// Declare PODs as POD tuples of tupleSize=1.
 GUSDUT_DECLARE_POD_TUPLE(bool,      bool, 1);
 GUSDUT_DECLARE_POD_TUPLE(uint8,     uint8, 1);
 GUSDUT_DECLARE_POD_TUPLE(uint16,    uint16, 1);
@@ -139,4 +143,4 @@ GUSDUT_DECLARE_POD_TUPLE(GfHalf,    GfHalf, 1);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /*_GUSD_UT_TYPETRAITS_H_*/
+#endif // _GUSD_UT_TYPETRAITS_H_
