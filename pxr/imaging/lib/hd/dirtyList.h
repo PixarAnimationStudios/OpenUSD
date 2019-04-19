@@ -107,11 +107,6 @@ public:
     HD_API
     ~HdDirtyList();
 
-    /// Return the collection associated to this dirty list.
-    HdRprimCollection const &GetCollection() const {
-        return _collection;
-    }
-
     /// Returns a reference of dirty ids.
     /// If the change tracker hasn't changed any state since the last time
     /// GetDirtyRprims gets called, it simply returns an empty list.

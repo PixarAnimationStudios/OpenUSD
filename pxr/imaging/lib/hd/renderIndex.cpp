@@ -1016,9 +1016,10 @@ namespace {
 };
 
 void
-HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList)
+HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList,
+                    HdRprimCollection const &collection)
 {
-    _syncQueue.push_back(dirtyList);
+    _syncQueue.emplace_back(_SyncQueueEntry{dirtyList, collection});
 }
 
 void
@@ -1119,8 +1120,11 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         HF_TRACE_FUNCTION_SCOPE("Merge Dirty Lists");
         // If dirty list prims are all sorted, we could do something more
         // efficient here.
-        for (auto const& hdDirtyList : _syncQueue) {
-            HdRprimCollection const& collection = hdDirtyList->GetCollection();
+        size_t numSyncQueueEntries = _syncQueue.size();
+        for (size_t entryNum = 0; entryNum < numSyncQueueEntries; ++entryNum) {
+            _SyncQueueEntry &entry = _syncQueue[entryNum];
+            HdDirtyListSharedPtr &hdDirtyList = entry.dirtyList;
+            HdRprimCollection const& collection = entry.collection;
 
             _ReprSpec reprSpec(collection.GetReprSelector(),
                                collection.IsForcedRepr());

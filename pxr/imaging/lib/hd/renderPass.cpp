@@ -128,7 +128,7 @@ HdRenderPass::Sync()
     HF_MALLOC_TAG_FUNCTION();
 
     // Sync the dirty list of prims
-    _renderIndex->Sync(_dirtyList);
+    _renderIndex->Sync(_dirtyList, _collection);
 
     // Give derived classes a chance to sync.
     _Sync();
