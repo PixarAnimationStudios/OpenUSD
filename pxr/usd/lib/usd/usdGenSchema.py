@@ -214,6 +214,16 @@ valueTypeNameToStr = dict(
      for n in dir(Sdf.ValueTypeNames)
      if isinstance(getattr(Sdf.ValueTypeNames, n), Sdf.ValueTypeName)])
 
+def _SchemaDefException(msg, path):
+    errorPrefix = ('Invalid schema definition at ' 
+                   + '<' + str(path) + '>')
+    errorSuffix = ('See '
+                   'https://graphics.pixar.com/usd/docs/api/'
+                   '_usd__page__generating_schemas.html '
+                   'for more information.\n')
+    errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
+    raise Exception(errorMsg(msg))
+
 class AttrInfo(PropInfo):
     def __init__(self, sdfProp):
         super(AttrInfo, self).__init__(sdfProp)
@@ -222,8 +232,17 @@ class AttrInfo(PropInfo):
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
         self.fallback = sdfProp.default
         self.cppType = sdfProp.typeName.cppTypeName
-        self.usdType = "SdfValueTypeNames->%s" % (
-            valueTypeNameToStr[sdfProp.typeName])
+
+        if sdfProp.typeName not in valueTypeNameToStr:
+            _SchemaDefException("Code generation requires that all attributes "
+                                "have a known type "
+                                "(<%s> has type '%s', which is not a member of "
+                                "Sdf.ValueTypeNames.)"
+                                % (sdfProp.path, sdfProp.typeName),
+                                sdfProp.path)
+        else:
+            self.usdType = "SdfValueTypeNames->%s" % (
+                valueTypeNameToStr[sdfProp.typeName])
         
         self.details = [('C++ Type', self.cppType),
                         ('Usd Type', self.usdType),
@@ -261,22 +280,14 @@ def _IsTyped(p):
 
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim):
-        # Error handling
-        errorPrefix = ('Invalid schema definition at ' 
-                       + '<' + str(sdfPrim.path) + '>')
-        errorSuffix = ('See '
-                       'https://graphics.pixar.com/usd/docs/api/'
-                       '_usd__page__generating_schemas.html '
-                       'for more information.\n')
-        errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
-
         # First validate proper class naming...
         if (sdfPrim.typeName != sdfPrim.path.name and
             sdfPrim.typeName != ''):
-            raise Exception(errorMsg("Code generation requires that every instantiable "
-                                     "class's name must match its declared type "
-                                     "('%s' and '%s' do not match.)" % 
-                                     (sdfPrim.typeName, sdfPrim.path.name)))
+            _SchemaDefException("Code generation requires that every instantiable "
+                                "class's name must match its declared type "
+                                "('%s' and '%s' do not match.)" % 
+                                (sdfPrim.typeName, sdfPrim.path.name),
+                                sdfPrim.path)
         
         # NOTE: usdPrim should ONLY be used for querying information regarding
         # the class's parent in order to avoid duplicating class members during
@@ -287,10 +298,11 @@ class ClassInfo(object):
         # We do not allow multiple inheritance 
         numInherits = len(inheritsList)
         if numInherits > 1:
-            raise Exception(errorMsg(('Schemas can only inherit from one other schema '
-                                      'at most. This schema inherits from %d (%s).' 
-                                      % (numInherits, 
-                                         ', '.join(map(str, inheritsList))))))
+            _SchemaDefException('Schemas can only inherit from one other schema '
+                                'at most. This schema inherits from %d (%s).' 
+                                 % (numInherits, 
+                                    ', '.join(map(str, inheritsList))),
+                                 sdfPrim.path)
 
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfPrim.customData)
@@ -307,6 +319,8 @@ class ClassInfo(object):
          self.className,
          self.cppClassName,
          self.baseFileName) = _ExtractNames(sdfPrim, self.customData)
+
+        self.parentCppClassName = ''
 
         # We must also hold onto the authored prim name in schema.usda
         # for cases in which we must differentiate that from the authored
@@ -363,9 +377,10 @@ class ClassInfo(object):
            self.apiSchemaType not in [Usd.Tokens.nonApplied, 
                                       Usd.Tokens.singleApply,
                                       Usd.Tokens.multipleApply]:
-            raise Exception(errorMsg("CustomData 'apiSchemaType' is %s. It must"
-                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
-                "for an API schema."))
+            _SchemaDefException("CustomData 'apiSchemaType' is %s. It must"
+                                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
+                                "for an API schema.",
+                                sdfPrim.path)
 
         self.isAppliedAPISchema = self.apiSchemaType in [Usd.Tokens.singleApply, 
                                                       Usd.Tokens.multipleApply]
@@ -387,34 +402,37 @@ class ClassInfo(object):
             self.schemaType = "UsdSchemaType::AbstractBase"
 
         if self.isConcrete and not self.isTyped:
-            raise Exception(errorMsg('Schema classes must either inherit '
-                                     'Typed(IsA), or neither inherit typed '
-                                     'nor provide a typename(API).'))
+            _SchemaDefException('Schema classes must either inherit '
+                                'Typed(IsA), or neither inherit typed '
+                                'nor provide a typename(API).',
+                                sdfPrim.path)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             not sdfPrim.path.name.endswith('API'):
-            raise Exception(errorMsg('API schemas must be named with an API suffix.'))
+            _SchemaDefException('API schemas must be named with an API suffix.',
+                                sdfPrim.path)
         
 
         if self.isApi and not self.isAppliedAPISchema and self.isPrivateApply:
-            raise Exception(errorMsg("Non-applied API schema cannot be tagged "
-                "as private-apply"))
+            _SchemaDefException("Non-applied API schema cannot be tagged "
+                                "as private-apply", sdfPrim.path)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             (not self.parentCppClassName):
-            raise Exception(errorMsg("API schemas must explicitly inherit from "
-                    "UsdAPISchemaBase."))
+            _SchemaDefException("API schemas must explicitly inherit from "
+                                "UsdAPISchemaBase.", sdfPrim.path)
 
         if not self.isApi and self.isAppliedAPISchema:
-            raise Exception(errorMsg('Non API schemas cannot have non-empty '
-                                     'apiSchemaType value.'))
+            _SchemaDefException('Non API schemas cannot have non-empty '
+                                'apiSchemaType value.', sdfPrim.path)
 
         if (not self.isApi or not self.isAppliedAPISchema) and \
                 self.isPrivateApply:
-            raise Exception(errorMsg('Non API schemas or non-applied API '
-                                     'schemas cannot be marked with '
-                                     'isPrivateApply, only applied API schemas '
-                                     'have an Apply() method generated. '))
+            _SchemaDefException('Non API schemas or non-applied API '
+                                'schemas cannot be marked with '
+                                'isPrivateApply, only applied API schemas '
+                                'have an Apply() method generated. ',
+                                sdfPrim.path)
          
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
