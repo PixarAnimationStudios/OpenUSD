@@ -61,8 +61,6 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 
-#include <tbb/atomic.h>
-
 #include <iosfwd>
 #include <typeinfo>
 #include <type_traits>
