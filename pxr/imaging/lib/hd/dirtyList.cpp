@@ -34,8 +34,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct _FilterParam {
-    const HdRprimCollection &collection;
     const HdRenderIndex     &renderIndex;
+    const TfTokenVector     &renderTags;
     HdDirtyBits              mask;
 };
 
@@ -45,15 +45,27 @@ _DirtyListFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const _FilterParam *filterParam =
                               static_cast<const _FilterParam *>(predicateParam);
 
-    const HdRprimCollection &collection = filterParam->collection;
     const HdRenderIndex &renderIndex    = filterParam->renderIndex;
     HdDirtyBits mask                    = filterParam->mask;
 
     HdChangeTracker const &tracker = renderIndex.GetChangeTracker();
 
    if (mask == 0 || tracker.GetRprimDirtyBits(rprimID) & mask) {
-       if (collection.HasRenderTag(renderIndex.GetRenderTag(rprimID))) {
+       // An empty render tag set means everything passes the filter
+       // Primary user is tests, but some single task render delegates
+       // that don't support render tags yet also use it.
+       if (filterParam->renderTags.empty()) {
            return true;
+       }
+
+       // As the number of tags is expected to be low (<10)
+       // use a simple linear search.
+       TfToken primRenderTag = renderIndex.GetRenderTag(rprimID);
+       size_t numRenderTags = filterParam->renderTags.size();
+       for (size_t tagNum = 0; tagNum < numRenderTags; ++tagNum) {
+           if (filterParam->renderTags[tagNum] == primRenderTag) {
+               return true;
+           }
        }
    }
 
@@ -88,7 +100,8 @@ HdDirtyList::~HdDirtyList()
 }
 
 void
-HdDirtyList::_BuildDirtyList(HdDirtyBits mask)
+HdDirtyList::_BuildDirtyList(const TfTokenVector& renderTags,
+                             HdDirtyBits mask)
 {
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
@@ -107,10 +120,10 @@ HdDirtyList::_BuildDirtyList(HdDirtyBits mask)
     static const SdfPathVector includePaths = {SdfPath::AbsoluteRootPath()};
     static const SdfPathVector excludePaths;
     
-    const SdfPathVector &paths        = _renderIndex.GetRprimIds();
+    const SdfPathVector &paths = _renderIndex.GetRprimIds();
 
 
-    _FilterParam filterParam = {_collection, _renderIndex, mask};
+    _FilterParam filterParam = {_renderIndex, renderTags, mask};
 
     HdPrimGather gather;
 
@@ -145,7 +158,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
 }
 
 SdfPathVector const&
-HdDirtyList::GetDirtyRprims()
+HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -235,7 +248,7 @@ HdDirtyList::GetDirtyRprims()
         _renderTagVersion  = currentRenderTagVersion;
 
         // Build list including all dirty prims
-        _BuildDirtyList(0);
+        _BuildDirtyList(renderTags, 0);
 
        // There maybe new prims in the list, that might have repr's they've not
        // seen before.  To flag these up as needing re-evaluating.
@@ -258,7 +271,7 @@ HdDirtyList::GetDirtyRprims()
         _varyingStateVersion = currentVaryingStateVersion;
 
         // Build list only with prims in varying state
-        _BuildDirtyList(HdChangeTracker::Varying);
+        _BuildDirtyList(renderTags, HdChangeTracker::Varying);
     }
     // If not either of the above, we can used the cached results.
 

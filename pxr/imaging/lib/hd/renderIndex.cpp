@@ -1149,8 +1149,14 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
             }
 
             // PERFORMANCE: this loop can be expensive.
-            for (auto const& sdfPath : hdDirtyList->GetDirtyRprims()) {
-                dirtyIds[sdfPath] |= (1ULL << reprIndex);
+            TfTokenVector const &renderTags = collection.GetRenderTags();
+            SdfPathVector const &dirtyPrims
+                               = hdDirtyList->GetDirtyRprims(renderTags);
+
+            size_t numDirtyPrims = dirtyPrims.size();
+            for (size_t primNum = 0; primNum < numDirtyPrims; ++primNum) {
+                SdfPath const &primPath = dirtyPrims[primNum];
+                dirtyIds[primPath] |= (1ULL << reprIndex);
             }
         }
     }

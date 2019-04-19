@@ -120,7 +120,7 @@ public:
     /// Therefore, it is expected that GetDirtyRprims is called only once
     /// per render index sync.
     HD_API
-    SdfPathVector const& GetDirtyRprims();
+    SdfPathVector const& GetDirtyRprims(const TfTokenVector &renderTags);
 
     /// Update the tracking state for this HdDirtyList with the new collection,
     /// if the update cannot be applied, return false.
@@ -128,7 +128,8 @@ public:
     bool ApplyEdit(HdRprimCollection const& newCollection);
 
 private:
-    void _BuildDirtyList(HdDirtyBits mask);
+    void _BuildDirtyList(const TfTokenVector& renderTags,
+                         HdDirtyBits mask);
 
     HdRprimCollection _collection;
     SdfPathVector _dirtyIds;
