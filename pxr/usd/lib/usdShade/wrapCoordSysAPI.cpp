@@ -105,15 +105,23 @@ void wrapUsdShadeCoordSysAPI()
 
 namespace {
 
+struct _BindingToTuple {
+    static PyObject*
+    convert(UsdShadeCoordSysAPI::Binding const& b) {
+        boost::python::tuple result = boost::python::make_tuple(
+            b.name, b.bindingRelPath, b.coordSysPrimPath );
+        return boost::python::incref(result.ptr());
+    }
+};
+
 WRAP_CUSTOM {
     _class
-        .def("GetCoordinateSystems",
-             &UsdShadeCoordSysAPI::GetCoordinateSystems,
+        .def("HasLocalBindings", &UsdShadeCoordSysAPI::Bind)
+        .def("GetLocalBindings",
+             &UsdShadeCoordSysAPI::GetLocalBindings,
              return_value_policy<TfPySequenceToList>())
-        .def("FindCoordinateSystemsWithInheritance",
-             &UsdShadeCoordSysAPI::FindCoordinateSystemsWithInheritance,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetLocalBindings", &UsdShadeCoordSysAPI::GetLocalBindings,
+        .def("FindBindingsWithInheritance",
+             &UsdShadeCoordSysAPI::FindBindingsWithInheritance,
              return_value_policy<TfPySequenceToList>())
         .def("Bind", &UsdShadeCoordSysAPI::Bind)
         .def("ClearBinding", &UsdShadeCoordSysAPI::ClearBinding)
@@ -124,14 +132,8 @@ WRAP_CUSTOM {
         ;
 
      // Register to and from python conversion for parameter pairs
-     to_python_converter<
-         std::pair<TfToken, SdfPath>,
-         TfPyContainerConversions::to_tuple< std::pair<TfToken, SdfPath> > >();
-     to_python_converter<
-         std::pair<TfToken, UsdGeomXformable>,
-         TfPyContainerConversions::to_tuple<
-             std::pair<TfToken, UsdGeomXformable> > >();
-
+     to_python_converter<UsdShadeCoordSysAPI::Binding,
+         _BindingToTuple>();
 }
 
 }

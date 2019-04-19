@@ -121,22 +121,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (coordSys)
 );
 
-std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
-UsdShadeCoordSysAPI::GetCoordinateSystems() const
-{
-    std::vector<UsdShadeCoordSysAPI::CoordinateSystem> result;
-    _ResolveCoordinateSystems(&result, false);
-    return result;
-}
-
-std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
-UsdShadeCoordSysAPI::FindCoordinateSystemsWithInheritance() const
-{
-    std::vector<UsdShadeCoordSysAPI::CoordinateSystem> result;
-    _ResolveCoordinateSystems(&result, true);
-    return result;
-}
-
 std::vector<UsdShadeCoordSysAPI::Binding> 
 UsdShadeCoordSysAPI::GetLocalBindings() const
 {
@@ -147,16 +131,62 @@ UsdShadeCoordSysAPI::GetLocalBindings() const
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             targets.clear();
             if (rel.GetForwardedTargets(&targets) && !targets.empty()) {
-                result.emplace_back(Binding(rel.GetBaseName(),
-                                            targets.front()));
+                Binding b = {rel.GetBaseName(), rel.GetPath(), targets.front()};
+                result.push_back(b);
             }
         }
     }
     return result;
 }
 
+std::vector<UsdShadeCoordSysAPI::Binding> 
+UsdShadeCoordSysAPI::FindBindingsWithInheritance() const
+{
+    std::vector<Binding> result;
+    SdfPathVector targets;
+    for (UsdPrim prim = GetPrim(); prim; prim = prim.GetParent()) {
+        SdfPathVector targets;
+        for (UsdProperty prop:
+             prim.GetAuthoredPropertiesInNamespace(_tokens->coordSys)) {
+            if (UsdRelationship rel = prop.As<UsdRelationship>()) {
+                // Check if name is already bound; skip if bound.
+                bool nameIsAlreadyBound = false;
+                for (Binding const& existing: result) {
+                    if (existing.name == rel.GetBaseName()) {
+                        nameIsAlreadyBound = true;
+                        break;
+                    }
+                }
+                if (!nameIsAlreadyBound) {
+                    targets.clear();
+                    if (rel.GetForwardedTargets(&targets) && !targets.empty()) {
+                        Binding b = {rel.GetBaseName(), rel.GetPath(),
+                            targets.front()};
+                        result.push_back(b);
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+bool
+UsdShadeCoordSysAPI::HasLocalBindings() const
+{
+    for (UsdProperty prop:
+         GetPrim().GetAuthoredPropertiesInNamespace(_tokens->coordSys)) {
+        if (UsdRelationship rel = prop.As<UsdRelationship>()) {
+            if (rel.HasAuthoredTargets()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool 
-UsdShadeCoordSysAPI::Bind(TfToken const &name, SdfPath const &path) const
+UsdShadeCoordSysAPI::Bind(const TfToken &name, const SdfPath &path) const
 {
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().CreateRelationship(relName)) {
@@ -166,7 +196,7 @@ UsdShadeCoordSysAPI::Bind(TfToken const &name, SdfPath const &path) const
 }
 
 bool 
-UsdShadeCoordSysAPI::ClearBinding(TfToken const& name, bool removeSpec) const
+UsdShadeCoordSysAPI::ClearBinding(const TfToken &name, bool removeSpec) const
 {
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().GetRelationship(relName)) {
@@ -186,42 +216,9 @@ UsdShadeCoordSysAPI::BlockBinding(const TfToken &name) const
 }
 
 TfToken
-UsdShadeCoordSysAPI::GetCoordSysRelationshipName(const std::string &coordSysName)
+UsdShadeCoordSysAPI::GetCoordSysRelationshipName(const std::string &name)
 {
-    return TfToken(_tokens->coordSys.GetString() + ":" + coordSysName);
-}
-
-void
-UsdShadeCoordSysAPI::_ResolveCoordinateSystems(
-    std::vector<UsdShadeCoordSysAPI::CoordinateSystem> *result,
-    bool includeInherited) const
-{
-    for (UsdShadeCoordSysAPI api = *this; api.GetPrim();
-         api = UsdShadeCoordSysAPI(api.GetPrim().GetParent())) {
-        for (Binding const& binding: api.GetLocalBindings()) {
-            bool apply = true;
-            // Prefer existing bindings with this name
-            for (CoordinateSystem const& existing: *result) {
-                if (existing.first == binding.first) {
-                    // Name is already bound
-                    apply = false;
-                    break;
-                }
-            }
-            if (!apply) {
-                continue;
-            }
-            if (UsdPrim target =
-                GetPrim().GetStage()->GetPrimAtPath(binding.second)) {
-                if (UsdGeomXformable xf = UsdGeomXformable(target)) {
-                    result->emplace_back(CoordinateSystem(binding.first, xf));
-                }
-            }
-        }
-        if (!includeInherited) {
-            break;
-        }
-    }
+    return TfToken(_tokens->coordSys.GetString() + ":" + name);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
