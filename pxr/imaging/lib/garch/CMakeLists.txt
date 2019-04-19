@@ -26,6 +26,7 @@ pxr_library(garch
     LIBRARIES
         arch
         tf
+        ${X11_LIBRARIES}
         ${OPENGL_gl_LIBRARY}
         ${APPKIT_LIBRARY}
 
