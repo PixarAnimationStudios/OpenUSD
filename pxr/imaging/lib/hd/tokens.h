@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (catmullRom)                                \
     (collection)                                \
     (computeShader)                             \
+    (coordSysBindings)                          \
     (cubic)                                     \
     (culledInstanceIndices)                     \
     (cullStyle)                                 \
@@ -211,6 +212,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (camera)                                    \
     (drawTarget)                                \
     (material)                                  \
+    (coordSys)                                  \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \

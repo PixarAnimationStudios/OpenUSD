@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
 #include "pxr/imaging/hd/bufferArray.h"
+#include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/basisCurves.h"
@@ -392,6 +393,29 @@ private:
     Hd_NullMaterial &operator =(const Hd_NullMaterial &) = delete;
 };
 
+class Hd_NullCoordSys final : public HdCoordSys {
+public:
+    Hd_NullCoordSys(SdfPath const& id) : HdCoordSys(id) {}
+    virtual ~Hd_NullCoordSys() = default;
+
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override
+    {
+        *dirtyBits = HdCoordSys::Clean;
+    };
+
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
+        return HdCoordSys::AllDirty;
+    }
+
+private:
+    Hd_NullCoordSys()                                  = delete;
+    Hd_NullCoordSys(const Hd_NullCoordSys &)             = delete;
+    Hd_NullCoordSys &operator =(const Hd_NullCoordSys &) = delete;
+};
+
+
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -401,6 +425,7 @@ const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
+    HdPrimTypeTokens->coordSys,
     HdPrimTypeTokens->material
 };
 
@@ -493,6 +518,8 @@ Hd_UnitTestNullRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->material) {
         return new Hd_NullMaterial(sprimId);
+    } else if (typeId == HdPrimTypeTokens->coordSys) {
+        return new Hd_NullCoordSys(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -505,6 +532,8 @@ Hd_UnitTestNullRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->material) {
         return new Hd_NullMaterial(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->coordSys) {
+        return new Hd_NullCoordSys(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
