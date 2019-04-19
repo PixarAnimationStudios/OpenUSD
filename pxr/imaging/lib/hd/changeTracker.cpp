@@ -56,6 +56,7 @@ HdChangeTracker::HdChangeTracker()
     , _instancerIndexVersion(1)
     , _sceneStateVersion(1)
     , _visChangeCount(1)
+    , _renderTagVersion(1)
     , _batchVersion(1)
 {
     /*NOTHING*/

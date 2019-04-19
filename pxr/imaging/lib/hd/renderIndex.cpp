@@ -1322,11 +1322,6 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
             delegate->PostSyncCleanup();
         }
 
-        // Clear out the dirty list for future consumers.
-        for (auto const& hdDirtyList : _syncQueue) {
-            hdDirtyList->Clear();
-        }
-
         if (resetVaryingState) {
             _tracker.ResetVaryingState();
         }
