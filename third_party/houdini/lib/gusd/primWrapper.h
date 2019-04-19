@@ -213,10 +213,10 @@ public:
         const GusdContext&        ctxt,
         GusdSimpleXformCache&     xformCache );
 
-    /// Add a sample just before the current time that invisies this prim.
-    // For points and instances this means writing a empty point attribute.
-    // Other prims set their visibility flag.
-    // It might be possible to avoid this if we are on the first frame.
+    /// Add a sample just before the current time that invises this prim.
+    /// For points and instances this means writing a empty point attribute.
+    /// Other prims set their visibility flag.
+    /// It might be possible to avoid this if we are on the first frame.
     virtual void addLeadingBookend( double curFrame, double startFrame );
 
     /// Add a sample at the current frame, invising this from.
@@ -232,9 +232,9 @@ public:
                     const UsdGeomPrimvar& primvar, 
                     UsdTimeCode time );
 
-    // Load primvars for prim from USD.
-    // remapIndicies is used to expand curve primvars into point attributes if
-    // needed.
+    /// Load primvars for prim from USD.
+    /// remapIndicies is used to expand curve primvars into point attributes if
+    /// needed.
     void loadPrimvars( 
                     UsdTimeCode               time,
                     const GT_RefineParms*     rparms,
@@ -280,7 +280,7 @@ protected:
                 UsdTimeCode                 time,
                 const GT_DataArrayHandle&   data );
 
-    // Write primvar values from a GT attribute list to USD.
+    /// Write primvar values from a GT attribute list to USD.
     bool updatePrimvarFromGTPrim( const GT_AttributeListHandle& gtAttrs,
                                   const GusdGT_AttrFilter&      primvarFilter,
                                   const TfToken&                interpolation,
@@ -288,16 +288,15 @@ protected:
 
     void clearCaches();
 
-    // Compute a USD transform from a Houdini transform.
-    //
-    // \p houXform is the transform from world to the prim's space in Houdini.
-    // This includes the object node transformation and the transform of any
-    // containing packed prim.
-    //
-    // \p xformCache is a map of the transforms of any groups that have been 
-    // written on the current frame.
-    
-    static GfMatrix4d computeTransform( 
+    /// Compute a USD transform from a Houdini transform.
+    ///
+    /// \p houXform is the transform from world to the prim's space in Houdini.
+    /// This includes the object node transformation and the transform of any
+    /// containing packed prim.
+    ///
+    /// \p xformCache is a map of the transforms of any groups that have been
+    /// written on the current frame.
+    static GfMatrix4d computeTransform(
                 const UsdPrim&              prim,
                 UsdTimeCode                 time,
                 const UT_Matrix4D&          houXform,
