@@ -470,7 +470,8 @@ _ImportChromeEvents(
                     if (it == tidToNames.end()) {
                         it = tidToNames.insert(
                             std::make_pair(
-                                *utid, TfStringPrintf("%lu", *utid))).first;
+                                *utid,
+                                TfStringPrintf("%" PRId64, *utid))).first;
                     }
                     tid = &it->second;
                 }
