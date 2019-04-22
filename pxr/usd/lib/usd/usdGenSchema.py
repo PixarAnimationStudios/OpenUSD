@@ -214,7 +214,7 @@ valueTypeNameToStr = dict(
      for n in dir(Sdf.ValueTypeNames)
      if isinstance(getattr(Sdf.ValueTypeNames, n), Sdf.ValueTypeName)])
 
-def _SchemaDefException(msg, path):
+def _GetSchemaDefException(msg, path):
     errorPrefix = ('Invalid schema definition at ' 
                    + '<' + str(path) + '>')
     errorSuffix = ('See '
@@ -222,7 +222,7 @@ def _SchemaDefException(msg, path):
                    '_usd__page__generating_schemas.html '
                    'for more information.\n')
     errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
-    raise Exception(errorMsg(msg))
+    return Exception(errorMsg(msg))
 
 class AttrInfo(PropInfo):
     def __init__(self, sdfProp):
@@ -234,12 +234,12 @@ class AttrInfo(PropInfo):
         self.cppType = sdfProp.typeName.cppTypeName
 
         if sdfProp.typeName not in valueTypeNameToStr:
-            _SchemaDefException("Code generation requires that all attributes "
-                                "have a known type "
-                                "(<%s> has type '%s', which is not a member of "
-                                "Sdf.ValueTypeNames.)"
-                                % (sdfProp.path, sdfProp.typeName),
-                                sdfProp.path)
+            raise _GetSchemaDefException(
+                        "Code generation requires that all attributes "
+                        "have a known type "
+                        "(<%s> has type '%s', which is not a member of "
+                        "Sdf.ValueTypeNames.)"
+                        % (sdfProp.path, sdfProp.typeName), sdfProp.path)
         else:
             self.usdType = "SdfValueTypeNames->%s" % (
                 valueTypeNameToStr[sdfProp.typeName])
@@ -283,11 +283,11 @@ class ClassInfo(object):
         # First validate proper class naming...
         if (sdfPrim.typeName != sdfPrim.path.name and
             sdfPrim.typeName != ''):
-            _SchemaDefException("Code generation requires that every instantiable "
-                                "class's name must match its declared type "
-                                "('%s' and '%s' do not match.)" % 
-                                (sdfPrim.typeName, sdfPrim.path.name),
-                                sdfPrim.path)
+            raise _GetSchemaDefException(
+                "Code generation requires that every instantiable "
+                "class's name must match its declared type "
+                "('%s' and '%s' do not match.)" % 
+                (sdfPrim.typeName, sdfPrim.path.name), sdfPrim.path)
         
         # NOTE: usdPrim should ONLY be used for querying information regarding
         # the class's parent in order to avoid duplicating class members during
@@ -298,11 +298,11 @@ class ClassInfo(object):
         # We do not allow multiple inheritance 
         numInherits = len(inheritsList)
         if numInherits > 1:
-            _SchemaDefException('Schemas can only inherit from one other schema '
-                                'at most. This schema inherits from %d (%s).' 
-                                 % (numInherits, 
-                                    ', '.join(map(str, inheritsList))),
-                                 sdfPrim.path)
+            raise _GetSchemaDefException(
+                'Schemas can only inherit from one other schema '
+                'at most. This schema inherits from %d (%s).' 
+                 % (numInherits, ', '.join(map(str, inheritsList))), 
+                 sdfPrim.path)
 
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfPrim.customData)
@@ -377,7 +377,7 @@ class ClassInfo(object):
            self.apiSchemaType not in [Usd.Tokens.nonApplied, 
                                       Usd.Tokens.singleApply,
                                       Usd.Tokens.multipleApply]:
-            _SchemaDefException("CustomData 'apiSchemaType' is %s. It must"
+            raise _GetSchemaDefException("CustomData 'apiSchemaType' is %s. It must"
                                 " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
                                 "for an API schema.",
                                 sdfPrim.path)
@@ -402,33 +402,36 @@ class ClassInfo(object):
             self.schemaType = "UsdSchemaType::AbstractBase"
 
         if self.isConcrete and not self.isTyped:
-            _SchemaDefException('Schema classes must either inherit '
+            raise _GetSchemaDefException('Schema classes must either inherit '
                                 'Typed(IsA), or neither inherit typed '
                                 'nor provide a typename(API).',
                                 sdfPrim.path)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             not sdfPrim.path.name.endswith('API'):
-            _SchemaDefException('API schemas must be named with an API suffix.',
-                                sdfPrim.path)
+            raise _GetSchemaDefException(
+                        'API schemas must be named with an API suffix.', 
+                        sdfPrim.path)
         
 
         if self.isApi and not self.isAppliedAPISchema and self.isPrivateApply:
-            _SchemaDefException("Non-applied API schema cannot be tagged "
-                                "as private-apply", sdfPrim.path)
+            raise _GetSchemaDefException("Non-applied API schema cannot be "
+                                "tagged as private-apply", sdfPrim.path)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             (not self.parentCppClassName):
-            _SchemaDefException("API schemas must explicitly inherit from "
-                                "UsdAPISchemaBase.", sdfPrim.path)
+            raise _GetSchemaDefException(
+                "API schemas must explicitly inherit from UsdAPISchemaBase.", 
+                sdfPrim.path)
 
         if not self.isApi and self.isAppliedAPISchema:
-            _SchemaDefException('Non API schemas cannot have non-empty '
-                                'apiSchemaType value.', sdfPrim.path)
+            raise _GetSchemaDefException(
+                'Non API schemas cannot have non-empty apiSchemaType value.', 
+                sdfPrim.path)
 
         if (not self.isApi or not self.isAppliedAPISchema) and \
                 self.isPrivateApply:
-            _SchemaDefException('Non API schemas or non-applied API '
+            raise _GetSchemaDefException('Non API schemas or non-applied API '
                                 'schemas cannot be marked with '
                                 'isPrivateApply, only applied API schemas '
                                 'have an Apply() method generated. ',
@@ -499,26 +502,21 @@ def ParseUsd(usdFilePath):
         usdPrim = stage.GetPrimAtPath(sdfPrim.path)
         classInfo = ClassInfo(usdPrim, sdfPrim)
 
-        errorPrefix = ('Invalid schema definition at ' 
-                       + '<' + str(sdfPrim.path) + '>')
-        errorSuffix = ('See '
-                       'https://graphics.pixar.com/usd/docs/api/'
-                       '_usd__page__generating_schemas.html '
-                       'for more information.\n')
-        errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
         if classInfo.apiSchemaType == Usd.Tokens.multipleApply:
             if classInfo.propertyNamespacePrefix and \
                 len(sdfPrim.properties) == 0:
-                raise Exception(errorMsg("Multiple-apply schemas that have the "
-                    "propertyNamespacePrefix metadata fields must have at "
-                    "least one property"))
+                    raise _GetSchemaDefException(
+                        "Multiple-apply schemas that have the "
+                        "propertyNamespacePrefix metadata fields must have at "
+                        "least one property", sdfPrim.path)
             if not classInfo.propertyNamespacePrefix and \
                 not len(sdfPrim.properties) == 0:
-                raise Exception(errorMsg("Multiple-apply schemas that do not"
-                    "have a propertyNamespacePrefix metadata field must have "
-                    "zero properties"))
+                    raise _GetSchemaDefException(
+                        "Multiple-apply schemas that do not"
+                        "have a propertyNamespacePrefix metadata field must "
+                        "have zero properties", sdfPrim.path)
 
         classes.append(classInfo)
         #
