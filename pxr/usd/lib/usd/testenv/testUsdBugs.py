@@ -409,5 +409,29 @@ class TestUsdBugs(unittest.TestCase):
         # prior to fixing this bug, the resulting target would be '/W/A/B/B/D'.
         self.assertEqual(wab.GetRelationship('r').GetTargets(), [Sdf.Path('/W/A/B/D')])
 
+    def test_USD_5196(self):
+        from pxr import Usd, Sdf, Vt, Tf
+        import os, random
+        # Test that usdc files corrupted by truncation (such that the table of
+        # contents is past the end of the file) are detected and fail to open
+        # with an error.
+        with Tf.NamedTemporaryFile(suffix=".usdc") as f:
+            layer = Sdf.Layer.CreateNew(f.name)
+            foo = Sdf.CreatePrimInLayer(layer, '/foo')
+            attr = Sdf.AttributeSpec(foo, 'attr', Sdf.ValueTypeNames.IntArray)
+            ints = range(1024**2)
+            random.shuffle(ints)
+            attr.default = Vt.IntArray(ints)
+            layer.Save()
+            del layer
+            # Now truncate layer to corrupt it.
+            fobj = open(f.name, "rw+")
+            size = os.path.getsize(f.name)
+            fobj.truncate(size / 2)
+            fobj.close()
+            # Attempting to open the file should raise an exception.
+            with self.assertRaises(Tf.ErrorException):
+                layer = Sdf.Layer.FindOrOpen(f.name)
+
 if __name__ == '__main__':
     unittest.main()

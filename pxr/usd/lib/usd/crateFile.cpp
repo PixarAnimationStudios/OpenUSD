@@ -3020,6 +3020,14 @@ CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
             "software supports %s", Version(b).AsString().c_str(),
             _SoftwareVersion.AsString().c_str());
     }
+    // Check that the table of contents is not past the end of the file.  This
+    // catches some cases where a file was corrupted by truncation.
+    else if (fileSize <= b.tocOffset) {
+        TF_RUNTIME_ERROR(
+            "Usd crate file corrupt, possibly truncated: table of contents "
+            "at offset %" PRId64 " but file size is %" PRId64,
+            b.tocOffset, fileSize);
+    }
     return b;
 }
 
