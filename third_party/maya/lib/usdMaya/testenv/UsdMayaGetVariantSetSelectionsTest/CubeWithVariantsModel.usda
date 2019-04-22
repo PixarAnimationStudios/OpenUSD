@@ -31,16 +31,43 @@ def Xform "CubeWithVariantsModel" (
     }
     variantSet "fooVariant" = {
         "DefaultFooVariant" {
-
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    string variantAttribute = "Default"
+                }
+            }
         }
+
         "FooVariantA" {
-
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    string variantAttribute = "A"
+                }
+            }
         }
+
         "FooVariantB" {
-
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    string variantAttribute = "B"
+                }
+            }
         }
-        "FooVariantC" {
 
+        "FooVariantC" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    string variantAttribute = "C"
+                }
+            }
         }
     }
     variantSet "modelingVariant" = {
