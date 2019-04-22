@@ -1828,7 +1828,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             SdfLayer::FileFormatArguments args;
             // Apply payload decorators (payloads only)
             _ApplyPayloadDecorator(node, *indexer, refOrPayload, &args);
-            Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema, &args);
+            Pcp_GetArgumentsForTargetSchema(
+                refOrPayload.GetAssetPath(), 
+                indexer->inputs.targetSchema, &args);
 
             TfErrorMark m;
 

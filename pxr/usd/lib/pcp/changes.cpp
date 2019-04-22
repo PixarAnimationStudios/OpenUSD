@@ -1604,7 +1604,7 @@ PcpChanges::_LoadSublayerForChange(
     SdfLayerRefPtr sublayer;
 
     const SdfLayer::FileFormatArguments sublayerArgs = 
-        Pcp_GetArgumentsForTargetSchema(cache->GetTargetSchema());
+        Pcp_GetArgumentsForTargetSchema(sublayerPath, cache->GetTargetSchema());
 
     if (sublayerChange == _SublayerAdded) {
         sublayer = SdfLayer::FindOrOpen(sublayerPath, sublayerArgs);
@@ -1636,7 +1636,7 @@ PcpChanges::_LoadSublayerForChange(
     SdfLayerRefPtr sublayer;
 
     const SdfLayer::FileFormatArguments sublayerArgs = 
-        Pcp_GetArgumentsForTargetSchema(cache->GetTargetSchema());
+        Pcp_GetArgumentsForTargetSchema(sublayerPath, cache->GetTargetSchema());
 
     // Note the possible conversions from SdfLayerHandle to SdfLayerRefPtr below.
     if (SdfLayer::IsAnonymousLayerIdentifier(resolvedAssetPath)) {

@@ -728,7 +728,7 @@ PcpLayerStack::_BuildLayerStack(
     const SdfLayerHandle & layer,
     const SdfLayerOffset & offset,
     const ArResolverContext & pathResolverContext,
-    const SdfLayer::FileFormatArguments & layerArgs,
+    const SdfLayer::FileFormatArguments & defaultLayerArgs,
     const std::string & sessionOwner,
     const Pcp_MutedLayers & mutedLayers, 
     SdfLayerHandleSet *seenLayers,
@@ -760,6 +760,12 @@ PcpLayerStack::_BuildLayerStack(
         // Resolve and open sublayer.
         string sublayerPath(sublayers[i]);
         TfErrorMark m;
+
+        SdfLayer::FileFormatArguments localArgs;
+        const SdfLayer::FileFormatArguments& layerArgs = 
+            Pcp_GetArgumentsForTargetSchema(
+                sublayerPath, &defaultLayerArgs, &localArgs);
+
         SdfLayerRefPtr sublayer = SdfFindOrOpenRelativeToLayer(
             layer, &sublayerPath, layerArgs);
 
@@ -832,7 +838,7 @@ PcpLayerStack::_BuildLayerStack(
     TF_FOR_ALL(i, sublayerInfo) {
         if (SdfLayerTreeHandle subtree =
             _BuildLayerStack(i->layer, i->offset, pathResolverContext,
-                             layerArgs, sessionOwner, 
+                             defaultLayerArgs, sessionOwner, 
                              mutedLayers, seenLayers, errors)) {
             subtrees.push_back(subtree);
         }

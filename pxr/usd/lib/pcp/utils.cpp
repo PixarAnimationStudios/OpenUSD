@@ -31,23 +31,60 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static bool
+_TargetIsSpecifiedInIdentifier(
+    const std::string& identifier)
+{
+    std::string layerPath;
+    SdfLayer::FileFormatArguments layerArgs;
+    return SdfLayer::SplitIdentifier(identifier, &layerPath, &layerArgs)
+        && layerArgs.find(SdfFileFormatTokens->TargetArg) != layerArgs.end();
+}
+
 SdfLayer::FileFormatArguments 
 Pcp_GetArgumentsForTargetSchema(
+    const std::string& identifier,
     const std::string& targetSchema)
 {
     SdfLayer::FileFormatArguments args;
-    Pcp_GetArgumentsForTargetSchema(targetSchema, &args);
+    Pcp_GetArgumentsForTargetSchema(identifier, targetSchema, &args);
     return args;
 }
 
 void 
 Pcp_GetArgumentsForTargetSchema(
+    const std::string& identifier,
     const std::string& targetSchema,
     SdfLayer::FileFormatArguments* args)
 {
-    if (!targetSchema.empty()) {
+    if (!targetSchema.empty() && !_TargetIsSpecifiedInIdentifier(identifier)) {
         (*args)[SdfFileFormatTokens->TargetArg] = targetSchema;
     }
+}
+
+SdfLayer::FileFormatArguments 
+Pcp_GetArgumentsForTargetSchema(
+    const std::string& targetSchema)
+{
+    if (targetSchema.empty()) {
+        return {};
+    }
+    return {{ SdfFileFormatTokens->TargetArg, targetSchema }};
+}
+
+const SdfLayer::FileFormatArguments&
+Pcp_GetArgumentsForTargetSchema(
+    const std::string& identifier,
+    const SdfLayer::FileFormatArguments* defaultArgs,
+    SdfLayer::FileFormatArguments* localArgs)
+{
+    if (!_TargetIsSpecifiedInIdentifier(identifier)) {
+        return *defaultArgs;
+    }
+
+    *localArgs = *defaultArgs;
+    localArgs->erase(SdfFileFormatTokens->TargetArg);
+    return *localArgs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
