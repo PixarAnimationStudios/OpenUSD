@@ -298,6 +298,13 @@ def GetShortString(prop, frame):
     elif isinstance(prop, Sdf.RelationshipSpec):
         return str(prop.targetPathList)
 
+    # If there is no value opinion, we do not want to display anything,
+    # since python 'None' has a different meaning than usda-authored None,
+    # which is how we encode attribute value blocks (which evaluate to 
+    # Sdf.ValueBlock)
+    if val is None:
+        return ''
+    
     from scalarTypes import GetScalarTypeFromAttr
     scalarType, isArray = GetScalarTypeFromAttr(prop)
     result = ''

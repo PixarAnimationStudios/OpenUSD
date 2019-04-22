@@ -3373,7 +3373,7 @@ class AppController(QtCore.QObject):
                     (key, type(primProperty)))
                 continue
 
-            attrText = GetShortString(primProperty, frame) or ""
+            attrText = GetShortString(primProperty, frame)
             treeWidget.addTopLevelItem(
                 QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
 
