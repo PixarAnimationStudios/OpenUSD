@@ -36,6 +36,7 @@
 #include "gusd/USD_Utils.h"
 
 #include <pxr/pxr.h>
+#include "pxr/base/arch/hints.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
@@ -91,7 +92,7 @@ DefaultImageablePrimVisitorT<Visitor,Recursive>::AcceptPrim(
         TfToken purpose;
         ip.GetPurposeAttr().Get(&purpose);
         if( GusdPurposeInSet( purpose, purposes )) {
-            if(BOOST_UNLIKELY(Visitor()(prim, time, ctl))) {
+            if(ARCH_UNLIKELY(Visitor()(prim, time, ctl))) {
                 if(!Recursive)
                     ctl.PruneChildren();
                 return true;
@@ -166,7 +167,7 @@ TraverseTaskT<Visitor>::run()
 {
     /* XXX: Ended up needing this check at some point.
             Find out if it's still necessary.*/
-    if(BOOST_UNLIKELY(_visited)) return NULL;
+    if(ARCH_UNLIKELY(_visited)) return NULL;
     _visited = true;
 
     UT_ASSERT_P(_prim);
@@ -174,7 +175,7 @@ TraverseTaskT<Visitor>::run()
     if(!_skipPrim) {
 
         GusdUSD_TraverseControl ctl;
-        if(BOOST_UNLIKELY(_visitor.AcceptPrim(_prim, _time, _purposes, ctl))) {
+        if(ARCH_UNLIKELY(_visitor.AcceptPrim(_prim, _time, _purposes, ctl))) {
             /* Matched. Add it to the thread-specific list.*/
             auto*& threadData = _data.threadData.get();
             if(!threadData)
@@ -182,7 +183,7 @@ TraverseTaskT<Visitor>::run()
             threadData->prims.append(
                 GusdUSD_Traverse::PrimIndexPair(_prim, _idx));
         }
-        if(BOOST_UNLIKELY(!ctl.GetVisitChildren())) {
+        if(ARCH_UNLIKELY(!ctl.GetVisitChildren())) {
             return NULL;
         }
     }

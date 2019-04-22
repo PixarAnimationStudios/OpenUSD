@@ -29,6 +29,7 @@
 #include "gusd/error.h"
 
 #include <pxr/pxr.h>
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -270,7 +271,7 @@ GetNumericTime(UsdTimeCode time)
 inline UsdTimeCode
 ClampTimeCode(UsdTimeCode t, double start, double end, int digits)
 {
-    if(BOOST_UNLIKELY(t.IsDefault()))
+    if(ARCH_UNLIKELY(t.IsDefault()))
         return t;
     return UsdTimeCode(
         SYSniceNumber(SYSclamp(t.GetValue(), start, end), digits));

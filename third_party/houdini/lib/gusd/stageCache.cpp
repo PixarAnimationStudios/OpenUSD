@@ -40,6 +40,7 @@
 #include "gusd/error.h"
 #include "gusd/USD_DataCache.h"
 
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/usd/ar/resolver.h"
@@ -911,7 +912,7 @@ GusdStageCache::_Impl::_GetPrimsInRange(const PrimRangeFn& rangeFn,
     char bcnt = 0;
 
     for(exint i = start; i < end; ++i) {
-        if(BOOST_UNLIKELY(!++bcnt && task.wasInterrupted()))
+        if(ARCH_UNLIKELY(!++bcnt && task.wasInterrupted()))
             return false;
 
         exint primIndex = rangeFn(i);
@@ -1150,7 +1151,7 @@ GusdStageCache::_Impl::LoadPrims(
             auto* boss = UTgetInterrupt();
             
             for(size_t i = r.begin(); i < r.end(); ++i) {
-                if(BOOST_UNLIKELY(boss->opInterrupt() || workerInterrupt)) {
+                if(ARCH_UNLIKELY(boss->opInterrupt() || workerInterrupt)) {
                     return;
                 }
 
