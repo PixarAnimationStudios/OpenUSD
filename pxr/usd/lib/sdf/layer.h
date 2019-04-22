@@ -111,7 +111,7 @@ public:
     SDF_API virtual const SdfSchemaBase& GetSchema() const;
 
     /// Returns the file format used by this layer.
-    SDF_API SdfFileFormatConstPtr GetFileFormat() const;
+    SDF_API const SdfFileFormatConstPtr& GetFileFormat() const;
 
     /// Type for specifying additional file format-specific arguments to
     /// layer API.

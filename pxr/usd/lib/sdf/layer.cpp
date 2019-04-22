@@ -188,7 +188,7 @@ SdfLayer::~SdfLayer()
     _layerRegistry->Erase(SdfCreateHandle(this));
 }
 
-SdfFileFormatConstPtr
+const SdfFileFormatConstPtr&
 SdfLayer::GetFileFormat() const
 {
     return _fileFormat;

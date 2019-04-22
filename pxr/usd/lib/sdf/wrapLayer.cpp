@@ -508,7 +508,8 @@ void wrapLayer()
 
         .def("__repr__", _Repr)
 
-        .def("GetFileFormat", &This::GetFileFormat)
+        .def("GetFileFormat", &This::GetFileFormat,
+             return_value_policy<return_by_value>())
         .def("GetFileFormatArguments", &This::GetFileFormatArguments,
              return_value_policy<return_by_value>())
 
