@@ -48,6 +48,19 @@ public:
         std::map<SdfPath, std::vector<SdfPath>> derivedMaterialPaths;
     };
 
+    /// \brief Pair for associating a USD time with a Katana time.
+    struct UsdKatanaTimePair {
+        bool operator==(const UsdKatanaTimePair& o) const {
+            return usdTime == o.usdTime && katanaTime == o.katanaTime;
+        }
+        bool operator!=(const UsdKatanaTimePair& o) const {
+            return !(*this == o);
+        }
+
+        double usdTime;
+        double katanaTime;
+    };
+
     PxrUsdKatanaUsdInPrivateData(
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
@@ -99,7 +112,7 @@ public:
     /// \brief Returns a list of <usd, katana> times for use in clients that
     ///        wish to multi-sample USD data and build corresponding Katana 
     ///        attributes.
-    std::vector<std::pair<double, double> > GetUsdAndKatanaTimes(
+    std::vector<UsdKatanaTimePair> GetUsdAndKatanaTimes(
         const UsdAttribute& attr = UsdAttribute()) const;
 
 
