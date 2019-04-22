@@ -104,23 +104,21 @@ layout (location = 0) out vec4 colorOut;
 
 void RenderColor(vec4 color)
 {
-    if (color.a < 1.0) {
-        int screenWidth = HdGet_oitWidth();
-        int screenHeight = HdGet_oitHeight();
-        int numSamples = HdGet_oitSamples();
-        int bufferSize = screenWidth * screenHeight * numSamples;
-        int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+    int screenWidth = HdGet_oitWidth();
+    int screenHeight = HdGet_oitHeight();
+    int numSamples = HdGet_oitSamples();
+    int bufferSize = screenWidth * screenHeight * numSamples;
+    int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
 
-        if (writeIndex < bufferSize) {
-            int screenIndex =
-                int(gl_FragCoord.x) +
-                int(gl_FragCoord.y) * screenWidth;
-            int prevIndex =
-                atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
-            hdxOitDataBuffer[writeIndex] = color;
-            hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
-            hdxOitIndexBuffer[writeIndex] = prevIndex;
-        }
+    if (writeIndex < bufferSize) {
+        int screenIndex =
+            int(gl_FragCoord.x) +
+            int(gl_FragCoord.y) * screenWidth;
+        int prevIndex =
+            atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+        hdxOitDataBuffer[writeIndex] = color;
+        hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
+        hdxOitIndexBuffer[writeIndex] = prevIndex;
     }
 }
 
