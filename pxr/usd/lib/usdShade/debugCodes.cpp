@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "debugCodes.h"
+#include "pxr/usd/usdShade/debugCodes.h"
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/registryManager.h"

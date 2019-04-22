@@ -126,7 +126,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/tokens.h"
 
-#include "debugCodes.h"
+#include "pxr/usd/usdShade/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
