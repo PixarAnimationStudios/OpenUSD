@@ -285,9 +285,6 @@ SDF_API const TfEnum &SdfDefaultUnit( const TfEnum &unit );
 /// Gets the unit category for a given /a unit.
 SDF_API const std::string &SdfUnitCategory( const TfEnum &unit );
 
-/// Gets the type/unit pair for a unit enum.
-std::pair<uint32_t, uint32_t> Sdf_GetUnitIndices( const TfEnum &unit );
-
 /// Converts from one unit of measure to another. The \a fromUnit and \a toUnit
 /// units must be of the same type (for example, both of type SdfLengthUnit).
 SDF_API double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit );
