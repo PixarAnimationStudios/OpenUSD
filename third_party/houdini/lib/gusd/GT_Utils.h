@@ -159,9 +159,57 @@ public:
 
     static std::string
     makeValidIdentifier(const TfToken& usdFilePath, const SdfPath& nodePath);
+
+
+    /// Struct for querying storage by POD type.
+    /// XXX: replace this with a constexpr in C++11.
+    template <typename T>
+    struct StorageByType;
 }; 
 //------------------------------------------------------------------------------
 
+
+template <>
+struct GusdGT_Utils::StorageByType<bool>
+{ static const GT_Storage value = GT_STORE_UINT8; };
+
+template <>
+struct GusdGT_Utils::StorageByType<uint8>
+{ static const GT_Storage value = GT_STORE_UINT8; };
+
+#if SYS_VERSION_FULL_INT >= 0x11000000
+template <>
+struct GusdGT_Utils::StorageByType<int8>
+{ static const GT_Storage value = GT_STORE_INT8; };
+
+template <>
+struct GusdGT_Utils::StorageByType<int16>
+{ static const GT_Storage value = GT_STORE_INT16; };
+#endif
+
+template <>
+struct GusdGT_Utils::StorageByType<int32>
+{ static const GT_Storage value = GT_STORE_INT32; };
+
+template <>
+struct GusdGT_Utils::StorageByType<int64>
+{ static const GT_Storage value = GT_STORE_INT64; };
+
+template <>
+struct GusdGT_Utils::StorageByType<fpreal16>
+{ static const GT_Storage value = GT_STORE_REAL16; };
+
+template <>
+struct GusdGT_Utils::StorageByType<GfHalf>
+{ static const GT_Storage value = GT_STORE_REAL16; };
+
+template <>
+struct GusdGT_Utils::StorageByType<fpreal32>
+{ static const GT_Storage value = GT_STORE_REAL32; };
+
+template <>
+struct GusdGT_Utils::StorageByType<fpreal64>
+{ static const GT_Storage value = GT_STORE_REAL64; };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

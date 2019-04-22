@@ -149,12 +149,14 @@ struct GtDataToUsdTypename
                          SdfValueTypeNames->Double2);
 
         // GT_TYPE_TEXTURE
+#if SYS_VERSION_FULL_INT >= 0x10050000
         DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_TEXTURE, 2,
                          SdfValueTypeNames->TexCoord2h);
         DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_TEXTURE, 2,
                          SdfValueTypeNames->TexCoord2f);
         DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_TEXTURE, 2,
                          SdfValueTypeNames->TexCoord2d);
+#endif
 
         // GT_TYPE_ST
         DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_ST, 2,
@@ -205,12 +207,14 @@ struct GtDataToUsdTypename
                          SdfValueTypeNames->Point3d);
 
         // GT_TYPE_TEXTURE 3
+#if SYS_VERSION_FULL_INT >= 0x10050000
         DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_TEXTURE, 3,
                          SdfValueTypeNames->TexCoord3h);
         DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_TEXTURE, 3,
                          SdfValueTypeNames->TexCoord3f);
         DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_TEXTURE, 3,
                          SdfValueTypeNames->TexCoord3d);
+#endif
 
         // Vec4
         DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_NONE, 4,
@@ -968,8 +972,10 @@ GusdGT_Utils::getRole(GT_Type type)
     case GT_TYPE_NORMAL: return SdfValueRoleNames->Normal;
     case GT_TYPE_COLOR:  return SdfValueRoleNames->Color;
     case GT_TYPE_ST:
+#if SYS_VERSION_FULL_INT >= 0x10050000
     case GT_TYPE_TEXTURE:
         return SdfValueRoleNames->TextureCoordinate;
+#endif
     default:
         return TfToken();
     };

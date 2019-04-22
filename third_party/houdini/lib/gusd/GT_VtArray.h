@@ -75,8 +75,8 @@ public:
     using PODType = typename GusdPodTupleTraits<T>::ValueType;
     
     static const int        tupleSize = GusdGetTupleSize<T>();
-    static const GT_Storage storage   = GTstorage<PODType>();
-
+    static const GT_Storage storage =
+        GusdGT_Utils::StorageByType<PODType>::value;
 
     GusdGT_VtArray(const ArrayType& array, GT_Type type=GT_TYPE_NONE);
     GusdGT_VtArray(GT_Type type=GT_TYPE_NONE);
@@ -268,7 +268,8 @@ GusdGT_VtArray<T>::getArrayT(GT_DataArrayHandle& buf) const
         return reinterpret_cast<const PODT*>(_data);
 
 #if SYS_VERSION_FULL_INT < 0x10050000
-    using _GTArrayType = GT_DANumeric<PODT, GTstorage<PODT>()>;
+    using _GTArrayType =
+       GT_DANumeric<PODT, GusdGT_Utils::StorageByType<PODType>::value>;
 #else
     using _GTArrayType = GT_DANumeric<PODT>;
 #endif
