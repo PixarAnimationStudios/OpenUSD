@@ -103,6 +103,9 @@ public:
         return _drawItems.size() - _visibleSize; 
     }
 
+    HDST_API
+    void SetEnableTinyPrimCulling(bool tinyPrimCulling);
+
 private:
     void _RebuildDrawBatches();
 

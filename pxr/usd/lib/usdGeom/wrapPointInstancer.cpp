@@ -310,6 +310,9 @@ WRAP_CUSTOM {
 
     typedef UsdGeomPointInstancer This;
 
+    // class needs to be in-scope for enums to get wrapped properly
+    scope obj = _class;
+
     TfPyWrapEnum<This::MaskApplication>();
 
     TfPyWrapEnum<This::ProtoXformInclusion>();

@@ -79,10 +79,12 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
 
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    // See UsdImagingGprimAdapter::TrackVariability() for reasoning
-    // why we use time 1.0 here.
-    UsdTimeCode time(1.0);
-    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+    // XXX: The usage of _GetTimeWithOffset here is super-sketch, but avoids
+    // blowing up the inherited visibility cache. This belongs in
+    // UpdateForTime, except that we don't currently call UpdateForTime on
+    // lights...
+    valueCache->GetVisible(cachePath) = GetVisible(prim,
+        _GetTimeWithOffset(0.0));
 
     UsdLuxLight light(prim);
     if (TF_VERIFY(light)) {

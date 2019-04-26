@@ -23,14 +23,34 @@
 //
 
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/ndr/filesystemDiscovery.h"
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/envSetting.h"
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 NDR_REGISTER_DISCOVERY_PLUGIN(_NdrFilesystemDiscoveryPlugin)
+
+TF_DEFINE_ENV_SETTING(
+    PXR_NDR_FS_PLUGIN_SEARCH_PATHS, "",
+    "The paths that should be searched, recursively, for files that represent "
+    "nodes. Paths should be separated by either a ':' or a ';' depending on "
+    "your platform (it should mimic the PATH attribute).  See "
+    "ARCH_PATH_LIST_SEP");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_NDR_FS_PLUGIN_ALLOWED_EXTS, "",
+    "The extensions on files that define nodes.  Do not include the leading "
+    "'.'. Extensions should be separated by a colon.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_NDR_FS_PLUGIN_FOLLOW_SYMLINKS, false,
+    "Whether symlinks should be followed while walking the search paths. Set "
+    "to 'true' (case sensitive) if they should be followed.");
 
 _NdrFilesystemDiscoveryPlugin::_NdrFilesystemDiscoveryPlugin()
 {
@@ -39,11 +59,11 @@ _NdrFilesystemDiscoveryPlugin::_NdrFilesystemDiscoveryPlugin()
     //       ships with
     //
     _searchPaths = TfStringSplit(
-        TfGetenv("PXR_NDR_FS_PLUGIN_SEARCH_PATHS"), ARCH_PATH_LIST_SEP);
+            TfGetEnvSetting(PXR_NDR_FS_PLUGIN_SEARCH_PATHS),
+            ARCH_PATH_LIST_SEP);
     _allowedExtensions = TfStringSplit(
-        TfGetenv("PXR_NDR_FS_PLUGIN_ALLOWED_EXTS"), ":");
-    _followSymlinks =
-        TfGetenvBool("PXR_NDR_FS_PLUGIN_FOLLOW_SYMLINKS", false);
+            TfGetEnvSetting(PXR_NDR_FS_PLUGIN_ALLOWED_EXTS), ":");
+    _followSymlinks = TfGetEnvSetting(PXR_NDR_FS_PLUGIN_FOLLOW_SYMLINKS);
 }
 
 _NdrFilesystemDiscoveryPlugin::_NdrFilesystemDiscoveryPlugin(Filter filter)

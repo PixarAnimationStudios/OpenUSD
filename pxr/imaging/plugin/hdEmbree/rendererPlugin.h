@@ -51,6 +51,14 @@ public:
     ///   \return A new HdEmbreeRenderDelegate object.
     virtual HdRenderDelegate *CreateRenderDelegate() override;
 
+    /// Construct a new render delegate of type HdEmbreeRenderDelegate.
+    /// Embree render delegates own the embree scene object, so a new render
+    /// delegate should be created for each instance of HdRenderIndex.
+    ///   \param settingsMap A list of initialization-time settings for embree.
+    ///   \return A new HdEmbreeRenderDelegate object.
+    virtual HdRenderDelegate *CreateRenderDelegate(
+        HdRenderSettingsMap const& settingsMap) override;
+
     /// Destroy a render delegate created by this class's CreateRenderDelegate.
     ///   \param renderDelegate The render delegate to delete.
     virtual void DeleteRenderDelegate(

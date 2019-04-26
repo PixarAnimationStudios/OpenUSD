@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/instanceCache.h"
+#include "pxr/usd/usd/payloads.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
@@ -49,6 +50,10 @@
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <boost/functional/hash.hpp>
+
+#include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_unordered_set.h>
+#include <tbb/parallel_sort.h>
 
 #include <algorithm>
 #include <functional>
@@ -99,6 +104,12 @@ UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
     return !typeName.empty() &&
         PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).
         IsA(schemaType);
+}
+
+bool
+UsdPrim::IsA(const TfType& schemaType) const
+{
+    return _IsA(schemaType, true);
 }
 
 bool
@@ -210,6 +221,11 @@ UsdPrim::_HasAPI(
     return false;
 }
 
+bool
+UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const{
+    return _HasAPI(schemaType, true, instanceName);
+}
+
 std::vector<UsdProperty>
 UsdPrim::_MakeProperties(const TfTokenVector &names) const
 {
@@ -286,7 +302,7 @@ UsdPrim::GetProperty(const TfToken &propName) const
 bool
 UsdPrim::HasProperty(const TfToken &propName) const 
 {
-    return GetProperty(propName);
+    return static_cast<bool>(GetProperty(propName));
 }
 
 TfTokenVector
@@ -586,7 +602,7 @@ UsdPrim::GetAttribute(const TfToken& attrName) const
 bool
 UsdPrim::HasAttribute(const TfToken& attrName) const
 {
-    return GetAttribute(attrName);
+    return static_cast<bool>(GetAttribute(attrName));
 }
 
 UsdRelationship
@@ -645,7 +661,7 @@ UsdPrim::GetRelationship(const TfToken& relName) const
 bool
 UsdPrim::HasRelationship(const TfToken& relName) const
 {
-    return GetRelationship(relName);
+    return static_cast<bool>(GetRelationship(relName));
 } 
 
 template <class PropertyType, class Derived>
@@ -853,32 +869,50 @@ UsdPrim::HasAuthoredReferences() const
 bool
 UsdPrim::HasPayload() const
 {
-    return _Prim()->HasPayload();
+    return HasAuthoredPayloads();
 }
 
 bool
 UsdPrim::SetPayload(const SdfPayload& payload) const
 {
-    return SetMetadata(SdfFieldKeys->Payload, payload);
+    UsdPayloads payloads = GetPayloads();
+    payloads.ClearPayloads();
+    return payloads.SetPayloads(SdfPayloadVector{payload});
 }
 
 bool
 UsdPrim::SetPayload(const std::string& assetPath, const SdfPath& primPath) const
 {
-    return SetMetadata(SdfFieldKeys->Payload, SdfPayload(assetPath, primPath));
+    return SetPayload(SdfPayload(assetPath, primPath));
 }
 
 bool
 UsdPrim::SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const
 {
-    return SetMetadata(SdfFieldKeys->Payload,
-                       SdfPayload(layer->GetIdentifier(), primPath));
+    return SetPayload(SdfPayload(layer->GetIdentifier(), primPath));
 }
 
 bool
 UsdPrim::ClearPayload() const
 {
-    return ClearMetadata(SdfFieldKeys->Payload);
+    return GetPayloads().ClearPayloads();
+}
+
+UsdPayloads
+UsdPrim::GetPayloads() const
+{
+    return UsdPayloads(*this);
+}
+
+bool
+UsdPrim::HasAuthoredPayloads() const
+{
+    // Unlike the equivalent function for references, we query the prim data
+    // for the cached value of HasPayload computed by Pcp instead of querying
+    // the composed metadata. This is necessary as this function is called by 
+    // _IncludeNewlyDiscoveredPayloadsPredicate in UsdStage which can't safely
+    // call back into the querying the composed metatdata.
+    return _Prim()->HasPayload();
 }
 
 void

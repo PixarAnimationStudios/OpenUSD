@@ -23,15 +23,12 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import unittest
-
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
+from pxr import UsdMaya
 
 from maya import cmds
 from maya import standalone
+
+import unittest
 
 
 class testUsdMayaBlockSceneModificationContext(unittest.TestCase):

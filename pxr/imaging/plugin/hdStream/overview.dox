@@ -1,0 +1,12 @@
+/*!
+\page hdStream_page_front HdStream : GL-based Hydra renderer plugin
+\if ( PIXAR_MFB_BUILD )
+\mainpage  HdStream : GL-based Hydra renderer plugin
+\publicLib
+\endif
+
+HdStream implements a Hydra renderer plugin that uses OpenGL. 
+This is a thin plugin layer, you will find most rendering functionality 
+in the HdSt library.
+
+*/

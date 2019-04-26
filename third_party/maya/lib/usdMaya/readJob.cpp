@@ -30,17 +30,20 @@
 #include "usdMaya/translatorMaterial.h"
 #include "usdMaya/translatorModelAssembly.h"
 #include "usdMaya/translatorXformable.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdUtils/pipeline.h"
@@ -49,6 +52,7 @@
 #include <maya/MAnimControl.h>
 #include <maya/MDagModifier.h>
 #include <maya/MDGModifier.h>
+#include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -124,6 +128,22 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     stage->SetEditTarget(stage->GetSessionLayer());
 
+    // XXX Currently all distance values are set directly from USD and will be 
+    // interpreted as centimeters (Maya's internal distance unit). Future work
+    // could include converting distance values based on the specified meters-
+    // per-unit in the USD stage metadata. For now, simply warn. 
+    if (UsdGeomStageHasAuthoredMetersPerUnit(stage)) {
+        MDistance::Unit mdistanceUnit = 
+            UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(
+                UsdGeomGetStageMetersPerUnit(stage));
+
+        if (mdistanceUnit != MDistance::internalUnit()) {
+            TF_WARN("Distance unit conversion is not yet supported. "
+                "All distance values will be imported in Maya's internal "
+                "distance unit.");
+        }
+    }
+
     // If the import time interval isn't empty, we expand the Min/Max time
     // sliders to include the stage's range if necessary.
     if (!mArgs.timeInterval.IsEmpty()) {
@@ -180,12 +200,23 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 .SetVariantSelection(variant.second);
     }
 
-    bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
+    Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
+
+    const bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
     if (isSceneAssembly) {
         mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
+
+        // When importing on behalf of a scene assembly, we want to make sure
+        // that we traverse down into instances. The expectation is that the
+        // user switched an assembly to its Expanded or Full representation
+        // because they want to see the hierarchy underneath it, possibly with
+        // the intention of making modifications down there. As a result, we
+        // don't really want to try to preserve instancing, but we do need to
+        // be able to access the scene description below the root prim.
+        predicate.TraverseInstanceProxies(true);
     }
 
-    UsdPrimRange range(usdRootPrim);
+    UsdPrimRange range(usdRootPrim, predicate);
     if (range.empty()) {
         // XXX: This shouldn't really be possible, but it currently is because
         // combinations of nested assembly nodes with variant set selections

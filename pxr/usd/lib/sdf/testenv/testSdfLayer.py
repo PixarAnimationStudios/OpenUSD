@@ -106,14 +106,20 @@ def "Root" (
 
     variantSet "v" = {
         "x" (
-            payload = @payload_1.sdf@</Payload>
+            payload = [
+                @payload_1.sdf@</Payload>, 
+                @payload_2.sdf@</Payload2>
+            ]
             references = [
                 @ref_1.sdf@</Ref>,
                 @ref_2.sdf@</Ref2>
             ]
         ) {
             def "ChildInVariant" (
-                payload = @payload_1.sdf@</Payload>
+                payload = [
+                    @payload_1.sdf@</Payload>, 
+                    @payload_2.sdf@</Payload2>
+                ]
                 references = [
                     @ref_1.sdf@</Ref>,
                     @ref_2.sdf@</Ref2>
@@ -153,20 +159,40 @@ def "Root" (
             srcLayer.GetPrimAtPath(p) for p in
             ["/Root", "/Root/Child", "/Root{v=x}", "/Root{v=x}ChildInVariant"]
         ]
+        primsWithSinglePayload = [
+            srcLayer.GetPrimAtPath(p) for p in
+            ["/Root", "/Root/Child"]
+        ]
+        primsWithPayloadList = [
+            srcLayer.GetPrimAtPath(p) for p in
+            ["/Root{v=x}", "/Root{v=x}ChildInVariant"]
+        ]
 
         self.assertTrue(srcLayer.UpdateExternalReference(
-            "payload_1.sdf", "payload_2.sdf"))
-        for prim in primsWithReferences:
+            "payload_1.sdf", "new_payload_1.sdf"))
+        for prim in primsWithSinglePayload:
             self.assertEqual(
-                prim.payload, Sdf.Payload("payload_2.sdf", "/Payload"),
-                "Unexpected payload {0} at {1}".format(prim.payload, prim.path))
+                prim.payloadList.explicitItems, 
+                [Sdf.Payload("new_payload_1.sdf", "/Payload")],
+                "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
+        for prim in primsWithPayloadList:
+            self.assertEqual(
+                prim.payloadList.explicitItems, 
+                [Sdf.Payload("new_payload_1.sdf", "/Payload"),
+                 Sdf.Payload("payload_2.sdf", "/Payload2")],
+                "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
 
         self.assertTrue(srcLayer.UpdateExternalReference(
-            "payload_2.sdf", ""))
-        for prim in primsWithReferences:
+            "new_payload_1.sdf", ""))
+        for prim in primsWithSinglePayload:
             self.assertEqual(
-                prim.payload, Sdf.Payload(),
-                "Unexpected payload {0} at {1}".format(prim.payload, prim.path))
+                prim.payloadList.explicitItems, [],
+                "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
+        for prim in primsWithPayloadList:
+            self.assertEqual(
+                prim.payloadList.explicitItems, 
+                [Sdf.Payload("payload_2.sdf", "/Payload2")],
+                "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
 
         # Test renaming / removing references.
         self.assertTrue(srcLayer.UpdateExternalReference(

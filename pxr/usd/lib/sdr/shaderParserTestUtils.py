@@ -72,6 +72,7 @@ def TestBasicProperties(node):
         "inputC": node.GetInput("inputC"),
         "inputD": node.GetInput("inputD"),
         "inputF2": node.GetInput("inputF2"),
+        "inputStrArray": node.GetInput("inputStrArray"),
         "resultF": node.GetOutput("resultF"),
         "resultI": node.GetOutput("resultI"),
     }
@@ -102,6 +103,10 @@ def TestBasicProperties(node):
     assert properties["inputF2"].IsArray()
     assert not properties["inputF2"].IsConnectable()
     assert list(properties["inputF2"].GetDefaultValue()) == [1.0, 2.0]
+
+    assert properties["inputStrArray"].GetArraySize() == 4
+    assert list(properties["inputStrArray"].GetDefaultValue()) == \
+        ["test", "string", "array", "values"]
 
 
 def TestShadingProperties(node):
@@ -283,7 +288,7 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
     assert node.GetSourceURI() == nodeURI
     assert node.IsValid()
     assert node.GetInfoString().startswith(info)
-    assert len(nodeInputs) == 16
+    assert len(nodeInputs) == 17
     assert len(nodeOutputs) == numOutputs
     assert nodeInputs["inputA"] is not None
     assert nodeInputs["inputB"] is not None
@@ -303,11 +308,12 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
     assert nodeOutputs["outputNormal"] is not None
     assert nodeOutputs["outputColor"] is not None
     assert nodeOutputs["outputVector"] is not None
+    print set(node.GetInputNames())
     assert set(node.GetInputNames()) == {
         "inputA", "inputB", "inputC", "inputD", "inputF2", "inputF3", "inputF4",
         "inputF5", "inputInterp", "inputOptions", "inputPoint", "inputNormal",
         "inputStruct", "inputAssetIdentifier", "primvarNamingProperty",
-        "invalidPrimvarNamingProperty"
+        "invalidPrimvarNamingProperty", "inputStrArray"
     }
     assert set(node.GetOutputNames()) == outputNames
 
@@ -348,7 +354,7 @@ def TestShaderSpecificNode(node):
     shaderOutputs = {propertyName: node.GetShaderOutput(propertyName)
                      for propertyName in node.GetOutputNames()}
 
-    assert len(shaderInputs) == 16
+    assert len(shaderInputs) == 17
     assert len(shaderOutputs) == numOutputs
     assert shaderInputs["inputA"] is not None
     assert shaderInputs["inputB"] is not None
@@ -388,7 +394,7 @@ def TestShaderSpecificNode(node):
         "inputB", "inputC", "inputD", "inputF2", "inputF3", "inputF4", "inputF5",
         "inputInterp", "inputOptions", "inputPoint", "inputNormal",
         "inputStruct", "inputAssetIdentifier", "primvarNamingProperty",
-        "invalidPrimvarNamingProperty"
+        "invalidPrimvarNamingProperty", "inputStrArray"
     }
     assert node.GetAllVstructNames() == vstructNames
 

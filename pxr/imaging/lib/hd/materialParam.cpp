@@ -36,13 +36,13 @@ HdMaterialParam::HdMaterialParam(ParamType paramType,
                                  VtValue const& fallbackValue,
                                  SdfPath const& connection,
                                  TfTokenVector const& samplerCoords,
-                                 bool isPtex)
+                                 HdTextureType textureType)
     : _paramType(paramType)
     , _name(name)
     , _fallbackValue(fallbackValue)
     , _connection(connection)
     , _samplerCoords(samplerCoords)
-    , _isPtex(isPtex)
+    , _textureType(textureType)
 {
     /*NOTHING*/
 }
@@ -64,7 +64,7 @@ HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
         TF_FOR_ALL(coordIt, paramIt->GetSamplerCoordinates()) {
             boost::hash_combine(hash, coordIt->Hash());
         }
-        boost::hash_combine(hash, paramIt->IsPtex());
+        boost::hash_combine(hash, paramIt->GetTextureType());
     }
     return hash;
 }
@@ -80,12 +80,6 @@ HdMaterialParam::GetSamplerCoordinates() const
 {
     // NOTE: could discover from texture connection.
     return _samplerCoords;
-}
-
-bool
-HdMaterialParam::IsPtex() const
-{
-    return _isPtex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

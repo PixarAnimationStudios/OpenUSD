@@ -36,7 +36,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
-#include "pxr/base/tf/move.h"
+#include "pxr/base/tf/anyUniquePtr.h"
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -60,13 +60,12 @@
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/utility/value_init.hpp>
 
 #include <tbb/atomic.h>
 
-#include <iostream>
-#include <memory>
+#include <iosfwd>
 #include <typeinfo>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -80,32 +79,37 @@ struct Vt_DefaultValueFactory;
 // its type erased and only known at runtime via a std::type_info.
 struct Vt_DefaultValueHolder
 {
-    // Constructor and implicit conversion from any type.  Creates a copy of the
-    // object and stores the type_info for the static type.
-    template<class T>
+    // Creates a value-initialized object and stores the type_info for the
+    // static type.
+    template <typename T>
+    static Vt_DefaultValueHolder Create() {
+        return Vt_DefaultValueHolder(TfAnyUniquePtr::New<T>(), typeid(T));
+    }
+
+    // Creates a copy of the object and stores the type_info for the static
+    // type.
+    template <typename T>
     static Vt_DefaultValueHolder Create(T const &val) {
-        return Vt_DefaultValueHolder(
-            std::shared_ptr<void>(new T(val)), typeid(T));
+        return Vt_DefaultValueHolder(TfAnyUniquePtr::New(val), typeid(T));
     }
 
     // Return the runtime type of the held object.
     std::type_info const &GetType() const {
-        return _type;
+        return *_type;
     }
 
     // Return a pointer to the held object.  This may be safely cast to the
     // static type corresponding to the type_info returned by GetType.
     void const *GetPointer() const {
-        return _ptr.get();
+        return _ptr.Get();
     }
 
 private:
-    Vt_DefaultValueHolder(std::shared_ptr<void> const &ptr,
-                          std::type_info const &type)
-        : _ptr(ptr), _type(type) {}
+    Vt_DefaultValueHolder(TfAnyUniquePtr &&ptr, std::type_info const &type)
+        : _ptr(std::move(ptr)), _type(&type) {}
 
-    std::shared_ptr<void> _ptr;
-    std::type_info const &_type;
+    TfAnyUniquePtr _ptr;
+    std::type_info const *_type;
 };
 
 class VtValue;
@@ -187,8 +191,6 @@ class VtValue
     struct _Counted {
         explicit _Counted(T const &obj) : _obj(obj) {
             _refCount = 0;
-            TF_AXIOM(static_cast<void const *>(this) ==
-                     static_cast<void const *>(&_obj));
         }
         bool IsUnique() const { return _refCount == 1; }
         T const &Get() const { return _obj; }
@@ -196,14 +198,16 @@ class VtValue
 
     private:
         T _obj;
-        mutable tbb::atomic<int> _refCount;
+        mutable std::atomic<int> _refCount;
 
         friend inline void intrusive_ptr_add_ref(_Counted const *d) {
-            ++d->_refCount;
+            d->_refCount.fetch_add(1, std::memory_order_relaxed);
         }
         friend inline void intrusive_ptr_release(_Counted const *d) {
-            if (d->_refCount.fetch_and_decrement() == 1)
+            if (d->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
+                std::atomic_thread_fence(std::memory_order_acquire);
                 delete d;
+            }
         }
     };
 
@@ -211,7 +215,7 @@ class VtValue
     // 16 bytes when compiled 64 bit (1 word type-info pointer, 1 word storage
     // space).
     static const size_t _MaxLocalSize = sizeof(void*);
-    typedef boost::aligned_storage<
+    typedef std::aligned_storage<
         /* size */_MaxLocalSize, /* alignment */_MaxLocalSize>::type _Storage;
 
     template <class T>
@@ -435,7 +439,7 @@ class VtValue
         ////////////////////////////////////////////////////////////////////
         // _TypeInfo interface function implementations.
         static void _CopyInit(_Storage const &src, _Storage &dst) {
-            new (&dst) Container(_Container(src));
+            new (&_Container(dst)) Container(_Container(src));
         }
 
         static void _Destroy(_Storage &storage) {
@@ -454,7 +458,7 @@ class VtValue
         }
 
         static void _Move(_Storage &src, _Storage &dst) {
-            TfMoveTo(&_Container(dst), _Container(src));
+            new (&_Container(dst)) Container(std::move(_Container(src)));
             _Destroy(src);
         }
 
@@ -634,13 +638,12 @@ public:
 
     /// Copy construct with \p other.
     VtValue(VtValue const &other) {
-        // If other is local, can memcpy without derefing info ptrs.
-        _info = other._info;
-        if (other._IsLocalAndTriviallyCopyable()) {
-            _storage = other._storage;
-        } else if (auto *info = _info.Get()) {
-            info->CopyInit(other._storage, _storage);
-        }
+        _Copy(other, *this);
+    }
+
+    /// Move construct with \p other.
+    VtValue(VtValue &&other) {
+        _Move(other, *this);
     }
 
     /// Construct a VtValue holding a copy of \p obj.
@@ -682,10 +685,17 @@ public:
     /// Destructor.
     ~VtValue() { _Clear(); }
 
-    /// Assignment from another \a VtValue.
+    /// Copy assignment from another \a VtValue.
     VtValue &operator=(VtValue const &other) {
         if (ARCH_LIKELY(this != &other))
             _Copy(other, *this);
+        return *this;
+    }
+
+    /// Move assignment from another \a VtValue.
+    VtValue &operator=(VtValue &&other) {
+        if (ARCH_LIKELY(this != &other))
+            _Move(other, *this);
         return *this;
     }
 
@@ -1030,7 +1040,7 @@ private:
     VT_API size_t _GetNumElements() const;
     friend struct Vt_ValueShapeDataAccess;
 
-    static void _Copy(VtValue const &src, VtValue &dst) {
+    static inline void _Copy(VtValue const &src, VtValue &dst) {
         if (src.IsEmpty()) {
             dst._Clear();
             return;
@@ -1045,7 +1055,7 @@ private:
         }
     }
 
-    static void _Move(VtValue &src, VtValue &dst) {
+    static inline void _Move(VtValue &src, VtValue &dst) {
         if (src.IsEmpty()) {
             dst._Clear();
             return;
@@ -1172,8 +1182,7 @@ template <class T>
 struct Vt_DefaultValueFactory {
     /// This function *must* return an object of type \a T.
     static Vt_DefaultValueHolder Invoke() {
-        return Vt_DefaultValueHolder::Create<T>(
-            boost::value_initialized<T>().data());
+        return Vt_DefaultValueHolder::Create<T>();
     }
 };
 

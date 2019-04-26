@@ -114,15 +114,6 @@ UsdImagingCapsuleAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        valueCache->GetPoints(cachePath) = GetMeshPoints(prim, time);
-
-        // Expose points as a primvar.
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
-                      HdTokens->points,
-                      HdInterpolationVertex,
-                      HdPrimvarRoleTokens->point);
-    }
 
     if (_IsRefined(cachePath)) {
         if (requestedBits & HdChangeTracker::DirtySubdivTags) {
@@ -131,6 +122,16 @@ UsdImagingCapsuleAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
+
+/*virtual*/
+VtValue
+UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
+                 		    SdfPath const& cachePath,
+                                    UsdTimeCode time) const
+{
+    TF_UNUSED(cachePath);
+    return GetMeshPoints(prim, time);   
+}
 
 // -------------------------------------------------------------------------- //
 

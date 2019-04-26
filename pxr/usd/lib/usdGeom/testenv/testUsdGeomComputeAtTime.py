@@ -82,7 +82,7 @@ class TestUsdGeomComputeAtTimeBase(object):
 
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
-            xformInclusion=UsdGeom.IncludeProtoXform):
+            xformInclusion=UsdGeom.PointInstancer.IncludeProtoXform):
         """This method should be overridden to call both the single sample
         and multisample version of ComputeInstanceTransformAtTime.
         """
@@ -239,7 +239,7 @@ class TestUsdGeomComputeAtTimeBase(object):
         baseTime = 0
         tr = timeRange(baseTime)
         xformsArray = self.computeInstanceTransforms(
-            pi, tr, baseTime, UsdGeom.ExcludeProtoXform)
+            pi, tr, baseTime, UsdGeom.PointInstancer.ExcludeProtoXform)
         compares = [[Gf.Matrix4d(
                 Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
                 Gf.Vec3d(time * 5, time * 10, time * 20))]
@@ -312,7 +312,7 @@ class TestUsdGeomComputeAtTime(
     ComputeExtentAtTime methods."""
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
-            xformInclusion=UsdGeom.IncludeProtoXform):
+            xformInclusion=UsdGeom.PointInstancer.IncludeProtoXform):
         return [pi.ComputeInstanceTransformsAtTime(time, baseTime, xformInclusion)
                 for time, delta in tr]
 
@@ -346,7 +346,7 @@ class TestUsdGeomComputeAtTimeMultisampled(
     """
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
-            xformInclusion=UsdGeom.IncludeProtoXform):
+            xformInclusion=UsdGeom.PointInstancer.IncludeProtoXform):
         return pi.ComputeInstanceTransformsAtTimes(
             [time for time, delta in tr], baseTime, xformInclusion)
 

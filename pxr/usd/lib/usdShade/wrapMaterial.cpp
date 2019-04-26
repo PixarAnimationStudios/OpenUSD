@@ -271,14 +271,6 @@ WRAP_CUSTOM {
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("ComputeVolumeSource", &_WrapComputeVolumeSource, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
-        
-        // These are now deprecated.
-        .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)
-            .staticmethod("CreateMaterialFaceSet")
-        .def("GetMaterialFaceSet", &UsdShadeMaterial::GetMaterialFaceSet)
-            .staticmethod("GetMaterialFaceSet")
-        .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
-            .staticmethod("HasMaterialFaceSet")
 
         ;
 

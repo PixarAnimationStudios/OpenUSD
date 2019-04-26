@@ -81,7 +81,8 @@ public:
     struct TextureDescriptor {
         TfToken name;
         size_t handle; // GLuint64, for bindless textures
-        enum { TEXTURE_2D, TEXTURE_PTEX_TEXEL, TEXTURE_PTEX_LAYOUT };
+        enum { TEXTURE_2D, TEXTURE_UDIM_ARRAY, TEXTURE_UDIM_LAYOUT,
+               TEXTURE_PTEX_TEXEL, TEXTURE_PTEX_LAYOUT };
         int type;
         unsigned int sampler;
     };
@@ -115,6 +116,13 @@ public:
     static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
                              HdStShaderCodeSharedPtr const &shaderB);
 
+    /// Material tags can be set in the meta-data of a glslfx file to control
+    /// what rprim collection that prims using this shader should go into.
+    /// E.g. We can use it to split opaque and translucent prims into different
+    /// collections. When no material tags are specified in the shader, a empty
+    /// token is returned.
+    HDST_API
+    virtual TfToken GetMaterialTag() const;
 
 private:
 

@@ -182,7 +182,7 @@ class GfBBox3d {
         _SetMatrices(_matrix * matrix);
     }
 
-    /// Returns the axis-aligned range (as a \c GfRange3d) that wesults from
+    /// Returns the axis-aligned range (as a \c GfRange3d) that results from
     /// applying the transformation matrix to the wxis-aligned box and
     /// aligning the result.
     GF_API

@@ -45,10 +45,14 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         self.assertEqual(img.ComputePurpose(), UsdGeom.Tokens.default_, 
                     img.GetPrim().GetPath())
         img = UsdGeom.Imageable(ni_leaf)
-        self.assertEqual(img.ComputeVisibility(), UsdGeom.Tokens.inherited, 
-                    img.GetPrim().GetPath())
-        self.assertEqual(img.ComputePurpose(), UsdGeom.Tokens.default_, 
-                    img.GetPrim().GetPath())
+        self.assertEqual(img.ComputeVisibility(
+                    parentVisibility=UsdGeom.Tokens.inherited),
+                UsdGeom.Tokens.inherited, 
+                img.GetPrim().GetPath())
+        self.assertEqual(img.ComputePurpose(
+                        parentPurpose=UsdGeom.Tokens.default_), 
+                UsdGeom.Tokens.default_, 
+                img.GetPrim().GetPath())
         
         print "Ensuring non-imageable prims WITH opinions STILL evaluate to defaults"
         ni_sub.CreateAttribute(UsdGeom.Tokens.visibility, Sdf.ValueTypeNames.Token).Set(UsdGeom.Tokens.invisible)
@@ -73,8 +77,11 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         i_leaf.GetPurposeAttr().Set(UsdGeom.Tokens.guide)
         i_leaf.GetVisibilityAttr().Set(UsdGeom.Tokens.invisible)
         
-        self.assertEqual(i_leaf.ComputeVisibility(), UsdGeom.Tokens.invisible, 
-                    i_leaf.GetPrim().GetPath())
+        self.assertEqual(i_leaf.ComputeVisibility(
+                    parentVisibility=UsdGeom.Tokens.inherited), 
+                UsdGeom.Tokens.invisible, 
+                i_leaf.GetPrim().GetPath())
+
         self.assertEqual(i_leaf.ComputePurpose(), UsdGeom.Tokens.guide, 
                     i_leaf.GetPrim().GetPath())
         
@@ -115,6 +122,17 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
                     i_leaf.GetPrim().GetPath())
         self.assertEqual(i_leaf.ComputePurpose(), UsdGeom.Tokens.render, 
                     i_leaf.GetPrim().GetPath())
+
+        # Verify that the Compute*() API that takes parent visibility/purpose 
+        # works correctly.
+        self.assertEqual(i_leaf.ComputeVisibility(
+                    parentVisibility=i_sub.ComputeVisibility()), 
+                UsdGeom.Tokens.invisible, 
+                i_leaf.GetPrim().GetPath())
+        self.assertEqual(i_leaf.ComputePurpose(
+                    parentPurpose= i_sub.ComputePurpose()), 
+                UsdGeom.Tokens.render, 
+                i_leaf.GetPrim().GetPath())
         
     def test_MakeVisInvis(self):
         stage = Usd.Stage.CreateInMemory()

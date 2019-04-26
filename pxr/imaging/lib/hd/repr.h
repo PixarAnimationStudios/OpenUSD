@@ -26,28 +26,25 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/tokens.h"
 #include <vector>
-#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct HdRprimSharedData;
-
 /// \class HdReprSelector
 ///
-/// Describes one of more authored rprim display representations.
+/// Describes one or more authored display representations for an rprim.
 /// Display opinions are separated by the topology index they represent.
 /// This allows the application to specify one or more topological
-/// representations for a given HdRprim. For some visualizations it is
-/// important to allow the application to provide an opinion for the display
-/// of the refined surface, the unrefined hull, and the points separately from
-/// the Rprim's authored opinions. This allows the representations to merge
-/// and create a final composite representation to be used for rendering.
+/// representations for a given HdRprim.
+/// For some visualizations, an application may choose to provide an opinion for
+/// the display of the refined surface, the unrefined hull and the points
+/// separately from the rprim's authored opinions.
+/// HdReprSelector allows these opinions to compose/merge into a final composite
+/// representation to be used for rendering.
+///
 class HdReprSelector {
 public:
     explicit HdReprSelector()
@@ -74,7 +71,10 @@ public:
     : refinedToken(refined)
     , unrefinedToken(unrefined)
     , pointsToken(points) { }
-    
+
+    /// Currenly support upto 3 topology tokens.
+    static const size_t MAX_TOPOLOGY_REPRS = 3;
+
     /// Returns true if the passed in reprToken is in the set of tokens
     /// for any topology index.
     HD_API
@@ -83,7 +83,7 @@ public:
     /// Returns true if the topology token at an index is active, i.e., neither
     /// empty nor disabled.
     HD_API
-    bool IsActiveRepr(int index) const;
+    bool IsActiveRepr(size_t topologyIndex) const;
 
     /// Returns true if any of the topology tokens is valid, i.e., neither
     /// empty nor disabled.
@@ -118,11 +118,9 @@ public:
     friend std::ostream &operator <<(std::ostream &stream,
                                      HdReprSelector const& t);
     
-    HD_API
-    size_t size() const;
 
     HD_API
-    TfToken const &operator[](int index) const;
+    TfToken const &operator[](size_t topologyIndex) const;
     
 private:
     TfToken refinedToken;
@@ -132,8 +130,9 @@ private:
 
 /// \class HdRepr
 ///
-/// An HdRepr owns one or more draw item(s) that visually represent it.
-///
+/// An HdRepr refers to a (single) topological representation of an rprim, and 
+/// owns the draw item(s) that visually represent it. The draw items are
+/// populated by the rprim.
 /// The relevant compositional hierarchy is:
 /// 
 /// HdRprim
@@ -141,10 +140,9 @@ private:
 ///  +--HdRepr(s)
 ///       |
 ///       +--HdDrawItem(s)
-///  
-/// For example, an HdMesh rprim could have a "Surface + Hull" repr with two 
-/// draw items; one to draw its subdivided surface and another to draw its 
-/// hull lines.
+/// 
+/// When multiple topological representations are required for an rprim, we use
+/// HdReprSelector to compose the individual representations.
 ///
 class HdRepr {
 public:
@@ -155,18 +153,12 @@ public:
     HD_API
     virtual ~HdRepr();
 
-    // Noncopyable
-    HdRepr(const HdRepr&) = delete;
-    HdRepr& operator=(const HdRepr&) = delete;
-
     /// Returns the draw items for this representation.
-    HD_API
     const DrawItems& GetDrawItems() {
         return _drawItems;
     }
 
     /// Transfers ownership of a draw item to this repr.
-    HD_API
     void AddDrawItem(HdDrawItem *item) {
         _drawItems.push_back(item);
     }
@@ -175,10 +167,14 @@ public:
     ///
     /// Note that the pointer returned is owned by this object and must not be
     /// deleted.
-    HD_API
     HdDrawItem* GetDrawItem(size_t index) {
         return _drawItems[index];
     }
+
+private:
+    // Noncopyable
+    HdRepr(const HdRepr&) = delete;
+    HdRepr& operator=(const HdRepr&) = delete;
 
 private:
     DrawItems _drawItems;

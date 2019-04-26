@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/shared_ptr.hpp>
@@ -42,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Forward declare pointers.
 SDF_DECLARE_HANDLES(SdfLayer);
 typedef TfRefPtr<class UsdStage> UsdStageRefPtr;
-typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
 class SdfPath;
 class UsdPrim;
 
@@ -68,7 +69,7 @@ class UsdKatanaCache : public TfSingleton<UsdKatanaCache>
     static void _SetMutedLayers(
         const UsdStageRefPtr &stage, const std::string &layerRegex);
 
-    typedef std::map<std::string, UsdImagingGLSharedPtr> _RendererCache;
+    typedef std::map<std::string, UsdImagingGLEngineSharedPtr> _RendererCache;
 
     std::string _ComputeCacheKey(FnAttribute::GroupAttribute sessionAttr, 
         const std::string& rootLocation);
@@ -108,7 +109,7 @@ public:
 
 
     /// Get (or create) a cached renderer for a given prim path.
-    UsdImagingGLSharedPtr const& GetRenderer(UsdStageRefPtr const& stage,
+    UsdImagingGLEngineSharedPtr const& GetRenderer(UsdStageRefPtr const& stage,
                                              UsdPrim const& root,
                                              std::string const& sessionKey);
 

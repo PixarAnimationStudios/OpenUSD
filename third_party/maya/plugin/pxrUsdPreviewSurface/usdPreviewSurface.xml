@@ -1,0 +1,130 @@
+<fragment_graph name="usdPreviewSurface" ref="usdPreviewSurface" class="FragmentGraph" version="1.0" feature_level="0">
+    <fragments>
+        <!-- Maya fragments for computing dot products for lighting. -->
+        <fragment_ref name="mayaHVector" ref="mayaHVector"/>
+        <fragment_ref name="mayaShaderGeom" ref="mayaShaderGeom"/>
+
+        <!-- Fragments for extracting computed dot products. -->
+        <fragment_ref name="mayaShaderGeom_Float4GetX" ref="float4ToFloatX"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetY" ref="float4ToFloatY"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetZ" ref="float4ToFloatZ"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetW" ref="float4ToFloatW"/>
+
+        <!-- Fragments for computing and accumulating lighting contributions
+             and combining them with material properties. -->
+        <fragment_ref name="diffuseColorPassThrough" ref="mayafloat3PassThrough"/>
+        <fragment_ref name="specularColorPassThrough" ref="mayafloat3PassThrough"/>
+        <fragment_ref name="usdPreviewSurfaceLighting" ref="usdPreviewSurfaceLighting"/>
+        <fragment_ref name="lightingContributions" ref="lightingContributions"/>
+        <fragment_ref name="maya16LightAccum" ref="maya16LightAccum"/>
+        <fragment_ref name="usdPreviewSurfaceCombiner" ref="usdPreviewSurfaceCombiner"/>
+
+        <!-- Maya fragments for computing the output surface values. -->
+        <fragment_ref name="maya_FogDepthSurface" ref="maya_FogDepthSurface"/>
+        <fragment_ref name="mayaComputeSurfaceFinal" ref="mayaComputeSurfaceFinal"/>
+        <fragment_ref name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput"/>
+    </fragments>
+    <connections>
+        <connect from="mayaHVector.mayaHVector" to="mayaShaderGeom.Hw" name="Hw"/>
+
+        <!-- mayaShaderGeom packs the dot products into a float4, so we
+             extract them individually for use as parameters to the lighting
+             fragment. -->
+        <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetX.vectorInput" name="vectorInput"/>
+        <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetY.vectorInput" name="vectorInput"/>
+        <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetZ.vectorInput" name="vectorInput"/>
+        <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetW.vectorInput" name="vectorInput"/>
+
+        <connect from="mayaShaderGeom_Float4GetX.floatOutput" to="usdPreviewSurfaceLighting.NdotL" name="NdotL"/>
+        <connect from="mayaShaderGeom_Float4GetY.floatOutput" to="usdPreviewSurfaceLighting.NdotV" name="NdotV"/>
+        <connect from="mayaShaderGeom_Float4GetZ.floatOutput" to="usdPreviewSurfaceLighting.NdotH" name="NdotH"/>
+        <connect from="mayaShaderGeom_Float4GetW.floatOutput" to="usdPreviewSurfaceLighting.VdotH" name="VdotH"/>
+
+        <connect from="diffuseColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLighting.diffuseColor" name="diffuseColor"/>
+        <connect from="specularColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLighting.specularColor" name="specularColor"/>
+        <connect from="usdPreviewSurfaceLighting.usdPreviewSurfaceLighting" to="lightingContributions.lightingContributions" name="lightingContributions"/>
+        <connect from="lightingContributions.diffuse" to="maya16LightAccum.scaledDiffuse" name="scaledDiffuse"/>
+        <connect from="lightingContributions.specular" to="maya16LightAccum.scaledSpecular" name="scaledSpecular"/>
+        <connect from="maya16LightAccum.scaledDiffuse" to="usdPreviewSurfaceCombiner.diffuseIrradianceIn" name="diffuseIrradianceIn"/>
+        <connect from="maya16LightAccum.scaledSpecular" to="usdPreviewSurfaceCombiner.specularIrradianceIn" name="specularIrradianceIn"/>
+        <connect from="diffuseColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceCombiner.diffuseColor" name="diffuseColor"/>
+        <connect from="specularColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceCombiner.specularColor" name="specularColor"/>
+        <connect from="usdPreviewSurfaceCombiner.usdPreviewSurfaceCombiner" to="mayaComputeSurfaceFinal.input" name="input"/>
+        <connect from="maya_FogDepthSurface.maya_FogDepthSurface" to="mayaComputeSurfaceFinal.maya_FogDepthSurface" name="maya_FogDepthSurface"/>
+        <connect from="mayaComputeSurfaceFinal.mayaComputeSurfaceFinal" to="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" name="mayaSurfaceShaderOutput"/>
+    </connections>
+    <properties>
+        <!-- UsdPreviewSurface Parameters -->
+        <float name="clearcoat" ref="usdPreviewSurfaceLighting.clearcoatAmount"/>
+        <float name="clearcoatRoughness" ref="usdPreviewSurfaceLighting.clearcoatRoughness"/>
+        <float3 name="diffuseColor" ref="diffuseColorPassThrough.input"/>
+        <float3 name="emissiveColor" ref="usdPreviewSurfaceCombiner.emissiveColor"/>
+        <float name="ior" ref="usdPreviewSurfaceLighting.ior"/>
+        <float name="metallic" ref="usdPreviewSurfaceLighting.metallic"/>
+        <float name="occlusion" ref="usdPreviewSurfaceLighting.occlusion"/>
+        <float name="roughness" ref="usdPreviewSurfaceLighting.specularRoughness"/>
+        <float3 name="specularColor" ref="specularColorPassThrough.input"/>
+        <float3 name="transparency" ref="usdPreviewSurfaceCombiner.transparency"/>
+        <bool name="useSpecularWorkflow" ref="usdPreviewSurfaceLighting.useSpecularWorkflow"/>
+
+        <!-- Maya Parameters for Lighting -->
+        <undefined name="GPUStage" ref="mayaComputeSurfaceFinal.GPUStage" semantic="GPUStage"/>
+        <float3 name="Nw" ref="mayaShaderGeom.Nw" flags="varyingInputParam"/>
+        <float3 name="Lw" ref="mayaShaderGeom.Lw"/>
+        <float3 name="Vw" ref="mayaShaderGeom.Vw" flags="varyingInputParam"/>
+        <float3 name="HLw" ref="mayaHVector.HLw"/>
+        <float3 name="diffuseI" ref="usdPreviewSurfaceLighting.diffuseIrradiance"/>
+        <float3 name="specularI" ref="usdPreviewSurfaceLighting.specularIrradiance"/>
+        <string name="selector" ref="maya16LightAccum.selector"/>
+        <bool name="mayaAlphaCut" ref="usdPreviewSurfaceCombiner.mayaAlphaCut" semantic="mayaAlphaCut" flags="isRequirementOnly"/>
+        <float3 name="ambientIn" ref="usdPreviewSurfaceCombiner.ambientIn"/>
+        <float3 name="IrradianceEnv" ref="usdPreviewSurfaceCombiner.IrradianceEnv"/>
+        <float3 name="SpecularEnv" ref="usdPreviewSurfaceCombiner.SpecularEnv"/>
+        <float name="extraOpacity" ref="mayaComputeSurfaceFinal.extraOpacity"/>
+        <bool name="fogEnabled" ref="mayaComputeSurfaceFinal.fogEnabled"/>
+        <float3 name="Pw" ref="maya_FogDepthSurface.Pw" semantic="Pw"/>
+        <float4x4 name="ViewProj" ref="maya_FogDepthSurface.ViewProj" semantic="viewprojection"/>
+        <float name="fogStart" ref="maya_FogDepthSurface.fogStart"/>
+        <float name="fogEnd" ref="maya_FogDepthSurface.fogEnd"/>
+        <int name="fogMode" ref="maya_FogDepthSurface.fogMode"/>
+        <float name="fogDensity" ref="maya_FogDepthSurface.fogDensity"/>
+        <float4 name="fogColor" ref="mayaComputeSurfaceFinal.fogColor"/>
+        <float name="fogMultiplier" ref="mayaComputeSurfaceFinal.fogMultiplier"/>
+    </properties>
+    <values>
+        <!-- UsdPreviewSurface Parameter Default Values -->
+        <float name="clearcoat" value="0.0"/>
+        <float name="clearcoatRoughness" value="0.01"/>
+        <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
+        <float3 name="emissiveColor" value="0.0,0.0,0.0"/>
+        <float name="ior" value="1.5"/>
+        <float name="metallic" value="0.0"/>
+        <float name="occlusion" value="1.0"/>
+        <float name="roughness" value="0.5"/>
+        <float3 name="specularColor" value="0.0,0.0,0.0"/>
+        <!-- The shader computes transparency from its "opacity" attribute. -->
+        <float3 name="transparency" value="0.0,0.0,0.0"/>
+        <bool name="useSpecularWorkflow" value="false"/>
+
+        <!-- Default values for Maya-provided parameters. -->
+        <float3 name="Lw" value="0.0,0.0,0.0"/>
+        <float3 name="HLw" value="0.0,0.0,0.0"/>
+        <float3 name="diffuseI" value="0.0,0.0,0.0"/>
+        <float3 name="specularI" value="0.0,0.0,0.0"/>
+        <string name="selector" value="mayaLightSelector16"/>
+        <float3 name="ambientIn" value="0.0,0.0,0.0"/>
+        <float3 name="IrradianceEnv" value="0.0,0.0,0.0"/>
+        <float3 name="SpecularEnv" value="0.0,0.0,0.0"/>
+        <float name="extraOpacity" value="1.0"/>
+        <bool name="fogEnabled" value="false"/>
+        <float name="fogStart" value="0.0"/>
+        <float name="fogEnd" value="92.0"/>
+        <int name="fogMode" value="0"/>
+        <float name="fogDensity" value="0.1"/>
+        <float4 name="fogColor" value="0.5,0.5,0.5,1.0"/>
+        <float name="fogMultiplier" value="1.0"/>
+    </values>
+    <outputs>
+        <struct name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput"/>
+    </outputs>
+</fragment_graph>

@@ -71,7 +71,7 @@ class PcpLayerStackSite;
 
 /// \struct PcpSourceReferenceInfo
 ///
-/// Information about reference arcs.
+/// Information about reference or payload arcs.
 ///
 struct PcpSourceReferenceInfo {
     SdfLayerHandle layer;
@@ -79,7 +79,7 @@ struct PcpSourceReferenceInfo {
     std::string authoredAssetPath;
 };
 
-/// A vector of reference arc information.
+/// A vector of reference or payload arc information.
 typedef std::vector<PcpSourceReferenceInfo> PcpSourceReferenceInfoVector;
 
 /// References
@@ -98,20 +98,20 @@ PcpComposeSiteReferences(PcpNodeRef const &node,
                                     result, info);
 }
 
-/// Payload
+/// Payloads
 PCP_API
 void
-PcpComposeSitePayload(PcpLayerStackRefPtr const &layerStack,
-                      SdfPath const &path,
-                      SdfPayload *result,
-                      SdfLayerHandle *sourceLayer);
+PcpComposeSitePayloads(PcpLayerStackRefPtr const &layerStack,
+                       SdfPath const &path,
+                       SdfPayloadVector *result,
+                       PcpSourceReferenceInfoVector *info);
 inline void
-PcpComposeSitePayload(PcpNodeRef const &node,
-                      SdfPayload *result,
-                      SdfLayerHandle *sourceLayer)
+PcpComposeSitePayloads(PcpNodeRef const &node,
+                       SdfPayloadVector *result,
+                       PcpSourceReferenceInfoVector *info)
 {
-    return PcpComposeSitePayload(node.GetLayerStack(), node.GetPath(),
-                                 result, sourceLayer);
+    return PcpComposeSitePayloads(node.GetLayerStack(), node.GetPath(),
+                                  result, info);
 }
 
 /// Permission

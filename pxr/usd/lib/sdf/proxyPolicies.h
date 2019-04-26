@@ -35,7 +35,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfReference;
-class SdfMapperSpec;
 
 /// \class SdfNameKeyPolicy
 ///
@@ -136,6 +135,35 @@ struct Vt_DefaultValueFactory<SdfPathKeyPolicy> {
     }
 };
 
+/// \class SdfPayloadTypePolicy
+///
+/// List editor type policy for \c SdfPayload.
+///
+class SdfPayloadTypePolicy {
+public:
+    typedef SdfPayload value_type;
+
+    static const value_type& Canonicalize(const value_type& x)
+    {
+        return x;
+    }
+
+    static const std::vector<value_type>& Canonicalize(
+        const std::vector<value_type>& x)
+    {
+        return x;
+    }
+};
+
+// Cannot get from a VtValue except as the correct type.
+template <>
+struct Vt_DefaultValueFactory<SdfPayloadTypePolicy> {
+    static Vt_DefaultValueHolder Invoke() {
+        TF_AXIOM(false && "Failed VtValue::Get<SdfPayloadTypePolicy> not allowed");
+        return Vt_DefaultValueHolder::Create((void*)0);
+    }
+};
+
 /// \class SdfReferenceTypePolicy
 ///
 /// List editor type policy for \c SdfReference.
@@ -183,26 +211,6 @@ public:
     {
         return x;
     }
-};
-
-/// \class SdfConnectionMapperViewPredicate
-///
-/// Predicate for connection mappers.  Don't include connections that don't
-/// have a mapper.
-///
-class SdfConnectionMapperViewPredicate {
-public:
-    SDF_API bool operator()(const SdfHandle<SdfMapperSpec>& x) const;
-};
-
-/// \class SdfConnectionMapperValuePolicy
-///
-/// Value policy for connection mappers.
-///
-class SdfConnectionMapperValuePolicy {
-public:
-    typedef SdfHandle<SdfMapperSpec> value_type;
-
 };
 
 /// \class SdfRelocatesMapProxyValuePolicy
@@ -258,6 +266,7 @@ private:
 ///
 class SdfAttributeViewPredicate : public SdfGenericSpecViewPredicate {
 public:
+    SDF_API
     SdfAttributeViewPredicate();
 };
 
@@ -267,6 +276,7 @@ public:
 ///
 class SdfRelationshipViewPredicate : public SdfGenericSpecViewPredicate {
 public:
+    SDF_API
     SdfRelationshipViewPredicate();
 };
 

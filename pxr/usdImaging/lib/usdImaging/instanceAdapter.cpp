@@ -40,19 +40,11 @@
 
 #include "pxr/base/gf/matrix4f.h"
 
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
 
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-// // XXX: These should come from Hd or UsdImaging
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (instance)
-);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -70,6 +62,18 @@ UsdImagingInstanceAdapter::UsdImagingInstanceAdapter()
 
 UsdImagingInstanceAdapter::~UsdImagingInstanceAdapter() 
 {
+}
+
+bool
+UsdImagingInstanceAdapter::ShouldCullChildren() const
+{
+    return true;
+}
+
+bool
+UsdImagingInstanceAdapter::IsInstancerAdapter() const
+{
+    return true;
 }
 
 SdfPath
@@ -212,9 +216,14 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 continue;
             }
 
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(instanceProxyPrim)) {
+                iter.PruneChildren();
+                continue;
+            }
+
             UsdImagingPrimAdapterSharedPtr const& primAdapter =
                 _GetPrimAdapter(instanceProxyPrim, /*ignoreInstancing=*/ true);
-            if (!primAdapter || primAdapter->IsPopulatedIndirectly()) {
+            if (!primAdapter) {
                 continue;
             }
 
@@ -387,7 +396,7 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
 
     SdfPath protoPath = primAdapter->Populate(prim, index, &ctx);
 
-    if (primAdapter->ShouldCullChildren(prim)) {
+    if (primAdapter->ShouldCullChildren()) {
         it->PruneChildren();
     }
 
@@ -444,17 +453,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    // XXX: This is no good: if an attribute has exactly one time sample, the
-    // default value will get cached and never updated. However, if we use an
-    // arbitrary time here, attributes which have valid default values and 1
-    // time sample will get cached with the wrong result. The solution is to
-    // stop guessing about what time to read, which will be done in a future
-    // change, which requires a much larger structure change to UsdImaging.
-    //
-    // Here we choose to favor correctness of the time sample, since we must
-    // ensure the correct image is produced for final render.
-    UsdTimeCode time(1.0);
-
     if (_IsChildPrim(prim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
         _ProtoRprim & rproto = const_cast<_ProtoRprim&>(
@@ -483,7 +481,10 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         if (!(rproto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
             // the rprim prototype over all time.
-            rproto.visible = GetVisible(protoPrim, time);
+            // XXX: The usage of _GetTimeWithOffset here is super-sketch, but
+            // it avoids blowing up the inherited visibility cache... We should
+            // let this be initialized by the first UpdateForTime instead.
+            rproto.visible = GetVisible(protoPrim, _GetTimeWithOffset(0.0));
         }
 
         // If any of the instances varies over time, we should flag the 
@@ -1074,6 +1075,24 @@ UsdImagingInstanceAdapter::MarkCullStyleDirty(UsdPrim const& prim,
     }
 }
 
+void
+UsdImagingInstanceAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                       SdfPath const& cachePath,
+                                       UsdImagingIndexProxy* index)
+{
+    // The instancer isn't interested in this, but it's children maybe
+    // so make sure the message gets forwarded
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkRenderTagDirty(prim, cachePath, index);
+        }
+    }
+}
 void
 UsdImagingInstanceAdapter::MarkTransformDirty(UsdPrim const& prim,
                                               SdfPath const& cachePath,
@@ -1700,7 +1719,6 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 
         // add all protos.
         TF_FOR_ALL (it, instancerData->primMap) {
-            SdfPath protoRprim = it->first;
             // convert to indexPath (add prefix)
             SdfPath indexPath = adapter->_GetPathForIndex(it->first);
 

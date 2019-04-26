@@ -26,8 +26,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// We use an empty token to indicate "no option" (i.e., a "don't care" opinion).
-// This is factored in when compositing repr selectors. See CompositeOver.
+// We use an empty token to indicate "no opinion" (i.e., a "don't care" opinion)
+// which is used when compositing/reolving repr selector opinions.
+// See HdReprSelector::CompositeOver.
 static bool
 _ReprHasOpinion(const TfToken &reprToken) {
     return !reprToken.IsEmpty();
@@ -42,17 +43,17 @@ HdReprSelector::Contains(const TfToken &reprToken) const
 }
 
 bool
-HdReprSelector::IsActiveRepr(int index) const
+HdReprSelector::IsActiveRepr(size_t topologyIndex) const
 {
-    TF_VERIFY(index < 3);
-    TfToken const &reprToken = (*this)[index];
+    TF_VERIFY(topologyIndex < MAX_TOPOLOGY_REPRS);
+    TfToken const &reprToken = (*this)[topologyIndex];
     return !(reprToken.IsEmpty() || reprToken == HdReprTokens->disabled);
 }
 
 bool
 HdReprSelector::AnyActiveRepr() const
 {
-    for (size_t i = 0; i < size(); ++i) {
+    for (size_t i = 0; i < MAX_TOPOLOGY_REPRS; ++i) {
         if (IsActiveRepr(i)) {
             return true;
         }
@@ -120,16 +121,10 @@ operator <<(std::ostream &stream, HdReprSelector const& t)
           << ", " << t.pointsToken;
 }
 
-size_t
-HdReprSelector::size() const
-{
-    return 3;
-}
-
 TfToken const &
-HdReprSelector::operator[](int index) const
+HdReprSelector::operator[](size_t topologyIndex) const
 {
-    switch (index) {
+    switch (topologyIndex) {
         case 0: return refinedToken;
         case 1: return unrefinedToken;
         case 2: return pointsToken;

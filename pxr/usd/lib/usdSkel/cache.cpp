@@ -25,6 +25,7 @@
 
 #include "pxr/usd/usd/primRange.h"
 
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usdSkel/cacheImpl.h"
 #include "pxr/usd/usdSkel/debugCodes.h"
@@ -51,6 +52,18 @@ UsdSkelCache::Clear()
 }
 
 
+// XXX: This method exists only so that it's clear to users that
+// GetAnimQuery() is valid on UsdSkelAnimation prims.
+UsdSkelAnimQuery
+UsdSkelCache::GetAnimQuery(const UsdSkelAnimation& anim) const
+{
+    return UsdSkel_CacheImpl::ReadScope(_impl.get())
+        .FindOrCreateAnimQuery(anim.GetPrim());
+}
+
+
+// XXX: Keeping this method around for backwards-compatibility,
+/// but we should prefer the form above.
 UsdSkelAnimQuery
 UsdSkelCache::GetAnimQuery(const UsdPrim& prim) const
 {

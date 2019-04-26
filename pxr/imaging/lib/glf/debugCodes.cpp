@@ -37,8 +37,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Glf report when context caps are initialized and dump contents");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_ERROR_STACKTRACE,
         "Glf dump stack trace on GL error");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_GLSLFX,
-        "Glf GLSLFX info");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_SHADOW_TEXTURES,
         "Glf outputs shadows textures to image files");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,

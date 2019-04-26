@@ -42,9 +42,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::cerr;
-using std::cout;
-using std::endl;
 using std::map;
 
 namespace {
@@ -279,10 +276,10 @@ GusdNURBSCurvesWrapper::refine(
         }
 
         UsdAttribute widthsAttr = usdCurves.GetWidthsAttr();
-        if(widthsAttr && widthsAttr.HasAuthoredValueOpinion() ) {
+        VtFloatArray usdWidths;
+        if( widthsAttr.HasAuthoredValue() && 
+            widthsAttr.Get(&usdWidths, m_time) ) {
 
-            VtFloatArray usdWidths;
-            widthsAttr.Get(&usdWidths, m_time);
             GT_DataArrayHandle gtWidths = new GusdGT_VtArray<fpreal32>(usdWidths); 
 
             TfToken widthsInterpolation = usdCurves.GetWidthsInterpolation();
@@ -334,10 +331,8 @@ GusdNURBSCurvesWrapper::refine(
         }
         // velocities
         UsdAttribute velAttr = usdCurves.GetVelocitiesAttr();
-        if( velAttr && velAttr.HasAuthoredValueOpinion() ) {
-
-            VtVec3fArray usdVelocities;
-            velAttr.Get(&usdVelocities, m_time);
+        VtVec3fArray usdVelocities;
+        if( velAttr.HasAuthoredValue() && velAttr.Get(&usdVelocities, m_time) ) {
 
             GT_DataArrayHandle gtVelocities = 
                 new GusdGT_VtArray<GfVec3f>(usdVelocities,GT_TYPE_VECTOR);
@@ -347,9 +342,9 @@ GusdNURBSCurvesWrapper::refine(
         }
         // normals
         UsdAttribute normAttr = usdCurves.GetNormalsAttr();
-        if(normAttr && normAttr.HasAuthoredValueOpinion()) {
-            VtVec3fArray usdNormals;
-            normAttr.Get(&usdNormals, m_time);
+        VtVec3fArray usdNormals;
+        if(normAttr.HasAuthoredValue() && normAttr.Get(&usdNormals, m_time) ) {
+            
             GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(usdNormals,GT_TYPE_NORMAL);
 
@@ -415,11 +410,11 @@ GusdNURBSCurvesWrapper::refine(
     } else {
 
         UsdGeomPrimvar colorPrimvar = usdCurves.GetPrimvar(GusdTokens->Cd);
-        if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
+        if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValue() ) {
             colorPrimvar = usdCurves.GetPrimvar(GusdTokens->displayColor);
         }
 
-        if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+        if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValue()) {
 
             GT_DataArrayHandle gtData = convertPrimvarData( colorPrimvar, m_time );
             if( gtData ) {

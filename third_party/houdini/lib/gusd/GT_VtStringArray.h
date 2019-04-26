@@ -61,7 +61,7 @@ public:
     const T&            operator()(GT_Offset o) const
                         {
                             UT_ASSERT_P(o >= 0 && o <= _size);
-                            return _data[0];
+                            return _data[o];
                         }
 
     const ArrayType&    operator*() const   { return _array; }

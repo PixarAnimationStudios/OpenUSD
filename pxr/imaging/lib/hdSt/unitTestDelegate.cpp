@@ -79,18 +79,18 @@ HdSt_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
         GlfTextureRegistry::GetInstance().GetTextureHandle(_textures[textureId].texture);
 
     // Simple way to detect if the glf texture is ptex or not
-    bool isPtex = false;
+    HdTextureType textureType = HdTextureType::Uv;
 #ifdef PXR_PTEX_SUPPORT_ENABLED
     GlfPtexTextureRefPtr pTex = 
         TfDynamic_cast<GlfPtexTextureRefPtr>(_textures[textureId].texture);
     if (pTex) {
-        isPtex = true;
+        textureType = HdTextureType::Ptex;
     }
 #endif
 
     return HdTextureResourceSharedPtr(
         new HdStSimpleTextureResource(texture,
-                                      isPtex,
+                                      textureType,
                                       HdWrapUseMetadata,
                                       HdWrapUseMetadata,
                                       HdMinFilterNearestMipmapLinear,

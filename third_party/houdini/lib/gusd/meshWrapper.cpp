@@ -46,6 +46,7 @@
 #include <GT/GT_DAConstant.h>
 #include <SYS/SYS_Version.h>
 #include <numeric>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -329,14 +330,12 @@ GusdMeshWrapper::refine(
     gtPointAttrs = gtPointAttrs->addAttribute("P", gtPoints, true);
 
     UsdAttribute normalsAttr = m_usdMesh.GetNormalsAttr();
-    if( normalsAttr && normalsAttr.HasAuthoredValueOpinion()) {
-        normalsAttr.Get(&vtVec3Array, m_time);
+    if( normalsAttr.HasAuthoredValue() && normalsAttr.Get(&vtVec3Array, m_time) ) {
+        
         GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
-        TfToken interp;
-        if (!normalsAttr.GetMetadata(UsdGeomTokens->interpolation, &interp)) {
-            interp = UsdGeomTokens->varying;
-        }
+        TfToken interp = m_usdMesh.GetNormalsInterpolation();
+
         if( gtNormals ) {
             _validateAttrData(
                 "N",
@@ -358,8 +357,8 @@ GusdMeshWrapper::refine(
 
         // point velocities
         UsdAttribute velAttr = m_usdMesh.GetVelocitiesAttr();
-        if (velAttr && velAttr.HasAuthoredValueOpinion()) {
-            velAttr.Get(&vtVec3Array, m_time);
+        if ( velAttr.HasAuthoredValue() && velAttr.Get(&vtVec3Array, m_time) ) {
+            
             GT_DataArrayHandle gtVel = 
                     new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_VECTOR);
             if( gtVel ) {
@@ -388,22 +387,6 @@ GusdMeshWrapper::refine(
                       &gtPointAttrs,
                       &gtUniformAttrs,
                       &gtDetailAttrs );
-
-        if( gtVertexAttrs->entries() > 0 ) {
-            if( reverseWindingOrder ) {
-                // Construct an index array which will be used to lookup vertex 
-                // attributes in the correct order.
-                GT_Int32Array* vertexIndirect
-                    = new GT_Int32Array(gtIndicesHandle->entries(), 1);
-                GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
-                for(int i=0; i<gtIndicesHandle->entries(); ++i) {
-                    vertexIndirect->set(i, i);     
-                }
-                _reverseWindingOrder(vertexIndirect, gtVertexCounts );
-
-                gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
-            }
-        }
     }
 
     else {
@@ -415,11 +398,11 @@ GusdMeshWrapper::refine(
         // to vertex.
 
         UsdGeomPrimvar colorPrimvar = m_usdMesh.GetPrimvar(GusdTokens->Cd);
-        if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
+        if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValue() ) {
             colorPrimvar = m_usdMesh.GetPrimvar(GusdTokens->displayColor);
         }
 
-        if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+        if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValue()) {
 
             GT_DataArrayHandle gtData = convertPrimvarData( colorPrimvar, m_time );
             if( gtData ) {
@@ -440,11 +423,11 @@ GusdMeshWrapper::refine(
             }
         }
         UsdGeomPrimvar alphaPrimvar = m_usdMesh.GetPrimvar(GusdTokens->Alpha);
-        if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
+        if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValue() ) {
             alphaPrimvar = m_usdMesh.GetPrimvar(GusdTokens->displayOpacity);
         }
 
-        if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+        if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValue()) {
 
             GT_DataArrayHandle gtData = convertPrimvarData( alphaPrimvar, m_time );
             if( gtData ) {
@@ -464,6 +447,22 @@ GusdMeshWrapper::refine(
                     &gtDetailAttrs );
             }
         }
+    }
+
+    if( gtVertexAttrs->entries() > 0 ) {
+	if( reverseWindingOrder ) {
+	    // Construct an index array which will be used to lookup vertex
+	    // attributes in the correct order.
+	    GT_Int32Array* vertexIndirect
+		= new GT_Int32Array(gtIndicesHandle->entries(), 1);
+	    GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
+	    for(int i=0; i<gtIndicesHandle->entries(); ++i) {
+		vertexIndirect->set(i, i);
+	    }
+	    _reverseWindingOrder(vertexIndirect, gtVertexCounts );
+
+	    gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
+	}
     }
 
     // build GT_Primitive
@@ -517,15 +516,14 @@ GusdMeshWrapper::refine(
         UsdAttribute creaseIndicesAttr = m_usdMesh.GetCreaseIndicesAttr();
         UsdAttribute creaseLengthsAttr = m_usdMesh.GetCreaseLengthsAttr();
         UsdAttribute creaseSharpnessesAttr = m_usdMesh.GetCreaseSharpnessesAttr();
-        if (creaseIndicesAttr.IsValid() &&
-            creaseLengthsAttr.IsValid() &&
+        // creaseIndices are mandatory, so we validate as part of the guard
+        VtIntArray vtCreaseIndices;
+        if (creaseLengthsAttr.IsValid() &&
             creaseSharpnessesAttr.IsValid() &&
-            creaseIndicesAttr.HasAuthoredValueOpinion()) {
+            creaseIndicesAttr.Get(&vtCreaseIndices, m_time)) {
             // Extract vt arrays
-            VtIntArray vtCreaseIndices;
             VtIntArray vtCreaseLengths;
             VtFloatArray vtCreaseSharpnesses;
-            creaseIndicesAttr.Get(&vtCreaseIndices, m_time);
             creaseLengthsAttr.Get(&vtCreaseLengths, m_time);
             creaseSharpnessesAttr.Get(&vtCreaseSharpnesses, m_time);
 
@@ -534,6 +532,7 @@ GusdMeshWrapper::refine(
             // Houdini expects separate creases per vertex pair.
             std::vector<int> creaseIndices;
             std::vector<float> creaseSharpness;
+            // XXX There is no validation that vtCreaseIndices is long enough!
             if (vtCreaseLengths.size() == vtCreaseSharpnesses.size()) {
                 // We have exactly 1 sharpness per crease.
                 size_t i=0;
@@ -586,6 +585,15 @@ GusdMeshWrapper::refine(
             UT_ASSERT(index->entries() == weight->entries()*2);
             subdPrim->appendIntTag("crease", GT_DataArrayHandle(index));
             subdPrim->appendRealTag("crease", GT_DataArrayHandle(weight));
+        }
+
+        // Holes
+        UsdAttribute holeIndicesAttr = m_usdMesh.GetHoleIndicesAttr();
+        VtIntArray holeIndices;
+        holeIndicesAttr.Get(&holeIndices, m_time);
+        if (!holeIndices.empty()) {
+            subdPrim->appendIntTag("hole", GT_DataArrayHandle(
+                                       new GusdGT_VtArray<int>(holeIndices)));
         }
 
         // Interpolation boundaries
@@ -887,10 +895,14 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         usdAttr = m_usdMesh.GetNormalsAttr();
         if( updateAttributeFromGTPrim( attrOwner, "N",
                                        houAttr, usdAttr, geoTime ) ) {
-            if(GT_OWNER_VERTEX == attrOwner) {
+            if (GT_OWNER_CONSTANT == attrOwner) {
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+            } else if(GT_OWNER_PRIMITIVE == attrOwner) {
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->uniform);
+            } else if(GT_OWNER_VERTEX == attrOwner) {
                 m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
             } else {
-                 m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->varying);
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->varying);
             }
         }
 
@@ -929,9 +941,11 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "facevertexindices",
                                    houVertexList, usdAttr, topologyTime );
 
-        // Creases
+        // Subdiv tags
         if(const GT_PrimSubdivisionMesh* subdMesh
            = dynamic_cast<const GT_PrimSubdivisionMesh*>(gtMesh)) {
+
+            // Creases
             if (const GT_PrimSubdivisionMesh::Tag *tag =
                 subdMesh->findTag("crease")) {
                 const GT_Int32Array *index =
@@ -944,7 +958,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                     UT_ASSERT(index->entries() == weight->entries()*2);
 
                     // Convert to vt arrays
-                    const int numCreases = weight->entries();
+                    const size_t numCreases = weight->entries();
                     VtIntArray vtCreaseIndices;
                     VtIntArray vtCreaseLengths;
                     VtFloatArray vtCreaseSharpnesses;
@@ -970,6 +984,23 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                     creaseIndicesAttr.Set(vtCreaseIndices, m_time);
                     creaseLengthsAttr.Set(vtCreaseLengths, m_time);
                     creaseSharpnessesAttr.Set(vtCreaseSharpnesses, m_time);
+                }
+            }
+
+            // Holes
+            if (const GT_PrimSubdivisionMesh::Tag* tag =
+                subdMesh->findTag("hole")) {
+                
+                if (const GT_Int32Array* indices =
+                    dynamic_cast<GT_Int32Array*>(tag->intArray().get())) {
+                    
+                    // Convert to vt arrays
+                    const size_t numIndices = indices->entries();
+                    VtIntArray vtHoleIndices(numIndices);
+                    UTconvertArray(vtHoleIndices.data(),
+                                   indices->data(), numIndices);
+
+                    m_usdMesh.GetHoleIndicesAttr().Set(vtHoleIndices, m_time);
                 }
             }
         }

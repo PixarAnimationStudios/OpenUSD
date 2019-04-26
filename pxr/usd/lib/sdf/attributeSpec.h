@@ -36,8 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class T> class Sdf_MarkerUtils;
-
 /// \class SdfAttributeSpec
 ///
 /// A subclass of SdfPropertySpec that holds typed data.
@@ -57,8 +55,7 @@ template <class T> class Sdf_MarkerUtils;
 ///
 class SdfAttributeSpec : public SdfPropertySpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeAttribute,
-                     SdfAttributeSpec, SdfPropertySpec);
+    SDF_DECLARE_SPEC(SdfAttributeSpec, SdfPropertySpec);
 
 public:
     typedef SdfAttributeSpec This;
@@ -75,20 +72,6 @@ public:
     SDF_API
     static SdfAttributeSpecHandle
     New(const SdfPrimSpecHandle& owner,
-        const std::string& name, const SdfValueTypeName& typeName,
-        SdfVariability variability = SdfVariabilityVarying,
-        bool custom = false);
-
-    /// Constructs a new relational attribute instance.
-    ///
-    /// Creates and returns a new attribute for the given relationship
-    /// and target. The \p owner will own the newly created attribute.
-    /// The new attribute will appear at the end of the target's
-    /// attribute list.
-    SDF_API
-    static SdfAttributeSpecHandle
-    New(const SdfRelationshipSpecHandle& owner,
-        const SdfPath& targetPath,
         const std::string& name, const SdfValueTypeName& typeName,
         SdfVariability variability = SdfVariabilityVarying,
         bool custom = false);
@@ -113,56 +96,6 @@ public:
     /// Clears the connection paths for this attribute.
     SDF_API
     void ClearConnectionPaths();
-
-    /// @}
-    /// \name Mappers
-    /// @{
-
-    /// Returns the mappers for this attribute.
-    ///
-    /// Returns an editable map whose keys are connection paths and whose
-    /// values are mappers.  Mappers may be removed from the map.  Mappers
-    /// are added by directly constructing them.
-    SDF_API
-    SdfConnectionMappersProxy GetConnectionMappers() const;
-
-    /// Returns the target path that mapper \p mapper is associated with.
-    SDF_API
-    SdfPath GetConnectionPathForMapper(const SdfMapperSpecHandle& mapper);
-
-    /// Changes the path a mapper is associated with from \p oldPath to
-    /// \p newPath.
-    SDF_API
-    void ChangeMapperPath(const SdfPath& oldPath, const SdfPath& newPath);
-
-    /// @}
-    /// \name Markers
-    /// @{
-
-    typedef std::map<SdfPath, std::string,
-                     SdfPath::FastLessThan> ConnectionMarkerMap;
-
-    /// Sets all the connection markers for this attribute.
-    SDF_API
-    void SetConnectionMarkers(const ConnectionMarkerMap& markers);
-
-    /// Returns the marker for the given connection path.
-    /// If no marker exists, returns the empty string.
-    SDF_API
-    std::string GetConnectionMarker(const SdfPath& path) const;
-
-    /// Sets the marker for the given connection path.
-    /// Clears the marker if an empty string is given.
-    SDF_API
-    void SetConnectionMarker(const SdfPath& path, const std::string& marker);
-
-    /// Clears the marker for the given connection path.
-    SDF_API
-    void ClearConnectionMarker(const SdfPath& path);
-
-    /// Returns all connection paths on which markers are specified.
-    SDF_API
-    SdfPathVector GetConnectionMarkerPaths() const;
 
     /// @}
     /// \name Attribute value API
@@ -242,20 +175,8 @@ private:
          SdfVariability variability,
          bool custom);
 
-    static SdfAttributeSpecHandle
-    _New(const SdfRelationshipSpecHandle& owner,
-         const SdfPath& targetPath,
-         const std::string& name,
-         const SdfValueTypeName& typeName,
-         SdfVariability variability,
-         bool custom);
-
     SdfPath _CanonicalizeConnectionPath(const SdfPath& connectionPath) const;
 
-    SdfSpecHandle _FindOrCreateChildSpecForMarker(const SdfPath& key);
-
-    friend class SdfMapperSpec;
-    friend class Sdf_MarkerUtils<SdfAttributeSpec>;
     friend class Sdf_PyAttributeAccess;
 };
 

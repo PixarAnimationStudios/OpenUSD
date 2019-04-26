@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hdEmbree/renderer.h"
@@ -97,7 +98,10 @@ private:
     std::atomic<int> *_sceneVersion;
 
     // The last scene version we rendered with.
-    int _lastRenderedVersion;
+    int _lastSceneVersion;
+
+    // The last settings version we rendered with.
+    int _lastSettingsVersion;
 
     // The width of the viewport we're rendering into.
     unsigned int _width;
@@ -109,8 +113,8 @@ private:
     // The projection matrix: camera space to NDC space
     GfMatrix4d _projMatrix;
 
-    // The list of attachments this renderpass should write to.
-    HdRenderPassAttachmentVector _attachments;
+    // The list of aov buffers this renderpass should write to.
+    HdRenderPassAovBindingVector _aovBindings;
 
     // If no attachments are provided, provide an anonymous renderbuffer for
     // color and depth output.

@@ -118,12 +118,10 @@ UsdSkelInbetweenShape::_GetNamespacePrefix()
 }
 
 
-float
-UsdSkelInbetweenShape::GetWeight() const
+bool
+UsdSkelInbetweenShape::GetWeight(float* weight) const
 {
-    float weight = 1;
-    _attr.GetMetadata(UsdSkelTokens->weight, &weight);
-    return weight;
+    return _attr.GetMetadata(UsdSkelTokens->weight, weight);
 }
 
 

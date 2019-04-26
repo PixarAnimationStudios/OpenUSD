@@ -50,6 +50,10 @@ namespace GusdUSD_Utils
 {
 
 
+/// Convert a TfToken to a UT_StringHolder.
+GUSD_API
+UT_StringHolder TokenToStringHolder(const TfToken& token);
+
 /// Extract the numeric time from a time code.
 /// If @a time is not numeric, returns the numeric value
 /// from UsdTimeCode::EarliestTime().
@@ -105,10 +109,6 @@ GUSD_API
 void        ExtractPrimPathAndVariants(const SdfPath& path,
                                        SdfPath& primPath,
                                        SdfPath& variants);
-
-GUSD_API
-bool        ImageablePrimIsVisible(const UsdGeomImageable& prim,
-                                   UsdTimeCode time);
 
 /** Sort an array of prims (by path) */
 GUSD_API
@@ -264,15 +264,6 @@ GetNumericTime(UsdTimeCode time)
 {
     return time.IsNumeric() ?
         time.GetValue() : UsdTimeCode::EarliestTime().GetValue();
-}
-
-
-inline bool
-ImageablePrimIsVisible(const UsdGeomImageable& prim, UsdTimeCode time)
-{
-    TfToken vis;
-    prim.GetVisibilityAttr().Get(&vis, time);
-    return vis == UsdGeomTokens->inherited;
 }
 
 

@@ -23,19 +23,17 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from pxr import UsdMaya
+
+from pxr import Usd
+from pxr import UsdGeom
+
 from maya import cmds
 from maya import standalone
 
 import os
 import unittest
-from pxr import Usd, UsdGeom
 
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
 
 class testUsdMayaAdaptorMetadata(unittest.TestCase):
 

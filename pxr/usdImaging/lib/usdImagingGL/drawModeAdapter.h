@@ -58,17 +58,15 @@ public:
 
     // If the draw mode adapter is applied to a prim, it cuts off traversal of
     // that prim's subtree.
-    virtual bool ShouldCullChildren(UsdPrim const& prim) override {
-        return true;
-    }
+    virtual bool ShouldCullChildren() const override;
 
     // Because draw mode can change usdImaging topology, we need to handle
     // render index compatibility at a later point than adapter lookup.
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override {
-        return true;
-    }
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
-    virtual bool CanPopulateMaster() override { return true; }
+    // Cards prims can take effect on master prims, so we need to let the
+    // UsdImagingInstanceAdapter know we want special handling.
+    virtual bool CanPopulateMaster() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -145,16 +143,17 @@ private:
     // Check whether the given cachePath is a path to the draw mode material.
     bool _IsMaterialPath(SdfPath const& path) const;
     // Check whether the given cachePath is a path to a draw mode texture.
-
     bool _IsTexturePath(SdfPath const& path) const;
+
+    // Check if any of the cards texture attributes are marked as time-varying.
+    void _CheckForTextureVariability(UsdPrim const& prim,
+                                     HdDirtyBits dirtyBits,
+                                     HdDirtyBits *timeVaryingBits) const;
+
     // Computes the extents of the given prim, using UsdGeomBBoxCache.
     // The extents are computed at UsdTimeCode::EarliestTime() (and are not
     // animated), and they are computed for purposes default/proxy/render.
     GfRange3d _ComputeExtent(UsdPrim const& prim) const;
-
-    // Returns the UsdGeomImagable "purpose" for this prim, including any
-    // inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(UsdPrim const& prim, UsdTimeCode time) const;
 
     // Returns the draw mode surface shader.
     std::string _GetSurfaceShaderSource() const;

@@ -165,20 +165,31 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredPrimvars", &UsdGeomImageable::GetAuthoredPrimvars,
              return_value_policy<TfPySequenceToList>())
-        .def("FindInheritedPrimvars", &UsdGeomImageable::FindInheritedPrimvars,
-             return_value_policy<TfPySequenceToList>())
-        .def("FindInheritedPrimvar", &UsdGeomImageable::FindInheritedPrimvar,
-             arg("name"))
         .def("HasPrimvar", &UsdGeomImageable::HasPrimvar, arg("name"))
-        .def("HasInheritedPrimvar", &UsdGeomImageable::HasInheritedPrimvar,
-             arg("name"))
         .def("GetOrderedPurposeTokens",
              &UsdGeomImageable::GetOrderedPurposeTokens,
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetOrderedPurposeTokens")
-        .def("ComputeVisibility", &UsdGeomImageable::ComputeVisibility,
+
+        .def("ComputeVisibility", 
+             (TfToken (UsdGeomImageable::*)(UsdTimeCode const &) const)
+                &UsdGeomImageable::ComputeVisibility,
              arg("time")=UsdTimeCode::Default())
-        .def("ComputePurpose", &UsdGeomImageable::ComputePurpose)
+        .def("ComputeVisibility", 
+             (TfToken (UsdGeomImageable::*)(TfToken const &, 
+                                            UsdTimeCode const &) const)
+                &UsdGeomImageable::ComputeVisibility,
+             (arg("parentVisibility"),
+              arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputePurpose", 
+             (TfToken (UsdGeomImageable::*)() const)
+                &UsdGeomImageable::ComputePurpose)
+        .def("ComputePurpose", 
+             (TfToken (UsdGeomImageable::*)(const TfToken &) const)
+                &UsdGeomImageable::ComputePurpose,
+             arg("parentPurpose"))
+
         .def("ComputeProxyPrim", &_ComputeProxyPrim,
             "Returns None if neither this prim nor any of its ancestors "
             "has a valid renderProxy prim.  Otherwise, returns a tuple of "

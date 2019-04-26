@@ -46,6 +46,7 @@ HdStSurfaceShader::HdStSurfaceShader()
  , _paramSpec()
  , _paramArray()
  , _textureDescriptors()
+ , _materialTag()
 {
 }
 
@@ -113,6 +114,19 @@ HdStSurfaceShader::BindResources(HdSt_ResourceBinder const &binder, int program)
             
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
             samplerUnit++;
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_ARRAY) {
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)it->handle);
+            glBindSampler(samplerUnit, it->sampler);
+
+            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
+            samplerUnit++;
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_LAYOUT) {
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_1D, (GLuint)it->handle);
+
+            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
+            samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)it->handle);
@@ -144,6 +158,15 @@ HdStSurfaceShader::UnbindResources(HdSt_ResourceBinder const &binder, int progra
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D, 0);
             glBindSampler(samplerUnit, 0);
+            samplerUnit++;
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_ARRAY) {
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+            glBindSampler(samplerUnit, 0);
+            samplerUnit++;
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_LAYOUT) {
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_1D, 0);
             samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
@@ -192,6 +215,8 @@ HdStSurfaceShader::ComputeHash() const
         boost::hash_combine(hash, texDesc.type);
     }
 
+    boost::hash_combine(hash, _materialTag.Hash());
+
     return hash;
 }
 
@@ -237,7 +262,8 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             HdBufferArrayRangeSharedPtr range =
                     resourceRegistry->AllocateShaderStorageBufferArrayRange(
                                                   HdTokens->materialParams,
-                                                  bufferSpecs);
+                                                  bufferSpecs,
+                                                  HdBufferArrayUsageHint());
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();
@@ -250,6 +276,18 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             resourceRegistry->AddSources(_paramArray, bufferSources);
         }
     }
+}
+
+TfToken
+HdStSurfaceShader::GetMaterialTag() const
+{
+    return _materialTag;
+}
+
+void
+HdStSurfaceShader::SetMaterialTag(TfToken const &tag)
+{
+    _materialTag = tag;
 }
 
 /// If the prim is based on asset, reload that asset.

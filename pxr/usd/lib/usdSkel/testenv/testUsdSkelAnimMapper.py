@@ -116,6 +116,16 @@ class TestUsdSkelAnimMapper(unittest.TestCase):
                            expect=Vt.IntArray([0,0,0,0,10,11,20,21]),
                            elementSize=2)
 
+        # Indexed. Same case as above, but last elem is misordered
+        # (so this should not be treated as an offset mapping)
+        self.TestRemapping("ABC", "CDEAB",
+                           srcData=Vt.IntArray([1,2,3]),
+                           expect=Vt.IntArray([3,0,0,1,2]))
+        self.TestRemapping("ABC", "CDEAB",
+                           srcData=Vt.IntArray([10,11,20,21,30,31]),
+                           expect=Vt.IntArray([30,31,0,0,0,0,10,11,20,21]),
+                           elementSize=2)
+
         # Indexed, output uninitialized
         self.TestRemapping("ABC", "CDAEB",
                            srcData=Vt.IntArray([1,2,3]),

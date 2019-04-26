@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
+#include "pxr/imaging/hdx/colorCorrectionTask.h"
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -49,25 +50,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 // XXX: This API is transitional. At the least, render/picking/selection
 // APIs should be decoupled.
 
-/// Task set tokens:
-/// - "colorRender" is the set of tasks needed to render to a color buffer.
-/// - "idRender" is the set of tasks needed to render an id buffer, indicating
-///              what object is at each pixel.
-#define HDX_TASK_SET_TOKENS                    \
-    (colorRender)                              \
-    (idRender)
-
-TF_DECLARE_PUBLIC_TOKENS(HdxTaskSetTokens, HDX_API, HDX_TASK_SET_TOKENS);
-
 /// Intersection mode tokens, mapped to HdxIntersector API.
-/// Note: "nearest" hitmode may be considerably more efficient.
-/// - "nearest" returns the nearest single hit point.
+/// Note: The "nearest*" hitmodes may be considerably more efficient.
+/// - "nearestToCamera" returns the single hit point closest (by depth) to the
+///                     camera
+/// - "nearestToCenter" returns the single hit point nearest to the center of
+///                     the selection region; note that this should be faster
+///                     than nearestToCamera, as it will sample outward from the
+///                     center, and stop as soon as it finds any hit, while
+///                     nearestToCamera will check ALL pixels in the selection
+///                     region, and return the hit that has the lowest z
 /// - "unique"  returns the set of unique hit prims, keeping only the nearest
 ///             depth per prim.
 /// - "all"     returns all hit points, possibly including multiple hits per
 ///             prim.
 #define HDX_INTERSECTION_MODE_TOKENS           \
-    (nearest)                                  \
+    (nearestToCamera)                          \
+    (nearestToCenter)                          \
     (unique)                                   \
     (all)
 
@@ -90,19 +89,18 @@ public:
 
     /// Return the controller's scene-graph id (prefixed to any
     /// scene graph objects it creates).
-    SdfPath const& GetControllerId() { return _controllerId; }
+    SdfPath const& GetControllerId() const { return _controllerId; }
 
     /// -------------------------------------------------------
     /// Execution API
 
-    /// Obtain the set of tasks managed by the task controller
-    /// suitable for execution. Currently supported tasksets:
-    /// HdxTaskSet->render
-    /// HdxTaskSet->idRender
+    /// Obtain the set of tasks managed by the task controller,
+    /// for execution. The tasks returned will be different based on
+    /// current renderer state.
     ///
-    /// A vector of zero length indicates the specified taskSet is unsupported.
+    /// A vector of zero length indicates error.
     HDX_API
-    HdTaskSharedPtrVector const &GetTasks(TfToken const& taskSet);
+    HdTaskSharedPtrVector const GetTasks() const;
 
     /// -------------------------------------------------------
     /// Rendering API
@@ -220,6 +218,13 @@ public:
     HDX_API
     bool IsConverged() const;
 
+    /// -------------------------------------------------------
+    /// Color Correction API
+
+    /// Configure color correction by settings params.
+    HDX_API
+    void SetColorCorrectionParams(HdxColorCorrectionTaskParams const& params);
+
 private:
     ///
     /// This class is not intended to be copied.
@@ -230,19 +235,35 @@ private:
     HdRenderIndex *_index;
     SdfPath const _controllerId;
 
-    HdTaskSharedPtrVector _tasks;
     std::unique_ptr<HdxIntersector> _intersector;
 
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.
+    void _CreateRenderGraph();
+
     void _CreateCamera();
-    void _CreateRenderTasks();
-    void _CreateSelectionTask();
     void _CreateLightingTask();
     void _CreateShadowTask();
+    SdfPath _CreateRenderTask(TfToken const& materialTag);
+    void _CreateOitResolveTask();
+    void _CreateSelectionTask();
     void _CreateColorizeTask();
+    void _CreateColorizeSelectionTask();
+    void _CreateColorCorrectionTask();
 
-    SdfPath _GetAovPath(TfToken const& aov);
+    void _SetBlendStateForMaterialTag(TfToken const& materialTag,
+                                      HdxRenderTaskParams *renderParams) const;
+
+    // Render graph topology control.
+    bool _ShadowsEnabled() const;
+    bool _SelectionEnabled() const;
+    bool _ColorizeSelectionEnabled() const;
+    bool _ColorCorrectionEnabled() const;
+    bool _AovsSupported() const;
+
+    // Helper function for renderbuffer management.
+    SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;
+    SdfPath _GetAovPath(TfToken const& aov) const;
 
     // A private scene delegate member variable backs the tasks this
     // controller generates. To keep _Delegate simple, the containing class
@@ -296,17 +317,14 @@ private:
     _Delegate _delegate;
 
     // Generated tasks.
-    //
-    // _renderTaskId and _idRenderTaskId are both of type HdxRenderTask.
-    // The reason we have two around is so that they can have parallel sets of
-    // HdxRenderTaskParams; if there were only one render task, we'd thrash the
-    // params switching between id and color render.
-    SdfPath _renderTaskId;
-    SdfPath _idRenderTaskId;
-    SdfPath _selectionTaskId;
     SdfPath _simpleLightTaskId;
     SdfPath _shadowTaskId;
+    SdfPathVector _renderTaskIds;
+    SdfPath _oitResolveTaskId;
+    SdfPath _selectionTaskId;
+    SdfPath _colorizeSelectionTaskId;
     SdfPath _colorizeTaskId;
+    SdfPath _colorCorrectionTaskId;
 
     // Generated cameras
     SdfPath _cameraId;
@@ -315,7 +333,9 @@ private:
     SdfPathVector _lightIds;
 
     // Generated renderbuffers
-    SdfPathVector _renderBufferIds;
+    SdfPathVector _aovBufferIds;
+    TfTokenVector _aovOutputs;
+    TfToken _viewportAov;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

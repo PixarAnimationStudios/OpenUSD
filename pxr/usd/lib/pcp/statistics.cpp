@@ -32,6 +32,7 @@
 #include "pxr/base/arch/defines.h"
 
 #include <memory>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

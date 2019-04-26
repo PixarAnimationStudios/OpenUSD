@@ -720,7 +720,7 @@ private:
     void _WriteSection(
         _Writer &w, _SectionName name, _TableOfContents &toc, Fn writeFn) const;
 
-    void _AddDeferredTimeSampledSpecs();
+    void _AddDeferredSpecs();
 
     bool _Write();
 
@@ -835,23 +835,28 @@ private:
     // An index into the path list, plus a range of fields.
     vector<Spec> _specs;
 
-    // Deferred specs with timeSamples that we write separately at the end,
-    // time-by-time so that time-sampled data is collocated by time.
-    struct _DeferredTimeSampledSpec {
-        _DeferredTimeSampledSpec() = default;
-        _DeferredTimeSampledSpec(PathIndex p, SdfSpecType t,
-                                 vector<FieldIndex> &&of,
-                                 vector<pair<TfToken, TimeSamples>> &&ts)
+    // Deferred specs we write separately at the end. This is for specs that
+    // have fields that we may not know how to write until we've looked at other
+    // specs (e.g. SdfPayload version upgrades) or spces with time samples that
+    // we write time-by-time so that time-sampled data is collocated by time.
+    struct _DeferredSpec {
+        _DeferredSpec() = default;
+        _DeferredSpec(PathIndex p, SdfSpecType t,
+                      vector<FieldIndex> &&of,
+                      vector<FieldValuePair> &&dof,
+                      vector<pair<TfToken, TimeSamples>> &&ts)
             : path(p)
             , specType(t)
             , ordinaryFields(std::move(of))
+            , deferredOrdinaryFields(std::move(dof))
             , timeSampleFields(std::move(ts)) {}
         PathIndex path;
         SdfSpecType specType;
         vector<FieldIndex> ordinaryFields;
+        vector<FieldValuePair> deferredOrdinaryFields;
         vector<pair<TfToken, TimeSamples>> timeSampleFields;
     };
-    vector<_DeferredTimeSampledSpec> _deferredTimeSampledSpecs;
+    vector<_DeferredSpec> _deferredSpecs;
 
     // All unique fields.
     vector<Field> _fields;

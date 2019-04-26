@@ -36,6 +36,7 @@
 #include "pxr/usd/usdGeom/xformable.h"
 
 #include <maya/MDagModifier.h>
+#include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
@@ -217,6 +218,56 @@ UsdMayaTranslatorUtil::CreateNode(
 
     return TF_VERIFY(!mayaNodeObj->isNull());
 }
+
+/* static */
+bool
+UsdMayaTranslatorUtil::CreateShaderNode(
+        const MString& nodeName,
+        const MString& nodeTypeName,
+        const bool asShader,
+        MStatus* status,
+        MObject* shaderObj)
+{
+    MFnDependencyNode depFn;
+    depFn.create(nodeTypeName, nodeName, status);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+    *shaderObj = depFn.object(status);
+
+    if (asShader) {
+        MPlug shaderListPlug = UsdMayaUtil::GetMayaShaderListPlug();
+        if (shaderListPlug.isNull()) {
+            return false;
+        }
+
+        MPlug msgPlug = depFn.findPlug("msg", true, status);
+        CHECK_MSTATUS_AND_RETURN(*status, false);
+
+        UsdMayaUtil::Connect(msgPlug, shaderListPlug, false);
+    }
+
+    return true;
+}
+
+/* static */
+bool
+UsdMayaTranslatorUtil::ConnectDefaultLightNode(
+        MObject& lightNode,
+        MStatus* status)
+{
+    MObject lightSetObject = UsdMayaUtil::GetDefaultLightSetObject();
+    if (lightSetObject.isNull()) {
+        return false;
+    }
+
+    MFnSet setFn(lightSetObject, status);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    *status = setFn.addMember(lightNode);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

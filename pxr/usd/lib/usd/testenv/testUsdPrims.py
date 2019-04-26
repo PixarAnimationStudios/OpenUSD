@@ -130,7 +130,7 @@ class TestUsdPrim(unittest.TestCase):
 
         stage = Usd.Stage.Open(base)
         prim = stage.DefinePrim(primPath)
-        prim.SetPayload(payload, primPath)
+        prim.GetPayloads().AddPayload(payload.identifier, primPath)
         stage.GetRootLayer().subLayerPaths.append(sublayer.identifier) 
 
         expectedPrimStack = [layer.GetPrimAtPath(primPath) for layer in layers]

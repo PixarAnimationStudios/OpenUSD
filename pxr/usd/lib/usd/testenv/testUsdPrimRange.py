@@ -164,7 +164,8 @@ class TestUsdPrimRange(unittest.TestCase):
 
             stage = Usd.Stage.CreateInMemory("scene."+fmt)
             foo = stage.DefinePrim("/Foo")
-            foo.SetPayload(payloadStage.GetRootLayer(), "/Payload")
+            foo.GetPayloads().AddPayload(
+                payloadStage.GetRootLayer().identifier, "/Payload")
 
             self.assertEqual(stage.GetLoadSet(), ["/Foo"])
 

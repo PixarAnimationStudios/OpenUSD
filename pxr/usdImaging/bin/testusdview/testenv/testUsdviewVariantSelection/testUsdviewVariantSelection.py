@@ -51,12 +51,12 @@ def _setupWidgets(appController):
 
 def _getVariantSelector(appController, whichVariant):
     # Select the metadata tab in the lower right corner
-    attributeInspector = appController._ui.attributeInspector
-    attributeInspector.setCurrentIndex(1)
+    propertyInspector = appController._ui.propertyInspector
+    propertyInspector.setCurrentIndex(1)
 
     # Grab the rows of our metadata tab and select the set containing
     # our variant selection
-    metadataTable = attributeInspector.currentWidget().findChildren(QtWidgets.QTableWidget)[0]
+    metadataTable = propertyInspector.currentWidget().findChildren(QtWidgets.QTableWidget)[0]
 
     for i in range(0, metadataTable.rowCount()):
         currentName = metadataTable.item(i,0).text()

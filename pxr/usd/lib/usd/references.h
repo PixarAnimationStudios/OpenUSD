@@ -35,8 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DECLARE_HANDLES(SdfPrimSpec);
-
 /// \class UsdReferences
 ///
 /// UsdReferences provides an interface to authoring and introspecting
@@ -284,8 +282,6 @@ public:
     explicit operator bool() { return bool(_prim); }
 
 private:
-
-    SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
 

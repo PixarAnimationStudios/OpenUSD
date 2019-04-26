@@ -42,6 +42,11 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Prints out batched selection event info.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        PXRUSDMAYAGL_INSTANCER_TRACKING,
+        "Reports when the instancer imager starts and stops tracking "
+        "instancers.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING,
         "Reports on changes in the sets of shape adapters registered with the "
         "batch renderer.");

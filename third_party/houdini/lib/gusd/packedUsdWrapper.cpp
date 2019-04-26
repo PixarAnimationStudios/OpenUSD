@@ -39,9 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::cout;
-using std::cerr;
-using std::endl;
 using std::string;
 
 namespace {
@@ -160,7 +157,7 @@ doSoftCopy() const
 bool 
 GusdPackedUsdWrapper::isValid() const
 {
-    return m_primRef;
+    return static_cast<bool>(m_primRef);
 }
 
 // Recursively looks for ancestor path one below the root (ie "/<some prim>")

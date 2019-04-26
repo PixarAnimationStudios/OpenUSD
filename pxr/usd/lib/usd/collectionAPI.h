@@ -260,7 +260,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USD_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -272,7 +272,7 @@ private:
 
     // override SchemaBase virtuals.
     USD_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -553,17 +553,6 @@ public:
     static SdfPath GetNamedCollectionPath(
         const UsdPrim &prim, 
         const TfToken &collectionName);
-
-    /// Returns true if \p path points to a collection.
-    /// i.e., if it is a property path and the property name is of the 
-    /// form "collection:{collectionName}.
-    /// If \p collectionName is a valid pointer to a string, it is 
-    /// populated with the name of the collection if path is a valid 
-    /// collection path.
-    USD_API
-    static bool IsCollectionPath(
-        const SdfPath &path,
-        TfToken *collectionName);
 
     /// Computes and returns a MembershipQuery object which can be used to query
     /// inclusion or exclusion of paths in the collection.

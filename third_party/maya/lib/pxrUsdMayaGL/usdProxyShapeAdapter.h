@@ -37,6 +37,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MPxSurfaceShape.h>
 
@@ -65,10 +66,14 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// This method can be called on demand to ensure that the shape
         /// adapter is updated with the current visibility state of the shape.
         ///
+        /// The optional \p view parameter can be passed to have view-based
+        /// state such as view and/or plugin object filtering factor into the
+        /// shape's visibility.
+        ///
         /// Returns true if the visibility state was changed, or false
         /// otherwise.
         PXRUSDMAYAGL_API
-        bool UpdateVisibility(const MSelectionList& isolatedObjects) override;
+        bool UpdateVisibility(const M3dView* view = nullptr) override;
 
         /// Gets whether the shape adapter's shape is visible.
         ///

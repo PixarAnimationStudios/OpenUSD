@@ -80,9 +80,6 @@ public:
 protected:
     USDIMAGING_API
     virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
-
-private:
-    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time) const;
 };
 
 

@@ -176,7 +176,7 @@ GlfBaseTexture::GetTextureInfo(bool forceLoad)
         info["depth"] = 1;
         info["format"] = _format;
     }
-    info["referenceCount"] = GetRefCount().Get();
+    info["referenceCount"] = GetCurrentCount();
 
     return info;
 }

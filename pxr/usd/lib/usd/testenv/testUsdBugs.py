@@ -87,11 +87,11 @@ class TestUsdBugs(unittest.TestCase):
         x = Sdf.CreatePrimInLayer(l1, '/x')
         x.instanceable = True
         x.specifier = Sdf.SpecifierDef
-        x.payload = Sdf.Payload(l2.identifier, '/xpay')
+        x.payloadList.explicitItems.append(Sdf.Payload(l2.identifier, '/xpay'))
 
         y = Sdf.CreatePrimInLayer(l1, '/x/y')
         y.specifier = Sdf.SpecifierDef
-        y.payload = Sdf.Payload(l2.identifier, '/ypay')
+        x.payloadList.explicitItems.append(Sdf.Payload(l2.identifier, '/ypay'))
 
         s = Usd.Stage.Open(l1, Usd.Stage.LoadAll)
 
@@ -356,10 +356,10 @@ class TestUsdBugs(unittest.TestCase):
         Sdf.CreatePrimInLayer(
             l2, '/cam/cam_payload').specifier = Sdf.SpecifierDef
 
-        l1.GetPrimAtPath('/shot/camera/cache').payload = Sdf.Payload(
-            l2.identifier, '/cam_extra')
-        l1.GetPrimAtPath('/shot/camera/cache/cam').payload = Sdf.Payload(
-            l2.identifier, '/cam')
+        l1.GetPrimAtPath('/shot/camera/cache').payloadList.Prepend(
+            Sdf.Payload(l2.identifier, '/cam_extra'))
+        l1.GetPrimAtPath('/shot/camera/cache/cam').payloadList.Prepend(
+            Sdf.Payload(l2.identifier, '/cam'))
         
         stage = Usd.Stage.Open(l1)
         stage.SetEditTarget(stage.GetSessionLayer())
@@ -374,6 +374,40 @@ class TestUsdBugs(unittest.TestCase):
         cameraPayloadPrim = stage.GetPrimAtPath(
             '/shot/camera/cache/cam/cam_payload')
         self.assertTrue(cameraPayloadPrim.IsValid())
+
+    def test_USD_4936(self):
+        # Test that relationships resolve correctly with nested instancing and
+        # instance proxies within masters.
+        from pxr import Usd, Sdf
+        l1 = Sdf.Layer.CreateAnonymous('.usd')
+        l1.ImportFromString('''#usda 1.0
+            def "W" {
+                def "A" (
+                    instanceable = true
+                    prepend references = </M>
+                )
+                {
+                }
+            }
+
+            def "M" {
+                def "B" (
+                    instanceable = true
+                    prepend references = </M2>
+                )
+                {
+                }
+            }
+
+            def "M2" {
+                rel r = </M2/D>
+                def "D" {
+                }
+            }''')
+        stage = Usd.Stage.Open(l1)
+        wab = stage.GetPrimAtPath('/W/A/B')
+        # prior to fixing this bug, the resulting target would be '/W/A/B/B/D'.
+        self.assertEqual(wab.GetRelationship('r').GetTargets(), [Sdf.Path('/W/A/B/D')])
 
 if __name__ == '__main__':
     unittest.main()

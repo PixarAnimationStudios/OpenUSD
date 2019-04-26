@@ -239,6 +239,20 @@ QTableView::item:selected {
     background: rgb(189, 155, 84);
 }
 
+/* hover items a bit lighter */
+QTreeView::item:hover:!pressed:!selected,
+QTreeView::branch:hover:!pressed:!selected,
+QTableView::item:hover:!pressed:!selected {
+    background: rgb(70, 70, 70);
+}
+
+QTreeView::item:hover:!pressed:selected,
+QTreeView::branch:hover:!pressed:selected,
+QTableView::item:hover:!pressed:selected {
+/*    background: rgb(132, 109, 59); */
+    background: rgb(227, 186, 101);
+}
+
 /* Set the branch triangle icons */
 QTreeView::branch:has-children:!has-siblings:closed,
 QTreeView::branch:closed:has-children:has-siblings {
@@ -466,7 +480,14 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 /* *** QMenuBar ***
  * Style the menu bar 
  */
-QMenuBar {
+QMenuBar#menubar {
+    font-size: 10pt;
+    background: rgb(80, 80, 80);
+    border: 2px solid rgb(41, 41, 41);
+}
+
+QMenuBar#primViewMenuBar {
+    font-size: 8pt;
     background: rgb(80, 80, 80);
     border: 2px solid rgb(41, 41, 41);
 }
@@ -534,14 +555,14 @@ QComboBox {
     height: 22px;
     background: rgb(41, 41, 41);
     border:none;
-    border-radius: 7px;
+    border-radius: 5px;
     padding: 1px 0px 1px 3px; /*This makes text colour work*/
 }
 
 QComboBox::drop-down {
     background: rgb(41, 41, 41);
     border:none;
-    border-radius: 7px;
+    border-radius: 5px;
 }
 
 /**
@@ -555,7 +576,7 @@ QComboBox::drop-down {
     border-top: 2px solid rgb(32, 32, 32);
 }
 
-#attributeBrowserFrame, #attributeInspectorFrame {
+#attributeBrowserFrame, #propertyInspectorFrame {
     border-bottom: 2px solid rgb(32, 32, 32);
 }
 
@@ -563,11 +584,11 @@ QComboBox::drop-down {
     border-left: 2px solid rgb(32, 32, 32);
 }
 
-#glFrame, #attributeInspectorFrame {
+#glFrame, #propertyInspectorFrame {
     border-right: 2px solid rgb(32, 32, 32);
 }
 
-#attributeInspectorContainer {
+#propertyInspectorContainer {
     background: rgb(78, 80, 84);
 }
 

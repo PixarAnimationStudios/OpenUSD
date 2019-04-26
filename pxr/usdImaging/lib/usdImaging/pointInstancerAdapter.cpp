@@ -35,10 +35,11 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
-#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -70,6 +71,18 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingPointInstancerAdapter::~UsdImagingPointInstancerAdapter() 
 {
+}
+
+bool
+UsdImagingPointInstancerAdapter::ShouldCullChildren() const
+{
+    return true;
+}
+
+bool
+UsdImagingPointInstancerAdapter::IsInstancerAdapter() const
+{
+    return true;
 }
 
 SdfPath
@@ -303,6 +316,17 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 instancerChain));
 
         if (!instanceProxyPrim) {
+            range.set_begin(++iter);
+            continue;
+        }
+
+        // Skip population of non-imageable prims.
+        if (UsdImagingPrimAdapter::ShouldCullSubtree(instanceProxyPrim)) {
+            TF_DEBUG(USDIMAGING_INSTANCER).Msg("[Instance PI] Discovery of new "
+                "prims at or below <%s> pruned by prim type (%s)\n",
+                iter->GetPath().GetText(), iter->GetTypeName().GetText());
+            iter.PruneChildren();
+            range.set_begin(++iter);
             continue;
         }
 
@@ -319,17 +343,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     "In order to instance this prim, put the prim under an "
                     "Xform, and instance the Xform parent.",
                     iter->GetPath().GetText());
+            range.set_begin(++iter);
             continue;
         }
 
         if (adapter) {
-            if (adapter->IsPopulatedIndirectly()) {
-                // If "IsPopulatedIndirectly", don't populate this from
-                // traversal.
-                range.set_begin(++iter);
-                continue;
-            }
-
             primCount++;
 
             //
@@ -375,7 +393,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 protoPath = adapter->Populate(populatePrim, index, &ctx);
             }
 
-            if (adapter->ShouldCullChildren(*iter)) {
+            if (adapter->ShouldCullChildren()) {
                 iter.PruneChildren();
             }
 
@@ -545,7 +563,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
         return;
     } else {
-        TfToken purpose = UsdGeomImageable(prim).ComputePurpose();
+        TfToken purpose = GetPurpose(prim);
         // Empty purpose means there is no opinion, fall back to default.
         if (purpose.IsEmpty())
             purpose = UsdGeomTokens->default_;
@@ -932,7 +950,8 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             for (auto const &pv: primvars.GetPrimvars()) {
                 TfToken const& interp = pv.GetInterpolation();
                 if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform) {
+                    interp != UsdGeomTokens->uniform &&
+                    pv.HasAuthoredValue()) {
                     HdInterpolation interp = HdInterpolationInstance;
                     _ComputeAndMergePrimvar(
                         prim, cachePath, pv, time, valueCache, &interp);
@@ -975,10 +994,6 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
 {
-    // Blast everything.
-    return HdChangeTracker::AllDirty;
-    // XXX: Change processing needs to be routed through the adapter earlier,
-    // currently we don't see changes to the prototypes.
     if (IsChildPath(cachePath)) {
         _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
         if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
@@ -987,11 +1002,31 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
         if (!TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
             return HdChangeTracker::AllDirty;
         }
-        return rproto.adapter->ProcessPropertyChange(
+
+        // XXX: Specifically disallow visibility and transform updates: in
+        // these cases, it's hard to tell which prims we should dirty but
+        // probably we need to dirty both prototype & instancer. This is a
+        // project for later. In the meantime, returning AllDirty causes
+        // a re-sync.
+        HdDirtyBits dirtyBits = rproto.adapter->ProcessPropertyChange(
             _GetProtoUsdPrim(rproto), cachePath, propertyName);
+
+        if (dirtyBits & (HdChangeTracker::DirtyTransform |
+                         HdChangeTracker::DirtyVisibility)) {
+            return HdChangeTracker::AllDirty;
+        }
+        return dirtyBits;
     }
 
-    // Blast everything. This will trigger a prim resync; see ProcessPrimResync.
+    if (propertyName == UsdGeomTokens->positions ||
+        propertyName == UsdGeomTokens->orientations ||
+        propertyName == UsdGeomTokens->scales) {
+        return HdChangeTracker::DirtyPrimvar;
+    }
+
+    // XXX: Treat indices & transform changes as re-sync. In theory, we
+    // should only need to re-sync for changes to "prototypes", but we're a
+    // ways off...
     return HdChangeTracker::AllDirty;
 }
 
@@ -1205,6 +1240,21 @@ UsdImagingPointInstancerAdapter::MarkCullStyleDirty(UsdPrim const& prim,
         _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
 
         rproto.adapter->MarkCullStyleDirty(prim, cachePath, index);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                                    SdfPath const& cachePath,
+                                                    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkRenderTagDirty(prim, cachePath, index);
     }
 }
 
@@ -1483,8 +1533,11 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(UsdPrim const& instancerPrim)
     {
         // When the instancer visibility doesn't vary over time, pre-cache
         // visibility to avoid fetching it on frame change.
+        // XXX: The usage of _GetTimeWithOffset here is super-sketch, but
+        // it avoids blowing up the inherited visibility cache... We should let
+        // this be initialized by the first UpdateForTime instead.
         instrData.visible = _GetInstancerVisible(instancerPrim.GetPath(),
-                                                 /*time doesn't matter*/1.0);
+            _GetTimeWithOffset(0.0));
     }
 
     // These _IsVarying calls are chained to short circuit as soon as we find
@@ -1871,6 +1924,25 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         added = true;
     }
     return added;
+}
+
+/*virtual*/
+HdVolumeFieldDescriptorVector
+UsdImagingPointInstancerAdapter::GetVolumeFieldDescriptors(
+    UsdPrim const& usdPrim,
+    SdfPath const &id,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(id)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(), id);
+        UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
+        return rproto.adapter->GetVolumeFieldDescriptors(
+            protoPrim, id, time);
+    } else {
+        return UsdImagingPrimAdapter::GetVolumeFieldDescriptors(
+            usdPrim, id, time);
+    }
 }
 
 /*virtual*/

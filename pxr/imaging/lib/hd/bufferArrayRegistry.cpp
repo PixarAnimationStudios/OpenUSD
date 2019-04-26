@@ -36,7 +36,8 @@ HdBufferArrayRegistry::HdBufferArrayRegistry()
 HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
         HdAggregationStrategy *strategy,
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs)
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -53,20 +54,28 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
 
     // compute an aggregation Id on current aggregation strategy
     HdAggregationStrategy::AggregationId aggrId =
-        strategy->ComputeAggregationId(bufferSpecs);
+        strategy->ComputeAggregationId(bufferSpecs, usageHint);
 
     // We use insert to do a find and insert operation
-    std::pair<_BufferArrayIndex::iterator, bool> result =_entries.insert(std::make_pair(aggrId, _Entry()));
+    std::pair<_BufferArrayIndex::iterator, bool> result =
+            _entries.insert(std::make_pair(aggrId, _Entry()));
+
     _Entry &entry = (result.first)->second;
 
     if (result.second) {
         // We just created a new entry so make sure it has a buffer in it.
-        _InsertNewBufferArray(entry, HdBufferArraySharedPtr(), strategy, role, bufferSpecs);
+        _InsertNewBufferArray(entry,
+                              HdBufferArraySharedPtr(),
+                              strategy,
+                              role,
+                              bufferSpecs,
+                              usageHint);
     } else {
 
         // There's a potential multi-thread race condition where
-        // another thread has created the entry and is still in the process of adding
-        // the first buffer to it, therefore the list could be empty, so wait for it
+        // another thread has created the entry and is still in the process of
+        // adding the first buffer to it, therefore the list could be empty, so
+        // wait for it
         _EntryIsNotEmpty pred(entry);
         std::unique_lock<std::mutex> lock(entry.lock);
         entry.emptyCondition.wait(lock, pred);
@@ -97,7 +106,11 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
                 // however, by the time we get back multiple buffers may have
                 // been added, so rewind iterator.
                 
-                _InsertNewBufferArray(entry, currentArray, strategy, role, bufferSpecs);
+                _InsertNewBufferArray(entry,
+                                      currentArray,
+                                      strategy, role,
+                                      bufferSpecs,
+                                      usageHint);
                 it = prev;
                 ++it;
             }
@@ -155,9 +168,13 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
                     // create new BufferArray with same specification
                     HdBufferSpecVector bufferSpecs = 
                         strategy->GetBufferSpecs(bufferArray);
+                    HdBufferArrayUsageHint usageHint =
+                        bufferArray->GetUsageHint();
+
                     HdBufferArraySharedPtr newBufferArray =
                         strategy->CreateBufferArray(bufferArray->GetRole(),
-                                                    bufferSpecs);
+                                                    bufferSpecs,
+                                                    usageHint);
                     newBufferArray->Reallocate(ranges, bufferArray);
 
                     // bufferArrays is std::list
@@ -218,11 +235,13 @@ HdBufferArrayRegistry::GetResourceAllocation(HdAggregationStrategy *strategy,
 }
 
 void
-HdBufferArrayRegistry::_InsertNewBufferArray(_Entry &entry,
-                                             const HdBufferArraySharedPtr &expectedTail,
-                                             HdAggregationStrategy *strategy,
-                                             TfToken const &role,
-                                             HdBufferSpecVector const &bufferSpecs)
+HdBufferArrayRegistry::_InsertNewBufferArray(
+    _Entry &entry,
+    const HdBufferArraySharedPtr &expectedTail,
+    HdAggregationStrategy *strategy,
+    TfToken const &role,
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     {
         std::lock_guard<std::mutex> lock(entry.lock);
@@ -239,7 +258,8 @@ HdBufferArrayRegistry::_InsertNewBufferArray(_Entry &entry,
             TF_VERIFY(!expectedTail);
         }
 
-        entry.bufferArrays.emplace_back(strategy->CreateBufferArray(role, bufferSpecs));
+        entry.bufferArrays.emplace_back(
+                strategy->CreateBufferArray(role, bufferSpecs, usageHint));
     }  // Lock_guard will unlock
 
     // Notify any threads waiting on an empty list (unlock must happen first).

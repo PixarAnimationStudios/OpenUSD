@@ -1945,7 +1945,7 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
         if (!prim.IsActive() || prim.IsMaster())
             return;
         
-        if (prim._GetSourcePrimIndex().HasPayload()) {
+        if (prim._GetSourcePrimIndex().HasAnyPayloads()) {
             SdfPath const &payloadIncludePath =
                 prim._GetSourcePrimIndex().GetPath();
             if (!unloadedOnly ||
@@ -1996,7 +1996,7 @@ UsdStage::_DiscoverAncestorPayloads(const SdfPath& rootPath,
         if (!parent.IsActive() || parent.IsMaster())
             continue;
 
-        if (parent._GetSourcePrimIndex().HasPayload()) {
+        if (parent._GetSourcePrimIndex().HasAnyPayloads()) {
             const SdfPath& payloadIncludePath = 
                 parent._GetSourcePrimIndex().GetPath();
             if (!unloadedOnly ||
@@ -2070,6 +2070,8 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
     }
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
@@ -2108,7 +2110,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
         _WalkPrimsWithMasters(
             path,
             [&unloadIndexPaths] (UsdPrim const &prim) {
-                if (prim.IsInMaster() && prim.HasPayload()) {
+                if (prim.IsInMaster() && prim.HasAuthoredPayloads()) {
                     unloadIndexPaths.push_back(
                         prim._GetSourcePrimIndex().GetPath());
                 }
@@ -2125,7 +2127,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
 
     // Now get the current load set and find everything that's prefixed by
     // something in unloadPruneSet.  That's the finalUnloadSet.
-    SdfPathSet curLoadSet = _cache->GetIncludedPayloads(); //GetLoadSet();
+    PcpCache::PayloadSet const &curLoadSet = _cache->GetIncludedPayloads(); //GetLoadSet();
     SdfPathVector curLoadVec(curLoadSet.begin(), curLoadSet.end());
     curLoadVec.erase(
         std::remove_if(
@@ -3425,6 +3427,7 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges)
         .Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 const std::vector<std::string>&
@@ -4063,7 +4066,8 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // Walk the old and new, and if the old has payloads included strictly
         // descendent to the old path, find the equivalent relative path on the
         // new and include that payload.
-        SdfPathSet curLoadSet = _cache->GetIncludedPayloads();
+        PcpCache::PayloadSet const &curLoadHashSet = _cache->GetIncludedPayloads();
+        SdfPathSet curLoadSet(curLoadHashSet.begin(), curLoadHashSet.end());
         SdfPathSet newPayloads;
 
         for (size_t i = 0;
@@ -4229,7 +4233,7 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
             stagePath = path;
 
         UsdPrim prim = _stage->GetPrimAtPath(stagePath);
-        bool isNewPayload = !prim || !prim.HasPayload();
+        bool isNewPayload = !prim || !prim.HasAuthoredPayloads();
 
         if (!isNewPayload)
             return false;
@@ -4252,7 +4256,8 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
         }
 
         UsdPrim root = _stage->GetPseudoRoot();
-        for (; !prim.HasPayload() && prim != root; prim = prim.GetParent()) {
+        for (; !prim.HasAuthoredPayloads() && prim != root; 
+             prim = prim.GetParent()) {
             // continue
         }
 
@@ -4751,7 +4756,7 @@ _CopyPrim(const UsdPrim &usdPrim,
     // and GetAuthoredProperties to consider clips.
     auto hasValue = [](const UsdProperty& prop){
         return prop.Is<UsdAttribute>()
-               && prop.As<UsdAttribute>().HasAuthoredValueOpinion();
+               && prop.As<UsdAttribute>().HasAuthoredValue();
     };
     
     for (auto const &prop : usdPrim.GetProperties()) {
@@ -7783,17 +7788,17 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                \
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                         \
                                                                         \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                      
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                      
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET

@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include <boost/functional/hash.hpp>
+#include <iostream>
 #include <unordered_map>
 #include <set>
 
@@ -232,7 +233,7 @@ Picker::Pick(GfVec2i const& startPos,
 
     HdxIntersector::Params iParams;
     iParams.pickTarget         = _pParams.pickTarget;
-    iParams.pickThrough        = _pParams.pickThrough;
+    iParams.doUnpickablesOcclude = _pParams.doUnpickablesOcclude;
     iParams.hitMode          = HdxIntersector::HitFirst;
     iParams.projectionMatrix = pickFrustum.ComputeProjectionMatrix();
     iParams.viewMatrix       = viewMatrix;

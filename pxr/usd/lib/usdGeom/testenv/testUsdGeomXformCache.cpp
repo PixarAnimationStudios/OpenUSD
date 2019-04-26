@@ -29,6 +29,8 @@
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/scope.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // --------------------------------------------------------------------- //

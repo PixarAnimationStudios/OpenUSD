@@ -23,6 +23,8 @@
 //
 #include "pxr/usdImaging/usdVolImaging/field3dAssetAdapter.h"
 
+#include "pxr/usdImaging/usdVolImaging/tokens.h"
+
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,11 +36,6 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (field3dAsset)
-);
-
 UsdImagingField3DAssetAdapter::~UsdImagingField3DAssetAdapter() 
 {
 }
@@ -46,7 +43,7 @@ UsdImagingField3DAssetAdapter::~UsdImagingField3DAssetAdapter()
 TfToken
 UsdImagingField3DAssetAdapter::GetPrimTypeToken() const
 {
-    return _tokens->field3dAsset;
+    return UsdVolImagingTokens->field3dAsset;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

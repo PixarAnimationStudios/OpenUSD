@@ -21,38 +21,52 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdTranslators/locatorWriter.h"
-
 #include "pxr/pxr.h"
+#include "pxrUsdTranslators/locatorWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/xform.h"
 
-#include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 PXRUSDMAYA_REGISTER_WRITER(locator, PxrUsdTranslators_LocatorWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(locator, UsdGeomXform);
 
+
 PxrUsdTranslators_LocatorWriter::PxrUsdTranslators_LocatorWriter(
-        const MDagPath& iDag,
-        const SdfPath& uPath,
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
         UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(iDag, uPath, jobCtx)
+    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    UsdGeomXform xformSchema = UsdGeomXform::Define(GetUsdStage(),
-                                                    GetUsdPath());
-    TF_AXIOM(xformSchema);
+    if (!TF_VERIFY(GetDagPath().isValid())) {
+        return;
+    }
+
+    UsdGeomXform xformSchema =
+        UsdGeomXform::Define(GetUsdStage(), GetUsdPath());
+    if (!TF_VERIFY(
+            xformSchema,
+            "Could not define UsdGeomXform at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 
     _usdPrim = xformSchema.GetPrim();
-    TF_AXIOM(_usdPrim);
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdGeomXform at path '%s'\n",
+            xformSchema.GetPath().GetText())) {
+        return;
+    }
 }
 
 

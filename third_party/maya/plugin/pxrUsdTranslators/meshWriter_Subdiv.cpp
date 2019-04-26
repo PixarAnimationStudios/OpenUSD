@@ -34,11 +34,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _CompressCreases(
-    const std::vector<int>& inCreaseIndices,
-    const std::vector<float>& inCreaseSharpnesses,
-    std::vector<int>* creaseLengths,
-    std::vector<int>* creaseIndices,
-    std::vector<float>* creaseSharpnesses)
+        const std::vector<int>& inCreaseIndices,
+        const std::vector<float>& inCreaseSharpnesses,
+        std::vector<int>* creaseLengths,
+        std::vector<int>* creaseIndices,
+        std::vector<float>* creaseSharpnesses)
 {
     // Process vertex pairs.
     for (size_t i = 0; i < inCreaseSharpnesses.size(); i++) {
@@ -61,42 +61,50 @@ _CompressCreases(
     }
 }
 
-void PxrUsdTranslators_MeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &primSchema)
+void
+PxrUsdTranslators_MeshWriter::assignSubDivTagsToUSDPrim(
+        MFnMesh& meshFn,
+        UsdGeomMesh& primSchema)
 {
-
     // Vert Creasing
-    MUintArray   mayaCreaseVertIds;
+    MUintArray mayaCreaseVertIds;
     MDoubleArray mayaCreaseVertValues;
-    meshFn.getCreaseVertices (mayaCreaseVertIds, mayaCreaseVertValues);
-    TF_AXIOM(mayaCreaseVertIds.length() == mayaCreaseVertValues.length());
-    if ( mayaCreaseVertIds.length() > 0) {
-        VtArray<int>   subdCornerIndices(mayaCreaseVertIds.length());
-        VtArray<float> subdCornerSharpnesses(mayaCreaseVertIds.length());
-        for (unsigned int i=0; i < mayaCreaseVertIds.length(); i++) {
+    meshFn.getCreaseVertices(mayaCreaseVertIds, mayaCreaseVertValues);
+    if (!TF_VERIFY(mayaCreaseVertIds.length() == mayaCreaseVertValues.length())) {
+        return;
+    }
+    if (mayaCreaseVertIds.length() > 0u) {
+        VtIntArray subdCornerIndices(mayaCreaseVertIds.length());
+        VtFloatArray subdCornerSharpnesses(mayaCreaseVertIds.length());
+        for (unsigned int i = 0u; i < mayaCreaseVertIds.length(); ++i) {
             subdCornerIndices[i] = mayaCreaseVertIds[i];
             subdCornerSharpnesses[i] = mayaCreaseVertValues[i];
         }
-        // not animatable
-        _SetAttribute(primSchema.GetCornerIndicesAttr(), &subdCornerIndices); 
 
         // not animatable
-        _SetAttribute(primSchema.GetCornerSharpnessesAttr(), 
-                      &subdCornerSharpnesses); 
+        _SetAttribute(primSchema.GetCornerIndicesAttr(), &subdCornerIndices);
+
+        // not animatable
+        _SetAttribute(
+            primSchema.GetCornerSharpnessesAttr(),
+            &subdCornerSharpnesses);
     }
 
     // Edge Creasing
     int edgeVerts[2];
-    MUintArray   mayaCreaseEdgeIds;
+    MUintArray mayaCreaseEdgeIds;
     MDoubleArray mayaCreaseEdgeValues;
-    meshFn.getCreaseEdges (mayaCreaseEdgeIds, mayaCreaseEdgeValues);
-    TF_AXIOM(mayaCreaseEdgeIds.length() == mayaCreaseEdgeValues.length());
-    if (mayaCreaseEdgeIds.length() > 0) {
-        std::vector<int>   subdCreaseIndices(mayaCreaseEdgeIds.length()*2);
+    meshFn.getCreaseEdges(mayaCreaseEdgeIds, mayaCreaseEdgeValues);
+    if (!TF_VERIFY(mayaCreaseEdgeIds.length() == mayaCreaseEdgeValues.length())) {
+        return;
+    }
+    if (mayaCreaseEdgeIds.length() > 0u) {
+        std::vector<int> subdCreaseIndices(mayaCreaseEdgeIds.length() * 2);
         std::vector<float> subdCreaseSharpnesses(mayaCreaseEdgeIds.length());
-        for (unsigned int i=0; i < mayaCreaseEdgeIds.length(); i++) {
+        for (unsigned int i = 0u; i < mayaCreaseEdgeIds.length(); ++i) {
             meshFn.getEdgeVertices(mayaCreaseEdgeIds[i], edgeVerts);
-            subdCreaseIndices[i*2  ] = edgeVerts[0];
-            subdCreaseIndices[i*2+1] = edgeVerts[1];
+            subdCreaseIndices[i * 2] = edgeVerts[0];
+            subdCreaseIndices[i * 2 + 1] = edgeVerts[1];
             subdCreaseSharpnesses[i] = mayaCreaseEdgeValues[i];
         }
 
@@ -115,17 +123,19 @@ void PxrUsdTranslators_MeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, U
             VtIntArray creaseLengthsVt(numCreases.size());
             std::copy(numCreases.begin(), numCreases.end(), creaseLengthsVt.begin());
             _SetAttribute(primSchema.GetCreaseLengthsAttr(), &creaseLengthsVt);
-        } 
+        }
         if (!creaseSharpnesses.empty()) {
             VtFloatArray creaseSharpnessesVt(creaseSharpnesses.size());
-            std::copy(creaseSharpnesses.begin(), creaseSharpnesses.end(),
-                      creaseSharpnessesVt.begin());
-            _SetAttribute(primSchema.GetCreaseSharpnessesAttr(), 
-                          &creaseSharpnessesVt);
+            std::copy(
+                creaseSharpnesses.begin(),
+                creaseSharpnesses.end(),
+                creaseSharpnessesVt.begin());
+            _SetAttribute(
+                primSchema.GetCreaseSharpnessesAttr(),
+                &creaseSharpnessesVt);
         }
     }
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -6,7 +6,7 @@
 
 def GprimSphere "mysphere"
 {
-    custom Vec3d[] emptylist1 = []
-    custom Vec3d[] emptylist2 = []
+    custom double3[] emptylist1 = []
+    custom double3[] emptylist2 = []
 }
 

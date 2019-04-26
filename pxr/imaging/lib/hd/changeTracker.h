@@ -42,8 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class TfToken;
-class HdRprimCollection;
-class HdRenderIndex;
 
 /// \class HdChangeTracker
 ///
@@ -94,9 +92,8 @@ public:
     enum NonRprimDirtyBits : HdDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
-        DirtyChildren         = 1 << 2,
-        DirtyParams           = 1 << 3,
-        DirtyCollection       = 1 << 4,
+        DirtyParams           = 1 << 2,
+        DirtyCollection       = 1 << 3,
     };
 
     HD_API
@@ -148,7 +145,7 @@ public:
     HD_API
     void MarkAllRprimsDirty(HdDirtyBits bits);
 
-    // Clear Varying bit of all prims.
+    ///  Clear Varying bit of all prims.
     ///
     /// The idea is that from frame to frame (update iteration), the set of
     /// dirty rprims and their dirty bits do not change; that is, the same
@@ -157,6 +154,13 @@ public:
     /// overall cost of an update iteration.
     HD_API
     void ResetVaryingState();
+
+    /// Reset the varying state on one Rprim
+    /// This is done for Rprims, where we choose not to clean them
+    /// (due to state like invisibility).
+    HD_API
+    void ResetRprimVaryingState(SdfPath const& id);
+
 
     // ---------------------------------------------------------------------- //
 
@@ -217,6 +221,11 @@ public:
     /// Returns true if the dirtyBits has no flags set except the varying flag.
     static bool IsClean(HdDirtyBits dirtyBits) {
         return (dirtyBits & AllDirty) == 0;
+    }
+
+    /// Returns true if the dirtyBits has no flags set except the varying flag.
+    static bool IsVarying(HdDirtyBits dirtyBits) {
+        return (dirtyBits & Varying) != 0;
     }
 
     /// Returns true if the dirtyBits has a dirty extent. id is for perflog.
@@ -332,6 +341,14 @@ public:
     /// Set the dirty flags to \p newBits.
     HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
+
+    /// Set the flag when the set of render tags have changed.
+    HD_API
+    void MarkRenderTagsDirty();
+
+    /// Retrieve the current version number of the render tag set
+    HD_API
+    unsigned GetRenderTagVersion() const;
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -457,10 +474,6 @@ public:
     HD_API
     void MarkCollectionDirty(TfToken const& collectionName);
 
-    /// Invalidates all collections by bumping a global version number.
-    HD_API
-    void MarkAllCollectionsDirty();
-
     /// Returns the current version of the named collection.
     HD_API
     unsigned GetCollectionVersion(TfToken const& collectionName) const;
@@ -476,11 +489,6 @@ public:
         return _varyingStateVersion;
     }
 
-    /// Returns the change count 
-    unsigned GetChangeCount() const {
-        return _changeCount;
-    }
-
     /// Marks all batches dirty, meaning they need to be validated and
     /// potentially rebuilt.
     HD_API
@@ -490,9 +498,49 @@ public:
     HD_API
     unsigned GetBatchVersion() const;
 
+    // ---------------------------------------------------------------------- //
+    /// @}
+    /// \name Render Index Versioning
+    /// @{
+    // ---------------------------------------------------------------------- //
+
     /// Returns the current version of the Render Index's RPrim set.
-    HD_API
-    unsigned GetRenderIndexVersion() const;
+    /// This version number changes when Rprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetRprimIndexVersion() const {
+        return _rprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's SPrim set.
+    /// This version number changes when Sprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetSprimIndexVersion() const {
+        return _sprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's BPrim set.
+    /// This version number changes when Bprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetBprimIndexVersion() const {
+        return _bprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's Instancer set.
+    /// This version number changes when Instancers are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetInstancerIndexVersion() const {
+        return _instancerIndexVersion;
+    }
+
+
+    /// Returns the current version of the scene state.
+    /// This version number changes whenever any prims are inserted, removed
+    /// or marked dirty.
+    /// The use case is to detect that nothing has changed, so the Sync
+    /// phase can be avoided.
+    unsigned GetSceneStateVersion() const {
+        return _sceneStateVersion;
+    }
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -559,14 +607,24 @@ private:
     // the varyingStateVersion, which triggers downstream invalidation.
     unsigned _varyingStateVersion;
  
-    // Used for coarse grain invalidation of all RprimCollections.
-    unsigned _indexVersion;
+    // Tracks changes (insertions/removals) of prims in the render index.
+    // This is used to indicating that cached gather operations need to be
+    // re-evaluated, such as dirty lists or batch building.
+    unsigned _rprimIndexVersion;
+    unsigned _sprimIndexVersion;
+    unsigned _bprimIndexVersion;
+    unsigned _instancerIndexVersion;
 
-    // Used to detect that no changes have occurred when building dirty lists.
-    unsigned _changeCount;
+    // The following tracks any changes of state.  As a result it is very broad.
+    // The use case to detect, when no changes have been made, as to
+    // avoid the need to sync or reset progressive renderers.
+    unsigned _sceneStateVersion;
 
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
+
+    // Used to detect changes to the set of active render tags
+    unsigned _renderTagVersion;
 
     // Used to validate draw batches.
     std::atomic_uint _batchVersion;

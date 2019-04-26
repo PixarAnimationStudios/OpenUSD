@@ -1,0 +1,18 @@
+/*!
+\page hdSt_page_front HdSt : Rendering functionality for HdStream
+\if ( PIXAR_MFB_BUILD )
+\mainpage  HdSt : Rendering functionality for HdStream
+\publicLib
+\endif
+
+HdSt is responsible for the core rendering functionality of the 
+HdStream Hydra renderer.
+
+\section hdSt_overview Overview
+
+HdSt can pull data from Hydra's renderIndex (potentially data coming from 
+multiple scenegraph inputs) and it can create one or more command buffers 
+that aggregate and share the underlying GPU resources, such as primvar data. 
+It is optimized for both dynamically changing scenes and cached playback.
+
+*/

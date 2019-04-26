@@ -72,8 +72,8 @@ public:
     /// Get/set whether this prim index has an authored payload.
     /// Note that it does not necessarily mean that the payload has been
     /// loaded if this is set to true.
-    void SetHasPayload(bool hasPayload);
-    bool HasPayload() const;
+    void SetHasPayloads(bool hasPayloads);
+    bool HasPayloads() const;
 
     /// Get/set whether this prim index is instanceable.
     void SetIsInstanceable(bool isInstanceable);
@@ -376,7 +376,7 @@ private:
         _SharedData(bool usd_) 
             : finalized(false)
             , usd(usd_)
-            , hasPayload(false)
+            , hasPayloads(false)
             , instanceable(false)
         { }
 
@@ -387,8 +387,8 @@ private:
         bool finalized:1;
         // Whether this prim index is composed in USD mode.
         bool usd:1;
-        // Whether this prim index has an authored payload.
-        bool hasPayload:1;
+        // Whether this prim index has authored payloads.
+        bool hasPayloads:1;
         // Whether this prim index is instanceable.
         bool instanceable:1;
     };

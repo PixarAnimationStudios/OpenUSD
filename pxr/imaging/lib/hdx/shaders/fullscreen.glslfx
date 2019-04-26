@@ -77,11 +77,16 @@ varying vec2 uv;
 
 uniform sampler2D colorIn;
 uniform sampler2D depthIn;
+uniform bool remapDepthIn = true;
+
+float 
+RemapDepth(float depth) {
+    return (0.5 * depth + 0.5) * gl_DepthRange.diff + gl_DepthRange.near;
+}
 
 void main(void)
 {
     float depth = texture2D(depthIn, uv).r;
     gl_FragColor = texture2D(colorIn, uv);
-    gl_FragDepth = (0.5 * depth + 0.5) * gl_DepthRange.diff
-        + gl_DepthRange.near;
+    gl_FragDepth = remapDepthIn ? RemapDepth(depth) : depth;
 }

@@ -30,3 +30,42 @@ def "ShaderBindings_defaultShadingVariant"
     {
     }
 }
+
+def "InternalRef"
+{
+    def "Metal"
+    {
+    }
+
+    def "Brass" (
+        specializes = </InternalRef/Metal>
+    )
+    {
+    }
+}
+
+def "InternalRefAndSpecializes" (
+    references = </InternalRef>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "Brass"
+    {
+    }
+}
+
+def "RemoteRefAndSpecializes" (
+    references = @./ref.sdf@</Ref>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "Brass"
+    {
+    }
+}

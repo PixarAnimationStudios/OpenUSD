@@ -86,7 +86,7 @@ public:
     /// buffer range data.
     HDST_API
     void PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
-                          HdDirtyBits *dirtyBits, int instancePrimvarSlot);
+                          HdDirtyBits dirtyBits);
 
 protected:
     HDST_API

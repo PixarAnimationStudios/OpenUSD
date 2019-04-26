@@ -125,14 +125,7 @@ public:
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
     HD_API
-    static HdRenderIndex* New(HdRenderDelegate *renderDelegate) {
-        if (renderDelegate == nullptr) {
-            TF_CODING_ERROR(
-                "Null Render Delegate provided to create render index");
-            return nullptr;
-        }
-        return new HdRenderIndex(renderDelegate);
-    }
+    static HdRenderIndex* New(HdRenderDelegate *renderDelegate);
 
     HD_API
     ~HdRenderIndex();
@@ -173,7 +166,7 @@ public:
     /// data sources.
     /// This is the first phase in Hydra's execution. See HdEngine::Execute
     HD_API
-    void SyncAll(HdTaskSharedPtrVector const &tasks, HdTaskContext *taskContext);
+    void SyncAll(HdTaskSharedPtrVector *tasks, HdTaskContext *taskContext);
 
     // ---------------------------------------------------------------------- //
     /// \name Execution
@@ -235,6 +228,10 @@ public:
     /// Returns the render tag for the given rprim
     HD_API
     TfToken GetRenderTag(SdfPath const& id) const;
+
+    /// Return the material tag for the given rprim
+    HD_API
+    TfToken GetMaterialTag(SdfPath const& id) const;
 
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
@@ -419,7 +416,12 @@ private:
         HdRprim         *rprim;
     };
 
-    typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
+    struct _TaskInfo {
+        HdSceneDelegate *sceneDelegate;
+        HdTaskSharedPtr  task;
+    };
+
+    typedef std::unordered_map<SdfPath, _TaskInfo, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
 

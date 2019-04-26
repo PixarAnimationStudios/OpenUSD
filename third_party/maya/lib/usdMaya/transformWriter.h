@@ -26,24 +26,32 @@
 
 /// \file usdMaya/transformWriter.h
 
-#include "usdMaya/api.h"
-#include "usdMaya/primWriter.h"
-
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 
-#include "pxr/usd/usdGeom/xform.h"
+#include "usdMaya/primWriter.h"
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/xformOp.h"
+#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdUtils/sparseValueWriter.h"
 
+#include <maya/MFnDependencyNode.h>
 #include <maya/MEulerRotation.h>
 #include <maya/MFnTransform.h>
-#include <maya/MPlugArray.h>
+#include <maya/MPlug.h>
+#include <maya/MString.h>
 
 #include <unordered_map>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdGeomXformable;
-class UsdTimeCode;
 
 /// Writes transforms and serves as the base class for custom transform writers.
 /// Handles the conversion of Maya transformation data into USD xformOps.
@@ -52,15 +60,15 @@ class UsdMayaTransformWriter : public UsdMayaPrimWriter
 public:
     PXRUSDMAYA_API
     UsdMayaTransformWriter(
-            const MDagPath& iDag,
-            const SdfPath& uPath,
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx);
 
     /// Main export function that runs when the traversal hits the node.
     /// This extends UsdMayaPrimWriter::Write() by exporting xform ops for
     /// UsdGeomXformable if the Maya node has transform data.
     PXRUSDMAYA_API
-    void Write(const UsdTimeCode &usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
 private:
     using _TokenRotationMap = std::unordered_map<
@@ -79,7 +87,7 @@ private:
         // need to do conversion in one place, and so that, if we need to do
         // euler filtering, we don't do conversions, and then undo them to use
         // MEulerRotation).
-        GfVec3d defValue; 
+        GfVec3d defValue;
         _XformType opType;
         UsdGeomXformOp::Type usdOpType;
         UsdGeomXformOp::Precision precision;
@@ -91,37 +99,39 @@ private:
     // For a given array of _AnimChannels and time, compute the xformOp data if
     // needed and set the xformOps' values.
     static void _ComputeXformOps(
-            const std::vector<_AnimChannel>& animChanList, 
-            const UsdTimeCode &usdTime,
-            bool eulerFilter,
+            const std::vector<_AnimChannel>& animChanList,
+            const UsdTimeCode& usdTime,
+            const bool eulerFilter,
             UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
-            UsdUtilsSparseValueWriter *valueWriter);
+            UsdUtilsSparseValueWriter* valueWriter);
 
     // Creates an _AnimChannel from a Maya compound attribute if there is
     // meaningful data. This means we found data that is non-identity.
     // Returns true if we extracted an _AnimChannel and false otherwise (e.g.
     // the data was identity).
     static bool _GatherAnimChannel(
-            _XformType opType,
+            const _XformType opType,
             const MFnTransform& iTrans,
             const TfToken& parentName,
             const MString& xName, const MString& yName, const MString& zName,
-            std::vector<_AnimChannel>* oAnimChanList, 
-            bool isWritingAnimation,
-            bool setOpName);
+            std::vector<_AnimChannel>* oAnimChanList,
+            const bool isWritingAnimation,
+            const bool setOpName);
 
     /// Populates the AnimChannel vector with various ops based on
     /// the Maya transformation logic. If scale and/or rotate pivot are
     /// declared, creates inverse ops in the appropriate order.
     void _PushTransformStack(
-            const MFnTransform& iTrans, 
-            const UsdGeomXformable& usdXForm, 
-            bool writeAnim);
+            const MFnTransform& iTrans,
+            const UsdGeomXformable& usdXForm,
+            const bool writeAnim);
 
     std::vector<_AnimChannel> _animChannels;
     _TokenRotationMap _previousRotates;
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

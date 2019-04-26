@@ -64,7 +64,8 @@ HdExtCompCpuComputation::CreateComputation(
 
     Hd_ExtCompInputSourceSharedPtrVector inputs;
     for (const TfToken &inputName: computation.GetSceneInputNames()) {
-        VtValue inputValue = sceneDelegate->Get(id, inputName);
+        VtValue inputValue = sceneDelegate->GetExtComputationInput(
+                                                id, inputName);
         Hd_ExtCompInputSourceSharedPtr inputSource(
                          new Hd_SceneExtCompInputSource(inputName, inputValue));
         computationSources->push_back(inputSource);
@@ -86,8 +87,9 @@ HdExtCompCpuComputation::CreateComputation(
             // to create.
             if (sourceComp->IsInputAggregation()) {
                 VtValue inputValue =
-                    sceneDelegate->Get(compInput.sourceComputationId,
-                                       compInput.name);
+                    sceneDelegate->GetExtComputationInput(
+                            compInput.sourceComputationId,
+                            compInput.name);
                 Hd_ExtCompInputSourceSharedPtr inputSource(
                         new Hd_SceneExtCompInputSource(compInput.name,
                                                        inputValue));

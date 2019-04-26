@@ -30,9 +30,11 @@
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
@@ -47,6 +49,7 @@
 #include <maya/MFloatVector.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MIntArray.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
@@ -56,7 +59,9 @@
 #include <maya/MTransformationMatrix.h>
 
 #include <cmath>
+#include <ostream>
 #include <string>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -753,6 +758,31 @@ px_vp20Utils::RenderBoundingBox(
         const MMatrix& worldViewMat,
         const MMatrix& projectionMat)
 {
+    // Create a transformation matrix from the bounding box's center and
+    // dimensions.
+    MTransformationMatrix bboxTransformMatrix = MTransformationMatrix::identity;
+    bboxTransformMatrix.setTranslation(bounds.center(), MSpace::kTransform);
+    const double scales[3] = { bounds.width(), bounds.height(), bounds.depth() };
+    bboxTransformMatrix.setScale(scales, MSpace::kTransform);
+    return RenderWireCubes(
+            { GfMatrix4f(bboxTransformMatrix.asMatrix().matrix) },
+            color, 
+            GfMatrix4d(worldViewMat.matrix), 
+            GfMatrix4d(projectionMat.matrix));
+}
+
+/* static */
+bool
+px_vp20Utils::RenderWireCubes(
+        const std::vector<GfMatrix4f>& cubeXforms,
+        const GfVec4f& color,
+        const GfMatrix4d& worldViewMat,
+        const GfMatrix4d& projectionMat)
+{
+    if (cubeXforms.empty()) {
+        return true;
+    }
+
     static const GfVec3f cubeLineVertices[24u] = {
         // Vertical edges
         GfVec3f(-0.5f, -0.5f, 0.5f),
@@ -794,27 +824,24 @@ px_vp20Utils::RenderBoundingBox(
         GfVec3f(-0.5f, -0.5f, 0.5f),
     };
 
-    static const std::string vertexShaderSource(
-        "#version 140\n"
-        "\n"
-        "in vec3 position;\n"
-        "uniform mat4 mvpMatrix;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "    gl_Position = vec4(position, 1.0) * mvpMatrix;\n"
-        "}\n");
+    static const std::string vertexShaderSource(R"(#version 140
+in vec3 position;
+in mat4 cubeXformT;
+uniform mat4 vpMatrix;
 
-    static const std::string fragmentShaderSource(
-        "#version 140\n"
-        "\n"
-        "uniform vec4 color;\n"
-        "out vec4 outColor;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "    outColor = color;\n"
-        "}\n");
+void main()
+{
+    gl_Position = vec4(position, 1.0) * transpose(cubeXformT) * vpMatrix;
+})");
+
+    static const std::string fragmentShaderSource(R"(#version 140
+uniform vec4 color;
+out vec4 outColor;
+
+void main()
+{
+    outColor = color;
+})");
 
     PxrMayaGLSLProgram renderBoundsProgram;
 
@@ -844,6 +871,39 @@ px_vp20Utils::RenderBoundingBox(
 
     glUseProgram(renderBoundsProgramId);
 
+    GLuint cubesVAO;
+    glGenVertexArrays(1, &cubesVAO);
+    glBindVertexArray(cubesVAO);
+
+    // Populate the shader variables.
+    GfMatrix4f vpMatrix(worldViewMat * projectionMat);
+    GLuint vpMatrixLoc = glGetUniformLocation(renderBoundsProgramId, "vpMatrix");
+    glUniformMatrix4fv(vpMatrixLoc, 1, 
+            GL_TRUE, // transpose
+            vpMatrix.data());
+
+    // Populate the color
+    GLuint colorLocation = glGetUniformLocation(renderBoundsProgramId, "color");
+    glUniform4fv(colorLocation, 1, color.data());
+
+    // Setup and populate matrix buffers
+    GLuint matricesVBO;
+    glGenBuffers(1, &matricesVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, matricesVBO);
+    const size_t numCubes = cubeXforms.size();
+    // since we're copying these directly from GfMatrix4f, we need to
+    // transpose() them in the shader.
+    const GLuint cubeXformLoc = glGetAttribLocation(renderBoundsProgramId, "cubeXformT");
+    glBufferData(GL_ARRAY_BUFFER, 
+            sizeof(GfMatrix4f) * numCubes, cubeXforms.data(), GL_DYNAMIC_DRAW);
+    for (size_t r = 0; r < 4; r++) {
+        GLuint loc = cubeXformLoc + r;
+        glEnableVertexAttribArray(loc);
+        glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, sizeof(GfMatrix4f), 
+                (char*)(sizeof(float)*4*r));
+        glVertexAttribDivisor(loc, 1);
+    }
+
     // Populate an array buffer with the cube line vertices.
     GLuint cubeLinesVBO;
     glGenBuffers(1, &cubeLinesVBO);
@@ -852,36 +912,24 @@ px_vp20Utils::RenderBoundingBox(
                  sizeof(cubeLineVertices),
                  cubeLineVertices,
                  GL_STATIC_DRAW);
+    const GLuint positionLocation = glGetAttribLocation(renderBoundsProgramId, "position");
+    glEnableVertexAttribArray(positionLocation);
+    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    // Create a transformation matrix from the bounding box's center and
-    // dimensions.
-    MTransformationMatrix bboxTransformMatrix = MTransformationMatrix::identity;
-    bboxTransformMatrix.setTranslation(bounds.center(), MSpace::kTransform);
-    const double scales[3] = { bounds.width(), bounds.height(), bounds.depth() };
-    bboxTransformMatrix.setScale(scales, MSpace::kTransform);
+    // draw all cubes
+    glDrawArraysInstanced(GL_LINES, 0, sizeof(cubeLineVertices), numCubes);
 
-    const MMatrix mvpMatrix =
-        bboxTransformMatrix.asMatrix() * worldViewMat * projectionMat;
-
-    GLfloat mvpMatrixArray[4][4];
-    mvpMatrix.get(mvpMatrixArray);
-
-    // Populate the shader variables.
-    GLuint mvpMatrixLocation = glGetUniformLocation(renderBoundsProgramId, "mvpMatrix");
-    glUniformMatrix4fv(mvpMatrixLocation, 1, GL_TRUE, &mvpMatrixArray[0][0]);
-
-    GLuint colorLocation = glGetUniformLocation(renderBoundsProgramId, "color");
-    glUniform4fv(colorLocation, 1, color.data());
-
-    // Enable the position attribute and draw.
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_LINES, 0, sizeof(cubeLineVertices));
-    glDisableVertexAttribArray(0);
-
+    // cleanup
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDisableVertexAttribArray(positionLocation);
     glDeleteBuffers(1, &cubeLinesVBO);
-
+    for (size_t r = 0; r < 4; r++) {
+        GLuint loc = cubeXformLoc + r;
+        glDisableVertexAttribArray(loc);
+    }
+    glDeleteBuffers(1, &matricesVBO);
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &cubesVAO);
     glUseProgram(0);
 
     return true;
@@ -941,6 +989,103 @@ px_vp20Utils::GetSelectionMatrices(
     projectionMatrix = GfMatrix4d(projectionMat.matrix);
 
     return true;
+}
+
+/* static */
+void
+px_vp20Utils::OutputDisplayStyleToStream(
+        const unsigned int displayStyle,
+        std::ostream& stream)
+{
+    std::vector<std::string> styleComponents;
+
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded) {
+        styleComponents.emplace_back("kGouraudShaded");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) {
+        styleComponents.emplace_back("kWireFrame");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox) {
+        styleComponents.emplace_back("kBoundingBox");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kTextured) {
+        styleComponents.emplace_back("kTextured");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kDefaultMaterial) {
+        styleComponents.emplace_back("kDefaultMaterial");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kXrayJoint) {
+        styleComponents.emplace_back("kXrayJoint");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kXray) {
+        styleComponents.emplace_back("kXray");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kTwoSidedLighting) {
+        styleComponents.emplace_back("kTwoSidedLighting");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded) {
+        styleComponents.emplace_back("kFlatShaded");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly) {
+        styleComponents.emplace_back("kShadeActiveOnly");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kXrayActiveComponents) {
+        styleComponents.emplace_back("kXrayActiveComponents");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
+        styleComponents.emplace_back("kBackfaceCulling");
+    }
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kSmoothWireframe) {
+        styleComponents.emplace_back("kSmoothWireframe");
+    }
+
+    stream << "[" << TfStringJoin(styleComponents, ", ") << "]";
+}
+
+/* static */
+void
+px_vp20Utils::OutputDisplayStatusToStream(
+        const MHWRender::DisplayStatus displayStatus,
+        std::ostream& stream)
+{
+    switch (displayStatus) {
+        case MHWRender::kActive:
+            stream << "kActive";
+            break;
+        case MHWRender::kLive:
+            stream << "kLive";
+            break;
+        case MHWRender::kDormant:
+            stream << "kDormant";
+            break;
+        case MHWRender::kInvisible:
+            stream << "kInvisible";
+            break;
+        case MHWRender::kHilite:
+            stream << "kHilite";
+            break;
+        case MHWRender::kTemplate:
+            stream << "kTemplate";
+            break;
+        case MHWRender::kActiveTemplate:
+            stream << "kActiveTemplate";
+            break;
+        case MHWRender::kActiveComponent:
+            stream << "kActiveComponent";
+            break;
+        case MHWRender::kLead:
+            stream << "kLead";
+            break;
+        case MHWRender::kIntermediateObject:
+            stream << "kIntermediateObject";
+            break;
+        case MHWRender::kActiveAffected:
+            stream << "kActiveAffected";
+            break;
+        case MHWRender::kNoStatus:
+            stream << "kNoStatus";
+            break;
+    }
 }
 
 

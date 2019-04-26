@@ -38,8 +38,9 @@ from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
-from common import (RenderModes, ShadedRenderModes, Timer,
-    GetInstanceIndicesForIds, SelectionHighlightModes, DEBUG_CLIPPING)
+from common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
+                    ReportMetricSize, GetInstanceIndicesForIds,
+                    SelectionHighlightModes, DEBUG_CLIPPING)
 from rootDataModel import RootDataModel
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 from viewSettingsDataModel import ViewSettingsDataModel
@@ -655,7 +656,8 @@ class StageView(QtOpenGL.QGLWidget):
     signalBboxUpdateTimeChanged = QtCore.Signal(int)
 
     # First arg is primPath, (which could be empty Path)
-    # Second arg is instanceIndex (or UsdImagingGL.GL.ALL_INSTANCES for all instances)
+    # Second arg is instanceIndex (or UsdImagingGL.ALL_INSTANCES for all
+    #  instances)
     # Third arg is selectedPoint
     # Fourth and Fifth args represent state at time of the pick
     signalPrimSelected = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.MouseButton,
@@ -678,6 +680,10 @@ class StageView(QtOpenGL.QGLWidget):
     @renderParams.setter
     def renderParams(self, params):
         self._renderParams = params
+
+    @property
+    def autoClip(self):
+        return self._dataModel.viewSettings.autoComputeClippingPlanes
 
     @property
     def showReticles(self):
@@ -791,8 +797,8 @@ class StageView(QtOpenGL.QGLWidget):
         return self._lastComputedGfCamera.frustum
 
     @property
-    def rendererPluginName(self):
-        return self._rendererPluginName
+    def rendererDisplayName(self):
+        return self._rendererDisplayName
 
     @property
     def rendererAovName(self):
@@ -837,7 +843,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
         self._hud.addGroup("TopRight",    140, 32)   # Hydra: Enabled
         self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
-        self._hud.addGroup("BottomRight", 200, 32)   # Camera, Complexity
+        self._hud.addGroup("BottomRight", 210, 32)   # Camera, Complexity
 
         self._stageIsZup = True
         self._cameraMode = "none"
@@ -848,17 +854,21 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._renderer = None
         self._reportedContextError = False
-        self._renderModeDict={RenderModes.WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME,
-                              RenderModes.WIREFRAME_ON_SURFACE:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
-                              RenderModes.SMOOTH_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_SMOOTH,
-                              RenderModes.POINTS:UsdImagingGL.GL.DrawMode.DRAW_POINTS,
-                              RenderModes.FLAT_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_FLAT,
-                              RenderModes.GEOM_ONLY:UsdImagingGL.GL.DrawMode.DRAW_GEOM_ONLY,
-                              RenderModes.GEOM_SMOOTH:UsdImagingGL.GL.DrawMode.DRAW_GEOM_SMOOTH,
-                              RenderModes.GEOM_FLAT:UsdImagingGL.GL.DrawMode.DRAW_GEOM_FLAT,
-                              RenderModes.HIDDEN_SURFACE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
+        self._renderModeDict = {
+            RenderModes.WIREFRAME: UsdImagingGL.DrawMode.DRAW_WIREFRAME,
+            RenderModes.WIREFRAME_ON_SURFACE: 
+                UsdImagingGL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
+            RenderModes.SMOOTH_SHADED: UsdImagingGL.DrawMode.DRAW_SHADED_SMOOTH,
+            RenderModes.POINTS: UsdImagingGL.DrawMode.DRAW_POINTS,
+            RenderModes.FLAT_SHADED: UsdImagingGL.DrawMode.DRAW_SHADED_FLAT,
+            RenderModes.GEOM_ONLY: UsdImagingGL.DrawMode.DRAW_GEOM_ONLY,
+            RenderModes.GEOM_SMOOTH: UsdImagingGL.DrawMode.DRAW_GEOM_SMOOTH,
+            RenderModes.GEOM_FLAT: UsdImagingGL.DrawMode.DRAW_GEOM_FLAT,
+            RenderModes.HIDDEN_SURFACE_WIREFRAME:
+                UsdImagingGL.DrawMode.DRAW_WIREFRAME
+        }
 
-        self._renderParams = UsdImagingGL.GL.RenderParams()
+        self._renderParams = UsdImagingGL.RenderParams()
         self._dist = 50 
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
@@ -898,13 +908,16 @@ class StageView(QtOpenGL.QGLWidget):
         # create the renderer lazily, when we try to do real work with it.
         if not self._renderer:
             if self.isValid():
-                self._renderer = UsdImagingGL.GL()
-                self._rendererPluginName = ""
-                self._rendererAovName = "color"
+                self._renderer = UsdImagingGL.Engine()
+                self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
         return self._renderer
+
+    def _handleRendererChanged(self, rendererId):
+        self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
+        self._rendererAovName = "color"
 
     def closeRenderer(self):
         '''Close the current renderer.'''
@@ -919,18 +932,22 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return []
 
-    def GetRendererPluginDisplayName(self, plugId):
+    def GetRendererDisplayName(self, plugId):
         if self._renderer:
-            return self._renderer.GetRendererPluginDesc(plugId)
+            return self._renderer.GetRendererDisplayName(plugId)
+        else:
+            return ""
+
+    def GetCurrentRendererId(self):
+        if self._renderer:
+            return self._renderer.GetCurrentRendererId()
         else:
             return ""
 
     def SetRendererPlugin(self, plugId):
         if self._renderer:
             if self._renderer.SetRendererPlugin(plugId):
-                self._rendererPluginName = \
-                        self.GetRendererPluginDisplayName(plugId)
-                self._rendererAovName = "color"
+                self._handleRendererChanged(plugId)
                 self.updateGL()
                 return True
             else:
@@ -952,6 +969,23 @@ class StageView(QtOpenGL.QGLWidget):
             else:
                 return False
         return True
+
+    def GetRendererSettingsList(self):
+        if self._renderer:
+            return self._renderer.GetRendererSettingsList()
+        else:
+            return []
+
+    def GetRendererSetting(self, name):
+        if self._renderer:
+            return self._renderer.GetRendererSetting(name)
+        else:
+            return None
+
+    def SetRendererSetting(self, name, value):
+        if self._renderer:
+            self._renderer.SetRendererSetting(name, value)
+            self.updateGL()
 
     def _stageReplaced(self):
         '''Set the USD Stage this widget will be displaying. To decommission
@@ -1246,7 +1280,7 @@ class StageView(QtOpenGL.QGLWidget):
                         renderer.AddSelected(prim.GetPath(), instanceIndex)
                 else:
                     renderer.AddSelected(
-                        prim.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
+                        prim.GetPath(), UsdImagingGL.ALL_INSTANCES)
         except Tf.ErrorException as e:
             # If we encounter an error, we want to continue running. Just log 
             # the error and continue.
@@ -1294,18 +1328,27 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy
         self._renderParams.showRender = self._dataModel.viewSettings.displayRender
         self._renderParams.forceRefresh = self._forceRefresh
-        self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
-                                               if self._dataModel.viewSettings.cullBackfaces
-                                               else UsdImagingGL.GL.CullStyle.CULL_STYLE_NOTHING)
+        self._renderParams.cullStyle = \
+            (UsdImagingGL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
+               if self._dataModel.viewSettings.cullBackfaces
+               else UsdImagingGL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = self._dataModel.viewSettings.displayPrimId
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
         self._renderParams.highlight = renderSelHighlights
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
+        self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
+        self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
+        self._renderParams.renderResolution[0] = self.width()
+        self._renderParams.renderResolution[1] = self.height()
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
+
+        # Enable floating point framebuffer (for color correction)
+        renderer.SetEnableFloatPointDrawTarget(True)
+
         try:
             renderer.Render(pseudoRoot, self._renderParams)
         except Tf.ErrorException as e:
@@ -1366,7 +1409,7 @@ class StageView(QtOpenGL.QGLWidget):
         camera = self.computeGfCameraForCurrentCameraPrim()
         if not camera:
             self.switchToFreeCamera()
-            camera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox)
+            camera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox, autoClip=self.autoClip)
 
         cameraAspectRatio = camera.aspectRatio
 
@@ -1511,12 +1554,12 @@ class StageView(QtOpenGL.QGLWidget):
                 self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
                 self._glTimeElapsedQuery.BeginTimeElapsed()
 
-            # Enable sRGB in order to apply a final gamma to this window, just like
-            # in Presto.
-            from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
-            GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
+            if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+                from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
+                GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
-            GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))))
+            self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
+            GL.glClearColor(*self._renderParams.clearColor)
 
             GL.glEnable(GL.GL_DEPTH_TEST)
             GL.glDepthFunc(GL.GL_LESS)
@@ -1633,8 +1676,8 @@ class StageView(QtOpenGL.QGLWidget):
                     GL.glPolygonOffset( 1.0, 1.0 )
                     GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
 
-                    self.renderSinglePass( renderer.DrawMode.DRAW_GEOM_ONLY,
-                                        False)
+                    self.renderSinglePass( 
+                        UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
 
                     GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
                     GL.glDepthFunc(GL.GL_LEQUAL)
@@ -1654,6 +1697,9 @@ class StageView(QtOpenGL.QGLWidget):
                 self.renderSinglePass(
                     self._renderModeDict[self._dataModel.viewSettings.renderMode],
                     drawSelHighlights)
+
+                if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+                    GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
                 self.DrawAxis(viewProjectionMatrix)
 
@@ -1681,7 +1727,7 @@ class StageView(QtOpenGL.QGLWidget):
                 if self._dataModel.viewSettings.showMask_Opaque:
                     color = color[0:3] + (1.0,)
                 else:
-                    color = color[0:3] + (color[3] * 0.7,)
+                    color = color[0:3] + (color[3] * 0.45,)
                 self._mask.updateColor(color)
                 self._mask.updatePrims(cameraViewport, self)
                 uiTasks.append(self._mask)
@@ -1704,8 +1750,6 @@ class StageView(QtOpenGL.QGLWidget):
             # ### DRAW HUD ### #
             if self._dataModel.viewSettings.showHUD:
                 self.drawHUD(renderer)
-
-            GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
             if (not self._dataModel.playing) & (not renderer.IsConverged()):
                 QtCore.QTimer.singleShot(5, self.update)
@@ -1731,13 +1775,13 @@ class StageView(QtOpenGL.QGLWidget):
         # put the result in the HUD string
         self.fpsHUDInfo['Render'] = "%.2f ms (%.2f FPS)" % (ms, fps)
 
-        col = Gf.ConvertDisplayToLinear(Gf.Vec3f(.733,.604,.333))
+        col = Gf.Vec3f(.733,.604,.333)
 
         # the subtree info does not update while animating, grey it out
         if not self._dataModel.playing:
             subtreeCol = col
         else:
-            subtreeCol = Gf.ConvertDisplayToLinear(Gf.Vec3f(.6,.6,.6))
+            subtreeCol = Gf.Vec3f(.6,.6,.6)
 
         # Subtree Info
         if self._dataModel.viewSettings.showHUD_Info:
@@ -1750,14 +1794,14 @@ class StageView(QtOpenGL.QGLWidget):
         # Complexity
         if self._dataModel.viewSettings.showHUD_Complexity:
             # Camera name
-            camName = "Free"
+            camName = "Free%s" % (" AutoClip" if self.autoClip else "")
             if self._dataModel.viewSettings.cameraPrim:
                 camName = self._dataModel.viewSettings.cameraPrim.GetName()
 
             toPrint = {"Complexity" : self._dataModel.viewSettings.complexity.name,
                        "Camera" : camName}
             self._hud.updateGroup("BottomRight",
-                                  self.width()-200, self.height()-self._hud._HUDLineSpacing*2,
+                                  self.width()-210, self.height()-self._hud._HUDLineSpacing*2,
                                   col, toPrint)
         else:
             self._hud.updateGroup("BottomRight", 0, 0, col, {})
@@ -1765,8 +1809,8 @@ class StageView(QtOpenGL.QGLWidget):
         # Hydra Enabled (Top Right)
         hydraMode = "Disabled"
 
-        if UsdImagingGL.GL.IsEnabledHydra():
-            hydraMode = self._rendererPluginName
+        if UsdImagingGL.Engine.IsHydraEnabled():
+            hydraMode = self._rendererDisplayName
             if not hydraMode:
                 hydraMode = "Enabled"
 
@@ -1787,17 +1831,17 @@ class StageView(QtOpenGL.QGLWidget):
             texMem = 0
             if "gpuMemoryUsed" in allocInfo:
                 gpuMemTotal = allocInfo["gpuMemoryUsed"]
-            if "textureMemoryUsed" in allocInfo:
-                texMem = allocInfo["textureMemoryUsed"]
+            if "textureMemory" in allocInfo:
+                texMem = allocInfo["textureMemory"]
                 gpuMemTotal += texMem
 
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
             toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
-            toPrint["GPU mem  "] = gpuMemTotal
-            toPrint[" primvar "] = allocInfo["primvar"] if "primvar" in allocInfo else "N/A"
-            toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
-            toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
-            toPrint[" texture "] = texMem
+            toPrint["GPU mem  "] = ReportMetricSize(gpuMemTotal)
+            toPrint[" primvar "] = ReportMetricSize(allocInfo["primvar"]) if "primvar" in allocInfo else "N/A"
+            toPrint[" topology"] = ReportMetricSize(allocInfo["topology"]) if "topology" in allocInfo else "N/A"
+            toPrint[" shader  "] = ReportMetricSize(allocInfo["drawingShader"]) if "drawingShader" in allocInfo else "N/A"
+            toPrint[" texture "] = ReportMetricSize(texMem)
 
         # Playback Rate
         if self._dataModel.viewSettings.showHUD_Performance:
@@ -1989,9 +2033,10 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy
         self._renderParams.showRender = self._dataModel.viewSettings.displayRender
         self._renderParams.forceRefresh = self._forceRefresh
-        self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
-                                               if self._dataModel.viewSettings.cullBackfaces
-                                               else UsdImagingGL.GL.CullStyle.CULL_STYLE_NOTHING)
+        self._renderParams.cullStyle = \
+            (UsdImagingGL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
+                   if self._dataModel.viewSettings.cullBackfaces
+                   else UsdImagingGL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = True
         self._renderParams.enableSampleAlphaToCoverage = False
@@ -2096,11 +2141,22 @@ class StageView(QtOpenGL.QGLWidget):
     def glDraw(self):
         # override glDraw so we can time it.
         with Timer() as t:
-            # Make sure the renderer is created
-            if not self._getRenderer():
-                # error has already been issued
-                return
             QtOpenGL.QGLWidget.glDraw(self)
+
+        # Render creation is a deferred operation, so the render may not
+        # be initialized on entry to the function.
+        #
+        # This function itself can not create the render, as to create the
+        # renderer we need a valid GL context, which QT has not made current
+        # yet.
+        #
+        # So instead check that the render has been created after the fact.
+        # The point is to avoid reporting an invalid first image time.
+        
+        if not self._renderer:
+            # error has already been issued
+            return
+
 
         self._renderTime = t.interval
 
@@ -2129,8 +2185,9 @@ class StageView(QtOpenGL.QGLWidget):
 
         defcam = UsdGeom.Camera.Define(stage, '/'+defcamName)
 
-        # Map free camera params to usd camera.
-        gfCamera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox)
+        # Map free camera params to usd camera.  We do **not** want to burn
+        # auto-clipping near/far into our exported camera
+        gfCamera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox, autoClip=False)
 
         targetAspect = float(imgWidth) / max(1.0, imgHeight)
         CameraUtil.ConformWindow(

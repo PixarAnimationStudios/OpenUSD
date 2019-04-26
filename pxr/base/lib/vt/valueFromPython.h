@@ -31,22 +31,19 @@
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/singleton.h"
 
 #include <Python.h>
-#include <boost/noncopyable.hpp>
-#include "pxr/base/tf/hashmap.h"
 
-#include <memory>
-#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Vt_ValueFromPythonRegistry
 ///
-class Vt_ValueFromPythonRegistry : boost::noncopyable {
+class Vt_ValueFromPythonRegistry {
 public:
 
     static bool HasConversions() {
@@ -67,65 +64,56 @@ public:
             _GetInstance()._RegisterRValue(_Extractor::MakeRValue<T>());
     }
 
+    Vt_ValueFromPythonRegistry(Vt_ValueFromPythonRegistry const&) = delete;
+    Vt_ValueFromPythonRegistry& operator=(
+        Vt_ValueFromPythonRegistry const&) = delete;
+
+    Vt_ValueFromPythonRegistry(Vt_ValueFromPythonRegistry &&) = delete;
+    Vt_ValueFromPythonRegistry& operator=(
+        Vt_ValueFromPythonRegistry &&) = delete;
+
 private:
+    Vt_ValueFromPythonRegistry() {}
+    VT_API ~Vt_ValueFromPythonRegistry();
 
     friend class TfSingleton<Vt_ValueFromPythonRegistry>;
 
     class _Extractor {
-    public:
-        _Extractor() {}
-
     private:
-        class _HolderBase {
-        public:
-            VT_API virtual ~_HolderBase();
-            virtual VtValue Invoke(PyObject *) const = 0;
-        };
+        using _ExtractFunc = VtValue (*)(PyObject *);
 
-        // LValueHolder will attempt to obtain an l-value T from the python
-        // object it's passed in Invoke.  This effectively disallows type
-        // conversions (other than things like derived-to-base type
-        // conversions).
+        // _ExtractLValue will attempt to obtain an l-value T from the python
+        // object it's passed.  This effectively disallows type conversions
+        // (other than things like derived-to-base type conversions).
         template <class T>
-        class _LValueHolder : public _HolderBase {
-        public:
-            virtual ~_LValueHolder();
-            virtual VtValue Invoke(PyObject *) const;
-        };
+        static VtValue _ExtractLValue(PyObject *);
 
-        // RValueHolder will attempt to obtain an r-value T from the python
-        // object it's passed in Invoke.  This allows boost.python to invoke
-        // type conversions to produce the T.
+        // _ExtractRValue will attempt to obtain an r-value T from the python
+        // object it's passed.  This allows boost.python to invoke type
+        // conversions to produce the T.
         template <class T>
-        class _RValueHolder : public _HolderBase {
-        public:
-            virtual ~_RValueHolder();
-            virtual VtValue Invoke(PyObject *) const;
-        };
-
-        typedef std::shared_ptr<_HolderBase> _HolderBasePtr;
+        static VtValue _ExtractRValue(PyObject *);
 
     public:
 
         template <class T>
         static _Extractor MakeLValue() {
-            return _Extractor(_HolderBasePtr(new _LValueHolder<T>()));
+            return _Extractor(&_ExtractLValue<T>);
         }
         
         template <class T>
         static _Extractor MakeRValue() {
-            return _Extractor(_HolderBasePtr(new _RValueHolder<T>()));
+            return _Extractor(&_ExtractRValue<T>);
         }
         
         VtValue Invoke(PyObject *obj) const {
-            return _holder->Invoke(obj);
+            return _extract(obj);
         }
 
     private:
-        _Extractor(_HolderBasePtr const &holder) : _holder(holder) {}
-        
-        _HolderBasePtr _holder;
-        
+        explicit _Extractor(_ExtractFunc extract) : _extract(extract) {}
+
+        _ExtractFunc _extract;
     };
 
     VT_API static Vt_ValueFromPythonRegistry &_GetInstance() {
@@ -145,15 +133,9 @@ private:
 
 VT_API_TEMPLATE_CLASS(TfSingleton<Vt_ValueFromPythonRegistry>);
 
-// Holders are created and inserted into the registry, and currently never die.
-template <class T>
-Vt_ValueFromPythonRegistry::_Extractor::_LValueHolder<T>::~_LValueHolder() {}
-template <class T>
-Vt_ValueFromPythonRegistry::_Extractor::_RValueHolder<T>::~_RValueHolder() {}
-
 template <class T>
 VtValue Vt_ValueFromPythonRegistry::
-_Extractor::_LValueHolder<T>::Invoke(PyObject *obj) const {
+_Extractor::_ExtractLValue(PyObject *obj) {
     boost::python::extract<T &> x(obj);
     if (x.check())
         return VtValue(x());
@@ -162,7 +144,7 @@ _Extractor::_LValueHolder<T>::Invoke(PyObject *obj) const {
 
 template <class T>
 VtValue Vt_ValueFromPythonRegistry::
-_Extractor::_RValueHolder<T>::Invoke(PyObject *obj) const {
+_Extractor::_ExtractRValue(PyObject *obj) {
     boost::python::extract<T> x(obj);
     if (x.check())
         return VtValue(x());

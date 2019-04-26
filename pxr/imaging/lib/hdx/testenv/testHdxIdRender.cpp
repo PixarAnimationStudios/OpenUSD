@@ -342,7 +342,7 @@ DrawScene(PickParam const * pickParam)
 
     glBindVertexArray(vao);
 
-    _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
 
     glBindVertexArray(0);
 }

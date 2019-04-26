@@ -35,7 +35,6 @@
 
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 
@@ -191,7 +190,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDSHADE_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -203,7 +202,7 @@ private:
 
     // override SchemaBase virtuals.
     USDSHADE_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -788,65 +787,6 @@ public:
     USDSHADE_API
     static TfToken GetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom);
-
-    /// @}
-
-    // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeMaterial_FaceSet
-    /// \name FaceSet
-    /// 
-    /// \deprecated 
-    /// \note This API is now deprecated as the has-A schema UsdGeomFaceSetAPI 
-    /// has been deprecated in favor of the new concrete (typed) 
-    /// <b>UsdGeomSubset</b> schema.
-    /// 
-    /// API to create and query the existence of a "Material" face-set on a mesh 
-    /// prim. 
-    /// 
-    /// \note Material bindings authored on a face-set are only honored by renderers 
-    /// if it is the "Material" face-set.
-    /// 
-    /// Here's some sample code that shows how to create and bind Materials to a 
-    /// "Material" face-set.
-    /// 
-    /// \code 
-    /// UsdPrim mesh = stage.GetPrimAtPath("/path/to/meshPrim");
-    /// UsdPrim Material1 = stage.GetPrimAtPath("/path/to/Material1");
-    /// USdPrim Material2 = stage.GetPrimAtPath("/path/to/Material2");
-    /// UsdGeomFaceSetAPI MaterialFaceSet = UsdShaderMaterial::CreateMaterialFaceSet(mesh);
-    /// VtIntArray faceIndices1, faceIndices2;
-    /// //.. populate faceIndices here.
-    /// MaterialFaceSet.AppendFaceGroup(faceIndices1, Material1.GetPath(), 
-    ///                             UsdTimeCode::Default());
-    /// MaterialFaceSet.AppendFaceGroup(faceIndices2, Material2.GetPath(), 
-    ///                             UsdTimeCode::Default());
-    /// \endcode
-    /// @{
-    // --------------------------------------------------------------------- //
-
-    /// \deprecated 
-    /// Creates a "Material" face-set on the given prim. The Material face-set is a 
-    /// partition of faces, since no face can be bound to more than one Material.
-    /// 
-    /// If a "Material" face-set already exists, it is returned. If not, it
-    /// creates one and returns it.
-    /// 
-    USDSHADE_API
-    static UsdGeomFaceSetAPI CreateMaterialFaceSet(const UsdPrim &prim);
-
-    /// \deprecated 
-    /// Returns the "Material" face-set if it exists on the given prim. If not, 
-    /// returns an invalid UsdGeomFaceSetAPI object.
-    /// 
-    USDSHADE_API
-    static UsdGeomFaceSetAPI GetMaterialFaceSet(const UsdPrim &prim);
-
-    /// \deprecated 
-    /// Returns true if the given prim has a "Material" face-set. A "Material" 
-    /// face-set must be a partition for it to be considered valid.
-    /// 
-    USDSHADE_API
-    static bool HasMaterialFaceSet(const UsdPrim &prim);
 
     /// @}
 };

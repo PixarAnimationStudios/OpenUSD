@@ -43,8 +43,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class TypePolicy> class Sdf_ListEditor;
-
 /// \class SdfPrimSpec
 ///
 /// Represents a prim description in an SdfLayer object.
@@ -75,7 +73,7 @@ template <class TypePolicy> class Sdf_ListEditor;
 ///
 class SdfPrimSpec : public SdfSpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypePrim, SdfPrimSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfPrimSpec, SdfSpec);
 
 public:
     typedef SdfPrimSpecView NameChildrenView;
@@ -582,26 +580,22 @@ public:
     void ClearInstanceable();
 
     /// @}
-    /// \name Payload
+    /// \name Payloads
     /// @{
 
-    /// Returns this prim spec's payload.
+    /// Returns a proxy for the prim's payloads.
     ///
-    /// The default value for payload is an empty \c SdfPayload.
+    /// Payloads for this prim may be modified through the proxy.
     SDF_API
-    SdfPayload GetPayload() const;
+    SdfPayloadsProxy GetPayloadList() const;
 
-    /// Sets this prim spec's payload.
+    /// Returns true if this prim has payloads set.
     SDF_API
-    void SetPayload(const SdfPayload& value);
+    bool HasPayloads() const;
 
-    /// Returns true if this prim spec has an opinion about payload.
+    /// Clears the payloads for this prim.
     SDF_API
-    bool HasPayload() const;
-
-    /// Remove the payload opinion from this prim spec if there is one.
-    SDF_API
-    void ClearPayload();
+    void ClearPayloadList();
 
     /// @}
     /// \name Inherits
@@ -748,14 +742,6 @@ private:
     // algorithm programming.  Mutating methods on SdfPrimSpec use
     // this function as write access validation.
     bool _ValidateEdit(const TfToken& key) const;
-
-    // Returns a list editor object for name children order list edits.
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-    _GetNameChildrenOrderEditor() const;
-
-    // Returns a list editor object for property order list edits.
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-    _GetPropertyOrderEditor() const;
 
 private:
     static SdfPrimSpecHandle

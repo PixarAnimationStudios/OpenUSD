@@ -45,6 +45,7 @@ public:
 
     virtual ~HdSt_BasisCurvesTopology();
 
+    HdBufferSourceSharedPtr GetPointsIndexBuilderComputation();
     HdBufferSourceSharedPtr GetIndexBuilderComputation(bool forceLines);
 
 private:

@@ -54,21 +54,26 @@ class Hd_DrawTask final : public HdTask
 public:
     Hd_DrawTask(HdRenderPassSharedPtr const &renderPass,
                 HdRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     {
     }
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(renderIndex->GetResourceRegistry());
+    }
+
+    virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState);
@@ -78,6 +83,10 @@ protected:
 private:
     HdRenderPassSharedPtr _renderPass;
     HdRenderPassStateSharedPtr _renderPassState;
+
+    Hd_DrawTask() = delete;
+    Hd_DrawTask(const Hd_DrawTask &) = delete;
+    Hd_DrawTask &operator =(const Hd_DrawTask &) = delete;
 };
 
 template <typename T>
@@ -163,7 +172,7 @@ Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
     HdTaskSharedPtrVector tasks = {
         boost::make_shared<Hd_DrawTask>(renderPass, _renderPassState)
     };
-    _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 }
 
 void

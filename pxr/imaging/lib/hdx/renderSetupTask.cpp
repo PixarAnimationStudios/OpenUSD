@@ -47,24 +47,62 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdSceneTask(delegate, id)
+    : HdTask(id)
+    , _renderPassState()
     , _colorRenderPassShader()
     , _idRenderPassShader()
     , _viewport()
     , _cameraId()
-    , _renderTags()    
+    , _renderTags()
+    , _aovBindings()
 {
     _colorRenderPassShader.reset(
         new HdStRenderPassShader(HdxPackageRenderPassShader()));
     _idRenderPassShader.reset(
         new HdStRenderPassShader(HdxPackageRenderPassIdShader()));
+}
 
-    HdRenderIndex &index = delegate->GetRenderIndex();
-    _renderPassState = index.GetRenderDelegate()->CreateRenderPassState();
+HdxRenderSetupTask::~HdxRenderSetupTask()
+{
 }
 
 void
-HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
+HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
+                         HdTaskContext* ctx,
+                         HdDirtyBits* dirtyBits)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
+        HdxRenderTaskParams params;
+
+        if (!_GetTaskParams(delegate, &params)) {
+            return;
+        }
+
+        SyncParams(delegate, params);
+    }
+
+    *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
+                            HdRenderIndex* renderIndex)
+{
+
+    PrepareAovBindings(renderIndex);
+    PrepareCamera(renderIndex);
+
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
+
+    renderPassState->Prepare(renderIndex->GetResourceRegistry());
+}
+
+void
+HdxRenderSetupTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -72,36 +110,6 @@ HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
     // set raster state to TaskContext
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
     (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
-}
-
-void
-HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
-    if (bits & HdChangeTracker::DirtyParams) {
-        HdxRenderTaskParams params;
-
-        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
-            return;
-        }
-
-        SyncParams(params);
-    }
-
-    SyncAttachments();
-    SyncCamera();
-    SyncRenderPassState();
-}
-
-void
-HdxRenderSetupTask::SyncRenderPassState()
-{
-    _renderPassState->Sync(
-        GetDelegate()->GetRenderIndex().GetResourceRegistry());
 }
 
 void
@@ -124,82 +132,93 @@ HdxRenderSetupTask::_SetHdStRenderPassState(HdxRenderTaskParams const &params,
 }
 
 void
-HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
+HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
+                               HdxRenderTaskParams const &params)
 {
-    _renderPassState->SetOverrideColor(params.overrideColor);
-    _renderPassState->SetWireframeColor(params.wireframeColor);
-    _renderPassState->SetMaskColor(params.maskColor);
-    _renderPassState->SetIndicatorColor(params.indicatorColor);
-    _renderPassState->SetPointColor(params.pointColor);
-    _renderPassState->SetPointSize(params.pointSize);
-    _renderPassState->SetPointSelectedSize(params.pointSelectedSize);
-    _renderPassState->SetLightingEnabled(params.enableLighting);
-    _renderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _renderPassState->SetTessLevel(params.tessLevel);
-    _renderPassState->SetDrawingRange(params.drawingRange);
-    _renderPassState->SetCullStyle(params.cullStyle);
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(&renderIndex);
 
-    // XXX TODO: Handle params.geomStyle
-    // XXX TODO: Handle params.complexity
-    // XXX TODO: Handle params visability (hullVisibility, surfaceVisibility)
+    renderPassState->SetOverrideColor(params.overrideColor);
+    renderPassState->SetWireframeColor(params.wireframeColor);
+    renderPassState->SetMaskColor(params.maskColor);
+    renderPassState->SetIndicatorColor(params.indicatorColor);
+    renderPassState->SetPointColor(params.pointColor);
+    renderPassState->SetPointSize(params.pointSize);
+    renderPassState->SetPointSelectedSize(params.pointSelectedSize);
+    renderPassState->SetLightingEnabled(params.enableLighting);
+    renderPassState->SetAlphaThreshold(params.alphaThreshold);
+    renderPassState->SetCullStyle(params.cullStyle);
 
     // depth bias
-    _renderPassState->SetDepthBiasUseDefault(params.depthBiasUseDefault);
-    _renderPassState->SetDepthBiasEnabled(params.depthBiasEnable);
-    _renderPassState->SetDepthBias(params.depthBiasConstantFactor,
-                               params.depthBiasSlopeFactor);
-    _renderPassState->SetDepthFunc(params.depthFunc);
+    renderPassState->SetDepthBiasUseDefault(params.depthBiasUseDefault);
+    renderPassState->SetDepthBiasEnabled(params.depthBiasEnable);
+    renderPassState->SetDepthBias(params.depthBiasConstantFactor,
+                                  params.depthBiasSlopeFactor);
+    renderPassState->SetDepthFunc(params.depthFunc);
+    renderPassState->SetEnableDepthMask(params.depthMaskEnable);
 
     // stencil
-    _renderPassState->SetStencilEnabled(params.stencilEnable);
-    _renderPassState->SetStencil(params.stencilFunc, params.stencilRef,
+    renderPassState->SetStencilEnabled(params.stencilEnable);
+    renderPassState->SetStencil(params.stencilFunc, params.stencilRef,
             params.stencilMask, params.stencilFailOp, params.stencilZFailOp,
             params.stencilZPassOp);
+
+    // blend
+    renderPassState->SetBlendEnabled(params.blendEnable);
+    renderPassState->SetBlend(
+            params.blendColorOp,
+            params.blendColorSrcFactor, params.blendColorDstFactor,
+            params.blendAlphaOp,
+            params.blendAlphaSrcFactor, params.blendAlphaDstFactor);
+    renderPassState->SetBlendConstantColor(params.blendConstantColor);
     
     // alpha to coverage
     // XXX:  Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
     // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
-    _renderPassState->SetAlphaToCoverageUseDefault(
-        GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
-    _renderPassState->SetAlphaToCoverageEnabled(
+    renderPassState->SetAlphaToCoverageUseDefault(
+        delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
+    renderPassState->SetAlphaToCoverageEnabled(
+        params.enableAlphaToCoverage &&
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
     _renderTags = params.renderTags;
     _cameraId = params.camera;
-    _attachments = params.attachments;
+    _aovBindings = params.aovBindings;
 
     if (HdStRenderPassState* extendedState =
-            dynamic_cast<HdStRenderPassState*>(_renderPassState.get())) {
+            dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
         _SetHdStRenderPassState(params, extendedState);
     }
 }
 
 void
-HdxRenderSetupTask::SyncAttachments()
+HdxRenderSetupTask::PrepareAovBindings(HdRenderIndex* renderIndex)
 {
-    // Walk the attachments, resolving the render index references as they're
+    // Walk the aov bindings, resolving the render index references as they're
     // encountered.
-    const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-    HdRenderPassAttachmentVector attachments = _attachments;
-    for (size_t i = 0; i < attachments.size(); ++i)
+    HdRenderPassAovBindingVector aovBindings = _aovBindings;
+    for (size_t i = 0; i < aovBindings.size(); ++i)
     {
-        if (attachments[i].renderBuffer == nullptr) {
-            attachments[i].renderBuffer = static_cast<HdRenderBuffer*>(
-                renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer,
-                attachments[i].renderBufferId));
+        if (aovBindings[i].renderBuffer == nullptr) {
+            aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
+                renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
+                aovBindings[i].renderBufferId));
         }
     }
-    _renderPassState->SetAttachments(attachments);
+
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
+    renderPassState->SetAovBindings(aovBindings);
 }
 
 void
-HdxRenderSetupTask::SyncCamera()
+HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 {
-    const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
     const HdCamera *camera = static_cast<const HdCamera *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
+        renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
 
     if (camera) {
         VtValue modelViewVt  = camera->Get(HdCameraTokens->worldToViewMatrix);
@@ -223,8 +242,10 @@ HdxRenderSetupTask::SyncCamera()
             vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 
         // sync render pass state
-        _renderPassState->SetCamera(modelView, projection, _viewport);
-        _renderPassState->SetClipPlanes(clipPlanes);
+        HdRenderPassStateSharedPtr &renderPassState =
+                _GetRenderPassState(renderIndex);
+        renderPassState->SetCamera(modelView, projection, _viewport);
+        renderPassState->SetClipPlanes(clipPlanes);
     }
 }
 
@@ -237,10 +258,22 @@ HdxRenderSetupTask::_CreateOverrideShader()
         std::lock_guard<std::mutex> lock(shaderCreateLock);
         if (!_overrideShader) {
             _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                HioGlslfxSharedPtr(new HioGlslfx(
                     HdStPackageFallbackSurfaceShader()))));
         }
     }
+}
+
+
+HdRenderPassStateSharedPtr &
+HdxRenderSetupTask::_GetRenderPassState(HdRenderIndex* renderIndex)
+{
+    if (!_renderPassState) {
+        HdRenderDelegate *renderDelegate = renderIndex->GetRenderDelegate();
+        _renderPassState = renderDelegate->CreateRenderPassState();
+    }
+
+    return _renderPassState;
 }
 
 // --------------------------------------------------------------------------- //
@@ -260,21 +293,32 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.enableLighting << " "
         << pv.enableIdRender << " "
         << pv.alphaThreshold << " "
-        << pv.tessLevel << " "
-        << pv.drawingRange << " "
         << pv.enableSceneMaterials << " "
+        << pv.depthBiasUseDefault << " "
         << pv.depthBiasEnable << " "
         << pv.depthBiasConstantFactor << " "
         << pv.depthBiasSlopeFactor << " "
         << pv.depthFunc << " "
+        << pv.stencilFunc << " "
+        << pv.stencilRef << " "
+        << pv.stencilMask << " "
+        << pv.stencilFailOp << " "
+        << pv.stencilZFailOp << " "
+        << pv.stencilZPassOp << " "
+        << pv.stencilEnable << " "
+        << pv.blendColorOp << " "
+        << pv.blendColorSrcFactor << " "
+        << pv.blendColorDstFactor << " "
+        << pv.blendAlphaOp << " "
+        << pv.blendAlphaSrcFactor << " "
+        << pv.blendAlphaDstFactor << " "
+        << pv.blendConstantColor << " "
+        << pv.blendEnable << " "
+        << pv.enableAlphaToCoverage << ""
         << pv.cullStyle << " "
-        << pv.geomStyle << " "
-        << pv.complexity << " "
-        << pv.hullVisibility << " "
-        << pv.surfaceVisibility << " "
         << pv.camera << " "
         << pv.viewport << " ";
-        for (auto const& a : pv.attachments) {
+        for (auto const& a : pv.aovBindings) {
             out << a << " ";
         }
         for (auto const& rt : pv.renderTags) {
@@ -295,19 +339,30 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.enableLighting          == rhs.enableLighting          &&
            lhs.enableIdRender          == rhs.enableIdRender          &&
            lhs.alphaThreshold          == rhs.alphaThreshold          &&
-           lhs.tessLevel               == rhs.tessLevel               &&
-           lhs.drawingRange            == rhs.drawingRange            &&
            lhs.enableSceneMaterials    == rhs.enableSceneMaterials    &&
+           lhs.depthBiasUseDefault     == rhs.depthBiasUseDefault     &&
            lhs.depthBiasEnable         == rhs.depthBiasEnable         &&
            lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor &&
            lhs.depthBiasSlopeFactor    == rhs.depthBiasSlopeFactor    &&
            lhs.depthFunc               == rhs.depthFunc               &&
+           lhs.stencilFunc             == rhs.stencilFunc             &&
+           lhs.stencilRef              == rhs.stencilRef              &&
+           lhs.stencilMask             == rhs.stencilMask             &&
+           lhs.stencilFailOp           == rhs.stencilFailOp           &&
+           lhs.stencilZFailOp          == rhs.stencilZFailOp          &&
+           lhs.stencilZPassOp          == rhs.stencilZPassOp          &&
+           lhs.stencilEnable           == rhs.stencilEnable           &&
+           lhs.blendColorOp            == rhs.blendColorOp            &&
+           lhs.blendColorSrcFactor     == rhs.blendColorSrcFactor     &&
+           lhs.blendColorDstFactor     == rhs.blendColorDstFactor     &&
+           lhs.blendAlphaOp            == rhs.blendAlphaOp            &&
+           lhs.blendAlphaSrcFactor     == rhs.blendAlphaSrcFactor     &&
+           lhs.blendAlphaDstFactor     == rhs.blendAlphaDstFactor     &&
+           lhs.blendConstantColor      == rhs.blendConstantColor      &&
+           lhs.blendEnable             == rhs.blendEnable             &&
+           lhs.enableAlphaToCoverage   == rhs.enableAlphaToCoverage   &&
            lhs.cullStyle               == rhs.cullStyle               &&
-           lhs.geomStyle               == rhs.geomStyle               &&
-           lhs.complexity              == rhs.complexity              &&
-           lhs.hullVisibility          == rhs.hullVisibility          &&
-           lhs.surfaceVisibility       == rhs.surfaceVisibility       &&
-           lhs.attachments             == rhs.attachments             &&
+           lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&
            lhs.viewport                == rhs.viewport                &&
            lhs.renderTags              == rhs.renderTags;

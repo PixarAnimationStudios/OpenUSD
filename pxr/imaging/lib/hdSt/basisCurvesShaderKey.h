@@ -55,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdSt_BasisCurvesShaderKey
 {
     enum DrawStyle{
+        POINTS,       // Draws only the control vertices.
         WIRE,         // Draws as lines or isolines, tessellated along length
         RIBBON,       // Draws as patch, tessellated along length only
         HALFTUBE      // Draws as patch, displaced into a half tube shape

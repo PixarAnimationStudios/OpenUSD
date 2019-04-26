@@ -23,18 +23,18 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from pxr import UsdMaya
+
+from pxr import Gf
+from pxr import Tf
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as OM
+
 import os
 import unittest
 
-from maya import cmds
-from maya.api import OpenMaya as OM
-from maya import standalone
-
-from pxr import Gf, Tf
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
 
 class testUsdImportUVSets(unittest.TestCase):
 

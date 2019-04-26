@@ -135,7 +135,7 @@ public:
 protected:
     /// Returns whether the underlying xformable is compatible with the API.
     USDGEOM_API
-    virtual bool _IsCompatible() const override;
+    bool _IsCompatible() const override;
 
 public:
 

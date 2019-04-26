@@ -43,16 +43,8 @@ UsdAttributeQuery::UsdAttributeQuery(
 
 UsdAttributeQuery::UsdAttributeQuery(
     const UsdPrim& prim, const TfToken& attrName)
+    : UsdAttributeQuery(prim.GetAttribute(attrName))
 {
-    UsdAttribute attr = prim.GetAttribute(attrName);
-    if (!attr) {
-        TF_CODING_ERROR(
-            "Invalid attribute '%s' on prim <%s>",
-            attrName.GetText(), prim.GetPath().GetString().c_str());
-        return;
-    }
-
-    _Initialize(attr);
 }
 
 std::vector<UsdAttributeQuery>
@@ -77,13 +69,10 @@ UsdAttributeQuery::_Initialize(const UsdAttribute& attr)
 {
     TRACE_FUNCTION();
 
-    if (!attr) {
-        TF_CODING_ERROR("Invalid attribute");
-        return;
+    if (attr) {
+        const UsdStage* stage = attr._GetStage();
+        stage->_GetResolveInfo(attr, &_resolveInfo);
     }
-
-    const UsdStage* stage = attr._GetStage();
-    stage->_GetResolveInfo(attr, &_resolveInfo);
 
     _attr = attr;
 }
@@ -245,6 +234,12 @@ UsdAttributeQuery::HasAuthoredValueOpinion() const
     return _resolveInfo.HasAuthoredValueOpinion();
 }
 
+bool 
+UsdAttributeQuery::HasAuthoredValue() const
+{
+    return _resolveInfo.HasAuthoredValue();
+}
+
 bool
 UsdAttributeQuery::HasFallbackValue() const
 {
@@ -265,9 +260,9 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template USD_API bool UsdAttributeQuery::_Get(                      \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*, UsdTimeCode) const;         \
+        SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttributeQuery::_Get(                      \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*, UsdTimeCode) const;
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET

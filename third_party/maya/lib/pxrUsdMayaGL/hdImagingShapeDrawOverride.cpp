@@ -26,19 +26,25 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/debugCodes.h"
+#include "pxrUsdMayaGL/instancerImager.h"
 #include "pxrUsdMayaGL/userData.h"
 
 #include "usdMaya/hdImagingShape.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <maya/MBoundingBox.h>
+#include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MObject.h>
+#include <maya/MPlug.h>
 #include <maya/MPxDrawOverride.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
@@ -62,6 +68,7 @@ PxrMayaHdImagingShapeDrawOverride::creator(const MObject& obj)
 /* virtual */
 PxrMayaHdImagingShapeDrawOverride::~PxrMayaHdImagingShapeDrawOverride()
 {
+    UsdMayaGL_InstancerImager::GetInstance().RemoveShapeAdapters(/*vp2*/ true);
 }
 
 /* virtual */
@@ -128,7 +135,7 @@ MUserData*
 PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */,
-        const MHWRender::MFrameContext& /* frameContext */,
+        const MHWRender::MFrameContext& frameContext,
         MUserData* oldData)
 {
     const PxrMayaHdImagingShape* imagingShape =
@@ -140,6 +147,36 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "PxrMayaHdImagingShapeDrawOverride::prepareForDraw(), objPath: %s\n",
         objPath.fullPathName().asChar());
+
+    // The HdImagingShape is very rarely marked dirty, but one of the things
+    // that does so is changing the selection resolution, so we grab the value
+    // from the shape here and use it to set the resolution in the batch
+    // renderer. The selection resolution should then be set appropriately for
+    // subsequent selections.
+    MStatus status;
+    const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
+    if (status == MS::kSuccess) {
+        const MPlug selectionResolutionPlug =
+            depNodeFn.findPlug(
+                PxrMayaHdImagingShape::selectionResolutionAttr,
+                &status);
+        if (status == MS::kSuccess) {
+            const short selectionResolution =
+#if MAYA_API_VERSION >= 20180000
+                selectionResolutionPlug.asShort(&status);
+#else
+                selectionResolutionPlug.asShort(MDGContext::fsNormal, &status);
+#endif
+            if (status == MS::kSuccess) {
+                UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
+                    GfVec2i(selectionResolution));
+            }
+        }
+    }
+
+    // Sync any instancers that need Hydra drawing.
+    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(
+            frameContext.getDisplayStyle());
 
     PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
     if (!newData) {

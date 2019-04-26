@@ -27,8 +27,8 @@
 /// \file usdImaging/openvdbAssetAdapter.h
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/fieldAdapter.h"
+#include "pxr/usdImaging/usdVolImaging/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,10 +47,10 @@ public:
         : UsdImagingFieldAdapter()
     {}
 
-    USDIMAGING_API
+    USDVOLIMAGING_API
     virtual ~UsdImagingOpenVDBAssetAdapter();
 
-    USDIMAGING_API
+    USDVOLIMAGING_API
     virtual TfToken GetPrimTypeToken() const;
 };
 

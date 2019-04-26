@@ -93,7 +93,6 @@ public:
         _instanceIndex(4),
         _faceVaryingPrimvar(5),
         _topologyVisibility(6),
-        _instancePrimvarNumLevels(0),
         _instancePrimvar(Unassigned) {
     }
 
@@ -112,21 +111,12 @@ public:
     int GetTopologyVisibilityIndex() const    { return _topologyVisibility; }
     void SetTopologyVisibilityIndex(int slot) { _topologyVisibility = slot; }
 
-    // instance primvars
+    // instance primvars take up a range of slots.
+    void SetInstancePrimvarBaseIndex(int slot) { _instancePrimvar = slot; }
     int GetInstancePrimvarIndex(int level) const {
+        TF_VERIFY(_instancePrimvar != Unassigned);
         return _instancePrimvar + level;
     }
-    void SetInstancePrimvarIndex(int level, int slot) {
-        if (_instancePrimvar == Unassigned) {
-            _instancePrimvar = slot - level;
-        } else {
-            TF_VERIFY(_instancePrimvar == (slot - level));
-        }
-        // update num levels
-        _instancePrimvarNumLevels
-            = std::max(int8_t(level+1), _instancePrimvarNumLevels);
-    }
-    int GetInstancePrimvarNumLevels() const { return _instancePrimvarNumLevels; }
 
 private:
     int8_t _constantPrimvar;
@@ -136,7 +126,6 @@ private:
     int8_t _instanceIndex;
     int8_t _faceVaryingPrimvar;
     int8_t _topologyVisibility;
-    int8_t _instancePrimvarNumLevels;
     int8_t _instancePrimvar;
 };
 

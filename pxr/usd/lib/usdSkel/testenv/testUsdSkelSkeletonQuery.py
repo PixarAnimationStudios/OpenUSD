@@ -101,10 +101,7 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         animXforms = {i:[_RandomXf() for _ in xrange(len(animOrder))]
                       for i in xrange(numFrames)}
         for frame,xforms in animXforms.items():
-            t,r,s = UsdSkel.DecomposeTransforms(Vt.Matrix4dArray(xforms))
-            anim.GetTranslationsAttr().Set(t, frame)
-            anim.GetRotationsAttr().Set(r, frame)
-            anim.GetScalesAttr().Set(s, frame)
+            anim.SetTransforms(Vt.Matrix4dArray(xforms), frame)
 
         #
         # Constuct query and start testing
@@ -154,6 +151,14 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
                  for i,expectedSkelXform in enumerate(expectedSkelXforms)])
             computedWorldXforms = query.ComputeJointWorldTransforms(xfCache)
             self.assertArrayIsClose(computedWorldXforms, expectedWorldXforms)
+
+            # Joint rest-relative xforms.
+            expectedRestRelXforms = Vt.Matrix4dArray(
+                [localXf*restXf.GetInverse()
+                 for localXf,restXf in zip(expectedLocalXforms, restXforms)])
+            computedRestRelXforms = query.ComputeJointRestRelativeTransforms(t)
+            self.assertArrayIsClose(computedRestRelXforms,
+                                    expectedRestRelXforms)
 
             #
             # Rest xforms

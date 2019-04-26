@@ -46,6 +46,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationUtils
         field
         flatNormals
         geomSubset
@@ -57,7 +58,6 @@ pxr_library(hd
         mesh
         meshTopology
         meshUtil
-        patchIndex
         perfLog
         points
         primGather

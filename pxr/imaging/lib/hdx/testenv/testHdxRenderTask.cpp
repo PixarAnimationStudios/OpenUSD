@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -52,6 +53,8 @@ int main(int argc, char *argv[])
     glViewport(0, 0, 256, 256);
     // wrap into GlfGLContext so that GlfDrawTarget works
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
+    GlfContextCaps::InitInstance();
+
 
     HdEngine engine;
     HdStRenderDelegate renderDelegate;
@@ -87,7 +90,7 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color1.png");
 
@@ -101,7 +104,7 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color2.png");
 
@@ -117,7 +120,7 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color3.png");
 

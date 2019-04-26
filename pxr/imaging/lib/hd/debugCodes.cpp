@@ -50,35 +50,19 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_COUNTER_CHANGED,
         "Report values when counters change");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DIRTY_ALL_COLLECTIONS,
+        "Reports diagnostics when all collections are marked dirty");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DIRTY_LIST,
         "Reports dirty list state changes");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_FRUSTUM_CULLING,
-        "Disable view frustum culling");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_MULTITHREADED_CULLING,
-        "Force the use of the single threaded version of frustum culling");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_MULTITHREADED_RPRIM_SYNC,
         "Run RPrim sync on a single thread");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_TINY_PRIM_CULLING,
-        "Disable tiny prim culling");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAW_BATCH,
-        "Reports diagnostics for draw batches");
-
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEM_DRAWN,
         "Report each draw item as it is drawn");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEM_CLEANED,
-        "Report when draw items are cleaned");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEMS_CULLED,
         "Report the number of draw items culled in each render pass");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_GLSLFX_CONFIG,
-        "Print composed GLSLFX configuration");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCE,
-        "Print generated shader code");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_BINARY,
-        "Write out compiled GLSL shader binary");
-
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_ENGINE_PHASE_INFO,
         "Report the execution phase of the Hydra engine");
 
@@ -88,6 +72,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Report when ExtComputations are removed");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_UPDATED,
         "Report when ExtComputations are updated");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_EXECUTION,
+        "Report when ExtComputations are executed");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_FREEZE_CULL_FRUSTUM,
         "Freeze the frustum used for culling at it's current value");
@@ -103,6 +89,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_MDI,
         "Report info related to multi-draw-indirect batches");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RENDER_SETTINGS,
+        "Report render settings changes");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_ADDED,
         "Report when rprims are added");

@@ -319,7 +319,8 @@ class TestUsdStagePopulationMask(unittest.TestCase):
 
         root = Usd.Stage.CreateInMemory()
         cubes = root.DefinePrim('/Cubes')
-        cubes.SetPayload(payload.GetRootLayer().identifier, '/CubesModel')
+        cubes.GetPayloads().AddPayload(payload.GetRootLayer().identifier, 
+                                       '/CubesModel')
 
         testStage = Usd.Stage.OpenMasked(
             root.GetRootLayer(),

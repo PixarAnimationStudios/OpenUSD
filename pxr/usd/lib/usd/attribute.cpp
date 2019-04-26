@@ -33,7 +33,6 @@
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/usd/pcp/targetIndex.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -178,6 +177,14 @@ UsdAttribute::HasAuthoredValueOpinion() const
     UsdResolveInfo resolveInfo;
     _GetStage()->_GetResolveInfo(*this, &resolveInfo);
     return resolveInfo.HasAuthoredValueOpinion();
+}
+
+bool 
+UsdAttribute::HasAuthoredValue() const
+{
+    UsdResolveInfo resolveInfo;
+    _GetStage()->_GetResolveInfo(*this, &resolveInfo);
+    return resolveInfo.HasAuthoredValue();
 }
 
 bool 
@@ -372,9 +379,9 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template USD_API bool UsdAttribute::_Get(                           \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*, UsdTimeCode) const;         \
+        SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttribute::_Get(                           \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*, UsdTimeCode) const;
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
@@ -559,76 +566,7 @@ bool
 UsdAttribute::GetConnections(SdfPathVector *sources) const
 {
     TRACE_FUNCTION();
-
-    UsdStage *stage = _GetStage();
-    PcpErrorVector pcpErrors;
-    std::vector<std::string> otherErrors;
-    PcpTargetIndex targetIndex;
-    {
-        // Our intention is that the following code requires read-only
-        // access to the PcpCache, so use a const-ref.
-        const PcpCache& pcpCache(*stage->_GetPcpCache());
-        // In USD mode, Pcp does not cache property indexes, so we
-        // compute one here ourselves and use that.  First, we need
-        // to get the prim index of the owning prim.
-        const PcpPrimIndex &primIndex = _Prim()->GetPrimIndex();
-        // PERFORMANCE: Here we can't avoid constructing the full property path
-        // without changing the Pcp API.  We're about to do serious
-        // composition/indexing, though, so the added expense may be neglible.
-        const PcpSite propSite(pcpCache.GetLayerStackIdentifier(), GetPath());
-        PcpPropertyIndex propIndex;
-        PcpBuildPrimPropertyIndex(propSite.path, pcpCache, primIndex,
-                                  &propIndex, &pcpErrors);
-        PcpBuildTargetIndex(propSite, propIndex, SdfSpecTypeAttribute,
-                            &targetIndex, &pcpErrors);
-    }
-
-    sources->swap(targetIndex.paths);
-    if (!sources->empty() && _Prim()->IsInMaster()) {
-        Usd_PrimDataConstPtr master = get_pointer(_Prim());
-        while (!master->IsMaster()) { 
-            master = master->GetParent();
-        }
-
-        // Paths that point to an object under the master's source prim index
-        // are internal to the master and need to be translated to either
-        // the master or instance we're currently looking at.
-        const SdfPath& masterSourcePrimIndexPath = 
-            master->GetSourcePrimIndex().GetPath();
-
-        if (GetPrim().IsInMaster()) {
-            // Translate any paths that point to an object at or under the
-            // source prim index to our master.
-            for (SdfPath& path : *sources) {
-                path = path.ReplacePrefix(
-                    masterSourcePrimIndexPath, master->GetPath());
-            }
-        }
-        else if (GetPrim().IsInstanceProxy()) {
-            // Translate any paths that point to an object at or under the
-            // source prim index to our instance.
-            UsdPrim instance = GetPrim();
-            while (!instance.IsInstance()) { 
-                instance = instance.GetParent();
-            }
-
-            for (SdfPath &path : *sources) {
-                path = path.ReplacePrefix(
-                    masterSourcePrimIndexPath, instance.GetPath());
-            }
-        }
-    }
-
-    // TODO: handle errors
-    const bool isClean = pcpErrors.empty() && otherErrors.empty();
-    if (!isClean) {
-        stage->_ReportErrors(
-            pcpErrors, otherErrors,
-            TfStringPrintf("getting connections for attribute <%s>",
-                           GetPath().GetText()));
-    }
-
-    return isClean;
+    return _GetTargets(SdfSpecTypeAttribute, sources);
 }
 
 bool

@@ -23,21 +23,18 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
+from pxr import UsdMaya
 
 from pxr import Gf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import UsdShade
 
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
-
 from maya import cmds
 from maya import standalone
+
+import os
+import unittest
 
 
 class testUsdExportShadingModeDisplayColor(unittest.TestCase):
@@ -55,7 +52,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         usdFilePath = os.path.abspath('RedCube.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='displayColor')
+            shadingMode='displayColor', materialsScopeName='Materials')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -91,7 +88,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         material = UsdShade.Material.GetBoundMaterial(cubePrim)
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
-        self.assertEqual(materialPath, '/RedCube/Looks/RedLambertSG')
+        self.assertEqual(materialPath, '/RedCube/Materials/RedLambertSG')
 
         materialInputs = material.GetInputs()
         self.assertEqual(len(materialInputs), 3)

@@ -25,8 +25,9 @@
 from qt import QtCore
 from pxr import UsdGeom, Sdf
 
-from common import (RenderModes, PickModes, SelectionHighlightModes,
-    CameraMaskModes, Complexities, PrintWarning)
+from common import (RenderModes, ColorCorrectionModes, PickModes, 
+                    SelectionHighlightModes, CameraMaskModes, Complexities, 
+                    PrintWarning)
 
 import settings2
 from settings2 import StateSource
@@ -98,6 +99,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
+        self._colorCorrectionMode = self.stateProperty("colorCorrectionMode", default=ColorCorrectionModes.SRGB)
         self._pickMode = self.stateProperty("pickMode", default=PickModes.PRIMS)
 
         # We need to store the trinary selHighlightMode state here,
@@ -113,6 +115,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._fillLightEnabled = self.stateProperty("fillLightEnabled", default=True)
         self._backLightEnabled = self.stateProperty("backLightEnabled", default=True)
         self._clearColorText = self.stateProperty("backgroundColor", default="Grey (Dark)")
+        self._autoComputeClippingPlanes = self.stateProperty("autoComputeClippingPlanes", default=False)
         self._showBBoxPlayback = self.stateProperty("showBBoxesDuringPlayback", default=False)
         self._showBBoxes = self.stateProperty("showBBoxes", default=True)
         self._showAABBox = self.stateProperty("showAABBox", default=True)
@@ -155,6 +158,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["defaultMaterialSpecular"] = self._defaultMaterialSpecular
         state["redrawOnScrub"] = self._redrawOnScrub
         state["renderMode"] = self._renderMode
+        state["colorCorrectionMode"] = self._colorCorrectionMode
         state["pickMode"] = self._pickMode
         state["selectionHighlightMode"] = self._selHighlightMode
         state["highlightColor"] = self._highlightColorName
@@ -163,6 +167,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["fillLightEnabled"] = self._fillLightEnabled
         state["backLightEnabled"] = self._backLightEnabled
         state["backgroundColor"] = self._clearColorText
+        state["autoComputeClippingPlanes"] = self._autoComputeClippingPlanes
         state["showBBoxesDuringPlayback"] = self._showBBoxPlayback
         state["showBBoxes"] = self._showBBoxes
         state["showAABBox"] = self._showAABBox
@@ -261,6 +266,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._renderMode = value
 
     @property
+    def colorCorrectionMode(self):
+        return self._colorCorrectionMode
+
+    @colorCorrectionMode.setter
+    @visibleViewSetting
+    def colorCorrectionMode(self, value):
+        self._colorCorrectionMode = value
+
+    @property
     def pickMode(self):
         return self._pickMode
 
@@ -295,6 +309,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def showBBoxes(self, value):
         self._showBBoxes = value
+
+    @property
+    def autoComputeClippingPlanes(self):
+        return self._autoComputeClippingPlanes
+
+    @autoComputeClippingPlanes.setter
+    @visibleViewSetting
+    def autoComputeClippingPlanes(self, value):
+        self._autoComputeClippingPlanes = value
 
     @property
     def showBBoxPlayback(self):

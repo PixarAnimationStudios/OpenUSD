@@ -68,31 +68,45 @@ static bool _IsEnabledVisCache() {
     return _v;
 }
 
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_PURPOSE_CACHE, 1, 
+                      "Enable a cache for purpose.");
+static bool _IsEnabledPurposeCache() {
+    static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_PURPOSE_CACHE) == 1;
+    return _v;
+}
+
+
 UsdImagingPrimAdapter::~UsdImagingPrimAdapter() 
 {
 }
 
+/*static*/
+bool
+UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
+{
+    // Skip population of non-imageable prims during population traversal
+    // (although they can still be populated by reference).
+    return (!prim.IsA<UsdGeomImageable>() && !prim.GetTypeName().IsEmpty());
+}
+
 /*virtual*/
 bool
-UsdImagingPrimAdapter::ShouldCullChildren(UsdPrim const&)
+UsdImagingPrimAdapter::ShouldCullChildren() const
 {
-    // By default, always continue traversal.
     return false;
 }
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::IsInstancerAdapter()
+UsdImagingPrimAdapter::IsInstancerAdapter() const
 {
-    // By default, opt-out of nested-instancing adapter resolution.
     return false;
 }
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::IsPopulatedIndirectly()
+UsdImagingPrimAdapter::CanPopulateMaster() const
 {
-    // By default, do not delay population.
     return false;
 }
 
@@ -171,6 +185,14 @@ UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
 
 /*virtual*/
 void
+UsdImagingPrimAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
 UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
                                           SdfPath const& usdPath,
                                           UsdImagingIndexProxy* index)
@@ -190,6 +212,13 @@ void
 UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
                                          SdfPath const& usdPath,
                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::InvokeComputation(SdfPath const& computationPath,
+                                         HdExtComputationContext* context)
 {
 }
 
@@ -226,12 +255,9 @@ UsdImagingPrimAdapter::SamplePrimvar(
 
     // Try as USD primvar.
     UsdGeomPrimvarsAPI primvars(usdPrim);
-    UsdGeomPrimvar pv = primvars.GetPrimvar(key);
-    if (!pv) {
-        // Try as inherited primvar.
-        pv = primvars.FindInheritedPrimvar(key);
-    }
-    if (pv) {
+    UsdGeomPrimvar pv = primvars.FindPrimvarWithInheritance(key);
+
+    if (pv && pv.HasValue()) {
         if (pv.ValueMightBeTimeVarying()) {
             size_t numSamples = std::min(maxNumSamples,
                                          configuredSampleTimes.size());
@@ -699,6 +725,19 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
     } else {
         return UsdImaging_VisStrategy::ComputeVisibility(prim, time)
                     == UsdGeomTokens->inherited;
+    }
+}
+
+TfToken 
+UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim) const
+{
+    HD_TRACE_FUNCTION();
+
+    if (_IsEnabledPurposeCache()) {
+        return _delegate->_purposeCache.GetValue(prim);
+
+    } else {
+        return UsdImaging_PurposeStrategy::ComputePurpose(prim);
     }
 }
 

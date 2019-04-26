@@ -57,6 +57,7 @@ class Usd_PrimData;
 
 class UsdAttribute;
 class UsdRelationship;
+class UsdPayloads;
 class UsdReferences;
 class UsdSchemaBase;
 class UsdAPISchemaBase;
@@ -189,21 +190,31 @@ public:
 
     /// Return true if this prim is active, meaning neither it nor any of its
     /// ancestors have active=false.  Return false otherwise.
+    ///
+    /// See \ref Usd_ActiveInactive for what it means for a prim to be active.
     bool IsActive() const { return _Prim()->IsActive(); }
 
     /// Author 'active' metadata for this prim at the current EditTarget.
+    ///
+    /// See \ref Usd_ActiveInactive for the effects of activating or deactivating
+    /// a prim.
     bool SetActive(bool active) const {
         return SetMetadata(SdfFieldKeys->Active, active);
     }
 
     /// Remove the authored 'active' opinion at the current EditTarget.  Do
     /// nothing if there is no authored opinion.
+    ///
+    /// See \ref Usd_ActiveInactive for the effects of activating or deactivating
+    /// a prim.
     bool ClearActive() const {
         return ClearMetadata(SdfFieldKeys->Active);
     }
 
     /// Return true if this prim has an authored opinion for 'active', false
     /// otherwise.
+    ///
+    /// See \ref Usd_ActiveInactive for what it means for a prim to be active.
     bool HasAuthoredActive() const {
         return HasAuthoredMetadata(SdfFieldKeys->Active);
     }
@@ -420,10 +431,6 @@ public:
     bool HasProperty(const TfToken &propName) const;
 
 private:
-    friend bool Usd_PrimIsA(const UsdPrim&, const TfType& schemaType);
-    friend bool Usd_PrimHasAPI(const UsdPrim &, const TfType& schemaType,
-                               const TfToken &instanceName);
-
     // The non-templated implementation of UsdPrim::IsA using the
     // TfType system. \p validateSchemaType is provided for python clients
     // because they can't use compile time assertions on the input type.
@@ -453,6 +460,10 @@ public:
                       "Provided type must derive UsdSchemaBase.");
         return _IsA(TfType::Find<T>(), /*validateSchemaType=*/false);
     };
+    
+    /// Return true if prim type is/inherits a Schema with TfType \p schemaType
+    USD_API
+    bool IsA(const TfType& schemaType) const;
 
     /// Return true if the UsdPrim has had an API schema represented by the C++ 
     /// class type <b>T</b> applied to it through the Apply() method provided 
@@ -514,6 +525,17 @@ public:
         return _HasAPI(TfType::Find<T>(), /*validateSchemaType=*/false, 
                        instanceName);
     }
+    
+    /// Return true if a prim has an API schema with TfType \p schemaType.
+    ///
+    /// \p instanceName, if non-empty is used to determine if a particular 
+    /// instance of a multiple-apply API schema (eg. UsdCollectionAPI) has been 
+    /// applied to the prim. A coding error is issued if a non-empty 
+    /// \p instanceName is passed in and <b>T</b> represents a single-apply API 
+    /// schema.
+    USD_API
+    bool HasAPI(const TfType& schemaType,
+                const TfToken& instanceName=TfToken()) const;
 
     // --------------------------------------------------------------------- //
     /// \name Prim Children
@@ -896,20 +918,28 @@ public:
         bool recurseOnTargets = false) const;
 
     // --------------------------------------------------------------------- //
-    /// \name Payloads, Load and Unload 
+    /// \name Payload Authoring 
+    /// \deprecated 
+    /// This API is now deprecated. Please use the HasAuthoredPayloads and the
+    /// UsdPayloads API returned from GetPayloads() to query and author payloads 
+    /// instead. 
+    /// @{ 
     // --------------------------------------------------------------------- //
 
-    /// Clears the payload at the current EditTarget for this prim. 
-    /// Return false if the payload could not be cleared.
+    /// \deprecated 
+    /// Clears the payload at the current EditTarget for this prim. Return false 
+    /// if the payload could not be cleared. 
     USD_API
     bool ClearPayload() const;
 
+    /// \deprecated 
     /// Return true if a payload is present on this prim.
     ///
     /// \sa \ref Usd_Payloads
     USD_API
     bool HasPayload() const;
 
+    /// \deprecated 
     /// Author payload metadata for this prim at the current edit
     /// target. Return true on success, false if the value could not be set. 
     ///
@@ -917,15 +947,36 @@ public:
     USD_API
     bool SetPayload(const SdfPayload& payload) const;
 
+    /// \deprecated 
     /// Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
     USD_API
     bool SetPayload(
         const std::string& assetPath, const SdfPath& primPath) const;
     
+    /// \deprecated 
     /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifier(),
     /// primPath)).
     USD_API
     bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \name Payloads, Load and Unload 
+    // --------------------------------------------------------------------- //
+
+    /// Return a UsdPayloads object that allows one to add, remove, or
+    /// mutate payloads <em>at the currently set UsdEditTarget</em>.
+    ///
+    /// There is currently no facility for \em listing the currently authored
+    /// payloads on a prim... the problem is somewhat ill-defined, and
+    /// requires some thought.
+    USD_API
+    UsdPayloads GetPayloads() const;
+
+    /// Return true if this prim has any authored payloads.
+    USD_API
+    bool HasAuthoredPayloads() const;
 
     /// Load this prim, all its ancestors, and by default all its descendants.
     /// If \p loadPolicy is UsdLoadWithoutDescendants, then load only this prim

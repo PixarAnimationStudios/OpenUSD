@@ -31,11 +31,9 @@
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/markerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/sdf/vectorListEditor.h"
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
@@ -44,7 +42,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfRelationshipSpec, SdfPropertySpec);
+SDF_DEFINE_SPEC(
+    SdfSchema, SdfSpecTypeRelationship, SdfRelationshipSpec, SdfPropertySpec);
 
 //
 // Primary API
@@ -127,39 +126,6 @@ SdfRelationshipSpec::_GetTargetSpec(const SdfPath& path) const
         _MakeCompleteTargetSpecPath(path));
 }
 
-SdfSpecHandle 
-SdfRelationshipSpec::_FindOrCreateTargetSpec(const SdfPath& path)
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-
-    SdfSpecHandle relTargetSpec = _GetTargetSpec(targetPath);
-    if (!relTargetSpec) {
-        SdfAllowed allowed;
-        if (!PermissionToEdit()) { 
-            allowed = SdfAllowed("Permission denied");
-        }
-        else {
-            allowed = SdfSchema::IsValidRelationshipTargetPath(targetPath);
-        }
-
-        const SdfPath targetSpecPath = _MakeCompleteTargetSpecPath(targetPath);
-        if (allowed) {
-            if (Sdf_ChildrenUtils<Sdf_RelationshipTargetChildPolicy>::CreateSpec(
-                    GetLayer(), targetSpecPath, 
-                    SdfSpecTypeRelationshipTarget)) {
-                relTargetSpec = _GetTargetSpec(targetPath);
-            }
-        }
-        else {
-            TF_CODING_ERROR("Create spec <%s>: %s", 
-                            targetPath.GetText(),
-                            allowed.GetWhyNot().c_str());
-        }
-    }
-
-    return relTargetSpec;
-}
-
 SdfTargetsProxy
 SdfRelationshipSpec::GetTargetPathList() const
 {
@@ -183,8 +149,13 @@ static boost::optional<SdfPath>
 _ReplacePath(
     const SdfPath &oldPath, const SdfPath &newPath, const SdfPath &path)
 {
+    // Replace oldPath with newPath, and also remove any existing
+    // newPath entries in the list op.
     if (path == oldPath) {
         return newPath;
+    }
+    if (path == newPath) {
+        return boost::none;
     }
     return path;
 }
@@ -217,45 +188,37 @@ SdfRelationshipSpec::ReplaceTargetPath(
 	layer->GetFieldAs<std::vector<SdfPath> >(
             relPath, SdfChildrenKeys->RelationshipTargetChildren);
 
-    // Replace the path in the targets list
-    bool targetSpecExists = false;
-    TF_FOR_ALL(i, siblingPaths) {
-	if (*i == oldTargetPath) {
-	    *i = newTargetPath;
-            targetSpecExists = true;
-	    break;
-	}
+    int oldTargetSpecIndex = -1;
+    int newTargetSpecIndex = -1;
+    for (size_t i = 0, n = siblingPaths.size(); i != n; ++i) {
+        if (siblingPaths[i] == oldTargetPath) {
+            oldTargetSpecIndex = i;
+        }
+        else if (siblingPaths[i] == newTargetPath) {
+            newTargetSpecIndex = i;
+        }
     }
     
     // If there is a target spec, then update the children field.
-    if (targetSpecExists) {
-        // Set the siblings
-        layer->SetField(relPath, SdfChildrenKeys->RelationshipTargetChildren,
-            siblingPaths);
-
+    if (oldTargetSpecIndex != -1) {
         SdfPath oldTargetSpecPath = relPath.AppendTarget(oldTargetPath);
         SdfPath newTargetSpecPath = relPath.AppendTarget(newTargetPath);
 
         if (layer->HasSpec(newTargetSpecPath)) {
-            // Target already exists.  That could be simply because it
-            // has a marker but it could be because there's already a
-            // relationship target.  Unfortunately there's no way to
-            // tell the difference between an explicitly created
-            // relationship target with a marker but no relational
-            // attributes and a target created just to hang a marker
-            // off of it.
-            //
-            // We decide not to care.  If the target has no attributes
+            // Target already exists.  If the target has no child specs
             // then we'll allow the replacement.  If it does have
             // attributes then we must refuse.
-            if (!GetAttributesForTargetPath(newTargetPath).empty()) {
-                TF_CODING_ERROR("Can't replace target %s with target %s in "
-                                "relationship %s: %s",
-                                oldPath.GetText(),
-                                newPath.GetText(),
-                                relPath.GetString().c_str(),
-                                "Target already exists");
-                return;
+            const SdfSchemaBase& schema = GetSchema();
+            for (const TfToken& field : layer->ListFields(newTargetSpecPath)) {
+                if (schema.HoldsChildren(field)) {
+                    TF_CODING_ERROR("Can't replace target %s with target %s in "
+                                    "relationship %s: %s",
+                                    oldPath.GetText(),
+                                    newPath.GetText(),
+                                    relPath.GetString().c_str(),
+                                    "Target already exists");
+                    return;
+                }
             }
 
             // Remove the existing spec at the new target path.
@@ -270,6 +233,15 @@ SdfRelationshipSpec::ReplaceTargetPath(
                 newTargetPath.GetText());
             return;
         }
+
+        // Update and set the siblings
+        siblingPaths[oldTargetSpecIndex] = newTargetPath;
+        if (newTargetSpecIndex != -1) {
+            siblingPaths.erase(siblingPaths.begin() + newTargetSpecIndex);
+        }
+        
+        layer->SetField(relPath, SdfChildrenKeys->RelationshipTargetChildren,
+            siblingPaths);
     }
 
     // Get the list op.
@@ -277,9 +249,10 @@ SdfRelationshipSpec::ReplaceTargetPath(
         layer->GetFieldAs<SdfPathListOp>(relPath, SdfFieldKeys->TargetPaths);
 
     // Update the list op.
-    if (targetsListOp.ModifyOperations(
+    if (targetsListOp.HasItem(oldTargetPath)) {
+        targetsListOp.ModifyOperations(
             std::bind(_ReplacePath, oldTargetPath, newTargetPath,
-                      std::placeholders::_1))) {
+                std::placeholders::_1));
         layer->SetField(relPath, SdfFieldKeys->TargetPaths, targetsListOp);
     }
 }
@@ -309,346 +282,6 @@ SdfRelationshipSpec::RemoveTargetPath(
     else {
         GetTargetPathList().RemoveItemEdits(path);
     }
-}
-
-//
-// Relational Attributes
-//
-
-SdfRelationalAttributeSpecView
-SdfRelationshipSpec::GetAttributesForTargetPath(
-    const SdfPath& path) const
-{
-    SdfPath targetPath = GetPath().AppendTarget(
-        _CanonicalizeTargetPath(path));
-    return SdfRelationalAttributeSpecView(GetLayer(),
-        targetPath, SdfChildrenKeys->PropertyChildren);
-}
-
-void
-SdfRelationshipSpec::SetAttributesForTargetPath(
-    const SdfPath& path,
-    const SdfAttributeSpecHandleVector& newAttrs)
-{
-    // Determine the path of the relationship target
-    SdfPath absPath = _CanonicalizeTargetPath(path);
-    SdfPath targetPath = GetPath().AppendTarget(absPath);
-
-    // Create the relationship target if it doesn't already exist
-    SdfTargetsProxy targets = GetTargetPathList();
-    if (!targets.ContainsItemEdit(absPath, true /*onlyAddOrExplicit*/)) {
-        targets.Add(absPath);
-    }
-        
-    Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::SetChildren(
-        GetLayer(), targetPath, newAttrs);
-}
-
-bool
-SdfRelationshipSpec::InsertAttributeForTargetPath(
-    const SdfPath& path,
-    const SdfAttributeSpecHandle& attr,
-    int index)
-{
-    if (!attr) {
-        TF_CODING_ERROR("Invalid attribute spec");
-        return false;
-    }
-
-    SdfChangeBlock block;
-        
-    // Ensure that the parent relationship target spec object has been 
-    // created.
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-
-    SdfSpecHandle relTargetSpec = _FindOrCreateTargetSpec(targetPath);
-    if (!relTargetSpec) {
-        TF_CODING_ERROR("Insert relational attribute: Failed to create "
-            "target <%s>", targetPath.GetText());
-        return false;
-    }
-
-    return Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::InsertChild(
-        GetLayer(), relTargetSpec->GetPath(), attr, index);
-}
-
-void
-SdfRelationshipSpec::RemoveAttributeForTargetPath(
-    const SdfPath& path,
-    const SdfAttributeSpecHandle& attr)
-{
-    if (!attr) {
-        TF_CODING_ERROR("Invalid attribute spec");
-        return;
-    }
-
-    // Ensure that the given attribute is in fact a relational attribute
-    // on the given target path.
-    const SdfPath targetSpecPath = 
-        GetPath().AppendTarget(_CanonicalizeTargetPath(path));
-
-    if (attr->GetLayer() != GetLayer() ||
-        attr->GetPath().GetParentPath() != targetSpecPath) {
-        TF_CODING_ERROR("'%s' is not an attribute for target <%s>",
-            attr->GetName().c_str(),
-            targetSpecPath.GetText());
-        return;
-    }
-
-    Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::RemoveChild(
-        GetLayer(), targetSpecPath, attr->GetNameToken());
-}
-
-SdfPathVector
-SdfRelationshipSpec::GetAttributeTargetPaths() const
-{
-    // Construct the path to each RelationshipTargetSpec for this object and
-    // check each one for attributes keys.
-    SdfPathVector paths;
-    
-    const std::vector<SdfPath> targets = 
-        GetFieldAs<std::vector<SdfPath> >(
-            SdfChildrenKeys->RelationshipTargetChildren);
-    TF_FOR_ALL(i, targets) {
-        const SdfPath targetPath = GetPath().AppendTarget(*i);
-        if (GetLayer()->HasField(
-                targetPath, SdfChildrenKeys->PropertyChildren)) {
-            paths.push_back(*i);
-        }
-    }
-
-    return paths;
-}
-
-SdfPath
-SdfRelationshipSpec::GetTargetPathForAttribute(
-    const SdfAttributeSpecConstHandle& attr) const
-{
-    if (!attr) {
-        TF_CODING_ERROR("Invalid attribute spec");
-        return SdfPath::EmptyPath();
-    }
-
-    // Verify that the given attribute is actually a relational attribute
-    // spec.
-    if (!attr->GetPath().IsRelationalAttributePath()) {
-        TF_CODING_ERROR("<%s> is not a relational attribute",
-            attr->GetPath().GetText());
-        return SdfPath();
-    }
-
-    // Verify that this attribute's parent is a relationship target
-    // in this layer and that relationship target's parent is this object.
-    const SdfSpecHandle relTargetSpec = 
-        attr->GetLayer()->GetObjectAtPath(attr->GetPath().GetParentPath());
-    if (!relTargetSpec ||
-        relTargetSpec->GetLayer() != GetLayer() ||
-        relTargetSpec->GetPath().GetParentPath() != GetPath()) {
-        TF_CODING_ERROR("<%s> is not an attribute of relationship '<%s>'",
-            attr->GetPath().GetText(),
-            GetPath().GetText());
-        return SdfPath();
-    }
-
-    return relTargetSpec->GetPath().GetTargetPath();
-}
-
-//
-// Relational Attribute Ordering
-//
-
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-SdfRelationshipSpec::_GetTargetAttributeOrderEditor(const SdfPath& path) const
-{
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor;
-    SdfSpecHandle relTargetSpec = _GetTargetSpec(path);
-    if (relTargetSpec) {
-        editor.reset(new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>(
-                relTargetSpec, 
-                SdfFieldKeys->PropertyOrder, SdfListOpTypeOrdered));
-    }
-    return editor;
-}
-
-void
-SdfRelationshipSpec::SetTargetAttributeOrders(
-    const AttributeOrderMap& orders)
-{
-    // Explicitly check permission here to ensure that any editing operation
-    // (even no-ops) trigger an error.
-    if (!PermissionToEdit()) {
-        TF_CODING_ERROR("Set target attribute orders: Permission denied");
-        return;
-    }
-
-    // Replace all target attribute orders on the relationship; clear out
-    // all current orderings and add in the orderings from the given dict.
-    SdfChangeBlock block;
-
-    const SdfPathVector oldAttrOrderPaths = GetAttributeOrderTargetPaths();
-    TF_FOR_ALL(oldPath, oldAttrOrderPaths) {
-        GetAttributeOrderForTargetPath(*oldPath).clear();
-    }
-
-    TF_FOR_ALL(newOrder, orders) {
-        GetOrCreateAttributeOrderForTargetPath(newOrder->first) = 
-            newOrder->second;
-    }
-}
-
-bool 
-SdfRelationshipSpec::HasAttributeOrderForTargetPath(const SdfPath& path) const
-{
-    const SdfPath targetSpecPath = _MakeCompleteTargetSpecPath(path);
-    const std::vector<TfToken> ordering = 
-        GetLayer()->GetFieldAs<std::vector<TfToken> >(
-            targetSpecPath, SdfFieldKeys->PropertyOrder);
-    return !ordering.empty();
-}
-
-SdfNameOrderProxy 
-SdfRelationshipSpec::GetAttributeOrderForTargetPath(const SdfPath& path) const
-{
-    if (!HasAttributeOrderForTargetPath(path)) {
-        return SdfNameOrderProxy(SdfListOpTypeOrdered);
-    }
-
-    return SdfNameOrderProxy(_GetTargetAttributeOrderEditor(path),
-                            SdfListOpTypeOrdered);
-}
-
-SdfNameOrderProxy 
-SdfRelationshipSpec::GetOrCreateAttributeOrderForTargetPath(
-    const SdfPath& path)
-{
-    if (!PermissionToEdit()) {
-        TF_CODING_ERROR("Cannot create attribute order for target path <%s> in "
-                        "relationship <%s>: Permission denied.", 
-                        path.GetText(), GetPath().GetText());
-        return SdfNameOrderProxy(SdfListOpTypeOrdered);
-    }
-
-    const bool specRetrievedOrCreated = (bool)_FindOrCreateTargetSpec(path);
-
-    if (!specRetrievedOrCreated) {
-        TF_CODING_ERROR("Can't create attribute ordering for target path "
-                        "<%s> in relationship <%s>: Couldn't create target.",
-                        path.GetText(), GetPath().GetText());
-        return SdfNameOrderProxy(SdfListOpTypeOrdered);
-    }
-
-    return SdfNameOrderProxy(_GetTargetAttributeOrderEditor(path),
-                            SdfListOpTypeOrdered);
-}
-
-SdfPathVector
-SdfRelationshipSpec::GetAttributeOrderTargetPaths() const
-{
-    SdfPathVector paths;
-
-    const std::vector<SdfPath> targets = 
-        GetFieldAs<std::vector<SdfPath> >(
-            SdfChildrenKeys->RelationshipTargetChildren);
-    TF_FOR_ALL(i, targets) {
-        if (HasAttributeOrderForTargetPath(*i)) {
-            paths.push_back(*i);
-        }
-    }
-
-    return paths;
-}
-
-void
-SdfRelationshipSpec::ApplyAttributeOrderForTargetPath(
-    const SdfPath& path,
-    std::vector<TfToken>* vec) const
-{
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor = 
-        _GetTargetAttributeOrderEditor(path);
-    if (editor) {
-        editor->ApplyEdits(vec);
-    }
-}
-
-//
-// Markers
-//
-
-SdfSpecHandle 
-SdfRelationshipSpec::_FindOrCreateChildSpecForMarker(const SdfPath& key)
-{
-    return _FindOrCreateTargetSpec(key);
-
-/* YYY
-    if (child) {
-        // Insert key into list editor if it's not there.  We must
-        // add it because the menva syntax does not support expressing
-        // a marker without expressing existence of the corresponding
-        // relationship target.
-        GetTargetPathList().Add(key);
-    }
-
-    return child;
-*/
-}
-
-std::string 
-SdfRelationshipSpec::GetTargetMarker(const SdfPath& path) const
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-    return Sdf_MarkerUtils<SdfRelationshipSpec>::GetMarker(
-        static_cast<const SdfRelationshipSpec&>(*this), targetPath);
-}
-
-void 
-SdfRelationshipSpec::SetTargetMarker(
-    const SdfPath& path, const std::string& marker)
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-    Sdf_MarkerUtils<SdfRelationshipSpec>::SetMarker(
-        static_cast<SdfRelationshipSpec*>(this), targetPath, marker);
-}
-
-void 
-SdfRelationshipSpec::ClearTargetMarker(const SdfPath& path)
-{
-    const SdfPath targetPath = _CanonicalizeTargetPath(path);
-    Sdf_MarkerUtils<SdfRelationshipSpec>::ClearMarker(
-        static_cast<SdfRelationshipSpec*>(this), targetPath);
-}
-
-SdfPathVector 
-SdfRelationshipSpec::GetTargetMarkerPaths() const
-{
-    return Sdf_MarkerUtils<SdfRelationshipSpec>::GetMarkerPaths(
-        static_cast<const SdfRelationshipSpec&>(*this));
-}
-
-SdfRelationshipSpec::TargetMarkerMap
-SdfRelationshipSpec::GetTargetMarkers() const
-{
-    TargetMarkerMap result;
-
-    const SdfPathVector& targetMarkerPaths = GetTargetMarkerPaths();
-    TF_FOR_ALL(i, targetMarkerPaths) {
-        const SdfPath& path = *i;
-        result[path] = GetTargetMarker(path);
-    }
-
-    return result;
-}
-
-void
-SdfRelationshipSpec::SetTargetMarkers(
-    const TargetMarkerMap &markers)
-{
-    Sdf_MarkerUtils<SdfRelationshipSpec>::MarkerMap m;
-    TF_FOR_ALL(it, markers) {
-        m[_CanonicalizeTargetPath(it->first)] = it->second;
-    }
-
-    Sdf_MarkerUtils<SdfRelationshipSpec>::SetMarkers(
-        static_cast<SdfRelationshipSpec*>(this), m);
 }
 
 //

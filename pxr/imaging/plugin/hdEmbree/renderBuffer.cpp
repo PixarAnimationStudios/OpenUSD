@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdEmbree/renderBuffer.h"
+#include "pxr/imaging/hdEmbree/renderParam.h"
+#include "pxr/base/gf/half.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,6 +45,33 @@ HdEmbreeRenderBuffer::~HdEmbreeRenderBuffer()
 {
 }
 
+/*virtual*/
+void
+HdEmbreeRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,
+                           HdRenderParam *renderParam,
+                           HdDirtyBits *dirtyBits)
+{
+    if (*dirtyBits & DirtyDescription) {
+        // Embree has the background thread write directly into render buffers,
+        // so we need to stop the render thread before reallocating them.
+        static_cast<HdEmbreeRenderParam*>(renderParam)->AcquireSceneForEdit();
+    }
+
+    HdRenderBuffer::Sync(sceneDelegate, renderParam, dirtyBits);
+}
+
+/*virtual*/
+void
+HdEmbreeRenderBuffer::Finalize(HdRenderParam *renderParam)
+{
+    // Embree has the background thread write directly into render buffers,
+    // so we need to stop the render thread before removing them.
+    static_cast<HdEmbreeRenderParam*>(renderParam)->AcquireSceneForEdit();
+
+    HdRenderBuffer::Finalize(renderParam);
+}
+
+/*virtual*/
 void
 HdEmbreeRenderBuffer::_Deallocate()
 {
@@ -77,7 +106,7 @@ HdEmbreeRenderBuffer::_GetSampleFormat(HdFormat format)
     size_t arity = HdGetComponentCount(format);
 
     if (component == HdFormatUNorm8 || component == HdFormatSNorm8 ||
-        component == HdFormatFloat32) {
+        component == HdFormatFloat16 || component == HdFormatFloat32) {
         if (arity == 1) { return HdFormatFloat32; }
         else if (arity == 2) { return HdFormatFloat32Vec2; }
         else if (arity == 3) { return HdFormatFloat32Vec3; }
@@ -151,6 +180,9 @@ static void _WriteOutput(HdFormat format, uint8_t *dst,
         if (componentFormat == HdFormatInt32) {
             ((int32_t*)dst)[c] =
                 (c < valueComponents) ? (int32_t)(value[c]) : 0;
+        } else if (componentFormat == HdFormatFloat16) {
+            ((uint16_t*)dst)[c] =
+                (c < valueComponents) ? GfHalf(value[c]).bits() : 0;
         } else if (componentFormat == HdFormatFloat32) {
             ((float*)dst)[c] =
                 (c < valueComponents) ? (float)(value[c]) : 0.0f;
@@ -257,6 +289,9 @@ HdEmbreeRenderBuffer::Resolve()
         for (size_t c = 0; c < componentCount; ++c) {
             if (componentFormat == HdFormatInt32) {
                 ((int32_t*)dst)[c] = ((int32_t*)src)[c] / sampleCount;
+            } else if (componentFormat == HdFormatFloat16) {
+                ((uint16_t*)dst)[c] = GfHalf(
+                    ((float*)src)[c] / sampleCount).bits();
             } else if (componentFormat == HdFormatFloat32) {
                 ((float*)dst)[c] = ((float*)src)[c] / sampleCount;
             } else if (componentFormat == HdFormatUNorm8) {

@@ -97,11 +97,11 @@ public:
 
 protected:
     USD_API
-    virtual bool _IsCompatible() const override;
+    bool _IsCompatible() const override;
 
 private:
     USD_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 };
 
 

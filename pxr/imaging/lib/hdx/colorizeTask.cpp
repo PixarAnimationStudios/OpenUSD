@@ -30,16 +30,23 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxColorizeTask::HdxColorizeTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdSceneTask(delegate, id)
-    , _renderBuffer(nullptr)
-    , _outputBuffer(nullptr)
-    , _outputBufferSize(0)
-    , _converged(false)
+ : HdxProgressiveTask(id)
+ , _aovName()
+ , _aovBufferPath()
+ , _depthBufferPath()
+ , _aovBuffer(nullptr)
+ , _depthBuffer(nullptr)
+ , _outputBuffer(nullptr)
+ , _outputBufferSize(0)
+ , _converged(false)
+ , _compositor()
+ , _needsValidation(false)
 {
 }
 
 HdxColorizeTask::~HdxColorizeTask()
 {
+    delete[] _outputBuffer;
 }
 
 bool
@@ -56,10 +63,6 @@ struct _Colorizer {
     ColorizerCallback callback;
 };
 
-static void _colorizeColor(uint8_t* dest, uint8_t* src, size_t nPixels)
-{
-    memcpy(dest, src, nPixels*4);
-}
 static void _colorizeNdcDepth(uint8_t* dest, uint8_t* src, size_t nPixels)
 {
     // depth is in clip space, so remap (-1, 1) to (0,1) and clamp.
@@ -69,7 +72,7 @@ static void _colorizeNdcDepth(uint8_t* dest, uint8_t* src, size_t nPixels)
             std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
         uint8_t value = (uint8_t)(255.0f * valuef);
         // special case 1.0 (far plane) as all black.
-        if (depthBuffer[i] == 1.0f) {
+        if (depthBuffer[i] >= 1.0f) {
             value = 0;
         }
         dest[i*4+0] = value;
@@ -148,36 +151,129 @@ static void _colorizePrimvar(uint8_t* dest, uint8_t* src, size_t nPixels)
 // XXX: It would be nice to make the colorizers more flexible on input format,
 // but this gets the job done.
 static _Colorizer _colorizerTable[] = {
-    { HdAovTokens->color, HdFormatUNorm8Vec4, _colorizeColor },
     { HdAovTokens->depth, HdFormatFloat32, _colorizeNdcDepth },
     { HdAovTokens->linearDepth, HdFormatFloat32, _colorizeLinearDepth },
     { HdAovTokens->Neye, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->normal, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->primId, HdFormatInt32, _colorizeId },
+    { HdAovTokens->elementId, HdFormatInt32, _colorizeId },
+    { HdAovTokens->instanceId, HdFormatInt32, _colorizeId },
 };
 
 void
-HdxColorizeTask::_Execute(HdTaskContext* ctx)
+HdxColorizeTask::Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!TF_VERIFY(_renderBuffer)) {
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
+        HdxColorizeTaskParams params;
+
+        if (_GetTaskParams(delegate, &params)) {
+            _aovName = params.aovName;
+            _aovBufferPath = params.aovBufferPath;
+            _depthBufferPath = params.depthBufferPath;
+            _needsValidation = true;
+        }
+    }
+    *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
+{
+    _aovBuffer = nullptr;
+    _depthBuffer = nullptr;
+
+    // An empty _aovBufferPath disables the task
+    if (_aovBufferPath.IsEmpty()) {
         return;
     }
 
-    // Resolve the renderbuffer before we read it.
-    _renderBuffer->Resolve();
+    _aovBuffer = static_cast<HdRenderBuffer*>(
+        renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer, _aovBufferPath));
 
-    // Allocate the scratch space, if needed.
-    size_t sz = _renderBuffer->GetWidth() * _renderBuffer->GetHeight();
-    if (!_outputBuffer || _outputBufferSize != sz) {
-        delete[] _outputBuffer;
-        _outputBuffer = new uint8_t[sz*4];
-        _outputBufferSize = sz;
+    if (!_aovBuffer) {
+        if (_needsValidation) {
+            TF_WARN("Bad AOV input buffer path %s", _aovBufferPath.GetText());
+            _needsValidation = false;
+        }
+        return;
     }
 
-    _converged = _renderBuffer->IsConverged();
+    if (!_depthBufferPath.IsEmpty()) {
+        _depthBuffer = static_cast<HdRenderBuffer*>(
+            renderIndex->GetBprim(
+                HdPrimTypeTokens->renderBuffer, _depthBufferPath));
+        if (!_depthBuffer && _needsValidation) {
+            TF_WARN("Bad depth input buffer path %s",
+                    _depthBufferPath.GetText());
+        }
+    }
+
+    if (_needsValidation) {
+        _needsValidation = false;
+
+        if (_aovName == HdAovTokens->color &&
+            _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
+            return;
+        }
+        for (auto& colorizer : _colorizerTable) {
+            if (_aovName == colorizer.aovName &&
+                _aovBuffer->GetFormat() == colorizer.aovFormat) {
+                return;
+            }
+        }
+        if (HdParsedAovToken(_aovName).isPrimvar &&
+            _aovBuffer->GetFormat() == HdFormatFloat32Vec3) {
+            return;
+        }
+        TF_WARN("Unsupported AOV input %s with format %s",
+                _aovName.GetText(),
+                TfEnum::GetName(_aovBuffer->GetFormat()).c_str());
+    }
+}
+
+void
+HdxColorizeTask::Execute(HdTaskContext* ctx)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // _aovBuffer is null if the task is disabled
+    // because _aovBufferPath is empty or
+    // we failed to look up the renderBuffer in the render index,
+    // in which case the error was previously reported
+    if (!_aovBuffer) {
+        return;
+    }
+
+    // Allocate the scratch space, if needed.  Don't allocate scratch space
+    // if we're just passing along color data.
+    size_t size = _aovBuffer->GetWidth() * _aovBuffer->GetHeight();
+    if (_aovName == HdAovTokens->color &&
+        _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
+        size = 0;
+    }
+
+    if (_outputBufferSize != size) {
+        delete[] _outputBuffer;
+        _outputBuffer = (size != 0) ? (new uint8_t[size*4]) : nullptr;
+        _outputBufferSize = size;
+    }
+
+    _converged = _aovBuffer->IsConverged();
+    if (_depthBuffer) {
+        _converged = _converged && _depthBuffer->IsConverged();
+    }
+
+    // Resolve the buffers before we read them.
+    _aovBuffer->Resolve();
+    if (_depthBuffer) {
+        _depthBuffer->Resolve();
+    }
 
     // XXX: Right now, we colorize on the CPU, before uploading data to the
     // fullscreen pass.  It would be much better if the colorizer callbacks
@@ -185,73 +281,75 @@ HdxColorizeTask::_Execute(HdTaskContext* ctx)
     // backends that keep renderbuffers on the GPU.
 
     // Colorize!
-    for (auto& colorizer : _colorizerTable) {
-        if (_aovName == colorizer.aovName &&
-            _renderBuffer->GetFormat() == colorizer.aovFormat) {
-            colorizer.callback(_outputBuffer, _renderBuffer->Map(),
-                               _outputBufferSize);
-            _renderBuffer->Unmap();
-            break;
-        }
-    }
-    // (special handling for primvar tokens).
-    if (HdAovIdentifier(_aovName).isPrimvar &&
-        _renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
-        _colorizePrimvar(_outputBuffer, _renderBuffer->Map(),
-                         _outputBufferSize);
-        _renderBuffer->Unmap();
+
+    if (_depthBuffer && _depthBuffer->GetFormat() == HdFormatFloat32) {
+        _compositor.UpdateDepth(_depthBuffer->GetWidth(),
+                                _depthBuffer->GetHeight(),
+                                _depthBuffer->Map());
+        _depthBuffer->Unmap();
+    } else {
+        // If no depth buffer is bound, don't draw with depth.
+        _compositor.UpdateDepth(0, 0, nullptr);
     }
 
-    // Blit!
-    _compositor.UpdateColor(_renderBuffer->GetWidth(),
-                            _renderBuffer->GetHeight(),
-                            _outputBuffer);
-    _compositor.Draw();
-}
+    if (_aovName == HdAovTokens->color &&
+        _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
+        // Special handling for color: to avoid a copy, just read the data
+        // from the render buffer.
+        _compositor.UpdateColor(_aovBuffer->GetWidth(),
+                                _aovBuffer->GetHeight(),
+                                _aovBuffer->Map());
+        _aovBuffer->Unmap();
+    } else {
 
-void
-HdxColorizeTask::_Sync(HdTaskContext* ctx)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
+        // Otherwise, colorize into the scratch buffer.
+        bool colorized = false;
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
-    bool validate = false;
-    if (bits & HdChangeTracker::DirtyParams) {
-        HdxColorizeTaskParams params;
-
-        if (_GetSceneDelegateValue(HdTokens->params, &params)) {
-            _aovName = params.aovName;
-            _renderBufferId = params.renderBuffer;
-            validate = true;
-        }
-    }
-
-    HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-    _renderBuffer = static_cast<HdRenderBuffer*>(
-        renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer, _renderBufferId));
-
-    if (validate) {
-        bool match = false;
+        // Check the colorizer callbacks.
         for (auto& colorizer : _colorizerTable) {
             if (_aovName == colorizer.aovName &&
-                _renderBuffer->GetFormat() == colorizer.aovFormat) {
-                match = true;
+                _aovBuffer->GetFormat() == colorizer.aovFormat) {
+                colorizer.callback(_outputBuffer, _aovBuffer->Map(),
+                                   _outputBufferSize);
+                _aovBuffer->Unmap();
+                colorized = true;
                 break;
             }
         }
-        if (HdAovIdentifier(_aovName).isPrimvar &&
-            _renderBuffer->GetFormat() == HdFormatFloat32Vec3) {
-            match = true;
+
+        // Special handling for primvar tokens: they all go through the same
+        // function...
+        if (!colorized && HdParsedAovToken(_aovName).isPrimvar &&
+            _aovBuffer->GetFormat() == HdFormatFloat32Vec3) {
+            _colorizePrimvar(_outputBuffer, _aovBuffer->Map(),
+                             _outputBufferSize);
+            _aovBuffer->Unmap();
+            colorized = true;
         }
-        if (!match) {
-            TF_WARN("Unsupported AOV input %s with format %s",
-                _aovName.GetText(),
-                TfEnum::GetName(_renderBuffer->GetFormat()).c_str());
+
+        // Upload the scratch buffer.
+        if (colorized) {
+            _compositor.UpdateColor(_aovBuffer->GetWidth(),
+                                    _aovBuffer->GetHeight(),
+                                    _outputBuffer);
+        } else {
+            _compositor.UpdateColor(0, 0, nullptr);
         }
     }
+
+    // Blit!
+    GLboolean blendEnabled;
+    glGetBooleanv(GL_BLEND, &blendEnabled);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    _compositor.Draw();
+
+    if (!blendEnabled) {
+        glDisable(GL_BLEND);
+    }
 }
+
 
 // --------------------------------------------------------------------------- //
 // VtValue Requirements
@@ -261,15 +359,17 @@ std::ostream& operator<<(std::ostream& out, const HdxColorizeTaskParams& pv)
 {
     out << "ColorizeTask Params: (...) "
         << pv.aovName << " "
-        << pv.renderBuffer;
+        << pv.aovBufferPath << " "
+        << pv.depthBufferPath;
     return out;
 }
 
 bool operator==(const HdxColorizeTaskParams& lhs,
                 const HdxColorizeTaskParams& rhs)
 {
-    return lhs.aovName      == rhs.aovName      &&
-           lhs.renderBuffer == rhs.renderBuffer;
+    return lhs.aovName         == rhs.aovName          &&
+           lhs.aovBufferPath   == rhs.aovBufferPath    &&
+           lhs.depthBufferPath == rhs.depthBufferPath;
 }
 
 bool operator!=(const HdxColorizeTaskParams& lhs,

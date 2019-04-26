@@ -31,17 +31,13 @@ class VariantComboBox(QtWidgets.QComboBox):
         self.prim = prim
         self.variantSetName = variantSetName
 
-    def updateVariantSelection(self, index, updateStageFn, printTiming):
+    def updateVariantSelection(self, index, printTiming):
         variantSet = self.prim.GetVariantSet(self.variantSetName)
         currentVariantSelection = variantSet.GetVariantSelection()
         newVariantSelection = str(self.currentText())
         if currentVariantSelection != newVariantSelection:
             with Timer() as t:
                 variantSet.SetVariantSelection(newVariantSelection)
-                # We need to completely re-generate the prim tree because
-                # changing a prim's variant set can change the namespace
-                # hierarchy.
-                updateStageFn()
             if printTiming:
                 t.PrintTime("change variantSet %s to %s" %
                             (variantSet.GetName(), newVariantSelection))

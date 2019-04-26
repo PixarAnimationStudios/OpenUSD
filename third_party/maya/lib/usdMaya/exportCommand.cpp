@@ -68,7 +68,10 @@ MSyntax UsdMayaExportCommand::createSyntax()
                    UsdMayaJobExportArgsTokens->exportDisplayColor.GetText(),
                    MSyntax::kBoolean);
     syntax.addFlag("-shd",
-                   UsdMayaJobExportArgsTokens->shadingMode.GetText() ,
+                   UsdMayaJobExportArgsTokens->shadingMode.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-msn",
+                   UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
                    MSyntax::kString);
     syntax.addFlag("-uvs",
                    UsdMayaJobExportArgsTokens->exportUVs.GetText(),

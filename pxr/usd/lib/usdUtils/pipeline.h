@@ -34,14 +34,22 @@
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usdUtils/registeredVariantSet.h"
 
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/common.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 SDF_DECLARE_HANDLES(SdfLayer);
+
+
+USDUTILS_API
+extern TfEnvSetting<bool> USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME;
+
 
 /// Define the shading pipeline's convention for naming a companion
 /// alpha/opacity attribute and primvarnames given the full name of a
@@ -116,6 +124,42 @@ TfToken UsdUtilsGetPrimaryUVSetName();
 USDUTILS_API
 TfToken UsdUtilsGetPrefName();
 
+/// Get the name of the USD prim under which materials are expected to be
+/// authored.
+///
+/// The scope name can be configured in the metadata of a plugInfo.json file
+/// like so:
+/// \code{json}
+///    "UsdUtilsPipeline": {
+///        "MaterialsScopeName": "SomeScopeName"
+///    }
+/// \endcode
+///
+/// If \p forceDefault is true, any value specified in a plugInfo.json will be
+/// ignored and the built-in default will be returned. This is primarily used
+/// for unit testing purposes as a way to ignore any site-based configuration.
+USDUTILS_API
+TfToken UsdUtilsGetMaterialsScopeName(const bool forceDefault = false);
+
+/// Get the name of the USD prim representing the primary camera.
+/// By default the name is "main_cam".
+///
+/// The camera name can be configured in the metadata of a plugInfo.json file
+/// like so:
+/// \code{json}
+///    "UsdUtilsPipeline": {
+///        "PrimaryCameraName": "SomeCameraName"
+///    }
+/// \endcode
+///
+/// If \p forceDefault is true, any value specified in a plugInfo.json will be
+/// ignored and the built-in default will be returned. This is primarily used
+/// for unit testing purposes as a way to ignore any site-based configuration.
+USDUTILS_API
+TfToken UsdUtilsGetPrimaryCameraName(const bool forceDefault = false);
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* USDUTILS_PIPELINE_H_ */
+
+#endif

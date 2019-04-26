@@ -21,58 +21,79 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/functorPrimWriter.h"
 
-#include "pxr/usd/usdGeom/xformable.h"
+#include "usdMaya/primWriter.h"
+#include "usdMaya/primWriterArgs.h"
+#include "usdMaya/primWriterContext.h"
+#include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/transformWriter.h"
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
+
+#include <maya/MFnDependencyNode.h>
+
+#include <functional>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 UsdMaya_FunctorPrimWriter::UsdMaya_FunctorPrimWriter(
-        const MDagPath& iDag,
-        const SdfPath& uPath,
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
         UsdMayaWriteJobContext& jobCtx,
         UsdMayaPrimWriterRegistry::WriterFn plugFn) :
-    UsdMayaTransformWriter(iDag, uPath, jobCtx),
+    UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
     _plugFn(plugFn),
     _exportsGprims(false),
     _pruneChildren(false)
 {
 }
 
+/* virtual */
 UsdMaya_FunctorPrimWriter::~UsdMaya_FunctorPrimWriter()
 {
 }
 
+/* virtual */
 void
 UsdMaya_FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaTransformWriter::Write(usdTime);
 
-    SdfPath authorPath = GetUsdPath();
-    UsdStageRefPtr stage = GetUsdStage();
-
-    UsdMayaPrimWriterArgs args(GetDagPath(),
+    const UsdMayaPrimWriterArgs args(
+        GetDagPath(),
         _GetExportArgs().exportRefsAsInstanceable);
-    UsdMayaPrimWriterContext ctx(usdTime, authorPath, stage);
+
+    UsdMayaPrimWriterContext ctx(usdTime, GetUsdPath(), GetUsdStage());
+
     _plugFn(args, &ctx);
+
     _exportsGprims = ctx.GetExportsGprims();
     _pruneChildren = ctx.GetPruneChildren();
     _modelPaths = ctx.GetModelPaths();
 }
 
+/* virtual */
 bool
 UsdMaya_FunctorPrimWriter::ExportsGprims() const
 {
     return _exportsGprims;
 }
 
+/* virtual */
 bool
 UsdMaya_FunctorPrimWriter::ShouldPruneChildren() const
 {
     return _pruneChildren;
 }
 
+/* virtual */
 const SdfPathVector&
 UsdMaya_FunctorPrimWriter::GetModelPaths() const
 {
@@ -82,19 +103,19 @@ UsdMaya_FunctorPrimWriter::GetModelPaths() const
 /* static */
 UsdMayaPrimWriterSharedPtr
 UsdMaya_FunctorPrimWriter::Create(
-    const MDagPath& dag,
-    const SdfPath& path,
-    UsdMayaWriteJobContext& jobCtx,
-    UsdMayaPrimWriterRegistry::WriterFn plugFn)
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        UsdMayaWriteJobContext& jobCtx,
+        UsdMayaPrimWriterRegistry::WriterFn plugFn)
 {
     return UsdMayaPrimWriterSharedPtr(
-            new UsdMaya_FunctorPrimWriter(dag, path, jobCtx, plugFn));
+        new UsdMaya_FunctorPrimWriter(depNodeFn, usdPath, jobCtx, plugFn));
 }
 
 /* static */
 UsdMayaPrimWriterRegistry::WriterFactoryFn
 UsdMaya_FunctorPrimWriter::CreateFactory(
-    UsdMayaPrimWriterRegistry::WriterFn fn)
+        UsdMayaPrimWriterRegistry::WriterFn fn)
 {
     return std::bind(
             Create,
@@ -104,5 +125,5 @@ UsdMaya_FunctorPrimWriter::CreateFactory(
             fn);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

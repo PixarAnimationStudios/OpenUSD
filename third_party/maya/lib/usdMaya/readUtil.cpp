@@ -818,7 +818,7 @@ UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                     VtValue value;
                     constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
-                    if (attr.HasAuthoredValueOpinion() && attr.Get(&value, t)) {
+                    if (attr.HasAuthoredValue() && attr.Get(&value, t)) {
                         schemaAdaptor.CreateAttribute(attrName).Set(value);
                     }
                 }
@@ -848,8 +848,7 @@ UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
         for (const TfToken& attrName : attributeNames) {
             if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                 VtValue value;
-                if (attr.HasAuthoredValueOpinion() &&
-                        attr.Get(&value, usdTime)) {
+                if (attr.HasAuthoredValue() && attr.Get(&value, usdTime)) {
                     if (schemaAdaptor.CreateAttribute(attrName).Set(value)) {
                         count++;
                     }

@@ -56,6 +56,7 @@ HdStRenderPassState::HdStRenderPassState()
     , _renderPassShader(new HdStRenderPassShader())
     , _fallbackLightingShader(new HdSt_FallbackLightingShader())
     , _clipPlanesBufferSize(0)
+    , _alphaThresholdCurrent(0)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -66,6 +67,7 @@ HdStRenderPassState::HdStRenderPassState(
     , _renderPassShader(renderPassShader)
     , _fallbackLightingShader(new HdSt_FallbackLightingShader())
     , _clipPlanesBufferSize(0)
+    , _alphaThresholdCurrent(0)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -75,8 +77,15 @@ HdStRenderPassState::~HdStRenderPassState()
     /*NOTHING*/
 }
 
+bool
+HdStRenderPassState::_UseAlphaMask() const
+{
+    return (_alphaThreshold > 0.0f);
+}
+
 void
-HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
+HdStRenderPassState::Prepare(
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -86,12 +95,17 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
     TF_FOR_ALL(it, _clipPlanes) {
         clipPlanes.push_back(GfVec4f(*it));
     }
-    if (clipPlanes.size() >= GL_MAX_CLIP_PLANES) {
-        clipPlanes.resize(GL_MAX_CLIP_PLANES);
+    GLint glMaxClipPlanes;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
+    size_t maxClipPlanes = (size_t)glMaxClipPlanes;
+    if (clipPlanes.size() >= maxClipPlanes) {
+        clipPlanes.resize(maxClipPlanes);
     }
 
     // allocate bar if not exists
-    if (!_renderPassStateBar || (_clipPlanesBufferSize != clipPlanes.size())) {
+    if (!_renderPassStateBar || 
+        (_clipPlanesBufferSize != clipPlanes.size()) ||
+        _alphaThresholdCurrent != _alphaThreshold) {
         HdBufferSpecVector bufferSpecs;
 
         // note: InterleavedMemoryManager computes the offsets in the packed
@@ -132,9 +146,14 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
         bufferSpecs.emplace_back(
             HdShaderTokens->lightingBlendAmount,
             HdTupleType{HdTypeFloat, 1});
-        bufferSpecs.emplace_back(
-            HdShaderTokens->alphaThreshold,
-            HdTupleType{HdTypeFloat, 1});
+
+        if (_UseAlphaMask()) {
+            bufferSpecs.emplace_back(
+                HdShaderTokens->alphaThreshold,
+                HdTupleType{HdTypeFloat, 1});
+        }
+        _alphaThresholdCurrent = _alphaThreshold;
+
         bufferSpecs.emplace_back(
             HdShaderTokens->tessLevel,
             HdTupleType{HdTypeFloat, 1});
@@ -151,7 +170,7 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
 
         // allocate interleaved buffer
         _renderPassStateBar = resourceRegistry->AllocateUniformBufferArrayRange(
-            HdTokens->drawingShader, bufferSpecs);
+            HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
@@ -202,10 +221,14 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
 
     sources.push_back(HdBufferSourceSharedPtr(
                        new HdVtBufferSource(HdShaderTokens->lightingBlendAmount,
-                                            VtValue(lightingBlendAmount))));;
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->alphaThreshold,
-                                               VtValue(_alphaThreshold))));
+                                            VtValue(lightingBlendAmount))));
+
+    if (_UseAlphaMask()) {
+        sources.push_back(HdBufferSourceSharedPtr(
+                              new HdVtBufferSource(HdShaderTokens->alphaThreshold,
+                                                   VtValue(_alphaThreshold))));
+    }
+
     sources.push_back(HdBufferSourceSharedPtr(
                        new HdVtBufferSource(HdShaderTokens->tessLevel,
                                             VtValue(_tessLevel))));
@@ -280,6 +303,10 @@ void
 HdStRenderPassState::Bind()
 {
     GLF_GROUP_FUNCTION();
+
+    if (!glBlendColor) {
+        return;
+    }
     
     // XXX: this states set will be refactored as hdstream PSO.
     
@@ -307,7 +334,8 @@ HdStRenderPassState::Bind()
     }
 
     glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
-    
+    glDepthMask(_depthMaskEnabled);
+
     // Stencil
     if (_stencilEnabled) {
         glEnable(GL_STENCIL_TEST);
@@ -325,6 +353,25 @@ HdStRenderPassState::Bind()
         glLineWidth(_lineWidth);
     }
 
+    // Blending
+    if (_blendEnabled) {
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(
+                HdStGLConversions::GetGlBlendOp(_blendColorOp),
+                HdStGLConversions::GetGlBlendOp(_blendAlphaOp));
+        glBlendFuncSeparate(
+                HdStGLConversions::GetGlBlendFactor(_blendColorSrcFactor),
+                HdStGLConversions::GetGlBlendFactor(_blendColorDstFactor),
+                HdStGLConversions::GetGlBlendFactor(_blendAlphaSrcFactor),
+                HdStGLConversions::GetGlBlendFactor(_blendAlphaDstFactor));
+        glBlendColor(_blendConstantColor[0],
+                     _blendConstantColor[1],
+                     _blendConstantColor[2],
+                     _blendConstantColor[3]);
+    } else {
+        glDisable(GL_BLEND);
+    }
+
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -333,8 +380,10 @@ HdStRenderPassState::Bind()
         }
     }
     glEnable(GL_PROGRAM_POINT_SIZE);
+    GLint glMaxClipPlanes;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
-        if (i >= GL_MAX_CLIP_PLANES) {
+        if (i >= (size_t)glMaxClipPlanes) {
             break;
         }
         glEnable(GL_CLIP_DISTANCE0 + i);
@@ -361,6 +410,10 @@ HdStRenderPassState::Unbind()
     GLF_GROUP_FUNCTION();
     // restore back to the GL defaults
 
+    if (!glBlendColor) {
+        return;
+    }
+
     glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_PROGRAM_POINT_SIZE);
@@ -369,11 +422,17 @@ HdStRenderPassState::Unbind()
     glPolygonOffset(0, 0);
     glLineWidth(1.0f);
 
+    glDisable(GL_BLEND);
+    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+    glBlendColor(0.0f, 0.0f, 0.0f, 0.0f);
+
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
         glDisable(GL_CLIP_DISTANCE0 + i);
     }
 
     glColorMask(true, true, true, true);
+    glDepthMask(true);
 }
 
 size_t
@@ -387,6 +446,7 @@ HdStRenderPassState::GetShaderHash() const
         boost::hash_combine(hash, _renderPassShader->ComputeHash());
     }
     boost::hash_combine(hash, _clipPlanes.size());
+    boost::hash_combine(hash, _UseAlphaMask());
     return hash;
 }
 

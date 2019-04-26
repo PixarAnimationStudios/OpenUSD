@@ -23,13 +23,9 @@ Property stacks:
     root.sdf             /Root.localAttr
 /Root.privateRel:
     A.sdf                /A.privateRel
-/Root.privateRel[/Root.A_attr].a:
-    A.sdf                /A.privateRel[/A.A_attr].a
 /Root.publicRel:
     root.sdf             /Root.publicRel
     A.sdf                /A.publicRel
-/Root.publicRel[/Root.A_attr].a:
-    A.sdf                /A.publicRel[/A.A_attr].a
 
 Relationship targets:
 /Root.privateRel:

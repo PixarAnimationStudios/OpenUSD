@@ -57,21 +57,27 @@ class HdSt_DrawTask final : public HdTask
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
                   HdStRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     {
     }
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(
+            renderIndex->GetResourceRegistry());
+    }
+
+    virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState);
@@ -81,6 +87,10 @@ protected:
 private:
     HdRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;
+
+    HdSt_DrawTask() = delete;
+    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
+    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
 };
 
 template <typename T>
@@ -185,7 +195,7 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
     HdTaskSharedPtrVector tasks = {
         boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState)
     };
-    _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -292,7 +302,7 @@ HdSt_TestLightingShader::HdSt_TestLightingShader()
     _sceneAmbient    = GfVec3f(0.04, 0.04, 0.04);
 
     std::stringstream ss(lightingShader);
-    _glslfx.reset(new GlfGLSLFX(ss));
+    _glslfx.reset(new HioGlslfx(ss));
 }
 
 HdSt_TestLightingShader::~HdSt_TestLightingShader()

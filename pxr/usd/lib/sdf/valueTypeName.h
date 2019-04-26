@@ -163,19 +163,11 @@ public:
     SDF_API
     size_t GetHash() const;
 
-#if !defined(doxygen)
-    class _Untyped;
-    typedef Sdf_ValueTypeImpl const* const (SdfValueTypeName::*_UnspecifiedBoolType);
-#endif
-
-    /// Returns \c false iff this is a valid type.
-    SDF_API
-    bool operator!() const;
-
-    /// Returns \c true iff this is a valid type.
-    operator _UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. Converts to \c true if this is a 
+    /// valid, non-empty type, \c false otherwise.
+    explicit operator bool() const
     {
-        return (!*this) ? 0 : &SdfValueTypeName::_impl;
+        return !_IsEmpty();
     }
 
     /// Returns all aliases of the type name as tokens.  These should not
@@ -189,6 +181,9 @@ private:
 
     SDF_API
     explicit SdfValueTypeName(const Sdf_ValueTypeImpl*);
+
+    SDF_API
+    bool _IsEmpty() const;
 
 private:
     const Sdf_ValueTypeImpl* _impl;

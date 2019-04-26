@@ -23,6 +23,8 @@
 //
 #include "pxr/usdImaging/usdVolImaging/openvdbAssetAdapter.h"
 
+#include "pxr/usdImaging/usdVolImaging/tokens.h"
+
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,11 +36,6 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (openvdbAsset)
-);
-
 UsdImagingOpenVDBAssetAdapter::~UsdImagingOpenVDBAssetAdapter() 
 {
 }
@@ -46,7 +43,7 @@ UsdImagingOpenVDBAssetAdapter::~UsdImagingOpenVDBAssetAdapter()
 TfToken
 UsdImagingOpenVDBAssetAdapter::GetPrimTypeToken() const
 {
-    return _tokens->openvdbAsset;
+    return UsdVolImagingTokens->openvdbAsset;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

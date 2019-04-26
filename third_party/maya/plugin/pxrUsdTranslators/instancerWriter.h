@@ -24,16 +24,27 @@
 #ifndef PXRUSDTRANSLATORS_INSTANCER_WRITER_H
 #define PXRUSDTRANSLATORS_INSTANCER_WRITER_H
 
-#include "pxr/pxr.h"
+/// \file pxrUsdTranslators/instancerWriter.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/transformWriter.h"
 
-#include <map>
+#include "usdMaya/primWriter.h"
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/usd/usdGeom/xformOp.h"
+
+#include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class UsdGeomPointInstancer;
 
 /// \brief Exporter for Maya particle instancer nodes (MFnInstancer).
 /// The instancer node is used in both nParticles and MASH networks.
@@ -51,18 +62,19 @@ class PxrUsdTranslators_InstancerWriter : public UsdMayaTransformWriter
 {
 public:
     PxrUsdTranslators_InstancerWriter(
-            const MDagPath & iDag,
-            const SdfPath& uPath,
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx);
-    
-    void Write(const UsdTimeCode &usdTime) override;
+
+    void Write(const UsdTimeCode& usdTime) override;
     void PostExport() override;
     bool ShouldPruneChildren() const override;
     const SdfPathVector& GetModelPaths() const override;
 
 protected:
     bool writeInstancerAttrs(
-            const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer);
+            const UsdTimeCode& usdTime,
+            const UsdGeomPointInstancer& instancer);
 
 private:
     bool _NeedsExtraInstancerTranslate(
@@ -92,5 +104,6 @@ private:
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

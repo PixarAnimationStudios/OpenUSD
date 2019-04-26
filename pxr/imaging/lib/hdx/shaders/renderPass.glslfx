@@ -1,7 +1,7 @@
 -- glslfx version 0.1
 
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -47,7 +47,7 @@ void RenderColor(vec4 color)
 }
 
 --- --------------------------------------------------------------------------
--- glsl HdxRenderPass.RenderColorOutputWithSelection
+-- glsl HdxRenderPass.ApplySelectionColor
 
 // Forward declare method defined in selection.glslfx
 vec4 ApplySelectionColor(vec4 color);
@@ -86,6 +86,9 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
     return color;
 }
 
+--- --------------------------------------------------------------------------
+-- glsl HdxRenderPass.RenderColorOutputWithSelection
+
 layout (location = 0) out vec4 colorOut;
 
 void RenderColor(vec4 color)
@@ -94,6 +97,33 @@ void RenderColor(vec4 color)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl HdxRenderPass.WriteOitLayersToBuffer
+
+layout (early_fragment_tests) in;
+layout (location = 0) out vec4 colorOut;
+
+void RenderColor(vec4 color)
+{
+    if (color.a < 1.0) {
+        int screenWidth = HdGet_oitWidth();
+        int screenHeight = HdGet_oitHeight();
+        int numSamples = HdGet_oitSamples();
+        int bufferSize = screenWidth * screenHeight * numSamples;
+        int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+
+        if (writeIndex < bufferSize) {
+            int screenIndex =
+                int(gl_FragCoord.x) +
+                int(gl_FragCoord.y) * screenWidth;
+            int prevIndex =
+                atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+            hdxOitDataBuffer[writeIndex] = color;
+            hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
+            hdxOitIndexBuffer[writeIndex] = prevIndex;
+        }
+    }
+}
+
 -- glsl HdxRenderPass.RenderColorIdOutput
 
 layout (location = 0) out vec4 primIdOut;

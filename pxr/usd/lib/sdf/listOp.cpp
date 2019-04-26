@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -51,6 +52,8 @@ TF_REGISTRY_FUNCTION(TfType)
         .Alias(TfType::GetRoot(), "SdfStringListOp");
     TfType::Define<SdfReferenceListOp>()
         .Alias(TfType::GetRoot(), "SdfReferenceListOp");
+    TfType::Define<SdfPayloadListOp>()
+        .Alias(TfType::GetRoot(), "SdfPayloadListOp");
     TfType::Define<SdfIntListOp>()
         .Alias(TfType::GetRoot(), "SdfIntListOp");
     TfType::Define<SdfUIntListOp>()
@@ -93,6 +96,28 @@ SdfListOp<T>::Swap(SdfListOp<T>& rhs)
     _appendedItems.swap(rhs._appendedItems);
     _deletedItems.swap(rhs._deletedItems);
     _orderedItems.swap(rhs._orderedItems);
+}
+
+template <typename T>
+bool
+SdfListOp<T>::HasItem(const T& item) const
+{
+    if (IsExplicit()) {
+        return std::find(_explicitItems.begin(), _explicitItems.end(), item)
+            != _explicitItems.end();
+    }
+
+    return 
+        (std::find(_addedItems.begin(), _addedItems.end(), item)
+            != _addedItems.end()) ||
+        (std::find(_prependedItems.begin(), _prependedItems.end(), item)
+            != _prependedItems.end()) ||
+        (std::find(_appendedItems.begin(), _appendedItems.end(), item)
+            != _appendedItems.end()) ||
+        (std::find(_deletedItems.begin(), _deletedItems.end(), item)
+            != _deletedItems.end()) ||
+        (std::find(_orderedItems.begin(), _orderedItems.end(), item)
+            != _orderedItems.end());
 }
 
 template <typename T>
@@ -799,6 +824,7 @@ SDF_INSTANTIATE_LIST_OP(TfToken);
 SDF_INSTANTIATE_LIST_OP(SdfUnregisteredValue);
 SDF_INSTANTIATE_LIST_OP(SdfPath);
 SDF_INSTANTIATE_LIST_OP(SdfReference);
+SDF_INSTANTIATE_LIST_OP(SdfPayload);
 
 template
 SDF_API void SdfApplyListOrdering(std::vector<string>* v, 

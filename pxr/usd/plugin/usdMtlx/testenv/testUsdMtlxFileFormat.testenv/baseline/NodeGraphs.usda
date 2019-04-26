@@ -45,7 +45,7 @@ def "MaterialX"
                 uniform token info:id = "ND_mix_color3"
                 color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph1/img2.outputs:result>
                 color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph1/img1.outputs:result>
-                float inputs:mask.connect = </MaterialX/NodeGraphs/nodegraph1/img3.outputs:result>
+                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph1/img3.outputs:result>
                 color3f outputs:result
             }
         }
@@ -95,7 +95,7 @@ def "MaterialX"
                 uniform token info:id = "ND_mix_color3"
                 color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph2/img2.outputs:result>
                 color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph2/img1.outputs:result>
-                float inputs:mask.connect = </MaterialX/NodeGraphs/nodegraph2/img3.outputs:result>
+                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph2/img3.outputs:result>
                 color3f outputs:result
             }
         }
@@ -193,7 +193,7 @@ def "MaterialX"
                 uniform token info:id = "ND_mix_color3"
                 color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph3/n6.outputs:result>
                 color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph3/n7.outputs:result>
-                float inputs:mask.connect = </MaterialX/NodeGraphs/nodegraph3/img3.outputs:result>
+                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph3/img3.outputs:result>
                 color3f outputs:result
             }
 

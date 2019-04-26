@@ -55,17 +55,20 @@ class PayloadedScene(object):
         # Create payload2.usda
         self.__payload2 = stageCreateFn("payload2"+ext)
         p = self.__payload2.DefinePrim("/Baz/Garply", "Scope")
-        p.SetPayload(self.__payload3.GetRootLayer(), "/Garply")
+        p.GetPayloads().AddPayload(
+            self.__payload3.GetRootLayer().identifier, "/Garply")
 
         #
         # Create the scene that references payload1 and payload2
         #
         self.stage = stageCreateFn("scene"+ext, loadSet)
         p = self.stage.DefinePrim("/Sad", "Scope")
-        p.SetPayload(self.__payload1.GetRootLayer(), "/Sad")
+        p.GetPayloads().AddPayload(
+            self.__payload1.GetRootLayer().identifier, "/Sad")
 
         p = self.stage.DefinePrim("/Foo/Baz", "Scope")
-        p.SetPayload(self.__payload2.GetRootLayer(), "/Baz")
+        p.GetPayloads().AddPayload(
+            self.__payload2.GetRootLayer().identifier, "/Baz")
 
         # By default, tests expect that the scene starts 
         # with everything unloaded, unless specified otherwise

@@ -78,6 +78,13 @@ public:
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL) const;
 
+    // Override the implemetation in GprimAdapter since we don't fetch the
+    // points attribute for implicit primitives.
+    USDIMAGING_API
+    virtual VtValue GetPoints(UsdPrim const& prim,
+                              SdfPath const& cachePath,
+                              UsdTimeCode time) const override;
+
     USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 
                                  UsdTimeCode time);

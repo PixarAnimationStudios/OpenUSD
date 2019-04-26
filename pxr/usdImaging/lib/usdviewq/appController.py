@@ -42,7 +42,9 @@ from headerContextMenu import HeaderContextMenu
 from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import (_GetCustomAttributes, CustomAttribute,
-                              BoundingBoxAttribute, LocalToWorldXformAttribute)
+                              BoundingBoxAttribute, LocalToWorldXformAttribute,
+                              ResolvedBoundMaterial)
+from primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
@@ -51,11 +53,13 @@ from constantGroup import ConstantGroup
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
-from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttributeColor, GetAttributeTextFont,
+from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
+                    GetPropertyColor, GetPropertyTextFont,
                     Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
-                    PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, RenderModes, ShadedRenderModes,
+                    PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
+                    RenderModes, ColorCorrectionModes, ShadedRenderModes,
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
@@ -92,6 +96,7 @@ class PropertyIndex(ConstantGroup):
 
 class DebugTypes(ConstantGroup):
     # Tf Debug entries to include in debug menu
+    HDST = "HDST"
     HD = "HD"
     HDX = "HDX"
     USD = "USD"
@@ -126,7 +131,6 @@ class UsdviewDataModel(RootDataModel):
     def viewSettings(self):
         return self._viewSettingsDataModel
 
-
 class UIStateProxySource(StateSource):
     """XXX Temporary class which allows AppController to serve as two state sources.
     All fields here will be moved back into AppController in the future.
@@ -137,7 +141,8 @@ class UIStateProxySource(StateSource):
 
         self._mainWindow = mainWindow
         primViewColumnVisibility = self.stateProperty("primViewColumnVisibility",
-                default=[True, True, True], validator=lambda value: len(value) == 3)
+                default=[True, True, True, False], validator=lambda value: 
+                len(value) == 4)
         propertyViewColumnVisibility = self.stateProperty("propertyViewColumnVisibility",
                 default=[True, True, True], validator=lambda value: len(value) == 3)
         attributeInspectorCurrentTab = self.stateProperty("attributeInspectorCurrentTab", default=PropertyIndex.VALUE)
@@ -180,7 +185,7 @@ class UIStateProxySource(StateSource):
         propertyIndex = attributeInspectorCurrentTab
         if propertyIndex not in PropertyIndex:
             propertyIndex = PropertyIndex.VALUE
-        self._mainWindow._ui.attributeInspector.setCurrentIndex(propertyIndex)
+        self._mainWindow._ui.propertyInspector.setCurrentIndex(propertyIndex)
 
     def onSaveState(self, state):
         # UI is different when --norender is used so don't load the splitter sizes.
@@ -218,7 +223,7 @@ class UIStateProxySource(StateSource):
             not self._mainWindow._ui.propertyView.isColumnHidden(c)
             for c in range(self._mainWindow._ui.propertyView.columnCount())]
 
-        state["attributeInspectorCurrentTab"] = self._mainWindow._ui.attributeInspector.currentIndex()
+        state["attributeInspectorCurrentTab"] = self._mainWindow._ui.propertyInspector.currentIndex()
 
 
 class Blocker:
@@ -254,6 +259,8 @@ class Blocker:
 
 
 class AppController(QtCore.QObject):
+
+    HYDRA_DISABLED_OPTION_STRING = "HydraDisabled"
 
     ###########
     # Signals #
@@ -338,9 +345,14 @@ class AppController(QtCore.QObject):
             # be restored later.
             self._viewerModeEscapeSizes = None
 
-            AppController._renderer = parserData.renderer
-            if AppController._renderer == 'simple':
-                os.environ['HD_ENABLED'] = '0'
+            self._rendererNameOpt = parserData.renderer
+
+            if self._rendererNameOpt:
+                if self._rendererNameOpt == \
+                            AppController.HYDRA_DISABLED_OPTION_STRING:
+                    os.environ['HD_ENABLED'] = '0'
+                else:
+                    os.environ['HD_DEFAULT_RENDERER'] = self._rendererNameOpt
 
             self._mainWindow = QtWidgets.QMainWindow(None)
             # Showing the window immediately prevents UI flashing.
@@ -369,7 +381,8 @@ class AppController(QtCore.QObject):
 
             # read the stage here
             stage = self._openStage(
-                self._parserData.usdFile, self._parserData.populationMask)
+                self._parserData.usdFile, self._parserData.sessionLayer,
+                self._parserData.populationMask)
             if not stage:
                 sys.exit(0)
 
@@ -381,6 +394,9 @@ class AppController(QtCore.QObject):
 
             self._dataModel = UsdviewDataModel(
                 self._printTiming, self._settings2)
+
+            self._dataModel.signalPrimsChanged.connect(
+                self._onPrimsChanged)
 
             self._dataModel.stage = stage
 
@@ -411,6 +427,7 @@ class AppController(QtCore.QObject):
                         parserData.complexity, fallback.id))
                 self._dataModel.viewSettings.complexity = fallback
 
+            self._hasPrimResync = False
             self._timeSamples = None
             self._stageView = None
             self._startingPrimCamera = None
@@ -528,7 +545,8 @@ class AppController(QtCore.QObject):
             self._ui.propertyView.setHorizontalScrollMode(
                 QtWidgets.QAbstractItemView.ScrollPerPixel)
 
-            self._ui.frameSlider.setTracking(self._dataModel.viewSettings.redrawOnScrub)
+            self._ui.frameSlider.setUpdateOnFrameScrub(
+                    self._dataModel.viewSettings.redrawOnScrub)
 
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
             self._ui.colorGroup.setExclusive(True)
@@ -563,6 +581,15 @@ class AppController(QtCore.QObject):
                 self._ui.actionHidden_Surface_Wireframe)
             for action in self._renderModeActions:
                 self._ui.renderModeActionGroup.addAction(action)
+
+            self._ui.colorCorrectionActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.colorCorrectionActionGroup.setExclusive(True)
+            self._colorCorrectionActions = (
+                self._ui.actionNoColorCorrection,
+                self._ui.actionSRGBColorCorrection,
+                self._ui.actionOpenColorIO)
+            for action in self._colorCorrectionActions:
+                self._ui.colorCorrectionActionGroup.addAction(action)
 
             # XXX This should be a validator in ViewSettingsDataModel.
             if self._dataModel.viewSettings.renderMode not in RenderModes:
@@ -658,6 +685,8 @@ class AppController(QtCore.QObject):
             nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
             nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+            nvh.resizeSection(3, 116)
+            nvh.setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
 
             pvh = self._ui.propertyView.header()
             pvh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
@@ -678,6 +707,7 @@ class AppController(QtCore.QObject):
                 QtCore.Qt.ScrollBarAlwaysOn)
 
             self._ui.attributeValueEditor.setAppController(self)
+            self._ui.primView.InitDrawModeDelegate(self)
 
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
@@ -690,6 +720,7 @@ class AppController(QtCore.QObject):
             primViewSelModel.selectionChanged.connect(self._selectionChanged)
 
             self._ui.primView.itemClicked.connect(self._itemClicked)
+            self._ui.primView.itemPressed.connect(self._itemPressed)
 
             self._ui.primView.header().customContextMenuRequested.connect(
                 self._primViewHeaderContextMenu)
@@ -701,11 +732,8 @@ class AppController(QtCore.QObject):
 
             self._ui.primView.expanded.connect(self._primViewExpanded)
 
-            self._ui.frameSlider.valueChanged.connect(self.setFrame)
-
-            self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
-
-            self._ui.frameSlider.sliderReleased.connect(self._updateOnFrameChange)
+            self._ui.frameSlider.signalFrameChanged.connect(self.setFrame)
+            self._ui.frameSlider.signalPositionChanged.connect(self._sliderMoved)
 
             self._ui.frameField.editingFinished.connect(self._frameStringChanged)
 
@@ -742,8 +770,8 @@ class AppController(QtCore.QObject):
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
             if self._stageView:
-                self._ui.actionRecompute_Clipping_Planes.triggered.connect(
-                    self._stageView.detachAndReClipFromCurrentCamera)
+                self._ui.actionAuto_Compute_Clipping_Planes.triggered.connect(
+                    self._toggleAutoComputeClippingPlanes)
 
             self._ui.actionAdjust_Clipping.triggered[bool].connect(
                 self._adjustClippingPlanes)
@@ -807,8 +835,8 @@ class AppController(QtCore.QObject):
             self._ui.actionCull_Backfaces.triggered.connect(
                 self._toggleCullBackfaces)
 
-            self._ui.attributeInspector.currentChanged.connect(
-                self._updateAttributeInspector)
+            self._ui.propertyInspector.currentChanged.connect(
+                self._updatePropertyInspector)
 
             self._ui.propertyView.itemSelectionChanged.connect(
                 self._propertyViewSelectionChanged)
@@ -833,6 +861,9 @@ class AppController(QtCore.QObject):
 
             self._ui.renderModeActionGroup.triggered.connect(self._changeRenderMode)
 
+            self._ui.colorCorrectionActionGroup.triggered.connect(
+                self._changeColorCorrection)
+
             self._ui.pickModeActionGroup.triggered.connect(self._changePickMode)
 
             self._ui.selHighlightModeActionGroup.triggered.connect(
@@ -855,6 +886,8 @@ class AppController(QtCore.QObject):
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
+            # Configuring the PrimView's Show menu.  In addition to the
+            # "designed" menu items, we inject a PrimView HeaderContextMenu
             self._ui.primViewDepthGroup.triggered.connect(self._changePrimViewDepth)
 
             self._ui.actionExpand_All.triggered.connect(
@@ -874,6 +907,12 @@ class AppController(QtCore.QObject):
 
             self._ui.actionShow_Abstract_Prims.triggered.connect(
                 self._toggleShowAbstractPrims)
+
+            # Since setting column visibility is probably not a common
+            # operation, it's actually good to have Columns at the end.
+            self._ui.menuShow.addSeparator()
+            self._ui.menuShow.addMenu(HeaderContextMenu(self._ui.primView))
+
 
             self._ui.actionRollover_Prim_Info.triggered.connect(
                 self._toggleRolloverPrimInfo)
@@ -949,21 +988,22 @@ class AppController(QtCore.QObject):
             self._ui.attributeValueEditor.editComplete.connect(self.editComplete)
 
             # Edit Prim menu
-            self._ui.menuEdit_Prim.aboutToShow.connect(self._updateEditPrimMenu)
+            self._ui.menuEdit.aboutToShow.connect(self._updateEditMenu)
+            self._ui.menuNavigation.aboutToShow.connect(self._updateNavigationMenu)
 
             self._ui.actionFind_Prims.triggered.connect(
                 self._ui.primViewLineEdit.setFocus)
 
-            self._ui.actionJump_to_Stage_Root.triggered.connect(
+            self._ui.actionSelect_Stage_Root.triggered.connect(
                 self.selectPseudoroot)
 
-            self._ui.actionJump_to_Model_Root.triggered.connect(
+            self._ui.actionSelect_Model_Root.triggered.connect(
                 self.selectEnclosingModel)
 
-            self._ui.actionJump_to_Bound_Preview_Material.triggered.connect(
+            self._ui.actionSelect_Bound_Preview_Material.triggered.connect(
                 self.selectBoundPreviewMaterial)
 
-            self._ui.actionJump_to_Bound_Full_Material.triggered.connect(
+            self._ui.actionSelect_Bound_Full_Material.triggered.connect(
                 self.selectBoundFullMaterial)
 
             self._ui.actionSelect_Preview_Binding_Relationship.triggered.connect(
@@ -995,14 +1035,6 @@ class AppController(QtCore.QObject):
             self._ui.actionDeactivate.triggered.connect(self.deactivateSelectedPrims)
 
             self._setupDebugMenu()
-
-            # timer for slider. when user stops scrubbing for 0.5s, update stuff.
-            self._sliderTimer = QtCore.QTimer(self)
-            self._sliderTimer.setInterval(500)
-
-            # Connect the update timer to _frameStringChanged, which will ensure
-            # we update _currentTime prior to updating UI
-            self._sliderTimer.timeout.connect(self._frameStringChanged)
 
             # We refresh as if all view settings changed. In the future, we
             # should do more granular refreshes. This first requires more
@@ -1042,6 +1074,7 @@ class AppController(QtCore.QObject):
 
         # configure render plugins after stageView initialized its renderer.
         self._configureRendererPlugins()
+        self._configureColorManagement()
 
         if self._mallocTags == 'stageAndImaging':
             DumpMallocTags(self._dataModel.stage,
@@ -1062,7 +1095,7 @@ class AppController(QtCore.QObject):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath, populationMaskPaths):
+    def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1090,14 +1123,30 @@ class AppController(QtCore.QObject):
                     [err.commentary.strip() for err in e.args]))
                 sys.exit(1)
 
+            if sessionFilePath:
+                try:
+                    sessionLayer = Sdf.Layer.Find(sessionFilePath)
+                    if sessionLayer:
+                        sessionLayer.Reload()
+                    else:
+                        sessionLayer = Sdf.Layer.FindOrOpen(sessionFilePath)
+                except Tf.ErrorException as e:
+                    sys.stderr.write(_GetFormattedError(
+                        [err.commentary.strip() for err in e.args]))
+                    sys.exit(1)
+            else:
+                sessionLayer = Sdf.Layer.CreateAnonymous()
+
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, 
+                stage = Usd.Stage.OpenMasked(layer,
+                                             sessionLayer,
                                              self._resolverContextFn(usdFilePath),
                                              popMask, loadSet)
             else:
                 stage = Usd.Stage.Open(layer,
+                                       sessionLayer,
                                        self._resolverContextFn(usdFilePath), 
                                        loadSet)
 
@@ -1195,8 +1244,7 @@ class AppController(QtCore.QObject):
 
         if self._playbackAvailable:
             if not resetStageDataOnly:
-                self._ui.frameSlider.setRange(0, len(self._timeSamples)-1)
-                self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
+                self._ui.frameSlider.resetSlider(len(self._timeSamples))
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
             self._ui.playButton.setChecked(False)
@@ -1211,6 +1259,18 @@ class AppController(QtCore.QObject):
 
         self._refreshCameraListAndMenu(preserveCurrCamera = preserveCamera)
 
+    @staticmethod
+    def GetRendererOptionChoices():
+        ids = UsdImagingGL.Engine.GetRendererPlugins()
+        choices = []
+        if ids:
+            choices = [UsdImagingGL.Engine.GetRendererDisplayName(x) 
+                        for x in ids]
+            choices.append(AppController.HYDRA_DISABLED_OPTION_STRING)
+        else:
+            choices = [AppController.HYDRA_DISABLED_OPTION_STRING]
+
+        return choices
 
     # Render plugin support
     def _rendererPluginChanged(self, plugin):
@@ -1219,7 +1279,7 @@ class AppController(QtCore.QObject):
                 # If SetRendererPlugin failed, we need to reset the check mark
                 # to whatever the currently loaded renderer is.
                 for action in self._ui.rendererPluginActionGroup.actions():
-                    if action.text() == self._stageView.rendererPluginName:
+                    if action.text() == self._stageView.rendererDisplayName:
                         action.setChecked(True)
                         break
                 # Then display an error message to let the user know something
@@ -1233,8 +1293,9 @@ class AppController(QtCore.QObject):
                         action.setDisabled(True)
                         break
             else:
-                # Refresh the AOV menu
+                # Refresh the AOV menu and settings menu
                 self._configureRendererAovs()
+                self._configureRendererSettings()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1243,7 +1304,7 @@ class AppController(QtCore.QObject):
 
             pluginTypes = self._stageView.GetRendererPlugins()
             for pluginType in pluginTypes:
-                name = self._stageView.GetRendererPluginDisplayName(pluginType)
+                name = self._stageView.GetRendererDisplayName(pluginType)
                 action = self._ui.menuRendererPlugin.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType
@@ -1252,23 +1313,24 @@ class AppController(QtCore.QObject):
                 action.triggered[bool].connect(lambda _, pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
 
-            # If any plugins exist, set the first one we find supported as the
-            # default
-            foundPlugin = False
-            if len(self._ui.rendererPluginActionGroup.actions()) > 0:
-                i = 0
-                for pluginType in pluginTypes:
-                    if self._stageView.SetRendererPlugin(pluginType):
-                        self._ui.rendererPluginActionGroup.actions()[i].setChecked(True)
-                        foundPlugin = True
-                        break
-                    i += 1
 
-            # Otherwise, disable the menu.
+            # Now set the checked box on the current renderer (it should
+            # have been set by now).
+            currentRendererId = self._stageView.GetCurrentRendererId()
+            foundPlugin = False
+            
+            for action in self._ui.rendererPluginActionGroup.actions():
+                if action.pluginType == currentRendererId:
+                    action.setChecked(True)
+                    foundPlugin = True
+                    break
+
+            # Disable the menu if no plugins were found
             self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
-            # Refresh the AOV menu
+            # Refresh the AOV menu and settings menu
             self._configureRendererAovs()
+            self._configureRendererSettings()
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
@@ -1293,6 +1355,9 @@ class AppController(QtCore.QObject):
 
                 action.triggered[bool].connect(lambda _, aov=aov:
                         self._rendererAovChanged(aov))
+
+            self._ui.menuRendererAovs.addSeparator()
+
             self._ui.aovOtherAction = self._ui.menuRendererAovs.addAction("Other...")
             self._ui.aovOtherAction.setCheckable(True)
             self._ui.aovOtherAction.aov = "Other"
@@ -1320,6 +1385,138 @@ class AppController(QtCore.QObject):
                     action.setChecked(True)
                     break
 
+    def _rendererSettingsFlagChanged(self, action):
+        if self._stageView:
+            self._stageView.SetRendererSetting(action.key, action.isChecked())
+
+    def _configureRendererSettings(self):
+        if self._stageView:
+            self._ui.menuRendererSettings.clear()
+            self._ui.settingsFlagActions = []
+
+            settings = self._stageView.GetRendererSettingsList()
+            moreSettings = False
+            for setting in settings:
+                if setting.type != UsdImagingGL.RendererSettingType.FLAG:
+                    moreSettings = True
+                    continue
+                action = self._ui.menuRendererSettings.addAction(setting.name)
+                action.setCheckable(True)
+                action.key = str(setting.key)
+                action.setChecked(self._stageView.GetRendererSetting(setting.key))
+                action.triggered[bool].connect(lambda _, action=action:
+                    self._rendererSettingsFlagChanged(action))
+                self._ui.settingsFlagActions.append(action)
+
+            if moreSettings:
+                self._ui.menuRendererSettings.addSeparator()
+
+                self._ui.settingsMoreAction = self._ui.menuRendererSettings.addAction("More...")
+                self._ui.settingsMoreAction.setCheckable(False)
+                self._ui.settingsMoreAction.triggered[bool].connect(self._moreRendererSettings)
+
+            self._ui.menuRendererSettings.setEnabled(len(settings) != 0)
+
+            # Close the old "More..." dialog if it's still open
+            if hasattr(self._ui, 'settingsMoreDialog'):
+                self._ui.settingsMoreDialog.reject()
+
+    def _moreRendererSettings(self):
+        # Recreate the settings dialog
+        self._ui.settingsMoreDialog = QtWidgets.QDialog(self._mainWindow)
+        self._ui.settingsMoreDialog.setWindowTitle("Hydra Settings")
+        self._ui.settingsMoreWidgets = []
+        layout = QtWidgets.QVBoxLayout()
+
+        # Add settings
+        groupBox = QtWidgets.QGroupBox()
+        formLayout = QtWidgets.QFormLayout()
+        groupBox.setLayout(formLayout)
+        layout.addWidget(groupBox)
+        formLayout.setLabelAlignment(QtCore.Qt.AlignLeft)
+        formLayout.setFormAlignment(QtCore.Qt.AlignRight)
+
+        settings = self._stageView.GetRendererSettingsList()
+        for setting in settings:
+            if setting.type == UsdImagingGL.RendererSettingType.FLAG:
+                checkBox = QtWidgets.QCheckBox()
+                checkBox.setChecked(self._stageView.GetRendererSetting(setting.key))
+                checkBox.key = str(setting.key)
+                checkBox.defValue = setting.defValue
+                formLayout.addRow(setting.name, checkBox)
+                self._ui.settingsMoreWidgets.append(checkBox)
+            if setting.type == UsdImagingGL.RendererSettingType.INT:
+                spinBox = QtWidgets.QSpinBox()
+                spinBox.setMinimum(-2 ** 31)
+                spinBox.setMaximum(2 ** 31 - 1)
+                spinBox.setValue(self._stageView.GetRendererSetting(setting.key))
+                spinBox.key = str(setting.key)
+                spinBox.defValue = setting.defValue
+                formLayout.addRow(setting.name, spinBox)
+                self._ui.settingsMoreWidgets.append(spinBox)
+            if setting.type == UsdImagingGL.RendererSettingType.FLOAT:
+                spinBox = QtWidgets.QDoubleSpinBox()
+                spinBox.setDecimals(10)
+                spinBox.setMinimum(-2 ** 31)
+                spinBox.setMaximum(2 ** 31 - 1)
+                spinBox.setValue(self._stageView.GetRendererSetting(setting.key))
+                spinBox.key = str(setting.key)
+                spinBox.defValue = setting.defValue
+                formLayout.addRow(setting.name, spinBox)
+                self._ui.settingsMoreWidgets.append(spinBox)
+            if setting.type == UsdImagingGL.RendererSettingType.STRING:
+                lineEdit = QtWidgets.QLineEdit()
+                lineEdit.setText(self._stageView.GetRendererSetting(setting.key))
+                lineEdit.key = str(setting.key)
+                lineEdit.defValue = setting.defValue
+                formLayout.addRow(setting.name, lineEdit)
+                self._ui.settingsMoreWidgets.append(lineEdit)
+
+        # Add buttons
+        buttonBox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok |
+            QtWidgets.QDialogButtonBox.Cancel |
+            QtWidgets.QDialogButtonBox.RestoreDefaults)
+        layout.addWidget(buttonBox)
+        buttonBox.rejected.connect(self._ui.settingsMoreDialog.reject)
+        buttonBox.accepted.connect(self._ui.settingsMoreDialog.accept)
+        self._ui.settingsMoreDialog.accepted.connect(self._applyMoreRendererSettings)
+        defaultButton = buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults)
+        defaultButton.clicked.connect(self._resetMoreRendererSettings)
+
+        self._ui.settingsMoreDialog.setLayout(layout)
+        self._ui.settingsMoreDialog.show()
+
+    def _applyMoreRendererSettings(self):
+        for widget in self._ui.settingsMoreWidgets:
+            if isinstance(widget, QtWidgets.QCheckBox):
+                self._stageView.SetRendererSetting(widget.key, widget.isChecked())
+            if isinstance(widget, QtWidgets.QSpinBox):
+                self._stageView.SetRendererSetting(widget.key, widget.value())
+            if isinstance(widget, QtWidgets.QDoubleSpinBox):
+                self._stageView.SetRendererSetting(widget.key, widget.value())
+            if isinstance(widget, QtWidgets.QLineEdit):
+                self._stageView.SetRendererSetting(widget.key, widget.text())
+
+        for action in self._ui.settingsFlagActions:
+            action.setChecked(self._stageView.GetRendererSetting(action.key))
+
+    def _resetMoreRendererSettings(self):
+        for widget in self._ui.settingsMoreWidgets:
+            if isinstance(widget, QtWidgets.QCheckBox):
+                widget.setChecked(widget.defValue)
+            if isinstance(widget, QtWidgets.QSpinBox):
+                widget.setValue(widget.defValue)
+            if isinstance(widget, QtWidgets.QDoubleSpinBox):
+                widget.setValue(widget.defValue)
+            if isinstance(widget, QtWidgets.QLineEdit):
+                widget.setText(widget.defValue)
+
+    def _configureColorManagement(self):
+        enableMenu = (not self._noRender and 
+                      UsdImagingGL.Engine.IsColorCorrectionCapable())
+        self._ui.menuColorCorrection.setEnabled(enableMenu)
+
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
 
@@ -1332,7 +1529,7 @@ class AppController(QtCore.QObject):
         else:
             self._resetPrimView(restoreSelection=False)
 
-        self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
+        self._ui.frameSlider.resetToMinimum()
 
         if not self._stageView:
 
@@ -1422,17 +1619,25 @@ class AppController(QtCore.QObject):
         previously fetched from the stage is invalid. In the future, more
         granular updates will be supported by listening to UsdNotice objects on
         the active stage.
+
+        If a prim resync is needed then we fully update the prim view,
+        otherwise can just do a simplified update to the prim view.
         """
-        self._resetPrimView()
-        self._updateAttributeView()
+        with BusyContext():
+            if self._hasPrimResync:
+                self._resetPrimView()
+                self._hasPrimResync = False
+            else:
+                self._resetPrimViewVis(selItemsOnly=False)
 
-        self._populateAttributeInspector()
-        self._updateMetadataView()
-        self._updateLayerStackView()
-        self._updateCompositionView()
+            self._updatePropertyView()
+            self._populatePropertyInspector()
+            self._updateMetadataView()
+            self._updateLayerStackView()
+            self._updateCompositionView()
 
-        if self._stageView:
-            self._stageView.update()
+            if self._stageView:
+                self._stageView.update()
 
     def updateGUI(self):
         """Will schedule a full refresh/resync of the GUI contents.
@@ -1523,7 +1728,8 @@ class AppController(QtCore.QObject):
 
     def _redrawOptionToggled(self, checked):
         self._dataModel.viewSettings.redrawOnScrub = checked
-        self._ui.frameSlider.setTracking(self._dataModel.viewSettings.redrawOnScrub)
+        self._ui.frameSlider.setUpdateOnFrameScrub(
+            self._dataModel.viewSettings.redrawOnScrub)
 
     # Frame-by-frame/Playback functionality ===================================
 
@@ -1591,68 +1797,63 @@ class AppController(QtCore.QObject):
     def _advanceFrame(self):
         if not self._playbackAvailable:
             return
-        newValue = self._ui.frameSlider.value() + 1
-        if newValue > self._ui.frameSlider.maximum():
-            newValue = self._ui.frameSlider.minimum()
-        self._ui.frameSlider.setValue(newValue)
+        self._ui.frameSlider.advanceFrame()
 
     def _retreatFrame(self):
         if not self._playbackAvailable:
             return
-        newValue = self._ui.frameSlider.value() - 1
-        if newValue < self._ui.frameSlider.minimum():
-            newValue = self._ui.frameSlider.maximum()
-        self._ui.frameSlider.setValue(newValue)
+        self._ui.frameSlider.retreatFrame()
 
-    def _findIndexOfFieldContents(self, field):
-        # don't convert string to float directly because of rounding error
-        frameString = str(field.text())
+    def _findClosestFrameIndex(self, timeSample):
+        """Find the closest frame index for the given `timeSample`.
 
-        if frameString.count(".") == 0:
-            frameString += ".0"
-        elif frameString[-1] == ".":
-            frameString += "0"
+        Args:
+            timeSample (float): A time sample value.
 
-        field.setText(frameString)
+        Returns:
+            int: The closest matching frame index or 0 if one cannot be
+            found.
+        """
+        closestIndex = int((timeSample - self._timeSamples[0]) / self.step)
 
-        # Find the index of the closest valid frame
-        dist = None
-        closestIndex = Usd.TimeCode.Default()
+        # Bounds checking
+        # 0 <= closestIndex <= number of time samples - 1
+        closestIndex = max(0, closestIndex)
+        closestIndex = min(len(self._timeSamples) - 1, closestIndex)
 
-        for i in range(len(self._timeSamples)):
-            newDist = abs(self._timeSamples[i] - float(frameString))
-            if dist is None or newDist < dist:
-                dist = newDist
-                closestIndex = i
         return closestIndex
 
     def _rangeBeginChanged(self):
-        self.realStartTimeCode = float(self._ui.rangeBegin.text())
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.rangeBegin.text())
+        if value != self.realStartTimeCode:
+            self.realStartTimeCode = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _stepSizeChanged(self):
-        stepStr = self._ui.stepSize.text()
-        self.step = float(stepStr)
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.stepSize.text())
+        if value != self.step:
+            self.step = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _rangeEndChanged(self):
-        self.realEndTimeCode = float(self._ui.rangeEnd.text())
-        self._UpdateTimeSamples(resetStageDataOnly=False)
+        value = float(self._ui.rangeEnd.text())
+        if value != self.realEndTimeCode:
+            self.realEndTimeCode = value
+            self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
-        indexOfFrame = self._findIndexOfFieldContents(self._ui.frameField)
+        timeSample = float(self._ui.frameField.text())
+        indexOfFrame = self._findClosestFrameIndex(timeSample)
 
         if (indexOfFrame != Usd.TimeCode.Default()):
             self.setFrame(indexOfFrame, forceUpdate=True)
-            self._ui.frameSlider.setValue(indexOfFrame)
+            self._ui.frameSlider.setValueImmediate(indexOfFrame)
 
         self._ui.frameField.setText(
             str(self._dataModel.currentFrame.GetValue()))
 
     def _sliderMoved(self, value):
         self._ui.frameField.setText(str(self._timeSamples[value]))
-        self._sliderTimer.stop()
-        self._sliderTimer.start()
 
     # Prim/Attribute search functionality =====================================
 
@@ -1736,7 +1937,7 @@ class AppController(QtCore.QObject):
             nextResult = self._attrSearchResults.popleft()
             itemName = str(nextResult.text(PropertyViewIndex.NAME))
 
-            selectedProp = self._attributeDict[itemName]
+            selectedProp = self._propertiesDict[itemName]
             if isinstance(selectedProp, CustomAttribute):
                 self._dataModel.selection.clearProps()
                 self._dataModel.selection.setComputedProp(selectedProp)
@@ -1832,13 +2033,15 @@ class AppController(QtCore.QObject):
 
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
 
-    def _updateForStageChanges(self):
+    def _updateForStageChanges(self, hasPrimResync=True):
         """Assuming there have been authoring changes to the already-loaded
         stage, make the minimal updates to the UI required to maintain a
         consistent state.  This may still be over-zealous until we know
         what actually changed, but we should be able to preserve camera and
         playback positions (unless viewing through a stage camera that no
         longer exists"""
+
+        self._hasPrimResync = hasPrimResync or self._hasPrimResync
 
         self._clearCaches(preserveCamera=True)
 
@@ -1907,6 +2110,9 @@ class AppController(QtCore.QObject):
     def _changeRenderMode(self, mode):
         self._dataModel.viewSettings.renderMode = str(mode.text())
 
+    def _changeColorCorrection(self, mode):
+        self._dataModel.viewSettings.colorCorrectionMode = str(mode.text())
+
     def _changePickMode(self, mode):
         self._dataModel.viewSettings.pickMode = str(mode.text())
 
@@ -1955,10 +2161,17 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.showBBoxPlayback = (
             self._ui.showBBoxPlayback.isChecked())
 
+    def _toggleAutoComputeClippingPlanes(self):
+        autoClip = self._ui.actionAuto_Compute_Clipping_Planes.isChecked()
+        self._dataModel.viewSettings.autoComputeClippingPlanes = autoClip
+        if autoClip:
+            self._stageView.detachAndReClipFromCurrentCamera()
+        
+
     def _setUseExtentsHint(self):
         self._dataModel.useExtentsHint = self._ui.useExtentsHint.isChecked()
 
-        self._updateAttributeView()
+        self._updatePropertyView()
 
         #recompute and display bbox
         self._refreshBBox()
@@ -2103,13 +2316,22 @@ class AppController(QtCore.QObject):
             t.PrintTime('tear down the UI')
 
     def _openFile(self):
-        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self._mainWindow, "Select file",".")
+        extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
+        builtInFiles = lambda f: f.startswith(".usd")
+        notBuiltInFiles = lambda f: not f.startswith(".usd")
+        extensions = filter(builtInFiles, extensions) + filter(notBuiltInFiles, extensions)
+        fileFilter = "USD Compatible Files (" + " ".join("*." + e for e in extensions) + ")" 
+        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
+            self._mainWindow,
+            caption="Select file",
+            dir=".",
+            filter=fileFilter,
+            selectedFilter=fileFilter)
+
         if len(filename) > 0:
-
             self._parserData.usdFile = str(filename)
-            self._reopenStage()
-
             self._mainWindow.setWindowTitle(filename)
+            self._reopenStage()
 
     def _getSaveFileName(self, caption, recommendedFilename):
         (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(
@@ -2191,6 +2413,9 @@ class AppController(QtCore.QObject):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
+            # Pause the stage view while we update
+            self._stageView.setUpdatesEnabled(False)
+
             # Clear out any Usd objects that may become invalid.
             self._dataModel.selection.clear()
             self._currentSpec = None
@@ -2200,7 +2425,8 @@ class AppController(QtCore.QObject):
             # while trying to open another stage.
             self._closeStage()
             stage = self._openStage(
-                self._parserData.usdFile, self._parserData.populationMask)
+                self._parserData.usdFile, self._parserData.sessionLayer,
+                self._parserData.populationMask)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
@@ -2213,6 +2439,7 @@ class AppController(QtCore.QObject):
 
             self._stepSizeChanged()
             self._stepSizeChanged()
+            self._stageView.setUpdatesEnabled(True)
         except Exception as err:
             self.statusMessage('Error occurred reopening Stage: %s' % err)
             traceback.print_exc()
@@ -2230,7 +2457,6 @@ class AppController(QtCore.QObject):
             Glf.TextureRegistry.Reset()
             # reset timeline, and playback settings from stage metadata
             self._reloadFixedUI(resetStageDataOnly=True)
-            self._updateForStageChanges()
         except Exception as err:
             self.statusMessage('Error occurred rereading all layers for Stage: %s' % err)
         finally:
@@ -2319,7 +2545,7 @@ class AppController(QtCore.QObject):
 
                 # Get the owning property's set of selected targets.
                 propName = str(item.parent().text(PropertyViewIndex.NAME))
-                prop = self._attributeDict[propName]
+                prop = self._propertiesDict[propName]
                 targets = selectedProperties.setdefault(prop, set())
 
                 # Add the target to the set of targets.
@@ -2336,7 +2562,7 @@ class AppController(QtCore.QObject):
             else:
 
                 propName = str(item.text(PropertyViewIndex.NAME))
-                prop = self._attributeDict[propName]
+                prop = self._propertiesDict[propName]
                 selectedProperties.setdefault(prop, set())
 
         with self._dataModel.selection.batchPropChanges:
@@ -2377,11 +2603,11 @@ class AppController(QtCore.QObject):
         """Called whenever the property selection in the data model changes.
         Updates any UI that relies on the selection state.
         """
-        self._updateAttributeViewSelection()
-        self._populateAttributeInspector()
-        self._updateAttributeInspector()
+        self._updatePropertyViewSelection()
+        self._populatePropertyInspector()
+        self._updatePropertyInspector()
 
-    def _populateAttributeInspector(self):
+    def _populatePropertyInspector(self):
 
         focusPrimPath = None
         focusPropName = None
@@ -2404,11 +2630,11 @@ class AppController(QtCore.QObject):
         self._currentSpec = getattr(curr, 'spec', None)
         self._currentLayer = getattr(curr, 'layer', None)
 
-    def _updateAttributeInspector(self, index=None, obj=None):
+    def _updatePropertyInspector(self, index=None, obj=None):
         # index must be the first parameter since this method is used as
-        # attributeInspector tab widget's currentChanged(int) signal callback
+        # propertyInspector tab widget's currentChanged(int) signal callback
         if index is None:
-            index = self._ui.attributeInspector.currentIndex()
+            index = self._ui.propertyInspector.currentIndex()
 
         if obj is None:
             obj = self._getSelectedObject()
@@ -2774,9 +3000,9 @@ class AppController(QtCore.QObject):
             self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
             self._stageView.updateView()
-        self._updateAttributeInspector(
+        self._updatePropertyInspector(
             obj=self._dataModel.selection.getFocusPrim())
-        self._updateAttributeView()
+        self._updatePropertyView()
         self._refreshAttributeValue()
 
     def _getPrimsFromPaths(self, paths):
@@ -2846,21 +3072,17 @@ class AppController(QtCore.QObject):
             for prim in self._dataModel.selection.getPrims()]
         if len(selectedItems) > 0:
             self._ui.primView.setCurrentItem(selectedItems[0])
-        for item in selectedItems:
-            item.setSelected(True)
-            self._ui.primView.scrollToItem(item)
+        self._ui.primView.updateSelection(selectedItems, [])
 
     def _updatePrimViewSelection(self, added, removed):
         """Do an incremental update to primView's selection using the added and
         removed prim paths from the selectionDataModel.
         """
-        for path in added:
-            item = self._getItemAtPath(path, ensureExpanded=True)
-            item.setSelected(True)
-            self._ui.primView.scrollToItem(item)
-        for path in removed:
-            item = self._getItemAtPath(path)
-            item.setSelected(False)
+        addedItems = [ 
+            self._getItemAtPath(path, ensureExpanded=True) 
+            for path in added ]
+        removedItems = [ self._getItemAtPath(path) for path in removed ]
+        self._ui.primView.updateSelection(addedItems, removedItems)
 
     def _primsFromSelectionRanges(self, ranges):
         """Iterate over all prims in a QItemSelection from primView."""
@@ -2888,16 +3110,32 @@ class AppController(QtCore.QObject):
                     self._dataModel.selection.removePrim(prim)
 
     def _itemClicked(self, item, col):
-        # onClick() returns True if the click caused a state change (currently
-        # this will only be a change to visibility).
-        if item.onClick(col):
-            self.editComplete('Updated prim visibility')
+        # If user clicked in a selected row, we will toggle all selected items;
+        # otherwise, just the clicked one.
+        if col == PrimViewColumnIndex.VIS:
+            itemsToToggle = [ item ]
+            if item.isSelected():
+                itemsToToggle =  [
+                    self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
+                    for prim in self._dataModel.selection.getPrims()]
+            changedAny = False
             with Timer() as t:
-                PrimViewItem.propagateVis(item)
+                for toToggle in itemsToToggle:
+                    # toggleVis() returns True if the click caused a visibility
+                    # change.
+                    changedOne = toToggle.toggleVis()
+                    if changedOne:
+                        PrimViewItem.propagateVis(toToggle)
+                        changedAny = True
+            if changedAny:
+                self.editComplete('Updated prim visibility')
             if self._printTiming:
                 t.PrintTime("update vis column")
-        self._updateAttributeInspector(
-            obj=self._dataModel.selection.getFocusPrim())
+            
+
+    def _itemPressed(self, item, col):
+        if col == PrimViewColumnIndex.DRAWMODE:
+            self._ui.primView.ShowDrawModeWidgetForItem(item)
 
     def _getPathsFromItems(self, items, prune = False):
         # this function returns a list of paths given a list of items if
@@ -2961,9 +3199,8 @@ class AppController(QtCore.QObject):
         if refreshUI: # slow stuff that we do only when not playing
             # topology might have changed, recalculate
             self._updateHUDGeomCounts()
-            self._updateAttributeView()
+            self._updatePropertyView()
             self._refreshAttributeValue()
-            self._sliderTimer.stop()
 
             # value sources of an attribute can change upon frame change
             # due to value clips, so we must update the layer stack.
@@ -2992,42 +3229,45 @@ class AppController(QtCore.QObject):
             pm =  QtGui.QPixmap.grabWindow(self._stageView.winId())
             pm.save(fileName, 'TIFF')
 
-    def _getAttributeDict(self):
-        attributeDict = OrderedDict()
+    def _getPropertiesDict(self):
+        propertiesDict = OrderedDict()
 
         # leave attribute viewer empty if multiple prims selected
         if len(self._dataModel.selection.getPrims()) != 1:
-            return attributeDict
+            return propertiesDict
 
         prim = self._dataModel.selection.getFocusPrim()
-
         composed = _GetCustomAttributes(prim, self._dataModel)
+        inheritedPrimvars = UsdGeom.PrimvarsAPI(prim).FindInheritablePrimvars() 
 
-        attrs = prim.GetAttributes() + prim.GetRelationships()
-        def cmpFunc(attrA, attrB):
-            aName = attrA.GetName()
-            bName = attrB.GetName()
+        # There may be overlap between inheritedProps and prim attributes,
+        # but that's OK because propsDict will uniquify them below
+        inheritedProps = [primvar.GetAttr() for primvar in inheritedPrimvars]
+        props = prim.GetAttributes() + prim.GetRelationships()  + inheritedProps
+
+        def cmpFunc(propA, propB):
+            aName = propA.GetName()
+            bName = propB.GetName()
             return cmp(aName.lower(), bName.lower())
 
-        attrs.sort(cmp=cmpFunc)
+        props.sort(cmp=cmpFunc)
 
         # Add the special composed attributes usdview generates
         # at the top of our property list.
-        for attr in composed:
-            attributeDict[attr.GetName()] = attr
+        for prop in composed:
+            propertiesDict[prop.GetName()] = prop
 
-        for attr in attrs:
-            attributeDict[attr.GetName()] = attr
+        for prop in props:
+            propertiesDict[prop.GetName()] = prop
 
-        return attributeDict
+        return propertiesDict
 
     def _propertyViewDeselectItem(self, item):
-
         item.setSelected(False)
         for i in range(item.childCount()):
             item.child(i).setSelected(False)
 
-    def _updateAttributeViewSelection(self):
+    def _updatePropertyViewSelection(self):
         """Updates property view's selected items to match the data model."""
 
         focusPrim = self._dataModel.selection.getFocusPrim()
@@ -3036,11 +3276,9 @@ class AppController(QtCore.QObject):
 
         selectedPrimPropNames = dict()
         selectedPrimPropNames.update({prop.GetName(): targets
-            for prop, targets in propTargets.items()
-            if prop.GetPrim() == focusPrim})
+            for prop, targets in propTargets.items()})
         selectedPrimPropNames.update({propName: set()
-            for primPath, propName in computedProps
-            if primPath == focusPrim.GetPath()})
+            for primPath, propName in computedProps})
 
         rootItem = self._ui.propertyView.invisibleRootItem()
 
@@ -3050,7 +3288,6 @@ class AppController(QtCore.QObject):
                 propName = str(item.text(PropertyViewIndex.NAME))
                 if propName in selectedPrimPropNames:
                     item.setSelected(True)
-
                     # Select relationships and connections.
                     targets = {prop.GetPath()
                         for prop in selectedPrimPropNames[propName]}
@@ -3063,92 +3300,115 @@ class AppController(QtCore.QObject):
                 else:
                     self._propertyViewDeselectItem(item)
 
-    def _updateAttributeViewInternal(self):
+    def _updatePropertyViewInternal(self):
         frame = self._dataModel.currentFrame
         treeWidget = self._ui.propertyView
-
+        treeWidget.setTextElideMode(QtCore.Qt.ElideMiddle)
         scrollPosition = treeWidget.verticalScrollBar().value()
 
-        # get a dictionary of prim attribs/members and store it in self._attributeDict
-        self._attributeDict = self._getAttributeDict()
+        # get a dictionary of prim attribs/members and store it in self._propertiesDict
+        self._propertiesDict = self._getPropertiesDict()
         with self._propertyViewSelectionBlocker:
             treeWidget.clear()
-        self._populateAttributeInspector()
+        self._populatePropertyInspector()
+
+        curPrimSelection = self._dataModel.selection.getFocusPrim()
 
         currRow = 0
-        for key, attribute in self._attributeDict.iteritems():
+        for key, primProperty in self._propertiesDict.iteritems():
             targets = None
-
-            if (isinstance(attribute, BoundingBoxAttribute) or
-                isinstance(attribute, LocalToWorldXformAttribute)):
-                typeContent = PropertyViewIcons.COMPOSED()
-                typeRole = PropertyViewDataRoles.COMPOSED
-            elif type(attribute) == Usd.Attribute:
-                if attribute.HasAuthoredConnections():
+            isInheritedProperty = isinstance(primProperty, Usd.Property) and \
+                (primProperty.GetPrim() != curPrimSelection)
+            if type(primProperty) == Usd.Attribute:
+                if primProperty.HasAuthoredConnections():
                     typeContent = PropertyViewIcons.ATTRIBUTE_WITH_CONNECTIONS()
                     typeRole = PropertyViewDataRoles.ATTRIBUTE_WITH_CONNNECTIONS
-                    targets = attribute.GetConnections()
+                    targets = primProperty.GetConnections()
                 else:
                     typeContent = PropertyViewIcons.ATTRIBUTE()
                     typeRole = PropertyViewDataRoles.ATTRIBUTE
-            else:
+            elif isinstance(primProperty, ResolvedBoundMaterial):
+                typeContent = PropertyViewIcons.COMPOSED()
+                typeRole = PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
+            elif isinstance(primProperty, CustomAttribute):
+                typeContent = PropertyViewIcons.COMPOSED()
+                typeRole = PropertyViewDataRoles.COMPOSED
+            elif isinstance(primProperty, Usd.Relationship):
                 # Otherwise we have a relationship
-                targets = attribute.GetTargets()
-
+                targets = primProperty.GetTargets()
                 if targets:
                     typeContent = PropertyViewIcons.RELATIONSHIP_WITH_TARGETS()
                     typeRole = PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
                 else:
                     typeContent = PropertyViewIcons.RELATIONSHIP()
                     typeRole = PropertyViewDataRoles.RELATIONSHIP
+            else:
+                PrintWarning("Property '%s' has unknown property type <%s>." %
+                    (key, type(primProperty)))
+                continue
 
-            attrText = GetShortString(attribute, frame) or ""
+            attrText = GetShortString(primProperty, frame) or ""
             treeWidget.addTopLevelItem(
                 QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
-            treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, typeContent)
+
+            treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, 
+                    typeContent)
             treeWidget.topLevelItem(currRow).setData(PropertyViewIndex.TYPE,
-                                                     QtCore.Qt.ItemDataRole.WhatsThisRole,
-                                                     typeRole)
+                    QtCore.Qt.ItemDataRole.WhatsThisRole,
+                    typeRole)
 
             currItem = treeWidget.topLevelItem(currRow)
 
-            valTextFont = GetAttributeTextFont(attribute, frame)
+            valTextFont = GetPropertyTextFont(primProperty, frame)
             if valTextFont:
                 currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                 currItem.setFont(PropertyViewIndex.NAME, valTextFont)
             else:
                 currItem.setFont(PropertyViewIndex.NAME, UIFonts.BOLD)
 
-            fgColor = GetAttributeColor(attribute, frame)
+            fgColor = GetPropertyColor(primProperty, frame)
+            # Inherited properties are colored 15% darker, along with the 
+            # addition of "(i)" in the type column.
+            if isInheritedProperty:
+                # Add "(i)" to the type column to indicate an inherited 
+                # property.
+                treeWidget.topLevelItem(currRow).setText(PropertyViewIndex.TYPE, 
+                                                         "(i)")
+                fgColor = fgColor.darker(115)
+                currItem.setFont(PropertyViewIndex.TYPE, UIFonts.INHERITED)
+
             currItem.setForeground(PropertyViewIndex.NAME, fgColor)
             currItem.setForeground(PropertyViewIndex.VALUE, fgColor)
 
             if targets:
                 childRow = 0
                 for t in targets:
-                    valTextFont = GetAttributeTextFont(attribute, frame) or UIFonts.BOLD
+                    valTextFont = GetPropertyTextFont(primProperty, frame) or \
+                            UIFonts.BOLD
                     # USD does not provide or infer values for relationship or
                     # connection targets, so we don't display them here.
-                    currItem.addChild(QtWidgets.QTreeWidgetItem(["", str(t), ""]))
+                    currItem.addChild(
+                            QtWidgets.QTreeWidgetItem(["", str(t), ""]))
                     currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                     child = currItem.child(childRow)
 
                     if typeRole == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
-                        child.setIcon(PropertyViewIndex.TYPE, PropertyViewIcons.TARGET())
+                        child.setIcon(PropertyViewIndex.TYPE, 
+                                      PropertyViewIcons.TARGET())
                         child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       PropertyViewDataRoles.TARGET)
                     else:
-                        child.setIcon(PropertyViewIndex.TYPE, PropertyViewIcons.CONNECTION())
+                        child.setIcon(PropertyViewIndex.TYPE,
+                                      PropertyViewIcons.CONNECTION())
                         child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       PropertyViewDataRoles.CONNECTION)
-
                     childRow += 1
 
             currRow += 1
 
-        self._updateAttributeViewSelection()
+        self._updatePropertyViewSelection()
 
         # For some reason, resetting the scrollbar position here only works on a
         # frame change, not when the prim changes. When the prim changes, the
@@ -3156,13 +3416,13 @@ class AppController(QtCore.QObject):
         # effect.
         treeWidget.verticalScrollBar().setValue(scrollPosition)
 
-    def _updateAttributeView(self):
+    def _updatePropertyView(self):
         """ Sets the contents of the attribute value viewer """
         cursorOverride = not self._timer.isActive()
         if cursorOverride:
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
-            self._updateAttributeViewInternal()
+            self._updatePropertyViewInternal()
         except Exception as err:
             print "Problem encountered updating attribute view: %s" % err
             raise
@@ -3170,25 +3430,27 @@ class AppController(QtCore.QObject):
             if cursorOverride:
                 QtWidgets.QApplication.restoreOverrideCursor()
 
-    def _getSelectedObject(self, selectedAttribute=None):
-        if selectedAttribute is None:
-            attrs = self._ui.propertyView.selectedItems()
-            if len(attrs) > 0:
-                selectedAttribute = attrs[0]
+    def _getSelectedObject(self):
+        focusPrim = self._dataModel.selection.getFocusPrim()
 
-        if selectedAttribute:
-            attrName = str(selectedAttribute.text(PropertyViewIndex.NAME))
+        attrs = self._ui.propertyView.selectedItems()
+        if len(attrs) == 0:
+            return focusPrim
 
-            if PropTreeWidgetTypeIsRel(selectedAttribute):
-                obj = self._dataModel.selection.getFocusPrim().GetRelationship(
-                    attrName)
-            else:
-                obj = self._dataModel.selection.getFocusPrim().GetAttribute(
-                    attrName)
+        selectedAttribute = attrs[0]
+        attrName = str(selectedAttribute.text(PropertyViewIndex.NAME))
+        
+        if PropTreeWidgetTypeIsRel(selectedAttribute):
+            return focusPrim.GetRelationship(attrName)
 
-            return obj
-
-        return self._dataModel.selection.getFocusPrim()
+        obj = focusPrim.GetAttribute(attrName)
+        if not obj:
+            # Check if it is an inherited primvar.
+            inheritedPrimvar = UsdGeom.PrimvarsAPI(
+                    focusPrim).FindPrimvarWithInheritance(attrName)
+            if inheritedPrimvar:
+                obj = inheritedPrimvar.GetAttr()
+        return obj
 
     def _findIndentPos(self, s):
         for index, char in enumerate(s):
@@ -3314,7 +3576,7 @@ class AppController(QtCore.QObject):
         # would be nice to clean that up and ensure we only update as needed.
 
         tableWidget = self._ui.metadataView
-        self._attributeDict = self._getAttributeDict()
+        self._propertiesDict = self._getPropertiesDict()
 
         # Setup table widget
         tableWidget.clearContents()
@@ -3422,7 +3684,7 @@ class AppController(QtCore.QObject):
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(
                 lambda i, combo=combo: combo.updateVariantSelection(
-                    i, self._updateForStageChanges, self._printTiming))
+                    i, self._printTiming))
             rowIndex += 1
 
         tableWidget.resizeColumnToContents(0)
@@ -3812,26 +4074,16 @@ class AppController(QtCore.QObject):
             action.setStatusTip(Tf.Debug.GetDebugSymbolDescription(flag))
             action.triggered[bool].connect(__createTriggerLambda(flag, not isEnabled))
 
-    def _updateEditPrimMenu(self):
-        """Make the Edit Prim menu items enabled or disabled depending on the
+    def _updateNavigationMenu(self):
+        """Make the Navigation menu items enabled or disabled depending on the
         selected prim."""
-        
-        # Use the descendent-pruned selection set to avoid redundant
-        # traversal of the stage to answer isLoaded...
-        anyLoadable, unused = GetPrimsLoadability(
-            self._dataModel.selection.getLCDPrims())
-        removeEnabled = False
-        anyImageable = False
         anyModels = False
         anyBoundPreviewMaterials = False
         anyBoundFullMaterials = False
-        anyActive = False
-        anyInactive = False
+
         for prim in self._dataModel.selection.getPrims():
             if prim.IsA(UsdGeom.Imageable):
                 imageable = UsdGeom.Imageable(prim)
-                anyImageable = anyImageable or bool(imageable)
-                removeEnabled = removeEnabled or HasSessionVis(prim)
             anyModels = anyModels or GetEnclosingModelPrim(prim) is not None
             
             (previewMat,previewBindingRel) =\
@@ -3843,23 +4095,39 @@ class AppController(QtCore.QObject):
                 UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
                     materialPurpose=UsdShade.Tokens.full)            
             anyBoundFullMaterials |= bool(fullMat)
-            
+
+        self._ui.actionSelect_Model_Root.setEnabled(anyModels)
+        self._ui.actionSelect_Bound_Preview_Material.setEnabled(
+                anyBoundPreviewMaterials)
+        self._ui.actionSelect_Preview_Binding_Relationship.setEnabled(
+                anyBoundPreviewMaterials)
+        self._ui.actionSelect_Bound_Full_Material.setEnabled(
+                anyBoundFullMaterials)
+        self._ui.actionSelect_Full_Binding_Relationship.setEnabled(
+                anyBoundFullMaterials)
+
+    def _updateEditMenu(self):
+        """Make the Edit Prim menu items enabled or disabled depending on the
+        selected prim."""
+        
+        # Use the descendent-pruned selection set to avoid redundant
+        # traversal of the stage to answer isLoaded...
+        anyLoadable, unused = GetPrimsLoadability(
+            self._dataModel.selection.getLCDPrims())
+        removeEnabled = False
+        anyImageable = False
+        anyActive = False
+        anyInactive = False
+        for prim in self._dataModel.selection.getPrims():
+            if prim.IsA(UsdGeom.Imageable):
+                imageable = UsdGeom.Imageable(prim)
+                anyImageable = anyImageable or bool(imageable)
+                removeEnabled = removeEnabled or HasSessionVis(prim)            
             if prim.IsActive():
                 anyActive = True
             else:
                 anyInactive = True
-
-        self._ui.actionJump_to_Model_Root.setEnabled(anyModels)
         
-        self._ui.actionJump_to_Bound_Preview_Material.setEnabled(
-                anyBoundPreviewMaterials)
-        self._ui.actionSelect_Preview_Binding_Relationship.setEnabled(
-                anyBoundPreviewMaterials)
-        
-        self._ui.actionJump_to_Bound_Full_Material.setEnabled(
-                anyBoundFullMaterials)
-        self._ui.actionSelect_Full_Binding_Relationship.setEnabled(
-                anyBoundFullMaterials)
         self._ui.actionRemove_Session_Visibility.setEnabled(removeEnabled)
         self._ui.actionMake_Visible.setEnabled(anyImageable)
         self._ui.actionVis_Only.setEnabled(anyImageable)
@@ -3868,7 +4136,6 @@ class AppController(QtCore.QObject):
         self._ui.actionUnload.setEnabled(anyLoadable)
         self._ui.actionActivate.setEnabled(anyInactive)
         self._ui.actionDeactivate.setEnabled(anyActive)
-
 
     def getSelectedItems(self):
         return [self._primToItemMap[n]
@@ -3951,9 +4218,6 @@ class AppController(QtCore.QObject):
                 for path in paths:
                     sdfPrim = Sdf.CreatePrimInLayer(layer, path)
                     sdfPrim.active = active
-
-            # Refresh primView to support the stage changes.
-            self.updateGUI()
 
             pathNames = ", ".join(path.name for path in paths)
             if active:
@@ -4263,6 +4527,7 @@ class AppController(QtCore.QObject):
         actions and submenus to match the values in the ViewSettingsDataModel.
         """
         self._refreshRenderModeMenu()
+        self._refreshColorCorrectionModeMenu()
         self._refreshPickModeMenu()
         self._refreshComplexityMenu()
         self._refreshBBoxMenu()
@@ -4285,6 +4550,11 @@ class AppController(QtCore.QObject):
         for action in self._renderModeActions:
             action.setChecked(
                 str(action.text()) == self._dataModel.viewSettings.renderMode)
+
+    def _refreshColorCorrectionModeMenu(self):
+        for action in self._colorCorrectionActions:
+            action.setChecked(
+                str(action.text()) == self._dataModel.viewSettings.colorCorrectionMode)
 
     def _refreshPickModeMenu(self):
         for action in self._pickModeActions:
@@ -4366,6 +4636,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.displayPrimId)
         self._ui.actionCull_Backfaces.setChecked(
             self._dataModel.viewSettings.cullBackfaces)
+        self._ui.actionAuto_Compute_Clipping_Planes.setChecked(
+            self._dataModel.viewSettings.autoComputeClippingPlanes)
 
     def _refreshHUDMenu(self):
         self._ui.actionHUD.setChecked(self._dataModel.viewSettings.showHUD)
@@ -4409,7 +4681,7 @@ class AppController(QtCore.QObject):
                 == self._dataModel.viewSettings.highlightColorName)
 
     def _displayPurposeChanged(self):
-        self._updateAttributeView()
+        self._updatePropertyView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
             self._stageView.updateView()
@@ -4419,3 +4691,9 @@ class AppController(QtCore.QObject):
         if self._isHUDVisible():
             self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
+
+    def _onPrimsChanged(self, primsChange, propertiesChange):
+        """Called when prims in the USD stage have changed."""
+        from rootDataModel import ChangeNotice
+        self._updateForStageChanges(
+            hasPrimResync=(primsChange==ChangeNotice.RESYNC))

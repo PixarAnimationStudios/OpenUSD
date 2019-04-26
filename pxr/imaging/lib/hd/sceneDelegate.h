@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/materialParam.h"
@@ -216,6 +217,15 @@ struct HdExtComputationInputDescriptor {
     : name(name_), sourceComputationId(sourceComputationId_)
     , sourceComputationOutputName(sourceComputationOutputName_)
     { }
+
+    bool operator==(HdExtComputationInputDescriptor const& rhs) const {
+        return name == rhs.name &&
+               sourceComputationId == rhs.sourceComputationId &&
+               sourceComputationOutputName == rhs.sourceComputationOutputName;
+    }
+    bool operator!=(HdExtComputationInputDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 typedef std::vector<HdExtComputationInputDescriptor>
@@ -237,27 +247,18 @@ struct HdExtComputationOutputDescriptor {
         HdTupleType const & valueType_)
     : name(name_), valueType(valueType_)
     { }
+
+    bool operator==(HdExtComputationOutputDescriptor const& rhs) const {
+        return name == rhs.name &&
+               valueType == rhs.valueType;
+    }
+    bool operator!=(HdExtComputationOutputDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 typedef std::vector<HdExtComputationOutputDescriptor>
         HdExtComputationOutputDescriptorVector;
-
-/// \struct HdRenderBufferDescriptor
-///
-/// Describes the allocation structure of a render buffer bprim.
-struct HdRenderBufferDescriptor {
-    GfVec3i dimensions;
-    HdFormat format;
-    bool multiSampled;
-
-    bool operator==(HdRenderBufferDescriptor const& rhs) const {
-        return dimensions == rhs.dimensions &&
-               format == rhs.format && multiSampled == rhs.multiSampled;
-    }
-    bool operator!=(HdRenderBufferDescriptor const& rhs) const {
-        return !(*this == rhs);
-    }
-};
 
 /// \struct HdVolumeFieldDescriptor
 ///
@@ -419,7 +420,6 @@ public:
     HD_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples);
 
@@ -428,10 +428,9 @@ public:
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
         out->count = SampleInstancerTransform(
-            instancerId, prototypeId, CAPACITY, out->times, out->values);
+            instancerId, CAPACITY, out->times, out->values);
     }
 
     /// Store up to \a maxSampleCount primvar samples in \a *samples.
@@ -482,8 +481,7 @@ public:
 
     /// Returns the instancer transform.
     HD_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId);
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId);
 
 
     /// Resolves a pair of rprimPath and instanceIndex back to original
@@ -638,6 +636,12 @@ public:
     virtual HdExtComputationPrimvarDescriptorVector
     GetExtComputationPrimvarDescriptors(SdfPath const& id,
                                         HdInterpolation interpolationMode);
+
+    /// Returns a single value for a given computation id and input token.
+    /// The token may be a computation input or a computation config parameter.
+    HD_API
+    virtual VtValue GetExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input);
 
     /// Returns the kernel source assigned to the computation at the path id.
     /// If the string is empty the computation has no GPU kernel and the

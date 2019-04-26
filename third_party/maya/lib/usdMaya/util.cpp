@@ -32,16 +32,21 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/tokens.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/metrics.h"
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
@@ -63,12 +68,14 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -76,6 +83,98 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+double
+UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(
+    const MDistance::Unit mdistanceUnit)
+{
+    switch (mdistanceUnit) {
+        case MDistance::kInches:
+            return UsdGeomLinearUnits::inches;
+        case MDistance::kFeet:
+            return UsdGeomLinearUnits::feet;
+        case MDistance::kYards:
+            return UsdGeomLinearUnits::yards;
+        case MDistance::kMiles:
+            return UsdGeomLinearUnits::miles;
+        case MDistance::kMillimeters:
+            return UsdGeomLinearUnits::millimeters;
+        case MDistance::kCentimeters:
+            return UsdGeomLinearUnits::centimeters;
+        case MDistance::kKilometers:
+            return UsdGeomLinearUnits::kilometers;
+        case MDistance::kMeters:
+            return UsdGeomLinearUnits::meters;
+        default:
+            TF_CODING_ERROR("Invalid MDistance unit %d. Assuming centimeters", 
+                mdistanceUnit);
+            return UsdGeomLinearUnits::centimeters;
+    }
+}
+
+MDistance::Unit
+UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(
+    const double linearUnit)
+{
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::millimeters)) {
+        return MDistance::kMillimeters;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::centimeters)) {
+        return MDistance::kCentimeters;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::meters)) {
+        return MDistance::kMeters;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::kilometers)) {
+        return MDistance::kKilometers;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::inches)) {
+        return MDistance::kInches;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::feet)) {
+        return MDistance::kFeet;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::yards)) {
+        return MDistance::kYards;
+    }
+    if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::miles)) {
+        return MDistance::kMiles;
+    }
+
+    TF_CODING_ERROR("Invalid UsdGeomLinearUnit %f. Assuming centimeters", 
+        linearUnit);
+    return MDistance::kCentimeters;
+}
+
+std::string
+UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
+{
+    MString nodeName;
+    MStatus status;
+
+    // All DAG nodes are also DG nodes, so try it as a DG node first.
+    const MFnDependencyNode depNodeFn(mayaNode, &status);
+    if (status == MS::kSuccess) {
+#if MAYA_API_VERSION >= 20180000
+        const MString depName = depNodeFn.absoluteName(&status);
+#else
+        const MString depName = depNodeFn.name(&status);
+#endif
+        if (status == MS::kSuccess) {
+            nodeName = depName;
+        }
+    }
+
+    // Overwrite the DG name if we find that it's a DAG node.
+    const MFnDagNode dagNodeFn(mayaNode, &status);
+    if (status == MS::kSuccess) {
+        const MString dagName = dagNodeFn.fullPathName(&status);
+        if (status == MS::kSuccess) {
+            nodeName = dagName;
+        }
+    }
+
+    return nodeName.asChar();
+}
 
 MStatus
 UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
@@ -170,6 +269,61 @@ UsdMayaUtil::GetMayaTimePlug()
     }
 
     return timePlug;
+}
+
+MPlug
+UsdMayaUtil::GetMayaShaderListPlug()
+{
+    MPlug shadersPlug;
+    MStatus status;
+
+    MItDependencyNodes iter(MFn::kShaderList, &status);
+    CHECK_MSTATUS_AND_RETURN(status, shadersPlug);
+
+    while (!shadersPlug && !iter.isDone()) {
+        MObject node = iter.thisNode();
+        iter.next();
+
+        MFnDependencyNode depNodeFn(node, &status);
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
+        MPlug outShadersPlug = depNodeFn.findPlug("shaders", true, &status);
+        if (status != MS::kSuccess || !outShadersPlug) {
+            continue;
+        }
+
+        shadersPlug = outShadersPlug;
+    }
+
+    return shadersPlug;
+}
+
+MObject
+UsdMayaUtil::GetDefaultLightSetObject()
+{
+    MObject node;
+    MStatus status;
+
+    MItDependencyNodes setIter(MFn::kSet, &status);
+    CHECK_MSTATUS_AND_RETURN(status, node);
+
+    while(!setIter.isDone()) {
+        node = setIter.thisNode();
+        setIter.next();
+
+        MFnSet setFn(node, &status);
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
+        if (setFn.name() == MString("defaultLightSet")) {
+            break;
+        }
+    }
+
+    return node;
 }
 
 bool
@@ -295,35 +449,38 @@ UsdMayaUtil::getSampledType(
 
 // does this cover all cases?
 bool
-UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
+UsdMayaUtil::isAnimated(const MObject& mayaObject, const bool checkParent)
 {
-    MStatus stat;
+    // MItDependencyGraph takes a non-const MObject as a constructor parameter,
+    // so we have to make a copy of mayaObject here.
+    MObject mayaObjectCopy(mayaObject);
+
+    MStatus status;
     MItDependencyGraph iter(
-        object,
+        mayaObjectCopy,
         MFn::kInvalid,
         MItDependencyGraph::kUpstream,
         MItDependencyGraph::kDepthFirst,
         MItDependencyGraph::kNodeLevel,
-        &stat);
-
-    if (stat!= MS::kSuccess)
-    {
-        TF_RUNTIME_ERROR("Unable to create DG iterator");
+        &status);
+    if (status != MS::kSuccess) {
+        TF_RUNTIME_ERROR(
+            "Unable to create DG iterator for Maya node '%s'",
+            GetMayaNodeName(mayaObject).c_str());
     }
 
     // MAnimUtil::isAnimated(node) will search the history of the node
     // for any animation curve nodes. It will return true for those nodes
     // that have animation curve in their history.
     // The average time complexity is O(n^2) where n is the number of history
-    // nodes. But we can improve the best case by split the loop into two.
+    // nodes. But we can improve the best case by splitting the loop into two.
     std::vector<MObject> nodesToCheckAnimCurve;
 
-    for (; !iter.isDone(); iter.next())
-    {
+    for (; !iter.isDone(); iter.next()) {
         MObject node = iter.thisNode();
 
         if (node.hasFn(MFn::kPluginDependNode) ||
-                node.hasFn( MFn::kConstraint ) ||
+                node.hasFn(MFn::kConstraint) ||
                 node.hasFn(MFn::kPointConstraint) ||
                 node.hasFn(MFn::kAimConstraint) ||
                 node.hasFn(MFn::kOrientConstraint) ||
@@ -347,11 +504,9 @@ UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
             return true;
         }
 
-        if (node.hasFn(MFn::kExpression))
-        {
-            MFnExpression fn(node, &stat);
-            if (stat == MS::kSuccess && fn.isAnimated())
-            {
+        if (node.hasFn(MFn::kExpression)) {
+            MFnExpression fn(node, &status);
+            if (status == MS::kSuccess && fn.isAnimated()) {
                 return true;
             }
         }
@@ -359,10 +514,8 @@ UsdMayaUtil::isAnimated(MObject& object, const bool checkParent)
         nodesToCheckAnimCurve.push_back(node);
     }
 
-    for (auto& node : nodesToCheckAnimCurve)
-    {
-        if (MAnimUtil::isAnimated(node, checkParent))
-        {
+    for (const MObject& node : nodesToCheckAnimCurve) {
+        if (MAnimUtil::isAnimated(node, checkParent)) {
             return true;
         }
     }
@@ -376,7 +529,7 @@ UsdMayaUtil::isPlugAnimated(const MPlug& plug)
     if (plug.isNull()) {
         return false;
     }
-    if (plug.isKeyable() && MAnimUtil::isAnimated(plug)) {
+    if (MAnimUtil::isAnimated(plug)) {
         return true;
     }
     if (plug.isDestination()) {
@@ -458,46 +611,72 @@ UsdMayaUtil::isWritable(const MObject& object)
         return true;
     }
 
-    const bool isWritableObj = depNodeFn.canBeWritten(&status);
+    const bool isDefaultNode = depNodeFn.isDefaultNode(&status);
     if (status != MS::kSuccess) {
         return true;
     }
 
-    return isWritableObj;
+    const bool canBeWritten = depNodeFn.canBeWritten(&status);
+    if (status != MS::kSuccess) {
+        return true;
+    }
+
+    return (!isDefaultNode && canBeWritten);
 }
 
-MString
-UsdMayaUtil::stripNamespaces(const MString& iNodeName, const int iDepth)
+std::string
+UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int nsDepth)
 {
-    if (iDepth == 0) {
-        return iNodeName;
+    if (nodeName.empty() || nsDepth == 0) {
+        return nodeName;
     }
 
     std::stringstream ss;
-    MStringArray pathPartsArray;
-    if (iNodeName.split('|', pathPartsArray) == MS::kSuccess) {
-        unsigned int partsLen = pathPartsArray.length();
-        for (unsigned int i = 0; i < partsLen; ++i) {
-            ss << '|';
-            MStringArray strArray;
-            if (pathPartsArray[i].split(':', strArray) == MS::kSuccess) {
-                int len = strArray.length();
-                // if iDepth is -1, we don't keep any namespaces
-                if (iDepth != -1) {
-                    // add any ns beyond iDepth so if name is: "stripped:save1:save2:name" add "save1:save2:",
-                    // but if there aren't any to save like: "stripped:name" then add nothing.
-                    for (int j = iDepth; j < len - 1; ++j) {
-                        ss << strArray[j] << ":";
-                    }
-                }
-                ss << strArray[len - 1];  // add the node name
-            }
+
+    const std::vector<std::string> nodeNameParts =
+        TfStringSplit(nodeName, UsdMayaUtil::MayaDagDelimiter);
+
+    const bool isAbsolute =
+        TfStringStartsWith(nodeName, UsdMayaUtil::MayaDagDelimiter);
+
+    for (size_t i = 0u; i < nodeNameParts.size(); ++i) {
+        if (i == 0u && isAbsolute) {
+            // If nodeName was absolute, the first element in nodeNameParts
+            // will be empty, so just skip it. The output path will be made
+            // absolute with the next iteration.
+            continue;
         }
-        auto path = ss.str();
-        return MString(path.c_str());
-    } else {
-        return iNodeName;
+
+        if (i != 0u) {
+            ss << UsdMayaUtil::MayaDagDelimiter;
+        }
+
+        const std::vector<std::string> nsNameParts =
+            TfStringSplit(
+                nodeNameParts[i],
+                UsdMayaUtil::MayaNamespaceDelimiter);
+
+        const size_t nodeNameIndex = nsNameParts.size() - 1u;
+
+        auto startIter = nsNameParts.begin();
+        if (nsDepth < 0) {
+            // If nsDepth is negative, we don't keep any namespaces, so advance
+            // startIter to the last element in the vector, which is just the
+            // node name.
+            startIter += nodeNameIndex;
+        } else {
+            // Otherwise we strip as many namespaces as possible up to nsDepth,
+            // but no more than what would leave us with just the node name.
+            startIter += std::min(static_cast<size_t>(nsDepth), nodeNameIndex);
+        }
+
+        ss << TfStringJoin(
+            startIter,
+            nsNameParts.end(),
+            UsdMayaUtil::MayaNamespaceDelimiter.c_str());
     }
+
+    return ss.str();
 }
 
 std::string
@@ -668,16 +847,14 @@ _GetColorAndTransparencyFromDepNode(
 }
 
 static
-void
+bool
 _getMayaShadersColor(
         const MObjectArray& shaderObjs,
         VtVec3fArray* RGBData,
         VtFloatArray* AlphaData)
 {
-    MStatus status;
-
-    if (shaderObjs.length() == 0) {
-        return;
+    if (shaderObjs.length() == 0u) {
+        return false;
     }
 
     if (RGBData) {
@@ -687,44 +864,44 @@ _getMayaShadersColor(
         AlphaData->resize(shaderObjs.length());
     }
 
-    for (unsigned int i = 0; i < shaderObjs.length(); ++i) {
+    bool gotValues = false;
+
+    for (unsigned int i = 0u; i < shaderObjs.length(); ++i) {
         // Initialize RGB and Alpha to (1,1,1,1)
         if (RGBData) {
-            (*RGBData)[i][0] = 1.0;
-            (*RGBData)[i][1] = 1.0;
-            (*RGBData)[i][2] = 1.0;
+            (*RGBData)[i][0u] = 1.0f;
+            (*RGBData)[i][1u] = 1.0f;
+            (*RGBData)[i][2u] = 1.0f;
         }
         if (AlphaData) {
-            (*AlphaData)[i] = 1.0;
+            (*AlphaData)[i] = 1.0f;
         }
 
         if (shaderObjs[i].isNull()) {
             TF_RUNTIME_ERROR(
-                    "Invalid Maya shader object at index %d. "
-                    "Unable to retrieve shader base color.",
-                    i);
+                "Invalid Maya shader object at index %d. "
+                "Unable to retrieve shader base color.",
+                i);
             continue;
         }
 
-        // first, we assume the shader is a lambert and try that API.  if
-        // not, we try our next best guess.
-        bool gotValues = _GetColorAndTransparencyFromLambert(
+        // First, we assume the shader is a lambert and try that API. If not,
+        // we try our next best guess.
+        const bool gotShaderValues =
+            _GetColorAndTransparencyFromLambert(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : nullptr,
-                AlphaData ?  &(*AlphaData)[i] : nullptr)
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr)
 
             || _GetColorAndTransparencyFromDepNode(
                 shaderObjs[i],
-                RGBData ?  &(*RGBData)[i] : nullptr,
-                AlphaData ?  &(*AlphaData)[i] : nullptr);
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr);
 
-        if (!gotValues) {
-            TF_RUNTIME_ERROR(
-                    "Failed to get shaders colors at index %d. "
-                    "Unable to retrieve shader base color.",
-                    i);
-        }
+        gotValues |= gotShaderValues;
     }
+
+    return gotValues;
 }
 
 static
@@ -981,7 +1158,7 @@ UsdMayaUtil::CompressFaceVaryingPrimvarIndices(
 }
 
 bool
-UsdMayaUtil::IsAuthored(MPlug& plug)
+UsdMayaUtil::IsAuthored(const MPlug& plug)
 {
     MStatus status;
 
@@ -989,13 +1166,20 @@ UsdMayaUtil::IsAuthored(MPlug& plug)
         return false;
     }
 
-    // Plugs with connections are considered authored.
-    if (plug.isConnected(&status)) {
+    // Plugs that are the destination of a connection are considered authored,
+    // since their value comes from an upstream dependency. If the plug is only
+    // the source of a connection or is not connected at all, it's
+    // authored-ness only depends on its own value, which is checked below.
+    if (plug.isDestination(&status)) {
         return true;
     }
 
+    // MPlug::getSetAttrCmds() is currently not declared const, so we have to
+    // make a copy of plug here.
+    MPlug plugCopy(plug);
+
     MStringArray setAttrCmds;
-    status = plug.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
+    status = plugCopy.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     for (unsigned int i = 0u; i < setAttrCmds.length(); ++i) {
@@ -1089,24 +1273,42 @@ _IsShape(const MDagPath& dagPath)
 }
 
 SdfPath
+UsdMayaUtil::MayaNodeNameToSdfPath(
+        const std::string& nodeName,
+        const bool stripNamespaces)
+{
+    std::string pathString = nodeName;
+
+    if (stripNamespaces) {
+        // Drop namespaces instead of making them part of the path.
+        pathString = UsdMayaUtil::stripNamespaces(pathString);
+    }
+
+    std::replace(
+        pathString.begin(),
+        pathString.end(),
+        UsdMayaUtil::MayaDagDelimiter[0],
+        SdfPathTokens->childDelimiter.GetString()[0]);
+    std::replace(
+        pathString.begin(),
+        pathString.end(),
+        UsdMayaUtil::MayaNamespaceDelimiter[0],
+        '_');
+
+    return SdfPath(pathString);
+}
+
+SdfPath
 UsdMayaUtil::MDagPathToUsdPath(
         const MDagPath& dagPath,
         const bool mergeTransformAndShape,
         const bool stripNamespaces)
 {
-    std::string usdPathStr;
+    SdfPath usdPath =
+        UsdMayaUtil::MayaNodeNameToSdfPath(
+            dagPath.fullPathName().asChar(),
+            stripNamespaces);
 
-    if (stripNamespaces) {
-        // drop namespaces instead of making them part of the path
-        MString stripped = UsdMayaUtil::stripNamespaces(dagPath.fullPathName());
-        usdPathStr = stripped.asChar();
-    } else{
-        usdPathStr = dagPath.fullPathName().asChar();
-    }
-    std::replace(usdPathStr.begin(), usdPathStr.end(), '|', '/');
-    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_'); // replace namespace ":" with "_"
-
-    SdfPath usdPath(usdPathStr);
     if (mergeTransformAndShape && _IsShape(dagPath)) {
         usdPath = usdPath.GetParentPath();
     }
@@ -1237,6 +1439,11 @@ UsdMayaUtil::setPlugValue(
     }
     else if (val.IsHolding<bool>()) {
         status = attrPlug.setBool(val.UncheckedGet<bool>());
+    }
+    else if (val.IsHolding<SdfAssetPath>()) {
+        // Assume that Ar and Maya will resolve paths the same.  This the best
+        // we can do w.r.t. to round-tripping.
+        status = attrPlug.setString(val.UncheckedGet<SdfAssetPath>().GetAssetPath().c_str());
     }
     else if (val.IsHolding<std::string>()) {
         status = attrPlug.setString(val.UncheckedGet<std::string>().c_str());
@@ -1564,6 +1771,17 @@ UsdMayaUtil::SetNotes(
     return true;
 }
 
+bool
+UsdMayaUtil::SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden)
+{
+    MPlug plug = depNode.findPlug("hiddenInOutliner", true);
+    if (!plug.isNull()) {
+        plug.setBool(hidden);
+        return true;
+    }
+    return false;
+}
+
 UsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
         const MPlug& plug,
         MDataHandle dataHandle) :
@@ -1793,4 +2011,11 @@ UsdMayaUtil::FindAncestorSceneAssembly(
         currentPath.pop();
     }
     return false;
+}
+
+MBoundingBox
+UsdMayaUtil::GetInfiniteBoundingBox()
+{
+    constexpr double inf = std::numeric_limits<double>::infinity();
+    return MBoundingBox(MPoint(-inf, -inf, -inf), MPoint(inf, inf, inf));
 }

@@ -125,10 +125,10 @@ HdTexture::GetInitialDirtyBitsMask() const
     return AllDirty;
 }
 
-bool
-HdTexture::IsPtex() const
+HdTextureType
+HdTexture::GetTextureType() const
 {
-    return false;
+    return HdTextureType::Uv;
 }
 
 bool

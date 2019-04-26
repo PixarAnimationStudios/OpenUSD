@@ -29,7 +29,9 @@
 #include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
 
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdEmbree/mesh.h"
 //XXX: Add other Rprim types later
@@ -40,6 +42,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_TOKENS);
+
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -48,6 +52,7 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_RPRIM_TYPES =
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
+    HdPrimTypeTokens->extComputation,
 };
 
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -97,7 +102,37 @@ static void _RenderCallback(HdEmbreeRenderer *renderer,
 }
 
 HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
+    : HdRenderDelegate()
 {
+    _Initialize();
+}
+
+HdEmbreeRenderDelegate::HdEmbreeRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+    : HdRenderDelegate(settingsMap)
+{
+    _Initialize();
+}
+
+void
+HdEmbreeRenderDelegate::_Initialize()
+{
+    // Initialize the settings and settings descriptors.
+    _settingDescriptors.resize(4);
+    _settingDescriptors[0] = { "Enable Scene Colors",
+        HdEmbreeRenderSettingsTokens->enableSceneColors,
+        VtValue(HdEmbreeConfig::GetInstance().useFaceColors) };
+    _settingDescriptors[1] = { "Enable Ambient Occlusion",
+        HdEmbreeRenderSettingsTokens->enableAmbientOcclusion,
+        VtValue(HdEmbreeConfig::GetInstance().ambientOcclusionSamples > 0) };
+    _settingDescriptors[2] = { "Ambient Occlusion Samples",
+        HdEmbreeRenderSettingsTokens->ambientOcclusionSamples,
+        VtValue(int(HdEmbreeConfig::GetInstance().ambientOcclusionSamples)) };
+    _settingDescriptors[3] = { "Samples To Convergence",
+        HdRenderSettingsTokens->convergedSamplesPerPixel,
+        VtValue(int(HdEmbreeConfig::GetInstance().samplesToConvergence)) };
+    _PopulateDefaultSettings(_settingDescriptors);
+
     // Initialize the embree library handle (_rtcDevice).
     _rtcDevice = rtcNewDevice(nullptr);
 
@@ -163,6 +198,12 @@ HdEmbreeRenderDelegate::~HdEmbreeRenderDelegate()
     rtcDeleteDevice(_rtcDevice);
 }
 
+HdRenderSettingDescriptorList
+HdEmbreeRenderDelegate::GetRenderSettingDescriptors() const
+{
+    return _settingDescriptors;
+}
+
 HdRenderParam*
 HdEmbreeRenderDelegate::GetRenderParam() const
 {
@@ -202,22 +243,24 @@ HdAovDescriptor
 HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
     if (name == HdAovTokens->color) {
-        return HdAovDescriptor(VtValue(GfVec4f(0.0f)),
-                               HdFormatUNorm8Vec4, true);
+        return HdAovDescriptor(HdFormatUNorm8Vec4, true,
+                               VtValue(GfVec4f(0.0f)));
     } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
-        return HdAovDescriptor(VtValue(GfVec3f(-1.0f)),
-                               HdFormatFloat32Vec3, false);
+        return HdAovDescriptor(HdFormatFloat32Vec3, false,
+                               VtValue(GfVec3f(-1.0f)));
     } else if (name == HdAovTokens->depth) {
-        return HdAovDescriptor(VtValue(1.0f), HdFormatFloat32, false);
+        return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
     } else if (name == HdAovTokens->linearDepth) {
-        return HdAovDescriptor(VtValue(0.0f), HdFormatFloat32, false);
-    } else if (name == HdAovTokens->primId) {
-        return HdAovDescriptor(VtValue(0), HdFormatInt32, false);
+        return HdAovDescriptor(HdFormatFloat32, false, VtValue(0.0f));
+    } else if (name == HdAovTokens->primId ||
+               name == HdAovTokens->instanceId ||
+               name == HdAovTokens->elementId) {
+        return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
     } else {
-        HdAovIdentifier aovId(name);
+        HdParsedAovToken aovId(name);
         if (aovId.isPrimvar) {
-            return HdAovDescriptor(VtValue(GfVec3f(0.0f)),
-                                   HdFormatFloat32Vec3, false);
+            return HdAovDescriptor(HdFormatFloat32Vec3, false,
+                                   VtValue(GfVec3f(0.0f)));
         }
     }
 
@@ -272,6 +315,8 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);
+    } else if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -286,6 +331,8 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
     // They'll use default values and won't be updated by a scene delegate.
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

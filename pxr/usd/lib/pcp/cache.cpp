@@ -60,6 +60,7 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <algorithm>
+#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -243,10 +244,10 @@ PcpCache::IsPayloadIncluded(const SdfPath &path) const
     return _includedPayloads.find(path) != _includedPayloads.end();
 }
 
-SdfPathSet
+PcpCache::PayloadSet const &
 PcpCache::GetIncludedPayloads() const
 {
-    return SdfPathSet(_includedPayloads.begin(), _includedPayloads.end());
+    return _includedPayloads;
 }
 
 void
@@ -963,7 +964,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
     static const bool fixTargetPaths = true;
     std::vector<SdfPath> newIncludes;
     TF_FOR_ALL(i, changes.didChangePath) {
-        for (_PayloadSet::iterator j = _includedPayloads.begin();
+        for (PayloadSet::iterator j = _includedPayloads.begin();
                 j != _includedPayloads.end(); ) {
             // If the payload path has the old path as a prefix then remove
             // the payload path and add the payload path with the old path
@@ -1604,7 +1605,7 @@ PcpCache::ComputePropertyIndex(const SdfPath & path, PcpErrorVector *allErrors)
 void 
 PcpCache::PrintStatistics() const
 {
-    Pcp_PrintCacheStatistics(this);
+    Pcp_PrintCacheStatistics(this, std::cout);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

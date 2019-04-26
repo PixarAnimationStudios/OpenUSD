@@ -366,7 +366,7 @@ private:
 
     static bool _NonZero(const Type& x)
     {
-        return x;
+        return static_cast<bool>(x);
     }
 };
 

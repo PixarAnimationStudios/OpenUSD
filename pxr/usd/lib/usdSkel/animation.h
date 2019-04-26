@@ -139,7 +139,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDSKEL_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -151,7 +151,7 @@ private:
 
     // override SchemaBase virtuals.
     USDSKEL_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -304,6 +304,19 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Convenience method for querying resolved transforms at \p time.
+    /// Note that it is more efficient to query transforms through
+    /// UsdSkelAnimQuery or UsdSkelSkeletonQuery.
+    USDSKEL_API
+    bool GetTransforms(VtMatrix4dArray* xforms,
+                       UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    /// Convenience method for setting an array of transforms.
+    /// The given transforms must be _orthogonal_.
+    USDSKEL_API
+    bool SetTransforms(const VtMatrix4dArray& xforms,
+                       UsdTimeCode time=UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -70,7 +70,7 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
 
     // Collect all composition arcs that contribute to the instance key.
     _Collector collector;
-    collector.indexHasPayload = primIndex.HasPayload();
+    collector.indexHasPayload = primIndex.HasAnyPayloads();
     Pcp_TraverseInstanceableStrongToWeak(primIndex, &collector);
     _arcs.swap(collector.instancingArcs);
 

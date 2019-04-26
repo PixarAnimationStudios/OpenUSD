@@ -44,6 +44,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Secondly to provide access to these values from other
 /// threads that don't have the context bound.
 ///
+/// In the event of failure (InitInstance() wasn't called
+/// or an issue accessing the GL context), a reasonable
+/// set of defaults, based on GL minimums, is provided.
+///
+///
 /// TO DO (bug #124971):
 ///   - LoadCaps() should be called whenever the context
 ///     changes.
@@ -54,8 +59,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GlfContextCaps : boost::noncopyable {
 public:
 
+    /// InitInstance queries the GL context for its capabilities.
+    /// It should be called by the application before using systems
+    /// that depend on the caps, such as Hydra.  A good example would be
+    /// to pair the call to initialize after a call to GlfGlewInit().
     GLF_API
-    static GlfContextCaps &GetInstance();
+    static void InitInstance();
+
+    /// GetInstance() returns the filled capabilities structure.
+    /// This function will not populate the caps and will issue a
+    /// coding error if it hasn't been filled.
+    GLF_API
+    static const GlfContextCaps &GetInstance();
+
+
 
     // GL version
     int glVersion;                    // 400 (4.0), 410 (4.1), ...
@@ -64,12 +81,14 @@ public:
     bool coreProfile;
 
     // Max constants
+    int maxArrayTextureLayers;
     int maxUniformBlockSize;
     int maxShaderStorageBlockSize;
     int maxTextureBufferSize;
     int uniformBufferOffsetAlignment;
 
     // GL extensions (ordered by version)
+    bool arrayTexturesEnabled;        // EXT_texture_array                (3.0)
     bool shaderStorageBufferEnabled;  // ARB_shader_storage_buffer_object (4.3)
     bool bufferStorageEnabled;        // ARB_buffer_storage               (4.4)
     bool directStateAccessEnabled;    // ARB_direct_state_access          (4.5)
@@ -86,6 +105,8 @@ public:
 
     // workarounds for driver issues
     bool copyBufferEnabled;
+
+    bool floatingPointBuffersEnabled;
 
 private:
     void _LoadCaps();

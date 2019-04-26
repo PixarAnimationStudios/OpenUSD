@@ -49,6 +49,40 @@ typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::weak_ptr<HdBufferArrayRange> HdBufferArrayRangePtr;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
+/// \union HdBufferArrayUsageHint
+///
+/// The union provides a set of flags that provide hints to the memory
+/// management system about the properties of a Buffer Array Range (BAR),
+/// so it can efficiently organize that memory.  For example,
+/// the memory manager should probably not aggregate BARs with different
+/// usage hints.
+///
+/// The union provides two members:
+///   - value: The combined set of flags
+///   - bits:  Access to individual flag bits
+///
+/// The flag bits are:
+///   - immutable: The BAR will not be modified once created and populated.
+///   - sizeVarying: The number of elements in the BAR changes with time.
+///
+/// Some flag bits may not make sense in combination
+/// (i.e. mutually exclusive to each other).  For example, it is logically
+/// impossible to be both immutable (i.e. not changing) and sizeVarying
+/// (changing).  However, these logically impossible combinations are
+/// not enforced and remain valid potential values.
+///
+union HdBufferArrayUsageHint {
+    struct _Bits {
+        uint32_t immutable   :  1;
+        uint32_t sizeVarying :  1;
+        uint32_t pad         : 30;
+    } bits;
+    uint32_t value;
+
+    HdBufferArrayUsageHint() : value(0) {}
+};
+
+
 /// \class HdBufferArray
 ///
 /// Similar to a VAO, this object is a bundle of coherent buffers. This object
@@ -61,7 +95,7 @@ public:
     HD_API
     HdBufferArray(TfToken const &role,
                   TfToken const garbageCollectionPerfToken,
-                  bool isImmutable=false);
+                  HdBufferArrayUsageHint usageHint);
 
     HD_API
     virtual ~HdBufferArray();
@@ -123,7 +157,12 @@ public:
 
     /// Returns true if this buffer array is marked as immutable.
     bool IsImmutable() const {
-        return _isImmutable;
+        return _usageHint.bits.immutable;
+    }
+
+    /// Returns the usage hints for this buffer array.
+    HdBufferArrayUsageHint GetUsageHint() const {
+        return _usageHint;
     }
 
 protected:
@@ -156,8 +195,8 @@ private:
 
     size_t _version;
 
-    size_t             _maxNumRanges;
-    bool               _isImmutable;
+    size_t _maxNumRanges;
+    HdBufferArrayUsageHint _usageHint;
 };
 
 

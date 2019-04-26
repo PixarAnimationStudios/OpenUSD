@@ -30,7 +30,6 @@ if QtCore.__name__.startswith('PySide.'):
     from PySide import QtGui as QtWidgets
 
     # Patch missing functions to make PySide look like PySide2
-
     if not hasattr(QtGui.QApplication, 'devicePixelRatio'):
         QtGui.QApplication.devicePixelRatio = lambda self: 1
 
@@ -46,6 +45,10 @@ if QtCore.__name__.startswith('PySide.'):
         def angleDelta(self):
             return QtCore.QPoint(0, self.delta())
         QtGui.QWheelEvent.angleDelta = angleDelta
+
+    # Patch missing classes to make PySide look like PySide2
+    if not hasattr(QtCore, "QItemSelectionModel"):
+        QtCore.QItemSelectionModel = QtGui.QItemSelectionModel
 
 elif QtCore.__name__.startswith('PySide2.'):
     from PySide2 import QtGui, QtWidgets, QtOpenGL

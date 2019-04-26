@@ -175,7 +175,8 @@ public:
 private:
 
     PCP_API
-    PcpMapFunction(const PathPairVector &sourceToTarget, 
+    PcpMapFunction(PathPair const *sourceToTargetBegin,
+                   PathPair const *sourceToTargetEnd,
                    SdfLayerOffset offset,
                    bool hasRootIdentity);
 
@@ -186,21 +187,18 @@ private:
     struct _Data final {
         _Data() {};
 
-        _Data(PathPairVector const &sourceToTarget, bool hasRootIdentity)
-            : numPairs(sourceToTarget.size())
+        _Data(PathPair const *begin, PathPair const *end, bool hasRootIdentity)
+            : numPairs(end-begin)
             , hasRootIdentity(hasRootIdentity) {
-            if (sourceToTarget.empty())
+            if (numPairs == 0)
                 return;
             if (numPairs <= _MaxLocalPairs) {
-                std::uninitialized_copy(
-                    sourceToTarget.begin(), sourceToTarget.end(),
-                    localPairs);
+                std::uninitialized_copy(begin, end, localPairs);
             }
             else {
                 new (&remotePairs) std::shared_ptr<PathPair>(
                     new PathPair[numPairs], std::default_delete<PathPair[]>());
-                std::copy(sourceToTarget.begin(), sourceToTarget.end(),
-                          remotePairs.get());
+                std::copy(begin, end, remotePairs.get());
             }
         }
         

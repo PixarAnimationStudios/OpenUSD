@@ -32,9 +32,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 int
-Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase,
-                                        TfRefBase::UniqueChangedListener const &listener)
+Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase)
 {
+    TfRefBase::UniqueChangedListener const &listener =
+        TfRefBase::_uniqueChangedListener;
     listener.lock();
     int oldValue = refBase->GetRefCount()._FetchAndAdd(1);
     if (oldValue == 1)
@@ -44,9 +45,10 @@ Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase,
 }
 
 bool
-Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase,
-                                           TfRefBase::UniqueChangedListener const &listener)
+Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase)
 {
+    TfRefBase::UniqueChangedListener const &listener =
+        TfRefBase::_uniqueChangedListener;
     listener.lock();
     int oldValue = refBase->GetRefCount()._FetchAndAdd(-1);
     if (oldValue == 2)
@@ -57,9 +59,10 @@ Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase,
 }
 
 bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
-    TfRefBase const *refBase,
-    TfRefBase::UniqueChangedListener const &listener)
+    TfRefBase const *refBase)
 {
+    TfRefBase::UniqueChangedListener const &listener =
+        TfRefBase::_uniqueChangedListener;
     listener.lock();
     auto &counter = refBase->GetRefCount()._counter;
     int oldValue = counter.load(std::memory_order_relaxed);

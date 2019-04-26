@@ -43,50 +43,36 @@ PXR_NAMESPACE_OPEN_SCOPE
 // compute the absolute form of the asset path, using the layer that
 // expressed the opinion as the basis for relative paths.
 
-
-// List-op composition callback that computes absolute asset paths
-// relative to the layer where they were expressed.
-static boost::optional<SdfReference>
-_ResolveReference( const SdfLayerHandle& layer, 
-                   const SdfLayerOffset& layerOffset,
-                   std::map<SdfReference, PcpSourceReferenceInfo>* infoMap,
-                   SdfListOpType opType,
-                   const SdfReference& ref)
+// SdfReference has custom data that is copied during composition, SdfPayload 
+// does not.
+static void 
+_CopyCustomData(SdfReference *lhs, const SdfReference &rhs)
 {
-    // Fill in the result SdfReference with the anchored asset path
-    // instead of the authored asset path. This ensures that references
-    // with the same relative asset path but anchored to different
-    // locations will not be considered duplicates.
-    const std::string assetPath = ref.GetAssetPath().empty() ? 
-        ref.GetAssetPath() : 
-        SdfComputeAssetPathRelativeToLayer(layer, ref.GetAssetPath());
-
-    SdfReference result( assetPath, 
-                        ref.GetPrimPath(), 
-                        layerOffset * ref.GetLayerOffset(),
-                        ref.GetCustomData() );
-    PcpSourceReferenceInfo& info = (*infoMap)[result];
-    info.layer       = layer;
-    info.layerOffset = ref.GetLayerOffset();
-    info.authoredAssetPath = ref.GetAssetPath();
-    return result;
+    lhs->SetCustomData(rhs.GetCustomData());
 }
 
-void
-PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
-                         SdfPath const &path,
-                         SdfReferenceVector *result,
-                         PcpSourceReferenceInfoVector *info )
+static void 
+_CopyCustomData(SdfPayload *, const SdfPayload&)
 {
-    static const TfToken field = SdfFieldKeys->References;
+    // do nothing
+}
 
-    // Sd provides no convenient way to annotate each element of the result.
+// Payload and reference lists are composed in the same way.
+template <class RefOrPayloadType>
+static void
+_PcpComposeSiteReferencesOrPayloads(TfToken const &field,
+                                    PcpLayerStackRefPtr const &layerStack,
+                                    SdfPath const &path,
+                                    std::vector<RefOrPayloadType> *result,
+                                    PcpSourceReferenceInfoVector *info )
+{
+    // Sdf provides no convenient way to annotate each element of the result.
     // So we use a map from element value to its annotation, which in this
     // case is a PcpSourceReferenceInfo.
-    std::map<SdfReference, PcpSourceReferenceInfo> infoMap;
+    std::map<RefOrPayloadType, PcpSourceReferenceInfo> infoMap;
 
     const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
-    SdfReferenceListOp curListOp;
+    SdfListOp<RefOrPayloadType> curListOp;
 
     result->clear();
     for (size_t i = layers.size(); i-- != 0; ) {
@@ -94,11 +80,39 @@ PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
         if (layer->HasField(path, field, &curListOp)) {
             const SdfLayerOffset* layerOffset =
                 layerStack->GetLayerOffsetForLayer(i);
+
+            // List-op composition callback computes absolute asset paths
+            // relative to the layer where they were expressed and combines
+            // layer offsets.
             curListOp.ApplyOperations(result,
-                  std::bind( &_ResolveReference, std::ref(layer),
-                             layerOffset ? *layerOffset : SdfLayerOffset(),
-                             &infoMap,
-                             std::placeholders::_1, std::placeholders::_2));
+                [&layer, layerOffset, &infoMap](
+                    SdfListOpType opType, const RefOrPayloadType& refOrPayload)
+                {
+                    // Fill in the result reference of payload with the anchored
+                    // asset path instead of the authored asset path. This 
+                    // ensures that references or payloads with the same 
+                    // relative asset path but anchored to different
+                    // locations will not be considered duplicates.
+                    const std::string &authoredAssetPath = 
+                        refOrPayload.GetAssetPath();
+                    const std::string assetPath = authoredAssetPath.empty() ? 
+                        authoredAssetPath : 
+                        SdfComputeAssetPathRelativeToLayer(
+                            layer, authoredAssetPath);
+                    SdfLayerOffset resolvedLayerOffset = layerOffset ?
+                        *layerOffset * refOrPayload.GetLayerOffset() : 
+                        refOrPayload.GetLayerOffset();
+                    RefOrPayloadType result( assetPath, 
+                                             refOrPayload.GetPrimPath(),
+                                             resolvedLayerOffset);
+
+                    _CopyCustomData(&result, refOrPayload);
+                    PcpSourceReferenceInfo& info = infoMap[result];
+                    info.layer = layer;
+                    info.layerOffset = refOrPayload.GetLayerOffset();
+                    info.authoredAssetPath = refOrPayload.GetAssetPath();
+                    return result;
+                });
         }
     }
 
@@ -111,19 +125,23 @@ PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
 }
 
 void
-PcpComposeSitePayload(PcpLayerStackRefPtr const &layerStack,
-                      SdfPath const &path,
-                      SdfPayload *result,
-                      SdfLayerHandle *sourceLayer)
+PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
+                         SdfPath const &path,
+                         SdfReferenceVector *result,
+                         PcpSourceReferenceInfoVector *info )
 {
-    static const TfToken field = SdfFieldKeys->Payload;
+    _PcpComposeSiteReferencesOrPayloads(
+        SdfFieldKeys->References, layerStack, path, result, info);
+}
 
-    for (auto const &layer: layerStack->GetLayers()) {
-        if (layer->HasField(path, field, result) && *result) {
-            *sourceLayer = layer;
-            return;
-        }
-    }
+void
+PcpComposeSitePayloads(PcpLayerStackRefPtr const &layerStack,
+                       SdfPath const &path,
+                       SdfPayloadVector *result,
+                       PcpSourceReferenceInfoVector *info )
+{
+    _PcpComposeSiteReferencesOrPayloads(
+        SdfFieldKeys->Payload, layerStack, path, result, info);
 }
 
 SdfPermission

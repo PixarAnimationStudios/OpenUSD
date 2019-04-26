@@ -26,19 +26,25 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/debugCodes.h"
+#include "pxrUsdMayaGL/instancerImager.h"
 #include "pxrUsdMayaGL/userData.h"
 
 #include "usdMaya/hdImagingShape.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/debug.h"
 
 #include <maya/M3dView.h>
+#include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MStatus.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -69,6 +75,34 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "PxrMayaHdImagingShapeUI::getDrawRequests(), shapeDagPath: %s\n",
         shapeDagPath.fullPathName().asChar());
+
+    // Grab the selection resolution value from the shape here and use it to
+    // set the resolution in the batch renderer. The selection resolution
+    // should then be set appropriately for subsequent selections.
+    MStatus status;
+    const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
+    if (status == MS::kSuccess) {
+        const MPlug selectionResolutionPlug =
+            depNodeFn.findPlug(
+                PxrMayaHdImagingShape::selectionResolutionAttr,
+                &status);
+        if (status == MS::kSuccess) {
+            const short selectionResolution =
+#if MAYA_API_VERSION >= 20180000
+                selectionResolutionPlug.asShort(&status);
+#else
+                selectionResolutionPlug.asShort(MDGContext::fsNormal, &status);
+#endif
+            if (status == MS::kSuccess) {
+                UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
+                    GfVec2i(selectionResolution));
+            }
+        }
+    }
+
+    // Sync any instancers that need Hydra drawing.
+    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(
+            drawInfo.displayStyle());
 
     // The legacy viewport never has an old MUserData we can reuse. It also
     // does not manage the data allocated in the MDrawData object, so the batch
@@ -107,6 +141,7 @@ PxrMayaHdImagingShapeUI::PxrMayaHdImagingShapeUI() : MPxSurfaceShapeUI()
 /* virtual */
 PxrMayaHdImagingShapeUI::~PxrMayaHdImagingShapeUI()
 {
+    UsdMayaGL_InstancerImager::GetInstance().RemoveShapeAdapters(/*vp2*/ false);
 }
 
 

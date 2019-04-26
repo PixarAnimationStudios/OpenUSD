@@ -67,6 +67,25 @@ class TestUsdSkelTopology(unittest.TestCase):
 
         for i,parentIndex in enumerate(expectedParentIndices):
             self.assertEqual(parentIndex, topology.GetParent(i))
+            if parentIndex < 0:
+                self.assertTrue(topology.IsRoot(i))
+
+
+    def test_ValidateTopology(self):
+        """Test UsdSkelTopology validation"""
+
+        topology = UsdSkel.Topology(
+            MakeTargets("A", "A/B", "A/B/C", "D", "D/E"))
+        self.assertTrue(topology)
+        valid,reason = topology.Validate()
+        self.assertTrue(valid)
+        
+        # Mis-orderered topology (parents don't come before children)
+        topology = UsdSkel.Topology(MakeTargets("A/B", "C", "A"))
+        self.assertTrue(topology)
+        valid,reason = topology.Validate()
+        self.assertFalse(valid)
+        self.assertTrue(reason)
 
 
 if __name__ == "__main__":

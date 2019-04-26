@@ -25,6 +25,7 @@
 
 #include "usdMaya/editUtil.h"
 #include "usdMaya/jobArgs.h"
+#include "usdMaya/notice.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/readJob.h"
@@ -32,6 +33,7 @@
 #include "usdMaya/stageData.h"
 
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -50,6 +52,7 @@
 #include <maya/MFileIO.h>
 #include <maya/MFnAssembly.h>
 #include <maya/MFnCompoundAttribute.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
@@ -156,7 +159,9 @@ UsdMayaReferenceAssembly::initialize()
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
-    numericAttrFn.setStorable(false); // not written to the file
+    numericAttrFn.setChannelBox(true);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setAffectsAppearance(true);
     status = addAttribute(complexityAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -276,6 +281,8 @@ UsdMayaReferenceAssembly::UsdMayaReferenceAssembly() :
     _inSetInternalValue(false),
     _hasEdits(false)
 {
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaReferenceAssembly>();
+
     //
     // REMINDER: Also update usdMaya.mel:usdMaya_UsdMayaReferenceAssembly_listRepTypes()
     //           if adding a new Representation
@@ -534,6 +541,35 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     return MS::kSuccess;
 }
 
+MStatus
+UsdMayaReferenceAssembly::connectionMade(
+        const MPlug& plug,
+        const MPlug& otherPlug,
+        bool asSrc)
+{
+    if (asSrc && otherPlug.node().hasFn(MFn::kInstancer)) {
+        const MObject assembly = plug.node();
+        const MObject instancer = otherPlug.node();
+        UsdMayaAssemblyConnectedToInstancerNotice(assembly, instancer).Send();
+    }
+    return MPxAssembly::connectionMade(plug, otherPlug, asSrc);
+}
+
+MStatus
+UsdMayaReferenceAssembly::connectionBroken(
+        const MPlug& plug,
+        const MPlug& otherPlug,
+        bool asSrc)
+{
+    if (asSrc && otherPlug.node().hasFn(MFn::kInstancer)) {
+        const MObject assembly = plug.node();
+        const MObject instancer = otherPlug.node();
+        UsdMayaAssemblyDisconnectedFromInstancerNotice(assembly, instancer)
+                .Send();
+    }
+    return MPxAssembly::connectionBroken(plug, otherPlug, asSrc);
+}
+
 MStatus UsdMayaReferenceAssembly::compute(const MPlug& aPlug,
                              MDataBlock& dataBlock)
 {
@@ -607,7 +643,8 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
     return varSetNames;
 }
 
-MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
+MStatus
+UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
@@ -645,16 +682,16 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         UsdStageRefPtr usdStage;
         SdfPath        primPath;
 
-        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-            MFnDependencyNode depNodeFn(thisMObject());
+        MFnDagNode dagNodeFn(thisMObject());
 
+        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
             std::map<std::string, std::string> varSels;
             TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
-            const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
+            const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(dagNodeFn);
             TF_FOR_ALL(variantSet, varSetNamesForCache) {
                 MString variantSetPlugName(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
                 variantSetPlugName += variantSet->c_str();
-                MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
+                MPlug varSetPlg = dagNodeFn.findPlug(variantSetPlugName, true);
                 if (!varSetPlg.isNull()) {
                     MString varSetVal = varSetPlg.asString();
                     if (varSetVal.length() > 0) {
@@ -664,7 +701,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             }
 
             TfToken drawMode;
-            MPlug drawModePlug = depNodeFn.findPlug(drawModeAttr, true);
+            MPlug drawModePlug = dagNodeFn.findPlug(drawModeAttr, true);
             if (!drawModePlug.isNull()) {
                 drawMode = TfToken(drawModePlug.asString().asChar());
             }
@@ -683,8 +720,8 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             // typical to have enough models in a scene that share the same
             // set of edits in order to make that worthwhile.
             MObject assemObj = thisMObject();
-            MItEdits assemEdits(_GetEdits(assemObj));
-            if (!assemEdits.isDone()) {
+            MItEdits itAssemEdits(_GetEdits(assemObj));
+            if (!itAssemEdits.isDone()) {
                 _hasEdits = true;
                 SdfLayerRefPtr unsharedSessionLayer = SdfLayer::CreateAnonymous();
                 unsharedSessionLayer->TransferContent(sessionLayer);
@@ -713,8 +750,9 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         // provide Maya with a sane result (an empty UsdMayaStageData).
         if (!fileString.empty() && !usdStage) {
             TF_RUNTIME_ERROR(
-                    "Could not open stage with root layer '%s'",
-                    fileString.c_str());
+                "Could not open USD stage with root layer '%s' for assembly %s",
+                fileString.c_str(),
+                dagNodeFn.fullPathName().asChar());
         }
 
         // Create the output outData ========
@@ -744,9 +782,8 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
     return MS::kSuccess;
 }
 
-
-
-MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
+MStatus
+UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
@@ -1220,35 +1257,43 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     // unvarying time.
 
     MObject assemObj = getAssembly()->thisMObject();
-    UsdMayaReferenceAssembly* usdAssem = dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly());
-    MFnAssembly assemblyFn(assemObj);
-    MString assemblyPathStr = assemblyFn.partialPathName();
-    MItEdits assemEdits(_GetEdits(assemObj));
-    bool hasEdits = !assemEdits.isDone();
+    UsdMayaReferenceAssembly* usdAssem =
+        dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly());
+    const MFnAssembly assemblyFn(assemObj);
+    MItEdits itAssemEdits(_GetEdits(assemObj));
+    const bool hasEdits = !itAssemEdits.isDone();
     if (usdAssem->HasEdits() != hasEdits) {
         usdAssem->SetHasEdits(hasEdits);
 
         // If we now have edits but previous did not, or vice versa, make sure
         // we invalidate our UsdStage so that we are not sharing with other
         // model instances that do not have edits.
-        MGlobal::executeCommand("dgdirty " + assemblyPathStr);
+        MGlobal::executeCommand("dgdirty " + assemblyFn.partialPathName());
     }
 
-    UsdPrim proxyRootPrim = dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly())->usdPrim();
+    const UsdPrim proxyRootPrim = usdAssem->usdPrim();
     if (!proxyRootPrim) {
         return;
     }
-    UsdStagePtr stage = proxyRootPrim.GetStage();
 
-    UsdMayaEditUtil::PathEditMap refEdits;
-    std::vector< std::string > invalidEdits, failedEdits;
+    UsdMayaEditUtil::PathEditMap assemEdits;
+    std::vector<std::string> invalidEdits;
+    UsdMayaEditUtil::GetEditsForAssembly(assemObj, &assemEdits, &invalidEdits);
 
-    UsdMayaEditUtil::GetEditsForAssembly( assemObj, &refEdits, &invalidEdits );
+    if (!invalidEdits.empty()) {
+        TF_WARN(
+            "The following invalid assembly edits were found for "
+            "%s node '%s':\n"
+            "    %s",
+            UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText(),
+            assemblyFn.fullPathName().asChar(),
+            TfStringJoin(invalidEdits, "\n    ").c_str());
+    }
 
-    if( !refEdits.empty() )
-    {
+    if (!assemEdits.empty()) {
         // Create an anonymous layer to hold the assembly edit opinions, and
         // sublayer it into the stage's session layer.
+        const UsdStagePtr stage = proxyRootPrim.GetStage();
         _sessionSublayer = SdfLayer::CreateAnonymous();
         stage->GetSessionLayer()->GetSubLayerPaths().clear();
         stage->GetSessionLayer()->GetSubLayerPaths().push_back(
@@ -1259,23 +1304,22 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
         // same layer(s).
         UsdEditContext editContext(stage, _sessionSublayer);
 
-        UsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
-    }
+        std::vector<std::string> failedEdits;
+        UsdMayaEditUtil::ApplyEditsToProxy(
+            assemEdits,
+            proxyRootPrim,
+            &failedEdits);
 
-    if( !invalidEdits.empty() )
-    {
-        TF_WARN("The following edits could not be read from the proxy for '%s':"
-                "\n\t%s",
-                assemblyPathStr.asChar(),
-                TfStringJoin(invalidEdits, "\n\t").c_str());
-    }
-
-    if( !failedEdits.empty() )
-    {
-        TF_WARN("The following edits could not be pushed to the proxy for '%s':"
-                "\n\t%s",
-                assemblyPathStr.asChar(),
-                TfStringJoin(failedEdits, "\n\t").c_str());
+        if (!failedEdits.empty()) {
+            TF_WARN(
+                "The following assembly edits could not be applied under the "
+                "USD prim '%s' for %s node '%s':\n"
+                "    %s",
+                proxyRootPrim.GetPath().GetText(),
+                UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText(),
+                assemblyFn.fullPathName().asChar(),
+                TfStringJoin(failedEdits, "\n    ").c_str());
+        }
     }
 }
 

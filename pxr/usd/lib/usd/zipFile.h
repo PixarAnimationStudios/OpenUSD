@@ -102,6 +102,9 @@ public:
         /// file specification for valid values. In particular, a value of 0
         /// means this file is stored with no compression.
         uint16_t compressionMethod = 0;
+
+        /// Whether or not this file is encrypted.
+        bool encrypted = false;
     };
 
     /// \class Iterator

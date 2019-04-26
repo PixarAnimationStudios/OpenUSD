@@ -61,15 +61,13 @@ public:
                (!(other.layer < layer) && path < other.path);
     }
 
-#if !defined(doxygen)
-    typedef SdfPath SdfSite::*UnspecifiedBoolType;
-#endif
-
-    /// Returns true if both layer and path fields are filled with valid values. 
+    /// Explicit bool conversion operator. A site object converts to \c true iff 
+    /// both the layer and path fields are filled with valid values, \c false
+    /// otherwise.
     /// This does NOT imply that there are opinions in the layer at that path.
-    operator UnspecifiedBoolType() const
+    explicit operator bool() const
     {
-        return (layer && !path.IsEmpty()) ? &SdfSite::path : 0;
+        return layer && !path.IsEmpty();
     }
 
 public:

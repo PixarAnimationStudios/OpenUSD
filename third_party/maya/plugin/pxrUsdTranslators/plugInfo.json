@@ -12,6 +12,15 @@
                             "UsdGeomNurbsPatch",
                             "UsdGeomScope",
                             "UsdGeomXform",
+                            "UsdLuxCylinderLight",
+                            "UsdLuxDiskLight",
+                            "UsdLuxDistantLight",
+                            "UsdLuxDomeLight",
+                            "UsdLuxGeometryLight",
+                            "UsdLuxRectLight",
+                            "UsdLuxSphereLight",
+                            "UsdRiPxrAovLight",
+                            "UsdRiPxrEnvDayLight",
                             "UsdShadeMaterial",
                             "UsdSkelRoot",
                             "UsdSkelSkeleton"
@@ -21,6 +30,7 @@
                         "mayaPlugin": "pxrUsdTranslators",
                         "providesTranslator": [
                             "camera",
+                            "file",
                             "instancer",
                             "joint",
                             "locator",
@@ -28,7 +38,16 @@
                             "nParticle",
                             "nurbsCurve",
                             "nurbsSurface",
-                            "particle"
+                            "particle",
+                            "PxrAovLight",
+                            "PxrCylinderLight",
+                            "PxrDiskLight",
+                            "PxrDistantLight",
+                            "PxrDomeLight",
+                            "PxrEnvDayLight",
+                            "PxrMeshLight",
+                            "PxrRectLight",
+                            "PxrSphereLight"
                         ]
                     }
                 }

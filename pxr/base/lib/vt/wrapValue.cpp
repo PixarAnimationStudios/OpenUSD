@@ -254,18 +254,6 @@ struct Vt_ValueFromPython {
 
 } // anonymous namespace 
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-// XXX: Disable rvalue conversion of TfType.  It causes a mysterious
-//      crash and we don't need any implicit conversions.
-template <>
-VtValue Vt_ValueFromPythonRegistry::
-_Extractor::_RValueHolder<TfType>::Invoke(PyObject *obj) const {
-    return VtValue();
-}
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
 void wrapValue()
 {
     def("_test_ValueTypeName", _test_ValueTypeName);
@@ -338,7 +326,9 @@ void wrapValue()
     VtValueFromPython<string>();
     VtValueFromPython<double>();
     VtValueFromPython<int>();
-    VtValueFromPython<TfType>();
+    // XXX: Disable rvalue conversion of TfType.  It causes a mysterious
+    //      crash and we don't need any implicit conversions.
+    VtValueFromPythonLValue<TfType>();
 
     // Register conversions from sequences of VtValues
     TfPyContainerConversions::from_python_sequence<

@@ -36,9 +36,11 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MObjectHandle.h>
 
 #include <memory>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,7 +54,8 @@ class UsdMaya_WriteJob;
 /// The main purpose of this class is to handle source prim creation for instancing,
 /// and to avoid storing the UsdMayaJobExportArgs and UsdStage on each prim writer.
 ///
-class UsdMayaWriteJobContext {
+class UsdMayaWriteJobContext
+{
 protected:
     friend class UsdMaya_WriteJob;
 
@@ -81,17 +84,24 @@ public:
     PXRUSDMAYA_API
     SdfPath ConvertDagToUsdPath(const MDagPath& dagPath) const;
 
-    /// Creates a prim writer that writes the Maya node at \p curDag, excluding
+    /// Creates a prim writer that writes the Maya node \p depNodeFn, excluding
     /// its descendants, to the given \p usdPath.
-    /// If \usdPath is the empty path, then the USD path will be inferred from
-    /// the Maya DAG path.
-    /// If \p forceUninstance is \c true, then the node will be un-instanced
-    /// during export, even if the export args have instancing enabled.
+    ///
+    /// For DAG nodes, \p usdPath can be an empty path, in which case it will
+    /// be inferred from the Maya node's DAG path.
+    /// For DG nodes, \p usdPath cannot be empty and must be provided.
+    ///
+    /// If the node is a DAG node and \p forceUninstance is \c true, then the
+    /// node will be un-instanced during export, even if the export args have
+    /// instancing enabled. An MFnDagNode (or one of its derived classes)
+    /// constructed using an MDagPath (*not* an MObject) must be passed in for
+    /// DAG nodes to ensure that instances can be handled correctly.
+    ///
     /// Note that you must call UsdMayaPrimWriter::Write() on the returned prim
     /// writer in order to author its USD attributes.
     PXRUSDMAYA_API
     UsdMayaPrimWriterSharedPtr CreatePrimWriter(
-            const MDagPath& curDag,
+            const MFnDependencyNode& depNodeFn,
             const SdfPath& usdPath = SdfPath(),
             const bool forceUninstance = false);
 
@@ -225,6 +235,8 @@ private:
     friend class UsdMaya_InstancedNodeWriter;
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

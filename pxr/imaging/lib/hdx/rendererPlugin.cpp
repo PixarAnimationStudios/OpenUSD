@@ -33,6 +33,14 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<HdxRendererPlugin>();
 }
 
+HdRenderDelegate*
+HdxRendererPlugin::CreateRenderDelegate(HdRenderSettingsMap const& settingsMap)
+{
+    // The settings map is currently an opt-in API, so if there's no
+    // derived implementation, fall back to the settings-less factory.
+    return CreateRenderDelegate();
+}
+
 //
 // As this class is a pure interface class, it does not need a
 // vtable.  However, it is possible that some users will use rtti.

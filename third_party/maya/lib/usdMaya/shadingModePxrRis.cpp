@@ -28,6 +28,7 @@
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
 #include "usdMaya/shadingModePxrRis_rfm_map.h"
 #include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -58,6 +59,7 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MGlobal.h>
 
 #include <vector>
 
@@ -72,15 +74,42 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
 
-    // XXX: In RenderMan 22, these look like "rman__surface", and are added via
-    // extension attribute.
-    ((RmanSurfaceShaderPlugName, "surfaceShader"))
+    ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
+
     ((RmanVolumeShaderPlugName, "volumeShader"))
-    ((RmanDisplacementShaderPlugName, "displacementShader"))
 );
 
 
 namespace {
+
+struct _ShadingPlugs {
+    const TfToken surface;
+    const TfToken displacement;
+};
+
+static const _ShadingPlugs _RmanPlugs { 
+    TfToken("rman__surface"), 
+    TfToken("rman__displacement") 
+};
+
+static const _ShadingPlugs _MayaPlugs { 
+    TfToken("surfaceShader"), 
+    TfToken("displacementShader") 
+};
+
+static 
+_ShadingPlugs
+_GetShadingPlugs()
+{
+    // Check for rfmShadingEngineUseRmanPlugs preference
+    // If set to 1, use rman__surface and rman__displacement plug names
+    // Otherwise, fallback to Maya's surfaceShader and displacementShader
+    bool exists = false;
+    int useRmanPlugs = MGlobal::optionVarIntValue(
+            _tokens->RmanPlugPreferenceName.GetText(), &exists);
+    return (exists && useRmanPlugs) ? _RmanPlugs : _MayaPlugs;
+}
+
 class PxrRisShadingModeExporter : public UsdMayaShadingModeExporter {
 public:
     PxrRisShadingModeExporter() {}
@@ -89,9 +118,11 @@ private:
     void
     PreExport(UsdMayaShadingModeExportContext* context) override
     {
-        context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
         context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
-        context->SetDisplacementShaderPlugName(_tokens->RmanDisplacementShaderPlugName);
+
+        const auto shadingPlugs = _GetShadingPlugs();
+        context->SetSurfaceShaderPlugName(shadingPlugs.surface);
+        context->SetDisplacementShaderPlugName(shadingPlugs.displacement);
     }
 
     TfToken
@@ -365,14 +396,16 @@ namespace {
 
 static
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const bool asShader,
         UsdMayaShadingModeImportContext* context);
 
 static
 MObject
 _GetOrCreateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const bool asShader,
         UsdMayaShadingModeImportContext* context)
 {
     MObject shaderObj;
@@ -384,7 +417,7 @@ _GetOrCreateShaderObject(
         return shaderObj;
     }
 
-    shaderObj = _CreateShaderObject(shaderSchema, context);
+    shaderObj = _CreateAndPopulateShaderObject(shaderSchema, asShader, context);
     return context->AddCreatedObject(shaderSchema.GetPrim(), shaderObj);
 }
 
@@ -415,8 +448,9 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
 
 // Should only be called by _GetOrCreateShaderObject, no one else.
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const bool asShader,
         UsdMayaShadingModeImportContext* context)
 {
     TfToken shaderId;
@@ -433,12 +467,15 @@ _CreateShaderObject(
     }
 
     MStatus status;
+    MObject shaderObj;
     MFnDependencyNode depFn;
-    MObject shaderObj =
-        depFn.create(MString(mayaTypeName.GetText()),
-                     MString(shaderSchema.GetPrim().GetName().GetText()),
-                     &status);
-    if (status != MS::kSuccess) {
+    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
+                MString(shaderSchema.GetPrim().GetName().GetText()),
+                mayaTypeName.GetText(),
+                asShader,
+                &status,
+                &shaderObj) 
+            && depFn.setObject(shaderObj))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'. "
@@ -472,8 +509,12 @@ _CreateShaderObject(
             continue;
         }
 
-        MObject sourceObj = _GetOrCreateShaderObject(sourceShaderSchema,
-                                                     context);
+        MObject sourceObj = _GetOrCreateShaderObject(
+            sourceShaderSchema,
+            // any "nested" shader objects are not "shaders"
+            false, 
+            context);
+
         MFnDependencyNode sourceDepFn(sourceObj, &status);
         if (status != MS::kSuccess) {
             continue;
@@ -508,9 +549,11 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
     // RenderMan for Maya wants the shader nodes to get hooked into the shading
     // group via its own plugs.
-    context->SetSurfaceShaderPlugName(_tokens->RmanSurfaceShaderPlugName);
     context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
-    context->SetDisplacementShaderPlugName(_tokens->RmanDisplacementShaderPlugName);
+
+    const auto shadingPlugs = _GetShadingPlugs();
+    context->SetSurfaceShaderPlugName(shadingPlugs.surface);
+    context->SetDisplacementShaderPlugName(shadingPlugs.displacement);
 
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
@@ -537,9 +580,9 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
         displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
     }
 
-    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, context);
-    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, context);
-    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, context);
+    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, true, context);
+    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, true, context);
+    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, true, context);
 
     if (surfaceShaderObj.isNull() &&
             volumeShaderObj.isNull() &&

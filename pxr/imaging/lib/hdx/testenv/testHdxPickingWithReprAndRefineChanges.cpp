@@ -294,11 +294,6 @@ My_TestGLDrawing::OffscreenTest()
         _delegate->SetReprName(SdfPath("/cube2"), 
             HdReprTokens->refinedWireOnSurf);
 
-        // XXX: Repr initialization doesn't currently trigger the collection's
-        // command buffer to be rebuilt, so we have to do that explicitly here.
-        // Failing to do so will show us a stale repr draw item (i.e. hull)
-        _delegate->GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
-
         _picker.Pick(GfVec2i(152, 376), GfVec2i(152, 376));
         DrawScene();
         WriteToFile("color", "color3_repr_change_cube2.png");
@@ -314,10 +309,6 @@ My_TestGLDrawing::OffscreenTest()
        std::cout << "Changing repr on cube1" << std::endl;
 
         _delegate->SetReprName(SdfPath("/cube1"), HdReprTokens->refinedWire);
-        // XXX: If we don't mark the collection dirty, it'll be drawn with the
-        // same command buffer and thus, cube1 will appear as hull and 
-        // not refinedWireOnSurf.
-        _delegate->GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
 
         _picker.Pick(GfVec2i(176, 96), GfVec2i(179, 99));
         DrawScene();
@@ -339,12 +330,7 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color5_refine_change_cube2.png");
         selection = _picker.GetSelection();
-        // XXX: A bug in primvar sharing (HD_ENABLE_SHARED_VERTEX_PRIMVAR)
-        // makes cube2 disappear because the vertex primvar BAR is not
-        // updated correctly. The dumped image and the verify below will
-        // fail once it is fixed.
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
-        //TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
      // deselect    
@@ -392,7 +378,7 @@ My_TestGLDrawing::DrawScene()
     VtValue v(_picker.GetSelectionTracker());
     _engine.SetTaskContextData(HdxTokens->selectionState, v);
 
-    _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
 
     glBindVertexArray(0);
 }

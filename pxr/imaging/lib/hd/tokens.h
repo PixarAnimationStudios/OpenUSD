@@ -40,8 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bSpline)                                   \
     (camera)                                    \
     (catmullRom)                                \
-    (children)                                  \
-    (color)                                     \
     (collection)                                \
     (computeShader)                             \
     (cubic)                                     \
@@ -49,6 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cullStyle)                                 \
     (doubleSided)                               \
     (dispatchCount)                             \
+    (displayColor)                              \
+    (displayOpacity)                            \
     (displayStyle)                              \
     (drawDispatch)                              \
     (drawingShader)                             \
@@ -184,6 +184,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pointColor)                                \
     (pointSize)                                 \
     (pointSelectedSize)                         \
+    (materialTag)                               \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (tessLevel)                                 \
@@ -192,6 +193,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (wireframeColor)                            \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
+
+#define HD_MATERIALTAG_TOKENS                   \
+    (defaultMaterialTag)
 
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
@@ -238,7 +242,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* Standard rendering outputs */            \
                                                 \
     /* HdAovTokens->color represents the final
-     * fragment RGBA color.
+     * fragment RGBA color. For correct compositing
+     * using Hydra, it should have pre-multiplied alpha.
      */                                         \
     (color)                                     \
     /* HdAovTokens->depth represents the clip-space
@@ -304,14 +309,27 @@ TfToken HdAovTokensMakeLpe(TfToken const& lpe);
 HD_API
 TfToken HdAovTokensMakeShader(TfToken const& shader);
 
+/* Schema for application-configurable render settings. */
+#define HD_RENDER_SETTINGS_TOKENS                     \
+    /* General graphical options */                   \
+    (enableShadows)                                   \
+    (enableSceneMaterials)                            \
+    (enableSceneLights)                               \
+    /* Raytracer sampling settings */                 \
+    (convergedVariance)                               \
+    (convergedSamplesPerPixel)
+
+
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

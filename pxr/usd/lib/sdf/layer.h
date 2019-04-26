@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
-#include "pxr/usd/sdf/layerBase.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/usd/sdf/path.h"
@@ -90,20 +89,37 @@ struct Sdf_AssetInfo;
 /// \todo
 /// \li Should have validate... methods for rootPrims
 ///
-class SdfLayer : public SdfLayerBase
+class SdfLayer 
+    : public TfRefBase
+    , public TfWeakBase
 {
-    typedef SdfLayerBase Parent;
-    typedef SdfLayer This;
 public:
-    /// Destructor.
+    /// Destructor
     SDF_API
     virtual ~SdfLayer(); 
+
+    /// Noncopyable
+    SdfLayer(const SdfLayer&) = delete;
+    SdfLayer& operator=(const SdfLayer&) = delete;
 
     ///
     /// \name Primary API
     /// @{
 
-    using SdfLayerBase::FileFormatArguments;
+    /// Returns the schema this layer adheres to. This schema provides details
+    /// about the scene description that may be authored in this layer.
+    SDF_API virtual const SdfSchemaBase& GetSchema() const;
+
+    /// Returns the file format used by this layer.
+    SDF_API SdfFileFormatConstPtr GetFileFormat() const;
+
+    /// Type for specifying additional file format-specific arguments to
+    /// layer API.
+    typedef std::map<std::string, std::string> FileFormatArguments;
+
+    /// Returns the file format-specific arguments used during the construction
+    /// of this layer.
+    SDF_API const FileFormatArguments& GetFileFormatArguments() const;
 
     /// Creates a new empty layer with the given identifier.
     ///
@@ -202,10 +218,6 @@ public:
         bool metadataOnly = false,
         const std::string& tag = std::string());
 
-    /// Returns the scene description schema for this layer.
-    SDF_API
-    virtual const SdfSchemaBase& GetSchema() const;
-
     /// Returns the data from the absolute root path of this layer.
     SDF_API
     SdfDataRefPtr GetMetadata() const;
@@ -226,20 +238,27 @@ public:
     /// Creates a new \e anonymous layer with an optional \p tag. An anonymous
     /// layer is a layer with a system assigned identifier, that cannot be
     /// saved to disk via Save(). Anonymous layers have an identifier, but no
-    /// repository, overlay, real path, or other asset information fields.
+    /// real path or other asset information fields.
+    ///
     /// Anonymous layers may be tagged, which can be done to aid debugging
     /// subsystems that make use of anonymous layers.  The tag becomes the
     /// display name of an anonymous layer, and is also included in the
     /// generated identifier. Untagged anonymous layers have an empty display
     /// name.
+    ///
+    /// Additional arguments may be supplied via the \p args parameter.
+    /// These arguments may control behavior specific to the layer's
+    /// file format.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
-        const std::string& tag = std::string());
+        const std::string& tag = std::string(),
+        const FileFormatArguments& args = FileFormatArguments());
 
     /// Create an anonymous layer with a specific \p format.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
-        const std::string &tag, const SdfFileFormatConstPtr &format);
+        const std::string &tag, const SdfFileFormatConstPtr &format,
+        const FileFormatArguments& args = FileFormatArguments());
 
     /// Returns true if this layer is an anonymous layer.
     SDF_API
@@ -1408,10 +1427,6 @@ public:
     // @}
 
 protected:
-    static SdfLayerRefPtr _CreateAnonymousWithFormat(
-        const SdfFileFormatConstPtr &fileFormat,
-        const std::string& tag = std::string());
-
     // Private constructor -- use New(), FindOrCreate(), etc.
     // Precondition: _layerRegistryMutex must be locked.
     SdfLayer(const SdfFileFormatConstPtr& fileFormat,
@@ -1436,6 +1451,11 @@ private:
         const std::string& realPath,
         const ArAssetInfo& assetInfo = ArAssetInfo(),
         const FileFormatArguments& args = FileFormatArguments());
+
+    static SdfLayerRefPtr _CreateAnonymousWithFormat(
+        const SdfFileFormatConstPtr &fileFormat,
+        const std::string& tag,
+        const FileFormatArguments& args);
 
     // Finish initializing this layer (which may have succeeded or not)
     // and publish the results to other threads by unlocking the mutex.
@@ -1698,6 +1718,10 @@ private:
     void _TraverseChildren(const SdfPath &path, const TraversalFunction &func);
 
 private:
+    // File format and arguments for this layer.
+    SdfFileFormatConstPtr _fileFormat;
+    FileFormatArguments _fileFormatArgs;
+
     // Registry of Sdf Identities
     mutable Sdf_IdentityRegistry _idRegistry;
 

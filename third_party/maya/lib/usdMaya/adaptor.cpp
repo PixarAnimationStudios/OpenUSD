@@ -25,6 +25,7 @@
 
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/readUtil.h"
+#include "usdMaya/registryHelper.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -570,7 +571,17 @@ UsdMayaAdaptor::RegisterTypedSchemaConversion(
     const std::string& nodeTypeName,
     const TfType& usdType)
 {
-    _schemaLookup[nodeTypeName] = usdType;
+    const auto iterAndInserted = _schemaLookup.insert(
+            std::make_pair(nodeTypeName, usdType));
+    if (iterAndInserted.second) {
+        UsdMaya_RegistryHelper::AddUnloader([nodeTypeName]() {
+            _schemaLookup.erase(nodeTypeName);
+        });
+    }
+    else {
+        TF_CODING_ERROR("Typed schema conversion already registered for Maya "
+                "type %s", nodeTypeName.c_str());
+    }
 }
 
 /* static */
@@ -579,7 +590,21 @@ UsdMayaAdaptor::RegisterAttributeAlias(
     const TfToken& attributeName,
     const std::string& alias)
 {
-    _attributeAliases[attributeName].push_back(alias);
+    std::vector<std::string>& aliases = _attributeAliases[attributeName];
+    if (std::find(aliases.begin(), aliases.end(), alias) == aliases.end()) {
+        aliases.push_back(alias);
+        UsdMaya_RegistryHelper::AddUnloader([attributeName, alias]() {
+            std::vector<std::string>& aliases =
+                    _attributeAliases[attributeName];
+            aliases.erase(
+                    std::remove(aliases.begin(), aliases.end(), alias), 
+                    aliases.end());
+        });
+    }
+    else {
+        TF_CODING_ERROR("Attribute alias '%s' (='%s') already registered",
+                alias.c_str(), attributeName.GetText());
+    }
 }
 
 /* static */

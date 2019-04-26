@@ -23,24 +23,21 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Gf, Usd
+from pxr import UsdMaya
 
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
+from pxr import Gf
+from pxr import Usd
 
 from maya import cmds
-from maya.api import OpenMaya as OM
 from maya import standalone
+from maya.api import OpenMaya as OM
 
-import os
-import unittest
-import pprint
-import itertools
 from collections import OrderedDict
+import itertools
+import os
+import pprint
+import unittest
+
 
 class testUsdMayaXformStack(unittest.TestCase):
     @classmethod

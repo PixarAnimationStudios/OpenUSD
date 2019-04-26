@@ -161,7 +161,7 @@ using SdfShouldCopyChildrenFn = std::function<
 /// with \p srcRootPath to have the prefix \p dstRootPath.
 ///
 /// Existing values in the destination will be overwritten by values in the
-/// source.  Any fields in the deistination that aren't in the source will be
+/// source.  Any fields in the destination that aren't in the source will be
 /// cleared.
 SDF_API
 bool
@@ -178,7 +178,7 @@ SdfShouldCopyValue(
 /// prefixed with \p srcRootPath to have the prefix \p dstRootPath.
 ///
 /// Existing values in the destination will be overwritten by values in the
-/// source.  Any fields in the deistination that aren't in the source will be
+/// source.  Any fields in the destination that aren't in the source will be
 /// cleared.
 SDF_API
 bool

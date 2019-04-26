@@ -55,10 +55,11 @@ TF_DEFINE_ENV_SETTING(HD_MAX_VBO_SIZE, (1*1024*1024*1024),
 HdBufferArraySharedPtr
 HdStVBOMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return boost::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
-        role, bufferSpecs, _isImmutable);
+        role, bufferSpecs, usageHint);
 }
 
 
@@ -70,7 +71,9 @@ HdStVBOMemoryManager::CreateBufferArrayRange()
 
 
 HdAggregationStrategy::AggregationId
-HdStVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs) const
+HdStVBOMemoryManager::ComputeAggregationId(
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
@@ -83,6 +86,9 @@ HdStVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
     }
+
+    boost::hash_combine(result, usageHint.value);
+
     // promote to size_t
     return (AggregationId)result;
 }
@@ -143,8 +149,8 @@ HdStVBOMemoryManager::GetResourceAllocation(
 HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
-    bool isImmutable)
-    : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, isImmutable),
+    HdBufferArrayUsageHint usageHint)
+    : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, usageHint),
       _needsCompaction(false),
       _totalCapacity(0),
       _maxBytesPerElement(0)
@@ -725,6 +731,17 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
 {
     return _stripedBufferArray->GetMaxNumElements();
 }
+
+HdBufferArrayUsageHint
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetUsageHint() const
+{
+    if (!TF_VERIFY(_stripedBufferArray)) {
+        return HdBufferArrayUsageHint();
+    }
+
+    return _stripedBufferArray->GetUsageHint();
+}
+
 
 HdStBufferResourceGLSharedPtr
 HdStVBOMemoryManager::_StripedBufferArrayRange::GetResource() const

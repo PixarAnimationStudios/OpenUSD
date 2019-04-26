@@ -31,6 +31,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -87,6 +89,8 @@ struct UsdMaya_RegistryHelper
     /// site-specific, department-specific, show-specific values.
     static VtDictionary GetComposedInfoDictionary(
             const std::vector<TfToken>& scope);
+
+    static void AddUnloader(const std::function<void()>& func);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

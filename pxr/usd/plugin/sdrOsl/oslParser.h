@@ -120,18 +120,11 @@ public:
     NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult& discoveryResult) 
         override;
 
-    static const NdrTokenVec& DiscoveryTypes;
-    static const TfToken& SourceType;
+    SDROSL_API
+    const NdrTokenVec& GetDiscoveryTypes() const override;
 
     SDROSL_API
-    const NdrTokenVec& GetDiscoveryTypes() const override {
-        return SdrOslParserPlugin::DiscoveryTypes;
-    }
-
-    SDROSL_API
-    const TfToken& GetSourceType() const override {
-        return SdrOslParserPlugin::SourceType;
-    }
+    const TfToken& GetSourceType() const override;
 
 private:
     // Gets a vector of properties that are present on the specified OSL

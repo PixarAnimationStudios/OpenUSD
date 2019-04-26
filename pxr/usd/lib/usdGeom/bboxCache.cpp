@@ -250,11 +250,13 @@ _GetOrCreateExtentsHintQuery(UsdGeomModelAPI& geomModel, UsdAttributeQuery* q)
 // -------------------------------------------------------------------------- //
 
 UsdGeomBBoxCache::UsdGeomBBoxCache(
-    UsdTimeCode time, TfTokenVector includedPurposes, bool useExtentsHint)
+    UsdTimeCode time, TfTokenVector includedPurposes,
+    bool useExtentsHint, bool ignoreVisibility)
     : _time(time)
     , _includedPurposes(includedPurposes)
     , _ctmCache(time)
     , _useExtentsHint(useExtentsHint)
+    , _ignoreVisibility(ignoreVisibility)
 {
 }
 
@@ -323,7 +325,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
     GfMatrix4d primCtm = _ctmCache.GetLocalToWorldTransform(prim);
     GfMatrix4d ancestorCtm =
         _ctmCache.GetLocalToWorldTransform(relativeToAncestorPrim);
-    GfMatrix4d relativeCtm = ancestorCtm.GetInverse() * primCtm;
+    GfMatrix4d relativeCtm = primCtm * ancestorCtm.GetInverse();
 
     bbox.Transform(relativeCtm);
 
@@ -694,16 +696,18 @@ UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
         return false;
     }
 
-    UsdGeomImageable img(prim);
-    TfToken vis;
-    if (img.GetVisibilityAttr().Get(&vis, _time)
-        && vis == UsdGeomTokens->invisible) {
-        TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded for VISIBILITY. "
-                                   "prim: %s visibility at time %s: %s\n",
-                                   prim.GetPath().GetText(),
-                                   TfStringify(_time).c_str(),
-                                   vis.GetText());
-        return false;
+    if (!_ignoreVisibility) {
+        UsdGeomImageable img(prim);
+        TfToken vis;
+        if (img.GetVisibilityAttr().Get(&vis, _time)
+            && vis == UsdGeomTokens->invisible) {
+            TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded for VISIBILITY. "
+                                       "prim: %s visibility at time %s: %s\n",
+                                       prim.GetPath().GetText(),
+                                       TfStringify(_time).c_str(),
+                                       vis.GetText());
+            return false;
+        }
     }
 
     return true;
@@ -1130,7 +1134,10 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // entry->isVarying (below).
 
         UsdAttributeQuery visQuery;
-        _GetOrCreateVisibilityQuery(prim, &visQuery);
+        if (!_ignoreVisibility) {
+            _GetOrCreateVisibilityQuery(prim, &visQuery);
+        }
+        
         const UsdAttributeQuery& extentQuery =
             _GetOrCreateExtentQuery(prim, &queries[Extent]);
 
@@ -1190,7 +1197,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // For more information, see bugzilla #115735
 
                 bool primHasAuthoredPoints =
-                    pointBasedObj.GetPointsAttr().HasAuthoredValueOpinion();
+                    pointBasedObj.GetPointsAttr().HasAuthoredValue();
 
                 if (primHasAuthoredPoints) {
                     successGettingExtent = _ComputeExtent(boundableObj, &extent);
@@ -1283,7 +1290,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 childEntry->isIncluded = _ShouldIncludePrim(childPrim);
 
             // We're now confident that the cached flag is correct.
-            if (!childEntry->isIncluded) {
+            if (!_ignoreVisibility && !childEntry->isIncluded) {
                 // If the child prim is excluded, mark the parent as varying
                 // if the child is imageable and its visibility is varying.
                 // This will ensure that the parent entry gets dirtied when

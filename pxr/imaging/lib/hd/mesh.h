@@ -147,15 +147,10 @@ protected:
            SdfPath const& instancerId = SdfPath());
 
     // We allow up to 2 repr descs per repr for meshes (see ConfigureRepr above)
-    // We can have up to 3 topology reprs for the rprim (see
-    //      HdRprim::_GetReprSelector)
-    // So, a repr selector can generate at most 2*3=6 mesh repr descs.
-    typedef _ReprDescConfigs<HdMeshReprDesc, /*max repr descs=*/6>
-        _MeshReprConfig;
+    typedef _ReprDescConfigs<HdMeshReprDesc, 2> _MeshReprConfig;
 
     HD_API
-    static _MeshReprConfig::DescArray _GetReprDesc(
-        HdReprSelector const &reprSelector);
+    static _MeshReprConfig::DescArray _GetReprDesc(TfToken const &reprName);
 
 private:
 

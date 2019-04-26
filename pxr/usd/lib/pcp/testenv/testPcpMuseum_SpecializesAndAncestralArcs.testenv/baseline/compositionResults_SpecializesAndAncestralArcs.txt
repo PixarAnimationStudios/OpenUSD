@@ -1,0 +1,53 @@
+Loading @SpecializesAndAncestralArcs/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.sdf             /Specializes
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Specializes/Child>
+
+Prim Stack:
+    root.sdf             /Specializes/Child
+
+------------------------------------------------------------------------
+Results for composing </Class>
+
+Prim Stack:
+    root.sdf             /Class
+
+------------------------------------------------------------------------
+Results for composing </AncestralReference>
+
+Prim Stack:
+    root.sdf             /AncestralReference
+    ref.sdf              /Ref
+    root.sdf             /Specializes
+    ref.sdf              /Specializes
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </AncestralReference/Child>
+
+Prim Stack:
+    root.sdf             /AncestralReference/Child
+    ref.sdf              /Ref/Child
+    root.sdf             /Specializes/Child
+    root.sdf             /Class
+    ref.sdf              /Specializes/Child
+    ref.sdf              /ChildRef
+    ref.sdf              /Class
+    ref2.sdf             /Ref2
+    ref2.sdf             /Class
+

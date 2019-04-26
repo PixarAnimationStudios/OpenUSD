@@ -124,7 +124,7 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
     // Look for generatedSchema in Resources.
     const string fname = TfStringCatPaths(plugin->GetResourcePath(),
                                           "generatedSchema.usda");
-    return TfIsFile(fname) ? SdfLayer::OpenAsAnonymous(fname) : TfNullPtr;
+    return SdfLayer::OpenAsAnonymous(fname);
 }
 
 void
@@ -434,6 +434,13 @@ UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
 
     return false;
 }
+
+TfType
+UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
+    return PlugRegistry::GetInstance().FindDerivedTypeByName(
+        *_schemaBaseType, typeName.GetString());
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -84,6 +84,18 @@ void UsdUtilsExtractExternalReferences(
 /// \note If the given asset has a dependency on a directory (i.e. an external 
 /// reference to a directory path), the dependency is ignored and the contents 
 /// of the directory are not included in the created package. 
+/// 
+/// \note This function modifies the layers referenced by \p assetPath 
+/// (including the root layer and all transitive layer dependencies) in-place. 
+/// However, it does not save the layers before copying them into the package 
+/// that is created. It also does not revert the changes it makes to the 
+/// layers. Therefore, it is strongly recommended that you run this function in 
+/// isolation after any source UsdStages have been closed. If you have UsdStages 
+/// open during the function call that reference the layers being modified, you 
+/// may receive warnings or composition errors which may not affect the 
+/// resulting package adversely.
+/// 
+/// \sa UsdUtilsCreateNewARKitUsdzPackage()
 USDUTILS_API
 bool
 UsdUtilsCreateNewUsdzPackage(
@@ -111,6 +123,18 @@ UsdUtilsCreateNewUsdzPackage(
 /// \note If the given asset has a dependency on a directory (i.e. an external 
 /// reference to a directory path), the dependency is ignored and the contents 
 /// of the directory are not included in the created package. 
+/// 
+/// \note This function modifies the layers referenced by \p assetPath 
+/// (including the root layer and all transitive layer dependencies) in-place. 
+/// However, it does not save the layers before copying them into the package 
+/// that is created. It also does not revert the changes it makes to the 
+/// layers. Therefore, it is strongly recommended that you run this function in 
+/// isolation after any source UsdStages have been closed. If you have UsdStages 
+/// open during the function call that reference the layers being modified, you 
+/// may receive warnings or composition errors which may not affect the 
+/// resulting package adversely.  
+/// 
+/// \sa UsdUtilsCreateNewUsdzPackage()
 USDUTILS_API
 bool
 UsdUtilsCreateNewARKitUsdzPackage(
@@ -134,6 +158,25 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
                                std::vector<SdfLayerRefPtr> *layers,
                                std::vector<std::string> *assets,
                                std::vector<std::string> *unresolvedPaths);
+
+/// Callback that is used to modify asset paths in a layer.  The \c assetPath
+/// will contain the string value that's authored.  The returned value is the
+/// new value that should be authored in the layer.
+using UsdUtilsModifyAssetPathFn = std::function<std::string(
+        const std::string& assetPath)>;
+
+/// Helper function that visits every asset path in \c layer, calls \c modifyFn
+/// and replaces the value with the return value of \c modifyFn.  This modifies
+/// \c layer in place.
+///
+/// This can be useful in preparing a layer for consumption in contexts that do
+/// not have access to the ArResolver for which the layer's asset paths were
+/// authored: we can replace all paths with their fully resolved equivalents,
+/// for example.
+USDUTILS_API
+void UsdUtilsModifyAssetPaths(
+        const SdfLayerHandle& layer,
+        const UsdUtilsModifyAssetPathFn& modifyFn);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

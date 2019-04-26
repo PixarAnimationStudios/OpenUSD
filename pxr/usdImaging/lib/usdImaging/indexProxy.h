@@ -47,6 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingIndexProxy {
 public: 
     /// Adds a new prim to be tracked to the delegate.
+    /// Returns true if an entry to track the prim was added.
+    ///
     /// "cachePath" is the index path minus the delegate prefix (i.e. the result
     /// of GetPathForUsd()).
     /// usdPrim reference the prim to track in usd.
@@ -62,7 +64,7 @@ public:
     /// twice without causing an error.  However, the UsdPrim and Adpater have
     /// to be the same as what is already inserted in the tracking.
     USDIMAGING_API
-    void AddPrimInfo(SdfPath const& cachePath,
+    bool AddPrimInfo(SdfPath const& cachePath,
                      UsdPrim const& usdPrim,
                      UsdImagingPrimAdapterSharedPtr const& adapter);
 

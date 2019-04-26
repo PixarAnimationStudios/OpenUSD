@@ -76,7 +76,7 @@ class testUsdMayaAdaptorGeom(unittest.TestCase):
 
         # Testing that there is no authored attribute
         geom4 = UsdGeom.Imageable(newUsdStage.GetPrimAtPath('/World/pCube4'))
-        self.assertFalse(geom4.GetPurposeAttr().HasAuthoredValueOpinion())
+        self.assertFalse(geom4.GetPurposeAttr().HasAuthoredValue())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

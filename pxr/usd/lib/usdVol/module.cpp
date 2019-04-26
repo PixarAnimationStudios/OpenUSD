@@ -28,6 +28,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
+    TF_WRAP(UsdVolTokens);
     TF_WRAP(UsdVolVolume);
     TF_WRAP(UsdVolFieldBase);
     TF_WRAP(UsdVolFieldAsset);

@@ -1,0 +1,29 @@
+#sdf 1.4.32
+
+def "ChildRef" (
+    references = @./ref2.sdf@</Ref2>
+)
+{
+}
+
+def "Specializes"
+{
+    def "Child" (
+        references = </ChildRef>
+    )
+    {
+    }
+}
+
+over "Class"
+{
+}
+
+def "Ref" (
+    specializes = </Specializes>
+)
+{
+    over "Child"
+    {
+    }
+}

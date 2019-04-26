@@ -1177,7 +1177,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
                 m_usdPointInstancer.GetPrim().GetAttribute(token);
             if(!usdAttrMap[token].IsValid()) {
                 TF_WARN( "Missing '%s' attribute from point instancer. "
-                    "Failed to update attributes.", token.GetString().c_str());
+                         "Failed to update attributes.", token.GetText() );
                 return;
             }
         }
@@ -1594,8 +1594,9 @@ GusdInstancerWrapper::unpack(
                 storage == GT_STORE_REAL64 ) {
 
                 GA_RWAttributeRef attr = 
-                    gdr.addFloatTuple( GA_ATTRIB_POINT, 
-                                       primvar.GetBaseName().GetString().c_str(), 
+                    gdr.addFloatTuple( GA_ATTRIB_POINT,
+                                       GusdUSD_Utils::TokenToStringHolder(
+                                           primvar.GetBaseName()),
                                        pvData->getTupleSize(),
                                        GA_Defaults(0.0),
                                        /* creation_args */0,
@@ -1630,7 +1631,8 @@ GusdInstancerWrapper::unpack(
 
                 GA_RWAttributeRef attr = 
                     gdr.addIntTuple( GA_ATTRIB_POINT, 
-                                     primvar.GetBaseName().GetString().c_str(), 
+                                     GusdUSD_Utils::TokenToStringHolder(
+                                         primvar.GetBaseName()),
                                      pvData->getTupleSize(),
                                      GA_Defaults(0.0),
                                      /* creation_args */0,

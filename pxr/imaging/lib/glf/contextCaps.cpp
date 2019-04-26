@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/contextCaps.h"
 
+#include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/debugCodes.h"
 #include "pxr/imaging/glf/glew.h"
 
@@ -45,7 +46,7 @@ TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_BUFFER, false,
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
-                      "Use GL mult draw indirect extention");
+                      "Use GL multi draw indirect extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
@@ -57,16 +58,25 @@ TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
                       "GLSL version");
 
 
+// Set defaults based on GL spec minimums
+static const int _DefaultMaxArrayTextureLayers        = 256;
+static const int _DefaultMaxUniformBlockSize          = 16*1024;
+static const int _DefaultMaxShaderStorageBlockSize    = 16*1024*1024;
+static const int _DefaultMaxTextureBufferSize         = 64*1024;
+static const int _DefaultGLSLVersion                  = 400;
+
 // Initialize members to ensure a sane starting state.
 GlfContextCaps::GlfContextCaps()
     : glVersion(0)
     , coreProfile(false)
 
-    , maxUniformBlockSize(0)
-    , maxShaderStorageBlockSize(0)
-    , maxTextureBufferSize(0)
+    , maxArrayTextureLayers(_DefaultMaxArrayTextureLayers)
+    , maxUniformBlockSize(_DefaultMaxUniformBlockSize)
+    , maxShaderStorageBlockSize(_DefaultMaxShaderStorageBlockSize)
+    , maxTextureBufferSize(_DefaultMaxTextureBufferSize)
     , uniformBufferOffsetAlignment(0)
 
+    , arrayTexturesEnabled(false)
     , shaderStorageBufferEnabled(false)
     , bufferStorageEnabled(false)
     , directStateAccessEnabled(false)
@@ -74,55 +84,80 @@ GlfContextCaps::GlfContextCaps()
     , bindlessTextureEnabled(false)
     , bindlessBufferEnabled(false)
 
-    , glslVersion(400)
+    , glslVersion(_DefaultGLSLVersion)
     , explicitUniformLocation(false)
     , shadingLanguage420pack(false)
     , shaderDrawParametersEnabled(false)
 
     , copyBufferEnabled(true)
+    , floatingPointBuffersEnabled(false)
 {
 }
 
 /*static*/
-GlfContextCaps&
-GlfContextCaps::GetInstance()
+void
+GlfContextCaps::InitInstance()
 {
-    // Make sure the render context caps have been populated.
+    // Initialize the render context caps.
     // This needs to be called on a thread that has the gl context
     // bound before we go wide on the cpus.
-    //
-    // Because we have unit tests that side step almost all Hd machinery, we 
-    // must call _LoadCaps() here, so we can ensure the object is in a good 
-    // state for all clients.
-    //
-    // XXX: Move this to an render context change event api. (bug #124971)
 
-    static std::once_flag renderContextLoad;
+    // XXX: This should be called on
+    // an render context change event api. (bug #124971)
+
     GlfContextCaps& caps = TfSingleton<GlfContextCaps>::GetInstance();
-    std::call_once(renderContextLoad, [&caps](){ caps._LoadCaps(); });
+
+    caps._LoadCaps();
+}
+
+/*static*/
+const GlfContextCaps&
+GlfContextCaps::GetInstance()
+{
+    GlfContextCaps& caps = TfSingleton<GlfContextCaps>::GetInstance();
+
+    if (caps.glVersion == 0) {
+        TF_CODING_ERROR("GlfContextCaps has not been initialized");
+        // Return the default set
+    }
+
     return caps;
 }
 
 void
 GlfContextCaps::_LoadCaps()
 {
-    // XXX: consider to move this class into glf
-
-    // note that this function is called without GL context, in some unit tests.
-
+    // Reset Values to reasonable defaults based of OpenGL minimums.
+    // So that if we early out, systems can still depend on the
+    // caps values being valid.
+    //
+    // _LoadCaps can also be called multiple times, so not want
+    // to mix and match values in the event of an early out.
+    glVersion                    = 0;
+    coreProfile                  = false;
+    maxArrayTextureLayers        = _DefaultMaxArrayTextureLayers;
+    maxUniformBlockSize          = _DefaultMaxUniformBlockSize;
+    maxShaderStorageBlockSize    = _DefaultMaxShaderStorageBlockSize;
+    maxTextureBufferSize         = _DefaultMaxTextureBufferSize;
+    uniformBufferOffsetAlignment = 0;
+    arrayTexturesEnabled         = false;
     shaderStorageBufferEnabled   = false;
     bufferStorageEnabled         = false;
     directStateAccessEnabled     = false;
     multiDrawIndirectEnabled     = false;
     bindlessTextureEnabled       = false;
     bindlessBufferEnabled        = false;
+    glslVersion                  = _DefaultGLSLVersion;
     explicitUniformLocation      = false;
     shadingLanguage420pack       = false;
     shaderDrawParametersEnabled  = false;
-    maxUniformBlockSize          = 16*1024;      // GL spec minimum
-    maxShaderStorageBlockSize    = 16*1024*1024; // GL spec minimum
-    maxTextureBufferSize         = 64*1024;      // GL spec minimum
-    uniformBufferOffsetAlignment = 0;
+    copyBufferEnabled            = true;
+    floatingPointBuffersEnabled  = false;
+
+
+    if (!TF_VERIFY(GlfGLContext::GetCurrentGLContext()->IsValid())) {
+        return;
+    }
 
     const char *glVersionStr = (const char*)glGetString(GL_VERSION);
 
@@ -157,6 +192,11 @@ GlfContextCaps::_LoadCaps()
         glslVersion = 0;
     }
 
+    if (glVersion >= 300) {
+        glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
+        arrayTexturesEnabled = true;
+    }
+
     // initialize by Core versions
     if (glVersion >= 310) {
         glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,
@@ -170,6 +210,11 @@ GlfContextCaps::_LoadCaps()
         GLint profileMask = 0;
         glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
         coreProfile = (profileMask & GL_CONTEXT_CORE_PROFILE_BIT);
+    }
+    if (glVersion >= 400) {
+        // Older versions of GL maybe support R16F and D32F, but for now we set
+        // the minimum GL at 4.
+        floatingPointBuffersEnabled = true;
     }
     if (glVersion >= 420) {
         shadingLanguage420pack = true;
@@ -192,7 +237,7 @@ GlfContextCaps::_LoadCaps()
     }
 
     // initialize by individual extension.
-    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentNV) {
+    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentARB) {
         bindlessTextureEnabled = true;
     }
     if (GLEW_NV_shader_buffer_load && glMakeNamedBufferResidentNV) {
@@ -245,6 +290,7 @@ GlfContextCaps::_LoadCaps()
         glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
 
         // downgrade to the overridden GLSL version
+        floatingPointBuffersEnabled &= (glslVersion >= 400);
         shadingLanguage420pack      &= (glslVersion >= 420);
         explicitUniformLocation     &= (glslVersion >= 430);
         bindlessTextureEnabled      &= (glslVersion >= 430);

@@ -65,7 +65,14 @@ class Skeleton "Skeleton" (
         up the skeleton, and their order. Each token in the array must be valid
         when parsed as an SdfPath. The parent-child relationships of the
         corresponding paths determine the parent-child relationships of each
-        joint."""
+        joint. It is not required that the name at the end of each path be
+        unique, but rather only that the paths themselves be unique."""
+    )
+
+    uniform token[] jointNames (
+        doc = """If authored, provides a unique name per joint. This may be
+        optionally set to provide better names when translating to DCC apps 
+        that require unique joint names."""
     )
 
     uniform matrix4d[] bindTransforms (
@@ -141,7 +148,7 @@ class PackedJointAnimation "PackedJointAnimation" (
 {
 }
 
-class "BindingAPI" (
+class "SkelBindingAPI" (
     inherits = </APISchemaBase>
     doc = """Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want
@@ -151,7 +158,9 @@ class "BindingAPI" (
     documentation for more about bindings and how they apply in a scene graph.
     """
     customData = {
+        string className = "BindingAPI"
         string extraIncludes = """
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdSkel/skeleton.h" """
     }
@@ -255,6 +264,7 @@ class BlendShape "BlendShape" (
       """
     customData = {
         string extraIncludes = """
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/usdSkel/inbetweenShape.h" """
     }
 )
@@ -262,6 +272,11 @@ class BlendShape "BlendShape" (
     uniform vector3f[] offsets (
         doc = """**Required property**. Position offsets which, when added to the
         base pose, provides the target shape."""
+    )
+
+    uniform vector3f[] normalOffsets (
+        doc = """**Required property**. Normal offsets which, when added to the
+        base pose, provides the normals of the target shape."""
     )
 
     uniform uint[] pointIndices (

@@ -24,14 +24,22 @@
 #ifndef PXRUSDTRANSLATORS_JOINT_WRITER_H
 #define PXRUSDTRANSLATORS_JOINT_WRITER_H
 
+/// \file pxrUsdTranslators/jointWriter.h
+
 #include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
 
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/animMapper.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/topology.h"
+
+#include <maya/MFnDependencyNode.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -52,25 +60,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrUsdTranslators_JointWriter : public UsdMayaPrimWriter
 {
 public:
-    PxrUsdTranslators_JointWriter(const MDagPath& iDag,
-                       const SdfPath& uPath,
-                       UsdMayaWriteJobContext& jobCtx);
-    
-    void Write(const UsdTimeCode &usdTime) override;
+    PxrUsdTranslators_JointWriter(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
+            UsdMayaWriteJobContext& jobCtx);
+
+    void Write(const UsdTimeCode& usdTime) override;
     bool ExportsGprims() const override;
     bool ShouldPruneChildren() const override;
 
     /// Gets the joint name tokens for the given dag paths, assuming a joint
     /// hierarchy with the given root joint.
-    static VtTokenArray GetJointNames(const std::vector<MDagPath>& joints,
-                                      const MDagPath& rootJoint,
-                                      bool stripNamespaces);
+    static VtTokenArray GetJointNames(
+            const std::vector<MDagPath>& joints,
+            const MDagPath& rootJoint,
+            bool stripNamespaces);
 
     /// Gets the expected path where a skeleton will be exported for
     /// the given root joint. The skeleton both binds a skeleton and
     /// holds root transformations of the joint hierarchy.
-    static SdfPath GetSkeletonPath(const MDagPath& rootJoint,
-                                   bool stripNamespaces);
+    static SdfPath GetSkeletonPath(
+            const MDagPath& rootJoint,
+            bool stripNamespaces);
 
 private:
     bool _WriteRestState();
@@ -94,5 +105,6 @@ private:
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

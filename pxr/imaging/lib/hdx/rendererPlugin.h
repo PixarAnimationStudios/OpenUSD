@@ -27,11 +27,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hf/pluginBase.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
-class HdRenderDelegate;
 class HdRenderIndex;
 
 ///
@@ -53,6 +53,15 @@ public:
     /// factory prims and communicate with a renderer.
     ///
     virtual HdRenderDelegate *CreateRenderDelegate() = 0;
+
+    ///
+    /// Factory a Render Delegate object, that Hydra can use to
+    /// factory prims and communicate with a renderer.  Pass in initial
+    /// settings...
+    ///
+    HDX_API
+    virtual HdRenderDelegate *CreateRenderDelegate(
+        HdRenderSettingsMap const& settingsMap);
 
     ///
     /// Release the object factoried by CreateRenderDelegate().

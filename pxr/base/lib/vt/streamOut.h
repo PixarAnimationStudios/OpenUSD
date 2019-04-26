@@ -28,13 +28,9 @@
 #include "pxr/base/vt/api.h"
 #include "pxr/base/tf/enum.h"
 
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/has_left_shift.hpp>
-#include <boost/utility/enable_if.hpp>
-
 #include <iosfwd>
-#include <string>
 #include <typeinfo>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,23 +42,19 @@ Vt_StreamOutGeneric(std::type_info const &type,
                     void const *addr,
                     std::ostream &stream);
 
-// Package up a type traits test for stream insertion operator.
-template <class T>
-struct Vt_IsOutputStreamable : boost::has_left_shift<
-    std::ostream &, /* << */ T const &, /* -> */ std::ostream &> {};
-
 // Function used in the case that T has a stream insertion operator.
 template <class T>
-typename boost::enable_if<Vt_IsOutputStreamable<T>, std::ostream &>::type
-Vt_StreamOutImpl(T const &obj, std::ostream &stream)
+inline auto
+Vt_StreamOutImpl(T const &obj, std::ostream &stream, int)
+    -> decltype(stream << obj)
 {
     return stream << obj;
 }
 
 // Function used in the case that T does not have a stream insertion operator.
 template <class T>
-typename boost::disable_if<Vt_IsOutputStreamable<T>, std::ostream &>::type
-Vt_StreamOutImpl(T const &obj, std::ostream &stream)
+inline std::ostream &
+Vt_StreamOutImpl(T const &obj, std::ostream &stream, long)
 {
     return Vt_StreamOutGeneric(
         typeid(T), static_cast<void const *>(&obj), stream);
@@ -72,13 +64,15 @@ Vt_StreamOutImpl(T const &obj, std::ostream &stream)
 /// values to streams.  Clients may overload VtStreamOut for their own types
 /// if desired.
 template <class T>
-typename boost::disable_if<boost::is_enum<T>, std::ostream &>::type
+typename std::enable_if<!std::is_enum<T>::value, std::ostream &>::type
 VtStreamOut(T const &obj, std::ostream &stream)
 {
-    return Vt_StreamOutImpl(obj, stream);
+    // For types that have an operator<< suitable for ostream, we use the
+    // traditional int/long 0-argument technique to disambiguate overloads.
+    return Vt_StreamOutImpl(obj, stream, 0);
 }
 template <class EnumT>
-typename boost::enable_if<boost::is_enum<EnumT>, std::ostream &>::type
+typename std::enable_if<std::is_enum<EnumT>::value, std::ostream &>::type
 VtStreamOut(EnumT const &e, std::ostream &stream)
 {
     return VtStreamOut(TfEnum::GetName(e), stream);

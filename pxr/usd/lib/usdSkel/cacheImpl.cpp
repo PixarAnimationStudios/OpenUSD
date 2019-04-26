@@ -127,32 +127,6 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelDefinition(const UsdPrim& prim)
 }
 
 
-namespace {
-
-
-/// Return the a resolved prim for a target in \p targets.
-UsdPrim
-_GetFirstTarget(const UsdRelationship& rel, const SdfPathVector& targets)
-{
-    if(targets.size() > 0) {
-        if(targets.size() > 1) {
-            TF_WARN("%s -- relationship has more than one target. "
-                    "Only the first will be used.",
-                    rel.GetPath().GetText());
-        }
-        if(UsdPrim prim = rel.GetStage()->GetPrimAtPath(targets.front()))
-            return prim;
-        
-        TF_WARN("%s -- Invalid target <%s>.",
-                rel.GetPath().GetText(), targets.front().GetText());
-    }
-    return UsdPrim();
-}
-
-
-} // namespace
-
-
 UsdSkelSkeletonQuery
 UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelQuery(const UsdPrim& prim)
 {
@@ -202,7 +176,8 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
         skinnedPrim,
         skelQuery ? skelQuery.GetJointOrder() : VtTokenArray(),
         key.jointIndicesAttr, key.jointWeightsAttr,
-        key.geomBindTransformAttr, key.jointsAttr);
+        key.geomBindTransformAttr, key.jointsAttr,
+        key.blendShapesAttr, key.blendShapeTargetsRel);
 }
 
 
@@ -251,7 +226,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
             TF_DEBUG(USDSKEL_CACHE).Msg(
-                "[UsdSkelCache]: %sPruning traversal at <%s> "
+                "[UsdSkelCache]  %sPruning traversal at <%s> "
                 "(prim is not UsdGeomImageable)\n",
                 _MakeIndent(stack.size()).c_str(), it->GetPath().GetText());
 
@@ -280,8 +255,13 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
         if (UsdAttribute attr = binding.GetJointsAttr())
             key.jointsAttr = attr;
 
-        if (UsdSkelIsSkinnablePrim(*it) &&
-            key.jointIndicesAttr && key.jointWeightsAttr) {
+        if (UsdAttribute attr = binding.GetBlendShapesAttr())
+            key.blendShapesAttr = attr;
+
+        if (UsdRelationship rel = binding.GetBlendShapeTargetsRel())
+            key.blendShapeTargetsRel = rel;
+
+        if (UsdSkelIsSkinnablePrim(*it)) {
 
             _PrimToSkinningQueryMap::accessor a;
             if (_cache->_primSkinningQueryCache.insert(a, *it)) {
@@ -289,9 +269,12 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
             }
 
             TF_DEBUG(USDSKEL_CACHE).Msg(
-                "[UsdSkelCache] %sAdded skinning query for prim <%s> "
-                "(valid = %d).\n", _MakeIndent(stack.size()).c_str(),
-                it->GetPath().GetText(), a->second.IsValid());
+                "[UsdSkelCache] %sAdded skinning query for prim <%s>\n",
+                _MakeIndent(stack.size()).c_str(),
+                it->GetPath().GetText());
+
+            // TODO: How should nested skinnable primitives be handled?
+            // Should we prune traversal at this point?
         }
 
         stack.emplace_back(key, *it);

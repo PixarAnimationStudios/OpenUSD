@@ -394,6 +394,27 @@ _PrimSetReferenceListItems(SdfListOpType opType, Sdf_TextParserContext *context)
 }
 
 static void
+_PrimSetPayloadListItems(SdfListOpType opType, Sdf_TextParserContext *context) 
+{
+    if (context->payloadParsingRefs.empty() &&
+        opType != SdfListOpTypeExplicit) {
+        Err(context, 
+            "Setting payload to None (or an empty list) is only allowed "
+            "when setting explicit payloads, not for list editing");
+        return;
+    }
+
+    TF_FOR_ALL(ref, context->payloadParsingRefs) {
+        ERROR_AND_RETURN_IF_NOT_ALLOWED(
+            context, 
+            SdfSchema::IsValidPayload(*ref));
+    }
+
+    _SetListOpItems(SdfFieldKeys->Payload, opType, 
+                    context->payloadParsingRefs, context);
+}
+
+static void
 _PrimSetVariantSetNamesListItems(SdfListOpType opType, 
                                  Sdf_TextParserContext *context)
 {
@@ -619,10 +640,7 @@ _PrimInitAttribute(const Value &arg1, Sdf_TextParserContext *context)
         Err(context, "'%s' is not a valid attribute name", name.GetText());
     }
 
-    if (context->path.IsTargetPath())
-        context->path = context->path.AppendRelationalAttribute(name);
-    else
-        context->path = context->path.AppendProperty(name);
+    context->path = context->path.AppendProperty(name);
 
     // If we haven't seen this attribute before, then set the object type
     // and add it to the parent's list of properties. Otherwise both have
@@ -901,16 +919,6 @@ _PathSetPrim(const Value& arg1, Sdf_TextParserContext *context)
     context->savedPath = SdfPath(pathStr);
     if (!context->savedPath.IsPrimPath()) {
         Err(context, "'%s' is not a valid prim path", pathStr.c_str());
-    }
-}
-
-static void
-_PathSetProperty(const Value& arg1, Sdf_TextParserContext *context)
-{
-    const std::string& pathStr = arg1.Get<std::string>();
-    context->savedPath = SdfPath(pathStr);
-    if (!context->savedPath.IsPropertyPath()) {
-        Err(context, "'%s' is not a valid property path", pathStr.c_str());
     }
 }
 
@@ -1194,7 +1202,6 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 %token TOK_ABSTRACT
 %token TOK_ADD
 %token TOK_APPEND
-%token TOK_ATTRIBUTES
 %token TOK_CLASS
 %token TOK_CONFIG
 %token TOK_CONNECT
@@ -1208,7 +1215,6 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 %token TOK_DOC
 %token TOK_INHERITS
 %token TOK_KIND
-%token TOK_MAPPER
 %token TOK_NAMECHILDREN
 %token TOK_NONE
 %token TOK_OFFSET
@@ -1247,7 +1253,6 @@ keyword:
       TOK_ABSTRACT
     | TOK_ADD
     | TOK_APPEND
-    | TOK_ATTRIBUTES
     | TOK_CLASS
     | TOK_CONFIG
     | TOK_CONNECT
@@ -1261,7 +1266,6 @@ keyword:
     | TOK_DOC
     | TOK_INHERITS
     | TOK_KIND
-    | TOK_MAPPER
     | TOK_NAMECHILDREN
     | TOK_NONE
     | TOK_OFFSET
@@ -1659,15 +1663,48 @@ prim_metadata:
                 _GetPermissionFromString($3.Get<std::string>(), context), 
                 context);
         }
-    // Not parsed with generic metadata because: SdfPayload is two consecutive
-    // values
+    // Not parsed with generic metadata because: SdfListOp is not supported
     | TOK_PAYLOAD {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
-        } '=' payload_item {
-            _SetField(
-                context->path, SdfFieldKeys->Payload, 
-                SdfPayload(context->layerRefPath, context->savedPath), context);
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeExplicit, context);
+        }
+    | TOK_DELETE TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeDeleted, context);
+        }
+    | TOK_ADD TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeAdded, context);
+        }
+    | TOK_PREPEND TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypePrepended, context);
+        }
+    | TOK_APPEND TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeAppended, context);
+        }
+    | TOK_REORDER TOK_PAYLOAD {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->payloadParsingRefs.clear();
+        } '=' payload_list {
+            _PrimSetPayloadListItems(SdfListOpTypeOrdered, context);
         }
     // Not parsed with generic metadata because: SdfListOp is not supported
     | TOK_INHERITS {
@@ -1842,9 +1879,67 @@ prim_metadata:
         }
     ;
 
-payload_item:
+payload_list:
     TOK_NONE
-    | layer_ref prim_path_opt
+    | payload_list_item
+    | '[' newlines_opt ']'
+    | '[' newlines_opt payload_list_int listsep_opt ']'
+    ;
+
+payload_list_int:
+    payload_list_item
+    | payload_list_int listsep payload_list_item
+    ;
+
+payload_list_item:
+    layer_ref prim_path_opt payload_params_opt  {
+        if (context->layerRefPath.empty()) {
+            Err(context, "Payload asset path must not be empty. If this "
+                "is intended to be an internal payload, remove the "
+                "'@' delimiters.");
+        }
+
+        SdfPayload payload(context->layerRefPath,
+                           context->savedPath,
+                           context->layerRefOffset);
+        context->payloadParsingRefs.push_back(payload);
+    }
+    | TOK_PATHREF {
+        // Internal payloads do not begin with an asset path so there's
+        // no layer_ref rule, but we need to make sure we reset state the
+        // so we don't pick up data from a previously-parsed payload.
+        context->layerRefPath.clear();
+        context->layerRefOffset = SdfLayerOffset();
+        ABORT_IF_ERROR(context->seenError);
+      } 
+      payload_params_opt {
+        if (!$1.Get<std::string>().empty()) {
+           _PathSetPrim($1, context);
+        }
+        else {
+            context->savedPath = SdfPath::EmptyPath();
+        }        
+
+        SdfPayload payload(std::string(),
+                           context->savedPath,
+                           context->layerRefOffset);
+        context->payloadParsingRefs.push_back(payload);
+    }
+    ;
+
+payload_params_opt:
+    /* empty */
+    | '(' newlines_opt ')'
+    | '(' newlines_opt payload_params_int stmtsep_opt ')'
+    ;
+
+payload_params_int:
+    payload_params_item
+    | payload_params_int stmtsep payload_params_item
+    ;
+
+payload_params_item:
+    layer_offset_stmt
     ;
 
 reference_list:
@@ -2240,30 +2335,6 @@ prim_attribute_connect :
     }
     ;
 
-prim_attribute_mapper:
-    prim_attribute_full_type namespaced_name '.' TOK_MAPPER '[' property_path ']' '=' {
-        _PrimInitAttribute($2, context);
-        context->mapperTarget = context->savedPath;
-        context->path = context->path.AppendMapper(context->mapperTarget);
-    } 
-    attribute_mapper_rhs {
-        SdfPath targetPath = context->path.GetTargetPath();
-        context->path = context->path.GetParentPath(); // pop mapper
-
-        // Add this mapper to the list of mapper children (keyed by the mapper's
-        // connection path) on this attribute.
-        //
-        // XXX:
-        // Conceptually, this is incorrect -- mappers are children of attribute
-        // connections, not attributes themselves. This is OK for now and should
-        // be fixed by the introduction of real attribute connection specs in Sd.
-        _AppendVectorItem<SdfPath>(SdfChildrenKeys->MapperChildren, targetPath,
-                                  context);
-
-        context->path = context->path.GetParentPath(); // pop attr
-    }
-    ;
-
 prim_attribute_time_samples:
     prim_attribute_full_type namespaced_name '.' TOK_TIME_SAMPLES '=' {
             _PrimInitAttribute($2, context);
@@ -2280,84 +2351,12 @@ prim_attribute:
     prim_attribute_fallback
     | prim_attribute_default
     | prim_attribute_connect
-    | prim_attribute_mapper
     | prim_attribute_time_samples
     ;
 
 //--------------------------------------------------------------------
-// Attribute connections, markers, and mappers
+// Attribute connections
 //--------------------------------------------------------------------
-
-// TODO: handle mapper expressions here, as TOK_STRING
-attribute_mapper_rhs:
-    name {
-        const std::string mapperName($1.Get<std::string>());
-        if (_HasSpec(context->path, context)) {
-            Err(context, "Duplicate mapper");
-        }
-
-        _CreateSpec(context->path, SdfSpecTypeMapper, context);
-        _SetField(context->path, SdfFieldKeys->TypeName, mapperName, context);
-    } 
-    attribute_mapper_metadata_opt
-    //XXX: We want to allow optional newlines here, but adding this to
-    //     the attribute_mapper_params_opt production rule makes the
-    //     parser consume newlines even in the case there is no params
-    //     and it chokes later due to a missing separator...
-    attribute_mapper_params_opt
-    ;
-
-attribute_mapper_params_opt:
-    /* empty */
-    | '{' newlines_opt '}'
-    | '{' newlines_opt attribute_mapper_params_list stmtsep_opt '}' {
-        _SetField(
-            context->path, SdfChildrenKeys->MapperArgChildren, 
-            context->mapperArgsNameVector, context);
-        context->mapperArgsNameVector.clear();
-    }
-    ;
-
-attribute_mapper_params_list:
-    attribute_mapper_param
-    | attribute_mapper_params_list stmtsep attribute_mapper_param
-    ;
-
-attribute_mapper_param:
-    prim_attr_type name {
-            TfToken mapperParamName($2.Get<std::string>());
-            context->mapperArgsNameVector.push_back(mapperParamName);
-            context->path = context->path.AppendMapperArg(mapperParamName);
-
-            _CreateSpec(context->path, SdfSpecTypeMapperArg, context);
-
-        } '=' typed_value {
-            _SetField(
-                context->path, SdfFieldKeys->MapperArgValue, 
-                context->currentValue, context);
-            context->path = context->path.GetParentPath(); // pop mapper arg
-        }
-    ;
-
-attribute_mapper_metadata_opt:
-    /* empty */
-    | '(' newlines_opt ')'
-    | '(' newlines_opt attribute_mapper_metadata_list stmtsep_opt ')'
-    ;
-
-attribute_mapper_metadata_list:
-    attribute_mapper_metadata
-    | attribute_mapper_metadata_list stmtsep attribute_mapper_metadata
-    ;
-
-attribute_mapper_metadata:
-    TOK_SYMMETRYARGUMENTS '=' typed_dictionary {
-            _SetField(
-                context->path, SdfFieldKeys->SymmetryArgs, 
-                context->currentDictionaries[0], context);
-            context->currentDictionaries[0].clear();
-        }
-    ;
 
 connect_rhs:
     TOK_NONE
@@ -2374,25 +2373,6 @@ connect_list:
 connect_item:
     prim_or_property_scene_path {
             _AttributeAppendConnectionPath(context);
-        }
-    | property_path {
-            _AttributeAppendConnectionPath(context);
-        } '@' marker {
-            // XXX: See comment in relationship_target_and_opt_marker about
-            //      markers in reorder/delete statements.
-            if (context->connParsingAllowConnectionData) {
-                const SdfPath specPath = context->path.AppendTarget(
-                    context->connParsingTargetPaths.back());
-
-                // Create the connection spec object if one doesn't already
-                // exist to parent the marker data.
-                if (!_HasSpec(specPath, context)) {
-                    _CreateSpec(specPath, SdfSpecTypeConnection, context);
-                }
-
-                _SetField(
-                    specPath, SdfFieldKeys->Marker, context->marker, context);
-            }
         }
     ;
 
@@ -2886,13 +2866,6 @@ prim_relationship:
             _RelationshipInitTarget(context->relParsingTargetPaths->back(),
                                     context);
         }
-    relational_attributes {
-            // This clause only defines relational attributes for a target,
-            // it does not add to the relationship target list. However, we 
-            // do need to create a relationship target spec to associate the
-            // attributes with.
-            _PrimEndRelationship(context);
-        }
     | prim_relationship_time_samples
     | prim_relationship_default
     ;
@@ -3010,93 +2983,9 @@ relationship_target_list:
     ;
 
 relationship_target:
-    relationship_target_and_opt_marker relational_attributes_opt
-    ;
-
-relationship_target_and_opt_marker:
     TOK_PATHREF {
             _RelationshipAppendTargetPath($1, context);
         }
-    | TOK_PATHREF '@' marker {
-            _RelationshipAppendTargetPath($1, context);
-
-            // Markers on relationship targets in reorder or delete statements
-            // shouldn't cause a relationship target spec to be created.
-            //
-            // XXX: This probably should be a parser error; markers in these
-            //      statements don't make any sense. However, doing this
-            //      would require a staged process for backwards compatibility.
-            //      For now, we silently ignore markers in unwanted places.
-            //      The next stages would be to stop writing out markers in
-            //      reorders/deletes, then finally making this an error.
-            if (context->relParsingAllowTargetData) {
-                const SdfPath specPath = context->path.AppendTarget( 
-                    context->relParsingTargetPaths->back() );
-                _RelationshipInitTarget(context->relParsingTargetPaths->back(),
-                                        context);
-                _SetField(
-                    specPath, SdfFieldKeys->Marker, VtValue(context->marker), 
-                    context);
-            }
-        }
-    ;
-
-relational_attributes_opt:
-    /* empty */
-    | relational_attributes
-    ;
-
-relational_attributes:
-    '{' {
-            _RelationshipInitTarget(context->relParsingTargetPaths->back(), 
-                                    context);
-            context->path = context->path.AppendTarget( 
-                context->relParsingTargetPaths->back() );
-
-            context->propertiesStack.push_back(std::vector<TfToken>());
-
-            if (!context->relParsingAllowTargetData) {
-                Err(context, 
-                    "Relational attributes cannot be specified in lists of "
-                    "targets to be deleted or reordered");
-            }
-        }
-    newlines_opt relational_attributes_list_opt '}' {
-        if (!context->propertiesStack.back().empty()) {
-            _SetField(
-                context->path, SdfChildrenKeys->PropertyChildren, 
-                context->propertiesStack.back(), context);
-        }
-        context->propertiesStack.pop_back();
-
-        context->path = context->path.GetParentPath();
-    }
-    ;
-
-relational_attributes_list_opt:
-    /* empty */
-    | relational_attributes_list stmtsep_opt
-    ;
-
-relational_attributes_list:
-    relational_attributes_list_item
-    | relational_attributes_list stmtsep relational_attributes_list_item
-    ;
-
-/* XXX: the fact that relational_attribute uses prim_attribute is confusing */
-relational_attributes_list_item:
-    prim_attribute {
-        }
-    | relational_attributes_order_stmt
-    ;
-
-relational_attributes_order_stmt:
-    TOK_REORDER TOK_ATTRIBUTES '=' name_list {
-            _SetField(
-                context->path, SdfFieldKeys->PropertyOrder, 
-                context->nameVector, context);
-            context->nameVector.clear();
-        } 
     ;
 
 //--------------------------------------------------------------------
@@ -3116,28 +3005,13 @@ prim_path:
         }
     ;
 
-property_path:
-    TOK_PATHREF {
-            _PathSetProperty($1, context);
-        }
-    ;
-
 prim_or_property_scene_path:
     TOK_PATHREF {
             _PathSetPrimOrPropertyScenePath($1, context);
         }
     ;
 
-marker:
-    prim_path {
-            context->marker = context->savedPath.GetString();
-        } 
-    | name {
-            context->marker = $1.Get<std::string>();
-        }     
-    ;
-
-// A generic name, used to name prims, mappers, mapper parameters, etc.
+// A generic name, used to name prims, etc.
 //
 // We accept C/Python identifiers, C++ namespaced identifiers, and our
 // full set of keywords to ensure that we don't prevent people from using

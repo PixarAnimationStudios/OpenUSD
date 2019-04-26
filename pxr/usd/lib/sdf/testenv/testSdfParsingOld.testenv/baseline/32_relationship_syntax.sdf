@@ -7,34 +7,15 @@
 
 def MfScope "foo"
 {
-    rel attr_rel = </foo/Foo/Bar> {
-        double x = 1.234
-    }
     rel complex_rel = [
-        </foo/Foo/Bar> {
-            double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
-        </foo/Blah/Blah> {
-            double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
+        </foo/Foo/Bar>,
+        </foo/Blah/Blah>,
     ] (
         "Exercise full syntax"
         doc = 'use this for "stuff"...'
         permission = public
         symmetryFunction = testSymmetryFunction
     )
-    rel multi_attr_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
     rel multi_target_rel = [
         </foo/Foo>,
         </foo/Bar>,
@@ -50,10 +31,7 @@ def MfScope "foo"
         </bar>,
     ]
     add rel rel_list_editing = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     reorder rel rel_list_editing = [
@@ -62,10 +40,7 @@ def MfScope "foo"
         </whatever>,
     ]
     add rel rel_list_editing2 = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     reorder rel rel_list_editing3 = [
@@ -87,18 +62,7 @@ def MfScope "foo"
         </whatever>,
     ]
     rel rel_make_empty = None
-    rel rel_with_attr[</foo/Foo>] {
-        double y = 1.234
-    }
     rel rel_with_empty_path = </foo>
-    rel semicolons_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
     rel single_target_rel = </foo/Foo>
 
     def MfScope "Scope"
@@ -109,34 +73,15 @@ def MfScope "foo"
 
 def MfScope "customFoo"
 {
-    custom rel attr_rel = </foo/Foo/Bar> {
-        double x = 1.234
-    }
     custom rel complex_rel = [
-        </foo/Foo/Bar> {
-            double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
-        </foo/Blah/Blah> {
-            double scale = 0.5
-            Color rgb = (0.2, 0.3, 0.4)
-            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
+        </foo/Foo/Bar>,
+        </foo/Blah/Blah>,
     ] (
         "Exercise full syntax"
         doc = 'use this for "stuff"...'
         permission = public
         symmetryFunction = testSymmetryFunction
     )
-    custom rel multi_attr_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
     custom rel multi_target_rel = [
         </foo/Foo>,
         </foo/Bar>,
@@ -153,10 +98,7 @@ def MfScope "customFoo"
         </bar>,
     ]
     add rel rel_list_editing = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     reorder rel rel_list_editing = [
@@ -166,10 +108,7 @@ def MfScope "customFoo"
     ]
     custom rel rel_list_editing2
     add rel rel_list_editing2 = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     custom rel rel_list_editing3
@@ -193,19 +132,7 @@ def MfScope "customFoo"
         </whatever>,
     ]
     custom rel rel_make_empty = None
-    custom rel rel_with_attr
-    rel rel_with_attr[</foo/Foo>] {
-        double y = 1.234
-    }
     custom rel rel_with_empty_path = </foo>
-    custom rel semicolons_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
     custom rel single_target_rel = </foo/Foo>
 
     def MfScope "Scope"

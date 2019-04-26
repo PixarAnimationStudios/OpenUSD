@@ -71,7 +71,9 @@ _AllocateComputationDataRange(
 
     HdBufferArrayRangeSharedPtr inputRange =
         resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                                HdPrimTypeTokens->extComputation, bufferSpecs);
+                                              HdPrimTypeTokens->extComputation,
+                                              bufferSpecs,
+                                              HdBufferArrayUsageHint());
     resourceRegistry->AddSources(inputRange, inputs);
 
     return inputRange;
@@ -84,14 +86,24 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
-        "HdStExtComputation::Sync %s\n", GetId().GetText());
 
     HdExtComputation::_Sync(sceneDelegate, renderParam, dirtyBits);
 
-    // We only commit GPU resources when directly executing a GPU computation
-    // or when aggregating inputs for a downstream computation.
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
+        "HdStExtComputation::Sync for %s (dirty bits = 0x%x)\n",
+        GetId().GetText(), *dirtyBits);
+
+    // During Sprim sync, we only commit GPU resources when directly executing a
+    // GPU computation or when aggregating inputs for a downstream computation.
+    // Note: For CPU computations, we pull the inputs when we create the
+    // HdExtCompCpuComputation, which happens during Rprim sync.
     if (GetGpuKernelSource().empty() && !IsInputAggregation()) {
+        return;
+    }
+
+    if (!(*dirtyBits & DirtySceneInput)) {
+        // No scene inputs to sync. All other computation dirty bits (barring
+        // DirtyCompInput) are sync'd in HdExtComputation::_Sync.
         return;
     }
 
@@ -102,12 +114,19 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
     HdBufferSourceVector inputs;
     for (TfToken const & inputName: GetSceneInputNames()) {
-        VtValue inputValue = sceneDelegate->Get(GetId(), inputName);
+        VtValue inputValue = sceneDelegate->GetExtComputationInput(
+                                                GetId(), inputName);
         size_t arraySize =
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
         HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(
                     new HdVtBufferSource(inputName, inputValue, arraySize));
-        inputs.push_back(inputSource);
+        if (inputSource->IsValid()) {
+            inputs.push_back(inputSource);
+        } else {
+            TF_WARN("Unsupported type %s for source %s in extComputation %s.",
+                    inputValue.GetType().GetTypeName().c_str(),
+                    inputName.GetText(), GetId().GetText());
+        }
     }
 
     _inputRange.reset();
@@ -147,6 +166,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         // Make sure that we also release any stale input range data
         renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
     }
+
+    *dirtyBits &= ~DirtySceneInput;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

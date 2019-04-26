@@ -149,7 +149,7 @@ HdxIntersector::_ConfigureSceneMaterials(bool enableSceneMaterials,
     } else {
         if (!_overrideShader) {
             _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                HioGlslfxSharedPtr(new HioGlslfx(
                     HdStPackageFallbackSurfaceShader()))));
         }
         renderPassState->SetOverrideShader(_overrideShader);
@@ -249,22 +249,29 @@ public:
     HdxIntersector_DrawTask(HdRenderPassSharedPtr const &renderPass,
                 HdRenderPassStateSharedPtr const &renderPassState,
                 TfTokenVector const &renderTags)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     , _renderTags(renderTags)
     {
     }
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(renderIndex->GetResourceRegistry());
+    }
+
+    virtual void Execute(HdTaskContext* ctx) override
     {
         // Try to extract render tags from the context in case
         // there are render tags passed to the graph that 
@@ -298,6 +305,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                       HdxIntersector::Result* result)
 {
     TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // XXX: Check if we're using the stream render delegate. The current
     // implementation needs to be extended to be truly backend agnostic.
@@ -420,85 +428,35 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         // multi-task usage below.
         HdTaskSharedPtrVector tasks;
 
-        // The picking operation is composed of one or more ceonceptual passes 
-        // as follows:
+        // The picking operation is composed of one or more conceptual passes:
         // (i) [optional] depth-only pass for "unpickable" prims: This ensures 
-        // that occlusion is honored during picking. We swap the include
-        // and exclude paths of the input collection and render the resulting
-        // prims into the depth buffer.
-        // We currently skip this pass when "picking through" prims.
-        // XXX: This shouldn't be tied to pick through; it should be a separate
-        // knob.
+        // that occlusion stemming for unpickable prims is honored during 
+        // picking.
         //
-        // (ii) [optional] depth-only hull pass for "pickable" prims: This is
-        // relevant only when picking points, when pickThrough isn't set.
-        // To ensure hidden points aren't picked, we render the hull of the 
-        // pickable prims to the depth buffer.
-        //
-        // (iii) [mandatory] id render for "pickable" prims: This writes out the
+        // (ii) [mandatory] id render for "pickable" prims: This writes out the
         // various id's for prims that pass the depth test.
 
-        if (!params.pickThrough) {
-            const bool pickPoints =
-                (params.pickTarget == HdxIntersector::PickPoints);
-            const bool hasUnpickables =
-                (!pickablesCol.GetExcludePaths().empty());
+        if (params.doUnpickablesOcclude &&
+            !pickablesCol.GetExcludePaths().empty()) {
+            // Pass (i) from above
+            HdRprimCollection occluderCol =
+                pickablesCol.CreateInverseCollection();
+            _occluderRenderPass->SetRprimCollection(occluderCol);
 
-            if (pickPoints) {
-                // Passes (i) and (ii) are combined into a single occlusion pass
-                HdRprimCollection occluderCol = pickablesCol;
-
-                // While we'd prefer not to override/use repr's configured by 
-                // Hydra (in HdRenderIndex::_ConfigureReprs), we make an 
-                // exception here.  Point picking support is limited to 
-                // unrefined meshes currently, and so we can use 'hull' to do 
-                // the depth-only pass w/ both pickables and unpickables.
-                occluderCol.SetReprSelector(
-                                HdReprSelector(HdReprTokens->hull,
-                                               HdReprTokens->disabled,
-                                               HdReprTokens->disabled));
-                if (!occluderCol.GetExcludePaths().empty()) {
-                    // add the "unpickables" to the prims rendered to the depth
-                    // buffer
-                    SdfPathVector netIncludePaths = occluderCol.GetRootPaths();
-                    SdfPathVector const& excludePaths = 
-                        occluderCol.GetExcludePaths();
-                    netIncludePaths.insert(netIncludePaths.end(),
-                                           excludePaths.begin(),
-                                           excludePaths.end());
-                    occluderCol.SetRootPaths(netIncludePaths);
-                }
-
-                _occluderRenderPass->SetRprimCollection(occluderCol);
-
-                tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                        _occluderRenderPass,
-                        _occluderRenderPassState,
-                        params.renderTags));
-            }
-            else if (hasUnpickables) {
-                // Pass (i) from above
-                HdRprimCollection occluderCol =
-                    pickablesCol.CreateInverseCollection();
-                _occluderRenderPass->SetRprimCollection(occluderCol);
-
-                tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                        _occluderRenderPass,
-                        _occluderRenderPassState,
-                        params.renderTags));
-            }
+            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                    _occluderRenderPass,
+                    _occluderRenderPassState,
+                    params.renderTags));
         }
 
-        // 
-        // Pass (iii) from above
-        //
+        // Pass (ii) from above
         _pickableRenderPass->SetRprimCollection(pickablesCol);
         tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
                 _pickableRenderPass,
                 _pickableRenderPassState,
                 params.renderTags));
 
-        engine->Execute(*_index, tasks);
+        engine->Execute(_index, &tasks);
 
         glDisable(GL_STENCIL_TEST);
 
@@ -698,16 +656,49 @@ HdxIntersector::Result::_GetHash(int index) const
 }
 
 bool
-HdxIntersector::Result::_IsPrimIdValid(int index) const
+HdxIntersector::Result::_IsIdValid(unsigned char const* ids, int index) const
 {
-    unsigned char const* primIds = _primIds.get();
-
     // The ID buffer is a pointer to unsigned char; since ID's are 4 byte ints,
     // stride by 4 while indexing into it.
-    int primId = HdxIntersector::DecodeIDRenderColor(&primIds[index * 4]);
+    int id = HdxIntersector::DecodeIDRenderColor(&ids[index * 4]);
     // All color channels are cleared to 1, so when cast as int, an unwritten
     // pixel is encoded as -1. See HdxIntersector::HdxIntersectorQuery(..)
-    return (primId != -1);
+    return (id != -1);
+}
+
+bool
+HdxIntersector::Result::_IsPrimIdValid(int index) const
+{
+    return _IsIdValid(_primIds.get(), index);
+}
+
+bool
+HdxIntersector::Result::_IsEdgeIdValid(int index) const
+{
+    return _IsIdValid(_edgeIds.get(), index);
+}
+
+bool
+HdxIntersector::Result::_IsPointIdValid(int index) const
+{
+    return _IsIdValid(_pointIds.get(), index);
+}
+
+bool
+HdxIntersector::Result::_IsValidHit(int index) const
+{
+    // Inspect the id buffers to determine if the pixel index is a valid hit
+    // by accounting for the pick target when picking points and edges.
+    // This allows the hit(s) returned to be relevant.
+    bool validPrim = _IsPrimIdValid(index);
+    bool invalidTargetEdgePick =
+        (_params.pickTarget == PickEdges) && !_IsEdgeIdValid(index);
+    bool invalidTargetPointPick =
+        (_params.pickTarget == PickPoints) && !_IsPointIdValid(index);
+
+    return validPrim
+           && !invalidTargetEdgePick
+           && !invalidTargetPointPick;
 }
 
 bool
@@ -733,7 +724,7 @@ HdxIntersector::Result::ResolveNearestToCamera(HdxIntersector::Hit* hit) const
     // of the ID buffers)
     for (int y=0, i=0; y < height; y++) {
         for (int x=0; x < width; x++, i++) {
-            if (_IsPrimIdValid(i) && depths[i] < zMin) {
+            if (_IsValidHit(i) && depths[i] < zMin) {
                 xMin = x;
                 yMin = y;
                 zMin = depths[i];
@@ -777,7 +768,7 @@ HdxIntersector::Result::ResolveNearestToCenter(HdxIntersector::Hit* hit) const
         for (int xx = x; xx < width-x; xx++) {
             for (int yy = y; yy < height-y; yy++) {
                 int index = xx + yy*width;
-                if (_IsPrimIdValid(index)) {
+                if (_IsValidHit(index)) {
                     return _ResolveHit(index, index%width, index/width,
                                        depths[index], hit);
                 }
@@ -806,7 +797,7 @@ HdxIntersector::Result::ResolveAll(HdxIntersector::HitVector* allHits) const
     int hitCount = 0;
     for (int y=0, i=0; y < height; y++) {
         for (int x=0; x < width; x++, i++) {
-            if (!_IsPrimIdValid(i)) continue;
+            if (!_IsValidHit(i)) continue;
 
             Hit hit;
             if (_ResolveHit(i, x, y, depths[i], &hit)) {
@@ -836,7 +827,7 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
         HD_TRACE_SCOPE("unique indices");
         size_t previousHash = 0;
         for (int i = 0; i < width * height; ++i) {
-            if (!_IsPrimIdValid(i)) continue;
+            if (!_IsValidHit(i)) continue;
            
             size_t hash = _GetHash(i);
             // As an optimization, keep track of the previous hash value and

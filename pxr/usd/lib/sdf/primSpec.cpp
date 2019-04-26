@@ -38,7 +38,6 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
-#include "pxr/usd/sdf/vectorListEditor.h"
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -56,7 +55,7 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfPrimSpec, SdfSpec);
+SDF_DEFINE_SPEC(SdfSchema, SdfSpecTypePrim, SdfPrimSpec, SdfSpec);
 
 // register types
 TF_REGISTRY_FUNCTION(TfType)
@@ -291,22 +290,10 @@ SdfPrimSpec::RemoveNameChild(const SdfPrimSpecHandle& child)
             GetLayer(), GetPath(), child->GetNameToken());
 }
 
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-SdfPrimSpec::_GetNameChildrenOrderEditor() const
-{
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor( 
-            new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>( 
-                SdfCreateHandle(this),
-                SdfFieldKeys->PrimOrder, SdfListOpTypeOrdered));
-
-    return editor;
-}
-
 SdfNameChildrenOrderProxy
 SdfPrimSpec::GetNameChildrenOrder() const
 {
-    return SdfNameOrderProxy(
-        _GetNameChildrenOrderEditor(), SdfListOpTypeOrdered);
+    return SdfGetNameOrderProxy(SdfCreateHandle(this), SdfFieldKeys->PrimOrder);
 }
 
 bool
@@ -342,7 +329,7 @@ SdfPrimSpec::RemoveFromNameChildrenOrderByIndex(int index)
 void
 SdfPrimSpec::ApplyNameChildrenOrder(std::vector<TfToken>* vec) const
 {
-    _GetNameChildrenOrderEditor()->ApplyEdits(vec);
+    GetNameChildrenOrder().ApplyEditsToList(vec);
 }
 
 //
@@ -412,20 +399,11 @@ SdfPrimSpec::GetRelationships() const
         GetLayer(), GetPath(), SdfChildrenKeys->PropertyChildren);
 }
 
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-SdfPrimSpec::_GetPropertyOrderEditor() const
-{
-    return boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >( 
-            new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>( 
-                SdfCreateHandle(this),
-                SdfFieldKeys->PropertyOrder, SdfListOpTypeOrdered));
-}
-
 SdfPropertyOrderProxy
 SdfPrimSpec::GetPropertyOrder() const
 {
-    return SdfPropertyOrderProxy(
-        _GetPropertyOrderEditor(), SdfListOpTypeOrdered);
+    return SdfGetNameOrderProxy(
+        SdfCreateHandle(this), SdfFieldKeys->PropertyOrder);
 }
 
 bool
@@ -470,7 +448,7 @@ void
 SdfPrimSpec::ApplyPropertyOrder(std::vector<TfToken>* vec) const
 {
     if (_ValidateEdit(SdfChildrenKeys->PropertyChildren)) {
-        _GetPropertyOrderEditor()->ApplyEdits(vec);
+        GetPropertyOrder().ApplyEditsToList(vec);
     }
 }
 
@@ -560,7 +538,6 @@ SDF_DEFINE_GET_SET(SuffixSubstitutions,  SdfFieldKeys->SuffixSubstitutions,
 
 SDF_DEFINE_GET_SET_HAS_CLEAR(Active,         SdfFieldKeys->Active,       bool)
 SDF_DEFINE_GET_SET_HAS_CLEAR(Kind,           SdfFieldKeys->Kind,    TfToken)
-SDF_DEFINE_GET_SET_HAS_CLEAR(Payload,        SdfFieldKeys->Payload, SdfPayload)
 SDF_DEFINE_GET_SET_HAS_CLEAR(Instanceable,   SdfFieldKeys->Instanceable, bool)
 
 SDF_DEFINE_TYPED_GET_SET(Specifier,  SdfFieldKeys->Specifier,  
@@ -643,6 +620,31 @@ SdfPrimSpec::ClearSpecializesList()
 {
     if (_ValidateEdit(SdfFieldKeys->Specializes)) {
         GetSpecializesList().ClearEdits();
+    }
+}
+
+//
+// Payloads
+//
+
+SdfPayloadsProxy
+SdfPrimSpec::GetPayloadList() const
+{
+    return SdfGetPayloadEditorProxy(
+        SdfCreateHandle(this), SdfFieldKeys->Payload);
+}
+
+bool
+SdfPrimSpec::HasPayloads() const
+{
+    return GetPayloadList().HasKeys();
+}
+
+void
+SdfPrimSpec::ClearPayloadList()
+{
+    if (_ValidateEdit(SdfFieldKeys->Payload)) {
+        GetPayloadList().ClearEdits();
     }
 }
 

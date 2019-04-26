@@ -48,4 +48,12 @@ void wrapPipeline()
         (arg("stage"), arg("path")));
     def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName);
     def("GetPrefName", UsdUtilsGetPrefName);
+    def(
+        "GetMaterialsScopeName",
+        UsdUtilsGetMaterialsScopeName,
+        arg("forceDefault")=false);
+    def(
+        "GetPrimaryCameraName",
+        UsdUtilsGetPrimaryCameraName,
+        arg("forceDefault")=false);
 }

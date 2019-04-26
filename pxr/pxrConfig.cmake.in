@@ -3,6 +3,7 @@
 # PXR_INCLUDE_DIRS  - Root include directory for the installed project.
 # PXR_LIBRARIES     - List of all libraries, by target name.
 # PXR_foo_LIBRARY   - Absolute path to individual libraries.
+# The preprocessor definition PXR_STATIC will be defined if appropriate
 
 set(PXR_CMAKE_DIR "@CMAKE_INSTALL_PREFIX@")
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")
@@ -15,3 +16,10 @@ foreach(lib ${libs})
     set(PXR_${lib}_LIBRARY ${location})
     list(APPEND PXR_LIBRARIES ${lib})
 endforeach()
+if(NOT @BUILD_SHARED_LIBS@)
+    if(WIN32)
+        list(APPEND PXR_LIBRARIES Shlwapi.lib)
+        list(APPEND PXR_LIBRARIES Dbghelp.lib)
+    endif()
+    add_definitions(-DPXR_STATIC)
+endif()

@@ -49,8 +49,7 @@ PxrUsdKatanaAttrMap::Set(
         const UsdAttribute& attr)
 {
     VtValue val;
-    if (attr.IsValid() && attr.HasAuthoredValueOpinion()
-        && attr.Get(&val, _usdTimeCode)) {
+    if (attr.HasAuthoredValue() && attr.Get(&val, _usdTimeCode)) {
         FnKat::Attribute kat_attr =
             PxrUsdKatanaUtils::ConvertVtValueToKatAttr(val);
         _groupBuilder.set(path, kat_attr);

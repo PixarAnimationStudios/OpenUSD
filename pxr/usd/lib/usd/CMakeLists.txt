@@ -36,6 +36,7 @@ pxr_library(usd
         modelAPI
         notice
         object
+        payloads
         prim
         primData
         primDataHandle
@@ -85,6 +86,7 @@ pxr_library(usd
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
+        refOrPayloadListEditImpl.h
         wrapUtils.h
 
     PYTHON_CPPFILES
@@ -106,6 +108,7 @@ pxr_library(usd
         wrapModelAPI.cpp
         wrapNotice.cpp
         wrapObject.cpp
+        wrapPayloads.cpp
         wrapPrim.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
@@ -167,6 +170,7 @@ pxr_test_scripts(
     testenv/testUsdChangeProcessing.py
     testenv/testUsdClasses.py
     testenv/testUsdCollectionAPI.py
+    testenv/testUsdCrate07To08Conversion.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdFileFormats.py
@@ -191,6 +195,7 @@ pxr_test_scripts(
     testenv/testUsdStageCache.py
     testenv/testUsdStageLoadUnload.py
     testenv/testUsdStagePopulationMasks.py
+    testenv/testUsdTimeCodeRepr.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
     testenv/testUsdUsdzFileFormat.py
@@ -296,6 +301,14 @@ pxr_build_test(testUsdThreadedAuthoring
         testenv/testUsdThreadedAuthoring.cpp
 )
 
+pxr_build_test(testUsdTimeCodeStream
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdTimeCodeStream.cpp
+)
+
 pxr_build_test(testUsdSchemaBase
     LIBRARIES
         usd
@@ -316,6 +329,11 @@ pxr_build_test(testUsdUsdzResolver
 pxr_install_test_dir(
     SRC testenv/testUsdStageThreading
     DEST testUsdStageThreading
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdCrate07To08Conversion.testenv
+    DEST testUsdCrate07To08Conversion
 )
 
 pxr_install_test_dir(
@@ -672,10 +690,20 @@ pxr_register_test(testUsdThreadedAuthoring
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdThreadedAuthoring"
     EXPECTED_RETURN_CODE 0
 )
+pxr_register_test(testUsdTimeCodeStream
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeCodeStream"
+    EXPECTED_RETURN_CODE 0
+)
 
 pxr_register_test(testUsdStage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStage"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeCodeRepr
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeCodeRepr"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -710,6 +738,12 @@ pxr_register_test(testUsdStageLoadUnload
 pxr_register_test(testUsdPayloads
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPayloads"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCrate07To08Conversion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrate07To08Conversion"
     EXPECTED_RETURN_CODE 0
 )
 

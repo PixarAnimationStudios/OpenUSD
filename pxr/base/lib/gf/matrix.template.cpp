@@ -36,7 +36,7 @@
 {% endblock customIncludes -%}
 
 #include <float.h>
-#include <iostream>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

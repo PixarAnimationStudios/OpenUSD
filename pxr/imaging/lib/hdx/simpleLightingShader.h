@@ -32,7 +32,7 @@
 #include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/glf/bindingMap.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -91,7 +91,7 @@ private:
     GlfSimpleLightingContextRefPtr _lightingContext; 
     GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
 };
 
 

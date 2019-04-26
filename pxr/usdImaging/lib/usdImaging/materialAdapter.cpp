@@ -51,14 +51,6 @@ UsdImagingMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
     return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
-bool
-UsdImagingMaterialAdapter::IsPopulatedIndirectly()
-{
-    // Materials are populated as a consequence of populating a prim
-    // which uses the material.
-    return true;
-}
-
 SdfPath
 UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
@@ -138,6 +130,11 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                TfToken const& propertyName)
 {
+    if (propertyName == UsdGeomTokens->visibility) {
+        // Materials aren't affected by visibility
+        return HdChangeTracker::Clean;
+    }
+
     // The only meaningful change is to dirty the computed resource,
     // an HdMaterialNetwork.
     return HdMaterial::DirtyResource;

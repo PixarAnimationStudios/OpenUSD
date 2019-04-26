@@ -100,6 +100,9 @@ public:
         return _orderedItems.size() != 0;
     }
 
+    /// Returns \c true if the given item is in any of the item lists.
+    SDF_API bool HasItem(const T& item) const;
+
     /// Returns \c true if the list is explicit.
     bool IsExplicit() const
     {
@@ -291,6 +294,7 @@ typedef class SdfListOp<TfToken> SdfTokenListOp;
 typedef class SdfListOp<std::string> SdfStringListOp;
 typedef class SdfListOp<class SdfPath> SdfPathListOp;
 typedef class SdfListOp<class SdfReference> SdfReferenceListOp;
+typedef class SdfListOp<class SdfPayload> SdfPayloadListOp;
 typedef class SdfListOp<class SdfUnregisteredValue> SdfUnregisteredValueListOp;
 
 PXR_NAMESPACE_CLOSE_SCOPE

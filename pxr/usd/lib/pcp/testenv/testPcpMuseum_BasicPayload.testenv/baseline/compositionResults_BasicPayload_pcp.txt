@@ -1,38 +1,296 @@
+Loading session @BasicPayload/session.sdf@
+
 Loading @BasicPayload/root.sdf@
 
 ------------------------------------------------------------------------
 Layer Stack:
+     session.sdf
      root.sdf
+     sublayer.sdf
 
 ------------------------------------------------------------------------
-Results for composing </Root>
+Results for composing </InternalSublayerPayload>
 
 Prim Stack:
-    root.sdf             /Root
+    root.sdf             /InternalSublayerPayload
+    sublayer.sdf         /InternalSublayerPayload
 
 Child names:
-     ['SimplePayload', 'SimpleSubrootPayload']
+     ['InternalSublayerPayload_Child']
 
 ------------------------------------------------------------------------
-Results for composing </Root/SimplePayload>
+Results for composing </InternalSublayerPayload/InternalSublayerPayload_Child>
 
 Prim Stack:
-    root.sdf             /Root/SimplePayload
+    root.sdf             /InternalSublayerPayload/InternalSublayerPayload_Child
+    sublayer.sdf         /InternalSublayerPayload/InternalSublayerPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalPayload>
+
+Prim Stack:
+    sublayer.sdf         /PrimInSublayerWithInternalPayload
+    root.sdf             /InternalSublayerPayload
+    sublayer.sdf         /InternalSublayerPayload
+
+Child names:
+     ['InternalSublayerPayload_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalPayload/InternalSublayerPayload_Child>
+
+Prim Stack:
+    root.sdf             /InternalSublayerPayload/InternalSublayerPayload_Child
+    sublayer.sdf         /InternalSublayerPayload/InternalSublayerPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </SublayerPrim>
+
+Prim Stack:
+    sublayer.sdf         /SublayerPrim
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalPayload2>
+
+Prim Stack:
+    sublayer.sdf         /PrimInSublayerWithInternalPayload2
+    sublayer.sdf         /SublayerPrim
+
+------------------------------------------------------------------------
+Results for composing </SimplePayload>
+
+Prim Stack:
+    root.sdf             /SimplePayload
     payload.sdf          /SimplePayload
 
 Child names:
      ['Child']
 
 ------------------------------------------------------------------------
-Results for composing </Root/SimplePayload/Child>
+Results for composing </SimplePayload/Child>
 
 Prim Stack:
     payload.sdf          /SimplePayload/Child
 
 ------------------------------------------------------------------------
-Results for composing </Root/SimpleSubrootPayload>
+Results for composing </SimpleSubrootPayload>
 
 Prim Stack:
-    root.sdf             /Root/SimpleSubrootPayload
+    root.sdf             /SimpleSubrootPayload
     payload.sdf          /SimplePayload/Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloads>
+
+Prim Stack:
+    root.sdf             /PrimWithPayloads
+    payload.sdf          /SimplePayload
+    ref.sdf              /PayloadPrimA
+    ref2.sdf             /PrimC
+    ref2.sdf             /PrimB
+
+Child names:
+     ['PrimB_Child', 'PrimC_Child', 'PrimA_Child', 'Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloads/PrimB_Child>
+
+Prim Stack:
+    ref2.sdf             /PrimB/PrimB_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloads/PrimC_Child>
+
+Prim Stack:
+    ref2.sdf             /PrimC/PrimC_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloads/PrimA_Child>
+
+Prim Stack:
+    ref.sdf              /PayloadPrimA/PrimA_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloads/Child>
+
+Prim Stack:
+    payload.sdf          /SimplePayload/Child
+
+------------------------------------------------------------------------
+Results for composing </PrimB>
+
+Prim Stack:
+    root.sdf             /PrimB
+
+Child names:
+     ['PrimB_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimB/PrimB_Child>
+
+Prim Stack:
+    root.sdf             /PrimB/PrimB_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfPayload>
+
+Prim Stack:
+    root.sdf             /PrimWithSelfPayload
+    root.sdf             /InternalPayload
+    sublayer.sdf         /InternalSublayerPayload
+
+Child names:
+     ['InternalSublayerPayload_Child', 'InternalPayload_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfPayload/InternalSublayerPayload_Child>
+
+Prim Stack:
+    sublayer.sdf         /InternalSublayerPayload/InternalSublayerPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfPayload/InternalPayload_Child>
+
+Prim Stack:
+    root.sdf             /InternalPayload/InternalPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalPayload>
+
+Prim Stack:
+    root.sdf             /PrimWithInternalPayload
+    root.sdf             /InternalPayload
+    session.sdf          /InternalPayload2
+
+Child names:
+     ['InternalPayload_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalPayload/InternalPayload_Child>
+
+Prim Stack:
+    root.sdf             /InternalPayload/InternalPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalPayload>
+
+Prim Stack:
+    root.sdf             /InternalPayload
+
+Child names:
+     ['InternalPayload_Child']
+
+------------------------------------------------------------------------
+Results for composing </InternalPayload/InternalPayload_Child>
+
+Prim Stack:
+    root.sdf             /InternalPayload/InternalPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultPayloadTarget>
+
+Prim Stack:
+    root.sdf             /PrimWithDefaultPayloadTarget
+    defaultRef.sdf       /Default
+
+Child names:
+     ['Default_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultPayloadTarget/Default_Child>
+
+Prim Stack:
+    defaultRef.sdf       /Default/Default_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultPayloadTarget2>
+
+Prim Stack:
+    root.sdf             /PrimWithDefaultPayloadTarget2
+    root.sdf             /InternalPayload
+
+Child names:
+     ['InternalPayload_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultPayloadTarget2/InternalPayload_Child>
+
+Prim Stack:
+    root.sdf             /InternalPayload/InternalPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </PayloadPrimWithSubrootInReference>
+
+Prim Stack:
+    root.sdf             /PayloadPrimWithSubrootInReference
+    ref.sdf              /RefPrimA/PrimA_Child
+    ref2.sdf             /PrimC/PrimC_Child
+
+------------------------------------------------------------------------
+Results for composing </RefPrimWithSubrootInReference>
+
+Prim Stack:
+    root.sdf             /RefPrimWithSubrootInReference
+    ref.sdf              /RefPrimA/PrimA_Child
+    ref2.sdf             /PrimC/PrimC_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalSubrootPayload>
+
+Prim Stack:
+    root.sdf             /PrimWithInternalSubrootPayload
+    root.sdf             /InternalPayload/InternalPayload_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloadsInVariants>
+
+Prim Stack:
+    root.sdf             /PrimWithPayloadsInVariants
+    root.sdf             /PrimWithPayloadsInVariants{v=ref}
+
+Variant Selections:
+    {v = ref}
+
+Child names:
+     ['Ref', 'A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloadsInVariants/Ref>
+
+Prim Stack:
+    root.sdf             /PrimWithPayloadsInVariants{v=ref}Ref
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloadsInVariants/A>
+
+Prim Stack:
+    root.sdf             /PrimWithPayloadsInVariants{v=ref}A
+    root.sdf             /PrimWithPayloadsInVariants{v=ref}Ref
+
+------------------------------------------------------------------------
+Results for composing </PrimWithPayloadsInVariants/B>
+
+Prim Stack:
+    root.sdf             /PrimWithPayloadsInVariants/B
+    root.sdf             /PrimWithPayloadsInVariants{v=ref}Ref
+
+------------------------------------------------------------------------
+Results for composing </PayloadPrimWithSubrootInPayload>
+
+Prim Stack:
+    root.sdf             /PayloadPrimWithSubrootInPayload
+    ref.sdf              /PayloadPrimA/PrimA_Child
+
+------------------------------------------------------------------------
+Results for composing </RefPrimWithSubrootInPayload>
+
+Prim Stack:
+    root.sdf             /RefPrimWithSubrootInPayload
+    ref.sdf              /PayloadPrimA/PrimA_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalPayload2>
+
+Prim Stack:
+    session.sdf          /InternalPayload2
 

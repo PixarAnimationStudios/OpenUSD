@@ -309,8 +309,8 @@ public:
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
                                           SdfPath const &prototypeId) override;
     USDIMAGING_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId) override;
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId) 
+        override;
 
     // Motion samples
     USDIMAGING_API
@@ -320,7 +320,6 @@ public:
     USDIMAGING_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples) override;
     USDIMAGING_API
@@ -364,6 +363,10 @@ public:
     USDIMAGING_API
     virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId) override;
 
+    USDIMAGING_API
+    virtual VtDictionary
+    GetMaterialMetadata(SdfPath const &materialId) override;
+
     // Instance path resolution
 
     /// Returns the path of the instance prim corresponding to the
@@ -395,6 +398,35 @@ public:
                                             int *absoluteInstanceIndex,
                                             SdfPath *rprimPath=NULL,
                                             SdfPathVector *instanceContext=NULL) override;
+
+    // ExtComputation support
+    USDIMAGING_API
+    TfTokenVector
+    GetExtComputationSceneInputNames(SdfPath const& computationId) override;
+
+    USDIMAGING_API
+    HdExtComputationInputDescriptorVector
+    GetExtComputationInputDescriptors(SdfPath const& computationId) override;
+
+    USDIMAGING_API
+    HdExtComputationOutputDescriptorVector
+    GetExtComputationOutputDescriptors(SdfPath const& computationId) override;
+
+    USDIMAGING_API
+    HdExtComputationPrimvarDescriptorVector
+    GetExtComputationPrimvarDescriptors(SdfPath const& computationId,
+                                        HdInterpolation interpolation) override;
+
+    USDIMAGING_API
+    VtValue GetExtComputationInput(SdfPath const& computationId,
+                                   TfToken const& input) override;
+
+    USDIMAGING_API
+    std::string GetExtComputationKernel(SdfPath const& computationId) override;
+
+    USDIMAGING_API
+    void InvokeExtComputation(SdfPath const& computationId,
+                              HdExtComputationContext *context) override;
 
 public:
     // Converts a UsdStage path to a path in the render index.
@@ -653,6 +685,7 @@ private:
     UsdImaging_MaterialBindingImplData _materialBindingImplData;
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
+    UsdImaging_PurposeCache _purposeCache;
     UsdImaging_DrawModeCache _drawModeCache;
     UsdImaging_CollectionCache _collectionCache;
 

@@ -75,9 +75,10 @@ public:
                             const UT_StringHolder&  fileName, 
                             const SdfPath&          primPath, 
                             UsdTimeCode             frame, 
-                            const char*             lod = NULL,
+                            const char*             lod = nullptr,
                             GusdPurposeSet          purposes = GUSD_PURPOSE_PROXY,
-                            const UsdPrim&          prim = UsdPrim() );
+                            const UsdPrim&          prim = UsdPrim(),
+                            const UT_Matrix4D*      xform = nullptr );
 
     static GU_PrimPacked* Build( 
                             GU_Detail&              detail,
@@ -86,9 +87,19 @@ public:
                             const SdfPath&          srcPrimPath, 
                             int                     index,
                             UsdTimeCode             frame, 
-                            const char*             lod = NULL,
+                            const char*             lod = nullptr,
                             GusdPurposeSet          purposes = GUSD_PURPOSE_PROXY,
-                            const UsdPrim&          prim = UsdPrim() );
+                            const UsdPrim&          prim = UsdPrim(),
+                            const UT_Matrix4D*      xform = nullptr );
+
+    /// Convenience method for building a packed USD prim for \p prim.
+    static GU_PrimPacked* Build(
+                            GU_Detail&              detail,
+                            const UsdPrim&          prim,
+                            UsdTimeCode             frame,
+                            const char*             lod = nullptr,
+                            GusdPurposeSet          purpose = GUSD_PURPOSE_PROXY,
+                            const UT_Matrix4D*      xform = nullptr );
 
     GusdGU_PackedUSD();
     GusdGU_PackedUSD(const GusdGU_PackedUSD &src );
@@ -284,6 +295,7 @@ private:
 
     void resetCaches();
     void updateTransform();
+    void setTransform( const UT_Matrix4D& mx );
 
     // intrinsics
     UT_StringHolder m_fileName;
@@ -297,7 +309,9 @@ private:
 
     // caches    
     mutable UsdPrim             m_usdPrim;
+#if SYS_VERSION_FULL_INT < 0x12000000
     mutable UT_BoundingBox      m_boundsCache;
+#endif
     mutable bool                m_transformCacheValid;
     mutable UT_Matrix4D         m_transformCache;
     mutable GT_PrimitiveHandle  m_gtPrimCache;

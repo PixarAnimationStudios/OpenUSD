@@ -23,6 +23,11 @@
 //
 #include "usdMaya/shadingModeExporter.h"
 
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
@@ -49,6 +54,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((materialNamespace, "material:"))
 );
+
 
 UsdMayaShadingModeExporter::UsdMayaShadingModeExporter()
 {
@@ -91,31 +97,35 @@ _GetRootPaths(const SdfPathSet& paths)
 
 void
 UsdMayaShadingModeExporter::DoExport(
-        const UsdStageRefPtr& stage,
-        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap,
-        const UsdMayaExportParams& exportParams)
+        UsdMayaWriteJobContext& writeJobContext,
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
 {
+    const UsdMayaJobExportArgs& exportArgs = writeJobContext.GetArgs();
+    const UsdStageRefPtr& stage = writeJobContext.GetUsdStage();
+
     MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
 
+    const SdfPath& materialCollectionsPath =
+        exportArgs.exportMaterialCollections ?
+            exportArgs.materialCollectionsPath :
+            SdfPath::EmptyPath();
+
     UsdPrim materialCollectionsPrim;
-    const SdfPath &materialCollectionsPath =
-            exportParams.materialCollectionsPath;
     if (!materialCollectionsPath.IsEmpty()) {
-        materialCollectionsPrim =
-            stage->OverridePrim(materialCollectionsPath);
+        materialCollectionsPrim = stage->OverridePrim(materialCollectionsPath);
         if (!materialCollectionsPrim) {
-            TF_WARN("Error: could not override prim at path <%s>. One of the "
-                    "ancestors of the path must be inactive or an instance "
-                    "root. Not exporting material collections!",
-                    materialCollectionsPath.GetText());
+            TF_WARN(
+                "Error: could not override prim at path <%s>. One of the "
+                "ancestors of the path must be inactive or an instance root. "
+                "Not exporting material collections!",
+                materialCollectionsPath.GetText());
         }
     }
 
     UsdMayaShadingModeExportContext context(
         MObject(),
-        stage,
-        dagPathToUsdMap,
-        exportParams);
+        writeJobContext,
+        dagPathToUsdMap);
 
     PreExport(&context);
 
@@ -142,7 +152,7 @@ UsdMayaShadingModeExporter::DoExport(
     context.SetShadingEngine(MObject());
     PostExport(context);
 
-    if ((materialCollectionsPrim || exportParams.exportCollectionBasedBindings)
+    if ((materialCollectionsPrim || exportArgs.exportCollectionBasedBindings)
         && !matAssignments.empty())
     {
         if (!materialCollectionsPrim) {
@@ -164,10 +174,8 @@ UsdMayaShadingModeExporter::DoExport(
         std::vector<UsdCollectionAPI> collections =
             UsdUtilsCreateCollections(matAssignments, materialCollectionsPrim);
 
-        if (exportParams.exportCollectionBasedBindings)
-        {
-            for (size_t i = 0; i < exportedMaterials.size(); ++i)
-            {
+        if (exportArgs.exportCollectionBasedBindings) {
+            for (size_t i = 0u; i < exportedMaterials.size(); ++i) {
                 const UsdShadeMaterial &mat = exportedMaterials[i];
                 const UsdCollectionAPI &coll = collections[i];
 

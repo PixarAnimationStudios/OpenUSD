@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
@@ -59,20 +60,23 @@ class HdStRenderPassState;
 /// create a render setup task internally.  See the HdxRenderTask documentation
 /// for details.
 ///
-class HdxRenderSetupTask : public HdSceneTask {
+class HdxRenderSetupTask : public HdTask {
 public:
     HDX_API
     HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    // APIs used from HdxRenderTask to manage the sync process.
     HDX_API
-    void SyncParams(HdxRenderTaskParams const &params);
+    virtual ~HdxRenderSetupTask();
+
+
+    // APIs used from HdxRenderTask to manage the sync/prepare process.
     HDX_API
-    void SyncCamera();
+    void SyncParams(HdSceneDelegate* delegate,
+                    HdxRenderTaskParams const &params);
     HDX_API
-    void SyncAttachments();
+    void PrepareCamera(HdRenderIndex* renderIndex);
     HDX_API
-    void SyncRenderPassState();
+    void PrepareAovBindings(HdRenderIndex* renderIndex);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
@@ -81,14 +85,21 @@ public:
         return _renderTags;
     }
 
-protected:
-    /// Execute render pass task
-    HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
-
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
+
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;
@@ -97,7 +108,7 @@ private:
     GfVec4d _viewport;
     SdfPath _cameraId;
     TfTokenVector _renderTags;
-    HdRenderPassAttachmentVector _attachments;
+    HdRenderPassAovBindingVector _aovBindings;
 
     static HdStShaderCodeSharedPtr _overrideShader;
 
@@ -105,13 +116,20 @@ private:
 
     void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
                                  HdStRenderPassState *renderPassState);
+
+    HdRenderPassStateSharedPtr &_GetRenderPassState(HdRenderIndex* renderIndex);
+
+
+    HdxRenderSetupTask() = delete;
+    HdxRenderSetupTask(const HdxRenderSetupTask &) = delete;
+    HdxRenderSetupTask &operator =(const HdxRenderSetupTask &) = delete;
 };
 
 /// \class HdxRenderTaskParams
 ///
 /// RenderTask parameters (renderpass state).
 ///
-struct HdxRenderTaskParams : public HdTaskParams
+struct HdxRenderTaskParams
 {
     HdxRenderTaskParams()
         : overrideColor(0.0)
@@ -124,8 +142,6 @@ struct HdxRenderTaskParams : public HdTaskParams
         , enableLighting(false)
         , enableIdRender(false)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.0, -1.0)
         , enableSceneMaterials(true)
         , renderTags()
         , depthBiasUseDefault(true)
@@ -133,6 +149,7 @@ struct HdxRenderTaskParams : public HdTaskParams
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
+        , depthMaskEnable(true)
         , stencilFunc(HdCmpFuncAlways)
         , stencilRef(0)
         , stencilMask(~0)
@@ -140,12 +157,17 @@ struct HdxRenderTaskParams : public HdTaskParams
         , stencilZFailOp(HdStencilOpKeep)
         , stencilZPassOp(HdStencilOpKeep)
         , stencilEnable(false)
+        , blendColorOp(HdBlendOpAdd)
+        , blendColorSrcFactor(HdBlendFactorOne)
+        , blendColorDstFactor(HdBlendFactorZero)
+        , blendAlphaOp(HdBlendOpAdd)
+        , blendAlphaSrcFactor(HdBlendFactorOne)
+        , blendAlphaDstFactor(HdBlendFactorZero)
+        , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+        , blendEnable(false)
+        , enableAlphaToCoverage(true)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , geomStyle(HdGeomStylePolygons)
-        , complexity(HdComplexityLow)
-        , hullVisibility(false)
-        , surfaceVisibility(true)
-        , attachments()
+        , aovBindings()
         , camera()
         , viewport(0.0)
         {}
@@ -161,8 +183,6 @@ struct HdxRenderTaskParams : public HdTaskParams
     bool enableLighting;
     bool enableIdRender;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
     bool enableSceneMaterials;
     TfTokenVector renderTags;
 
@@ -177,6 +197,7 @@ struct HdxRenderTaskParams : public HdTaskParams
     float depthBiasSlopeFactor;
 
     HdCompareFunction depthFunc;
+    bool depthMaskEnable;
 
     // Stencil
     HdCompareFunction stencilFunc;
@@ -187,17 +208,26 @@ struct HdxRenderTaskParams : public HdTaskParams
     HdStencilOp stencilZPassOp;
     bool stencilEnable;
 
+    // Blending
+    HdBlendOp blendColorOp;
+    HdBlendFactor blendColorSrcFactor;
+    HdBlendFactor blendColorDstFactor;
+    HdBlendOp blendAlphaOp;
+    HdBlendFactor blendAlphaSrcFactor;
+    HdBlendFactor blendAlphaDstFactor;
+    GfVec4f blendConstantColor;
+    bool blendEnable;
+
+    // AlphaToCoverage
+    bool enableAlphaToCoverage;
+
     // Viewer's Render Style
     HdCullStyle cullStyle;
-    HdGeomStyle geomStyle;
-    HdComplexity complexity;
-    bool hullVisibility;
-    bool surfaceVisibility;
 
-    // Attachments.
+    // AOV bindings.
     // XXX: As a transitional API, if this is empty it indicates the renderer
     // should write color and depth to the GL framebuffer.
-    HdRenderPassAttachmentVector attachments;
+    HdRenderPassAovBindingVector aovBindings;
 
     // RasterState index objects
     SdfPath camera;

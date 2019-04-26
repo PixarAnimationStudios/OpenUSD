@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/copyUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schema.h"
 
@@ -268,6 +269,8 @@ _MergeValueFn(
         || _MergeValue<SdfPathListOp>(
         field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
         || _MergeValue<SdfReferenceListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfPayloadListOp>(
         field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
         || _MergeValue<SdfUnregisteredValueListOp>(
         field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)

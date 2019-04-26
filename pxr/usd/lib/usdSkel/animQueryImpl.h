@@ -65,6 +65,9 @@ public:
     virtual bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                              UsdTimeCode time) const = 0;
 
+    virtual bool ComputeJointLocalTransforms(VtMatrix4fArray* xforms,
+                                             UsdTimeCode time) const = 0;
+
     virtual bool ComputeJointLocalTransformComponents(
                      VtVec3fArray* translations,
                      VtQuatfArray* rotations,
@@ -83,6 +86,13 @@ public:
     virtual bool
     ComputeBlendShapeWeights(VtFloatArray* weights,
                              UsdTimeCode time=UsdTimeCode::Default()) const = 0;
+
+    virtual bool
+    GetBlendShapeWeightTimeSamples(const GfInterval& interval,
+                                   std::vector<double>* times) const = 0;
+
+    virtual bool
+    BlendShapeWeightsMightBeTimeVarying() const = 0;
 
     const VtTokenArray& GetJointOrder() const { return _jointOrder; }
 

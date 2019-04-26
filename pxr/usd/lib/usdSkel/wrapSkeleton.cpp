@@ -57,6 +57,13 @@ _CreateJointsAttr(UsdSkelSkeleton &self,
 }
         
 static UsdAttribute
+_CreateJointNamesAttr(UsdSkelSkeleton &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointNamesAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateBindTransformsAttr(UsdSkelSkeleton &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateBindTransformsAttr(
@@ -107,6 +114,13 @@ void wrapUsdSkelSkeleton()
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
              &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetJointNamesAttr",
+             &This::GetJointNamesAttr)
+        .def("CreateJointNamesAttr",
+             &_CreateJointNamesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

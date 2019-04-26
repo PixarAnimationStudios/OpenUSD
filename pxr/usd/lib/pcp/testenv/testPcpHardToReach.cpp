@@ -47,7 +47,7 @@ TestBug160419()
     SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous();
     SdfPrimSpecHandle refPrim = 
         SdfCreatePrimInLayer(rootLayer, SdfPath("/Ref/Child"));
-    refPrim->SetPayload(
+    refPrim->GetPayloadList().Prepend(
         SdfPayload(payloadLayer->GetIdentifier(), payloadPrim->GetPath()));
 
     SdfPrimSpecHandle rootPrim = 
@@ -56,7 +56,7 @@ TestBug160419()
         SdfReference(std::string(), refPrim->GetPath()));
     
     PcpCache cache{PcpLayerStackIdentifier(rootLayer), std::string(), true};
-    TF_AXIOM(cache.GetIncludedPayloads() == SdfPathSet());
+    TF_AXIOM(cache.GetIncludedPayloads().empty());
 
     PcpErrorVector errors;
     cache.ComputePrimIndexesInParallel(
@@ -66,7 +66,8 @@ TestBug160419()
 
     TF_AXIOM(errors.empty());
     TF_AXIOM((cache.GetIncludedPayloads() == 
-              SdfPathSet{SdfPath("/Ref/Child"), SdfPath("/Root")}));
+              PcpCache::PayloadSet {
+                  SdfPath("/Ref/Child"), SdfPath("/Root") }));
 }
 
 int main(int argc, char** argv)

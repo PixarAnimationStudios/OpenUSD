@@ -47,6 +47,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct TfTokenFastArbitraryLessThan;
+
 /// \class TfToken
 /// \ingroup group_tf_String
 ///
@@ -167,15 +169,6 @@ public:
         size_t operator()(TfToken const& token) const { return token.Hash(); }
     };
 
-    /// Functor to be used with std::set when lexicographical ordering
-    // isn't crucial and you just want uniqueness and fast lookup
-    // without the overhead of an TfHashSet.
-    struct LTTokenFunctor {
-        bool operator()(TfToken const& s1, TfToken const& s2) const {
-            return s1._rep.Get() < s2._rep.Get();
-        }
-    };
-
     /// \typedef TfHashSet<TfToken, TfToken::HashFunctor> HashSet;
     ///
     /// Predefined type for TfHashSet of tokens, since it's so awkward to
@@ -183,13 +176,13 @@ public:
     ///
     typedef TfHashSet<TfToken, TfToken::HashFunctor> HashSet;
     
-    /// \typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
+    /// \typedef std::set<TfToken, TfTokenFastArbitraryLessThan> Set;
     ///
     /// Predefined type for set of tokens, for when faster lookup is
     /// desired, without paying the memory or initialization cost of a
     /// TfHashSet.
     ///
-    typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
+    typedef std::set<TfToken, TfTokenFastArbitraryLessThan> Set;
     
     /// Return the size of the string that this token represents.
     size_t size() const {
@@ -304,6 +297,9 @@ public:
     
     /// Returns \c true iff this token contains the empty string \c ""
     bool IsEmpty() const { return _rep.GetLiteral() == 0; }
+
+    /// Returns \c true iff this is an immortal token.
+    bool IsImmortal() const { return !_rep->_isCounted; }
 
     /// Stream insertion.
     friend TF_API std::ostream &operator <<(std::ostream &stream, TfToken const&);

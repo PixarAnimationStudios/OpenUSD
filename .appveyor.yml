@@ -1,0 +1,65 @@
+#
+# Copyright 2016 Pixar
+#
+# Licensed under the Apache License, Version 2.0 (the "Apache License")
+# with the following modification; you may not use this file except in
+# compliance with the Apache License and the following modification to it:
+# Section 6. Trademarks. is deleted and replaced with:
+#
+# 6. Trademarks. This License does not grant permission to use the trade
+#    names, trademarks, service marks, or product names of the Licensor
+#    and its affiliates, except as required to comply with Section 4(c) of
+#    the License and to reproduce the content of the NOTICE file.
+#
+# You may obtain a copy of the Apache License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the Apache License with the above modification is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the Apache License for the specific
+# language governing permissions and limitations under the Apache License.
+#
+image: Visual Studio 2017
+
+clone_folder: c:\projects\USD
+
+branches:
+    only:
+        - dev
+        - master
+
+platform:
+    - x64
+
+install:
+    - ps: $env:USD_YY_VERSION = (Get-Content .\cmake\defaults\Version.cmake | Where-Object {$_ -match 'PXR_MINOR_VERSION'}).Split("( )")[2].Trim('"').PadLeft(2, "0")
+    - ps: $env:USD_MM_VERSION = (Get-Content .\cmake\defaults\Version.cmake | Where-Object {$_ -match 'PXR_PATCH_VERSION'}).Split("( )")[2].Trim('"').PadLeft(2, "0")
+    - ps: Update-AppveyorBuild -Version "$env:USD_YY_VERSION.$env:USD_MM_VERSION-$env:APPVEYOR_REPO_BRANCH-build$env:APPVEYOR_BUILD_NUMBER"
+
+cache:
+    - C:\USDgen\build\boost -> build_scripts/build_usd.py
+    - C:\USDgen\build\IlmBase -> build_scripts/build_usd.py
+    - C:\USDgen\build\OpenEXR -> build_scripts/build_usd.py
+    - C:\USDgen\build\OpenSubdiv-3_1_1 -> build_scripts/build_usd.py
+    - C:\USDgen\build\zlib-1.2.11 -> build_scripts/build_usd.py
+    - C:\USDgen\src -> build_scripts/build_usd.py
+
+init:
+    - set PATH=c:/Python27-x64;c:/Python27-x64/Scripts;%PATH%
+    - C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Community\VC\Auxiliary\Build\vcvarsall.bat amd64
+
+
+before_build:
+    - python -m pip install --upgrade pip
+    - pip install pyside
+    - pip install PyOpenGL
+    - 
+
+build_script:
+
+    - cd c:\projects\USD
+    - python build_scripts/build_usd.py -vvv --build C:/USDgen/build --src C:/USDgen/src c:/USDinst
+    - cd c:\USDgen\build
+    - dir

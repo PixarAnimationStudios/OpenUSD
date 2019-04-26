@@ -139,6 +139,19 @@ Sdf_FileFormatRegistry::FindByExtension(
     return formatInfo ? _GetFileFormat(formatInfo) : TfNullPtr;
 }
 
+std::set<std::string>
+Sdf_FileFormatRegistry::FindAllFileFormatExtensions()
+{
+    _RegisterFormatPlugins();
+
+    std::set<std::string> result; 
+    for (const auto& p : _extensionIndex) {
+        result.insert(p.first);
+    }
+
+    return result;
+}
+
 TfToken
 Sdf_FileFormatRegistry::GetPrimaryFormatForExtension(
     const std::string& ext)

@@ -67,7 +67,7 @@ public:
         /** Dynamic menu for selecting prim paths.
             Must be paired with a PRM_SpareData giving 'fileprm', whose value
             is the name of a string parm on the same prim, which gives the path
-            to the tds file.
+            to the usd file.
             @todo This currently uses a simple drop-down menu. When the new UI
             API access rolls out in the HDK, this should be updated to use a proper
             hierarchy UI, like the regular operator picker menus in Houdini.*/

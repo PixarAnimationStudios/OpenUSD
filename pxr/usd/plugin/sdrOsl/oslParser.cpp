@@ -57,9 +57,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "OSL"))
 );
 
-// Static member initialization
-const NdrTokenVec& SdrOslParserPlugin::DiscoveryTypes = {_tokens->discoveryType};
-const TfToken& SdrOslParserPlugin::SourceType = _tokens->sourceType;
+const NdrTokenVec& 
+SdrOslParserPlugin::GetDiscoveryTypes() const
+{
+    static const NdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+    return _DiscoveryTypes;
+}
+
+const TfToken& 
+SdrOslParserPlugin::GetSourceType() const
+{
+    return _tokens->sourceType;
+}
 
 SdrOslParserPlugin::SdrOslParserPlugin()
 {
@@ -355,7 +364,14 @@ SdrOslParserPlugin::_getDefaultValue(
         }
 
         VtStringArray array;
-        array.assign(param.sdefault.begin(), param.sdefault.end());
+        array.reserve(param.sdefault.size());
+
+        // Strings are stored as `ustring`s from OIIO; these need to be
+        // converted explicitly into `std::string`s (otherwise the
+        // `VtStringArray` will contain garbage).
+        for (const OIIO::ustring& ustr : param.sdefault) {
+            array.push_back(ustr.string());
+        }
 
         return VtValue::Take(array);
     }

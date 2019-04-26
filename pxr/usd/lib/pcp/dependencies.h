@@ -38,10 +38,10 @@
 #include "pxr/usd/sdf/site.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <iosfwd>
 #include <set>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -163,14 +163,13 @@ private:
     // Map of site paths to dependencies, as cache paths.  Stores cache
     // paths as an unordered vector: for our datasets this is both more
     // compact and faster than std::set.
-    typedef SdfPathTable<SdfPathVector> _SiteDepMap;
+    using _SiteDepMap = SdfPathTable<SdfPathVector>;
 
-    // Map of layery stacks to dependencies on that layerStack.
+    // Map of layer stacks to dependencies on that layerStack.
     // Retains references to those layer stacks, which in turn
     // retain references to their constituent layers.
-    typedef boost::unordered_map<PcpLayerStackRefPtr, _SiteDepMap>
-        _LayerStackDepMap;
-
+    using _LayerStackDepMap = 
+        std::unordered_map<PcpLayerStackRefPtr, _SiteDepMap, TfHash>;
     _LayerStackDepMap _deps;
 };
 

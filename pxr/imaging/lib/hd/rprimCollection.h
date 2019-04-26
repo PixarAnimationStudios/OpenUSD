@@ -59,19 +59,31 @@ public:
 
     /// Constructs an rprim collection with \p reprSelector. \p if forcedRepr is
     /// set to true, prims authored repr will be ignored.
+    /// If \p materialTag is provided, only prims who's material have 
+    /// a matching tag will end up in the collection. This can be used to make 
+    /// seperate collections for e.g. opaque vs translucent prims.
+    /// An empty materialTag opts-out of using material tags entirely and will
+    /// return all prims in the collection, regardless of their material tags.
     HD_API
     HdRprimCollection(TfToken const& name,
                       HdReprSelector const& reprSelector,
-                      bool forcedRepr=false);
+                      bool forcedRepr=false,
+                      TfToken const& materialTag = TfToken());
 
     /// Constructs an rprim collection, excluding all Rprims not prefixed by \p
     /// rootPath. \p if forcedRepr is set to true, prims authored repr will be
     /// ignored.
+    /// If \p materialTag is provided, only prims who's material have 
+    /// a matching tag will end up in the collection. This can be used to make 
+    /// seperate collections for e.g. opaque vs translucent prims.
+    /// An empty materialTag opts-out of using material tags entirely and will
+    /// return all prims in the collection, regardless of their material tags.
     HD_API
     HdRprimCollection(TfToken const& name,
                       HdReprSelector const& reprSelector,
                       SdfPath const& rootPath,
-                      bool forcedRepr=false);
+                      bool forcedRepr=false,
+                      TfToken const& materialTag = TfToken());
 
     /// Copy constructor.
     HD_API
@@ -164,6 +176,23 @@ public:
     HD_API
     bool HasRenderTag(TfToken const & renderTag) const;
 
+    /// A MaterialTag can be used to ensure only prims whos material have
+    /// a matching tag will end up in the collection. Different rendering 
+    /// backends can control what material properties are useful for splitting 
+    /// up collections. For example, when Stream finds the 'translucent'
+    /// MaterialTag in a material it will transfer this tag onto the
+    /// prim's DrawItem. This ensures that opaque and translucent prims end up
+    /// in different collections so they can be rendered seperately.
+    /// A path-tracer backend may find the translucent MaterialTag on a material
+    /// and choose NOT to transfer the tag onto the DrawItem because the
+    /// backend wants to render opaque and translucent prims in the same
+    /// collection.
+    HD_API
+    void SetMaterialTag(TfToken const& tag);
+
+    HD_API
+    TfToken const& GetMaterialTag() const;
+
     HD_API
     size_t ComputeHash() const;
 
@@ -186,6 +215,7 @@ private:
     TfToken _name;
     HdReprSelector _reprSelector;
     bool _forcedRepr;
+    TfToken _materialTag;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
     TfTokenVector _renderTags;

@@ -35,8 +35,7 @@ TF_WRAP_MODULE
     TF_WRAP( CleanupEnabler );
     TF_WRAP( CopyUtils );
     TF_WRAP( FileFormat );
-    TF_WRAP( LayerBase );
-    TF_WRAP( Layer ); // Needs to come after wrapping for base SdfLayerBase
+    TF_WRAP( Layer );
     TF_WRAP( LayerOffset );
     TF_WRAP( LayerTree );
     TF_WRAP( NamespaceEdit );
@@ -48,8 +47,6 @@ TF_WRAP_MODULE
     TF_WRAP( ValueType );
 
     TF_WRAP( Spec );
-    TF_WRAP( MapperSpec );
-    TF_WRAP( MapperArgSpec );
     TF_WRAP( VariantSpec );
     TF_WRAP( VariantSetSpec );
 

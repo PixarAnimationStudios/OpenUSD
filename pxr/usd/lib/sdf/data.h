@@ -56,6 +56,9 @@ public:
     /// SdfAbstractData overrides
 
     SDF_API
+    virtual bool StreamsData() const;
+
+    SDF_API
     virtual void CreateSpec(const SdfAbstractDataSpecId& id, 
                             SdfSpecType specType);
     SDF_API
@@ -68,6 +71,7 @@ public:
     SDF_API
     virtual SdfSpecType GetSpecType(const SdfAbstractDataSpecId& id) const;
 
+    SDF_API
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken &fieldName,
                      SdfAbstractDataValue* value) const;
     SDF_API
@@ -136,6 +140,10 @@ protected:
 private:
     const VtValue* _GetFieldValue(const SdfAbstractDataSpecId& id,
                                   const TfToken& field) const;
+
+    VtValue* _GetMutableFieldValue(const SdfAbstractDataSpecId& id,
+                                   const TfToken& field);
+
     VtValue* _GetOrCreateFieldValue(const SdfAbstractDataSpecId& id,
                                     const TfToken& field);
 

@@ -95,7 +95,8 @@ TfToken UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage);
 /// 
 /// UpAxis is stage-level metadata, therefore see UsdStage::SetMetadata().
 ///
-/// \return true if upAxis was successfully set.
+/// \return true if upAxis was successfully set.  The stage's UsdEditTarget
+/// must be either its root layer or session layer.
 /// \sa UsdGeomUpAxis_group
 USDGEOM_API
 bool UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis);
@@ -120,6 +121,98 @@ TfToken UsdGeomGetFallbackUpAxis();
 
 /// @}
 
+/// \defgroup UsdGeomLinearUnits_group Encoding Stage Linear Units
+/// 
+/// As with \ref UsdGeomUpAxis_group, we restrict the encoding of linear
+/// units to be stage-wide; if assembling assets of different metrics, it is
+/// the assembler's responsibility to apply suitable correctives to the 
+/// referenced data to bring it into the referencing stage's metric.
+///
+/// We encode linear measure as **meters per unit** (stage-level metadata
+/// *metersPerUnit*) rather than units-per-meter because it makes it easier
+/// to encode precise imperial units (one imperial foot = 0.3048 meters exactly).
+///
+/// If a UsdStage has no authored *metersPerUnit* we fall back to the value
+/// \ref UsdGeomLinearUnits "UsdGeomLinearUnits::centimeters", i.e. 0.01.
+///
+/// The specified *metersPerUnit* metric should only be applied to 
+/// **world space** (i.e. fully transformed) attributes of types:
+/// - point3{h,f,d} (and Arrays thereof)
+/// - vector3{h,f,d} (and Arrays thereof)
+/// - schema attributes that define a length, such as Sphere.radius
+///   and Boundable.extent
+///
+/// It may be tempting to interpret raw attribute values, and even 
+/// xformOp:translate values in the *metersPerUnit* metric, but because any
+/// xformOp:scale transformations will change the metric of the authored 
+/// attribute, and in fact we *require* this sort of scale change when
+/// referencing assets of differing metrics, it is unreliable to do so.
+
+/// @{
+
+/// Return *stage*'s authored *metersPerUnit*, or 0.01 if unauthored.
+/// \sa UsdGeomLinearUnits_group
+USDGEOM_API
+double UsdGeomGetStageMetersPerUnit(const UsdStageWeakPtr &stage);
+
+/// Return whether *stage* has an authored *metersPerUnit*.
+/// \sa UsdGeomLinearUnits_group
+USDGEOM_API
+bool UsdGeomStageHasAuthoredMetersPerUnit(const UsdStageWeakPtr &stage);
+
+/// Author *stage*'s *metersPerUnit*.
+///
+/// \return true if metersPerUnit was successfully set.  The stage's
+/// UsdEditTarget must be either its root layer or session layer.
+/// \sa UsdGeomLinearUnits_group
+USDGEOM_API
+bool UsdGeomSetStageMetersPerUnit(const UsdStageWeakPtr &stage, 
+                                  double metersPerUnit);
+
+/// Return *true* if the two given metrics are within the provided
+/// relative *epsilon* of each other, when you need to know an absolute
+/// metric rather than a scaling factor.  
+///
+/// Use like so:
+/// \code
+/// double stageUnits = UsdGeomGetStageMetersPerUnit(stage);
+///
+/// if (UsdGeomLinearUnitsAre(stageUnits, UsdGeomLinearUnits::meters))
+///     // do something for meters
+/// else if (UsdGeomLinearUnitsAre(stageUnits, UsdGeomLinearUnits::feet))
+///     // do something for feet
+/// \endcode
+///
+/// \return *false* if either input is zero or negative, otherwise relative
+/// floating-point comparison between the two inputs.
+/// \sa UsdGeomLinearUnits_group
+USDGEOM_API
+bool UsdGeomLinearUnitsAre(double authoredUnits, double standardUnits,
+                           double epsilon = 1e-5);
+
+/// \class UsdGeomLinearUnits
+/// Container class for static double-precision symbols representing common
+/// units of measure expressed in meters.
+/// \sa UsdGeomLinearUnits_group
+class UsdGeomLinearUnits {
+public:
+    static constexpr double nanometers  = 1e-9;
+    static constexpr double micrometers = 1e-6;
+    static constexpr double millimeters = 0.001;
+    static constexpr double centimeters = 0.01;
+    static constexpr double meters = 1.0;
+    static constexpr double kilometers = 1000;
+
+    /// Measured for one year = 365.25 days
+    static constexpr double lightYears = 9.4607304725808e15;
+
+    static constexpr double inches = 0.0254;
+    static constexpr double feet   = 0.3048;
+    static constexpr double yards  = 0.9144;
+    static constexpr double miles  = 1609.344;
+};
+
+/// @}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

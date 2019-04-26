@@ -156,16 +156,12 @@ private:
 
             UsdGeomGprim primSchema(boundPrim);
             // Set color if not already authored
-            //
-            // XXX: Note that this will not update the display color
-            // in the presence of a SdfValueBlock which is a valid
-            // 'authored value opinion' in the eyes of Usd.
-            if (!primSchema.GetDisplayColorAttr().HasAuthoredValueOpinion()) {
+            if (!primSchema.GetDisplayColorAttr().HasAuthoredValue()) {
                 // not animatable
                 primSchema.CreateDisplayColorPrimvar().Set(displayColorAry);
             }
             if (transparencyAvg > 0.0f &&
-                    !primSchema.GetDisplayOpacityAttr().HasAuthoredValueOpinion()) {
+                    !primSchema.GetDisplayOpacityAttr().HasAuthoredValue()) {
                 // not animatable
                 primSchema.CreateDisplayOpacityPrimvar().Set(displayOpacityAry);
             }
@@ -287,7 +283,7 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
                 primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) {
             linearDisplayColor = gprimDisplayColor[0];
             VtFloatArray gprimDisplayOpacity(1);
-            if (primSchema.GetDisplayOpacityPrimvar().GetAttr().HasAuthoredValueOpinion() &&
+            if (primSchema.GetDisplayOpacityPrimvar().GetAttr().HasAuthoredValue() &&
                     primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
                 const float trans = 1.0 - gprimDisplayOpacity[0];
                 linearTransparency = GfVec3f(trans, trans, trans);

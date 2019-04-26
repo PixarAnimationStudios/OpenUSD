@@ -153,6 +153,12 @@ assert m5.Compose(m6).timeOffset == (offset1 * offset2)
 testMapFuncs.append(m5)
 testMapFuncs.append(m6)
 
+# Test composing map functions that should produce identity mappings.
+m1 = Pcp.MapFunction({'/':'/', '/a':'/b'})
+m2 = Pcp.MapFunction({'/':'/', '/b':'/a'})
+assert m1.Compose(m2) == Pcp.MapFunction.Identity()
+assert m2.Compose(m1) == Pcp.MapFunction.Identity()
+
 # Test equality/inequality
 for i in range(len(testMapFuncs)):
     for j in range(len(testMapFuncs)):

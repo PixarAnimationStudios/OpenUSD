@@ -33,10 +33,9 @@
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 
-#include <boost/mpl/logical.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/type_traits.hpp>
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -119,7 +118,7 @@ public:
     void ApplyEditsToList(value_vector_type* vec) const
     {
         if (_Validate()) {
-            _listEditor->ApplyEdits(vec, ApplyCallback());
+            _listEditor->ApplyEditsToList(vec, ApplyCallback());
         }
     }
 
@@ -132,7 +131,7 @@ public:
     void ApplyEditsToList(value_vector_type* vec, CB callback) const
     {
         if (_Validate()) {
-            _listEditor->ApplyEdits(vec, ApplyCallback(callback));
+            _listEditor->ApplyEditsToList(vec, ApplyCallback(callback));
         }
     }
 
@@ -299,7 +298,7 @@ public:
     {
         value_vector_type result;
         if (_Validate()) {
-            _listEditor->ApplyEdits(&result);
+            _listEditor->ApplyEditsToList(&result);
         }
         return result;
     }
@@ -380,24 +379,12 @@ public:
         }
     }
 
-#if !defined(doxygen)
-    typedef boost::shared_ptr<Sdf_ListEditor<TypePolicy> >
-        This::*UnspecifiedBoolType;
-#endif
-
-    /// Returns \c true in a boolean context if the list editor is valid,
-    /// \c false otherwise.
-    operator UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. A ListEditorProxy object 
+    /// converts to \c true iff the list editor is valid, converts to \c false 
+    /// otherwise.
+    explicit operator bool() const
     {
-        return (_listEditor && _listEditor->IsValid()) ? 
-            &This::_listEditor : NULL;
-    }
-
-    /// Returns \c false in a boolean context if the list editor is valid,
-    /// \c true otherwise.
-    bool operator!() const 
-    { 
-        return (!_listEditor || !_listEditor->IsValid());
+        return _listEditor && _listEditor->IsValid();
     }
 
 private:
@@ -482,10 +469,7 @@ private:
 // Cannot get from a VtValue except as the correct type.
 template <class TP>
 struct Vt_DefaultValueFactory<SdfListEditorProxy<TP> > {
-    static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false && "Failed VtValue::Get<SdfListEditorProxy> not allowed");
-        return Vt_DefaultValueHolder::Create((void*)0);
-    }
+    static Vt_DefaultValueHolder Invoke() = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -34,6 +34,8 @@
 #include <SYS/SYS_Version.h>
 #include <UT/UT_VectorTypes.h>
 
+#include "pxr/base/gf/half.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /** Common type traits.
@@ -133,6 +135,7 @@ GUSDUT_DECLARE_POD_TUPLE(int64,     int64, 1);
 GUSDUT_DECLARE_POD_TUPLE(fpreal16,  fpreal16, 1);
 GUSDUT_DECLARE_POD_TUPLE(fpreal32,  fpreal32, 1);
 GUSDUT_DECLARE_POD_TUPLE(fpreal64,  fpreal64, 1);
+GUSDUT_DECLARE_POD_TUPLE(GfHalf,    GfHalf, 1);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

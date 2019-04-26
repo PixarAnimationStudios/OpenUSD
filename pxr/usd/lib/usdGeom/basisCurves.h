@@ -80,8 +80,6 @@ class SdfAssetPath;
 /// bezier        | 3
 /// catmullRom    | 1
 /// bspline       | 1
-/// hermite       | 2
-/// power         | 4
 /// 
 /// The first segment of a cubic (nonperiodic) curve is always defined by its
 /// first four points. The vstep is the increment used to determine what
@@ -95,25 +93,48 @@ class SdfAssetPath;
 /// properly divides by your vstep. (The indices described are relative to
 /// the initial vertex index for a batched curve.)
 /// 
-/// For periodic curves, at least one of the curves' initial vertices are
-/// repeated to close the curve.
-/// (TODO: Explain the rules for how to repeat vertices for periodic curves.)
+/// For periodic curves, at least one of the curve's initial vertices are
+/// repeated to close the curve. For cubic curves, the number of vertices
+/// repeated is '4 - vstep'. For linear curves, only one vertex is repeated
+/// to close the loop.
+/// 
+/// Pinned curves are a special case of nonperiodic curves that only affects
+/// the behavior of cubic Bspline and Catmull-Rom curves. To evaluate or render
+/// pinned curves, a client must effectively add 'phantom points' at the 
+/// beginning and end of every curve in a batch.  These phantom points
+/// are injected to ensure that the inteprolated curve begins at P[0] and
+/// ends at P[n-1].
+/// 
+/// For a curve with initial point P[0] and last point P[n-1], the phantom
+/// points are defined as.
+/// P[-1]  = 2 * P[0] - P[1]
+/// P[n] = 2 * P[n-1] - P[n-2]
+/// 
+/// Pinned cubic curves will (usually) have to be unpacked into the standard
+/// nonperiodic representation before rendering. This unpacking can add some 
+/// additional overhead. However, using pinned curves reduces the amount of
+/// data recorded in a scene and (more importantly) better records the
+/// authors' intent for interchange.
+/// 
+/// \note The additional phantom points mean that the minimum curve vertex
+/// count for cubic bspline and catmullRom curves is 2.
 /// 
 /// Linear curve segments are defined by two vertices.
 /// A two segment linear curve's first segment would be defined by
 /// interpolating vertices [0, 1]. The second segment would be defined by 
-/// vertices [1, 2]. (Again, for a batched curve indices are relative to
+/// vertices [1, 2]. (Again, for a batched curve, indices are relative to
 /// the initial vertex index.)
 /// 
 /// When validating curve topology, each renderable entry in the
 /// curveVertexCounts vector must pass this check.
 /// 
-/// type    | wrap           | validitity
-/// ------- | -------------- | ----------------
-/// linear  | nonperiodic    | curveVertexCounts[i] > 2
-/// linear  | periodic       | curveVertexCounts[i] > 3
-/// cubic   | nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
-/// cubic   | periodic       | (curveVertexCounts[i]) % vstep == 0
+/// type    | wrap                        | validitity
+/// ------- | --------------------------- | ----------------
+/// linear  | nonperiodic                 | curveVertexCounts[i] > 2
+/// linear  | periodic                    | curveVertexCounts[i] > 3
+/// cubic   | nonperiodic                 | (curveVertexCounts[i] - 4) % vstep == 0
+/// cubic   | periodic                    | (curveVertexCounts[i]) % vstep == 0
+/// cubic   | pinned (catmullRom/bspline) | (curveVertexCounts[i] - 2) >= 0
 /// 
 /// \section UsdGeomBasisCurves_BasisMatrix Cubic Vertex Interpolation
 /// 
@@ -149,21 +170,22 @@ class SdfAssetPath;
 /// like '[:]' (to describe all members of an array) and 'len(...)' 
 /// (to describe the length of an array) are used.
 /// 
-/// type    | wrap          | curve segment count                    | batch segment count                                                       
-/// ------- | ------------- | -------------------------------------- | --------------------------
-/// linear  | nonperiodic   | curveVertexCounts[i] - 1               | sum(curveVertexCounts[:]) - len(curveVertexCounts)
-/// linear  | periodic      | curveVertexCounts[i]                   | sum(curveVertexCounts[:])
-/// cubic   | nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1 | sum(curveVertexCounts[:] - 4) / vstep + len(curveVertexCounts)
-/// cubic   | periodic      | curveVertexCounts[i] / vstep           | sum(curveVertexCounts[:]) / vstep
+/// type    | wrap                        | curve segment count                    | batch segment count                                                       
+/// ------- | --------------------------- | -------------------------------------- | --------------------------
+/// linear  | nonperiodic                 | curveVertexCounts[i] - 1               | sum(curveVertexCounts[:]) - len(curveVertexCounts)
+/// linear  | periodic                    | curveVertexCounts[i]                   | sum(curveVertexCounts[:])
+/// cubic   | nonperiodic                 | (curveVertexCounts[i] - 4) / vstep + 1 | sum(curveVertexCounts[:] - 4) / vstep + len(curveVertexCounts)
+/// cubic   | periodic                    | curveVertexCounts[i] / vstep           | sum(curveVertexCounts[:]) / vstep
+/// cubic   | pinned (catmullRom/bspline) | (curveVertexCounts[i] - 2) + 1         | sum(curveVertexCounts[:] - 2) + len(curveVertexCounts)
 /// 
 /// The following table descrives the expected size of varying
 /// (linearly interpolated) data, derived from the segment counts computed
 /// above.
 /// 
-/// wrap          | curve varying count          | batch varying count
-/// ------------- | ---------------------------- | ------------------------------------------------
-/// nonperiodic   | segmentCounts[i] + 1         | sum(segmentCounts[:]) + len(curveVertexCounts)
-/// periodic      | segmentCounts[i]             | sum(segmentCounts[:])
+/// wrap                | curve varying count          | batch varying count
+/// ------------------- | ---------------------------- | ------------------------------------------------
+/// nonperiodic/pinned  | segmentCounts[i] + 1         | sum(segmentCounts[:]) + len(curveVertexCounts)
+/// periodic            | segmentCounts[i]             | sum(segmentCounts[:])
 /// 
 /// Both curve types additionally define 'constant' interpolation for the
 /// entire prim and 'uniform' interpolation as per curve data.
@@ -318,7 +340,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDGEOM_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -330,7 +352,7 @@ private:
 
     // override SchemaBase virtuals.
     USDGEOM_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -383,13 +405,15 @@ public:
     // --------------------------------------------------------------------- //
     /// If wrap is set to periodic, the curve when rendered will 
     /// repeat the initial vertices (dependent on the vstep) to close the
-    /// curve.
+    /// curve. If wrap is set to 'pinned', phantom points may be created
+    /// to ensure that the curve interpolation starts at P[0] and ends at P[n-1].
+    /// 
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: nonperiodic
-    /// \n  \ref UsdGeomTokens "Allowed Values": [nonperiodic, periodic]
+    /// \n  \ref UsdGeomTokens "Allowed Values": [nonperiodic, periodic, pinned]
     USDGEOM_API
     UsdAttribute GetWrapAttr() const;
 

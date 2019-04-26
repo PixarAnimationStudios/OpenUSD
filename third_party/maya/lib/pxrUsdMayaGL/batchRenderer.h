@@ -33,11 +33,15 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 #include "usdMaya/diagnosticDelegate.h"
+#include "usdMaya/notice.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/weakBase.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -88,7 +92,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// RemoveShapeAdapter() (usually in the destructor) when they no longer wish
 /// for their shape to participate in batched drawing and selection.
 ///
-class UsdMayaGLBatchRenderer : public TfSingleton<UsdMayaGLBatchRenderer>
+class UsdMayaGLBatchRenderer
+        : public TfSingleton<UsdMayaGLBatchRenderer>, public TfWeakBase
 {
 public:
 
@@ -177,6 +182,22 @@ public:
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport,
             const PxrMayaHdRenderParams& params = PxrMayaHdRenderParams());
+
+    /// Gets the resolution of the draw target used for computing selections.
+    ///
+    /// The resolution is specified as (width, height).
+    PXRUSDMAYAGL_API
+    GfVec2i GetSelectionResolution() const;
+
+    /// Sets the resolution of the draw target used for computing selections.
+    ///
+    /// The resolution should be specified as (width, height).
+    ///
+    /// Smaller values yield better performance but may miss selecting very
+    /// small objects. Larger values will be slower but more accurate. The
+    /// default resolution is (256, 256) for performance.
+    PXRUSDMAYAGL_API
+    void SetSelectionResolution(const GfVec2i& widthHeight);
 
     /// Tests the object from the given shape adapter for intersection with
     /// a given selection context in the legacy viewport.
@@ -301,6 +322,9 @@ private:
             HdxIntersector::Params queryParams,
             HdxIntersector::Result* result);
 
+    // Handler for Maya scene resets (e.g. new scene or switch scenes).
+    void _OnMayaSceneReset(const UsdMayaSceneResetNotice& notice);
+
     /// Handler for Maya Viewport 2.0 end render notifications.
     ///
     /// Viewport 2.0 may execute a render in multiple passes (shadow, color,
@@ -363,13 +387,8 @@ private:
 
     /// Mapping of Maya object handles to their shape adapters.
     /// This is a "secondary" container for storing shape adapters.
-    struct _MObjectHandleHash {
-        unsigned long operator()(const MObjectHandle& handle) const {
-            return handle.hashCode();
-        }
-    };
-    typedef std::unordered_map<MObjectHandle, PxrMayaHdShapeAdapter*,
-            _MObjectHandleHash> _ShapeAdapterHandleMap;
+    typedef UsdMayaUtil::MObjectHandleUnorderedMap<PxrMayaHdShapeAdapter*>
+            _ShapeAdapterHandleMap;
 
     /// We maintain separate object handle path maps for Viewport 2.0 and the
     /// legacy viewport.
@@ -400,7 +419,7 @@ private:
     /// occluded shapes will be included in the selection.
     HdRprimCollectionVector _GetIntersectionRprimCollections(
             _ShapeAdapterBucketsMap& bucketsMap,
-            const MSelectionList& isolatedObjects,
+            const M3dView* view,
             const bool useDepthSelection) const;
 
     /// Populates the selection results using the given parameters by
@@ -454,6 +473,8 @@ private:
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
 
     std::unique_ptr<HdxIntersector> _intersector;
+    GfVec2i _selectionResolution;
+
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
     UsdMayaGLSoftSelectHelper _softSelectHelper;

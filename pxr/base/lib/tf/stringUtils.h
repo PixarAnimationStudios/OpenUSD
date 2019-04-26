@@ -544,6 +544,15 @@ TF_API std::string TfStringify(float);
 /// \overload
 TF_API std::string TfStringify(double);
 
+/// Writes the string representation of \c d to \c buffer of length \c len. 
+/// If \c emitTrailingZero is true, the string representation will end with .0 
+/// in the case where d is an integer otherwise it will be omitted.
+/// The buffer length must be at least 25 in order to ensure that all doubles 
+/// values can be represented.
+/// Returns whether the conversion was successful.
+TF_API bool TfDoubleToString(
+    double d, char* buffer, int len, bool emitTrailingZero);
+
 /// \struct TfStreamFloat
 /// 
 /// A type which offers streaming for floats in a canonical
@@ -647,23 +656,20 @@ std::string TfStringCatPaths( const std::string &prefix,
 /// that is, it must be at least one character long, must start with a letter
 /// or underscore, and must contain only letters, underscores, and numerals.
 inline bool
-TfIsValidIdentifier(const std::string &identifier)
+TfIsValidIdentifier(std::string const &identifier)
 {
     char const *p = identifier.c_str();
-    if (!*p || (!(('a' <= *p && *p <= 'z') || 
-                  ('A' <= *p && *p <= 'Z') || 
-                  *p == '_')))
+    auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
+    auto number = [](unsigned c) { return (c-'0') < 10; };
+    auto under = [](unsigned c) { return c == '_'; };
+    unsigned x = *p;
+    if (!x || number(x)) {
         return false;
-
-    for (++p; *p; ++p) {
-        if (!(('a' <= *p && *p <= 'z') || 
-              ('A' <= *p && *p <= 'Z') || 
-              ('0' <= *p && *p <= '9') || 
-              *p == '_')) {
-            return false;
-        }
     }
-    return true;
+    while (letter(x) || number(x) || under(x)) {
+        x = *p++;
+    };
+    return x == 0;
 }
 
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by

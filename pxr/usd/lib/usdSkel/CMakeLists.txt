@@ -25,6 +25,7 @@ pxr_library(usdSkel
         animQuery
         bindingAPI
         blendShape
+        blendShapeQuery
         cache
         debugCodes
         inbetweenShape
@@ -57,6 +58,7 @@ pxr_library(usdSkel
         wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
+        wrapBlendShapeQuery.cpp
         wrapBinding.cpp
         wrapBindingAPI.cpp
         wrapBlendShape.cpp
@@ -80,6 +82,7 @@ pxr_library(usdSkel
 pxr_test_scripts(
     testenv/testUsdSkelAnimMapper.py
     testenv/testUsdSkelAnimQuery.py 
+    testenv/testUsdSkelBakeSkinning.py
     testenv/testUsdSkelBindingAPI.py
     testenv/testUsdSkelCache.py
     testenv/testUsdSkelRoot.py
@@ -87,6 +90,11 @@ pxr_test_scripts(
     testenv/testUsdSkelSkinningQuery.py
     testenv/testUsdSkelTopology.py
     testenv/testUsdSkelUtils.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelBakeSkinning
+    DEST testUsdSkelBakeSkinning
 )
 
 pxr_install_test_dir(
@@ -113,6 +121,12 @@ pxr_register_test(testUsdSkelAnimMapper
 pxr_register_test(testUsdSkelAnimQuery
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimQuery"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSkelBakeSkinning
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBakeSkinning"
     EXPECTED_RETURN_CODE 0
 )
 

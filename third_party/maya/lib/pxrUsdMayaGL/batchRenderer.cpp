@@ -54,6 +54,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
@@ -117,6 +118,7 @@ void
 UsdMayaGLBatchRenderer::Init()
 {
     GlfGlewInit();
+    GlfContextCaps::InitInstance();
 
     GetInstance();
 }
@@ -310,7 +312,7 @@ UsdMayaGLBatchRenderer::RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
     _ShapeAdapterHandleMap& handleMap = isViewport2 ?
         _shapeAdapterHandleMap :
         _legacyShapeAdapterHandleMap;
-    handleMap.erase(MObject(shapeAdapter->GetDagPath().node()));
+    handleMap.erase(MObjectHandle(shapeAdapter->GetDagPath().node()));
 
     return (numErased > 0u);
 }
@@ -365,14 +367,10 @@ UsdMayaGLBatchRenderer::PopulateCustomCollection(
 // Since we're using a static singleton UsdMayaGLBatchRenderer object, we need
 // to make sure that we reset its state when switching to a new Maya scene or
 // when opening a different scene.
-static
 void
-_OnMayaNewOrOpenSceneCallback(void* clientData)
+UsdMayaGLBatchRenderer::_OnMayaSceneReset(
+        const UsdMayaSceneResetNotice& notice)
 {
-    if (MFileIO::isImportingFile() || MFileIO::isReferencingFile()) {
-        return;
-    }
-
     UsdMayaGLBatchRenderer::Reset();
 }
 
@@ -411,7 +409,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _isSelectionPending(false),
         _objectSoftSelectEnabled(false),
         _softSelectOptionsCallbackId(0),
-        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false)
+        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
+        _selectionResolution(256)
 {
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
@@ -454,30 +453,12 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _viewport2RprimCollection.GetName());
 
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
+    SetSelectionResolution(_selectionResolution);
+
     _selectionTracker.reset(new HdxSelectionTracker());
 
-    // The batch renderer needs to be reset when changing scenes (either by
-    // switching to a new empty scene or by opening a different scene). We
-    // listen for these two messages and *not* for kSceneUpdate messages since
-    // those are also emitted after a SaveAs operation, in which case we
-    // actually do not want to reset the batch renderer. We listen for
-    // kBeforeFileRead messages because those fire at the right time (after any
-    // existing scene has been closed but before the new scene has been opened),
-    // but they are also emitted when a file is imported or referenced, so we
-    // must be sure *not* to reset the batch renderer in those cases.
-    static MCallbackId afterNewCallbackId = 0;
-    if (afterNewCallbackId == 0) {
-        afterNewCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kAfterNew,
-                                       _OnMayaNewOrOpenSceneCallback);
-    }
-
-    static MCallbackId beforeFileReadCallbackId = 0;
-    if (beforeFileReadCallbackId == 0) {
-        beforeFileReadCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead,
-                                       _OnMayaNewOrOpenSceneCallback);
-    }
+    TfWeakPtr<UsdMayaGLBatchRenderer> me(this);
+    TfNotice::Register(me, &UsdMayaGLBatchRenderer::_OnMayaSceneReset);
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
     if (!renderer) {
@@ -747,6 +728,22 @@ void UsdMayaGLBatchRenderer::DrawCustomCollection(
     _Render(viewMatrix, projectionMatrix, viewport, items);
 }
 
+GfVec2i
+UsdMayaGLBatchRenderer::GetSelectionResolution() const
+{
+    return _selectionResolution;
+}
+
+void
+UsdMayaGLBatchRenderer::SetSelectionResolution(const GfVec2i& widthHeight)
+{
+    _selectionResolution = widthHeight;
+
+    if (_intersector) {
+        _intersector->SetResolution(_selectionResolution);
+    }
+}
+
 const HdxIntersector::HitSet*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
@@ -958,9 +955,6 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
-    const unsigned int pickResolution = 256u;
-    _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
-
     HdxIntersector::Params params;
     params.viewMatrix = viewMatrix;
     params.projectionMatrix = projectionMatrix;
@@ -1006,7 +1000,7 @@ UsdMayaGLBatchRenderer::GetNearestHit(
 HdRprimCollectionVector
 UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterBucketsMap& bucketsMap,
-        const MSelectionList& isolatedObjects,
+        const M3dView* view,
         const bool useDepthSelection) const
 {
     HdRprimCollectionVector rprimCollections;
@@ -1023,7 +1017,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterSet& shapeAdapters = iter.second.second;
 
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility(isolatedObjects);
+            shapeAdapter->UpdateVisibility(view);
 
             isViewport2 = shapeAdapter->IsViewport2();
 
@@ -1081,14 +1075,6 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
-    // Figure out Maya's isolate for this viewport.
-    MSelectionList isolatedObjects;
-#if MAYA_API_VERSION >= 201700
-    if (view3d && view3d->viewIsFiltered()) {
-        view3d->filteredObjectList(isolatedObjects);
-    }
-#endif
-
     // If the enable depth selection env setting has not been turned on, then
     // we can optimize area/marquee selections by handling collections
     // similarly to a single selection, where we test intersections against the
@@ -1097,19 +1083,13 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         (!singleSelection && TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION));
 
     const HdRprimCollectionVector rprimCollections =
-        _GetIntersectionRprimCollections(
-            bucketsMap, isolatedObjects, useDepthSelection);
+        _GetIntersectionRprimCollections(bucketsMap, view3d, useDepthSelection);
 
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    ____________ SELECTION STAGE START ______________ "
         "(singleSelection = %s, %zu collection(s))\n",
         singleSelection ? "true" : "false",
         rprimCollections.size());
-
-    // We may miss very small objects with this setting, but it's faster.
-    const unsigned int pickResolution = 256u;
-
-    _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
 
     HdxIntersector::Params qparams;
     qparams.viewMatrix = viewMatrix;
@@ -1275,7 +1255,7 @@ UsdMayaGLBatchRenderer::_Render(
     _hdEngine.SetTaskContextData(HdxTokens->selectionState,
                                  selectionTrackerValue);
 
-    _hdEngine.Execute(*_renderIndex, tasks);
+    _hdEngine.Execute(_renderIndex.get(), &tasks);
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 
@@ -1325,14 +1305,6 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         }
     }
 
-    // Figure out Maya's isolate for this viewport.
-    MSelectionList isolatedObjects;
-#if MAYA_API_VERSION >= 201700
-    if (view3d && view3d->viewIsFiltered()) {
-        view3d->filteredObjectList(isolatedObjects);
-    }
-#endif
-
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "    ____________ RENDER STAGE START ______________ (%zu buckets)\n",
         bucketsMap.size());
@@ -1354,7 +1326,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
         HdRprimCollectionVector rprimCollections;
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility(isolatedObjects);
+            shapeAdapter->UpdateVisibility(view3d);
             itemsVisible |= shapeAdapter->IsVisible();
 
             rprimCollections.push_back(shapeAdapter->GetRprimCollection());

@@ -584,7 +584,7 @@ GusdOBJ_usdcamera::_EvalCamVariable(fpreal& val, int idx, int thread)
     case VAR_FAR:                   val = 10000; break;
     case VAR_FOCUS:                 val = 5; break;
     case VAR_FSTOP:                 val = 5.6; break;
-    case VAR_HAPERTUREOFFSET:       val = 41.2136;
+    case VAR_HAPERTUREOFFSET:       val = 41.2136; break;
     // for backwards compatibility with old stereo attributes
     case VAR_ISSTEREO:              val = 0; break;
     case VAR_CONVERGENCEDISTANCE:   val = 1000; break;

@@ -47,7 +47,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         usdFilePath = os.path.abspath('MarbleCube.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='pxrRis')
+            shadingMode='pxrRis', materialsScopeName='Materials')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -73,7 +73,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         material = UsdShade.Material.GetBoundMaterial(cubePrim)
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
-        self.assertEqual(materialPath, '/MarbleCube/Looks/MarbleCubeSG')
+        self.assertEqual(materialPath, '/MarbleCube/Materials/MarbleCubeSG')
 
         # Validate the surface shader that is connected to the material.
         materialOutputs = material.GetOutputs()
@@ -104,7 +104,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         """
         Tests that only the attributes authored in Maya are exported to USD.
         """
-        shaderPrimPath = '/MarbleCube/Looks/MarbleCubeSG/MarbleShader'
+        shaderPrimPath = '/MarbleCube/Materials/MarbleCubeSG/MarbleShader'
         shaderPrim = self._stage.GetPrimAtPath(shaderPrimPath)
         self.assertTrue(shaderPrim)
 
@@ -126,7 +126,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         inputPlacementMatrix = shader.GetInput('placementMatrix')
         (connectableAPI, outputName, outputType) = inputPlacementMatrix.GetConnectedSource()
         self.assertEqual(connectableAPI.GetPath().pathString,
-            '/MarbleCube/Looks/MarbleCubeSG/MarbleCubePlace3dTexture')
+            '/MarbleCube/Materials/MarbleCubeSG/MarbleCubePlace3dTexture')
 
         shaderOutputs = shader.GetOutputs()
         self.assertEqual(len(shaderOutputs), 1)

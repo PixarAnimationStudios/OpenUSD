@@ -23,6 +23,10 @@
 //
 #include "pxr/usd/usdSkel/skinningQuery.h"
 
+#include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -31,8 +35,6 @@
 
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usdGeom/boundable.h"
-
-#include "pxr/base/gf/interval.h"
 
 #include <boost/python.hpp>
 
@@ -50,7 +52,7 @@ _ComputeJointInfluences(const UsdSkelSkinningQuery& self, UsdTimeCode time)
 {
     VtIntArray indices;
     VtFloatArray weights;
-    if(self.ComputeJointInfluences(&indices, &weights, time)) {
+    if (self.ComputeJointInfluences(&indices, &weights, time)) {
         return boost::python::make_tuple(indices, weights);
     }
     return object();
@@ -64,7 +66,7 @@ _ComputeVaryingJointInfluences(const UsdSkelSkinningQuery& self,
 {
     VtIntArray indices;
     VtFloatArray weights;
-    if(self.ComputeVaryingJointInfluences(numPoints, &indices,
+    if (self.ComputeVaryingJointInfluences(numPoints, &indices,
                                           &weights, time)) {
         return boost::python::make_tuple(indices, weights);
     }
@@ -95,15 +97,16 @@ object
 _GetJointOrder(const UsdSkelSkinningQuery& self)
 {
     VtTokenArray jointOrder;
-    if(self.GetJointOrder(&jointOrder))
+    if (self.GetJointOrder(&jointOrder))
         return object(jointOrder);
     return object();
 }
 
 
+template <typename Matrix4>
 bool
 _ComputeSkinnedPoints(const UsdSkelSkinningQuery& self,
-                      const VtMatrix4dArray& xforms,
+                      const VtArray<Matrix4>& xforms,
                       VtVec3fArray& points,
                       UsdTimeCode time)
 {
@@ -111,12 +114,13 @@ _ComputeSkinnedPoints(const UsdSkelSkinningQuery& self,
 }
 
 
-GfMatrix4d
+template <typename Matrix4>
+Matrix4
 _ComputeSkinnedTransform(const UsdSkelSkinningQuery& self,
-                         const VtMatrix4dArray& xforms,
+                         const VtArray<Matrix4>& xforms,
                          UsdTimeCode time)
 {
-    GfMatrix4d xform;
+    Matrix4 xform;
     self.ComputeSkinnedTransform(xforms, &xform, time);
     return xform;
 }
@@ -134,6 +138,13 @@ void wrapUsdSkelSkinningQuery()
         .def(!self)
 
         .def("__str__", &This::GetDescription)
+
+        .def("GetPrim", &This::GetPrim,
+             return_value_policy<return_by_value>())
+
+        .def("HasJointInfluences", &This::HasJointInfluences)
+
+        .def("HasBlendShapes", &This::HasBlendShapes)
         
         .def("GetNumInfluencesPerComponent",
              &This::GetNumInfluencesPerComponent)
@@ -167,15 +178,36 @@ void wrapUsdSkelSkinningQuery()
         .def("ComputeVaryingJointInfluences", &_ComputeVaryingJointInfluences,
              (arg("numPoints"), arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints,
+        .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4d>,
              (arg("xforms"), arg("points"),
               arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform,
+        .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4f>,
+             (arg("xforms"), arg("points"),
+              arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4d>,
              (arg("xforms"),
               arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeExentsPadding", &This::ComputeExtentsPadding,
+        .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4f>,
+             (arg("xforms"),
+              arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeExentsPadding",
+             static_cast<float (UsdSkelSkinningQuery::*)(
+                 const VtMatrix4dArray&,
+                 const UsdGeomBoundable&) const>(
+                     &This::ComputeExtentsPadding),
+             (arg("skelRestXforms"),
+              arg("boundable"),
+              arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeExentsPadding",
+             static_cast<float (UsdSkelSkinningQuery::*)(
+                 const VtMatrix4fArray&,
+                 const UsdGeomBoundable&) const>(
+                     &This::ComputeExtentsPadding),
              (arg("skelRestXforms"),
               arg("boundable"),
               arg("time")=UsdTimeCode::Default()))

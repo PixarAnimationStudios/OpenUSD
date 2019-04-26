@@ -49,6 +49,9 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include "vtKatana/array.h"
+#include "vtKatana/value.h"
+
 #include "usdKatana/utils.h"
 #include "usdKatana/blindDataObject.h"
 #include "usdKatana/lookAPI.h"
@@ -56,7 +59,7 @@
 
 #include <FnLogging/FnLogging.h>
 
-FnLogSetup("PxrUsdKatanaUtils::SGG");
+FnLogSetup("PxrUsdKatanaUtils");
 
 #include <sstream>
 
@@ -95,53 +98,7 @@ PxrUsdKatanaUtils::ConvertNumVertsToStartVerts(
     }
 }
 
-static void
-_ConvertArrayToVector(const VtVec3hArray &a, std::vector<float> *r)
-{
-    r->resize(a.size()*3);
-    size_t i=0;
-    TF_FOR_ALL(vec, a) {
-        (*r)[i++] = (*vec)[0];
-        (*r)[i++] = (*vec)[1];
-        (*r)[i++] = (*vec)[2];
-    }
-    TF_VERIFY(i == r->size());
-}
 
-static void
-_ConvertArrayToVector(const VtHalfArray &a, std::vector<float> *r)
-{
-    r->resize(a.size());
-    size_t i=0;
-    TF_FOR_ALL(val, a) {
-        (*r)[i++] = *val;
-    }
-    TF_VERIFY(i == r->size());
-}
-
-static void
-_ConvertArrayToVector(const VtVec2fArray &a, std::vector<float> *r)
-{
-    r->resize(a.size()*2);
-    size_t i=0;
-    TF_FOR_ALL(vec, a) {
-        (*r)[i++] = (*vec)[0];
-        (*r)[i++] = (*vec)[1];
-    }
-    TF_VERIFY(i == r->size());
-}
-
-static void
-_ConvertArrayToVector(const VtVec2dArray &a, std::vector<double> *r)
-{
-    r->resize(a.size()*2);
-    size_t i=0;
-    TF_FOR_ALL(vec, a) {
-        (*r)[i++] = (*vec)[0];
-        (*r)[i++] = (*vec)[1];
-    }
-    TF_VERIFY(i == r->size());
-}
 
 void
 PxrUsdKatanaUtils::ConvertArrayToVector(
@@ -153,47 +110,6 @@ PxrUsdKatanaUtils::ConvertArrayToVector(
         (*r)[i++] = (*vec)[0];
         (*r)[i++] = (*vec)[1];
         (*r)[i++] = (*vec)[2];
-    }
-    TF_VERIFY(i == r->size());
-}
-
-static void
-_ConvertArrayToVector(const VtVec3dArray &a, std::vector<double> *r)
-{
-    r->resize(a.size()*3);
-    size_t i=0;
-    TF_FOR_ALL(vec, a) {
-        (*r)[i++] = (*vec)[0];
-        (*r)[i++] = (*vec)[1];
-        (*r)[i++] = (*vec)[2];
-    }
-    TF_VERIFY(i == r->size());
-}
-
-static void
-_ConvertArrayToVector(const VtVec4fArray &a, std::vector<float> *r)
-{
-    r->resize(a.size()*4);
-    size_t i=0;
-    TF_FOR_ALL(vec, a) {
-        (*r)[i++] = (*vec)[0];
-        (*r)[i++] = (*vec)[1];
-        (*r)[i++] = (*vec)[2];
-        (*r)[i++] = (*vec)[3];
-    }
-    TF_VERIFY(i == r->size());
-}
-
-static void
-_ConvertArrayToVector(const VtVec4dArray &a, std::vector<double> *r)
-{
-    r->resize(a.size()*4);
-    size_t i=0;
-    TF_FOR_ALL(vec, a) {
-        (*r)[i++] = (*vec)[0];
-        (*r)[i++] = (*vec)[1];
-        (*r)[i++] = (*vec)[2];
-        (*r)[i++] = (*vec)[3];
     }
     TF_VERIFY(i == r->size());
 }
@@ -239,80 +155,55 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     FnKat::Attribute valueAttr;
 
     if (val.IsHolding<VtArray<std::string> >()) {
-        const VtArray<std::string> rawVal = val.UncheckedGet<VtArray<std::string> >();
-        std::vector<std::string> vec(rawVal.begin(), rawVal.end());
-        FnKat::StringBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
+        const auto& array = val.UncheckedGet<VtArray<std::string> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("string [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("string [%zu]", array.size()));
     }
 
     else if (val.IsHolding<VtArray<TfToken> >()) {
-        const auto& rawVal = val.UncheckedGet<VtArray<TfToken> >();
-        std::vector<std::string> vec(rawVal.size());
-        for(size_t i=0; i<rawVal.size(); i++) {
-            vec[i] = rawVal[i].GetString();
-        }
-        FnKat::StringBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
-        //return builder.build();
+        const auto& array = val.UncheckedGet<VtArray<TfToken> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("string [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("string [%zu]", array.size()));
     }
 
     else if (val.IsHolding<VtArray<int> >()) {
-        const VtArray<int> rawVal = val.UncheckedGet<VtArray<int> >();
-        std::vector<int> vec(rawVal.begin(), rawVal.end());
-        FnKat::IntBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
+        const VtArray<int> array = val.UncheckedGet<VtArray<int> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("int [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("int [%zu]", array.size()));
     }
 
     else if (val.IsHolding<VtArray<unsigned> >()) {
         // Lossy translation of array<unsigned> to array<int>
         // No warning is printed as they obscure more important warnings
-        const VtArray<unsigned> rawVal = val.Get<VtArray<unsigned> >();
-        std::vector<int> vec(rawVal.begin(), rawVal.end());
-        FnKat::IntBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
+        const VtArray<unsigned> array = val.Get<VtArray<unsigned> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("unsigned [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("unsigned [%zu]", array.size()));
     }
 
     else if (val.IsHolding<VtArray<long> >()) {
         // Lossy translation of array<long> to array<int>
         // No warning is printed as they obscure more important warnings
-        const VtArray<long> rawVal = val.Get<VtArray<long> >();
-        std::vector<int> vec(rawVal.begin(), rawVal.end());
-        FnKat::IntBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
+        const VtArray<long> array = val.Get<VtArray<long> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("long [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("long [%zu]", array.size()));
     }
 
     else if (val.IsHolding<VtArray<float> >()) {
-        const VtArray<float> rawVal = val.UncheckedGet<VtArray<float> >();
-        std::vector<float> vec(rawVal.begin(), rawVal.end());
-        FnKat::FloatBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
+        const VtArray<float> array = val.UncheckedGet<VtArray<float> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("float [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("float [%zu]", array.size()));
     }
     else if (val.IsHolding<VtArray<double> >()) {
-        const VtArray<double> rawVal = val.UncheckedGet<VtArray<double> >();
-        std::vector<double> vec(rawVal.begin(), rawVal.end());
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
+        const VtArray<double> array = val.UncheckedGet<VtArray<double> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("double [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("double [%zu]", array.size()));
     }
 
     // XXX: Should matrices also be brought in as doubles?
@@ -339,85 +230,43 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // GfVec2f
     else if (val.IsHolding<GfVec2f>()) {
         const GfVec2f rawVal = val.UncheckedGet<GfVec2f>();
-        FnKat::FloatBuilder builder(/* tupleSize = */ 2);
-        std::vector<float> vec;
-        vec.resize(2);
-        vec[0] = rawVal[0];
-        vec[1] = rawVal[1];
-        builder.set(vec);
+        valueAttr = VtKatanaCopy(rawVal);
         typeAttr = FnKat::StringAttribute("float [2]");
-        valueAttr = builder.build();
     }
 
     // GfVec2d
     else if (val.IsHolding<GfVec2d>()) {
         const GfVec2d rawVal = val.UncheckedGet<GfVec2d>();
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
-        std::vector<double> vec;
-        vec.resize(2);
-        vec[0] = rawVal[0];
-        vec[1] = rawVal[1];
-        builder.set(vec);
+        valueAttr = VtKatanaCopy(rawVal);
         typeAttr = FnKat::StringAttribute("double [2]");
-        valueAttr = builder.build();
     }
 
     // GfVec3f
     else if (val.IsHolding<GfVec3f>()) {
         const GfVec3f rawVal = val.UncheckedGet<GfVec3f>();
-        FnKat::FloatBuilder builder(/* tupleSize = */ 3);
-        std::vector<float> vec;
-        vec.resize(3);
-        vec[0] = rawVal[0];
-        vec[1] = rawVal[1];
-        vec[2] = rawVal[2];
-        builder.set(vec);
+        valueAttr = VtKatanaCopy(rawVal);
         typeAttr = FnKat::StringAttribute("float [3]");
-        valueAttr = builder.build();
     }
 
     // GfVec3d
     else if (val.IsHolding<GfVec3d>()) {
         const GfVec3d rawVal = val.UncheckedGet<GfVec3d>();
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
-        std::vector<double> vec;
-        vec.resize(3);
-        vec[0] = rawVal[0];
-        vec[1] = rawVal[1];
-        vec[2] = rawVal[2];
-        builder.set(vec);
+        valueAttr = VtKatanaCopy(rawVal);
         typeAttr = FnKat::StringAttribute("double [3]");
-        valueAttr = builder.build();
     }
 
     // GfVec4f
     else if (val.IsHolding<GfVec4f>()) {
         const GfVec4f rawVal = val.UncheckedGet<GfVec4f>();
-        FnKat::FloatBuilder builder(/* tupleSize = */ 4);
-        std::vector<float> vec;
-        vec.resize(4);
-        vec[0] = rawVal[0];
-        vec[1] = rawVal[1];
-        vec[2] = rawVal[2];
-        vec[3] = rawVal[3];
-        builder.set(vec);
+        valueAttr = VtKatanaCopy(rawVal);
         typeAttr = FnKat::StringAttribute("float [4]");
-        valueAttr = builder.build();
     }
 
     // GfVec4d
     else if (val.IsHolding<GfVec4d>()) {
         const GfVec4d rawVal = val.UncheckedGet<GfVec4d>();
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
-        std::vector<double> vec;
-        vec.resize(4);
-        vec[0] = rawVal[0];
-        vec[1] = rawVal[1];
-        vec[2] = rawVal[2];
-        vec[3] = rawVal[3];
-        builder.set(vec);
+        valueAttr = VtKatanaCopy(rawVal);
         typeAttr = FnKat::StringAttribute("double [4]");
-        valueAttr = builder.build();
     }
 
     // GfMatrix4d
@@ -443,82 +292,54 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // TODO: support complex types such as primvars
     // VtArray<GfVec4f>
     else if (val.IsHolding<VtArray<GfVec4f> >()) {
-        const VtArray<GfVec4f> rawVal = val.UncheckedGet<VtArray<GfVec4f> >();
-        std::vector<float> vec;
-        _ConvertArrayToVector(rawVal, &vec);
-        FnKat::FloatBuilder builder(/* tupleSize = */ 4);
-        builder.set(vec);
+        const VtArray<GfVec4f> array = val.UncheckedGet<VtArray<GfVec4f> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         // NOTE: needs typeAttr set?
-        valueAttr = builder.build();
     }
 
     // VtArray<GfVec3f>
     else if (val.IsHolding<VtArray<GfVec3f> >()) {
-        const VtArray<GfVec3f> rawVal = val.UncheckedGet<VtArray<GfVec3f> >();
-        std::vector<float> vec;
-        PxrUsdKatanaUtils::ConvertArrayToVector(rawVal, &vec);
-        FnKat::FloatBuilder builder(/* tupleSize = */ 3);
-        builder.set(vec);
+        const VtArray<GfVec3f> array = val.UncheckedGet<VtArray<GfVec3f> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         // NOTE: needs typeAttr set?
-        valueAttr = builder.build();
     }
 
     // VtArray<GfVec2f>
     else if (val.IsHolding<VtArray<GfVec2f> >()) {
-        const VtArray<GfVec2f> rawVal = val.UncheckedGet<VtArray<GfVec2f> >();
-        std::vector<float> vec;
-        _ConvertArrayToVector(rawVal, &vec);
-        FnKat::FloatBuilder builder(/* tupleSize = */ 2);
-        builder.set(vec);
+        const VtArray<GfVec2f> array = val.UncheckedGet<VtArray<GfVec2f> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         // NOTE: needs typeAttr set?
-        valueAttr = builder.build();
     }
 
     // VtArray<GfVec4d>
     else if (val.IsHolding<VtArray<GfVec4d> >()) {
-        const VtArray<GfVec4d> rawVal = val.UncheckedGet<VtArray<GfVec4d> >();
-        std::vector<double> vec;
-        _ConvertArrayToVector(rawVal, &vec);
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
-        builder.set(vec);
+        const VtArray<GfVec4d> array = val.UncheckedGet<VtArray<GfVec4d> >();
+	valueAttr = VtKatanaMapOrCopy(array);    
         // NOTE: needs typeAttr set?
-        valueAttr = builder.build();
     }
 
     // VtArray<GfVec3d>
     else if (val.IsHolding<VtArray<GfVec3d> >()) {
-        const VtArray<GfVec3d> rawVal = val.UncheckedGet<VtArray<GfVec3d> >();
-        std::vector<double> vec;
-        _ConvertArrayToVector(rawVal, &vec);
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
-        builder.set(vec);
+        const VtArray<GfVec3d> array = val.UncheckedGet<VtArray<GfVec3d> >();
+        valueAttr = VtKatanaMapOrCopy(array);    
         // NOTE: needs typeAttr set?
-        valueAttr = builder.build();
     }
 
     // VtArray<GfVec2d>
     else if (val.IsHolding<VtArray<GfVec2d> >()) {
-        const VtArray<GfVec2d> rawVal = val.UncheckedGet<VtArray<GfVec2d> >();
-        std::vector<double> vec;
-        _ConvertArrayToVector(rawVal, &vec);
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
-        builder.set(vec);
+        const VtArray<GfVec2d> array = val.UncheckedGet<VtArray<GfVec2d> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         // NOTE: needs typeAttr set?
-        valueAttr = builder.build();
     }
 
     // VtArray<SdfAssetPath>
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
         // This will replicate the previous behavior:
         // if (asShaderParam) return valueAttr; asShaderParam = false;
-        const VtArray<SdfAssetPath> &rawVal = val.UncheckedGet<VtArray<SdfAssetPath> >();
-        FnKat::StringBuilder builder;
-        TF_FOR_ALL(strItr, rawVal) {
-            builder.push_back(_ResolveAssetPath(*strItr));
-        }
+        const VtArray<SdfAssetPath> &array = val.UncheckedGet<VtArray<SdfAssetPath> >();
+        valueAttr = VtKatanaMapOrCopy(array);
         typeAttr = FnKat::StringAttribute(
-            TfStringPrintf("string [%zu]", rawVal.size()));
-        valueAttr = builder.build();
+            TfStringPrintf("string [%zu]", array.size()));
     }
      
     // If being used as a shader param, the type will be provided elsewhere,
@@ -753,13 +574,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec2(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const GfVec2f rawVal = val.Get<GfVec2f>();
-            FnKat::FloatBuilder builder(/* tupleSize = */ 2);
-            std::vector<float> vec;
-            vec.resize(2);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal);
         }
         return;
     }
@@ -767,13 +582,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec2(roleName, "double",
                                      inputTypeAttr, elementSizeAttr)){
             const GfVec2d rawVal = val.Get<GfVec2d>();
-            FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
-            std::vector<double> vec;
-            vec.resize(2);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal); 
         }
         return;
     }
@@ -781,14 +590,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec3(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const GfVec3f rawVal = val.Get<GfVec3f>();
-            FnKat::FloatBuilder builder(/* tupleSize = */ 3);
-            std::vector<float> vec;
-            vec.resize(3);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            vec[2] = rawVal[2];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal); 
         }
         return;
     }
@@ -796,28 +598,14 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec4(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const GfVec4f rawVal = val.Get<GfVec4f>();
-            FnKat::FloatBuilder builder(/* tupleSize = */ 4);
-            std::vector<float> vec;
-            vec.resize(4);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            vec[2] = rawVal[2];
-            vec[3] = rawVal[3];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal); 
         }
         return;
     }
     if (val.IsHolding<GfVec2f>()) {
         if (_KTypeAndSizeFromUsdVec2(roleName, inputTypeAttr, elementSizeAttr)){
             const GfVec2f rawVal = val.Get<GfVec2f>();
-            FnKat::FloatBuilder builder(/* tupleSize = */ 2);
-            std::vector<float> vec;
-            vec.resize(2);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal); 
         }
         return;
     }
@@ -825,14 +613,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec3(roleName, "double",
                                      inputTypeAttr, elementSizeAttr)){
             const GfVec3d rawVal = val.Get<GfVec3d>();
-            FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
-            std::vector<double> vec;
-            vec.resize(3);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            vec[2] = rawVal[2];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal); 
         }
         return;
     }
@@ -840,15 +621,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec4(roleName, "double",
                                      inputTypeAttr, elementSizeAttr)){
             const GfVec4d rawVal = val.Get<GfVec4d>();
-            FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
-            std::vector<double> vec;
-            vec.resize(4);
-            vec[0] = rawVal[0];
-            vec[1] = rawVal[1];
-            vec[2] = rawVal[2];
-            vec[3] = rawVal[3];
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaCopy(rawVal); 
         }
         return;
     }
@@ -877,20 +650,14 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec3(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfHalf> rawVal = val.Get<VtArray<GfHalf> >();
-            std::vector<float> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::FloatBuilder builder(/* tupleSize = */ 1);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
 
     if (val.IsHolding<VtFloatArray>()) {
         const VtFloatArray rawVal = val.Get<VtFloatArray>();
-        FnKat::FloatBuilder builder(/* tupleSize = */ 1);
-        builder.set( std::vector<float>(rawVal.begin(), rawVal.end()) );
-        *valueAttr = builder.build();
+        *valueAttr = VtKatanaMapOrCopy(rawVal);
         *inputTypeAttr = FnKat::StringAttribute("float");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
@@ -899,9 +666,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
     }
     if (val.IsHolding<VtDoubleArray>()) {
         const VtDoubleArray rawVal = val.Get<VtDoubleArray>();
-        FnKat::DoubleBuilder builder(/* tupleSize = */ 1);
-        builder.set( std::vector<double>(rawVal.begin(), rawVal.end()) );
-        *valueAttr = builder.build();
+        *valueAttr = VtKatanaMapOrCopy(rawVal);
         *inputTypeAttr = FnKat::StringAttribute("double");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
@@ -935,11 +700,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec2(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec2f> rawVal = val.Get<VtArray<GfVec2f> >();
-            std::vector<float> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::FloatBuilder builder(/* tupleSize = */ 2);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
@@ -947,11 +708,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec2(roleName, "double",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec2d> rawVal = val.Get<VtArray<GfVec2d> >();
-            std::vector<double> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
@@ -959,11 +716,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec3(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec3h> rawVal = val.Get<VtArray<GfVec3h> >();
-            std::vector<float> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::FloatBuilder builder(/* tupleSize = */ 3);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
@@ -971,11 +724,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec3(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec3f> rawVal = val.Get<VtArray<GfVec3f> >();
-            std::vector<float> vec;
-            PxrUsdKatanaUtils::ConvertArrayToVector(rawVal, &vec);
-            FnKat::FloatBuilder builder(/* tupleSize = */ 3);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
@@ -983,11 +732,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec3(roleName, "double",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec3d> rawVal = val.Get<VtArray<GfVec3d> >();
-            std::vector<double> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
@@ -995,11 +740,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec4(roleName, "float",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec4f> rawVal = val.Get<VtArray<GfVec4f> >();
-            std::vector<float> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::FloatBuilder builder(/* tupleSize = */ 4);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
@@ -1007,20 +748,13 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         if (_KTypeAndSizeFromUsdVec4(roleName, "double",
                                      inputTypeAttr, elementSizeAttr)){
             const VtArray<GfVec4d> rawVal = val.Get<VtArray<GfVec4d> >();
-            std::vector<double> vec;
-            _ConvertArrayToVector(rawVal, &vec);
-            FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
-            builder.set(vec);
-            *valueAttr = builder.build();
+            *valueAttr = VtKatanaMapOrCopy(rawVal);
         }
         return;
     }
     if (val.IsHolding<VtArray<int> >()) {
         const VtArray<int> rawVal = val.Get<VtArray<int> >();
-        std::vector<int> vec(rawVal.begin(), rawVal.end());
-        FnKat::IntBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
-        *valueAttr = builder.build();
+        *valueAttr = VtKatanaMapOrCopy(rawVal);
         *inputTypeAttr = FnKat::StringAttribute("int");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
@@ -1031,10 +765,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         // Lossy translation of array<unsigned> to array<int>
         // No warning is printed as they obscure more important warnings
         const VtArray<unsigned> rawVal = val.Get<VtArray<unsigned> >();
-        std::vector<int> vec(rawVal.begin(), rawVal.end());
-        FnKat::IntBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
-        *valueAttr = builder.build();
+        *valueAttr = VtKatanaMapOrCopy(rawVal);
         *inputTypeAttr = FnKat::StringAttribute("unsigned");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
@@ -1045,10 +776,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         // Lossy translation of array<long> to array<int>
         // No warning is printed as they obscure more important warnings
         const VtArray<long> rawVal = val.Get<VtArray<long> >();
-        std::vector<int> vec(rawVal.begin(), rawVal.end());
-        FnKat::IntBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
-        *valueAttr = builder.build();
+        *valueAttr = VtKatanaMapOrCopy(rawVal);
         *inputTypeAttr = FnKat::StringAttribute("long");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
@@ -1057,10 +785,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
     }
     if (val.IsHolding<VtArray<std::string> >()) {
         const VtArray<std::string> rawVal = val.Get<VtArray<std::string> >();
-        std::vector<std::string> vec(rawVal.begin(), rawVal.end());
-        FnKat::StringBuilder builder(/* tupleSize = */ 1);
-        builder.set(vec);
-        *valueAttr = builder.build();
+        *valueAttr = VtKatanaMapOrCopy(rawVal);
         *inputTypeAttr = FnKat::StringAttribute("string");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
@@ -1532,7 +1257,7 @@ PxrUsdKatanaUtils::PrimIsSubcomponent(const UsdPrim &prim)
     // unfortunately there's no good IsXXX() method to test
     // for subcomponents -- they aren't Models or Groups --
     // but they do have Payloads.
-    if (!(prim.HasPayload() && prim.GetParent()))
+    if (!(prim.HasAuthoredPayloads() && prim.GetParent()))
         return false;
 
     // XXX(spiff) with bug/102670, this test will be trivial: prim.IsAssembly()

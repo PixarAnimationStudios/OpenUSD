@@ -204,6 +204,39 @@ Prim Stack:
     root.sdf             /InternalReference/InternalReference_Child
 
 ------------------------------------------------------------------------
+Results for composing </PrimWithReferencesInVariants>
+
+Prim Stack:
+    root.sdf             /PrimWithReferencesInVariants
+    root.sdf             /PrimWithReferencesInVariants{v=ref}
+
+Variant Selections:
+    {v = ref}
+
+Child names:
+     ['Ref', 'A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferencesInVariants/Ref>
+
+Prim Stack:
+    root.sdf             /PrimWithReferencesInVariants{v=ref}Ref
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferencesInVariants/A>
+
+Prim Stack:
+    root.sdf             /PrimWithReferencesInVariants{v=ref}A
+    root.sdf             /PrimWithReferencesInVariants{v=ref}Ref
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferencesInVariants/B>
+
+Prim Stack:
+    root.sdf             /PrimWithReferencesInVariants/B
+    root.sdf             /PrimWithReferencesInVariants{v=ref}Ref
+
+------------------------------------------------------------------------
 Results for composing </InternalReference2>
 
 Prim Stack:

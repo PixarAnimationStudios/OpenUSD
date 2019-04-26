@@ -24,37 +24,53 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hashmap.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-
 #include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+TF_DEFINE_ENV_SETTING(
+    USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME,
+    false,
+    "Disables the ability to configure the materials scope name with a "
+    "plugInfo.json value and forces the use of the built-in default instead. "
+    "This is primarily used for unit testing purposes as a way to ignore any "
+    "site-based configuration.");
 
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (UsdUtilsPipeline)
+        (MaterialsScopeName)
+        (PrimaryCameraName)
         (RegisteredVariantSets)
             (selectionExportPolicy)
                 // lowerCamelCase of the enums.
                 (never)
                 (ifAuthored)
                 (always)
+
+    ((DefaultMaterialsScopeName, "Looks"))
+    ((DefaultPrimaryCameraName, "main_cam"))
 );
 
 
@@ -217,10 +233,6 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 
         if (prim.IsInstance()) {
             prim.SetInstanceable(false);
-            // When we uninstance the prim, there may be unloaded payloads 
-            // beneath it in namespace due to bug 155392. Load them here as a 
-            // temporary workaround.
-            stage->Load(prefixPath);
         }
     }
 
@@ -241,5 +253,118 @@ TfToken UsdUtilsGetPrefName()
     return TfToken("pref");
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+using _TokenToTokenMap = TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
 
+/// Looks through the metadata dictionaries of all registered plugins for
+/// string values that match the key path:
+///     [UsdUtilsPipeline][<identifierKey>]
+///
+/// A string value will be looked up for each of the tokens in identifierKeys.
+///
+/// The first valid string value identifier found for each identifierKey, if
+/// any, is inserted into the returned map.
+static
+_TokenToTokenMap
+_GetPipelineIdentifierTokens(const TfTokenVector& identifierKeys)
+{
+    const TfToken metadataDictKey = _tokens->UsdUtilsPipeline;
+
+    _TokenToTokenMap identifierMap;
+
+    const PlugPluginPtrVector plugs =
+        PlugRegistry::GetInstance().GetAllPlugins();
+    for (const PlugPluginPtr plug : plugs) {
+        JsObject metadata = plug->GetMetadata();
+        JsValue metadataDictValue;
+        if (!TfMapLookup(metadata, metadataDictKey, &metadataDictValue)) {
+            continue;
+        }
+
+        if (!metadataDictValue.Is<JsObject>()) {
+            TF_CODING_ERROR(
+                "%s[%s] was not a dictionary.",
+                plug->GetName().c_str(),
+                metadataDictKey.GetText());
+            continue;
+        }
+
+        JsObject metadataDict = metadataDictValue.Get<JsObject>();
+
+        for (const TfToken& identifierKey : identifierKeys) {
+            JsValue stringJsValue;
+            if (!TfMapLookup(metadataDict, identifierKey, &stringJsValue)) {
+                continue;
+            }
+
+            if (!stringJsValue.IsString()) {
+                TF_CODING_ERROR(
+                    "%s[%s][%s] was not a string.",
+                    plug->GetName().c_str(),
+                    metadataDictKey.GetText(),
+                    identifierKey.GetText());
+                continue;
+            }
+
+            const std::string valueString = stringJsValue.GetString();
+            if (!SdfPath::IsValidIdentifier(valueString)) {
+                TF_CODING_ERROR(
+                    "%s[%s][%s] was not a valid identifier: \"%s\".",
+                    plug->GetName().c_str(),
+                    metadataDictKey.GetText(),
+                    identifierKey.GetText(),
+                    valueString.c_str());
+                continue;
+            }
+
+            identifierMap.insert({identifierKey, TfToken(valueString)});
+        }
+
+        if (identifierMap.size() == identifierKeys.size()) {
+            // We got an identifier for all of the given keys, so stop looking
+            // through plugin metadata.
+            break;
+        }
+    }
+
+    return identifierMap;
+}
+
+TF_MAKE_STATIC_DATA(_TokenToTokenMap, _pipelineIdentifiersMap)
+{
+    const TfTokenVector identifierKeys({
+        _tokens->MaterialsScopeName,
+        _tokens->PrimaryCameraName
+    });
+
+    *_pipelineIdentifiersMap = _GetPipelineIdentifierTokens(identifierKeys);
+}
+
+TfToken
+UsdUtilsGetMaterialsScopeName(const bool forceDefault)
+{
+    if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME) ||
+            forceDefault) {
+        return _tokens->DefaultMaterialsScopeName;
+    }
+
+    return TfMapLookupByValue(
+        *_pipelineIdentifiersMap,
+        _tokens->MaterialsScopeName,
+        _tokens->DefaultMaterialsScopeName);
+}
+
+TfToken
+UsdUtilsGetPrimaryCameraName(const bool forceDefault)
+{
+    if (forceDefault) {
+        return _tokens->DefaultPrimaryCameraName;
+    }
+
+    return TfMapLookupByValue(
+        *_pipelineIdentifiersMap,
+        _tokens->PrimaryCameraName,
+        _tokens->DefaultPrimaryCameraName);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

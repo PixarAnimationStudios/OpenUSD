@@ -45,6 +45,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdEditTarget);
     TF_WRAP(UsdEditContext);
     TF_WRAP(UsdInherits);
+    TF_WRAP(UsdPayloads);
     TF_WRAP(UsdPrimFlags);
     TF_WRAP(UsdReferences);
     TF_WRAP(UsdSchemaRegistry);

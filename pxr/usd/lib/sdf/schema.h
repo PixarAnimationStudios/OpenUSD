@@ -40,7 +40,6 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/function.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -135,12 +134,12 @@ public:
         FieldDefinition& ReadOnly();
         FieldDefinition& AddInfo(const TfToken& tok, const JsValue& val);
 
-        typedef boost::function<
-            SdfAllowed(const SdfSchemaBase&, const VtValue&)> Validator;
-        FieldDefinition& ValueValidator(const Validator& v);
-        FieldDefinition& ListValueValidator(const Validator& v);
-        FieldDefinition& MapKeyValidator(const Validator& v);
-        FieldDefinition& MapValueValidator(const Validator& v);
+        using Validator =
+            SdfAllowed (*) (const SdfSchemaBase&, const VtValue&);
+        FieldDefinition& ValueValidator(Validator v);
+        FieldDefinition& ListValueValidator(Validator v);
+        FieldDefinition& MapKeyValidator(Validator v);
+        FieldDefinition& MapValueValidator(Validator v);
 
         /// @}
 
@@ -305,6 +304,7 @@ public:
     /// for this schema. It does not imply that the value is valid for
     /// a particular field -- the field's validation function must be
     /// used for that.
+    SDF_API
     SdfAllowed IsValidValue(const VtValue& value) const;
 
     /// Returns all registered type names.
@@ -371,61 +371,44 @@ protected:
         class Type
         {
         public:
+            ~Type();
+
             // Specify a type with the given name, default value, and default
             // array value of VtArray<T>.
             template <class T>
             Type(const std::string& name, const T& defaultValue)
-                : _name(name)
-                , _defaultValue(defaultValue)
-                , _defaultArrayValue(VtArray<T>())
+                : Type(name, VtValue(defaultValue), VtValue(VtArray<T>()))
             { }
 
             // Specify a type with the given name and underlying C++ type.
             // No default value or array value will be registered.
-            Type(const std::string& name, const TfType& type)
-                : _name(name)
-                , _type(type)
-            { }
+            Type(const std::string& name, const TfType& type);
 
             // Set C++ type name string for this type. Defaults to type name
             // from TfType.
-            Type& CPPTypeName(const std::string& cppTypeName)
-            {
-                _cppTypeName = cppTypeName;
-                if (!_defaultArrayValue.IsEmpty()) {
-                    _arrayCppTypeName = "VtArray<" + cppTypeName + ">";
-                }
-                return *this;
-            }
+            Type& CPPTypeName(const std::string& cppTypeName);
 
             // Set shape for this type. Defaults to shapeless.
-            Type& Dimensions(const SdfTupleDimensions& dims)
-            { _dimensions = dims; return *this; }
+            Type& Dimensions(const SdfTupleDimensions& dims);
 
             // Set default unit for this type. Defaults to dimensionless unit.
-            Type& DefaultUnit(TfEnum unit) { _unit = unit; return *this; }
+            Type& DefaultUnit(TfEnum unit);
 
             // Set role for this type. Defaults to no role.
-            Type& Role(const TfToken& role) { _role = role; return *this; }
+            Type& Role(const TfToken& role);
 
             // Indicate that arrays of this type are not supported.
-            Type& NoArrays() 
-            { 
-                _defaultArrayValue = VtValue(); 
-                _arrayCppTypeName = std::string();
-                return *this; 
-            }
+            Type& NoArrays();
 
         private:
-            friend class _ValueTypeRegistrar;
+            Type(const std::string& name, 
+                 const VtValue& defaultValue, 
+                 const VtValue& defaultArrayValue);
 
-            std::string _name;
-            TfType _type;
-            VtValue _defaultValue, _defaultArrayValue;
-            std::string _cppTypeName, _arrayCppTypeName;
-            TfEnum _unit;
-            TfToken _role;
-            SdfTupleDimensions _dimensions;
+            class _Impl;
+            std::unique_ptr<_Impl> _impl;
+
+            friend class _ValueTypeRegistrar;
         };
 
         /// Register a value type and its corresponding array value type.
@@ -436,6 +419,12 @@ protected:
     };
 
     SdfSchemaBase();
+    
+    /// Construct an SdfSchemaBase but does not populate it with standard
+    /// fields and types.
+    class EmptyTag {};
+    SdfSchemaBase(EmptyTag);
+
     virtual ~SdfSchemaBase();
 
     /// Creates and registers a new field named \p fieldKey with the fallback
@@ -452,12 +441,28 @@ protected:
         return _CreateField(fieldKey, VtValue(fallback), plugin);
     }
 
-    /// Returns the SpecDefinition for the given spec type. Subclasses may
-    /// then extend this definition by specifying additional fields.
+    /// Registers the given spec \p type with this schema and return a 
+    /// _SpecDefiner for specifying additional fields.
+    _SpecDefiner _Define(SdfSpecType type) {
+        return _SpecDefiner(this, &_specDefinitions[type]);
+    }
+
+    /// Returns a _SpecDefiner for the previously-defined spec \p type
+    /// for specifying additional fields.
     _SpecDefiner _ExtendSpecDefinition(SdfSpecType specType);
 
     /// Registers the standard fields.
     void _RegisterStandardFields();
+
+    /// Registers plugin fields and sets up handling so that fields will
+    /// be added when additional plugins are registered.
+    void _RegisterPluginFields();
+
+    /// Registers standard attribute value types.
+    void _RegisterStandardTypes();
+
+    /// Registers legacy attribute value types.
+    void _RegisterLegacyTypes();
 
     /// Returns a type registrar.
     _ValueTypeRegistrar _GetTypeRegistrar() const;
@@ -480,10 +485,7 @@ protected:
 private:
     friend class _SpecDefiner;
 
-    // Return a _SpecDefiner for the internal definition associated with \p type.
-    _SpecDefiner _Define(SdfSpecType type) {
-        return _SpecDefiner(this, &_specDefinitions[type]);
-    }
+    void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
 
     // Return a _SpecDefiner for an existing spec definition, \p local.
     _SpecDefiner _Define(SpecDefinition *local) {
@@ -539,13 +541,6 @@ private:
     friend class TfSingleton<SdfSchema>;
     SdfSchema();
     virtual ~SdfSchema();
-
-    static void _RegisterTypes(_ValueTypeRegistrar registry);
-
-    void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
-
-    const Sdf_ValueTypeNamesType* _NewValueTypeNames() const;
-    friend struct Sdf_ValueTypeNamesType::_Init;
 };
 
 SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
@@ -579,8 +574,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((InheritPaths, "inheritPaths"))                         \
     ((Instanceable, "instanceable"))                         \
     ((Kind, "kind"))                                         \
-    ((MapperArgValue, "value"))                              \
-    ((Marker, "marker"))                                     \
     ((PrimOrder, "primOrder"))                               \
     ((NoLoadHint, "noLoadHint"))                             \
     ((Owner, "owner"))                                       \
@@ -591,7 +584,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((PropertyOrder, "propertyOrder"))                       \
     ((References, "references"))                             \
     ((Relocates, "relocates"))                               \
-    ((Script, "script"))                                     \
     ((SessionOwner, "sessionOwner"))                         \
     ((Specializes, "specializes"))                           \
     ((Specifier, "specifier"))                               \

@@ -45,7 +45,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 typedef ArchAbiBase2* (WINAPI *NewDerived)();
 
 int
-main(int argc, char** argv)
+main(int /*argc*/, char** /*argv*/)
 {
     // Compute the plugin directory.
     std::string path = ArchGetExecutablePath();

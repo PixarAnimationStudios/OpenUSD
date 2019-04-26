@@ -38,6 +38,12 @@ SdfData::~SdfData()
 }
 
 bool
+SdfData::StreamsData() const
+{
+    return false;
+}
+
+bool
 SdfData::HasSpec(const SdfAbstractDataSpecId& id) const
 {
     return (_data.find(id.GetFullSpecPath()) != _data.end());
@@ -135,6 +141,22 @@ SdfData::_GetFieldValue(const SdfAbstractDataSpecId& id,
     _HashTable::const_iterator i = _data.find(id.GetFullSpecPath());
     if (i != _data.end()) {
         const _SpecData & spec = i->second;
+        for (size_t j=0, jEnd = spec.fields.size(); j != jEnd; ++j) {
+            if (spec.fields[j].first == field) {
+                return &spec.fields[j].second;
+            }
+        }
+    }
+    return NULL;
+}
+
+VtValue*
+SdfData::_GetMutableFieldValue(const SdfAbstractDataSpecId& id,
+                               const TfToken& field)
+{
+    _HashTable::iterator i = _data.find(id.GetFullSpecPath());
+    if (i != _data.end()) {
+        _SpecData &spec = i->second;
         for (size_t j=0, jEnd = spec.fields.size(); j != jEnd; ++j) {
             if (spec.fields[j].first == field) {
                 return &spec.fields[j].second;
@@ -395,25 +417,54 @@ SdfData::SetTimeSample(const SdfAbstractDataSpecId& id, double time,
         return;
     }
 
-    SdfTimeSampleMap samples =
-        GetAs<SdfTimeSampleMap>(id, SdfDataTokens->TimeSamples);
+    SdfTimeSampleMap newSamples;
 
-    samples[time] = value;
+    // Attempt to get a pointer to an existing timeSamples field.
+    VtValue *fieldValue =
+        _GetMutableFieldValue(id, SdfDataTokens->TimeSamples);
 
-    Set(id, SdfDataTokens->TimeSamples, VtValue(samples));
+    // If we have one, swap it out so we can modify it.
+    if (fieldValue && fieldValue->IsHolding<SdfTimeSampleMap>()) {
+        fieldValue->UncheckedSwap(newSamples);
+    }
+    
+    // Insert or overwrite into newSamples.
+    newSamples[time] = value;
+
+    // Set back into the field.
+    if (fieldValue) {
+        fieldValue->Swap(newSamples);
+    } else {
+        Set(id, SdfDataTokens->TimeSamples, VtValue::Take(newSamples));
+    }
 }
 
 void
 SdfData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time)
 {
-    SdfTimeSampleMap samples =
-        GetAs<SdfTimeSampleMap>(id, SdfDataTokens->TimeSamples);
+    SdfTimeSampleMap newSamples;
 
-    samples.erase(time);
-    if (samples.empty())
+    // Attempt to get a pointer to an existing timeSamples field.
+    VtValue *fieldValue =
+        _GetMutableFieldValue(id, SdfDataTokens->TimeSamples);
+
+    // If we have one, swap it out so we can modify it.  If we do not have one,
+    // there's nothing to erase so we're done.
+    if (fieldValue && fieldValue->IsHolding<SdfTimeSampleMap>()) {
+        fieldValue->UncheckedSwap(newSamples);
+    } else {
+        return;
+    }
+    
+    // Erase from newSamples.
+    newSamples.erase(time);
+
+    // Check to see if the result is empty.  In that case we remove the field.
+    if (newSamples.empty()) {
         Erase(id, SdfDataTokens->TimeSamples);
-    else
-        Set(id, SdfDataTokens->TimeSamples, VtValue(samples));
+    } else {
+        fieldValue->UncheckedSwap(newSamples);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

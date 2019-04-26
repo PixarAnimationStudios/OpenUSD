@@ -126,10 +126,6 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
     const TfToken closed;
-    /// \brief "collection"
-    /// 
-    /// This is the namespace prefix used by  the deprecated UsdGeomCollectionAPI for authoring collections. Use UsdTokens->collection instead, which is used by the new collection schema UsdCollectionAPI.
-    const TfToken collection;
     /// \brief "constant"
     /// 
     /// Possible value for UsdGeomPrimvar::SetInterpolation. Default value for UsdGeomPrimvar::GetInterpolation. One value remains constant over the entire surface primitive.
@@ -214,10 +210,6 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomSubset::GetElementTypeAttr(), Default value for UsdGeomSubset::GetElementTypeAttr()
     const TfToken face;
-    /// \brief "faceSet"
-    /// 
-    /// <Deprecated> This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
-    const TfToken faceSet;
     /// \brief "faceVarying"
     /// 
     /// Possible value for UsdGeomPrimvar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
@@ -330,6 +322,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
     const TfToken loop;
+    /// \brief "metersPerUnit"
+    /// 
+    /// Stage-level metadata that encodes a scene's linear unit of measure as meters per encoded unit.
+    const TfToken metersPerUnit;
     /// \brief "model:applyDrawMode"
     /// 
     /// UsdGeomModelAPI
@@ -430,6 +426,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomCamera::GetProjectionAttr(), Default value for UsdGeomCamera::GetProjectionAttr()
     const TfToken perspective;
+    /// \brief "pinned"
+    /// 
+    /// Possible value for UsdGeomBasisCurves::GetWrapAttr()
+    const TfToken pinned;
     /// \brief "points"
     /// 
     /// UsdGeomPointBased

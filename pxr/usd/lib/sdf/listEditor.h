@@ -33,13 +33,6 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 
-// XXX: Including this here may not be great, as this header leaks out
-//      of Sdf and causes downstream code to pick up the trace
-//      versions of TRACE_FUNCTION and TRACE_SCOPE instead of the
-//      versions in Common/Trace. Functionally, they should be equivalent,
-//      but could there be unwanted overhead involved?
-// #include "pxr/base/trace/trace.h"
-
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -77,17 +70,12 @@ public:
 
     bool IsValid() const
     {
-        return (!IsExpired() && !IsNullEditor());
+        return !IsExpired();
     }
 
-    virtual bool IsExpired() const
+    bool IsExpired() const
     {
         return !_owner;
-    }
-
-    virtual bool IsNullEditor() const
-    {
-        return false;
     }
 
     bool HasKeys() const
@@ -150,8 +138,9 @@ public:
     /// the returned key is applied, allowing callbacks to perform key
     /// translation.  Note that this means list editors can't meaningfully
     /// hold the empty key.
-    virtual void ApplyEdits(value_vector_type* vec, 
-                            const ApplyCallback& cb = ApplyCallback()) = 0;
+    virtual void ApplyEditsToList(
+        value_vector_type* vec, 
+        const ApplyCallback& cb = ApplyCallback()) = 0;
 
     /// Returns the number of elements in the specified list of operations.
     size_t GetSize(SdfListOpType op) const
@@ -236,9 +225,6 @@ protected:
                                const value_vector_type& oldValues,
                                const value_vector_type& newValues) const
     {
-        // See XXX comment for pxr/base/trace above.
-        // TRACE_FUNCTION();
-
         // Disallow duplicate items from being stored in the new list
         // editor values. This is O(n^2), but we expect the number of elements
         // stored to be small enough that this won't matter.

@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "Scene"
+{
+    def Scope "Looks"
+    {
+        def Material "MainMaterial_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/MainMaterial_1/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0,0.0,0.0)
+                token outputs:surface
+            }
+        }
+
+        def Material "MainMaterial_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/MainMaterial_2/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.0,1.0,0.0)
+                token outputs:surface
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Plane" {
+            rel material:binding = </Scene/Looks/MainMaterial_1>
+            uniform bool doubleSided = 0
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            color3f[] primvars:displayColor = [(0.0, 0.0, 1.0)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-2,-2,-2), (2, -2,-2), (2, 2, -2), (-2, 2, -2)]
+        }
+    }
+}

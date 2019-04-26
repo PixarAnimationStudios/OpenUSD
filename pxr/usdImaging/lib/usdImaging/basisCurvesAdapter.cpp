@@ -134,8 +134,9 @@ UsdImagingBasisCurvesAdapter::TrackVariability(UsdPrim const& prim,
 bool
 UsdImagingBasisCurvesAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
 {
-    return (primvarName == UsdImagingTokens->primvarsNormals ||
-            primvarName == UsdImagingTokens->primvarsWidths);
+    return (primvarName == HdTokens->normals ||
+            primvarName == HdTokens->widths) ||
+        UsdImagingGprimAdapter::_IsBuiltinPrimvar(primvarName);
 }
 
 void 
@@ -154,15 +155,6 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         VtValue& topology = valueCache->GetTopology(cachePath);
         _GetBasisCurvesTopology(prim, &topology, time);
-    }
-
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        VtValue& points = valueCache->GetPoints(cachePath);
-        _GetPoints(prim, &points, time);
-        _MergePrimvar(&primvars,
-                      UsdGeomTokens->points,
-                      HdInterpolationVertex,
-                      HdPrimvarRoleTokens->point);
     }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
@@ -283,19 +275,6 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
     *topo = VtValue(topology);
-}
-
-void
-UsdImagingBasisCurvesAdapter::_GetPoints(UsdPrim const& prim, 
-                                   VtValue* value, 
-                                   UsdTimeCode time) const
-{
-    HD_TRACE_FUNCTION();
-    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
-        TF_WARN("Points could not be read from prim: <%s>",
-                prim.GetPath().GetText());
-        *value = VtVec3fArray();
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

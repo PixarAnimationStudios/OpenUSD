@@ -62,6 +62,10 @@ class testUsdMayaProxyShape(unittest.TestCase):
         self.assertTrue(cmds.objExists(hdImagingShapePath))
         self.assertEqual(cmds.nodeType(hdImagingShapePath), 'pxrHdImagingShape')
 
+        self.assertNotEqual(
+                cmds.ls(hdImagingTransformPath, uuid=True),
+                cmds.ls(hdImagingShapePath, uuid=True))
+
         # The pxrHdImagingShape and its parent transform are set so that they
         # do not write to the Maya scene file and are not exported by
         # usdExport, so do a test export and make sure that's the case.
@@ -73,6 +77,13 @@ class testUsdMayaProxyShape(unittest.TestCase):
         self.assertFalse(prim)
         prim = usdStage.GetPrimAtPath('/HdImaging/HdImagingShape')
         self.assertFalse(prim)
+
+        # Make sure that we can reorder root nodes in the scene with the
+        # pxrHdImagingShape present.
+        cmds.polyCube(n="testNode1")
+        cmds.polyCube(n="testNode2")
+        cmds.reorder("testNode1", back=True)
+        cmds.reorder("testNode2", front=True)
 
 
 if __name__ == '__main__':

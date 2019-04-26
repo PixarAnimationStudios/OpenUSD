@@ -68,6 +68,7 @@
 #include <UT/UT_Map.h>
 
 #include <mutex>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -144,14 +145,14 @@ GusdGU_PackedUSD::Build(
     UsdTimeCode             frame, 
     const char*             lod,
     GusdPurposeSet          purposes,
-    const UsdPrim&          prim )
+    const UsdPrim&          prim,
+    const UT_Matrix4D*      xform )
 {   
     auto packedPrim = GU_PrimPacked::build( detail, k_typeName );
     auto impl = UTverify_cast<GusdGU_PackedUSD *>(packedPrim->implementation());
     impl->m_fileName = fileName;
     impl->m_primPath = primPath;
     impl->m_frame = frame;
-    impl->m_usdPrim = prim;
 
     if( prim && !prim.IsA<UsdGeomBoundable>() )
     {
@@ -205,7 +206,15 @@ GusdGU_PackedUSD::Build(
     // It seems that Houdini may reuse memory for packed implementations with
     // out calling the constructor to initialize data. 
     impl->resetCaches();
-    impl->updateTransform();
+
+    // If a UsdPrim was passed in, make sure it is used.
+    impl->m_usdPrim = prim;
+
+    if (xform) {
+        impl->setTransform(*xform);
+    } else {
+        impl->updateTransform();    
+    }
     return packedPrim;
 }
 
@@ -220,7 +229,8 @@ GusdGU_PackedUSD::Build(
     UsdTimeCode             frame, 
     const char*             lod,
     GusdPurposeSet          purposes,
-    const UsdPrim&          prim )
+    const UsdPrim&          prim,
+    const UT_Matrix4D*      xform )
 {   
     auto packedPrim = GU_PrimPacked::build( detail, k_typeName );
     auto impl = UTverify_cast<GusdGU_PackedUSD *>(packedPrim->implementation());
@@ -229,7 +239,6 @@ GusdGU_PackedUSD::Build(
     impl->m_srcPrimPath = srcPrimPath;
     impl->m_index = index;
     impl->m_frame = frame;
-    impl->m_usdPrim = prim;
     if( lod )
     {
 #if SYS_VERSION_FULL_INT < 0x10050000
@@ -243,8 +252,33 @@ GusdGU_PackedUSD::Build(
     // It seems that Houdini may reuse memory for packed implementations with
     // out calling the constructor to initialize data. 
     impl->resetCaches();
-    impl->updateTransform();
+
+    // If a UsdPrim was passed in, make sure it is used.
+    impl->m_usdPrim = prim;
+
+    if (xform) {
+        impl->setTransform(*xform);
+    } else {
+        impl->updateTransform();    
+    }
     return packedPrim;
+}
+
+
+/* static */
+GU_PrimPacked* 
+GusdGU_PackedUSD::Build( 
+    GU_Detail&              detail,
+    const UsdPrim&          prim,
+    UsdTimeCode             frame,
+    const char*             lod,
+    GusdPurposeSet          purposes,
+    const UT_Matrix4D*      xform )
+{
+    // TODO: Should we pull the identifier from the root layer as the file name?
+    return GusdGU_PackedUSD::Build(detail, /*fileName*/ UT_StringHolder(),
+                                   prim.GetPath(), frame, lod,
+                                   purposes, prim, xform);
 }
 
 
@@ -268,7 +302,9 @@ GusdGU_PackedUSD::GusdGU_PackedUSD( const GusdGU_PackedUSD &src )
     , m_frame( src.m_frame )
     , m_purposes( src.m_purposes )
     , m_usdPrim( src.m_usdPrim )
+#if SYS_VERSION_FULL_INT < 0x12000000
     , m_boundsCache( src.m_boundsCache )
+#endif
     , m_transformCacheValid( src.m_transformCacheValid )
     , m_transformCache( src.m_transformCache )
     , m_masterPathCacheValid( src.m_masterPathCacheValid )
@@ -308,7 +344,9 @@ GusdGU_PackedUSD::typeId()
 void
 GusdGU_PackedUSD::resetCaches()
 {
+#if SYS_VERSION_FULL_INT < 0x12000000
     m_boundsCache.makeInvalid();
+#endif
     m_usdPrim = UsdPrim();
     m_transformCacheValid = false;
     m_gtPrimCache = GT_PrimitiveHandle();
@@ -317,13 +355,17 @@ GusdGU_PackedUSD::resetCaches()
 void
 GusdGU_PackedUSD::updateTransform()
 {
-    const UT_Matrix4D& m = getUsdTransform();
+    setTransform(getUsdTransform());
+}
 
+void
+GusdGU_PackedUSD::setTransform( const UT_Matrix4D& mx )
+{
     UT_Vector3D p;
-    m.getTranslates(p);
-
+    mx.getTranslates(p);
+    
     GEO_PrimPacked *prim = getPrim();
-    prim->setLocalTransform(UT_Matrix3D(m));
+    prim->setLocalTransform(UT_Matrix3D(mx));
     prim->setPos3(0, p );
 }
 
@@ -447,7 +489,7 @@ GusdGU_PackedUSD::getIntrinsicPurposes( UT_StringArray& purposes ) const
 void 
 GusdGU_PackedUSD::setIntrinsicPurposes( const UT_StringArray& purposes )
 {
-    // always includ default purpose
+    // always include default purpose
     setPurposes(GusdPurposeSet(GusdPurposeSetFromArray(purposes)|
                                GUSD_PURPOSE_DEFAULT));
 }
@@ -457,7 +499,7 @@ GusdGU_PackedUSD::intrinsicType() const
 {
     // Return the USD prim type so it can be displayed in the spreadsheet.
     UsdPrim prim = getUsdPrim();
-    return UT_StringHolder( prim.GetTypeName().GetText() );
+    return GusdUSD_Utils::TokenToStringHolder( prim.GetTypeName() );
 }
 
 const UT_Matrix4D &
@@ -470,18 +512,16 @@ GusdGU_PackedUSD::getUsdTransform() const
 
     if( !prim ) {
         TF_WARN( "Invalid prim! %s", m_primPath.GetText() );
-        m_transformCache = UT_Matrix4D(1);
+        m_transformCache.identity();
         return m_transformCache;
     }
 
-    if( prim.IsA<UsdGeomXformable>() )
-    {
-        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-             prim, m_frame, m_transformCache );
+    if (GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+            prim, m_frame, m_transformCache)) {
         m_transformCacheValid = true;
+    } else {
+        m_transformCache.identity();
     }
-    else
-        m_transformCache = UT_Matrix4D(1);
 
     return m_transformCache;
 }
@@ -600,38 +640,48 @@ GusdGU_PackedUSD::save(UT_Options &options, const GA_SaveMap &map) const
 bool
 GusdGU_PackedUSD::getBounds(UT_BoundingBox &box) const
 {
+    // Box caching is handled in getBoundsCached()
+#if SYS_VERSION_FULL_INT < 0x12000000
     if( m_boundsCache.isValid() )
     {
         box = m_boundsCache;
         return true;
     }
+#endif
 
     UsdPrim prim = getUsdPrim();
 
     if( !prim ) {
-        cerr << "Invalid prim " << m_primPath << endl;
+        UT_ASSERT_MSG(0, "Invalid USD prim");
     }
 
     if(UsdGeomImageable visPrim = UsdGeomImageable(prim))
     {
         TfTokenVector purposes = GusdPurposeSetToTokens(m_purposes);
 
-        if( GusdBoundsCache::GetInstance().ComputeUntransformedBound( 
-                        prim, 
-                        UsdTimeCode( m_frame ), 
-                    purposes,
-                        m_boundsCache )) {
-                box = m_boundsCache;
-                return true;          
+        if ( GusdBoundsCache::GetInstance().ComputeUntransformedBound(
+                prim,
+                UsdTimeCode( m_frame ),
+                purposes,
+                box )) {
+#if SYS_VERSION_FULL_INT < 0x12000000
+            m_boundsCache = box;
+#endif
+            return true;
         }
     }
+    box.makeInvalid();
     return false;
 }
 
 bool
 GusdGU_PackedUSD::getRenderingBounds(UT_BoundingBox &box) const
 {
+#if SYS_VERSION_FULL_INT >= 0x12000000
+    return getBoundsCached(box);
+#else
     return getBounds(box);
+#endif
 }
 
 void

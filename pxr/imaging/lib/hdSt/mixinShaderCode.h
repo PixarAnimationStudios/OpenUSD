@@ -73,6 +73,10 @@ public:
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) override;
 
+    /// Returns the render pass tag of this shader.
+    HDST_API
+    virtual TfToken GetMaterialTag() const override;
+
 private:
     std::string _mixinSource;
     HdStShaderCodeSharedPtr _baseShader;

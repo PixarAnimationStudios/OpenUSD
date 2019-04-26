@@ -21,59 +21,123 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
 
 #include "usdMaya/adaptor.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/translatorGprim.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeJobContext.h"
 #include "usdMaya/writeUtil.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
-
-#include "pxr/usd/usd/inherits.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdUtils/sparseValueWriter.h"
 
+#include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <string>
+#include <typeinfo>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(
-        UsdGeomTokens->purpose, "USD_purpose");
+    UsdGeomTokens->purpose, "USD_purpose");
 
 TF_DEFINE_PRIVATE_TOKENS(
-        _tokens, 
+    _tokens,
 
-        (USD_inheritClassNames)
+    (USD_inheritClassNames)
 );
 
-static bool
-_IsAnimated(const UsdMayaJobExportArgs& args, const MDagPath& dagPath)
+
+static
+MDagPath
+_GetDagPath(const MFnDependencyNode& depNodeFn, const bool reportError = true)
 {
-    MObject obj = dagPath.node();
+    try {
+        const MFnDagNode& dagNodeFn =
+            dynamic_cast<const MFnDagNode&>(depNodeFn);
+
+        MStatus status;
+        const MDagPath dagPath = dagNodeFn.dagPath(&status);
+        if (status == MS::kSuccess) {
+            const bool dagPathIsValid = dagPath.isValid(&status);
+            if (status == MS::kSuccess && dagPathIsValid) {
+                return dagPath;
+            }
+        }
+
+        if (reportError) {
+            TF_CODING_ERROR(
+                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
+                "constructed using an MDagPath.",
+                dagNodeFn.fullPathName().asChar());
+        }
+    }
+    catch (const std::bad_cast& /* e */) {
+        // This is not a DAG node, so it can't have a DAG path.
+    }
+
+    return MDagPath();
+}
+
+static
+UsdMayaUtil::MDagPathMap<SdfPath>
+_GetDagPathMap(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath)
+{
+    const MDagPath dagPath = _GetDagPath(depNodeFn, /* reportError = */ false);
+    if (dagPath.isValid()) {
+        return UsdMayaUtil::MDagPathMap<SdfPath>({{dagPath, usdPath}});
+    }
+
+    return UsdMayaUtil::MDagPathMap<SdfPath>({});
+}
+
+static
+bool
+_IsAnimated(const UsdMayaJobExportArgs& args, const MObject& obj)
+{
     if (!args.timeSamples.empty()) {
         return UsdMayaUtil::isAnimated(obj);
     }
+
     return false;
 }
 
-UsdMayaPrimWriter::UsdMayaPrimWriter(const MDagPath& iDag,
-                               const SdfPath& uPath,
-                               UsdMayaWriteJobContext& jobCtx) :
+UsdMayaPrimWriter::UsdMayaPrimWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath& usdPath,
+        UsdMayaWriteJobContext& jobCtx) :
     _writeJobCtx(jobCtx),
-    _dagPath(iDag),
-    _usdPath(uPath),
-    _baseDagToUsdPaths({{iDag, uPath}}),
+    _dagPath(_GetDagPath(depNodeFn)),
+    _mayaObject(depNodeFn.object()),
+    _usdPath(usdPath),
+    _baseDagToUsdPaths(_GetDagPathMap(depNodeFn, usdPath)),
     _exportVisibility(jobCtx.GetArgs().exportVisibility),
-    _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), iDag))
+    _hasAnimCurves(_IsAnimated(jobCtx.GetArgs(), depNodeFn.object()))
 {
 }
 
+/* virtual */
 UsdMayaPrimWriter::~UsdMayaPrimWriter()
 {
 }
@@ -87,140 +151,159 @@ UsdMayaPrimWriter::_IsMergedTransform() const
 bool
 UsdMayaPrimWriter::_IsMergedShape() const
 {
+    // For DG nodes, popping an invalid path will silently fail leaving the
+    // path invalid, and IsMergedTransform() returns false for invalid paths.
     MDagPath parentPath = GetDagPath();
     parentPath.pop();
-    return parentPath.isValid() &&
-            _writeJobCtx.IsMergedTransform(parentPath);
+    return _writeJobCtx.IsMergedTransform(parentPath);
 }
 
 // In the future, we'd like to make this a plugin point.
-static bool 
+static
+bool
 _GetClassNamesToWrite(
-        MObject mObj,
+        const MObject& mObj,
         std::vector<std::string>* outClassNames)
 {
-    std::vector<std::string> ret;
-    if (UsdMayaWriteUtil::ReadMayaAttribute(
-            MFnDependencyNode(mObj), 
-            MString(_tokens->USD_inheritClassNames.GetText()),
-            outClassNames)) {
-        return true;
-    }
-
-    return false;
+    return UsdMayaWriteUtil::ReadMayaAttribute(
+        MFnDependencyNode(mObj),
+        MString(_tokens->USD_inheritClassNames.GetText()),
+        outClassNames);
 }
 
+/* virtual */
 void
-UsdMayaPrimWriter::Write(const UsdTimeCode &usdTime)
+UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
 {
-    // We imagine that most prim writers will be writing Imageable prims
-    // (all of the ones thus far do), but this might not be true in
-    // generality, so it's OK to skip writing if this isn't Imageable.
-    UsdGeomImageable primSchema(_usdPrim);
-    if (!primSchema) {
+    MStatus status;
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+    if (status != MS::kSuccess) {
         return;
     }
 
-    MStatus status;
-    MFnDependencyNode depFn(GetDagPath().node());
+    // Note that the prim may not actually conform to this schema, so we must
+    // check it for validity before using it below.
+    UsdGeomImageable imageable(_usdPrim);
 
-    // Visibility is unfortunately special when merging transforms and shapes in
-    // that visibility is "pruning" and cannot be overriden by descendants.
-    // Thus, we arbitrarily say that, when merging transforms and shapes, the
+    // Visibility is unfortunately special when merging transforms and shapes
+    // in that visibility is "pruning" and cannot be overridden by descendants.
+    // Thus, we arbitrarily say that when merging transforms and shapes, the
     // _shape_ writer always writes visibility.
-    if (_exportVisibility && !_IsMergedTransform()) {
-        bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
-        bool isAnimated = false;  // if either shape or xform is animated, then animated
+    if (imageable && _exportVisibility && !_IsMergedTransform()) {
+        bool isVisible = true;
+        bool isVisAnimated = false;
         UsdMayaUtil::getPlugValue(
-                depFn, "visibility", &isVisible, &isAnimated);
+            depNodeFn,
+            "visibility",
+            &isVisible,
+            &isVisAnimated);
 
         if (_IsMergedShape()) {
             MDagPath parentDagPath = GetDagPath();
             parentDagPath.pop();
-            MFnDependencyNode parentDepFn(parentDagPath.node());
+            const MFnDependencyNode parentDepNodeFn(parentDagPath.node());
 
-            bool parentVisible = true;
-            bool parentAnimated = false;
+            bool parentIsVisible = true;
+            bool parentIsVisAnimated = false;
             UsdMayaUtil::getPlugValue(
-                    parentDepFn, "visibility", &parentVisible, &parentAnimated);
-            isVisible = isVisible && parentVisible;
-            isAnimated = isAnimated || parentAnimated;
+                parentDepNodeFn,
+                "visibility",
+                &parentIsVisible,
+                &parentIsVisAnimated);
+
+            // If BOTH the shape AND the transform are visible, then the
+            // prim is visible.
+            isVisible = isVisible && parentIsVisible;
+
+            // If the visibility of EITHER the shape OR the transform is
+            // animated, then the prim's visibility is animated.
+            isVisAnimated = isVisAnimated || parentIsVisAnimated;
         }
 
-        TfToken const &visibilityTok = (isVisible ? UsdGeomTokens->inherited : 
-                                        UsdGeomTokens->invisible);
-        if (usdTime.IsDefault() != isAnimated) {
-            _SetAttribute(primSchema.CreateVisibilityAttr(VtValue(), true), 
-                          visibilityTok,
-                          usdTime);
+        // We write out the current visibility value to the default, regardless
+        // if it is animated or not.  If we're not writing to default, we only
+        // write visibility if it's animated.
+        if (usdTime.IsDefault() || isVisAnimated) {
+            const TfToken& visibilityTok =
+                (isVisible ?
+                    UsdGeomTokens->inherited :
+                    UsdGeomTokens->invisible);
+
+            _SetAttribute(
+                imageable.CreateVisibilityAttr(VtValue(), true),
+                visibilityTok,
+                usdTime);
         }
     }
 
-    UsdPrim usdPrim = primSchema.GetPrim();
     if (usdTime.IsDefault()) {
         // There is no Gprim abstraction in this module, so process the few
         // Gprim attrs here.
-        // Similar to the Imageable check above, we imagine that many, but not
-        // all, prim writers will write Gprims, so it's OK to skip writing
-        // if this isn't a Gprim.
-        if (UsdGeomGprim gprim = UsdGeomGprim(usdPrim)) {
-            UsdMayaPrimWriterContext* unused = nullptr;
-            UsdMayaTranslatorGprim::Write(
-                    GetDagPath().node(),
-                    gprim,
-                    unused);
+        // We imagine that many, but not all, prim writers will write Gprims,
+        // so it's OK to skip writing if this isn't a Gprim.
+        UsdGeomGprim gprim(_usdPrim);
+        if (gprim) {
+            UsdMayaTranslatorGprim::Write(GetMayaObject(), gprim, nullptr);
         }
 
         // Only write class inherits once at default time.
         std::vector<std::string> classNames;
-        if (_GetClassNamesToWrite(
-                GetDagPath().node(),
-                &classNames)) {
-            UsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
+        if (_GetClassNamesToWrite(GetMayaObject(), &classNames)) {
+            UsdMayaWriteUtil::WriteClassInherits(_usdPrim, classNames);
         }
 
-        // Write UsdGeomImageable typed schema attributes.
-        // Currently only purpose, which is uniform, so only export at default
-        // time.
-        UsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
-                GetDagPath().node(),
-                usdPrim,
+        if (imageable) {
+            // Write UsdGeomImageable typed schema attributes.
+            // Currently only purpose, which is uniform, so only export at
+            // default time.
+            UsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
+                GetMayaObject(),
+                _usdPrim,
                 {UsdGeomTokens->purpose},
                 usdTime,
                 &_valueWriter);
+        }
 
         // Write API schema attributes and strongly-typed metadata.
         // We currently only support these at default time.
-        UsdMayaWriteUtil::WriteMetadataToPrim(GetDagPath().node(), usdPrim);
+        UsdMayaWriteUtil::WriteMetadataToPrim(GetMayaObject(), _usdPrim);
         UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
-                GetDagPath().node(), usdPrim, _GetSparseValueWriter());
+            GetMayaObject(),
+            _usdPrim,
+            _GetSparseValueWriter());
     }
 
-    // Write out user-tagged attributes, which are supported at default time and
-    // at animated time-samples.
-    UsdMayaWriteUtil::WriteUserExportedAttributes(GetDagPath(), usdPrim, 
-            usdTime, _GetSparseValueWriter());
+    // Write out user-tagged attributes, which are supported at default time
+    // and at animated time-samples.
+    UsdMayaWriteUtil::WriteUserExportedAttributes(
+        GetMayaObject(),
+        _usdPrim,
+        usdTime,
+        _GetSparseValueWriter());
 }
 
+/* virtual */
 bool
 UsdMayaPrimWriter::ExportsGprims() const
 {
     return false;
 }
 
+/* virtual */
 bool
 UsdMayaPrimWriter::ShouldPruneChildren() const
 {
     return false;
 }
 
+/* virtual */
 void
 UsdMayaPrimWriter::PostExport()
-{ 
+{
 }
 
 void
-UsdMayaPrimWriter::SetExportVisibility(bool exportVis)
+UsdMayaPrimWriter::SetExportVisibility(const bool exportVis)
 {
     _exportVisibility = exportVis;
 }
@@ -231,6 +314,7 @@ UsdMayaPrimWriter::GetExportVisibility() const
     return _exportVisibility;
 }
 
+/* virtual */
 const SdfPathVector&
 UsdMayaPrimWriter::GetModelPaths() const
 {
@@ -238,6 +322,7 @@ UsdMayaPrimWriter::GetModelPaths() const
     return empty;
 }
 
+/* virtual */
 const UsdMayaUtil::MDagPathMap<SdfPath>&
 UsdMayaPrimWriter::GetDagToUsdPathMapping() const
 {
@@ -248,6 +333,12 @@ const MDagPath&
 UsdMayaPrimWriter::GetDagPath() const
 {
     return _dagPath;
+}
+
+const MObject&
+UsdMayaPrimWriter::GetMayaObject() const
+{
+    return _mayaObject;
 }
 
 const SdfPath&
@@ -280,11 +371,12 @@ UsdMayaPrimWriter::_GetSparseValueWriter()
     return &_valueWriter;
 }
 
+/* virtual */
 bool
 UsdMayaPrimWriter::_HasAnimCurves() const
 {
     return _hasAnimCurves;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

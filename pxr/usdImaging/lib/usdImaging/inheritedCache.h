@@ -33,6 +33,8 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/work/utils.h"
+
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
@@ -96,6 +98,12 @@ public:
         , _cacheVersion(1)
     {
     }
+
+    ~UsdImaging_InheritedCache()
+    {
+        WorkSwapDestroyAsync(_cache);
+    }
+
 
     /// Compute the inherited value for the given \p prim, including the value
     /// authored on the Prim itself, if present.
@@ -542,6 +550,52 @@ struct UsdImaging_VisStrategy {
     ComputeVisibility(UsdPrim const& prim, UsdTimeCode time)
     {
         return UsdGeomImageable(prim).ComputeVisibility(time);
+    }
+};
+
+// -------------------------------------------------------------------------- //
+// Purpose Cache
+// -------------------------------------------------------------------------- //
+
+struct UsdImaging_PurposeStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_PurposeStrategy> 
+    UsdImaging_PurposeCache;
+
+struct UsdImaging_PurposeStrategy {
+    typedef TfToken value_type; // purpose, inherited
+    typedef UsdAttributeQuery query_type;
+
+    static
+    value_type MakeDefault() { return UsdGeomTokens->default_; }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        UsdGeomImageable im = UsdGeomImageable(prim);
+        return im ? query_type(im.GetPurposeAttr()) : query_type();
+    }
+
+    static 
+    value_type
+    Inherit(UsdImaging_PurposeCache const* owner, 
+            UsdPrim prim,
+            query_type const* query)
+    { 
+
+        value_type v = *owner->_GetValue(prim.GetParent());
+
+        if (v != UsdGeomTokens->default_)
+            return v;
+
+        if (*query)
+            query->Get(&v);
+        return v;
+    }
+
+    static
+    value_type
+    ComputePurpose(UsdPrim const& prim)
+    {
+        return UsdGeomImageable(prim).ComputePurpose();
     }
 };
 

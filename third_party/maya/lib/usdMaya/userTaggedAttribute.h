@@ -29,16 +29,18 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <maya/MDagPath.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
 
 #include <map>
 #include <string>
 #include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,13 +49,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((USDAttrTypePrimvar, "primvar")) \
     ((USDAttrTypeUsdRi, "usdRi"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaUserTaggedAttributeTokens,
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaUserTaggedAttributeTokens,
     PXRUSDMAYA_API,
     PXRUSDMAYA_ATTR_TOKENS);
 
+
 /// \brief Represents a single attribute tagged for translation between Maya
 /// and USD, and describes how it will be exported from/imported into Maya.
-class UsdMayaUserTaggedAttribute {
+class UsdMayaUserTaggedAttribute
+{
 private:
     MPlug _plug;
     const std::string _name;
@@ -78,13 +83,13 @@ public:
             const std::string& name,
             const TfToken& type,
             const TfToken& interpolation,
-            const bool translateMayaDoubleToUsdSinglePrecision = 
+            const bool translateMayaDoubleToUsdSinglePrecision =
                 GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// \brief Gets all of the exported attributes for the given node.
     PXRUSDMAYA_API
     static std::vector<UsdMayaUserTaggedAttribute>
-            GetUserTaggedAttributesForNode(const MDagPath& dagPath);
+            GetUserTaggedAttributesForNode(const MObject& mayaNode);
 
     /// \brief Gets the plug for the Maya attribute to be exported.
     PXRUSDMAYA_API
@@ -128,7 +133,7 @@ public:
 };
 
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

@@ -260,11 +260,11 @@ size_t HdDataSizeOfTupleType(HdTupleType);
 /// It's similar to HdType but with more specific associated semantics.
 ///
 /// The list of supported formats is modelled after Vulkan and DXGI, though
-/// hydra only supports a subset.  Endian-ness is explicitly not captured;
+/// Hydra only supports a subset.  Endian-ness is explicitly not captured;
 /// color data is assumed to always be RGBA.
 ///
 /// For reference, see:
-///   https://vulkan.lunarg.com/doc/view/1.0.30.0/windows/vkspec.chunked/ch31s03.html
+///   https://www.khronos.org/registry/vulkan/specs/1.1/html/vkspec.html#VkFormat
 enum HdFormat
 {
     HdFormatInvalid=-1,
@@ -282,6 +282,12 @@ enum HdFormat
     HdFormatSNorm8Vec2,
     HdFormatSNorm8Vec3,
     HdFormatSNorm8Vec4,
+
+    // Float16 - a 2-byte IEEE half-precision float.
+    HdFormatFloat16,
+    HdFormatFloat16Vec2,
+    HdFormatFloat16Vec3,
+    HdFormatFloat16Vec4,
 
     // Float32 - a 4-byte IEEE float.
     HdFormatFloat32,

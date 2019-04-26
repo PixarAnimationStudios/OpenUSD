@@ -468,14 +468,6 @@ class TestSdfPath2(unittest.TestCase):
         
         self.assertEqual(Sdf.Path("/foo").targetPath, empty)
         
-        # IsBuiltinMarker
-        
-        self.assertTrue(all([Sdf.Path.IsBuiltInMarker(x) 
-                    for x in ['', 'current', 'authored', 'final', 'initial']]))
-        
-        self.assertTrue(not any([Sdf.Path.IsBuiltInMarker(x) 
-                          for x in ['XXX', 'YYY', 'ZZZ']]))
-        
         # test GetVariantSelection, 
         #      IsPrimVariantSelectionPath,
         #      ContainsPrimVariantSelection

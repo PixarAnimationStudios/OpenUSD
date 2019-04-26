@@ -11,6 +11,8 @@ USD support in Maya is provided through several libraries and plugins:
   This plugin supports the built-in Maya nodes.
 - \subpage usd_maya_plugin_pxrUsd_page_front
   This is the main plugin that you load for USD functionality in Maya.
+- \subpage usd_maya_plugin_pxrUsdPreviewSurface_page_front
+  This is a Maya surface shader plugin node that mimics the UsdPreviewSurface shader in USD.
 
 */
 

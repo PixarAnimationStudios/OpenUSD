@@ -91,6 +91,10 @@ shader TestNodeOSL
         string page = "inputs2",
         string help = "Invalid because a primvar naming property must have a string type"
     ]],
+    string inputStrArray[4] = { "test", "string", "array", "values" } [[
+        string widget = "null",
+        string page = "inputs2"
+    ]],
     output float resultF = .0 [[
         string widget = "null",
         string page = "results"

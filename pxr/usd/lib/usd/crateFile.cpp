@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #include "pxr/pxr.h"
 #include "crateFile.h"
 #include "integerCoding.h"
@@ -74,6 +75,7 @@
 #include "pxr/usd/sdf/pathTable.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
@@ -276,6 +278,8 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
+//        layer offsets.
 // 0.7.0: Array sizes written as 64 bit ints.
 // 0.6.0: Compressed (scalar) floating point arrays that are either all ints or
 //        can be represented efficiently with a lookup table.
@@ -287,7 +291,7 @@ using std::vector;
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 7;
+constexpr uint8_t USDC_MINOR = 8;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -318,7 +322,8 @@ struct CrateFile::Version
     }
 
     std::string AsString() const {
-        return TfStringPrintf("%d.%d.%d", majver, minver, patchver);
+        return TfStringPrintf("%" PRId8 ".%" PRId8 ".%" PRId8,
+                              majver, minver, patchver);
     }
 
     bool IsValid() const { return AsInt() != 0; }
@@ -1108,7 +1113,17 @@ public:
         // because the two modifications to 'src' must be correctly sequenced.
         auto assetPath = Read<string>();
         auto primPath = Read<SdfPath>();
-        return SdfPayload(assetPath, primPath);
+
+        // Layer offsets were added to SdfPayload starting in 0.8.0. Files 
+        // before that cannot have them.
+        const bool canReadLayerOffset = 
+            (Version(crate->_boot) >= Version(0, 8, 0));
+        if (canReadLayerOffset) {
+            auto layerOffset = Read<SdfLayerOffset>();
+            return SdfPayload(assetPath, primPath, layerOffset);
+        } else {
+            return SdfPayload(assetPath, primPath);
+        }
     }
     template <class T>
     SdfListOp<T> Read(SdfListOp<T> *) {
@@ -1311,8 +1326,21 @@ public:
         Write(ref.GetCustomData());
     }
     void Write(SdfPayload const &ref) {
+        // Layer offsets in payloads are only supported in version 0.8 and 
+        // later.  If we have to write one, we may have to upgrade the version
+        if (!ref.GetLayerOffset().IsIdentity()) {
+            crate->_packCtx->RequestWriteVersionUpgrade(
+                Version(0, 8, 0),
+                "A payload with a non-identity layer offset "
+                "was detected, which requires crate version 0.8.0.");
+        }
         Write(ref.GetAssetPath());
         Write(ref.GetPrimPath());
+
+        // Always write layer offsets in files versioned 0.8.0 or later
+        if (crate->_packCtx->writeVersion >= Version(0, 8, 0)) {
+            Write(ref.GetLayerOffset());
+        } 
     }
     template <class T>
     void Write(SdfListOp<T> const &listOp) {
@@ -1330,6 +1358,14 @@ public:
         if (h.HasAppendedItems()) { Write(listOp.GetAppendedItems()); }
         if (h.HasDeletedItems()) { Write(listOp.GetDeletedItems()); }
         if (h.HasOrderedItems()) { Write(listOp.GetOrderedItems()); }
+    }
+    // Specialized override for payload list ops which require a version check.
+    void Write(SdfPayloadListOp const &listOp) {
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0, 8, 0),
+            "A SdfPayloadListOp value was detected which requires crate "
+            "version 0.8.0.");
+        Write<SdfPayload>(listOp);
     }
     void Write(VtValue const &val) {
         ValueRep rep;
@@ -1400,7 +1436,7 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
     inline ValueRep Pack(_Writer writer, T const &val) {
         // See if we can inline the value -- we might be able to if there's some
         // encoding that can exactly represent it in 4 bytes.
-        uint32_t ival;
+        uint32_t ival = 0;
         if (_EncodeInline(val, &ival)) {
             auto ret = ValueRepFor<T>(ival);
             ret.SetIsInlined();
@@ -2182,7 +2218,8 @@ CrateFile::~CrateFile()
         printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
                "page map for %s\n"
-               "%zd pages, %zd used (%.1f%%), %zd in mem (%.1f%%)\n"
+               "%" PRId64 " pages, %" PRId64 " used (%.1f%%), %" PRId64
+               " in mem (%.1f%%)\n"
                "used %.1f%% of pages in mem\n"
                "legend: '+': in mem & used,     '-': in mem & unused\n"
                "        '!': not in mem & used, ' ': not in mem & unused\n"
@@ -2250,6 +2287,15 @@ CrateFile::StartPacking(string const &fileName)
         // Get rid of our local list of specs, if we have one -- the client is
         // required to repopulate it.
         vector<Spec>().swap(_specs);
+        // If we have no tokens yet, insert a special token that cannot be used
+        // as a prim property path element so that it gets token index 0.
+        // There's a bug (github issue 811) in the compressed path code where it
+        // uses negative indexes to indicate prim property path elements.  That
+        // fails for index 0.  So inserting a token here that cannot be used as
+        // a property path element sidesteps this.
+        if (_tokens.empty()) {
+            _AddToken(TfToken(";-)"));
+        }
     }
     return Packer(this);
 }
@@ -2357,14 +2403,14 @@ CrateFile::_WriteSection(
 }
 
 void
-CrateFile::_AddDeferredTimeSampledSpecs()
+CrateFile::_AddDeferredSpecs()
 {
     // A map from sample time to VtValues within TimeSamples instances in
-    // _deferredTimeSampledSpecs.
+    // _deferredSpecs.
     boost::container::flat_map<double, vector<VtValue *>> allValuesAtAllTimes;
 
     // Search for the TimeSamples, add to the allValuesAtAllTimes.
-    for (auto &spec: _deferredTimeSampledSpecs) {
+    for (auto &spec: _deferredSpecs) {
         for (auto &tsf: spec.timeSampleFields) {
             for (size_t i = 0; i != tsf.second.values.size(); ++i) {
                 if (!tsf.second.values[i].IsHolding<ValueRep>()) {
@@ -2385,9 +2431,14 @@ CrateFile::_AddDeferredTimeSampledSpecs()
     }
 
     // Now we've transformed all the VtValues in all the timeSampleFields to
-    // ValueReps.  We can call _AddField and add them to ordinaryFields, then
-    // add the spec.
-    for (auto &spec: _deferredTimeSampledSpecs) {
+    // ValueReps.  We can call _AddField and add them (and any of the other
+    // deferred fields) to ordinaryFields, then add the spec.
+    for (auto &spec: _deferredSpecs) {
+        // Add the deferred ordinary fields
+        for (auto &fv: spec.deferredOrdinaryFields) {
+            spec.ordinaryFields.push_back(_AddField(fv));
+        }
+        // Add the deferred time sample fields
         for (auto &p: spec.timeSampleFields) {
             spec.ordinaryFields.push_back(
                 _AddField(make_pair(p.first, VtValue::Take(p.second))));
@@ -2396,15 +2447,15 @@ CrateFile::_AddDeferredTimeSampledSpecs()
                             _AddFieldSet(spec.ordinaryFields));
     }
 
-    TfReset(_deferredTimeSampledSpecs);
+    TfReset(_deferredSpecs);
 }
 
 bool
 CrateFile::_Write()
 {
-    // First, add any _deferredTimeSampledSpecs, packing their values
+    // First, add any _deferredSpecs, including packing time sample field values
     // time-by-time to ensure that all the data for given times is collocated.
-    _AddDeferredTimeSampledSpecs();
+    _AddDeferredSpecs();
 
     // Now proceed with writing.
     _Writer w(this);
@@ -2453,36 +2504,51 @@ CrateFile::_Write()
 
 void
 CrateFile::_AddSpec(const SdfPath &path, SdfSpecType type,
-                   const std::vector<FieldValuePair> &fields) {
-    // If any of the fields here are TimeSamples, then defer adding this spec to
-    // the call to _Write().  In _Write(), we'll add all the sample values
-    // time-by-time to ensure that all the data for a given sample time is
-    // as collocated as possible in the file.
-
+                    const std::vector<FieldValuePair> &fields) 
+{
     vector<FieldIndex> ordinaryFields; // non time-sample valued fields.
     vector<pair<TfToken, TimeSamples>> timeSampleFields;
+    vector<FieldValuePair> versionUpgradePendingFields;
 
     ordinaryFields.reserve(fields.size());
     for (auto const &p: fields) {
         if (p.second.IsHolding<TimeSamples>() &&
             p.second.UncheckedGet<TimeSamples>().IsInMemory()) {
+            // If any of the fields here are TimeSamples, then defer adding 
+            // this spec to the call to _Write().  In _Write(), we'll add all 
+            // the sample values time-by-time to ensure that all the data for a 
+            // given sample time is as collocated as possible in the file.
             timeSampleFields.emplace_back(
                 p.first, p.second.UncheckedGet<TimeSamples>());
-        }
-        else {
+        } else if (_packCtx->writeVersion < Version(0, 8, 0) &&
+            p.second.IsHolding<SdfPayload>() && 
+            p.second.UncheckedGet<SdfPayload>().GetLayerOffset().IsIdentity()) {
+
+            // If the file we're writing has not yet been upgraded to a 0.8.0 or 
+            // later version and the field value is a single SdfPayload that 
+            // does not require a version update, then we defer this spec until 
+            // the call to _Write. This is to make sure that if we end up 
+            // needing to upgrade the file version for some other field or spec,
+            // that we still write all SdfPayloads in the file using the current
+            // format instead of having a mix of formats depending on the order 
+            // we wrote our payload values in.
+            versionUpgradePendingFields.push_back(p);
+        } else {
             ordinaryFields.push_back(_AddField(p));
         }
     }
 
-    // If we have no time sample fields, we can just add the spec now.
-    // Otherwise defer so we can write all sample values by time in _Write().
-    if (timeSampleFields.empty()) {
+    // If we have no time sample fields or version upgrade pending fields, we
+    // can just add the spec now. Otherwise defer this spec until _Write().
+    if (timeSampleFields.empty() && versionUpgradePendingFields.empty()) {
         _specs.emplace_back(_AddPath(path), type, _AddFieldSet(ordinaryFields));
     }
     else {
-        _deferredTimeSampledSpecs.emplace_back(
+        _deferredSpecs.emplace_back(
             _AddPath(path), type,
-            std::move(ordinaryFields), std::move(timeSampleFields));
+            std::move(ordinaryFields), 
+            std::move(versionUpgradePendingFields),
+            std::move(timeSampleFields));
     }        
 }
 

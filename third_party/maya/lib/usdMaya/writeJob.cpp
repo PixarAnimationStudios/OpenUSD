@@ -31,6 +31,7 @@
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/transformWriter.h"
 #include "usdMaya/translatorMaterial.h"
+#include "usdMaya/util.h"
 
 #include "usdMaya/chaser.h"
 #include "usdMaya/chaserRegistry.h"
@@ -62,6 +63,7 @@
 
 #include <maya/MAnimControl.h>
 #include <maya/MComputation.h>
+#include <maya/MDistance.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnRenderLayer.h>
 #include <maya/MGlobal.h>
@@ -69,9 +71,7 @@
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
-
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <maya/MUuid.h>
 
 #include <limits>
 #include <map>
@@ -98,12 +98,13 @@ static
 std::string
 _MakeTmpStageName(const std::string& dir)
 {
-    const std::string uuid =
-            boost::uuids::to_string(boost::uuids::random_generator()());
+    MUuid uuid;
+    uuid.generate();
+
     const std::string fileName =
             TfStringPrintf(
                 "tmp-%s.%s",
-                uuid.c_str(),
+                uuid.asString().asChar(),
                 UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     return TfStringCatPaths(dir, fileName);
 }
@@ -252,8 +253,7 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         _packageName = std::string();
     }
 
-    TF_STATUS("Creating stage file '%s'", _fileName.c_str());
-
+    TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
     if (mJobCtx.mArgs.renderLayerMode ==
             UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
@@ -378,30 +378,18 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(curDagPath);
+            const MFnDagNode dagNodeFn(curDagPath);
+            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(dagNodeFn);
 
             if (primWriter) {
                 mJobCtx.mMayaPrimWriterList.push_back(primWriter);
 
                 // Write out data (non-animated/default values).
                 if (const auto& usdPrim = primWriter->GetUsdPrim()) {
-                    if (mJobCtx.mArgs.stripNamespaces) {
-                        auto foundPair = mUsdPathToDagPathMap.find(usdPrim.GetPath());
-                        if (foundPair != mUsdPathToDagPathMap.end()){
-                            TF_RUNTIME_ERROR(
-                                    "Multiple dag nodes map to the same prim "
-                                    "path after stripping namespaces: %s - %s",
-                                    foundPair->second.fullPathName().asChar(),
-                                    primWriter->GetDagPath().fullPathName()
-                                        .asChar());
-                            return false;
-                        }
-                        // Note that mUsdPathToDagPathMap is _only_ used for
-                        // stripping namespaces, so we only need to populate it
-                        // when stripping namespaces. (This is different from
-                        // mDagPathToUsdPathMap!)
-                        mUsdPathToDagPathMap[usdPrim.GetPath()] =
-                                primWriter->GetDagPath();
+                    if (!_CheckNameClashes(
+                            usdPrim.GetPath(), primWriter->GetDagPath()))
+                    {
+                        return false;
                     }
 
                     primWriter->Write(UsdTimeCode::Default());
@@ -420,26 +408,10 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    UsdMayaExportParams exportParams;
-    exportParams.mergeTransformAndShape = mJobCtx.mArgs.mergeTransformAndShape;
-    exportParams.exportCollectionBasedBindings =
-            mJobCtx.mArgs.exportCollectionBasedBindings;
-    exportParams.stripNamespaces = mJobCtx.mArgs.stripNamespaces;
-    exportParams.overrideRootPath = mJobCtx.mArgs.usdModelRootOverridePath;
-    exportParams.bindableRoots = mJobCtx.mArgs.dagPaths;
-    exportParams.parentScope = mJobCtx.mArgs.parentScope;
-
     // Writing Materials/Shading
-    exportParams.materialCollectionsPath =
-            mJobCtx.mArgs.exportMaterialCollections ?
-            mJobCtx.mArgs.materialCollectionsPath :
-            SdfPath::EmptyPath();
-
     UsdMayaTranslatorMaterial::ExportShadingEngines(
-                mJobCtx.mStage,
-                mJobCtx.mArgs.shadingMode,
-                mDagPathToUsdPathMap,
-                exportParams);
+        mJobCtx,
+        mDagPathToUsdPathMap);
 
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
@@ -541,6 +513,21 @@ UsdMaya_WriteJob::_FinishWriting()
         upAxis = UsdGeomTokens->z;
     }
     UsdGeomSetStageUpAxis(mJobCtx.mStage, upAxis);
+
+    // XXX Currently all distance values are written directly to USD, and will
+    // be in centimeters (Maya's internal unit) despite what the users UIUnit
+    // preference is. Future work could include converting exported values to 
+    // the UIUnit setting and writing that unit to metadata. 
+    MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
+    if (mayaInternalUnit != MDistance::uiUnit()) {
+        TF_WARN("Distance unit conversion is not yet supported. "
+            "All distance values will be exported in Maya's internal "
+            "distance unit.");
+    }
+    UsdGeomSetStageMetersPerUnit(
+        mJobCtx.mStage, 
+        UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+
     if (usdRootPrim){
         // We have already decided above that 'usdRootPrim' is the important
         // prim for the export... usdVariantRootPrimPath
@@ -577,7 +564,7 @@ UsdMaya_WriteJob::_FinishWriting()
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
 
     // In the usdz case, the layer at _fileName was just a temp file, so
-    // clean it up now. Do this after mJobCtx.mStage is reset to ensure 
+    // clean it up now. Do this after mJobCtx.mStage is reset to ensure
     // there are no outstanding handles to the file, which will cause file
     // access issues on Windows.
     if (!_packageName.empty()) {
@@ -818,6 +805,37 @@ void UsdMaya_WriteJob::_PostCallback()
     }
 }
 
+bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath &path, const MDagPath &dagPath)
+{
+    if (!mJobCtx.mArgs.stripNamespaces) {
+        return true;
+    }
+    auto foundPair = mUsdPathToDagPathMap.find(path);
+    if (foundPair != mUsdPathToDagPathMap.end()){
+        if (mJobCtx.mArgs.mergeTransformAndShape) {
+            // Shape should not conflict with xform
+            MDagPath other = foundPair->second;
+            MDagPath self = dagPath;
+            other.extendToShape();
+            self.extendToShape();
+            if (other == self) {
+                return true;
+            }
+        }
+        TF_RUNTIME_ERROR(
+            "Multiple dag nodes map to the same prim "
+            "path after stripping namespaces: %s - %s",
+            foundPair->second.fullPathName().asChar(),
+            dagPath.fullPathName().asChar());
+        return false;
+    }
+    // Note that mUsdPathToDagPathMap is _only_ used for
+    // stripping namespaces, so we only need to populate it
+    // when stripping namespaces. (This is different from
+    // mDagPathToUsdPathMap!)
+    mUsdPathToDagPathMap[path] = dagPath;
+    return true;
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

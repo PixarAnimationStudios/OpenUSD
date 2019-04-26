@@ -47,8 +47,6 @@
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/atomic.h>
 
-#include <boost/scoped_ptr.hpp>
-
 #include <cstdarg>
 #include <list>
 #include <string>

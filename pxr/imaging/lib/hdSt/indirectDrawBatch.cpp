@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
@@ -41,7 +42,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -49,6 +50,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include <iostream>
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -75,8 +77,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 static const GLuint64 HD_CULL_RESULT_TIMEOUT_NS = 5e9; // XXX how long to wait?
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
-                      "Enable tiny prim culling");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_FRUSTUM_CULLING, true,
                       "Enable GPU frustum culling");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES, false,
@@ -88,9 +88,20 @@ HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     HdStDrawItemInstance * drawItemInstance)
     : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
+    , _bufferArraysHash(0)
     , _numVisibleItems(0)
+    , _numTotalVertices(0)
     , _numTotalElements(0)
-    , _lastTinyPrimCulling(false)
+    /* The following two values are set before draw by
+     * SetEnableTinyPrimCulling(). */
+    , _useTinyPrimCulling(false)
+    , _dirtyCullingProgram(false)
+    /* The following four values are initialized in _Init(). */
+    , _useDrawArrays(false)
+    , _useInstancing(false)
+    , _useGpuCulling(false)
+    , _useGpuInstanceCulling(false)
+
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
     , _cullResultSync(0)
@@ -130,13 +141,11 @@ HdSt_IndirectDrawBatch::_CullingProgram &
 HdSt_IndirectDrawBatch::_GetCullingProgram(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
-    if (!_cullingProgram.GetGLSLProgram() || 
-        _lastTinyPrimCulling != IsEnabledGPUTinyPrimCulling()) {
-    
+    if (!_cullingProgram.GetGLSLProgram() || _dirtyCullingProgram) {
         // create a culling shader key
         HdSt_CullingShaderKey shaderKey(_useGpuInstanceCulling,
-                                      IsEnabledGPUTinyPrimCulling(),
-                                      IsEnabledGPUCountVisibleInstances());
+            _useTinyPrimCulling,
+            IsEnabledGPUCountVisibleInstances());
 
         // sharing the culling geometric shader for the same configuration.
         HdSt_GeometricShaderSharedPtr cullShader =
@@ -147,15 +156,22 @@ HdSt_IndirectDrawBatch::_GetCullingProgram(
                                       /*indirect=*/true,
                                        resourceRegistry);
 
-        // track the last tiny prim culling state as it can be modified at
-        // runtime via TF_DEBUG_CODE HD_DISABLE_TINY_PRIM_CULLING
-        _lastTinyPrimCulling = IsEnabledGPUTinyPrimCulling();
+        _dirtyCullingProgram = false;
     }
     return _cullingProgram;
 }
 
 HdSt_IndirectDrawBatch::~HdSt_IndirectDrawBatch()
 {
+}
+
+void
+HdSt_IndirectDrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
+{
+    if (_useTinyPrimCulling != tinyPrimCulling) {
+        _useTinyPrimCulling = tinyPrimCulling;
+        _dirtyCullingProgram = true;
+    }
 }
 
 /* static */
@@ -169,7 +185,7 @@ HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
         TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) &&
         (caps.explicitUniformLocation);
     return isEnabledGPUFrustumCulling &&
-       !TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING);
+       !TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING);
 }
 
 /* static */
@@ -179,16 +195,6 @@ HdSt_IndirectDrawBatch::IsEnabledGPUCountVisibleInstances()
     static bool isEnabledGPUCountVisibleInstances =
         TfGetEnvSetting(HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES);
     return isEnabledGPUCountVisibleInstances;
-}
-
-/* static */
-bool
-HdSt_IndirectDrawBatch::IsEnabledGPUTinyPrimCulling()
-{
-    static bool isEnabledGPUTinyPrimCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING);
-    return isEnabledGPUTinyPrimCulling &&
-        !TfDebug::IsEnabled(HD_DISABLE_TINY_PRIM_CULLING);
 }
 
 /* static */
@@ -957,7 +963,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 
     // there is no non-zero draw items.
-    if ((    _useDrawArrays && _numTotalVertices == 0) ||
+    if (( _useDrawArrays && _numTotalVertices == 0) ||
         (!_useDrawArrays && _numTotalElements == 0)) return;
 
     HdStDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
@@ -1093,7 +1099,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     if (!TF_VERIFY(_dispatchBuffer)) return;
 
     // there is no non-zero draw items.
-    if ((    _useDrawArrays && _numTotalVertices == 0) ||
+    if (( _useDrawArrays && _numTotalVertices == 0) ||
         (!_useDrawArrays && _numTotalElements == 0)) return;
 
     GLF_GROUP_FUNCTION();
@@ -1360,7 +1366,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformui(_tokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
     binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    if (IsEnabledGPUTinyPrimCulling()) {
+    if (_useTinyPrimCulling) {
         binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
     }
 
@@ -1480,7 +1486,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    if (IsEnabledGPUTinyPrimCulling()) {
+    if (_useTinyPrimCulling) {
         binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
     }
 

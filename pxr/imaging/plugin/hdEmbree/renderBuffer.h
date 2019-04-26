@@ -38,6 +38,22 @@ public:
     HdEmbreeRenderBuffer(SdfPath const& id);
     ~HdEmbreeRenderBuffer();
 
+    /// Get allocation information from the scene delegate.
+    /// Note: Embree overrides this only to stop the render thread before
+    /// potential re-allocation.
+    ///   \param sceneDelegate The scene delegate backing this render buffer.
+    ///   \param renderParam   The renderer-global render param.
+    ///   \param dirtyBits     The invalidation state for this render buffer.
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam *renderParam,
+                      HdDirtyBits *dirtyBits) override;
+
+    /// Deallocate before deletion.
+    ///   \param renderParam   The renderer-global render param.
+    /// Note: Embree overrides this only to stop the render thread before
+    /// potential deallocation.
+    virtual void Finalize(HdRenderParam *renderParam) override;
+
     /// Allocate a new buffer with the given dimensions and format.
     ///   \param dimensions   Width, height, and depth of the desired buffer.
     ///                       (Only depth==1 is supported).

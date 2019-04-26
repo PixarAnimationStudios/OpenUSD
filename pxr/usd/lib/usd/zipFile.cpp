@@ -748,6 +748,7 @@ UsdZipFile::Iterator::GetFileInfo() const
     f.size = h.f.compressedSize;
     f.uncompressedSize = h.f.uncompressedSize;
     f.compressionMethod = h.f.compressionMethod;
+    f.encrypted = h.f.bits & 0x1; // Per 4.4.4, bit 0 is set if encrypted
     return f;
 }
 

@@ -21,26 +21,40 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #ifndef PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 #define PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 
-#include "pxr/pxr.h"
+/// \file pxrUsdTranslators/particleWriter.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/transformWriter.h"
+
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/points.h"
+
+#include <maya/MFnDependencyNode.h>
+#include <maya/MString.h>
+
+#include <utility>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdGeomPoints;
 
 class PxrUsdTranslators_ParticleWriter : public UsdMayaTransformWriter
 {
 public:
-    PxrUsdTranslators_ParticleWriter(const MDagPath & iDag,
-                       const SdfPath& uPath,
-                       UsdMayaWriteJobContext& jobCtx);
+    PxrUsdTranslators_ParticleWriter(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
+            UsdMayaWriteJobContext& jobCtx);
 
-    void Write(const UsdTimeCode &usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
 private:
     void writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points);
@@ -57,6 +71,8 @@ private:
     void initializeUserAttributes();
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

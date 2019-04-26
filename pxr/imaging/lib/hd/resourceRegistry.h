@@ -81,31 +81,36 @@ public:
     HD_API
     HdBufferArrayRangeSharedPtr AllocateNonUniformBufferArrayRange(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Allocate new immutable non uniform buffer array range
     HD_API
     HdBufferArrayRangeSharedPtr AllocateNonUniformImmutableBufferArrayRange(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Allocate new uniform buffer range
     HD_API
     HdBufferArrayRangeSharedPtr AllocateUniformBufferArrayRange(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Allocate new shader storage buffer range
     HD_API
     HdBufferArrayRangeSharedPtr AllocateShaderStorageBufferArrayRange(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Allocate single entry (non-aggregated) buffer array range
     HD_API
     HdBufferArrayRangeSharedPtr AllocateSingleBufferArrayRange(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Append source data for given range to be committed later.
     HD_API

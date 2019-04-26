@@ -78,30 +78,33 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertTrue(lightPrim)
 
         testNumber = None
-        if lightTypeName == 'DiskLight':
-            self.assertTrue(lightPrim.IsA(UsdLux.DiskLight))
+        if lightTypeName == 'CylinderLight':
+            self.assertTrue(lightPrim.IsA(UsdLux.CylinderLight))
             testNumber = 1
+        elif lightTypeName == 'DiskLight':
+            self.assertTrue(lightPrim.IsA(UsdLux.DiskLight))
+            testNumber = 2
         elif lightTypeName == 'DistantLight':
             self.assertTrue(lightPrim.IsA(UsdLux.DistantLight))
-            testNumber = 2
+            testNumber = 3
         elif lightTypeName == 'DomeLight':
             self.assertTrue(lightPrim.IsA(UsdLux.DomeLight))
-            testNumber = 3
+            testNumber = 4
         elif lightTypeName == 'MeshLight':
             self.assertTrue(lightPrim.IsA(UsdLux.GeometryLight))
-            testNumber = 4
+            testNumber = 5
         elif lightTypeName == 'RectLight':
             self.assertTrue(lightPrim.IsA(UsdLux.RectLight))
-            testNumber = 5
+            testNumber = 6
         elif lightTypeName == 'SphereLight':
             self.assertTrue(lightPrim.IsA(UsdLux.SphereLight))
-            testNumber = 6
+            testNumber = 7
         elif lightTypeName == 'AovLight':
             self.assertTrue(lightPrim.IsA(UsdRi.PxrAovLight))
-            testNumber = 7
+            testNumber = 8
         elif lightTypeName == 'EnvDayLight':
             self.assertTrue(lightPrim.IsA(UsdRi.PxrEnvDayLight))
-            testNumber = 8
+            testNumber = 9
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
 
@@ -135,7 +138,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         if lightTypeName == 'DomeLight':
             # PxrDomeLight has no normalize attribute
             self.assertFalse(
-                lightSchema.GetNormalizeAttr().HasAuthoredValueOpinion())
+                lightSchema.GetNormalizeAttr().HasAuthoredValue())
         else:
             expectedNormalize = True
             self.assertEqual(lightSchema.GetNormalizeAttr().Get(),
@@ -170,7 +173,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
 
         for frame in xrange(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
-            expectedTranslation = Gf.Vec3d(1.0, float(frame), 1.0)
+            expectedTranslation = Gf.Vec3d(2.0, float(frame), 2.0)
             self.assertTrue(
                 Gf.IsClose(translateOp.Get(frame), expectedTranslation, 1e-6))
 
@@ -255,48 +258,48 @@ class testUsdExportRfMLight(unittest.TestCase):
         envDayLight = UsdRi.PxrEnvDayLight(lightPrim)
         self.assertTrue(envDayLight)
 
-        expectedDay = 8
+        expectedDay = 9
         self.assertEqual(envDayLight.GetDayAttr().Get(), expectedDay)
 
-        expectedHaziness = 1.8
+        expectedHaziness = 1.9
         self.assertTrue(Gf.IsClose(envDayLight.GetHazinessAttr().Get(),
             expectedHaziness, 1e-6))
 
-        expectedHour = 8.8
+        expectedHour = 9.9
         self.assertTrue(Gf.IsClose(envDayLight.GetHourAttr().Get(),
             expectedHour, 1e-6))
 
-        expectedLatitude = 80.0
+        expectedLatitude = 90.0
         self.assertTrue(Gf.IsClose(envDayLight.GetLatitudeAttr().Get(),
             expectedLatitude, 1e-6))
 
-        expectedLongitude = -80.0
+        expectedLongitude = -90.0
         self.assertTrue(Gf.IsClose(envDayLight.GetLongitudeAttr().Get(),
             expectedLongitude, 1e-6))
 
-        expectedMonth = 8
+        expectedMonth = 9
         self.assertEqual(envDayLight.GetMonthAttr().Get(), expectedMonth)
 
-        expectedSkyTint = Gf.Vec3f(0.8)
+        expectedSkyTint = Gf.Vec3f(0.9)
         self.assertTrue(Gf.IsClose(envDayLight.GetSkyTintAttr().Get(),
             expectedSkyTint, 1e-6))
 
-        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.8)
+        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.9)
         self.assertTrue(Gf.IsClose(envDayLight.GetSunDirectionAttr().Get(),
             expectedSunDirection, 1e-6))
 
-        expectedSunSize = 0.8
+        expectedSunSize = 0.9
         self.assertTrue(Gf.IsClose(envDayLight.GetSunSizeAttr().Get(),
             expectedSunSize, 1e-6))
 
-        expectedSunTint = Gf.Vec3f(0.8)
+        expectedSunTint = Gf.Vec3f(0.9)
         self.assertTrue(Gf.IsClose(envDayLight.GetSunTintAttr().Get(),
             expectedSunTint, 1e-6))
 
-        expectedYear = 2018
+        expectedYear = 2019
         self.assertEqual(envDayLight.GetYearAttr().Get(), expectedYear)
 
-        expectedZone = 8.0
+        expectedZone = 9.0
         self.assertTrue(Gf.IsClose(envDayLight.GetZoneAttr().Get(),
             expectedZone, 1e-6))
 
@@ -310,19 +313,19 @@ class testUsdExportRfMLight(unittest.TestCase):
         shapingAPI = UsdLux.ShapingAPI(lightPrim)
         self.assertTrue(shapingAPI)
 
-        expectedFocus = 0.1
+        expectedFocus = 0.2
         self.assertTrue(Gf.IsClose(shapingAPI.GetShapingFocusAttr().Get(),
             expectedFocus, 1e-6))
 
-        expectedFocusTint = Gf.Vec3f(0.1)
+        expectedFocusTint = Gf.Vec3f(0.2)
         self.assertTrue(Gf.IsClose(shapingAPI.GetShapingFocusTintAttr().Get(),
             expectedFocusTint, 1e-6))
 
-        expectedConeAngle = 91.0
+        expectedConeAngle = 92.0
         self.assertTrue(Gf.IsClose(shapingAPI.GetShapingConeAngleAttr().Get(),
             expectedConeAngle, 1e-6))
 
-        expectedConeSoftness = 0.1
+        expectedConeSoftness = 0.2
         self.assertTrue(Gf.IsClose(shapingAPI.GetShapingConeSoftnessAttr().Get(),
             expectedConeSoftness, 1e-6))
 
@@ -330,7 +333,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertEqual(shapingAPI.GetShapingIesFileAttr().Get(),
             expectedProfilePath)
 
-        expectedProfileScale = 1.1
+        expectedProfileScale = 1.2
         self.assertTrue(Gf.IsClose(shapingAPI.GetShapingIesAngleScaleAttr().Get(),
             expectedProfileScale, 1e-6))
 
@@ -344,24 +347,21 @@ class testUsdExportRfMLight(unittest.TestCase):
         shadowAPI = UsdLux.ShadowAPI(lightPrim)
         self.assertTrue(shadowAPI)
 
-        # Shadows are enabled by default, and we author sparsely, so there
-        # should NOT be an opinion.
-        self.assertFalse(
-            shadowAPI.GetShadowEnableAttr().HasAuthoredValueOpinion())
+        self.assertTrue(shadowAPI.GetShadowEnableAttr().Get())
 
-        expectedShadowColor = Gf.Vec3f(0.5)
+        expectedShadowColor = Gf.Vec3f(0.6)
         self.assertTrue(Gf.IsClose(shadowAPI.GetShadowColorAttr().Get(),
             expectedShadowColor, 1e-6))
 
-        expectedShadowDistance = -0.5
+        expectedShadowDistance = -0.6
         self.assertTrue(Gf.IsClose(shadowAPI.GetShadowDistanceAttr().Get(),
             expectedShadowDistance, 1e-6))
 
-        expectedShadowFalloff = -0.5
+        expectedShadowFalloff = -0.6
         self.assertTrue(Gf.IsClose(shadowAPI.GetShadowFalloffAttr().Get(),
             expectedShadowFalloff, 1e-6))
 
-        expectedShadowFalloffGamma = 0.5
+        expectedShadowFalloffGamma = 0.6
         self.assertTrue(Gf.IsClose(shadowAPI.GetShadowFalloffGammaAttr().Get(),
             expectedShadowFalloffGamma, 1e-6))
 
@@ -370,6 +370,8 @@ class testUsdExportRfMLight(unittest.TestCase):
         Tests that RenderMan for Maya lights export as UsdLux schema USD prims
         correctly.
         """
+        self._ValidateUsdLuxLight('CylinderLight')
+
         self._ValidateUsdLuxLight('DiskLight')
         self._ValidateDiskLightXformAnimation()
 

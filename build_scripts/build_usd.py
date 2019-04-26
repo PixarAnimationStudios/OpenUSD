@@ -26,6 +26,7 @@ from distutils.spawn import find_executable
 import argparse
 import contextlib
 import datetime
+import distutils
 import fnmatch
 import glob
 import multiprocessing
@@ -64,6 +65,9 @@ def PrintCommandOutput(output):
         sys.stdout.write(output)
 
 def PrintError(error):
+    if verbosity >= 3 and sys.exc_info()[1] is not None:
+        import traceback
+        traceback.print_exc()
     print "ERROR:", error
 
 # Helpers for determining platform
@@ -74,43 +78,99 @@ def Linux():
 def MacOS():
     return platform.system() == "Darwin"
 
+def GetCommandOutput(command):
+    """Executes the specified command and returns output or None."""
+    try:
+        return subprocess.check_output(
+            shlex.split(command), stderr=subprocess.STDOUT).strip()
+    except subprocess.CalledProcessError:
+        pass
+    return None
+
 def GetXcodeDeveloperDirectory():
     """Returns the active developer directory as reported by 'xcode-select -p'.
     Returns None if none is set."""
     if not MacOS():
         return None
 
-    try:
-        return subprocess.check_output("xcode-select -p").strip()
-    except subprocess.CalledProcessError:
-        pass
-    return None
+    return GetCommandOutput("xcode-select -p")
 
 def GetVisualStudioCompilerAndVersion():
     """Returns a tuple containing the path to the Visual Studio compiler
-    and a tuple for its version, e.g. (19, 00, 24210). If the compiler is
-    not found, returns None."""
+    and a tuple for its version, e.g. (14, 0). If the compiler is not found
+    or version number cannot be determined, returns None."""
     if not Windows():
         return None
 
     msvcCompiler = find_executable('cl')
     if msvcCompiler:
+        # VisualStudioVersion environment variable should be set by the
+        # Visual Studio Command Prompt.
         match = re.search(
-            "Compiler Version (\d+).(\d+).(\d+)", 
-            subprocess.check_output("cl", stderr=subprocess.STDOUT))
+            "(\d+).(\d+)", 
+            os.environ.get("VisualStudioVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
 
 def IsVisualStudio2017OrGreater():
-    MSVC_2017_COMPILER_VERSION = (19, 10, 00000)
+    VISUAL_STUDIO_2017_VERSION = (15, 0)
     msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
     if msvcCompilerAndVersion:
         _, version = msvcCompilerAndVersion
-        return version >= MSVC_2017_COMPILER_VERSION
+        return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
+def GetPythonInfo():
+    """Returns a tuple containing the path to the Python executable, shared
+    library, and include directory corresponding to the version of Python
+    currently running. Returns None if any path could not be determined. This
+    function always returns None on Windows or Linux.
+
+    This function is primarily used to determine which version of
+    Python USD should link against when multiple versions are installed.
+    """
+    # We just skip all this on Windows. Users on Windows are unlikely to have
+    # multiple copies of the same version of Python, so the problem this
+    # function is intended to solve doesn't arise on that platform.
+    if Windows():
+        return None
+
+    # We also skip all this on Linux. The below code gets the wrong answer on
+    # certain distributions like Ubuntu, which organizes libraries based on
+    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
+    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
+    # this function is intended to solve primarily occurs on macOS, so it's
+    # simpler to just skip this for now.
+    if Linux():
+        return None
+
+    try:
+        import distutils.sysconfig
+
+        pythonExecPath = None
+        pythonLibPath = None
+
+        pythonPrefix = distutils.sysconfig.PREFIX
+        if pythonPrefix:
+            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
+            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
+
+        pythonIncludeDir = distutils.sysconfig.get_python_inc()
+    except:
+        return None
+
+    if pythonExecPath and pythonIncludeDir and pythonLibPath:
+        # Ensure that the paths are absolute, since depending on the version of
+        # Python being run and the path used to invoke it, we may have gotten a
+        # relative path from distutils.sysconfig.PREFIX.
+        return (
+            os.path.abspath(pythonExecPath),
+            os.path.abspath(pythonLibPath),
+            os.path.abspath(pythonIncludeDir))
+
+    return None
 
 def GetCPUCount():
     try:
@@ -184,6 +244,16 @@ def CopyDirectory(context, srcDir, destDir):
                        .format(srcDir=srcDir, destDir=instDestDir))
     shutil.copytree(srcDir, instDestDir)
 
+def FormatMultiProcs(numJobs, generator):
+    tag = "-j"
+    if generator:
+        if "Visual Studio" in generator:
+            tag = "/M:"
+        elif "Xcode" in generator:
+            tag = "-j "
+
+    return "{tag}{procs}".format(tag=tag, procs=numJobs)
+
 def RunCMake(context, force, extraArgs = None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
@@ -203,6 +273,7 @@ def RunCMake(context, force, extraArgs = None):
 
     # On Windows, we need to explicitly specify the generator to ensure we're
     # building a 64-bit project. (Surely there is a better way to do this?)
+    # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
         if IsVisualStudio2017OrGreater():
             generator = "Visual Studio 15 2017 Win64"
@@ -217,31 +288,42 @@ def RunCMake(context, force, extraArgs = None):
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
+    # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
+    # (Ninja, make), and --config for multi-configuration generators 
+    # (Visual Studio); technically we don't need BOTH at the same
+    # time, but specifying both is simpler than branching
+    config=("Debug" if context.buildDebug else "Release")
+
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
+            '-DCMAKE_BUILD_TYPE={config} '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
                     depsInstDir=context.instDir,
+                    config=config,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config Release --target install -- {multiproc}"
-            .format(multiproc=("/M:{procs}" if Windows() else "-j{procs}")
-                               .format(procs=context.numJobs)))
+        Run("cmake --build . --config {config} --target install -- {multiproc}"
+            .format(config=config,
+                    multiproc=FormatMultiProcs(context.numJobs, generator)))
 
-def PatchFile(filename, patches):
+def PatchFile(filename, patches, multiLineMatches=False):
     """Applies patches to the specified file. patches is a list of tuples
     (old string, new string)."""
-    oldLines = open(filename, 'r').readlines()
+    if multiLineMatches:
+        oldLines = [open(filename, 'r').read()]
+    else:
+        oldLines = open(filename, 'r').readlines()
     newLines = oldLines
-    for (oldLine, newLine) in patches:
-        newLines = [s.replace(oldLine, newLine) for s in newLines]
+    for (oldString, newString) in patches:
+        newLines = [s.replace(oldString, newString) for s in newLines]
     if newLines != oldLines:
         PrintInfo("Patching file {filename} (original in {oldFilename})..."
                   .format(filename=filename, oldFilename=filename + ".old"))
@@ -415,16 +497,14 @@ class PythonDependency(object):
         self.moduleNames = moduleNames
 
     def Exists(self, context):
-        # If one of the modules in our list exists we are good
+        # If one of the modules in our list imports successfully, we are good.
         for moduleName in self.moduleNames:
             try:
-                # Eat all output; we just care if the import succeeded or not.
-                subprocess.check_output(shlex.split(
-                    'python -c "import {module}"'.format(module=moduleName)),
-                    stderr=subprocess.STDOUT)
+                pyModule = __import__(moduleName)
                 return True
-            except subprocess.CalledProcessError:
+            except:
                 pass
+
         return False
 
 
@@ -446,13 +526,13 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # boost
 
 if Linux():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif MacOS():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     # The default installation of boost on Windows puts headers in a versioned 
     # subdirectory, which we have to account for here. In theory, specifying 
     # "layout=system" would make the Windows install match Linux/MacOS, but that 
@@ -461,10 +541,8 @@ elif Windows():
 
     # On Visual Studio 2017 we need at least boost 1.65.1
     if IsVisualStudio2017OrGreater():
-        BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
+        BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
-
-
 
 def InstallBoost(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
@@ -492,24 +570,28 @@ def InstallBoost(context, force, buildArgs):
             'link=shared',
             'runtime-link=shared',
             'threading=multi', 
-            'variant=release',
+            'variant={variant}'
+                .format(variant="debug" if context.buildDebug else "release"),
             '--with-atomic',
-            '--with-date_time',
-            '--with-filesystem',
             '--with-program_options',
-            '--with-regex',
-            '--with-system',
-            '--with-thread'
+            '--with-regex'
         ]
 
         if context.buildPython:
             b2_settings.append("--with-python")
 
+        if context.buildKatana or context.buildOIIO:
+            b2_settings.append("--with-date_time")
+            b2_settings.append("--with-system")
+            b2_settings.append("--with-thread")
+
+        if context.buildOIIO:
+            b2_settings.append("--with-filesystem")
+
         if force:
             b2_settings.append("-a")
 
         if Windows():
-
             if IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
             else:
@@ -579,7 +661,7 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 if Windows():
     JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/1.5.1.zip"
 else:
-    JPEG_URL = "http://www.ijg.org/files/jpegsrc.v9b.tar.gz"
+    JPEG_URL = "https://www.ijg.org/files/jpegsrc.v9b.tar.gz"
 
 def InstallJPEG(context, force, buildArgs):
     if Windows():
@@ -606,7 +688,7 @@ JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
 ############################################################
 # TIFF
 
-TIFF_URL = "http://download.osgeo.org/libtiff/tiff-4.0.7.zip"
+TIFF_URL = "https://download.osgeo.org/libtiff/tiff-4.0.7.zip"
 
 def InstallTIFF(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TIFF_URL, context, force)):
@@ -628,7 +710,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "http://downloads.sourceforge.net/project/libpng/libpng16/older-releases/1.6.29/libpng-1.6.29.tar.gz"
+PNG_URL = "https://downloads.sourceforge.net/project/libpng/libpng16/older-releases/1.6.29/libpng-1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
@@ -646,6 +728,34 @@ def InstallOpenEXR(context, force, buildArgs):
 
     ilmbaseSrcDir = os.path.join(srcDir, "IlmBase")
     with CurrentWorkingDirectory(ilmbaseSrcDir):
+        # openexr 2.2 has a bug with Ninja:
+        # https://github.com/openexr/openexr/issues/94
+        # https://github.com/openexr/openexr/pull/142
+        # Fix commit here:
+        # https://github.com/openexr/openexr/commit/8eed7012c10f1a835385d750fd55f228d1d35df9
+        # Merged here:
+        # https://github.com/openexr/openexr/commit/b206a243a03724650b04efcdf863c7761d5d5d5b
+        if context.cmakeGenerator == "Ninja":
+            PatchFile(
+                os.path.join('Half', 'CMakeLists.txt'),
+                [
+                    ("TARGET eLut POST_BUILD",
+                     "OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/eLut.h"),
+                    ("  COMMAND eLut > ${CMAKE_CURRENT_BINARY_DIR}/eLut.h",
+                     "  COMMAND eLut ARGS > ${CMAKE_CURRENT_BINARY_DIR}/eLut.h\n"
+                        "  DEPENDS eLut"),
+                    ("TARGET toFloat POST_BUILD",
+                     "OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h"),
+                    ("  COMMAND toFloat > ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h",
+                     "  COMMAND toFloat ARGS > ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h\n"
+                        "  DEPENDS toFloat"),
+
+                    ("  ${CMAKE_CURRENT_BINARY_DIR}/eLut.h\n"
+                         "  OBJECT_DEPENDS\n"
+                         "  ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h\n",
+                     '  "${CMAKE_CURRENT_BINARY_DIR}/eLut.h;${CMAKE_CURRENT_BINARY_DIR}/toFloat.h"\n'),
+                ],
+                multiLineMatches=True)
         RunCMake(context, force, buildArgs)
 
     openexrSrcDir = os.path.join(srcDir, "OpenEXR")
@@ -660,7 +770,7 @@ OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 # GLEW
 
 if Windows():
-    GLEW_URL = "http://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
+    GLEW_URL = "https://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
 else:
     # Important to get source package from this URL and NOT github. This package
     # contains pre-generated code that the github repo does not.
@@ -766,6 +876,32 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
                          "include/OpenImageIO/oiioversion.h")
 
 ############################################################
+# OpenColorIO
+
+# Note that we use v1.1.0 instead of the minimum required v1.0.9
+# because v1.0.9 has problems building on macOS and Windows.
+OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+
+def InstallOpenColorIO(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
+        extraArgs = ['-DOCIO_BUILD_TRUELIGHT=OFF',
+                     '-DOCIO_BUILD_APPS=OFF',
+                     '-DOCIO_BUILD_NUKE=OFF',
+                     '-DOCIO_BUILD_DOCS=OFF',
+                     '-DOCIO_BUILD_TESTS=OFF',
+                     '-DOCIO_BUILD_PYGLUE=OFF',
+                     '-DOCIO_BUILD_JNIGLUE=OFF',
+                     '-DOCIO_STATIC_JNIGLUE=OFF']
+
+        # Add on any user-specified extra arguments.
+        extraArgs += buildArgs
+
+        RunCMake(context, force, extraArgs)
+
+OPENCOLORIO = Dependency("OpenColorIO", InstallOpenColorIO,
+                         "include/OpenColorIO/OpenColorABI.h")
+
+############################################################
 # OpenSubdiv
 
 OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_1_1.zip"
@@ -806,7 +942,17 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        oldGenerator = context.cmakeGenerator
+    
+        # OpenSubdiv seems to error when building on windows w/ Ninja...
+        # ...so just use the default generator (ie, Visual Studio on Windows)
+        # until someone can sort it out
+        if oldGenerator == "Ninja" and Windows():
+            context.cmakeGenerator = None
+        try:
+            RunCMake(context, force, extraArgs)
+        finally:
+            context.cmakeGenerator = oldGenerator
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
@@ -918,6 +1064,25 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+
+            # CMake has trouble finding the executable, library, and include
+            # directories when there are multiple versions of Python installed.
+            # This can lead to crashes due to USD being linked against one
+            # version of Python but running through some other Python
+            # interpreter version. This primarily shows up on macOS, as it's
+            # common to have a Python install that's separate from the one
+            # included with the system.
+            #
+            # To avoid this, we try to determine these paths from Python
+            # itself rather than rely on CMake's heuristics.
+            pythonInfo = GetPythonInfo()
+            if pythonInfo:
+                extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
+                                 .format(pyExecPath=pythonInfo[0]))
+                extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
+                                 .format(pyLibPath=pythonInfo[1]))
+                extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
+                                 .format(pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -925,6 +1090,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DBUILD_SHARED_LIBS=ON')
         elif context.buildMonolithic:
             extraArgs.append('-DPXR_BUILD_MONOLITHIC=ON')
+
+        if context.buildDebug:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
+        else:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
         
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
@@ -956,6 +1126,11 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=OFF')
                 
+            if context.buildOCIO:
+                extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=OFF')
+
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -1006,17 +1181,8 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildHoudini:
             if context.houdiniLocation:
-		pythonExecPath = "python/bin/python"
-		pythonIncludeDir = "python/include"
-		pythonLib = "python/lib/libpython2.7.so"
                 extraArgs.append('-DHOUDINI_ROOT="{houdiniLocation}"'
                                  .format(houdiniLocation=context.houdiniLocation))
-		extraArgs.append('-DPYTHON_LIBRARY="{houdiniLocation}/{pythonLib}"'
-						.format(houdiniLocation=context.houdiniLocation,
-							pythonLib=pythonLib))
-		extraArgs.append('-DPYTHON_LIBRARIES="{houdiniLocation}/{pythonLib}"'
-						.format(houdiniLocation=context.houdiniLocation,
-							pythonLib=pythonLib))
             extraArgs.append('-DPXR_BUILD_HOUDINI_PLUGIN=ON')
         else:
             extraArgs.append('-DPXR_BUILD_HOUDINI_PLUGIN=OFF')
@@ -1064,6 +1230,21 @@ library. Multiple quotes may be needed to ensure arguments are passed on
 exactly as desired. Users must ensure these arguments are suitable for the
 specified library and do not conflict with other options, otherwise build 
 errors may occur.
+
+- Python Versions and DCC Plugins:
+Some DCCs (most notably, Maya) may ship with and run using their own version of
+Python. In that case, it is important that USD and the plugins for that DCC are
+built using the DCC's version of Python and not the system version. This can be
+done by running %(prog)s using the DCC's version of Python.
+
+For example, to build USD and the Maya plugins on macOS for Maya 2019, run:
+
+/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --maya --no-usdview ...
+
+Note that this is primarily an issue on macOS, where a DCC's version of Python
+is likely to conflict with the version provided by the system. On other
+platforms, %(prog)s *should* be run using the system Python and *should not*
+be run using the DCC's Python.
 """.format(
     libraryList=" ".join(sorted([d.name for d in AllDependencies])))
 
@@ -1125,6 +1306,9 @@ subgroup.add_argument("--build-monolithic", dest="build_type",
                       action="store_const", const=MONOLITHIC_LIB,
                       help="Build a single monolithic shared library")
 
+group.add_argument("--debug", dest="build_debug", action="store_true",
+                    help="Build with debugging information")
+
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tests", dest="build_tests", action="store_true",
                       default=False, help="Build unit tests")
@@ -1185,6 +1369,12 @@ subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true",
                       help="Build OpenImageIO plugin for USD")
 subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false",
                       help="Do not build OpenImageIO plugin for USD (default)")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--opencolorio", dest="build_ocio", action="store_true", 
+                      default=False,
+                      help="Build OpenColorIO plugin for USD")
+subgroup.add_argument("--no-opencolorio", dest="build_ocio", action="store_false",
+                      help="Do not build OpenColorIO plugin for USD (default)")
 
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1297,6 +1487,7 @@ class InstallContext:
             self.buildArgs.setdefault(depName.lower(), []).append(arg)
 
         # Build type
+        self.buildDebug = args.build_debug;
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
@@ -1327,6 +1518,7 @@ class InstallContext:
         self.embreeLocation = (os.path.abspath(args.embree_location)
                                if args.embree_location else None)
         self.buildOIIO = args.build_oiio
+        self.buildOCIO = args.build_ocio
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -1405,6 +1597,9 @@ if context.buildImaging:
     
     if context.buildOIIO:
         requiredDependencies += [JPEG, TIFF, PNG, OPENIMAGEIO]
+
+    if context.buildOCIO:
+        requiredDependencies += [OPENCOLORIO]
                              
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
@@ -1454,6 +1649,35 @@ if context.buildMaya and PTEX in requiredDependencies:
                "plugin, since using a separately-built Ptex library "
                "would conflict with the version used by Maya.")
     sys.exit(1)
+
+# Determine whether we're running in Maya's version of Python. When building
+# against Maya's Python, there are some additional restrictions on what we're
+# able to build.
+isMayaPython = False
+try:
+    import maya
+
+    # If the maya import succeeds and this function returns a tuple, then the
+    # USD build will be configured to use Maya's version of Python.
+    if GetPythonInfo() != None:
+        isMayaPython = True
+except:
+    pass
+
+if context.buildMaya and isMayaPython:
+    if context.buildUsdview:
+        PrintError("Cannot build usdview when building against Maya's version "
+                   "of Python. Maya does not provide access to the 'OpenGL' "
+                   "Python module. Use '--no-usdview' to disable building "
+                   "usdview.")
+        sys.exit(1)
+
+    # We should not attempt to build the plugins for any other DCCs if we're
+    # building against Maya's version of Python.
+    if any([context.buildHoudini, context.buildKatana]):
+        PrintError("Cannot build plugins for other DCCs when building against "
+                   "Maya's version of Python.")
+        sys.exit(1)
 
 dependenciesToBuild = []
 for dep in requiredDependencies:
@@ -1521,9 +1745,11 @@ Building with settings:
   Downloader                    {downloader}
 
   Building                      {buildType}
+    Config                      {buildConfig}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenImageIO support:      {buildOIIO} 
+      OpenColorIO support:      {buildOCIO} 
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
@@ -1567,9 +1793,11 @@ summaryMsg = summaryMsg.format(
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
+    buildConfig=("Debug" if context.buildDebug else "Release"),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
+    buildOCIO=("On" if context.buildOCIO else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),

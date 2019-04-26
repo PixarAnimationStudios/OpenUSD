@@ -26,8 +26,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/sdf/mapperArgSpec.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/pyChildrenView.h"
@@ -355,12 +353,11 @@ void wrapTypes()
     SdfPyWrapListProxy<SdfSubLayerProxy>();
     SdfPyWrapListEditorProxy<SdfConnectionsProxy>();
     SdfPyWrapListEditorProxy<SdfInheritsProxy>();
+    SdfPyWrapListEditorProxy<SdfPayloadsProxy>();
     SdfPyWrapListEditorProxy<SdfReferencesProxy>();
     SdfPyWrapListEditorProxy<SdfVariantSetNamesProxy>();
 
     SdfPyWrapChildrenView<SdfAttributeSpecView>();
-    SdfPyWrapChildrenView<SdfConnectionMappersView>();
-    SdfPyWrapChildrenView<SdfMapperArgSpecView>();
     SdfPyWrapChildrenView<SdfPrimSpecView>();
     SdfPyWrapChildrenView<SdfPropertySpecView>();
     SdfPyWrapChildrenView<SdfRelationalAttributeSpecView>();
@@ -373,6 +370,7 @@ void wrapTypes()
     SdfPyWrapMapEditProxy<SdfRelocatesMapProxy>();
 
     SdfPyWrapListOp<SdfPathListOp>("PathListOp");
+    SdfPyWrapListOp<SdfPayloadListOp>("PayloadListOp");
     SdfPyWrapListOp<SdfReferenceListOp>("ReferenceListOp");
     SdfPyWrapListOp<SdfStringListOp>("StringListOp");
     SdfPyWrapListOp<SdfTokenListOp>("TokenListOp");
@@ -383,6 +381,7 @@ void wrapTypes()
     SdfPyWrapListOp<SdfUnregisteredValueListOp>("UnregisteredValueListOp");
 
     VtValueFromPython<SdfPathListOp>();
+    VtValueFromPython<SdfPayloadListOp>();
     VtValueFromPython<SdfReferenceListOp>();
     VtValueFromPython<SdfStringListOp>();
     VtValueFromPython<SdfTokenListOp>();

@@ -420,14 +420,14 @@ STBIDEF const char *stbi_failure_reason  (void);
 STBIDEF void     stbi_image_free      (void *retval_from_stbi_load);
 
 // get image dimensions & components without fully decoding
-STBIDEF int      stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp);
-STBIDEF int      stbi_info_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp);
+STBIDEF int      stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp, float *gamma);
+STBIDEF int      stbi_info_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, float *gamma);
 STBIDEF int      stbi_is_16_bit_from_memory(stbi_uc const *buffer, int len);
 STBIDEF int      stbi_is_16_bit_from_callbacks(stbi_io_callbacks const *clbk, void *user);
 
 #ifndef STBI_NO_STDIO
-STBIDEF int      stbi_info               (char const *filename,     int *x, int *y, int *comp);
-STBIDEF int      stbi_info_from_file     (FILE *f,                  int *x, int *y, int *comp);
+STBIDEF int      stbi_info               (char const *filename,     int *x, int *y, int *comp, float *gamma);
+STBIDEF int      stbi_info_from_file     (FILE *f,                  int *x, int *y, int *comp, float *gamma);
 STBIDEF int      stbi_is_16_bit          (char const *filename);
 STBIDEF int      stbi_is_16_bit_from_file(FILE *f);
 #endif
@@ -792,7 +792,7 @@ static int      stbi__jpeg_info(stbi__context *s, int *x, int *y, int *comp);
 #ifndef STBI_NO_PNG
 static int      stbi__png_test(stbi__context *s);
 static void    *stbi__png_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__result_info *ri);
-static int      stbi__png_info(stbi__context *s, int *x, int *y, int *comp);
+static int      stbi__png_info(stbi__context *s, int *x, int *y, int *comp, float *gamma);
 static int      stbi__png_is16(stbi__context *s);
 #endif
 
@@ -4290,6 +4290,7 @@ typedef struct
    stbi__context *s;
    stbi_uc *idata, *expanded, *out;
    int depth;
+   float gamma = 0;
 } stbi__png;
 
 
@@ -4818,6 +4819,13 @@ static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp)
             break;
          }
 
+         case STBI__PNG_TYPE('g','A','M','A'): {
+            if (first) return stbi__err("first not IHDR", "Corrupt PNG");
+            if (4 != c.length) return stbi__err("invalid gAMA","Corrupt PNG");
+            z->gamma = stbi__get32be(s) / 100000.0f;
+            break;
+         }
+
          case STBI__PNG_TYPE('I','D','A','T'): {
             if (first) return stbi__err("first not IHDR", "Corrupt PNG");
             if (pal_img_n && !pal_len) return stbi__err("no PLTE","Corrupt PNG");
@@ -4963,9 +4971,6 @@ static void *stbi__do_png(stbi__png *p, int *x, int *y, int *n, int req_comp, st
           else
               pxr__associate_alpha16((stbi__uint16 *) result, *x, *y, p->s->img_n);
       }
-
-      // XXX PIXAR: Note this currently does not take into account the gamma 
-      // value in this file.
    }
    STBI_FREE(p->out);      p->out      = NULL;
    STBI_FREE(p->expanded); p->expanded = NULL;
@@ -4989,7 +4994,7 @@ static int stbi__png_test(stbi__context *s)
    return r;
 }
 
-static int stbi__png_info_raw(stbi__png *p, int *x, int *y, int *comp)
+static int stbi__png_info_raw(stbi__png *p, int *x, int *y, int *comp, float *gamma)
 {
    if (!stbi__parse_png_file(p, STBI__SCAN_header, 0)) {
       stbi__rewind( p->s );
@@ -4998,21 +5003,22 @@ static int stbi__png_info_raw(stbi__png *p, int *x, int *y, int *comp)
    if (x) *x = p->s->img_x;
    if (y) *y = p->s->img_y;
    if (comp) *comp = p->s->img_n;
+   if (gamma) *gamma = p->gamma;
    return 1;
 }
 
-static int stbi__png_info(stbi__context *s, int *x, int *y, int *comp)
+static int stbi__png_info(stbi__context *s, int *x, int *y, int *comp, float *gamma)
 {
    stbi__png p;
    p.s = s;
-   return stbi__png_info_raw(&p, x, y, comp);
+   return stbi__png_info_raw(&p, x, y, comp, gamma);
 }
 
 static int stbi__png_is16(stbi__context *s)
 {
    stbi__png p;
    p.s = s;
-   if (!stbi__png_info_raw(&p, NULL, NULL, NULL))
+   if (!stbi__png_info_raw(&p, NULL, NULL, NULL, NULL))
 	   return 0;
    if (p.depth != 16) {
       stbi__rewind(p.s);
@@ -7151,14 +7157,14 @@ static int      stbi__pnm_info(stbi__context *s, int *x, int *y, int *comp)
 }
 #endif
 
-static int stbi__info_main(stbi__context *s, int *x, int *y, int *comp)
+static int stbi__info_main(stbi__context *s, int *x, int *y, int *comp, float *gamma)
 {
    #ifndef STBI_NO_JPEG
    if (stbi__jpeg_info(s, x, y, comp)) return 1;
    #endif
 
    #ifndef STBI_NO_PNG
-   if (stbi__png_info(s, x, y, comp))  return 1;
+   if (stbi__png_info(s, x, y, comp, gamma))  return 1;
    #endif
 
    #ifndef STBI_NO_GIF
@@ -7207,23 +7213,23 @@ static int stbi__is_16_main(stbi__context *s)
 }
 
 #ifndef STBI_NO_STDIO
-STBIDEF int stbi_info(char const *filename, int *x, int *y, int *comp)
+STBIDEF int stbi_info(char const *filename, int *x, int *y, int *comp, float *gamma)
 {
     FILE *f = stbi__fopen(filename, "rb");
     int result;
     if (!f) return stbi__err("can't fopen", "Unable to open file");
-    result = stbi_info_from_file(f, x, y, comp);
+    result = stbi_info_from_file(f, x, y, comp, gamma);
     fclose(f);
     return result;
 }
 
-STBIDEF int stbi_info_from_file(FILE *f, int *x, int *y, int *comp)
+STBIDEF int stbi_info_from_file(FILE *f, int *x, int *y, int *comp, float *gamma)
 {
    int r;
    stbi__context s;
    long pos = ftell(f);
    stbi__start_file(&s, f);
-   r = stbi__info_main(&s,x,y,comp);
+   r = stbi__info_main(&s,x,y,comp, gamma);
    fseek(f,pos,SEEK_SET);
    return r;
 }
@@ -7250,18 +7256,18 @@ STBIDEF int stbi_is_16_bit_from_file(FILE *f)
 }
 #endif // !STBI_NO_STDIO
 
-STBIDEF int stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp)
+STBIDEF int stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp, float *gamma)
 {
    stbi__context s;
    stbi__start_mem(&s,buffer,len);
-   return stbi__info_main(&s,x,y,comp);
+   return stbi__info_main(&s,x,y,comp, gamma);
 }
 
-STBIDEF int stbi_info_from_callbacks(stbi_io_callbacks const *c, void *user, int *x, int *y, int *comp)
+STBIDEF int stbi_info_from_callbacks(stbi_io_callbacks const *c, void *user, int *x, int *y, int *comp, float *gamma)
 {
    stbi__context s;
    stbi__start_callbacks(&s, (stbi_io_callbacks *) c, user);
-   return stbi__info_main(&s,x,y,comp);
+   return stbi__info_main(&s,x,y,comp, gamma);
 }
 
 STBIDEF int stbi_is_16_bit_from_memory(stbi_uc const *buffer, int len)

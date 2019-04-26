@@ -33,6 +33,7 @@
 
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -78,7 +79,6 @@ public:
 
     void DidChangeAttributeTimeSamples(const SdfPath &attrPath);
     void DidChangeAttributeConnection(const SdfPath &attrPath);
-    void DidChangeMapperArgument(const SdfPath &attrPath);
     void DidChangeRelationshipTargets(const SdfPath &relPath);
     void DidAddTarget(const SdfPath &targetPath);
     void DidRemoveTarget(const SdfPath &targetPath);
@@ -148,7 +148,6 @@ public:
             // SdfPropertySpec
             bool didChangeAttributeTimeSamples:1;
             bool didChangeAttributeConnection:1;
-            bool didChangeMapperArgument:1;
             bool didChangeRelationshipTargets:1;
             bool didAddTarget:1;
             bool didRemoveTarget:1;
@@ -170,15 +169,17 @@ public:
     };
 
     /// Map of change entries at various paths in a layer.
-    typedef std::map<SdfPath, Entry> EntryList;
+    typedef std::unordered_map<SdfPath, Entry, SdfPath::Hash> EntryList;
 
 public:
     const EntryList & GetEntryList() const { return _entries; }
 
     // Change accessors/mutators
-    Entry& GetEntry( const SdfPath & );
+    Entry const &GetEntry( const SdfPath & ) const;
 
 private:
+    Entry &_GetEntry(SdfPath const &);
+    
     EntryList _entries;
 };
 

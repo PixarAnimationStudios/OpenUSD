@@ -374,6 +374,10 @@ class TestUsdMetadata(unittest.TestCase):
             p.ClearCustomDataByKey('a')
             self.assertEqual(p.GetCustomData(), { 'newKey':'value' })
 
+            # Setting customData keys with bad types should error.
+            with self.assertRaises(ValueError):
+                p.SetCustomDataByKey('testBadValue', [1,2,3])
+
     def test_ComposedNestedDictionaries(self):
         '''Test to ensure dictionaries are properly merged.
            They will be recursively merged, with the typical strength

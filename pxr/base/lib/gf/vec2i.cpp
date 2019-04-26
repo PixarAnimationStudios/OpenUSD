@@ -39,7 +39,7 @@
 #include "pxr/base/gf/vec2h.h"
 
 #include <vector>
-#include <iostream>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

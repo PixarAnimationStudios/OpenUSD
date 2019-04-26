@@ -101,9 +101,12 @@ public:
     /// includedPurposes by combining bounding box hints that have been cached
     /// for various values of purposes.
     ///
+    /// If \p ignoreVisibility is true invisible prims will be included during
+    /// bounds computations.
+    ///
     USDGEOM_API
     UsdGeomBBoxCache(UsdTimeCode time, TfTokenVector includedPurposes,
-                     bool useExtentsHint=false);
+                     bool useExtentsHint=false, bool ignoreVisibility=false);
 
     /// Copy constructor.
     USDGEOM_API
@@ -318,6 +321,12 @@ public:
         return _useExtentsHint;
     }
 
+    /// Returns whether prim visibility should be ignored when computing
+    /// bounding boxes.
+    bool GetIgnoreVisibility() const {
+        return _ignoreVisibility;
+    }    
+
     /// Use the new \p time when computing values and may clear any existing
     /// values cached for the previous time. Setting \p time to the current time
     /// is a no-op.
@@ -475,6 +484,7 @@ private:
     UsdGeomXformCache _ctmCache;
     _PrimBBoxHashMap _bboxCache;
     bool _useExtentsHint;
+    bool _ignoreVisibility;
 };
 
 

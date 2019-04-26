@@ -35,11 +35,42 @@ namespace {
 
 
 enum _Flags {
-    _HaveBindPose = 0x1,
-    _HaveRestPose = 0x2,
-    _SkelRestXformsComputed = 0x4,
-    _WorldInverseBindXformsComputed = 0x8
+    _HaveBindPose = 1 << 0,
+    _HaveRestPose = 1 << 1,
+    // Matrix4dArray computations
+    _SkelRestXforms4dComputed = 1 << 2,
+    _WorldInverseBindXforms4dComputed = 1 << 3,
+    _LocalInverseRestXforms4dComputed = 1 << 4,
+    // Matrix4fArray computations
+    _SkelRestXforms4fComputed = 1 << 5,
+    _WorldInverseBindXforms4fComputed = 1 << 6,
+    _LocalInverseRestXforms4fComputed = 1 << 7,
 };
+
+
+template <typename Matrix4>
+void
+_InvertTransforms(const VtArray<Matrix4>& xforms,
+                  VtArray<Matrix4>* inverseXforms)
+{
+    inverseXforms->resize(xforms.size());
+    Matrix4* dst = inverseXforms->data();
+    for (size_t i = 0; i < xforms.size(); ++i) {
+        dst[i] = xforms[i].GetInverse();
+    }
+}
+
+
+void
+_Convert4dXformsTo4f(const VtMatrix4dArray& matrix4dArray,
+                     VtMatrix4fArray* matrix4fArray)
+{
+    matrix4fArray->resize(matrix4dArray.size());
+    GfMatrix4f* dst = matrix4fArray->data();    
+    for (size_t i = 0; i < matrix4dArray.size(); ++i) {
+        dst[i] = GfMatrix4f(matrix4dArray[i]);
+    }
+}
 
 
 } // namespace
@@ -103,11 +134,32 @@ UsdSkel_SkelDefinition::_Init(const UsdSkelSkeleton& skel)
 }
 
 
+template <>
+VtMatrix4dArray&
+UsdSkel_SkelDefinition::_XformHolder::Get<GfMatrix4d>()
+{ return xforms4d; }
+
+template <>
+const VtMatrix4dArray&
+UsdSkel_SkelDefinition::_XformHolder::Get<GfMatrix4d>() const
+{ return xforms4d; }
+
+template <>
+VtMatrix4fArray&
+UsdSkel_SkelDefinition::_XformHolder::Get<GfMatrix4f>()
+{ return xforms4f; }
+
+template <>
+const VtMatrix4fArray&
+UsdSkel_SkelDefinition::_XformHolder::Get<GfMatrix4f>() const
+{ return xforms4f; }
+
+
+template <>
 bool
 UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4dArray* xforms)
 {
-    int flags = _flags;
-    
+    const int flags = _flags;
     if (flags&_HaveRestPose) {
 
         if (!xforms) {
@@ -115,6 +167,7 @@ UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4dArray* xforms)
             return false;
         }
 
+        // double-precision rest xforms are pre-computed.
         *xforms = _jointLocalRestXforms;
         return true;
     }
@@ -122,10 +175,30 @@ UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4dArray* xforms)
 }
 
 
+template <>
 bool
-UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4dArray* xforms)
+UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4fArray* xforms)
 {
-    int flags = _flags;
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' pointer is null.");
+        return false;
+    }
+
+    // float-precision uses uncached conversion from double-precision.
+    VtMatrix4dArray xforms4d;
+    if (GetJointLocalRestTransforms(&xforms4d)) {
+        _Convert4dXformsTo4f(xforms4d, xforms);
+        return true;
+    }
+    return false;
+}
+
+
+template <int ComputeFlag, typename Matrix4>
+bool
+UsdSkel_SkelDefinition::_GetJointSkelRestTransforms(VtArray<Matrix4>* xforms)
+{
+    const int flags = _flags;
     if (flags&_HaveRestPose) {
 
         if (!xforms) {
@@ -133,40 +206,69 @@ UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4dArray* xforms)
             return false;
         }
 
-        if (ARCH_UNLIKELY(!(flags&_SkelRestXformsComputed))) {
-
-            _ComputeJointSkelRestTransforms();
+        if (ARCH_UNLIKELY(!(flags&ComputeFlag))) {
+            if (!_ComputeJointSkelRestTransforms<ComputeFlag,Matrix4>()) {
+                return false;
+            }
         }
-        *xforms = _jointSkelRestXforms;
+        *xforms = _jointSkelRestXforms.Get<Matrix4>();
         return true;
     }
     return false;
 }
 
 
-void
+template <>
+bool
+UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4dArray* xforms)
+{
+    return _GetJointSkelRestTransforms<_SkelRestXforms4dComputed>(xforms);
+}
+
+
+template <>
+bool
+UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4fArray* xforms)
+{
+    return _GetJointSkelRestTransforms<_SkelRestXforms4fComputed>(xforms);
+}
+
+
+template <int ComputeFlag, typename Matrix4>
+bool
 UsdSkel_SkelDefinition::_ComputeJointSkelRestTransforms()
 {
     TRACE_FUNCTION();
 
-    std::lock_guard<std::mutex> lock(_mutex);
+    VtArray<Matrix4> jointLocalRestXforms;
+    if (TF_VERIFY(GetJointLocalRestTransforms(&jointLocalRestXforms))) {
 
-    bool success =
-        UsdSkelConcatJointTransforms(_topology, _jointLocalRestXforms,
-                                     &_jointSkelRestXforms);
-    // XXX: Topology was validated when the definition was constructed,
-    /// so this should not have failed.
-    TF_VERIFY(success);
+        std::lock_guard<std::mutex> lock(_mutex);
+        
+        VtArray<Matrix4>& skelXforms = _jointSkelRestXforms.Get<Matrix4>();
+        skelXforms.resize(_topology.size());
 
-    _flags = _flags|_SkelRestXformsComputed;
+        const bool success =
+            UsdSkelConcatJointTransforms(_topology, jointLocalRestXforms,
+                                         skelXforms);
+
+        // XXX: Topology was validated when the definition was constructed,
+        /// so this should not have failed.
+        TF_VERIFY(success);
+
+        _flags = _flags|ComputeFlag;
+
+        return true;
+    }
+    return false;
 }
 
 
+template <>
 bool
 UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4dArray* xforms)
 {
-    int flags = _flags;
-    
+    const int flags = _flags;
     if (flags&_HaveBindPose) {
 
         if (!xforms) {
@@ -174,6 +276,7 @@ UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4dArray* xforms)
             return false;
         }
 
+        // double-precision bind xforms are pre-computed.
         *xforms = _jointWorldBindXforms;
         return true;
     }
@@ -181,44 +284,161 @@ UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4dArray* xforms)
 }
 
 
+template <>
 bool
-UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
-    VtMatrix4dArray* xforms)
+UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4fArray* xforms)
 {
-    int flags = _flags;
-    if (flags&_HaveBindPose) {
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' pointer is null.");
+        return false;
+    }
 
-        if (ARCH_UNLIKELY(!(flags&_WorldInverseBindXformsComputed))) {
-
-            if (!xforms) {
-                TF_CODING_ERROR("'xforms' pointer is null.");
-                return false;
-            }
-
-            _ComputeJointWorldInverseBindTransforms();
-
-        }
-        *xforms = _jointWorldInverseBindXforms;
+    // float-precision uses uncached conversion from double-precision.
+    VtMatrix4dArray xforms4d;
+    if (GetJointWorldBindTransforms(&xforms4d)) {
+        _Convert4dXformsTo4f(xforms4d, xforms);
         return true;
     }
     return false;
 }
 
 
-void
+template <int ComputeFlag, typename Matrix4>
+bool
+UsdSkel_SkelDefinition::_GetJointWorldInverseBindTransforms(
+    VtArray<Matrix4>* xforms)
+{
+    const int flags = _flags;
+    if (flags&_HaveBindPose) {
+
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+
+        if (ARCH_UNLIKELY(!(flags&ComputeFlag))) {
+            if (!_ComputeJointWorldInverseBindTransforms<
+                    ComputeFlag,Matrix4>()) {
+                return false;
+            }
+        }
+        *xforms = _jointWorldInverseBindXforms.Get<Matrix4>();
+        return true;
+    }
+    return false;
+}
+
+
+template <>
+bool
+UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
+    VtMatrix4dArray* xforms)
+{
+    return _GetJointWorldInverseBindTransforms<
+        _WorldInverseBindXforms4dComputed>(xforms);
+}
+
+
+template <>
+bool
+UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
+    VtMatrix4fArray* xforms)
+{
+    return _GetJointWorldInverseBindTransforms<
+        _WorldInverseBindXforms4fComputed>(xforms);
+}
+
+
+template <int ComputeFlag, typename Matrix4>
+bool
 UsdSkel_SkelDefinition::_ComputeJointWorldInverseBindTransforms()
 {
     TRACE_FUNCTION();
 
-    std::lock_guard<std::mutex> lock(_mutex);
+    VtArray<Matrix4> jointWorldBindXforms;
+    if (TF_VERIFY(GetJointWorldBindTransforms(&jointWorldBindXforms))) {
 
-    VtMatrix4dArray xforms(_jointWorldBindXforms);
-    for(auto& xf : xforms) {
-        xf = xf.GetInverse();
+        std::lock_guard<std::mutex> lock(_mutex);
+
+        _InvertTransforms<Matrix4>(
+            jointWorldBindXforms,
+            &_jointWorldInverseBindXforms.Get<Matrix4>());
+
+        _flags = _flags|ComputeFlag;
+        return true;
     }
-    _jointWorldInverseBindXforms = xforms;
+    return false;
+}
 
-    _flags = _flags|_WorldInverseBindXformsComputed;
+
+template <int ComputeFlag, typename Matrix4>
+bool
+UsdSkel_SkelDefinition::_GetJointLocalInverseRestTransforms(
+    VtArray<Matrix4>* xforms)
+{
+    const int flags = _flags;
+    if (flags&_HaveRestPose) {
+
+        if (!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+
+        if (ARCH_UNLIKELY(!(flags&ComputeFlag))) {
+            if (!_ComputeJointLocalInverseRestTransforms<
+                    ComputeFlag,Matrix4>()) {
+                return false;
+            }
+        }
+        *xforms = _jointLocalInverseRestXforms.Get<Matrix4>();
+        return true;
+    }
+    return false;
+}
+
+
+template <>
+bool
+UsdSkel_SkelDefinition::GetJointLocalInverseRestTransforms(
+    VtMatrix4dArray* xforms)
+{
+    return _GetJointLocalInverseRestTransforms<
+        _LocalInverseRestXforms4dComputed>(xforms);
+    return false;
+}
+
+
+template <>
+bool
+UsdSkel_SkelDefinition::GetJointLocalInverseRestTransforms(
+    VtMatrix4fArray* xforms)
+{
+    return _GetJointLocalInverseRestTransforms<
+        _LocalInverseRestXforms4fComputed>(xforms);
+    return false;
+}
+
+
+template <int ComputeFlag, typename Matrix4>
+bool
+UsdSkel_SkelDefinition::_ComputeJointLocalInverseRestTransforms()
+{
+    TRACE_FUNCTION();
+
+    VtArray<Matrix4> jointLocalRestXforms;
+    if (TF_VERIFY(GetJointLocalRestTransforms(&jointLocalRestXforms))) {
+
+        std::lock_guard<std::mutex> lock(_mutex);
+
+        _InvertTransforms<Matrix4>(
+            jointLocalRestXforms,
+            &_jointLocalInverseRestXforms.Get<Matrix4>());
+
+        _flags = _flags|ComputeFlag;
+
+        return true;
+    }
+    return false;
 }
 
 

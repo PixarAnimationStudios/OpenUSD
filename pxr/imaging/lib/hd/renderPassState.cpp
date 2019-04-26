@@ -55,6 +55,7 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasConstantFactor(0.0f)
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
+    , _depthMaskEnabled(true)
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -64,6 +65,14 @@ HdRenderPassState::HdRenderPassState()
     , _stencilZPassOp(HdStencilOpKeep)
     , _stencilEnabled(false)
     , _lineWidth(1.0f)
+    , _blendColorOp(HdBlendOpAdd)
+    , _blendColorSrcFactor(HdBlendFactorOne)
+    , _blendColorDstFactor(HdBlendFactorZero)
+    , _blendAlphaOp(HdBlendOpAdd)
+    , _blendAlphaSrcFactor(HdBlendFactorOne)
+    , _blendAlphaDstFactor(HdBlendFactorZero)
+    , _blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _blendEnabled(false)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
@@ -78,7 +87,7 @@ HdRenderPassState::~HdRenderPassState()
 
 /* virtual */
 void
-HdRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
+HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
 }
 
@@ -193,16 +202,16 @@ HdRenderPassState::GetClipPlanes() const
 }
 
 void
-HdRenderPassState::SetAttachments(
-        HdRenderPassAttachmentVector const& attachments)
+HdRenderPassState::SetAovBindings(
+        HdRenderPassAovBindingVector const& aovBindings)
 {
-    _attachments = attachments;
+    _aovBindings= aovBindings;
 }
 
-HdRenderPassAttachmentVector const&
-HdRenderPassState::GetAttachments() const
+HdRenderPassAovBindingVector const&
+HdRenderPassState::GetAovBindings() const
 {
-    return _attachments;
+    return _aovBindings;
 }
 
 void
@@ -231,6 +240,18 @@ HdRenderPassState::SetDepthFunc(HdCompareFunction depthFunc)
 }
 
 void
+HdRenderPassState::SetEnableDepthMask(bool state)
+{
+    _depthMaskEnabled = state;
+}
+
+bool
+HdRenderPassState::GetEnableDepthMask()
+{
+    return _depthMaskEnabled;
+}
+
+void
 HdRenderPassState::SetStencil(HdCompareFunction func,
         int ref, int mask,
         HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
@@ -256,6 +277,34 @@ HdRenderPassState::SetLineWidth(float width)
 }
 
 void
+HdRenderPassState::SetBlend(HdBlendOp colorOp,
+                            HdBlendFactor colorSrcFactor,
+                            HdBlendFactor colorDstFactor,
+                            HdBlendOp alphaOp,
+                            HdBlendFactor alphaSrcFactor,
+                            HdBlendFactor alphaDstFactor)
+{
+    _blendColorOp = colorOp;
+    _blendColorSrcFactor = colorSrcFactor;
+    _blendColorDstFactor = colorDstFactor;
+    _blendAlphaOp = alphaOp;
+    _blendAlphaSrcFactor = alphaSrcFactor;
+    _blendAlphaDstFactor = alphaDstFactor;
+}
+
+void
+HdRenderPassState::SetBlendConstantColor(GfVec4f const & color)
+{
+    _blendConstantColor = color;
+}
+
+void
+HdRenderPassState::SetBlendEnabled(bool enabled)
+{
+    _blendEnabled = enabled;
+}
+
+void
 HdRenderPassState::SetAlphaToCoverageUseDefault(bool useDefault)
 {
     _alphaToCoverageUseDefault = useDefault;
@@ -277,40 +326,6 @@ void
 HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
 {
     _colorMask = mask;
-}
-
-std::ostream& operator<<(std::ostream& out,
-                         const HdRenderPassAttachment& desc)
-{
-    out << "RenderPassAttachment: {";
-    if (desc.aovName.isPrimvar) {
-        out << HdAovTokensMakePrimvar(desc.aovName.name) << ", ";
-    } else if (desc.aovName.isLpe) {
-        out << HdAovTokensMakeLpe(desc.aovName.name) << ", ";
-    } else {
-        out << desc.aovName.name << ", ";
-    }
-    out << desc.renderBuffer << ", "
-        << desc.renderBufferId << ", "
-        << desc.clearValue << "}";
-    return out;
-}
-
-bool operator==(const HdRenderPassAttachment& lhs,
-                const HdRenderPassAttachment& rhs)
-{
-    return lhs.aovName.name      == rhs.aovName.name      &&
-           lhs.aovName.isPrimvar == rhs.aovName.isPrimvar &&
-           lhs.aovName.isLpe     == rhs.aovName.isLpe     &&
-           lhs.renderBuffer      == rhs.renderBuffer      &&
-           lhs.renderBufferId    == rhs.renderBufferId    &&
-           lhs.clearValue        == rhs.clearValue;
-}
-
-bool operator!=(const HdRenderPassAttachment& lhs,
-                const HdRenderPassAttachment& rhs)
-{
-    return !(lhs == rhs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

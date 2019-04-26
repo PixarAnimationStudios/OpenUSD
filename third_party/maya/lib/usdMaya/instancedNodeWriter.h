@@ -26,23 +26,32 @@
 
 /// \file usdMaya/instancedNodeWriter.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/primWriter.h"
+
+#include "usdMaya/util.h"
 #include "usdMaya/writeJobContext.h"
 
-#include "pxr/pxr.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 
-#include "pxr/usd/usd/references.h"
+#include <maya/MFnDependencyNode.h>
+
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 /// This is a "helper" prim writer used internally by UsdMayaWriteJobContext to
 /// author nodes that are directly instanced in Maya.
-class UsdMaya_InstancedNodeWriter : public UsdMayaPrimWriter {
+class UsdMaya_InstancedNodeWriter : public UsdMayaPrimWriter
+{
 public:
     UsdMaya_InstancedNodeWriter(
-        const MDagPath& mayaInstancePath,
-        const SdfPath& usdInstancePath,
-        UsdMayaWriteJobContext& ctx);
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdInstancePath,
+            UsdMayaWriteJobContext& ctx);
 
     bool ExportsGprims() const override;
     bool ShouldPruneChildren() const override;
@@ -60,6 +69,8 @@ private:
     UsdMayaUtil::MDagPathMap<SdfPath> _dagToUsdPaths;
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

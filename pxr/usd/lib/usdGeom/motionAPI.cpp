@@ -166,7 +166,7 @@ float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
     while (prim != pseudoRoot){
         UsdAttribute vsAttr = 
             prim.GetAttribute(UsdGeomTokens->motionVelocityScale);
-        if (vsAttr.HasAuthoredValueOpinion() && 
+        if (vsAttr.HasAuthoredValue() && 
             vsAttr.Get(&velocityScale, time)){
             return velocityScale;
         }

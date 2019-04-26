@@ -40,6 +40,13 @@ HdEmbreeRendererPlugin::CreateRenderDelegate()
     return new HdEmbreeRenderDelegate();
 }
 
+HdRenderDelegate*
+HdEmbreeRendererPlugin::CreateRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+{
+    return new HdEmbreeRenderDelegate(settingsMap);
+}
+
 void
 HdEmbreeRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 {

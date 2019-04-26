@@ -90,6 +90,7 @@ public:
     /// Returns true if this node is 'less' than \p rhs. 
     /// The ordering of nodes is arbitrary and does not indicate the relative
     /// strength of the nodes.
+    PCP_API
     bool operator<(const PcpNodeRef& rhs) const;
 
     /// Hash functor.
@@ -102,6 +103,7 @@ public:
     PcpPrimIndex_GraphPtr GetOwningGraph() const;
 
     /// Returns a value that uniquely identifies this node.
+    PCP_API
     void* GetUniqueIdentifier() const;
 
     /// @}

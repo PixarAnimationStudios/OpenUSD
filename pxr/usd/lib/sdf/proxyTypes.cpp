@@ -28,7 +28,9 @@
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/connectionListEditor.h"
 #include "pxr/usd/sdf/listOpListEditor.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
+#include "pxr/usd/sdf/vectorListEditor.h"
 
 #include "pxr/base/tf/registryManager.h"
 
@@ -48,6 +50,9 @@ TF_REGISTRY_FUNCTION(TfType)
         ;
     TfType::Define<SdfReferencesProxy>()
         .Alias(TfType::GetRoot(), "SdfReferencesProxy")
+        ;
+    TfType::Define<SdfPayloadsProxy>()
+        .Alias(TfType::GetRoot(), "SdfPayloadsProxy")
         ;
 }
 
@@ -88,6 +93,18 @@ struct Sdf_ListEditorProxyTraits<SdfReferenceEditorProxy> {
     }
 };
 
+template <>
+struct Sdf_ListEditorProxyTraits<SdfPayloadEditorProxy> {
+    typedef SdfPayloadEditorProxy::TypePolicy TypePolicy;
+
+    static boost::shared_ptr<Sdf_ListEditor<TypePolicy> > GetListEditor(
+        const SdfSpecHandle& o, const TfToken& n)
+    {
+        return boost::shared_ptr<Sdf_ListEditor<TypePolicy> >(
+            new Sdf_ListOpListEditor<SdfPayloadTypePolicy>(o, n));
+    }
+};
+
 template <class Proxy>
 inline
 Proxy SdfGetListEditorProxy(const SdfSpecHandle& o, const TfToken & n)
@@ -106,6 +123,25 @@ SdfReferenceEditorProxy
 SdfGetReferenceEditorProxy(const SdfSpecHandle& o, const TfToken & n)
 {
     return SdfGetListEditorProxy<SdfReferenceEditorProxy>(o, n);
+}
+
+SdfPayloadEditorProxy
+SdfGetPayloadEditorProxy(const SdfSpecHandle& o, const TfToken & n)
+{
+    return SdfGetListEditorProxy<SdfPayloadEditorProxy>(o, n);
+}
+
+SdfNameOrderProxy
+SdfGetNameOrderProxy(const SdfSpecHandle& spec, const TfToken& orderField)
+{
+    if (!spec) {
+        return SdfNameOrderProxy(SdfListOpTypeOrdered);
+    }
+
+    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor(
+        new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>(
+            spec, orderField, SdfListOpTypeOrdered));
+    return SdfNameOrderProxy(editor, SdfListOpTypeOrdered);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

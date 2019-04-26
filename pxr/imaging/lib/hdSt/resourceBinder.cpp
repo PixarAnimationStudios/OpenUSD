@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hd/bufferSpec.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -179,6 +180,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // binding assignments
     BindingLocator locator;
     locator.textureUnit = 5; // XXX: skip glop's texture --- need fix.
+    locator.uboLocation = 3; // XXX  skip lighting context UBOs
 
     int bindlessTextureLocation = 0;
     // Note that these locations are used for hash keys only and
@@ -552,7 +554,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     = MetaData::ShaderParameterAccessor(glName,
                                                         /*type=*/glType);
             } else if (it->IsTexture()) {
-                if (it->IsPtex()) {
+                if (it->GetTextureType() == HdTextureType::Ptex) {
                     // ptex texture
                     HdBinding texelBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL, bindlessTextureLocation++)
@@ -577,7 +579,42 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     // XXX: same name ?
                     TfToken layoutName = TfToken(std::string(name.GetText()) + "_layout");
                     _bindingMap[layoutName] = layoutBinding; // used for non-bindless
-                } else {
+                } else if (it->GetTextureType() == HdTextureType::Udim) {
+                    // Texture Array for UDIM
+                    HdBinding textureBinding =
+                        bindless
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY,
+                            bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_UDIM_ARRAY,
+                            locator.uniformLocation++);
+                    metaDataOut->shaderParameterBinding[textureBinding] =
+                        MetaData::ShaderParameterAccessor(
+                            /*name=*/it->GetName(),
+                            /*type=*/glType,
+                            /*inPrimvars=*/it->GetSamplerCoordinates());
+                    // used for non-bindless
+                    _bindingMap[it->GetName()] = textureBinding;
+
+                    // Layout for UDIM
+                    TfToken layoutName =
+                        TfToken(std::string(it->GetName().GetText())
+                        + "_layout");
+                    HdBinding layoutBinding =
+                        bindless
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT,
+                            bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_UDIM_LAYOUT,
+                            locator.uniformLocation++);
+
+                    metaDataOut->shaderParameterBinding[layoutBinding] =
+                        MetaData::ShaderParameterAccessor(
+                            /*name=*/layoutName,
+                            /*type=*/HdStGLConversions::GetGLSLTypename(
+                                HdType::HdTypeFloat));
+
+                    // used for non-bindless
+                    _bindingMap[layoutName] = layoutBinding;
+                } else if (it->GetTextureType() == HdTextureType::Uv) {
                     // 2d texture
                     HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D, bindlessTextureLocation++)
@@ -1010,8 +1047,8 @@ HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
             // nothing? or make it resident?? but it only binds the first one.
             // XXX: it looks like this function should take all textures in the batch.
 
-//            if (!glIsTextureHandleResidentNV(it->handle)) {
-//                glMakeTextureHandleResidentNV(it->handle);
+//            if (!glIsTextureHandleResidentARB(it->handle)) {
+//                glMakeTextureHandleResidentARB(it->handle);
 //            }
         }
     }
@@ -1031,8 +1068,8 @@ HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
         } else if (type == HdBinding::BINDLESS_TEXTURE_2D
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
                    || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
-//            if (glIsTextureHandleResidentNV(it->handle)) {
-//                glMakeTextureHandleNonResidentNV(it->handle);
+//            if (glIsTextureHandleResidentARB(it->handle)) {
+//                glMakeTextureHandleNonResidentARB(it->handle);
 //            }
         }
         // XXX: unbind

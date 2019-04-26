@@ -183,6 +183,32 @@ public:
     /// Returns true if \p apiSchemaType is a multiple-apply API schema type.
     USD_API
     bool IsMultipleApplyAPISchema(const TfType& apiSchemaType);
+    
+
+    /// Finds the TfType of a schema with \p typeName
+    ///
+    /// This is primarily for when you have been provided Schema typeName
+    /// (perhaps from a User Interface or Script) and need to identify
+    /// if a prim's type inherits/is that typeName. If the type name IS known,
+    /// then using the schema class is preferred.
+    ///
+    /// \code{.py}
+    /// # This code attempts to match all prims on a stage to a given
+    /// # user specified type, making the traditional schema based idioms not
+    /// # applicable.
+    /// data = parser.parse_args()
+    /// tfType = UsdSchemaRegistry.GetTypeFromName(data.type)
+    /// matchedPrims = [p for p in stage.Traverse() if p.IsA(tfType)] 
+    /// \endcode
+    ///
+    /// \note It's worth noting that
+    /// GetTypeFromName("Sphere") == GetTypeFromName("UsdGeomSphere"), as
+    /// this function resolves both the Schema's C++ class name and any
+    /// registered aliases from a libraries plugInfo.json file. However,
+    /// GetTypeFromName("Boundable") != GetTypeFromName("UsdGeomBoundable")
+    /// because type aliases don't get registered for abstract schema types.
+    USD_API
+    static TfType GetTypeFromName(const TfToken& typeName);
 
 private:
     friend class TfSingleton<UsdSchemaRegistry>;

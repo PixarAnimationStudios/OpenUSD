@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hdx/progressiveTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -62,23 +62,36 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 /// setup task you run before the render task, you can change the render
 /// parameters without incurring a hydra sync or rebuilding any resources.
 ///
-class HdxRenderTask : public HdSceneTask 
+class HdxRenderTask : public HdxProgressiveTask
 {
 public:
     HDX_API
     HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    /// Hooks for progressive rendering (delegated to renderpasses).
-    bool IsConverged() const;
-
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxRenderTask();
+
+    /// Hooks for progressive rendering (delegated to renderpasses).
+    virtual bool IsConverged() const override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    HDX_API
+    HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 
 private:
     HdRenderPassSharedPtrVector _passes;
@@ -90,6 +103,13 @@ private:
     // XXX: This should be moved to hdSt!
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
+
+    // Gather the render tags
+    TfTokenVector _GetRenderTags(HdTaskContext *ctx) const;
+
+    HdxRenderTask() = delete;
+    HdxRenderTask(const HdxRenderTask &) = delete;
+    HdxRenderTask &operator =(const HdxRenderTask &) = delete;
 };
 
 

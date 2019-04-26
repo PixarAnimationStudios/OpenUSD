@@ -162,7 +162,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDGEOM_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -174,7 +174,7 @@ private:
 
     // override SchemaBase virtuals.
     USDGEOM_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -288,7 +288,7 @@ public:
     USDGEOM_API
     static UsdGeomSubset CreateGeomSubset(
         const UsdGeomImageable &geom, 
-        const std::string &subsetName,
+        const TfToken &subsetName,
         const TfToken &elementType,
         const VtIntArray &indices,
         const TfToken &familyName=TfToken(),
@@ -306,7 +306,7 @@ public:
     USDGEOM_API
     static UsdGeomSubset CreateUniqueGeomSubset(
         const UsdGeomImageable &geom, 
-        const std::string &subsetName,
+        const TfToken &subsetName,
         const TfToken &elementType,
         const VtIntArray &indices,
         const TfToken &familyName=TfToken(),

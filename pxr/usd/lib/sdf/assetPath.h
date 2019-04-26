@@ -79,6 +79,14 @@ public:
         return hash;
     }
 
+    /// \class Hash
+    struct Hash
+    {
+        size_t operator()(const SdfAssetPath &ap) const {
+            return ap.GetHash();
+        }
+    };
+
     friend size_t hash_value(const SdfAssetPath &ap) { return ap.GetHash(); }
 
     /// @}
@@ -95,7 +103,7 @@ public:
     ///
     /// Note that SdfAssetPath only carries a resolved path if the creator of
     /// an instance supplied one to the constructor.  SdfAssetPath will never
-    /// call Rp itself.
+    /// perform any resolution itself.
     const std::string &GetResolvedPath() const {
         return _resolvedPath;
     }

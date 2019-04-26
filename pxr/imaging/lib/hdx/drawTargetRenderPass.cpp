@@ -109,12 +109,16 @@ HdxDrawTargetRenderPass::Sync()
         _collectionObjectVersion = newCollectionVersion;
     }
 
+    _renderPass.Sync();
+}
+
+void
+HdxDrawTargetRenderPass::Prepare()
+{
     // Check the draw target is still valid on the context.
     if (!TF_VERIFY(_drawTargetContext == GlfGLContext::GetCurrentGLContext())) {
         SetDrawTarget(_drawTarget);
     }
-
-    _renderPass.Sync();
 }
 
 void

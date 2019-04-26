@@ -1,0 +1,67 @@
+<fragment uiName="usdPreviewSurfaceCombiner" name="usdPreviewSurfaceCombiner" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    {{ autoGenWarning }}
+    <description>
+        Combines material and lighting components.
+    </description>
+    <properties>
+        <!-- Irradiance values accumulated from all lights. -->
+        <float3 name="diffuseIrradianceIn" flags="constantParam"/>
+        <float3 name="specularIrradianceIn" flags="constantParam"/>
+
+        <!-- Ambient and environment lighting from Maya. -->
+        <float3 name="ambientIn"/>
+        <bool name="mayaAlphaCut" semantic="mayaAlphaCut" flags="isRequirementOnly"/>
+        <float3 name="IrradianceEnv"/>
+        <float3 name="SpecularEnv"/>
+
+        <!-- UsdPreviewSurface Material Properties. -->
+        <float3 name="diffuseColor"/>
+        <float3 name="specularColor"/>
+        <float3 name="emissiveColor"/>
+        <!-- The shader computes transparency from its "opacity" attribute. -->
+        <float3 name="transparency"/>
+    </properties>
+    <values>
+        <float3 name="diffuseIrradianceIn" value="0.0,0.0,0.0"/>
+        <float3 name="specularIrradianceIn" value="0.0,0.0,0.0"/>
+
+        <float3 name="ambientIn" value="0.0,0.0,0.0"/>
+        <float3 name="IrradianceEnv" value="0.0,0.0,0.0"/>
+        <float3 name="SpecularEnv" value="0.0,0.0,0.0"/>
+
+        <!-- UsdPreviewSurface Default Values -->
+        <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
+        <float3 name="specularColor" value="0.0,0.0,0.0"/>
+        <float3 name="emissiveColor" value="0.0,0.0,0.0"/>
+        <float3 name="transparency" value="0.0,0.0,0.0"/>
+    </values>
+    <outputs>
+        <struct name="usdPreviewSurfaceCombiner" struct_name="mayaSurfaceShaderOutput"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="usdPreviewSurfaceCombiner"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="usdPreviewSurfaceCombiner"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
+            <function_name val="usdPreviewSurfaceCombiner"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="usdPreviewSurfaceCombiner"/>
+            <source>
+                {{ shaderCode }}
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

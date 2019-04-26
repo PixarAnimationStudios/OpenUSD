@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/light.h"
 
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -47,7 +48,7 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
                                  HdSceneDelegate *sceneDelegate)
 {
     // Get the color of the light
-    GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdTokens->color)
+    GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdStLightTokens->color)
             .Get<GfVec3f>();
 
     // Extract intensity
