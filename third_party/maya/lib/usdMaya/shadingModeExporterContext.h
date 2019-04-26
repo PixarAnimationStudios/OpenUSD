@@ -26,10 +26,11 @@
 
 /// \file usdMaya/shadingModeExporterContext.h
 
-#include "usdMaya/api.h"
-#include "usdMaya/util.h"
-
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
+#include "usdMaya/jobArgs.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
