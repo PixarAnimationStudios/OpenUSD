@@ -1219,7 +1219,7 @@ class AppController(QtCore.QObject):
         cf = self._parserData.currentframe
         if cf:
             if cf >= self.realStartTimeCode and cf <= self.realEndTimeCode:
-                self.setFrame(cf)
+                self.setFrame(float(cf))
             else:
                 sys.stderr.write('Warning: Invalid current frame specified (%s)\n' % (cf))
 
@@ -1243,11 +1243,6 @@ class AppController(QtCore.QObject):
         if self._hasTimeSamples:
             self._ui.rangeBegin.setText(str(self._timeSamples[0]))
             self._ui.rangeEnd.setText(str(self._timeSamples[-1]))
-
-        if not resetStageDataOnly:
-            # Set the current frame to the first time sample if it exists.
-            frame = 0.0 if not self._hasTimeSamples else self._timeSamples[0]
-            self.setFrame(frame)
 
         if self._playbackAvailable:
             if not resetStageDataOnly:
@@ -1856,9 +1851,8 @@ class AppController(QtCore.QObject):
             self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
-        # don't convert string to float directly because of rounding error
-        frameString = str(self._ui.frameField.text())
-        self.setFrame(frameString)
+        value = float(self._ui.frameField.text())
+        self.setFrame(value)
 
     def _sliderMoved(self, frameIndex):
         """Slot called when the frame slider is moved by a user.
@@ -3190,9 +3184,9 @@ class AppController(QtCore.QObject):
         """Set the `frame`.
 
         Args:
-            frame (str|int|float): The new frame value.
+            frame (float): The new frame value.
         """
-        frameIndex = self._findClosestFrameIndex(float(frame))
+        frameIndex = self._findClosestFrameIndex(frame)
         self._setFrameIndex(frameIndex)
 
     def _setFrameIndex(self, frameIndex):
@@ -3207,15 +3201,15 @@ class AppController(QtCore.QObject):
         except IndexError:
             return
 
-        frameIndex = int(frameIndex)
-
-        if self._dataModel.currentFrame != frame:
-            self._dataModel.currentFrame = Usd.TimeCode(frame)
+        currentFrame = Usd.TimeCode(frame)
+        if self._dataModel.currentFrame != currentFrame:
+            self._dataModel.currentFrame = currentFrame
 
             self._ui.frameSlider.setValue(frameIndex)
-            self.setFrameField(self._dataModel.currentFrame.GetValue())
 
             self._updateOnFrameChange()
+
+        self.setFrameField(self._dataModel.currentFrame.GetValue())
 
     def _updateGUIForFrameChange(self):
         """Called when the frame changes have finished.
