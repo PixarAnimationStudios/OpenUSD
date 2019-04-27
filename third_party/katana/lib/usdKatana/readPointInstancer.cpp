@@ -373,91 +373,41 @@ PxrUsdKatanaReadPointInstancer(
                 continue;
             }
 
-            // Determine where (what path) to start building the prototype prim
-            // such that its material bindings will be preserved. This could be
-            // the prototype path itself or an ancestor path.
-            //
-            SdfPathVector commonPrefixes;
+            const std::string buildPath = protoPath.GetString();
 
-            // If the proto prim itself doesn't have any bindings or isn't a
-            // (sub)component, we'll walk upwards until we find a prim that
-            // does/is. Stop walking if we reach the instancer or the usdInArgs
-            // root.
+            FnKat::Attribute materialAssignAttr;
+
+            // If the prototype prim is a (sub)component, it should have
+            // materials defined below it.
             //
-            UsdPrim prim = protoPrim;
-            while (prim and prim != instancer.GetPrim() and
-                   prim != data.GetUsdInArgs()->GetRootPrim())
+            TfToken kind;
+            std::string assetName;
+            auto assetAPI = UsdModelAPI(protoPrim);
+
+            const bool hasMaterialChildren = (
+                    assetAPI.GetAssetName(&assetName) and
+                    assetAPI.GetKind(&kind) and (
+                        KindRegistry::IsA(kind, KindTokens->component) or
+                        KindRegistry::IsA(kind, KindTokens->subcomponent)));
+
+            // Otherwise, walk up from the prototype prim looking for a material
+            // binding, and if one is found, assign it directly to the generated
+            // instance source location.
+            //
+            if (!hasMaterialChildren)
             {
-                UsdRelationship materialBindingsRel =
-                        UsdShadeMaterial::GetBindingRel(prim);
-                SdfPathVector materialPaths;
-                bool hasMaterialBindings = (materialBindingsRel and
-                        materialBindingsRel.GetForwardedTargets(
-                            &materialPaths) and !materialPaths.empty());
-
-                TfToken kind;
-                std::string assetName;
-                auto assetAPI = UsdModelAPI(prim);
-                // If the prim is a (sub)component, it should have materials
-                // defined below it.
-                bool hasMaterialChildren = (
-                        assetAPI.GetAssetName(&assetName) and
-                        assetAPI.GetKind(&kind) and (
-                            KindRegistry::IsA(kind, KindTokens->component) or
-                            KindRegistry::IsA(kind, KindTokens->subcomponent)));
-
-                if (hasMaterialChildren)
+                UsdPrim prim = protoPrim;
+                while (prim and prim != instancer.GetPrim() and
+                       prim != data.GetUsdInArgs()->GetRootPrim())
                 {
-                    // The prim has material children, so start building at the
-                    // prim's path.
-                    //
-                    commonPrefixes.push_back(prim.GetPath());
-                    break;
-                }
-
-                if (hasMaterialBindings)
-                {
-                    for (auto materialPath : materialPaths)
-                    {
-                        const SdfPath &commonPrefix =
-                                protoPath.GetCommonPrefix(materialPath);
-                        if (commonPrefix.GetString() == "/" || instancerSdfPath.HasPrefix(commonPrefix))
-                        {
-                            // XXX Unhandled case.
-                            // The prim and its material are not under the same
-                            // parent; start building at the prim's path
-                            // (although it is likely that bindings will be
-                            // broken).
-                            //
-                            commonPrefixes.push_back(prim.GetPath());
-                        }
-                        else
-                        {
-                            // Start building at the common ancestor between the
-                            // prim and its material.
-                            //
-                            commonPrefixes.push_back(commonPrefix);
-                        }
+                    materialAssignAttr = 
+                        PxrUsdKatanaUtils::GetMaterialAssignAttr(prim, data);
+                    if (materialAssignAttr.isValid()) {
+                        break;
                     }
-                    break;
+                    prim = prim.GetParent();
                 }
-
-                prim = prim.GetParent();
             }
-
-            // Fail-safe in case no common prefixes were found.
-            if (commonPrefixes.empty())
-            {
-                commonPrefixes.push_back(protoPath);
-            }
-
-            // XXX Unhandled case.
-            // We'll use the first common ancestor even if there is more than
-            // one (which shouldn't appen if the prototype prim and its bindings
-            // are under the same parent).
-            //
-            SdfPath::RemoveDescendentPaths(&commonPrefixes);
-            const std::string buildPath = commonPrefixes[0].GetString();
 
             // See if the path is a child of the point instancer. If so, we'll
             // match its hierarchy. If not, we'll put it under a 'prototypes'
@@ -483,6 +433,8 @@ PxrUsdKatanaReadPointInstancer(
             //
             sourcesBldr.setAttrAtLocation(relBuildPath,
                     "type", FnKat::StringAttribute("instance source"));
+            sourcesBldr.setAttrAtLocation(relBuildPath,
+                    "materialAssign", materialAssignAttr);
 
             // Author a tracking attr.
             //
