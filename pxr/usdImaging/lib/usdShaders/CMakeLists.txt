@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdShaders)
 
+IF(WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+ENDIF()
+
 pxr_library(usdShaders
     LIBRARIES
         ar

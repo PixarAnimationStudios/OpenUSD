@@ -575,6 +575,7 @@ def InstallBoost(context, force, buildArgs):
             b2_settings.append("--with-date_time")
             b2_settings.append("--with-system")
             b2_settings.append("--with-thread")
+            b2_settings.append("--with-chrono")
 
         if context.buildOIIO:
             b2_settings.append("--with-filesystem")
