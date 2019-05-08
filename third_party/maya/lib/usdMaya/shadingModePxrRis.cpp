@@ -398,14 +398,14 @@ static
 MObject
 _CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
-        const bool asShader,
+        const UsdMayaShadingNodeType shadingNodeType,
         UsdMayaShadingModeImportContext* context);
 
 static
 MObject
 _GetOrCreateShaderObject(
         const UsdShadeShader& shaderSchema,
-        const bool asShader,
+        const UsdMayaShadingNodeType shadingNodeType,
         UsdMayaShadingModeImportContext* context)
 {
     MObject shaderObj;
@@ -417,7 +417,7 @@ _GetOrCreateShaderObject(
         return shaderObj;
     }
 
-    shaderObj = _CreateAndPopulateShaderObject(shaderSchema, asShader, context);
+    shaderObj = _CreateAndPopulateShaderObject(shaderSchema, shadingNodeType, context);
     return context->AddCreatedObject(shaderSchema.GetPrim(), shaderObj);
 }
 
@@ -450,7 +450,7 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
 MObject
 _CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
-        const bool asShader,
+        const UsdMayaShadingNodeType shadingNodeType,
         UsdMayaShadingModeImportContext* context)
 {
     TfToken shaderId;
@@ -472,7 +472,7 @@ _CreateAndPopulateShaderObject(
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
                 MString(shaderSchema.GetPrim().GetName().GetText()),
                 mayaTypeName.GetText(),
-                asShader,
+                shadingNodeType,
                 &status,
                 &shaderObj) 
             && depFn.setObject(shaderObj))) {
@@ -512,7 +512,7 @@ _CreateAndPopulateShaderObject(
         MObject sourceObj = _GetOrCreateShaderObject(
             sourceShaderSchema,
             // any "nested" shader objects are not "shaders"
-            false, 
+            UsdMayaShadingNodeType::None,
             context);
 
         MFnDependencyNode sourceDepFn(sourceObj, &status);
@@ -580,9 +580,12 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
         displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
     }
 
-    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, true, context);
-    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, true, context);
-    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, true, context);
+    MObject surfaceShaderObj = _GetOrCreateShaderObject(
+            surfaceShader, UsdMayaShadingNodeType::Shader, context);
+    MObject volumeShaderObj = _GetOrCreateShaderObject(
+            volumeShader, UsdMayaShadingNodeType::Shader, context);
+    MObject displacementShaderObj = _GetOrCreateShaderObject(
+            displacementShader, UsdMayaShadingNodeType::Shader, context);
 
     if (surfaceShaderObj.isNull() &&
             volumeShaderObj.isNull() &&
