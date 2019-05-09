@@ -22,58 +22,124 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/eventContainer.h"
-
 #include "pxr/pxr.h"
+
+#include "pxr/base/trace/eventContainer.h"
+#include "pxr/base/tf/diagnostic.h"
+
+#include <cstdlib>
+#include <new>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TraceEventContainer::TraceEventContainer()
-    : _back(nullptr)
+    : _front(nullptr)
+    , _back(nullptr)
     , _blockSizeBytes(512)
 {}
 
+TraceEventContainer::~TraceEventContainer()
+{
+    _Node::DestroyList(_front);
+}
+
 TraceEventContainer::TraceEventContainer(TraceEventContainer&& other)
-    : _back(nullptr)
-    , _outer(std::move(other._outer))
+    : _front(other._front)
+    , _back(other._back)
     , _blockSizeBytes(other._blockSizeBytes)
 {
     other._back = nullptr;
-    if (!empty()) {
-        _back = &_outer.back();
-    }
+    other._front = nullptr;
 }
 
 TraceEventContainer& TraceEventContainer::operator=(TraceEventContainer&& other)
 {
-    _back = nullptr;
-    _outer = std::move(other._outer);
-    _blockSizeBytes = other._blockSizeBytes;
-    other._back = nullptr;
-    if (!empty()) {
-        _back = &_outer.back();
-    }
+    TraceEventContainer temp(std::move(other));
+
+    using std::swap;
+    swap(_back, temp._back);
+    swap(_front, temp._front);
+
     return *this;
 }
 
 void 
 TraceEventContainer::Append(TraceEventContainer&& other)
 {
-    _outer.splice(_outer.end(), std::move(other._outer));
-    other._back = nullptr;
-    if (!empty()) {
-        _back = &_outer.back();
+    if (other.empty()) {
+        return;
     }
+    if (empty()) {
+        *this = std::move(other);
+        return;
+    }
+    _Node::Join(_back, other._front);
+    _back = other._back;
+    other = TraceEventContainer();
 }
-
 
 void
 TraceEventContainer::Allocate()
 {
-    _outer.emplace_back();
-    _back = &_outer.back();
-    _back->reserve(_blockSizeBytes/sizeof(TraceEvent));
+    size_t capacity = (_blockSizeBytes - sizeof(_Node)) / sizeof(TraceEvent);
+    _Node *node = _Node::New(capacity);
+    if (!_front) {
+        _front = node;
+    }
+    else {
+        _Node::Join(_back, node);
+    }
+    _back = node;
     _blockSizeBytes *= 2;
+}
+
+TraceEventContainer::_Node *
+TraceEventContainer::_Node::New(size_t capacity)
+{
+    void *p = malloc(sizeof(_Node)+sizeof(TraceEvent)*capacity);
+    return new (p) _Node(capacity);
+}
+
+void
+TraceEventContainer::_Node::DestroyList(_Node *head)
+{
+    // The node passed to DestroyList (if any) must be the first node.
+    TF_DEV_AXIOM(!head || !head->_prev);
+
+    while (head) {
+        _Node *next = head->_next;
+        head->~_Node();
+        free(head);
+        head = next;
+    }
+}
+
+TraceEventContainer::_Node::_Node(size_t capacity)
+    : _prev(nullptr)
+    , _next(nullptr)
+    , _size(0)
+    , _capacity(capacity)
+{
+}
+
+TraceEventContainer::_Node::~_Node()
+{
+    for (const TraceEvent &ev : *this) {
+        ev.~TraceEvent();
+    }
+}
+
+void
+TraceEventContainer::_Node::Join(_Node *lhs, _Node *rhs)
+{
+    TF_DEV_AXIOM(lhs);
+    TF_DEV_AXIOM(rhs);
+    // lhs must be the last node in its list and rhs must be the first.
+    TF_DEV_AXIOM(!lhs->_next);
+    TF_DEV_AXIOM(!rhs->_prev);
+
+    lhs->_next = rhs;
+    rhs->_prev = lhs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
