@@ -2520,7 +2520,7 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
 
 /*virtual*/
 VtIntArray
-UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerCachePath,
+UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
                                        SdfPath const &prototypeId)
 {
     HD_TRACE_FUNCTION();
@@ -2558,7 +2558,7 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerCachePath,
 
     if (indices.IsEmpty()) {
         TF_WARN("Empty InstanceIndices (%s, %s)\n",
-                instancerCachePath.GetText(), prototypeId.GetText());
+                instancerId.GetText(), prototypeId.GetText());
         return VtIntArray();
     }
 
@@ -2567,13 +2567,13 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerCachePath,
 
 /*virtual*/
 GfMatrix4d
-UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerCachePath)
+UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId)
 {
     HD_TRACE_FUNCTION();
 
     // InstancerTransform is cached on instancer prim, not prototype prim
 
-    SdfPath cachePath = ConvertIndexPathToCachePath(instancerCachePath);
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
     GfMatrix4d ctm(1.0);
 
     // same as GetInstanceIndices, the instancer transform may be
@@ -2583,7 +2583,7 @@ UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerCachePath)
     if (!_valueCache.FindInstancerTransform(cachePath, &ctm)) {
         TF_DEBUG(HD_SAFE_MODE).Msg(
             "WARNING: Slow instancer transform fetch for %s\n", 
-            instancerCachePath.GetText());
+            instancerId.GetText());
         _UpdateSingleValue(cachePath, HdChangeTracker::DirtyTransform);
         TF_VERIFY(_valueCache.FindInstancerTransform(cachePath, &ctm));
     }
@@ -2593,12 +2593,12 @@ UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerCachePath)
 
 /*virtual*/
 size_t
-UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerCachePath,
+UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
                                              size_t maxSampleCount,
                                              float *times,
                                              GfMatrix4d *samples)
 {
-    SdfPath cachePath = ConvertIndexPathToCachePath(instancerCachePath);
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter

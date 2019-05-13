@@ -307,10 +307,10 @@ public:
     GetPrimvarDescriptors(SdfPath const& id,
                           HdInterpolation interpolation) override;
     USDIMAGING_API
-    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerCachePath,
+    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
                                           SdfPath const &prototypeId) override;
     USDIMAGING_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerCachePath) 
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId) 
         override;
 
     // Motion samples
@@ -320,7 +320,7 @@ public:
                     float *times, GfMatrix4d *samples) override;
     USDIMAGING_API
     virtual size_t
-    SampleInstancerTransform(SdfPath const &instancerCachePath,
+    SampleInstancerTransform(SdfPath const &instancerId,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples) override;
     USDIMAGING_API
