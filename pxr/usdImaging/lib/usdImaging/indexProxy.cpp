@@ -28,7 +28,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
+UsdImagingIndexProxy::AddHdPrimInfo(SdfPath const &cachePath,
                                   UsdPrim const& usdPrim,
                                   UsdImagingPrimAdapterSharedPtr const& adapter)
 {
@@ -49,7 +49,7 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
     }
 
     TF_DEBUG(USDIMAGING_CHANGES).Msg(
-        "[Add Prim Info] <%s> adapter=%s\n",
+        "[Add HdPrim Info] <%s> adapter=%s\n",
         cachePath.GetText(),
         TfType::GetCanonicalTypeName(typeid(*(adapterToInsert.get()))).c_str());
 
@@ -57,12 +57,12 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
     // prim, but we could relax this restriction if it's useful.
 
     bool inserted;
-    UsdImagingDelegate::_PrimInfoMap::iterator it;
-    std::tie(it, inserted) = _delegate->_primInfoMap.insert(
-            UsdImagingDelegate::_PrimInfoMap::value_type(cachePath,
-                                              UsdImagingDelegate::_PrimInfo()));
+    UsdImagingDelegate::_HdPrimInfoMap::iterator it;
+    std::tie(it, inserted) = _delegate->_hdPrimInfoMap.insert(
+            UsdImagingDelegate::_HdPrimInfoMap::value_type(cachePath,
+                                          UsdImagingDelegate::_HdPrimInfo()));
 
-    UsdImagingDelegate::_PrimInfo &primInfo = it->second;
+    UsdImagingDelegate::_HdPrimInfo &primInfo = it->second;
 
     if (!inserted) { // Entry already exists.
 
@@ -90,10 +90,10 @@ UsdImagingIndexProxy::AddPrimInfo(SdfPath const &cachePath,
     primInfo.dirtyBits       = 0;
     primInfo.usdPrim         = usdPrim;
 
-    _delegate->_usdIds.Insert(cachePath);
+    _delegate->_cachePaths.Insert(cachePath);
 
     // precache cache path to index path translations
-    SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     _delegate->_cache2indexPath[cachePath] = indexPath;
     _delegate->_index2cachePath[indexPath] = cachePath;
 
@@ -114,10 +114,10 @@ UsdImagingIndexProxy::InsertRprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertRprim(primType, _delegate,
-            _delegate->GetPathForIndex(cachePath),
-            _delegate->GetPathForIndex(parentPath));
+            _delegate->ConvertCachePathToIndexPath(cachePath),
+            _delegate->ConvertCachePathToIndexPath(parentPath));
 
         _AddTask(cachePath);
     }
@@ -130,9 +130,9 @@ UsdImagingIndexProxy::InsertSprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertSprim(primType, _delegate,
-            _delegate->GetPathForIndex(cachePath));
+            _delegate->ConvertCachePathToIndexPath(cachePath));
 
         _AddTask(cachePath);
     }
@@ -145,9 +145,9 @@ UsdImagingIndexProxy::InsertBprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertBprim(primType, _delegate,
-            _delegate->GetPathForIndex(cachePath));
+            _delegate->ConvertCachePathToIndexPath(cachePath));
 
         _AddTask(cachePath);
     }
@@ -156,7 +156,7 @@ void
 UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
 { 
     // Repopulation is deferred to enable batch processing in parallel.
-    _pathsToRepopulate.push_back(usdPath); 
+    _usdPathsToRepopulate.push_back(usdPath); 
 }
 
 void
@@ -176,7 +176,7 @@ bool
 UsdImagingIndexProxy::HasRprim(SdfPath const &cachePath)
 {
     return _delegate->GetRenderIndex().HasRprim(
-        _delegate->GetPathForIndex(cachePath));
+        _delegate->ConvertCachePathToIndexPath(cachePath));
 }
 
 void
@@ -184,7 +184,7 @@ UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
-    SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkRprimDirty(indexPath, dirtyBits);
 }
 
@@ -193,7 +193,7 @@ UsdImagingIndexProxy::MarkSprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
-    SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkSprimDirty(indexPath, dirtyBits);
 }
 
@@ -202,7 +202,7 @@ UsdImagingIndexProxy::MarkBprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
-    SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkBprimDirty(indexPath, dirtyBits);
 }
 
@@ -211,14 +211,15 @@ UsdImagingIndexProxy::MarkInstancerDirty(SdfPath const& cachePath,
                                          HdDirtyBits dirtyBits)
 {
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
-    SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkInstancerDirty(indexPath, dirtyBits);
 
     // XXX: Currently, instancers are part of delegate sync even though they
     // aren't in the sync request. This means we need to duplicate their
     // change tracking. This can go away when instancers are part of delegate
     // sync.
-    UsdImagingDelegate::_PrimInfo *primInfo = _delegate->GetPrimInfo(cachePath);
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
         primInfo->dirtyBits |= dirtyBits;
     }
@@ -239,8 +240,8 @@ UsdImagingIndexProxy::GetMaterialAdapter(UsdPrim const& materialPrim)
 bool
 UsdImagingIndexProxy::IsPopulated(SdfPath const& cachePath) const
 {
-    return _delegate->_primInfoMap.find(cachePath) !=
-           _delegate->_primInfoMap.end();
+    return _delegate->_hdPrimInfoMap.find(cachePath) !=
+           _delegate->_hdPrimInfoMap.end();
 }
 
 bool
@@ -273,7 +274,7 @@ UsdImagingIndexProxy::_ProcessRemovals()
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Rprim] <%s>\n",
                                     it->GetText());
 
-            index.RemoveRprim(_delegate->GetPathForIndex(*it));
+            index.RemoveRprim(_delegate->ConvertCachePathToIndexPath(*it));
         }
         _rprimsToRemove.clear();
 
@@ -286,8 +287,8 @@ UsdImagingIndexProxy::_ProcessRemovals()
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Instancer] <%s>\n",
                                     it->GetText());
 
-            _delegate->_instancerPrimPaths.erase(*it);
-            index.RemoveInstancer(_delegate->GetPathForIndex(*it));
+            _delegate->_instancerPrimCachePaths.erase(*it);
+            index.RemoveInstancer(_delegate->ConvertCachePathToIndexPath(*it));
         }
         _instancersToRemove.clear();
     }
@@ -302,7 +303,7 @@ UsdImagingIndexProxy::_ProcessRemovals()
                                              cachePath.GetText());
 
             index.RemoveSprim(primType,
-                              _delegate->GetPathForIndex(cachePath));
+                              _delegate->ConvertCachePathToIndexPath(cachePath));
         }
         _sprimsToRemove.clear();
     }
@@ -317,14 +318,14 @@ UsdImagingIndexProxy::_ProcessRemovals()
                                              cachePath.GetText());
 
             index.RemoveBprim(primType,
-                              _delegate->GetPathForIndex(cachePath));
+                              _delegate->ConvertCachePathToIndexPath(cachePath));
         }
         _bprimsToRemove.clear();
     }
 
     {
         TRACE_FUNCTION_SCOPE("primInfo");
-        TF_FOR_ALL(it, _primInfoToRemove) {
+        TF_FOR_ALL(it, _hdPrimInfoToRemove) {
             SdfPath cachePath = *it;
 
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove PrimInfo] <%s>\n",
@@ -335,14 +336,14 @@ UsdImagingIndexProxy::_ProcessRemovals()
             _delegate->_refineLevelMap.erase(cachePath);
             _delegate->_pickablesMap.erase(cachePath);
 
-            _delegate->_primInfoMap.erase(cachePath);
-            _delegate->_usdIds.Remove(cachePath);
+            _delegate->_hdPrimInfoMap.erase(cachePath);
+            _delegate->_cachePaths.Remove(cachePath);
 
-            SdfPath indexPath = _delegate->GetPathForIndex(cachePath);
+            SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
             _delegate->_cache2indexPath.erase(cachePath);
             _delegate->_index2cachePath.erase(indexPath);
         }
-        _primInfoToRemove.clear();
+        _hdPrimInfoToRemove.clear();
     }
 }
 
@@ -353,12 +354,12 @@ UsdImagingIndexProxy::InsertInstancer(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddPrimInfo(cachePath, usdPrim, adapter)) {
+    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertInstancer(_delegate,
-            _delegate->GetPathForIndex(cachePath),
-            _delegate->GetPathForIndex(parentPath));
+            _delegate->ConvertCachePathToIndexPath(cachePath),
+            _delegate->ConvertCachePathToIndexPath(parentPath));
 
-        _delegate->_instancerPrimPaths.insert(cachePath);
+        _delegate->_instancerPrimCachePaths.insert(cachePath);
 
         TF_DEBUG(USDIMAGING_INSTANCER).Msg(
             "[Instancer Inserted] %s, parent = %s, adapter = %s\n",

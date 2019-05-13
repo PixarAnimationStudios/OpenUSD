@@ -67,7 +67,7 @@ UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim,
 
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 

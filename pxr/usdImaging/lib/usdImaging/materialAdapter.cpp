@@ -73,7 +73,7 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
     // create the material network.
     for (UsdPrim const& child: prim.GetDescendants()) {
         if (child.IsA<UsdShadeShader>()) {
-            index->AddPrimInfo(child.GetPath(), child, shared_from_this());
+            index->AddHdPrimInfo(child.GetPath(), child, shared_from_this());
         }
     }
 

@@ -264,8 +264,10 @@ UsdImagingGLEngine::Render(
 
     PrepareBatch(root, params);
 
-    SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
-    SdfPathVector roots(1, rootPath);
+    // XXX(UsdImagingPaths): Is it correct to map USD root path directly
+    // to the cachePath here?
+    SdfPath cachePath = root.GetPath();
+    SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
 
     _taskController->SetCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, roots, params);
@@ -522,7 +524,10 @@ UsdImagingGLEngine::TestIntersection(
 
     TF_VERIFY(_delegate);
 
-    SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
+    // XXX(UsdImagingPaths): Is it correct to map USD root path directly
+    // to the cachePath here?
+    SdfPath cachePath = root.GetPath();
+    SdfPath rootPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     SdfPathVector roots(1, rootPath);
     _UpdateHydraCollection(&_intersectCollection, roots, params);
 

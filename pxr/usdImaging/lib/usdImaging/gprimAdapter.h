@@ -161,12 +161,13 @@ public:
     static SdfPath _AddRprim(TfToken const& primType,
                       UsdPrim const& usdPrim,
                       UsdImagingIndexProxy* index,
-                      SdfPath const& materialId,
+                      SdfPath const& materialUsdPath,
                       UsdImagingInstancerContext const* instancerContext);
 
-    // Helper function: apply gprim name mangling.
+    // Helper function: map USD path to UsdImaging cache path,
+    // applying any name-encoding required by the instancerContext.
     USDIMAGING_API
-    static SdfPath _ResolveCachePath(SdfPath const& cachePath,
+    static SdfPath _ResolveCachePath(SdfPath const& usdPath,
             UsdImagingInstancerContext const* instancerContext);
 
 protected:

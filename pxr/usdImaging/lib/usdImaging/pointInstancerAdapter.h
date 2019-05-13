@@ -97,10 +97,10 @@ public:
                                               SdfPath const& cachePath,
                                               TfToken const& propertyName) override;
 
-    virtual void ProcessPrimResync(SdfPath const& usdPath,
+    virtual void ProcessPrimResync(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
 
-    virtual void ProcessPrimRemoval(SdfPath const& usdPath,
+    virtual void ProcessPrimRemoval(SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index) override;
 
     virtual void MarkDirty(UsdPrim const& prim,
@@ -225,7 +225,7 @@ private:
 
     // Process prim removal and output a set of affected instancer paths is
     // provided.
-    void _ProcessPrimRemoval(SdfPath const& usdPath,
+    void _ProcessPrimRemoval(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index,
                              SdfPathVector* instancersToReload);
 

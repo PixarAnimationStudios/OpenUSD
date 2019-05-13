@@ -98,10 +98,10 @@ public:
                                               SdfPath const& cachePath,
                                               TfToken const& propertyName) override;
 
-    virtual void ProcessPrimResync(SdfPath const& usdPath,
+    virtual void ProcessPrimResync(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
 
-    virtual void ProcessPrimRemoval(SdfPath const& primPath,
+    virtual void ProcessPrimRemoval(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
 
 
@@ -367,8 +367,8 @@ private:
         // The master prim path associated with this instancer.
         SdfPath masterPath;
 
-        // The material path associated with this instancer.
-        SdfPath materialId;
+        // The USD material path associated with this instancer.
+        SdfPath materialUsdPath;
 
         // The drawmode associated with this instancer.
         TfToken drawMode;

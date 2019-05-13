@@ -157,7 +157,7 @@ UsdSkelImagingSkeletonAdapter::Populate(
         // Also, since the bone mesh isn't backed by the UsdStage, we register 
         // the skeleton prim on its behalf.
         SdfPath instancer = instancerContext ?
-            instancerContext->instancerId : SdfPath();
+            instancerContext->instancerCachePath : SdfPath();
         index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
                         instancer, prim, shared_from_this());
     }
@@ -835,7 +835,7 @@ UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
         
         // Remove bone mesh.
         index->RemoveRprim(cachePath);
-        index->RemovePrimInfo(cachePath);
+        index->RemoveHdPrimInfo(cachePath);
 
         // Remove all skinned prims that are targered by the skeleton, and their
         // computations.
@@ -1130,18 +1130,18 @@ UsdSkelImagingSkeletonAdapter::_RemoveSkinnedPrimAndComputations(
     
     // Remove skinned prim.
     index->RemoveRprim(cachePath);
-    index->RemovePrimInfo(cachePath);
+    index->RemoveHdPrimInfo(cachePath);
 
     // Remove the computations it participates in.
     SdfPath compPath = _GetSkinningComputationPath(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->extComputation, compPath);
-    index->RemovePrimInfo(compPath);
+    index->RemoveHdPrimInfo(compPath);
     
     if (_IsEnabledAggregatorComputation()) {
         SdfPath aggrCompPath =
             _GetSkinningInputAggregatorComputationPath(cachePath);
         index->RemoveSprim(HdPrimTypeTokens->extComputation, aggrCompPath);
-        index->RemovePrimInfo(aggrCompPath);
+        index->RemoveHdPrimInfo(aggrCompPath);
     }
     
     // Clear cache entry.

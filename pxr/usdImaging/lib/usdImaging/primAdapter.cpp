@@ -133,15 +133,16 @@ UsdImagingPrimAdapter::ProcessPrimChange(UsdPrim const& prim,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath, 
+UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& cachePath, 
                                          UsdImagingIndexProxy* index) 
 {
-    // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the prim and repopulate as the default
-    // behavior.
-    _RemovePrim(/*cachePath*/usdPath, index);
-    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
+    _RemovePrim(cachePath, index);
+    index->RemoveHdPrimInfo(cachePath);
 
+    /// XXX(UsdImagingPaths): We use the cachePath directly as the
+    // usdPath here, but should do the proper transformation.
+    // Maybe we could check the primInfo before its removal.
+    SdfPath const& usdPath = cachePath;
     if (_GetPrim(usdPath)) {
         // The prim still exists, so repopulate it.
         index->Repopulate(/*cachePath*/usdPath);
@@ -150,19 +151,17 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
-    // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the prim. We don't repopulate.
-    _RemovePrim(/*cachePath*/primPath, index);
-    index->RemovePrimInfo(/*usdPrimPath*/primPath);
+    _RemovePrim(cachePath, index);
+    index->RemoveHdPrimInfo(cachePath);
 }
 
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
-                                            SdfPath const& usdPath,
+                                            SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
 }
@@ -170,7 +169,7 @@ UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
-                                     SdfPath const& usdPath,
+                                     SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index)
 {
 }
@@ -178,7 +177,7 @@ UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
-                                          SdfPath const& usdPath,
+                                          SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
 }
@@ -186,7 +185,7 @@ UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkRenderTagDirty(UsdPrim const& prim,
-                                          SdfPath const& usdPath,
+                                          SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
 }
@@ -194,7 +193,7 @@ UsdImagingPrimAdapter::MarkRenderTagDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
-                                          SdfPath const& usdPath,
+                                          SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
 }
@@ -202,7 +201,7 @@ UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
-                                           SdfPath const& usdPath,
+                                           SdfPath const& cachePath,
                                            UsdImagingIndexProxy* index)
 {
 }
@@ -210,7 +209,7 @@ UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
-                                         SdfPath const& usdPath,
+                                         SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
 }
@@ -346,7 +345,11 @@ UsdImagingPrimAdapter::PopulateSelection(HdSelection::HighlightMode const& mode,
                                          VtIntArray const &instanceIndices,
                                          HdSelectionSharedPtr const &result)
 {
-    const SdfPath indexPath = _delegate->GetPathForIndex(usdPath);
+    // XXX(UsdImagingPaths): Is this a Hydra ID? Cache Path? Or UsdPath?
+    // primAdapter.h calls it a usdPath, but clients pass in an rprimPath.
+    //
+    SdfPath const& cachePath = usdPath;
+    const SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
 
     // insert itself into the selection map.
     // XXX: should check the existence of the path
@@ -478,9 +481,9 @@ UsdImagingPrimAdapter::_GetTimeWithOffset(float offset) const
 }
 
 SdfPath 
-UsdImagingPrimAdapter::_GetPathForIndex(const SdfPath &usdPath) const
+UsdImagingPrimAdapter::_ConvertCachePathToIndexPath(const SdfPath &usdPath) const
 {
-    return _delegate->GetPathForIndex(usdPath);
+    return _delegate->ConvertCachePathToIndexPath(usdPath);
 }
 
 SdfPathVector
@@ -742,7 +745,7 @@ UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim) const
 }
 
 SdfPath
-UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim) const
+UsdImagingPrimAdapter::GetMaterialUsdPath(UsdPrim const& prim) const
 {
     HD_TRACE_FUNCTION();
 
@@ -766,7 +769,7 @@ SdfPath
 UsdImagingPrimAdapter::GetInstancerBinding(UsdPrim const& prim,
                         UsdImagingInstancerContext const* instancerContext)
 {
-    return instancerContext ? instancerContext->instancerId
+    return instancerContext ? instancerContext->instancerCachePath
                             : SdfPath();
     
 }

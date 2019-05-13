@@ -115,7 +115,8 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter = 
                         _GetSharedFromThis();
 
-    const SdfPath& instanceMaterialId = instancerAdapter->GetMaterialId(prim);
+    const SdfPath& instancerMaterialUsdPath =
+        instancerAdapter->GetMaterialUsdPath(prim);
 
     // Construct the instance proxy path for "instancePath" to look up the
     // draw mode for this instance.  If this is a nested instance (meaning
@@ -137,7 +138,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     for (auto it = range.first; it != range.second; ++it) {
         _InstancerData& instancerData = _instancerData[it->second];
         // If material ID or draw mode differ, split the instance.
-        if (instancerData.materialId == instanceMaterialId &&
+        if (instancerData.materialUsdPath == instancerMaterialUsdPath &&
             instancerData.drawMode == instanceDrawMode) {
             instancerPath = it->second;
             break;
@@ -167,7 +168,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
     if(instancerData.instancePaths.empty()) {
         instancerData.masterPath = masterPrim.GetPath();
-        instancerData.materialId = instanceMaterialId;
+        instancerData.materialUsdPath = instancerMaterialUsdPath;
         instancerData.drawMode = instanceDrawMode;
 
         // Add this instancer into the render index.
@@ -255,9 +256,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
             // Inherited attribute resolution...
             SdfPath protoMaterialId =
-                primAdapter->GetMaterialId(*iter);
+                primAdapter->GetMaterialUsdPath(*iter);
             if (protoMaterialId.IsEmpty()) {
-                protoMaterialId = instanceMaterialId;
+                protoMaterialId = instancerMaterialUsdPath;
             }
             TfToken protoDrawMode = GetModelDrawMode(instanceProxyPrim);
 
@@ -297,7 +298,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         }
         if (primCount > 0) {
             index->InsertInstancer(instancerPath,
-                                   /*parentPath=*/ctx.instancerId,
+                                   /*parentPath=*/ctx.instancerCachePath,
                                    _GetPrim(instancerPath),
                                    ctx.instancerAdapter);
 
@@ -337,7 +338,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
             // Make sure we add a dependency for this instance on this adapter,
             // so that changes to the instance are handled properly.
-            index->AddPrimInfo(instancePath,
+            index->AddHdPrimInfo(instancePath,
                                _GetPrim(instancePath),
                                instancerAdapter);
 
@@ -372,7 +373,7 @@ SdfPath
 UsdImagingInstanceAdapter::_InsertProtoRprim(
     UsdPrimRange::iterator *it,
     TfToken const& protoName,
-    SdfPath materialId,
+    SdfPath materialUsdPath,
     TfToken drawMode,
     SdfPath instancerPath,
     UsdImagingPrimAdapterSharedPtr const& primAdapter,
@@ -390,7 +391,7 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
 
     UsdImagingInstancerContext ctx = { instancerPath,
                                        protoName,
-                                       materialId,
+                                       materialUsdPath,
                                        drawMode,
                                        instancerAdapter };
 
@@ -491,7 +492,7 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         // DirtyInstancer bits on the Rprim on every frame, to be sure the 
         // instancer data associated with the Rprim gets updated.
         int instancerBits = _UpdateDirtyBits(
-                _GetPrim(instancerContext.instancerId));
+                _GetPrim(instancerContext.instancerCachePath));
         *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
         *timeVaryingBits |= HdChangeTracker::DirtyVisibility;
 
@@ -826,7 +827,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         if (!TF_VERIFY(rproto.protoGroup, "%s", cachePath.GetText()))
             return;
 
-        _UpdateInstanceMap(_GetPrim(instancerContext.instancerId), time);
+        _UpdateInstanceMap(_GetPrim(instancerContext.instancerCachePath), time);
 
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             valueCache->GetInstanceIndices(cachePath) = 
@@ -867,7 +868,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         else {
             // The instancer is visible and the prototype has varying
             // visibility, we must compute visibility.
-            vis = GetVisible(_GetPrim(instancerContext.instancerId), time);
+            vis = GetVisible(_GetPrim(instancerContext.instancerCachePath), time);
         }
 
         if (requestedBits & HdChangeTracker::DirtyTransform) {
@@ -987,16 +988,16 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& usdPath,
     }
 }
 
-void UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& primPath,
+void UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& cachePath,
                                                   UsdImagingIndexProxy* index)
 {
-    _ResyncPath(primPath, index, /*reload=*/true);
+    _ResyncPath(cachePath, index, /*reload=*/true);
 }
 
-void UsdImagingInstanceAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+void UsdImagingInstanceAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                                    UsdImagingIndexProxy* index)
 {
-    _ResyncPath(primPath, index, /*reload=*/false);
+    _ResyncPath(cachePath, index, /*reload=*/false);
 }
 
 void
@@ -1237,7 +1238,7 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     // copy of them around so we can repopulate them below.
     const SdfPathVector instancePaths = instIt->second.instancePaths;
     TF_FOR_ALL(instanceIt, instancePaths) {
-        index->RemovePrimInfo(*instanceIt);
+        index->RemoveHdPrimInfo(*instanceIt);
     }
 
     // Remove this instancer's entry from the master -> instancer map.
@@ -1251,7 +1252,7 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
 
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
-    index->RemovePrimInfo(instancerPath);
+    index->RemoveHdPrimInfo(instancerPath);
     _instancerData.erase(instIt);
 
     // Repopulate the instancer's previous instances. Those that don't exist
@@ -1285,8 +1286,8 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
 
     _InstancerDataMap::const_iterator it = _instancerData.find(instancerPath);
     _ProtoRprim const* r = nullptr;
-    SdfPath instancerId;
-    SdfPath materialId;
+    SdfPath instancerCachePath;
+    SdfPath materialUsdPath;
     TfToken drawMode;
 
     if (it != _instancerData.end()) {
@@ -1294,8 +1295,8 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
         if (primIt == it->second.primMap.end()) {
             return EMPTY;
         }
-        instancerId = instancerPath;
-        materialId = it->second.materialId;
+        instancerCachePath = instancerPath;
+        materialUsdPath = it->second.materialUsdPath;
         drawMode = it->second.drawMode;
         r = &(primIt->second);
     } else {
@@ -1311,9 +1312,9 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
                                     instancer.primMap.find(cachePath);
             if (protoIt != instancer.primMap.end()) {
                 // This is the correct instancer path for this prim.
-                instancerId = pathInstancerDataPair.first;
-                materialId = 
-                    pathInstancerDataPair.second.materialId;
+                instancerCachePath = pathInstancerDataPair.first;
+                materialUsdPath = 
+                    pathInstancerDataPair.second.materialUsdPath;
                 drawMode =
                     pathInstancerDataPair.second.drawMode;
                 r = &protoIt->second;
@@ -1326,8 +1327,8 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
         return EMPTY;
     }
 
-    ctx->instancerId = instancerId;
-    ctx->instanceMaterialId = materialId;
+    ctx->instancerCachePath = instancerCachePath;
+    ctx->instancerMaterialUsdPath = materialUsdPath;
     ctx->instanceDrawMode = drawMode;
     ctx->childName = TfToken();
     // Note: use a null adapter here.  The UsdImagingInstancerContext is
@@ -1720,7 +1721,8 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         // add all protos.
         TF_FOR_ALL (it, instancerData->primMap) {
             // convert to indexPath (add prefix)
-            SdfPath indexPath = adapter->_GetPathForIndex(it->first);
+            SdfPath indexPath =
+                adapter->_ConvertCachePathToIndexPath(it->first);
 
             // highlight all subtree with instanceIndices.
             // XXX: this seems redundant, but needed for point instancer 

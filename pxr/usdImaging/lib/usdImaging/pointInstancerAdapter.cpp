@@ -365,9 +365,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 // above, since UsdImagingInstanceAdapter also returns true for
                 // IsInstancerAdapter but it could be instancing something else.
                 UsdImagingInstancerContext ctx = {
-                    instancerContext->instancerId,
+                    instancerContext->instancerCachePath,
                     instancerContext->childName,
-                    instancerContext->instanceMaterialId,
+                    instancerContext->instancerMaterialUsdPath,
                     instancerContext->instanceDrawMode,
                     UsdImagingPrimAdapterSharedPtr() };
                 protoPath = adapter->Populate(*iter, index, &ctx);
@@ -382,10 +382,10 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     populatePrim = _GetPrim(instancerChain.at(1));
                 }
 
-                SdfPath const& materialId = GetMaterialId(populatePrim);
+                SdfPath const& materialId = GetMaterialUsdPath(populatePrim);
                 TfToken const& drawMode = GetModelDrawMode(instanceProxyPrim);
                 UsdImagingInstancerContext ctx = {
-                    instancerContext->instancerId,
+                    instancerContext->instancerCachePath,
                     /*childName=*/protoName,
                     materialId,
                     drawMode,
@@ -406,7 +406,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
                 "[Add Instance PI] <%s>  %s\n",
-                instancerContext->instancerId.GetText(), protoPath.GetText());
+                instancerContext->instancerCachePath.GetText(), protoPath.GetText());
 
             //
             // Update instancer data.
@@ -1031,10 +1031,14 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 }
 
 void
-UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& usdPath,
+UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index,
                                              SdfPathVector* instancersToReload)
 {
+    // XXX(UsdImagingPaths): We use the cachePath as a usdPath directly here,
+    // but we should probably do the correct transformation.
+    SdfPath const& usdPath = cachePath;
+
     // If prim data exists at this path, we'll drop it now.
     _InstancerDataMap::iterator instIt = _instancerData.find(usdPath);
     SdfPathVector instancersToUnload;
@@ -1054,7 +1058,7 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& usdPath,
             instIt = _instancerData.find(parentInstancerPath);
         }
     } else {
-        if (!IsChildPath(usdPath)) {
+        if (!IsChildPath(cachePath)) {
             // This is a path that is neither an instancer or a child path,
             // which means it was only tracked for change processing at an
             // instance root.
@@ -1156,7 +1160,7 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& usdPath,
 }
 
 void
-UsdImagingPointInstancerAdapter::ProcessPrimResync(SdfPath const& usdPath,
+UsdImagingPointInstancerAdapter::ProcessPrimResync(SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index)
 {
     // _ProcesPrimRemoval does the heavy lifting, returning a set of instancers
@@ -1164,7 +1168,7 @@ UsdImagingPointInstancerAdapter::ProcessPrimResync(SdfPath const& usdPath,
     // "toReload" list, as they will be discovered in the process of reloading
     // the root instancer prim.
     SdfPathVector toReload;
-    _ProcessPrimRemoval(usdPath, index, &toReload);
+    _ProcessPrimRemoval(cachePath, index, &toReload);
     for (SdfPath const& instancerRootPath : toReload) {
         index->Repopulate(instancerRootPath);
     }
@@ -1172,11 +1176,11 @@ UsdImagingPointInstancerAdapter::ProcessPrimResync(SdfPath const& usdPath,
 
 /*virtual*/
 void
-UsdImagingPointInstancerAdapter::ProcessPrimRemoval(SdfPath const& usdPath,
+UsdImagingPointInstancerAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                                     UsdImagingIndexProxy* index)
 {
     // Process removals, but do not repopulate.
-    _ProcessPrimRemoval(usdPath, index, /*instancersToRepopulate*/nullptr);
+    _ProcessPrimRemoval(cachePath, index, /*instancersToRepopulate*/nullptr);
 }
 
 void
@@ -1329,7 +1333,7 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
 
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
-    index->RemovePrimInfo(instancerPath);
+    index->RemoveHdPrimInfo(instancerPath);
 }
 
 // -------------------------------------------------------------------------- //
@@ -1915,7 +1919,10 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
     VtIntArray const &instanceIndices,
     HdSelectionSharedPtr const &result)
 {
-    SdfPath indexPath = _GetPathForIndex(path);
+    // XXX(UsdImagingPaths): Is this a Hydra ID? Cache Path? Or UsdPath?
+    // primAdapter.h calls it a usdPath, but clients pass in an rprimPath.
+    //
+    SdfPath indexPath = _ConvertCachePathToIndexPath(path);
     SdfPathVector const& ids = _GetRprimSubtree(indexPath);
 
     bool added = false;

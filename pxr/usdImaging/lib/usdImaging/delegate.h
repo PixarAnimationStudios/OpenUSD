@@ -179,19 +179,20 @@ public:
     USDIMAGING_API
     void SetRefineLevelFallback(int level);
 
-    /// Removes any explicit refine level set for the given prim, marks dirty if
-    /// a change in level occurs.
+    /// Removes any explicit refine level set for the given USD prim.
+    /// Marks dirty if a change in level occurs.
     USDIMAGING_API
     void ClearRefineLevel(SdfPath const& usdPath);
 
-    /// Sets an explicit refinement level for the given prim, if no level is
-    /// explicitly set, the fallback is used, see GetRefineLevelFallback().
+    /// Sets an explicit refinement level for the given USD prim.
+    /// If no level is explicitly set, the fallback is used;
+    /// see GetRefineLevelFallback().
     /// If setting an explicit level does not change the effective level, no
     /// dirty bit is set.
     USDIMAGING_API
     void SetRefineLevel(SdfPath const& usdPath, int level);
 
-    /// Returns true is the prims refinement level > 0
+    /// Returns true is the USD prim refinement level > 0
     USDIMAGING_API
     bool IsRefined(SdfPath const& usdPath) const;
 
@@ -306,10 +307,10 @@ public:
     GetPrimvarDescriptors(SdfPath const& id,
                           HdInterpolation interpolation) override;
     USDIMAGING_API
-    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
+    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerCachePath,
                                           SdfPath const &prototypeId) override;
     USDIMAGING_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId) 
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerCachePath) 
         override;
 
     // Motion samples
@@ -319,7 +320,7 @@ public:
                     float *times, GfMatrix4d *samples) override;
     USDIMAGING_API
     virtual size_t
-    SampleInstancerTransform(SdfPath const &instancerId,
+    SampleInstancerTransform(SdfPath const &instancerCachePath,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples) override;
     USDIMAGING_API
@@ -429,10 +430,10 @@ public:
                               HdExtComputationContext *context) override;
 
 public:
-    // Converts a UsdStage path to a path in the render index.
+    // Converts a cache path to a path in the render index.
     USDIMAGING_API
-    SdfPath GetPathForIndex(SdfPath const& usdPath) {
-        SdfPathMap::const_iterator it = _cache2indexPath.find(usdPath);
+    SdfPath ConvertCachePathToIndexPath(SdfPath const& cachePath) {
+        SdfPathMap::const_iterator it = _cache2indexPath.find(cachePath);
         if (it != _cache2indexPath.end()) {
             return it->second;
         }
@@ -440,13 +441,13 @@ public:
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();
         if (delegateID == SdfPath::AbsoluteRootPath()) {
-            return usdPath;
+            return cachePath;
         }
-        if (usdPath.IsEmpty()) {
-            return usdPath;
+        if (cachePath.IsEmpty()) {
+            return cachePath;
         }
 
-        return usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
+        return cachePath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
     }
 
     /// Convert the given Hydra ID to a UsdImaging cache path,
@@ -455,7 +456,7 @@ public:
     /// The UsdImaging cache path is the same as a USD prim path,
     /// except for instanced prims, which get a name-mangled encoding.
     USDIMAGING_API
-    SdfPath GetPathForUsd(SdfPath const& indexPath) {
+    SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
         SdfPathMap::const_iterator it = _index2cachePath.find(indexPath);
         if (it != _index2cachePath.end()) {
             return it->second;
@@ -471,14 +472,14 @@ public:
     }
 
     /// Populate HdxSelection for given \p path (root) and \p instanceIndex
-    /// if path is instancer and instanceIndex is -1, all instances will be
+    /// if indexPath is instancer and instanceIndex is -1, all instances will be
     /// selected.
     ///
     /// XXX: subtree highlighting with native instancing is not working
     /// correctly right now. Path needs to be a leaf prim or instancer.
     USDIMAGING_API
     bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
-                           const SdfPath &path,
+                           const SdfPath &indexPath,
                            int instanceIndex,
                            HdSelectionSharedPtr const &result);
 
@@ -515,8 +516,8 @@ private:
     // ---------------------------------------------------------------------- //
     // Usd Change Processing / Notice Handlers 
     // ---------------------------------------------------------------------- //
-    void _OnObjectsChanged(UsdNotice::ObjectsChanged const&,
-                           UsdStageWeakPtr const& sender);
+    void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const&,
+                              UsdStageWeakPtr const& sender);
 
     // The lightest-weight update, it does fine-grained invalidation of
     // individual properties at the given path (prim or property).
@@ -524,9 +525,9 @@ private:
     // If \p path is a prim path, changedPrimInfoFields will be populated
     // with the list of scene description fields that caused this prim to
     // be refreshed.
-    void _RefreshObject(SdfPath const& path, 
-                        TfTokenVector const& changedPrimInfoFields,
-                        UsdImagingIndexProxy* proxy);
+    void _RefreshUsdObject(SdfPath const& usdPath, 
+                           TfTokenVector const& changedPrimInfoFields,
+                           UsdImagingIndexProxy* proxy);
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
@@ -535,13 +536,13 @@ private:
     // Repopulate() on those prims individually. If repopulateFromRoot is
     // true, Repopulate() will be called on \p rootPath instead. This is slower,
     // but handles changes in tree topology.
-    void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy,
-                     bool repopulateFromRoot = false);
+    void _ResyncUsdPrim(SdfPath const& usdRootPath, UsdImagingIndexProxy* proxy,
+                        bool repopulateFromRoot = false);
 
     // ---------------------------------------------------------------------- //
     // Usd Data-Access Helper Methods
     // ---------------------------------------------------------------------- //
-    UsdPrim _GetPrim(SdfPath const& usdPath) {
+    UsdPrim _GetUsdPrim(SdfPath const& usdPath) {
         UsdPrim const& p = 
                     _stage->GetPrimAtPath(usdPath.GetAbsoluteRootOrPrimPath());
         TF_VERIFY(p, "No prim found for id: %s",
@@ -549,7 +550,7 @@ private:
         return p;
     }
 
-    void _UpdateSingleValue(SdfPath const& usdPath, int dirtyFlags);
+    void _UpdateSingleValue(SdfPath const& cachePath, int dirtyFlags);
 
     // ---------------------------------------------------------------------- //
     // Cache structures and related methods for population. 
@@ -599,7 +600,7 @@ private:
     _AdapterMap _adapterMap;
 
     // Per-Hydra-Primitive tracking data
-    struct _PrimInfo {
+    struct _HdPrimInfo {
         _AdapterSharedPtr adapter;          // The adapter to use for the prim
         UsdPrim           usdPrim;          // Reference to the Usd prim
         HdDirtyBits       timeVaryingBits;  // Dirty Bits to set when
@@ -607,9 +608,10 @@ private:
         HdDirtyBits       dirtyBits;        // Current dirty state of the prim.
     };
 
-    typedef TfHashMap<SdfPath, _PrimInfo, SdfPath::Hash> _PrimInfoMap;
+    typedef TfHashMap<SdfPath, _HdPrimInfo, SdfPath::Hash> _HdPrimInfoMap;
 
-    _PrimInfoMap _primInfoMap;       // Indexed by "Cache Path"
+    // Map from cache path to Hydra prim info
+    _HdPrimInfoMap _hdPrimInfoMap;
 
     // SdfPath::ReplacePrefix() is used frequently to convert between
     // cache path and Hydra render index path and is a performance bottleneck.
@@ -618,8 +620,9 @@ private:
     SdfPathMap _cache2indexPath;
     SdfPathMap _index2cachePath;
 
-    // List of all prim Id's for sub-tree analysis
-    Hd_SortedIds _usdIds;
+    // List of all cache paths in use, corresponding to the keys
+    // in _hdPrimInfoMap.
+    Hd_SortedIds _cachePaths;
 
     // Only use this method when we think no existing adapter has been
     // established. For example, during initial Population.
@@ -627,20 +630,23 @@ private:
                                             bool ignoreInstancing = false);
 
     // Obtain the prim tracking data for the given cache path.
-    _PrimInfo *GetPrimInfo(const SdfPath &cachePath);
+    _HdPrimInfo *_GetHdPrimInfo(const SdfPath &cachePath);
 
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
-    _InstancerSet _instancerPrimPaths;
 
-    void _MarkSubtreeTransformDirty(SdfPath const &subtreeRoot);
-    void _MarkSubtreeVisibilityDirty(SdfPath const &subtreeRoot);
+    // Set of cache paths representing instancers
+    _InstancerSet _instancerPrimCachePaths;
+
+    void _MarkSubtreeTransformDirty(SdfPath const &usdSubtreeRoot);
+    void _MarkSubtreeVisibilityDirty(SdfPath const &usdSubtreeRoot);
 
     bool _IsChildPath(SdfPath const& path) const {
         return path.IsPropertyPath();
     }
 
-    /// Refinement level per-prim and fallback.
+    /// Refinement level per-USD-prim and fallback.
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _RefineLevelMap;
+    /// Map from USD prim path to refine level.
     _RefineLevelMap _refineLevelMap;
 
     /// Cached/pre-fetched rprim data.
@@ -672,14 +678,14 @@ private:
 
     // Change processing
     TfNotice::Key _objectsChangedNoticeKey;
-    SdfPathVector _pathsToResync;
+    SdfPathVector _usdPathsToResync;
 
     // Map from path of Usd object to update to list of changed scene 
     // description fields for that object. This list of fields is only
     // populated for prim paths.
     typedef std::unordered_map<SdfPath, TfTokenVector, SdfPath::Hash> 
         _PathsToUpdateMap;
-    _PathsToUpdateMap _pathsToUpdate;
+    _PathsToUpdateMap _usdPathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingImplData _materialBindingImplData;

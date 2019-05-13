@@ -72,13 +72,13 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
     if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
         for (const UsdGeomSubset &subset:
              UsdGeomSubset::GetAllGeomSubsets(imageable)) {
-            index->AddPrimInfo(subset.GetPath(),
+            index->AddHdPrimInfo(subset.GetPath(),
                                subset.GetPrim().GetParent(),
                                shared_from_this());
             // Ensure the bound material has been populated.
             if (UsdPrim materialPrim =
                 prim.GetStage()->GetPrimAtPath(
-                GetMaterialId(subset.GetPrim()))) {
+                GetMaterialUsdPath(subset.GetPrim()))) {
                 UsdImagingPrimAdapterSharedPtr materialAdapter =
                     index->GetMaterialAdapter(materialPrim);
                 if (materialAdapter) {
@@ -88,7 +88,7 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
         }
     }
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 
@@ -364,7 +364,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
                         HdGeomSubset {
                             HdGeomSubset::TypeFaceSet,
                             subset.GetPath(),
-                            GetMaterialId(subset.GetPrim()),
+                            GetMaterialUsdPath(subset.GetPrim()),
                             indices });
                  }
              }

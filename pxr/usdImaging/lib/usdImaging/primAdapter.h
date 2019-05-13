@@ -180,13 +180,13 @@ public:
     /// adapter plug-ins should override this method to free any per-prim state
     /// that was accumulated in the adapter.
     USDIMAGING_API
-    virtual void ProcessPrimResync(SdfPath const& primPath,
+    virtual void ProcessPrimResync(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index);
 
     /// Removes all associated Rprims and dependencies from the render index
     /// without scheduling them for repopulation. 
     USDIMAGING_API
-    virtual void ProcessPrimRemoval(SdfPath const& primPath,
+    virtual void ProcessPrimRemoval(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index);
 
 
@@ -386,7 +386,7 @@ public:
     /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
     USDIMAGING_API
-    SdfPath GetMaterialId(UsdPrim const& prim) const; 
+    SdfPath GetMaterialUsdPath(UsdPrim const& prim) const; 
 
     /// Gets the instancer ID for the given prim and instancerContext.
     USDIMAGING_API
@@ -455,9 +455,9 @@ protected:
     USDIMAGING_API
     UsdTimeCode _GetTimeWithOffset(float offset) const;
 
-    // Converts \p stagePath to the path in the render index
+    // Converts \p cachePath to the path in the render index.
     USDIMAGING_API
-    SdfPath _GetPathForIndex(SdfPath const& usdPath) const;
+    SdfPath _ConvertCachePathToIndexPath(SdfPath const& cachePath) const;
 
     // Returns the rprim paths in the renderIndex rooted at \p indexPath.
     USDIMAGING_API
