@@ -1433,7 +1433,8 @@ protected:
              const std::string &identifier,
              const std::string &realPath = std::string(),
              const ArAssetInfo& assetInfo = ArAssetInfo(),
-             const FileFormatArguments &args = FileFormatArguments());
+             const FileFormatArguments &args = FileFormatArguments(),
+             bool validateAuthoring = false);
 
 private:
     // Create a new layer.
@@ -1575,6 +1576,9 @@ private:
     /// If \p prim is inert (has no affect on the scene), removes prim, then 
     /// prunes inert parent prims back to the root.
     void _RemoveInertToRootmost(SdfPrimSpecHandle prim);
+
+    /// Returns whether this layer is validating authoring operations.
+    bool _ValidateAuthoring() const { return _validateAuthoring; }
 
     /// Returns the path used in the muted layers set.
     std::string _GetMutedPath() const;
@@ -1764,9 +1768,13 @@ private:
     bool _permissionToEdit;
     bool _permissionToSave;
 
-    // Allow access to _FindLayerForData() and _IsInert().
+    // Whether layer edits are validated.
+    bool _validateAuthoring;
+
+    // Allow access to _ValidateAuthoring() and _IsInert().
     friend class SdfSpec;
     friend class SdfPropertySpec;
+    friend class SdfAttributeSpec;
 
     friend class Sdf_ChangeManager;
 
@@ -1781,9 +1789,6 @@ private:
     // Give layer state delegates access to our data as well as to
     // the various _Prim functions.
     friend class SdfLayerStateDelegateBase;
-
-    // Give SdSpec access to _MoveSpec
-    friend class SdSpec;
 };
 
 // Inlined implementations for convenience field and time sample API.

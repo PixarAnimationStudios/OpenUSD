@@ -55,6 +55,7 @@
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -114,12 +115,19 @@ _GetLayerRegistryMutex() {
     return mutex;
 }
 
+TF_DEFINE_ENV_SETTING(
+    SDF_LAYER_VALIDATE_AUTHORING, false,
+    "If enabled, layers will validate new fields and specs being authored "
+    "against their schema. If the field or spec is not defined in the schema "
+    "a coding error will be issued and the authoring operation will fail.");
+
 SdfLayer::SdfLayer(
     const SdfFileFormatConstPtr &fileFormat,
     const string &identifier,
     const string &realPath,
     const ArAssetInfo& assetInfo,
-    const FileFormatArguments &args)
+    const FileFormatArguments &args,
+    bool validateAuthoring)
     : _fileFormat(fileFormat)
     , _fileFormatArgs(args)
     , _idRegistry(SdfLayerHandle(this))
@@ -131,6 +139,8 @@ SdfLayer::SdfLayer(
     , _isMutedCache(false)
     , _permissionToEdit(true)
     , _permissionToSave(true)
+    , _validateAuthoring(
+        validateAuthoring || TfGetEnvSetting<bool>(SDF_LAYER_VALIDATE_AUTHORING))
 {
     const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
@@ -2727,6 +2737,27 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
         return;
     }
 
+    if (ARCH_UNLIKELY(_validateAuthoring)) {
+        // XXX: 
+        // For now, reject copying if this layer and the source layer
+        // have different schema types. This could be improved by allowing
+        // the copying if the source layer's schema was a base class of
+        // this layer's schema -- in other words, if the data that could
+        // be represented in the source layer's schema was a subset of
+        // what could be represented in this layer's schema.
+        const std::type_info& srcSchema = typeid(layer->GetSchema());
+        const std::type_info& dstSchema = typeid(GetSchema());
+
+        if (srcSchema != dstSchema) {
+            TF_CODING_ERROR("TransferContent of '%s': Cannot copy source layer "
+                            "with schema '%s' to layer with schema '%s'.",
+                            GetDisplayName().c_str(),
+                            ArchGetDemangled(srcSchema).c_str(),
+                            ArchGetDemangled(dstSchema).c_str());
+            return;
+        }
+    }
+
     // Two concerns apply here:
     //
     // If we need to notify about the changes, we need to use the
@@ -3158,6 +3189,15 @@ SdfLayer::GetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
     return result;
 }
 
+static bool
+_IsValidFieldForLayer(
+    const SdfLayer& layer, const SdfPath& path, 
+    const TfToken& fieldName)
+{
+    return layer.GetSchema().IsValidFieldForSpec(
+        fieldName, layer.GetSpecType(path));
+}
+
 void
 SdfLayer::SetField(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                    const VtValue& value)
@@ -3168,6 +3208,15 @@ SdfLayer::SetField(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
     if (ARCH_UNLIKELY(!PermissionToEdit())) {
         TF_CODING_ERROR("Cannot set %s on <%s>. Layer @%s@ is not editable.",
                         fieldName.GetText(), id.GetString().c_str(), 
+                        GetIdentifier().c_str());
+        return;
+    }
+
+    if (ARCH_UNLIKELY(_validateAuthoring) && 
+        !_IsValidFieldForLayer(*this, id.GetFullSpecPath(), fieldName)) {
+        TF_CODING_ERROR("Cannot set %s on <%s>. Field is not valid for "
+                        "layer @%s@.",
+                        fieldName.GetText(), id.GetString().c_str(),
                         GetIdentifier().c_str());
         return;
     }
@@ -3190,6 +3239,15 @@ SdfLayer::SetField(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                         GetIdentifier().c_str());
         return;
     }
+
+    if (ARCH_UNLIKELY(_validateAuthoring) && 
+        !_IsValidFieldForLayer(*this, id.GetFullSpecPath(), fieldName)) {
+        TF_CODING_ERROR("Cannot set %s on <%s>. Field is not valid for "
+                        "layer @%s@.",
+                        fieldName.GetText(), id.GetString().c_str(),
+                        GetIdentifier().c_str());
+        return;
+    }
     
     VtValue oldValue = GetField(id, fieldName);
     if (!value.IsEqual(oldValue))
@@ -3199,7 +3257,7 @@ SdfLayer::SetField(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
 void
 SdfLayer::SetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
                                  const TfToken& fieldName,
-                                 const TfToken &keyPath,
+                                 const TfToken& keyPath,
                                  const VtValue& value)
 {
     if (!PermissionToEdit()) {
@@ -3207,6 +3265,15 @@ SdfLayer::SetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
                         fieldName.GetText(), keyPath.GetText(),
                         id.GetString().c_str(), 
                         GetIdentifier().c_str());
+        return;
+    }
+
+    if (ARCH_UNLIKELY(_validateAuthoring) && 
+        !_IsValidFieldForLayer(*this, id.GetFullSpecPath(), fieldName)) {
+        TF_CODING_ERROR("Cannot set %s:%s on <%s>. Field is not valid for "
+                        "layer @%s@.",
+                        fieldName.GetText(), keyPath.GetText(),
+                        id.GetString().c_str(), GetIdentifier().c_str());
         return;
     }
 
@@ -3220,7 +3287,7 @@ SdfLayer::SetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
 void
 SdfLayer::SetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
                                  const TfToken& fieldName,
-                                 const TfToken &keyPath,
+                                 const TfToken& keyPath,
                                  const SdfAbstractDataConstValue& value)
 {
     if (!PermissionToEdit()) {
@@ -3228,6 +3295,15 @@ SdfLayer::SetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
                         fieldName.GetText(), keyPath.GetText(),
                         id.GetString().c_str(), 
                         GetIdentifier().c_str());
+        return;
+    }
+
+    if (ARCH_UNLIKELY(_validateAuthoring) && 
+        !_IsValidFieldForLayer(*this, id.GetFullSpecPath(), fieldName)) {
+        TF_CODING_ERROR("Cannot set %s:%s on <%s>. Field is not valid for "
+                        "layer @%s@.",
+                        fieldName.GetText(), keyPath.GetText(),
+                        id.GetString().c_str(), GetIdentifier().c_str());
         return;
     }
 
@@ -3748,6 +3824,15 @@ SdfLayer::_PrimMoveSpec(const SdfPath& oldPath, const SdfPath& newPath,
         std::bind(_MoveSpecInternal, _data, &_idRegistry, ph::_1, oldPath, newPath));
 }
 
+static bool
+_IsValidSpecForLayer(
+    const SdfLayer& layer, SdfSpecType specType)
+{
+    const SdfSchemaBase::SpecDefinition* specDef = 
+        layer.GetSchema().GetSpecDefinition(specType);
+    return static_cast<bool>(specDef);
+}
+
 bool 
 SdfLayer::_CreateSpec(const SdfPath& path, SdfSpecType specType, bool inert)
 {
@@ -3759,6 +3844,15 @@ SdfLayer::_CreateSpec(const SdfPath& path, SdfSpecType specType, bool inert)
         TF_CODING_ERROR("Cannot create spec at <%s>. Layer @%s@ is not editable.",
                         path.GetText(), 
                         GetIdentifier().c_str());
+        return false;
+    }
+
+    if (_validateAuthoring && !_IsValidSpecForLayer(*this, specType)) {
+        TF_CODING_ERROR(
+            "Cannot create spec at <%s>. %s is not a valid spec type "
+            "for layer @%s@",
+            path.GetText(), TfEnum::GetName(specType).c_str(), 
+            GetIdentifier().c_str());
         return false;
     }
 
