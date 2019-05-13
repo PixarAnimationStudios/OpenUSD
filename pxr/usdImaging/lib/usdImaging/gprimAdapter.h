@@ -158,7 +158,7 @@ public:
     // Helper function: add a given type of rprim, potentially with instancer
     // name mangling, and add any bound shader.
     USDIMAGING_API
-    static SdfPath _AddRprim(TfToken const& primType,
+    SdfPath _AddRprim(TfToken const& primType,
                       UsdPrim const& usdPrim,
                       UsdImagingIndexProxy* index,
                       SdfPath const& materialUsdPath,

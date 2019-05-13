@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -114,6 +115,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _materialBindingImplData(parentIndex->GetRenderDelegate()->
                                GetMaterialBindingPurpose())
     , _materialBindingCache(GetTime(), &_materialBindingImplData)
+    , _coordSysBindingCache(GetTime(), &_coordSysBindingImplData)
     , _visCache(GetTime())
     , _purposeCache() // note that purpose is uniform, so no GetTime()
     , _drawModeCache(GetTime())
@@ -123,7 +125,15 @@ UsdImagingDelegate::UsdImagingDelegate(
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
     , _sceneMaterialsEnabled(true)
+    , _coordSysEnabled(parentIndex
+                       ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
 {
+    // Provide a callback to the _coordSysBindingCache so it can
+    // convert USD paths to Hydra ID's.
+    _coordSysBindingImplData.usdToHydraPath =
+        std::bind( &UsdImagingDelegate::ConvertCachePathToIndexPath, this,
+                   std::placeholders::_1 );
+
     // Default to 2 samples: this frame and the next frame.
     // XXX In the future this should be configurable via negotation
     // between frontend and backend, or be provided otherwise.
@@ -236,6 +246,12 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         }
     }
 
+    return _AdapterLookup(adapterKey);
+}
+
+UsdImagingDelegate::_AdapterSharedPtr const& 
+UsdImagingDelegate::_AdapterLookup(TfToken const& adapterKey)
+{
     _AdapterMap::const_iterator it = _adapterMap.find(adapterKey);
     if (it != _adapterMap.end())
         return it->second;
@@ -879,6 +895,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _visCache.Clear();
     _purposeCache.Clear();
     _drawModeCache.Clear();
+    _coordSysBindingCache.Clear();
 
     UsdImagingDelegate::_Worker worker;
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -933,7 +950,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
                 // If any objects were removed as a result of the refresh (if it
                 // internally decided to resync), they must be ejected now,
-                // before the next call to _RefereshObject.
+                // before the next call to _RefreshObject.
                 indexProxy._ProcessRemovals();
             } else {
                 TF_RUNTIME_ERROR("Unexpected path type to update: <%s>",
@@ -998,8 +1015,11 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
                         it->GetText());
         }
         TF_FOR_ALL(it, pathsToUpdate) {
-            TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Refresh queued: %s\n",
-                        it->GetText());
+            // For diagonstic clarity, filter out paths we decided to ignore
+            if (_usdPathsToUpdate.find(*it) != _usdPathsToUpdate.end()) {
+                TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Refresh queued: %s\n",
+                                                 it->GetText());
+            }
         }
     }
 }
@@ -1331,6 +1351,12 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                 "material binding changes.", usdPath.GetText());
             // No need to gather -- we know all cachePaths are affected.
             affectedCachePaths = _cachePaths.GetIds();
+        } else if (TfStringStartsWith(attrName, UsdShadeTokens->coordSys)) {
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
+                "HdCoordSys bindings affected for %s", usdPath.GetText());
+            // Coordinate system bindings apply to all descendent gprims.
+            _ResyncUsdPrim(usdPrimPath, proxy, true);
+            return;
         } else {
             // Only include non-inherited properties for prims that we are
             // explicitly tracking in the render index.
@@ -2280,53 +2306,20 @@ UsdImagingDelegate::GetTransform(SdfPath const& id)
     return ctm;
 }
 
+/*virtual*/
 size_t
 UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
                                     float *times, GfMatrix4d *samples)
 {
-    if (maxNumSamples < 1) {
-        return 0;
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->SampleTransform(primInfo->usdPrim, cachePath,
+                              _timeSampleOffsets, maxNumSamples,
+                              times, samples);
     }
-
-    // XXX(UsdImaging): Bug -- we are using a cachePath directly as a usdPath
-    // here but we should do the correct mapping.
-    SdfPath usdPath = ConvertIndexPathToCachePath(id);
-
-    UsdPrim prim = _stage->GetPrimAtPath(usdPath);
-    if (!prim) {
-        // If this is not a literal USD prim, it is an instance of
-        // other object synthesized by UsdImaging.  Just return
-        // the single transform sample from the ValueCache.
-        samples[0] = GetTransform(id);
-        return 1;
-    }
-
-    // Provide the number of time samples configured in _timeSampleOffsets,
-    // but limited to the caller's declared capacity.
-    size_t numSamples = std::min(maxNumSamples, _timeSampleOffsets.size());
-
-    // XXX: We should add caching to the transform computation if this shows
-    // up in profiling, but all of our current caches are cleared on time change
-    // so we'd need to write a new structure.
-    for (size_t i=0; i < numSamples; ++i) {
-        UsdTimeCode offsetTime = GetTimeWithOffset(_timeSampleOffsets[i]);
-        times[i] = _timeSampleOffsets[i];
-        samples[i] = UsdImaging_XfStrategy::ComputeTransform(
-            prim, _rootPrimPath, offsetTime, _rigidXformOverrides) * _rootXf;
-    }
-
-    // Some backends benefit if they can avoid time sample animation
-    // for fixed transforms.  This is difficult to compute explicitly
-    // due to the hierarchial nature of concated transforms, so we
-    // do a post-pass sweep to detect static transforms here.
-    for (size_t i=1; i < numSamples; ++i) {
-        if (samples[i] != samples[0]) {
-            // At least 1 sample is different, so return them all.
-            return numSamples;
-        }
-    }
-    // All samples are the same, so just return 1.
-    return 1;
+    return 0;
 }
 
 bool
@@ -2455,6 +2448,20 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     }
 
     return value;
+}
+
+HdIdVectorSharedPtr
+UsdImagingDelegate::GetCoordSysBindings(SdfPath const& id)
+{
+    if (!_coordSysEnabled) {
+        return nullptr;
+    }
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo) || !TF_VERIFY(primInfo->usdPrim)) {
+        return nullptr;
+    }
+    return _coordSysBindingCache.GetValue(primInfo->usdPrim).idVecPtr;
 }
 
 /*virtual*/

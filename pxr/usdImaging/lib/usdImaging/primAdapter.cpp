@@ -429,6 +429,12 @@ UsdImagingPrimAdapter::_GetPrimAdapter(UsdPrim const& prim,
     return _delegate->_AdapterLookup(prim, ignoreInstancing);
 }
 
+const UsdImagingPrimAdapterSharedPtr& 
+UsdImagingPrimAdapter::_GetAdapter(TfToken const& adapterKey) const
+{
+    return _delegate->_AdapterLookup(adapterKey);
+}
+
 SdfPath
 UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
                                             SdfPathVector const& instancerChain)
@@ -484,6 +490,12 @@ SdfPath
 UsdImagingPrimAdapter::_ConvertCachePathToIndexPath(const SdfPath &usdPath) const
 {
     return _delegate->ConvertCachePathToIndexPath(usdPath);
+}
+
+SdfPath 
+UsdImagingPrimAdapter::_ConvertIndexPathToCachePath(const SdfPath &indexPath) const
+{
+    return _delegate->ConvertIndexPathToCachePath(indexPath);
 }
 
 SdfPathVector
@@ -612,6 +624,18 @@ UsdImagingPrimAdapter::_GetCollectionCache() const
     return _delegate->_collectionCache;
 }
 
+UsdImaging_CoordSysBindingStrategy::value_type
+UsdImagingPrimAdapter::_GetCoordSysBindings(UsdPrim const& prim) const
+{
+    return _delegate->_coordSysBindingCache.GetValue(prim);
+}
+
+bool
+UsdImagingPrimAdapter::_DoesDelegateSupportCoordSys() const
+{
+    return _delegate->_coordSysEnabled;
+}
+
 bool 
 UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   TfToken const& attrName, 
@@ -711,6 +735,55 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
     }
 
     return ignoreRootTransform ? ctm : ctm * GetRootTransform();
+}
+
+size_t
+UsdImagingPrimAdapter::SampleTransform(
+    UsdPrim const& prim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *times, GfMatrix4d *samples)
+{
+    if (maxNumSamples < 1) {
+        return 0;
+    }
+    if (!prim) {
+        // If this is not a literal USD prim, it is an instance of
+        // other object synthesized by UsdImaging.  Just return
+        // the single transform sample from the ValueCache.
+        samples[0] = GetTransform(prim, configuredSampleTimes[0]);
+        return 1;
+    }
+
+    // Provide the number of time samples configured in _timeSampleOffsets,
+    // but limited to the caller's declared capacity.
+    size_t numSamples = std::min(maxNumSamples, configuredSampleTimes.size());
+
+    UsdImaging_XformCache &xfCache = _delegate->_xformCache;
+
+    // XXX: We should add caching to the transform computation if this shows
+    // up in profiling, but all of our current caches are cleared on time change
+    // so we'd need to write a new structure.
+    for (size_t i=0; i < numSamples; ++i) {
+        times[i] = configuredSampleTimes[i];
+        UsdTimeCode sceneTime =
+            _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+        samples[i] = UsdImaging_XfStrategy::ComputeTransform(
+            prim, xfCache.GetRootPath(), sceneTime, 
+            _delegate->_rigidXformOverrides);
+    }
+
+    // Some backends benefit if they can avoid time sample animation
+    // for fixed transforms.  This is difficult to compute explicitly
+    // due to the hierarchial nature of concated transforms, so we
+    // do a post-pass sweep to detect static transforms here.
+    for (size_t i=1; i < numSamples; ++i) {
+        if (samples[i] != samples[0]) {
+            // At least 1 sample is different, so return them all.
+            return numSamples;
+        }
+    }
+    // All samples are the same, so just return 1.
+    return 1;
 }
 
 bool

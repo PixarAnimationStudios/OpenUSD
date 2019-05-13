@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -88,7 +89,6 @@ UsdImagingGprimAdapter::_ResolveCachePath(SdfPath const& usdPath,
     return cachePath;
 }
 
-/* static */
 SdfPath
 UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                                   UsdPrim const& usdPrim,
@@ -129,6 +129,14 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                     "prim <%s> of type (%s)", usdPrim.GetPath().GetText(),
                     materialPrim.GetPath().GetText(),
                     materialPrim.GetTypeName().GetText());
+        }
+    }
+
+    // Populate coordinate system sprims bound to rprims.
+    if (_DoesDelegateSupportCoordSys()) {
+        if (UsdImagingPrimAdapterSharedPtr coordSysAdapter =
+            _GetAdapter(HdPrimTypeTokens->coordSys)) {
+            coordSysAdapter->Populate(usdPrim, index, instancerContext);
         }
     }
 

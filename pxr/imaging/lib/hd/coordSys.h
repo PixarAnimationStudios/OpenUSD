@@ -38,12 +38,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-typedef std::shared_ptr<class HdCoordSys> HdCoordSysSharedPtr;
-
-/// A shared_ptr to a vector of SdfPaths identifying HdCoordSys sprims.
-/// Used to share groups of coordinate system bindings across rprims.
-/// See HdCoordSys for motivation.
-typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
 
 /// \class HdCoordSys
 ///

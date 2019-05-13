@@ -205,6 +205,12 @@ HdSceneDelegate::GetCategories(SdfPath const& id)
     return VtArray<TfToken>();
 }
 
+HdIdVectorSharedPtr
+HdSceneDelegate::GetCoordSysBindings(SdfPath const& id)
+{
+    return nullptr;
+}
+
 // -----------------------------------------------------------------------//
 /// \name Instancer prototypes
 // -----------------------------------------------------------------------//

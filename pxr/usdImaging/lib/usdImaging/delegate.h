@@ -33,6 +33,7 @@
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
+#include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/texture.h"
@@ -298,6 +299,9 @@ public:
 
     USDIMAGING_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
+    USDIMAGING_API
+    HdIdVectorSharedPtr
+    virtual GetCoordSysBindings(SdfPath const& id) override;
     USDIMAGING_API
     virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
     USDIMAGING_API
@@ -628,6 +632,7 @@ private:
     // established. For example, during initial Population.
     _AdapterSharedPtr const& _AdapterLookup(UsdPrim const& prim, 
                                             bool ignoreInstancing = false);
+    _AdapterSharedPtr const& _AdapterLookup(TfToken const& adapterKey);
 
     // Obtain the prim tracking data for the given cache path.
     _HdPrimInfo *_GetHdPrimInfo(const SdfPath &cachePath);
@@ -690,6 +695,8 @@ private:
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingImplData _materialBindingImplData;
     UsdImaging_MaterialBindingCache _materialBindingCache;
+    UsdImaging_CoordSysBindingImplData _coordSysBindingImplData;
+    UsdImaging_CoordSysBindingCache _coordSysBindingCache;
     UsdImaging_VisCache _visCache;
     UsdImaging_PurposeCache _purposeCache;
     UsdImaging_DrawModeCache _drawModeCache;
@@ -706,6 +713,9 @@ private:
 
     /// Enable custom shading of prims
     bool _sceneMaterialsEnabled;
+
+    // Enable HdCoordSys tracking
+    const bool _coordSysEnabled;
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

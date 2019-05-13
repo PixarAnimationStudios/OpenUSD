@@ -393,6 +393,10 @@ public:
     HD_API
     virtual VtArray<TfToken> GetCategories(SdfPath const& id);
 
+    /// Returns the coordinate system bindings, or a nullptr if none are bound.
+    HD_API
+    virtual HdIdVectorSharedPtr GetCoordSysBindings(SdfPath const& id);
+
     // -----------------------------------------------------------------------//
     /// \name Motion samples
     // -----------------------------------------------------------------------//
