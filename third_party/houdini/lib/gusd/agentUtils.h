@@ -24,7 +24,7 @@
 #ifndef GUSD_AGENTUTILS_H
 #define GUSD_AGENTUTILS_H
 
-/// \file gusd/agentUtils.h
+/// \file agentUtils.h
 /// \ingroup group_gusd_Agents
 /// Utilities for translating agents to/from USD.
 ///
@@ -58,7 +58,7 @@ class UsdSkelTopology;
 
 /// Create an agent rig from a \p skel.
 GUSD_API GU_AgentRigPtr
-GusdCreateAgentRig(const UsdSkelSkeleton& skel);
+GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel);
 
 
 /// Create an agent rig from \p topology and \p jointNames.
@@ -79,7 +79,23 @@ GUSD_API GU_AgentShapeLibPtr
 GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
                         UsdTimeCode time=UsdTimeCode::EarliestTime(),
                         const char* lod=nullptr,
-                        GusdPurposeSet purpose=GUSD_PURPOSE_PROXY,
+                        GusdPurposeSet purpose=GusdPurposeSet(
+                            GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
+                        UT_ErrorSeverity sev=UT_ERROR_WARNING);
+
+
+/// Read in all skinnable shapes for \p binding, coalescing them into \p gd.
+/// The \p sev defines the error severity when reading in each shape.
+/// If the severity is less than UT_ERROR_ABORT, the invalid shape is
+/// skipped. Otherwise, creation of the shape lib fails if errors are
+/// produced processing any shapes.
+GUSD_API bool
+GusdCoalesceAgentShapes(GEO_Detail& gd,
+                        const UsdSkelBinding& binding,
+                        UsdTimeCode time=UsdTimeCode::EarliestTime(),
+                        const char* lod=nullptr,
+                        GusdPurposeSet purpose=GusdPurposeSet(
+                            GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
                         UT_ErrorSeverity sev=UT_ERROR_WARNING);
 
 
@@ -97,7 +113,8 @@ GusdReadSkinnablePrim(GU_Detail& gd,
                       const VtMatrix4dArray& invBindTransforms,
                       UsdTimeCode time=UsdTimeCode::EarliestTime(),
                       const char* lod=nullptr,
-                      GusdPurposeSet purpose=GUSD_PURPOSE_PROXY,
+                      GusdPurposeSet purpose=GusdPurposeSet(
+                          GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
                       UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 
@@ -124,6 +141,21 @@ GusdWriteAgentFiles(const UsdSkelBinding& binding,
                     const char* shapeLibFile,
                     const char* layerFile,
                     const char* layerName="default");
+
+
+/// Helper for writing out a shape library, consisting of a single shape
+/// resulting from coalescing all prims in \p binding.
+///
+/// The name of the single shape in the shape lib is given by \p shapeName.
+///
+/// @warning: This is a *TEMPORARY* method to facilitate conversion of UsdSkel
+/// based assets to GU agents for testing purposes. This method may be removed
+/// in a future release of Gusd, when more robust import mechanisms have been
+/// put in place.
+bool
+GusdWriteCoalescedShapeLib(const UsdSkelBinding& binding,
+                           const char* shapeLibFile,
+                           const char* shapeName);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

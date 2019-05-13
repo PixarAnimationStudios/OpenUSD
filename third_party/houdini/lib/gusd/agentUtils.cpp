@@ -26,12 +26,14 @@
 #include "error.h"
 #include "GU_PackedUSD.h"
 #include "GU_USD.h"
-#include "UT_Gf.h"
 #include "stageCache.h"
+#include "UT_Gf.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/tf/span.h"
 
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdSkel/binding.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/topology.h"
@@ -39,6 +41,7 @@
 #include <GA/GA_AIFIndexPair.h>
 #include <GA/GA_AIFTuple.h>
 #include <GA/GA_Handle.h>
+#include <GA/GA_SplittableRange.h>
 #include <GEO/GEO_AttributeCaptureRegion.h>
 #include <GEO/GEO_AttributeIndexPairs.h>
 #include <GEO/GEO_Detail.h>
@@ -165,7 +168,7 @@ Gusd_GetChildren(const UsdSkelTopology& topology,
 
 
 GU_AgentRigPtr
-GusdCreateAgentRig(const UsdSkelSkeleton& skel)
+GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
 {
     TRACE_FUNCTION();
 
@@ -194,10 +197,7 @@ GusdCreateAgentRig(const UsdSkelSkeleton& skel)
                         reason.c_str());
         return nullptr;
     }
-
-    // TODO: Come up with a better scheme for naming rigs.
-    return GusdCreateAgentRig(/*name*/skel.GetPrim().GetPath().GetText(),
-                              topology, jointNames);
+    return GusdCreateAgentRig(name, topology, jointNames);
 }
 
 
@@ -230,6 +230,10 @@ GusdCreateAgentRig(const char* name,
     UT_StringArray names;
     Gusd_ConvertTokensToStrings(jointNames, names);
 
+    // Add a __locomotion__ transform for root motion.
+    names.append("__locomotion__");
+    childCounts.append(0);
+
     const auto rig = GU_AgentRig::addRig(name);
     UT_ASSERT_P(rig);
 
@@ -249,11 +253,11 @@ namespace {
 /// Create capture attrs on \p gd, in the form expected for LBS skinning.
 /// This expects \p gd to have already imported 'primvars:skel:jointIndices'
 /// and 'primvars:skel:jointWeights' -- as defined by the UsdSkelBindingAPI.
-/// If \p deleteInfluencePrimvars=true, the origin primvars imported for
+/// If \p deleteInfluencePrimvars=true, the original primvars imported for
 /// UsdSkel are deleted after conversion.
 bool
 Gusd_CreateCaptureAttributes(
-    GU_Detail& gd,
+    GEO_Detail& gd,
     const VtMatrix4dArray& inverseBindTransforms,
     const VtTokenArray& jointNames,
     bool deleteInluencePrimvars=true,
@@ -297,57 +301,76 @@ Gusd_CreateCaptureAttributes(
             captureAttr, regionsPropId);
     joints->setObjectCount(numJoints);
 
+
     // Set the names of each joint.
-    GEO_RWAttributeCapturePath jointPaths(&gd);
-    for (int i = 0; i < numJoints; ++i) {
-        // TODO: Elide the string copy.
-        jointPaths.setPath(i, jointNames[i].GetText());
+    {
+        GEO_RWAttributeCapturePath jointPaths(&gd);
+        for (int i = 0; i < numJoints; ++i) {
+            // TODO: Elide the string copy.
+            jointPaths.setPath(i, jointNames[i].GetText());
+        }
     }
 
     // Store the inverse bind transforms of each joint.
-    const GfMatrix4d* xforms = inverseBindTransforms.cdata();
-    for (int i = 0; i < numJoints; ++i) {
+    {
+        const GfMatrix4d* xforms = inverseBindTransforms.cdata();
+        for (int i = 0; i < numJoints; ++i) {
 
-        GEO_CaptureBoneStorage r;
-        r.myXform = GusdUT_Gf::Cast(xforms[i]);
-        
-        joints->setObjectValues(i, regionsPropId, r.floatPtr(),
-                                GEO_CaptureBoneStorage::tuple_size);
+            GEO_CaptureBoneStorage r;
+            r.myXform = GusdUT_Gf::Cast(xforms[i]);
+
+            joints->setObjectValues(i, regionsPropId, r.floatPtr(),
+                                    GEO_CaptureBoneStorage::tuple_size);
+        }
     }
 
     // Copy weights and indices.
-
-    UT_FloatArray weights(tupleSize, tupleSize);
-    UT_IntArray indices(tupleSize, tupleSize);
-
     const GA_AIFTuple* jointIndicesTuple = jointIndicesHnd->getAIFTuple();
     const GA_AIFTuple* jointWeightsTuple = jointWeightsHnd->getAIFTuple();
 
     const GA_AIFIndexPair* indexPair = captureAttr->getAIFIndexPair();
     indexPair->setEntries(captureAttr, tupleSize);
 
-    for (GA_Offset o : gd.getPointRange()) {
-        if (jointIndicesTuple->get(jointIndicesHnd.getAttribute(),
-                                   o, indices.data(), tupleSize) &&
-            jointWeightsTuple->get(jointWeightsHnd.getAttribute(),
-                                   o, weights.data(), tupleSize)) {
+    UTparallelFor(
+        GA_SplittableRange(gd.getPointRange()),
+        [&](const GA_SplittableRange& r)
+        {
+            UT_FloatArray weights(tupleSize, tupleSize);
+            UT_IntArray indices(tupleSize, tupleSize);
 
-            // Normalize in-place.
-            float sum = 0;
-            for (int c = 0; c < tupleSize; ++c)
-                sum += weights[c];
-            if (sum > 1e-6) {
-                for (int c = 0; c < tupleSize; ++c) {
-                    weights[c] /= sum;
+            auto* boss = UTgetInterrupt();
+            char bcnt = 0;
+
+            GA_Offset o,end;
+            for (GA_Iterator it(r); it.blockAdvance(o,end); ) {
+                if (ARCH_UNLIKELY(!++bcnt && boss->opInterrupt())) {
+                    return;
+                }
+
+                for ( ; o < end; ++o) {
+                    if (jointIndicesTuple->get(jointIndicesHnd.getAttribute(),
+                                               o, indices.data(), tupleSize) &&
+                        jointWeightsTuple->get(jointWeightsHnd.getAttribute(),
+                                               o, weights.data(), tupleSize)) {
+
+                        // Normalize in-place.
+                        float sum = 0;
+                        for (int c = 0; c < tupleSize; ++c)
+                            sum += weights[c];
+                        if (sum > 1e-6) {
+                            for (int c = 0; c < tupleSize; ++c) {
+                                weights[c] /= sum;
+                            }
+                        }
+
+                        for (int c = 0; c < tupleSize; ++c) {
+                            indexPair->setIndex(captureAttr, o, c, indices[c]);
+                            indexPair->setData(captureAttr, o, c, weights[c]);
+                        }
+                    }
                 }
             }
-
-            for (int c = 0; c < tupleSize; ++c) {
-                indexPair->setIndex(captureAttr, o, c, indices[c]);
-                indexPair->setData(captureAttr, o, c, weights[c]);
-            }
-        }
-    }
+        });
 
     if (deleteInluencePrimvars) {
         gd.destroyPointAttrib(GUSD_SKEL_JOINTINDICES_ATTR);
@@ -370,7 +393,7 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
     TRACE_FUNCTION();
 
     UT_AutoInterrupt task("Read USD shapes for shapelib");
-
+    
     const size_t numTargets = binding.GetSkinningTargets().size();
 
     details.clear();
@@ -379,7 +402,6 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
     GusdErrorTransport errTransport;
 
     // Read in details for all skinning targets in parallel.
-
     UTparallelForHeavyItems(
         UT_BlockedRange<size_t>(0, numTargets),
         [&](const UT_BlockedRange<size_t>& r)
@@ -388,8 +410,19 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
 
             for (size_t i = r.begin(); i < r.end(); ++i) {
 
-                if (task.wasInterrupted()) {
+                if (task.wasInterrupted())
                     return;
+
+                const UsdGeomImageable ip(
+                    binding.GetSkinningTargets()[i].GetPrim());
+                if (!ip) {
+                    continue;
+                }
+                if (ip.ComputeVisibility(time) == UsdGeomTokens->invisible) {
+                    continue;
+                }
+                if (!GusdPurposeInSet(ip.ComputePurpose(), purpose)) {
+                    continue;
                 }
 
                 GU_DetailHandle gdh;
@@ -409,6 +442,62 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
         });
 
     return !task.wasInterrupted();
+}
+
+
+void
+Gusd_InvertTransforms(TfSpan<GfMatrix4d> xforms)
+{
+    UTparallelForLightItems(
+        UT_BlockedRange<size_t>(0, xforms.size()),
+        [&](const UT_BlockedRange<size_t>& r)
+        {
+            for (size_t i = r.begin(); i < r.end(); ++i) {
+                xforms[i] = xforms[i].GetInverse();
+            }
+        });
+}
+
+
+bool
+Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,  
+                        UsdTimeCode time,
+                        const char* lod,
+                        GusdPurposeSet purpose,
+                        UT_ErrorSeverity sev,
+                        UT_Array<GU_ConstDetailHandle>& details)
+{
+    const UsdSkelSkeleton& skel = binding.GetSkeleton();
+
+    VtTokenArray joints;
+    if (!skel.GetJointsAttr().Get(&joints)) {
+        GUSD_WARN().Msg("%s -- 'joints' attr is invalid",
+                        skel.GetPrim().GetPath().GetText());
+        return false;
+    }
+    VtTokenArray jointNames;
+    if (!Gusd_GetJointNames(skel, joints, jointNames)) {
+        return false;
+    }
+
+    VtMatrix4dArray invBindTransforms;
+    if (!skel.GetBindTransformsAttr().Get(&invBindTransforms)) {
+        GUSD_WARN().Msg("%s -- no authored bindTransforms",
+                        skel.GetPrim().GetPath().GetText());
+        return false;
+    }
+    if (invBindTransforms.size() != joints.size()) {
+        GUSD_WARN().Msg("%s -- size of 'bindTransforms' [%zu] != "
+                        "size of 'joints' [%zu].",
+                        skel.GetPrim().GetPath().GetText(),
+                        invBindTransforms.size(), joints.size());
+        return false;
+    }
+    // XXX: Want *inverse* bind transforms when writing out capture data.
+    Gusd_InvertTransforms(invBindTransforms);
+    
+    return Gusd_ReadSkinnablePrims(binding, jointNames, invBindTransforms,
+                                   time, lod, purpose, sev, details);
 }
 
 
@@ -450,8 +539,8 @@ GusdReadSkinnablePrim(GU_Detail& gd,
 
     return (GusdGU_USD::ImportPrimUnpacked(
                 gd, skinnedPrim, time, lod, purpose, primvarPattern,
-                &GusdUT_Gf::Cast(geomBindTransform)) &&
-
+                &GusdUT_Gf::Cast(geomBindTransform),
+                /*addPathAttributes*/ false) &&
             Gusd_CreateCaptureAttributes(
                 gd, invBindTransforms, localJointNames, sev));
 }
@@ -466,51 +555,21 @@ GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
 {
     const UsdSkelSkeleton& skel = binding.GetSkeleton();
 
-    VtTokenArray joints;
-    if (!skel.GetJointsAttr().Get(&joints)) {
-        GUSD_WARN().Msg("%s -- 'joints' attr is invalid",
-                        skel.GetPrim().GetPath().GetText());
-        return nullptr;
-    }
-    VtTokenArray jointNames;
-    if (!Gusd_GetJointNames(skel, joints, jointNames)) {
+    // Read geom for each skinning target into its own detail.
+
+    UT_Array<GU_ConstDetailHandle> details;
+    if (!Gusd_ReadSkinnablePrims(binding, time, lod, purpose, sev, details)) {
         return nullptr;
     }
 
-    VtMatrix4dArray invBindTransforms;
-    if (!skel.GetBindTransformsAttr().Get(&invBindTransforms)) {
-        GUSD_WARN().Msg("%s -- no authored bindTransforms",
-                        skel.GetPrim().GetPath().GetText());
-        return nullptr;
-    }
-    if (invBindTransforms.size() != joints.size()) {
-        GUSD_WARN().Msg("%s -- size of 'bindTransforms' [%zu] != "
-                        "size of 'joints' [%zu].",
-                        invBindTransforms.size(), joints.size());
-        return nullptr;
-    }
-    // XXX: Want *inverse* bind transforms when writing out capture data.
-    for (auto& xf : invBindTransforms) {
-        xf = xf.GetInverse();
-    }
+    const size_t numTargets = binding.GetSkinningTargets().size();
+    UT_ASSERT_P(details.size() == numTargets);
 
     auto shapeLib =
         GU_AgentShapeLib::addLibrary(skel.GetPrim().GetPath().GetText());
 
-    // Read geom for each skinning target into its own detail.
-
-    const size_t numTargets = binding.GetSkinningTargets().size();
-
-    UT_Array<GU_ConstDetailHandle> details;
-    if (!Gusd_ReadSkinnablePrims(binding, jointNames, invBindTransforms,
-                                 time, lod, purpose, sev, details)) {
-        return nullptr;
-    }
-    UT_ASSERT_P(details.size() == numTargets);
-
     // Add the resulting details to the shape lib.
     for (size_t i = 0; i < numTargets; ++i) {
-
         if (const auto& gdh = details[i]) {
             const UsdPrim& prim = binding.GetSkinningTargets()[i].GetPrim();
 
@@ -519,6 +578,46 @@ GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
         }
     }
     return shapeLib;
+}
+
+
+namespace {
+
+// TODO: This is the bottle neck in import.
+bool
+_CoalesceShapes(GEO_Detail& coalescedGd,
+                const UT_Array<GU_ConstDetailHandle>& details)
+{
+    UT_AutoInterrupt task("Coalesce shapes");
+
+    for (const auto& gdh : details) {
+        if (task.wasInterrupted())
+            return false;
+
+        const GU_DetailHandleAutoReadLock gdl(gdh);
+        if (const GU_Detail* gdp = gdl.getGdp()) {
+            coalescedGd.merge(*gdp);
+        }
+    }
+    return !task.wasInterrupted();
+}
+
+} // namespace
+
+
+bool
+GusdCoalesceAgentShapes(GEO_Detail& gd,
+                        const UsdSkelBinding& binding,
+                        UsdTimeCode time,
+                        const char* lod,
+                        GusdPurposeSet purpose,
+                        UT_ErrorSeverity sev)
+{
+    UT_Array<GU_ConstDetailHandle> details;
+    if (Gusd_ReadSkinnablePrims(binding, time, lod, purpose, sev, details)) {
+        return _CoalesceShapes(gd, details);
+    }
+    return false;
 }
 
 
@@ -537,7 +636,7 @@ GusdWriteAgentFiles(const UsdSkelBinding& binding,
 
     bool success = true;
 
-    GU_AgentRigPtr rig = GusdCreateAgentRig(binding.GetSkeleton());
+    GU_AgentRigPtr rig = GusdCreateAgentRig(rigFile, binding.GetSkeleton());
     if (!rig) {
         TF_WARN("Failed creating rig");
         return false;
@@ -577,6 +676,33 @@ GusdWriteAgentFiles(const UsdSkelBinding& binding,
     }
 
     return success;
+}
+
+
+bool
+GusdWriteCoalescedShapeLib(const UsdSkelBinding& binding,
+                           const char* shapeLibFile,
+                           const char* shapeName)
+{
+    GU_DetailHandle gdh;
+    gdh.allocateAndSet(new GU_Detail);
+
+    {
+        const GU_DetailHandleAutoWriteLock gdl(gdh);
+        if (!GusdCoalesceAgentShapes(*gdl.getGdp(), binding)) {
+            return false;
+        }
+    }
+
+    const UsdSkelSkeleton& skel = binding.GetSkeleton();
+
+    auto shapeLib =
+        GU_AgentShapeLib::addLibrary(skel.GetPrim().GetPath().GetText());
+
+    shapeLib->addShape(shapeName, gdh);
+
+    UT_AutoJSONWriter shapeWriter(shapeLibFile, /*binary*/ true);
+    return shapeLib->save(*shapeWriter);
 }
 
 
