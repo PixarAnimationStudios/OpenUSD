@@ -24,11 +24,11 @@
 #ifndef _GUSD_USD_UTILS_H_
 #define _GUSD_USD_UTILS_H_
 
-#include "gusd/api.h"
+#include "api.h"
 
-#include "gusd/error.h"
+#include "error.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -70,6 +70,11 @@ GUSD_API
 bool        CreateSdfPath(const UT_StringRef& pathStr,
                           SdfPath& path,
                           UT_ErrorSeverity sev=UT_ERROR_ABORT);
+
+
+/// Returns an SdfPath that can be used for identify the stage's defaultPrim.
+GUSD_API
+const SdfPath& GetDefaultPrimIdentifier();
 
 
 /// Get a prim from a stage.

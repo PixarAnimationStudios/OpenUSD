@@ -247,6 +247,17 @@ struct _SdfPathHashCmp
 };
 
 
+/// Returns true if this is a valid prim path for referencing a prim on a stage.
+bool
+_IsValidPrimPath(const SdfPath& path)
+{
+    return (path.IsPrimPath() &&
+            (path.IsAbsolutePath() ||
+             path == GusdUSD_Utils::GetDefaultPrimIdentifier())) ||
+            path == SdfPath::AbsoluteRootPath();
+}
+
+
 } /*namespace*/
 
 
@@ -298,6 +309,8 @@ private:
     UsdStageRefPtr  _OpenStage(const UsdStagePopulationMask& mask,
                                const SdfPath& invokingPrimPath,
                                UT_ErrorSeverity sev=UT_ERROR_ABORT);
+
+    SdfPath _GetDefaultPrimPath(UT_ErrorSeverity sev=UT_ERROR_ABORT) const;
 
 private:
     using _StageMap = UT_ConcurrentHashMap<SdfPath,UsdStageRefPtr,
@@ -412,7 +425,7 @@ public:
     void            FindStages(const UT_StringSet& paths,
                                UT_Set<UsdStageRefPtr>& stages) const;
 
-    void	    InsertStage(UsdStageRefPtr &stage,
+    void            InsertStage(UsdStageRefPtr &stage,
                                 const UT_StringRef& path,
                                 const GusdStageOpts& opts,
                                 const GusdStageEditPtr& edit);
@@ -435,6 +448,13 @@ public:
                                   const UT_Array<SdfPath>& primPaths,
                                   UsdPrim* prims,
                                   UT_ErrorSeverity sev=UT_ERROR_ABORT);
+
+    /// Returns an SdfPath referring to the defaultPrim defined on the layer.
+    /// Returns an empty SdfPath if the layer either defines no defaultPrim,
+    /// or if the defaultPrim is invalid.
+    SdfPath         GetDefaultPrimPath(const UT_StringRef& path,
+                                       UT_ErrorSeverity sev=UT_ERROR_ABORT);
+                                       
 
 protected:
     /// Expand the set of masked prims on a stage.
@@ -816,8 +836,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
 {
     // XXX: empty paths and invalid prim paths should be caught earlier.
     UT_ASSERT_P(path);
-    UT_ASSERT_P(primPath.IsAbsolutePath());
-    UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
+    UT_ASSERT_P(_IsValidPrimPath(primPath));
 
     if(primPath == SdfPath::AbsoluteRootPath() ||
        !TfGetEnvSetting(GUSD_STAGEMASK_ENABLE)) {
@@ -994,6 +1013,38 @@ GusdStageCache::_Impl::LoadPrimRange(const PrimRangeFn& rangeFn,
 }
 
 
+SdfPath
+GusdStageCache::_Impl::GetDefaultPrimPath(const UT_StringRef& path,
+                                          UT_ErrorSeverity sev)
+{
+    // Catch Tf errors.
+    GusdTfErrorScope errorScope(sev);
+
+    // TODO: Should consider including the context as a member of the
+    // stage opts, so that it can be reconfigured across different hip files.
+    ArResolverContext resolverContext = ArGetResolver().GetCurrentContext();
+    ArResolverContextBinder binder(resolverContext);
+
+    // Open layer with metadataOnly to reduce parsing costs.
+    // TODO: The cache will likely need to do a full layer parse with
+    // SdfLayer::FindOrOpen() shortly after this point. Would be better to find
+    // a way of loading the layer once, and sharing the result downstream.
+    if (const SdfLayerRefPtr layer =
+        SdfLayer::OpenAsAnonymous(path.toStdString(), /*metadataOnly*/ true)) {
+        const TfToken name = layer->GetDefaultPrim();
+        if (SdfPath::IsValidIdentifier(name)) {
+            return SdfPath::AbsoluteRootPath().AppendChild(name);
+        } else {
+            GUSD_GENERIC_ERR(sev).Msg(
+                "No valid defaultPrim defined in layer @%s@", path.c_str());
+        }
+    } else {
+        GUSD_GENERIC_ERR(sev).Msg("Failed opening layer @%s@", path.c_str());
+    }
+    return SdfPath();
+}
+
+
 namespace {
 
 
@@ -1119,8 +1170,7 @@ GusdStageCache::_Impl::LoadPrims(
     primRange.keys.setCapacity(count);
     for(exint i = 0; i < count; ++i) {
         // Only include valid entries.
-        if(paths(i) && primPaths(i).IsAbsoluteRootOrPrimPath() &&
-           primPaths(i).IsAbsolutePath()) {
+        if(paths(i) && _IsValidPrimPath(primPaths(i))) {
             primRange.keys.emplace_back(paths(i), edits(i), i);
         }
     }
@@ -1350,8 +1400,7 @@ GusdStageCache::_Impl::InsertStage(UsdStageRefPtr &stage,
 UsdStageRefPtr
 GusdStageCache::_MaskedStageCache::FindStage(const SdfPath& primPath)
 {
-    UT_ASSERT_P(primPath.IsAbsolutePath());
-    UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
+    UT_ASSERT_P(_IsValidPrimPath(primPath));
 
     _StageMap::const_accessor ancestorAcc; 
     if(_map.find(ancestorAcc, primPath))
@@ -1362,27 +1411,29 @@ GusdStageCache::_MaskedStageCache::FindStage(const SdfPath& primPath)
     // So, to find a stage that has our prim, we only need to find an
     // existing stage that has one of our ancestors.
 
-    int distanceToMatchingAncestor = 1;
-    for(SdfPath ancestorPath = primPath.GetParentPath();
-        ancestorPath != SdfPath::AbsoluteRootPath();
-        ancestorPath = ancestorPath.GetParentPath(),
-        ++distanceToMatchingAncestor) {
+    if (primPath.IsAbsolutePath()) {
+        int distanceToMatchingAncestor = 1;
+        for(SdfPath ancestorPath = primPath.GetParentPath();
+            ancestorPath != SdfPath::AbsoluteRootPath();
+            ancestorPath = ancestorPath.GetParentPath(),
+            ++distanceToMatchingAncestor) {
 
-        if(_map.find(ancestorAcc, ancestorPath)) {
-            // Insert an entry on the cache for this prim if we traversed
-            // further than we would like to find a loaded prim,
-            // in order to speed up future lookups.
-            // We don't always store a new entry because that might
-            // flood the cache, harming rather than improving lookups.   
+            if(_map.find(ancestorAcc, ancestorPath)) {
+                // Insert an entry on the cache for this prim if we traversed
+                // further than we would like to find a loaded prim,
+                // in order to speed up future lookups.
+                // We don't always store a new entry because that might
+                // flood the cache, harming rather than improving lookups.   
 
-            const int maxSearchDistance = 4; // Non-scientific guess.
-            if(distanceToMatchingAncestor > maxSearchDistance) {
-                _StageMap::accessor primAcc;
-                if(_map.insert(primAcc, primPath))
-                    primAcc->second = ancestorAcc->second;
-                return primAcc->second;
+                const int maxSearchDistance = 4; // Non-scientific guess.
+                if(distanceToMatchingAncestor > maxSearchDistance) {
+                    _StageMap::accessor primAcc;
+                    if(_map.insert(primAcc, primPath))
+                        primAcc->second = ancestorAcc->second;
+                    return primAcc->second;
+                }
+                return ancestorAcc->second;
             }
-            return ancestorAcc->second;
         }
     }
     return TfNullPtr;
@@ -1410,7 +1461,18 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
     _StageMap::accessor a;
     if(_map.insert(a, primPath)) {
 
-        UsdStagePopulationMask mask(std::vector<SdfPath>({primPath}));
+        SdfPath maskPath = primPath;
+        if (!primPath.IsAbsolutePath()) {
+            // Expecting defaultPrim.    
+            UT_ASSERT_P(primPath == GusdUSD_Utils::GetDefaultPrimIdentifier());
+            maskPath = _GetDefaultPrimPath(sev);
+            if (maskPath.IsEmpty() && sev >= UT_ERROR_ABORT) {
+                _map.erase(a);
+                return TfNullPtr;
+            }
+        }
+
+        const UsdStagePopulationMask mask(std::vector<SdfPath>({maskPath}));
 
         a->second = _OpenStage(mask, primPath, sev);
 
@@ -1436,9 +1498,10 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
 
 
 UsdStageRefPtr
-GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask,
-                                              const SdfPath& invokingPrimPath,
-                                              UT_ErrorSeverity sev)
+GusdStageCache::_MaskedStageCache::_OpenStage(
+    const UsdStagePopulationMask& mask,
+    const SdfPath& invokingPrimPath,
+    UT_ErrorSeverity sev)
 {
     UsdStageRefPtr stage =
         _stageCache.OpenNewStage(_stageKey.GetPath(), _stageKey.GetOpts(),
@@ -1475,8 +1538,35 @@ GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask
                 }
             }
         }
+        // Determine if the mask included the stage's defaultPrim.
+        // If so, place an entry for the generic 'defaultPrim' path on the map.
+        if (stage->GetDefaultPrim()) {
+            // Just like the above case, take care to avoid deadlocks; the
+            // invokingPrimPath is already locked.
+            if (GusdUSD_Utils::GetDefaultPrimIdentifier() != invokingPrimPath) {
+                _StageMap::accessor acc;
+                if (_map.insert(
+                        acc, GusdUSD_Utils::GetDefaultPrimIdentifier())) {
+
+                    TF_DEBUG(GUSD_STAGECACHE).Msg(
+                        "[GusdStageCache::_MaskedStageCache::_OpenStage] "
+                        "%p -- Mapping defaultPrim to stage %s\n",
+                        this, UsdDescribe(stage).c_str());
+
+                    acc->second = stage;
+                }
+            }
+        }
     }
     return stage;
+}
+
+
+SdfPath
+GusdStageCache::_MaskedStageCache::_GetDefaultPrimPath(
+    UT_ErrorSeverity sev) const
+{
+    return _stageCache.GetDefaultPrimPath(_stageKey.GetPath(), sev);
 }
 
 
@@ -1515,7 +1605,23 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
                 // No existing stage may contain this prim.
                 // Append to the mask for batched loading.
                 primIndicesForBatchedLoad.append(primIndex);
-                primPathsForBatchedLoad.emplace_back(primPath);
+                if (primPath.IsAbsolutePath()) {
+                    primPathsForBatchedLoad.emplace_back(primPath);
+                } else {
+                    // Path must refer to the defaultPrim.
+                    UT_ASSERT_P(primPath ==
+                                GusdUSD_Utils::GetDefaultPrimIdentifier());
+
+                    // Lookup the actual defaultPrim from the layer, and add
+                    // it to the batched load set.
+                    const SdfPath defaultPrimPath = _GetDefaultPrimPath(sev);
+
+                    if (!defaultPrimPath.IsEmpty()) {
+                        primPathsForBatchedLoad.emplace_back(defaultPrimPath);
+                    } else if (sev >= UT_ERROR_ABORT) {
+                        return false;
+                    }
+                }
             }
         }
     }
@@ -1523,7 +1629,7 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
     if(primPathsForBatchedLoad.size() > 0) {
         UT_ASSERT_P(primIndicesForBatchedLoad.size() ==
                     primPathsForBatchedLoad.size());
-        
+
         // Open a stage with a mask holding all currently unloaded prims.
         if(UsdStageRefPtr stage =
            _OpenStage(UsdStagePopulationMask(
@@ -1646,9 +1752,7 @@ GusdStageCacheReader::GetPrim(const UT_StringRef& path,
                               UT_ErrorSeverity sev)
 {
     PrimStagePair pair;
-    if(path && primPath.IsAbsolutePath() &&
-       primPath.IsAbsoluteRootOrPrimPath()) {
-
+    if (path && _IsValidPrimPath(primPath)) {
         if((pair.second = _cache._impl->FindOrOpenMaskedStage(
                path, opts, edit, primPath, sev))) {
 
