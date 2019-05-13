@@ -501,6 +501,26 @@ public:
     PCP_API 
     bool IsInvalidAssetPath(const std::string& resolvedAssetPath) const;
 
+    /// Returns true if any prim index in this cache has a dependency on a 
+    /// dynamic file format argument field. 
+    PCP_API
+    bool HasAnyDynamicFileFormatArgumentDependencies() const;
+
+    /// Returns true if the given \p field is the name of a field that 
+    /// was composed while generating dynamic file format arguments for any prim
+    /// index in this cache. 
+    PCP_API
+    bool IsPossibleDynamicFileFormatArgumentField(const TfToken &field) const;
+
+    /// Returns the dynamic file format dependency data object for the prim
+    /// index with the given \p primIndexPath. This will return an empty 
+    /// dependency data if either there is no cache prim index for the path or 
+    /// if the prim index has no dynamic file formats that it depends on.
+    PCP_API
+    const PcpDynamicFileFormatDependencyData &
+    GetDynamicFileFormatArgumentDependencyData(
+        const SdfPath &primIndexPath) const;
+
     /// @}
 
     /// \name Change handling

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -23,27 +23,26 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
+#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/vt/value.h"
+
+#include <boost/python/class.hpp>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void 
+wrapDynamicFileFormatDependencyData()
 {
-    TF_WRAP( Dependency );
-    TF_WRAP( DynamicFileFormatDependencyData );
-    TF_WRAP( Cache );
-    TF_WRAP( Errors );
-    TF_WRAP( InstanceKey );
-    TF_WRAP( LayerStackIdentifier );
-    TF_WRAP( LayerStack );
-    TF_WRAP( MapExpression );
-    TF_WRAP( MapFunction );
-    TF_WRAP( Node );
-    TF_WRAP( PathTranslation );
-    TF_WRAP( PrimIndex );
-    TF_WRAP( PropertyIndex );
-    TF_WRAP( Site );
-    TF_WRAP( TestChangeProcessor );
-    TF_WRAP( TestPayloadDecorator );
-    TF_WRAP( Types );
+    using This = PcpDynamicFileFormatDependencyData;
+    class_<This>("DynamicFileFormatDependencyData", no_init)     
+        .def("GetRelevantFieldNames",
+             make_function(&This::GetRelevantFieldNames,
+                           return_value_policy< TfPySequenceToList >()))
+        .def("CanFieldChangeAffectFileFormatArguments", 
+             &This::CanFieldChangeAffectFileFormatArguments)
+        .def("IsEmpty", &This::IsEmpty)
+        ;
 }

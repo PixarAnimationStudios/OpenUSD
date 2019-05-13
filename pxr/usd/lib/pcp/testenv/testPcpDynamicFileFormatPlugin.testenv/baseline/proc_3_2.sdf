@@ -1,0 +1,38 @@
+#sdf 1.4.32
+(
+    defaultPrim = "Root"
+)
+
+def Xform "Root"
+{
+    def "geom" (
+        add references = @placeholder.sdf@
+    )
+    {
+    }
+
+    def Xform "Xform__2_0" (
+        TestPcp_depth = 2
+        TestPcp_height = 3
+        TestPcp_num = 2
+        add payload = @placeholder.sdf@
+        TestPcp_radius = 1.5
+    )
+    {
+        double3 xformOp:translate = (3, 0, 3)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Xform__2_1" (
+        TestPcp_depth = 2
+        TestPcp_height = 3
+        TestPcp_num = 2
+        add payload = @placeholder.sdf@
+        TestPcp_radius = 1.5
+    )
+    {
+        double3 xformOp:translate = (-3, 3.6739403974420594e-16, 3)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+

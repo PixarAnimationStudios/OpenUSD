@@ -296,6 +296,14 @@ wrapCache()
         .def("IsInvalidSublayerIdentifier", 
              &PcpCache::IsInvalidSublayerIdentifier)
 
+        .def("HasAnyDynamicFileFormatArgumentDependencies", 
+             &PcpCache::HasAnyDynamicFileFormatArgumentDependencies)
+        .def("IsPossibleDynamicFileFormatArgumentField", 
+             &PcpCache::IsPossibleDynamicFileFormatArgumentField)
+        .def("GetDynamicFileFormatArgumentDependencyData", 
+             &PcpCache::GetDynamicFileFormatArgumentDependencyData,
+             return_value_policy<reference_existing_object>())
+
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)
         ;

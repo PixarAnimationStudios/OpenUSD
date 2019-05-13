@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/composeSite.h"
+#include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/node.h"
@@ -289,11 +290,18 @@ public:
     /// that wasn't previously in the cache's payload include set.
     bool includedDiscoveredPayload = false;
     
+    /// A list of names of fields that were composed to generate dynamic file 
+    /// format arguments for a node in primIndex. These are not necessarily 
+    /// fields that had values, but is the list of all fields that a  composed 
+    /// value was requested for. 
+    PcpDynamicFileFormatDependencyData dynamicFileFormatDependency;
+
     /// Swap content with \p r.
     inline void swap(PcpPrimIndexOutputs &r) {
         primIndex.swap(r.primIndex);
         allErrors.swap(r.allErrors);
         std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
+        dynamicFileFormatDependency.swap(r.dynamicFileFormatDependency);
     }
 
     /// Appends the outputs from \p childOutputs to this object, using 
@@ -302,7 +310,7 @@ public:
     /// 
     /// Returns the node in this object's prim index corresponding to the root
     /// node of \p childOutputs' prim index.
-    PcpNodeRef Append(const PcpPrimIndexOutputs& childOutputs,
+    PcpNodeRef Append(PcpPrimIndexOutputs&& childOutputs,
                       const PcpArc& arcToParent);
 };
 

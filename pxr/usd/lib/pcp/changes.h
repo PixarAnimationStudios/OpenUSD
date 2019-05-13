@@ -337,27 +337,6 @@ private:
     void _OptimizePathChanges(const PcpCache* cache, PcpCacheChanges* changes,
                               PcpCacheChanges::PathEditMap* pathChanges);
 
-    // Bitmask for change type passed to _DidChangeDependents.
-    enum _ChangeType {
-        _ChangeTypeSignificant = 1 << 0,
-        _ChangeTypeSpecs       = 1 << 1,
-        _ChangeTypeTargets     = 1 << 2,
-        _ChangeTypeConnections = 1 << 3,
-        _ChangeTypeDecorator   = 1 << 4
-    };
-
-    // Propagate changes of the type indicated by \p changeType to all 
-    // dependents of the Sd site (\p path, \p layer) in \p layerStacks.
-    // If \p fallbackToParent is \c true then, if necessary, use the parent's 
-    // dependencies to find paths that use the Sd site.
-    void _DidChangeDependents(int changeType,
-                              PcpCache* cache,
-                              const SdfLayerHandle& layer,
-                              const SdfPath& path,
-                              const SdfChangeList& layerChangeList,
-                              bool onlyExistingDependentPaths,
-                              std::string* debugSummary);
-
     // Sublayer change type for _DidChangeSublayer.
     enum _SublayerChangeType {
         _SublayerAdded,

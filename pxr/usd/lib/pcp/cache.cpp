@@ -861,6 +861,27 @@ PcpCache::IsInvalidAssetPath(const std::string& resolvedAssetPath) const
     return false;
 }
 
+bool 
+PcpCache::HasAnyDynamicFileFormatArgumentDependencies() const
+{
+    return _primDependencies->HasAnyDynamicFileFormatArgumentDependencies();
+}
+
+bool 
+PcpCache::IsPossibleDynamicFileFormatArgumentField(
+    const TfToken &field) const
+{
+    return _primDependencies->IsPossibleDynamicFileFormatArgumentField(field);
+}
+
+const PcpDynamicFileFormatDependencyData &
+PcpCache::GetDynamicFileFormatArgumentDependencyData(
+    const SdfPath &primIndexPath) const
+{
+    return _primDependencies->GetDynamicFileFormatArgumentDependencyData(
+        primIndexPath);
+}
+
 void
 PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
 {
@@ -1347,7 +1368,9 @@ struct Pcp_ParallelIndexer
             // ideally.  We have to make a copy to move into the _cache itself,
             // since sibling caches in other tasks will still require that their
             // parent be valid.
-            _consumerScratch.push_back(outputs->primIndex);
+            _consumerScratch.emplace_back(
+                outputs->primIndex, 
+                std::move(outputs->dynamicFileFormatDependency));
 
             // Store included payload path to the side to publish several at
             // once, as well.
@@ -1404,13 +1427,14 @@ struct Pcp_ParallelIndexer
             if (locked) {
                 for (auto &index: _consumerScratch) {
                     // Save the prim index in the cache.
-                    const SdfPath &path = index.GetPath();
+                    const SdfPath &path = index.first.GetPath();
                     PcpPrimIndex &entry = _cache->_primIndexCache[path];
                     if (TF_VERIFY(!entry.IsValid(),
                                   "PrimIndex for %s already exists in cache",
                                   entry.GetPath().GetText())) {
-                        entry.Swap(index);
-                        _cache->_primDependencies->Add(entry);
+                        entry.Swap(index.first);
+                        _cache->_primDependencies->Add(
+                            entry, std::move(index.second));
                     }
                 }
                 lock.release();
@@ -1429,7 +1453,8 @@ struct Pcp_ParallelIndexer
     tbb::spin_rw_mutex _primIndexCacheMutex;
     tbb::spin_rw_mutex _includedPayloadsMutex;
     tbb::concurrent_queue<PcpPrimIndexOutputs *> _finishedOutputs;
-    vector<PcpPrimIndex> _consumerScratch;
+    vector<std::pair<PcpPrimIndex, 
+                     PcpDynamicFileFormatDependencyData>> _consumerScratch;
     vector<SdfPath> _consumerScratchPayloads;
     ArResolver& _resolver;
     WorkArenaDispatcher _dispatcher;
@@ -1530,7 +1555,8 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
         outputs.allErrors.end());
 
     // Add dependencies.
-    _primDependencies->Add(outputs.primIndex);
+    _primDependencies->Add(outputs.primIndex, 
+                           std::move(outputs.dynamicFileFormatDependency));
 
     // Update _includedPayloads if we included a discovered payload.
     if (outputs.includedDiscoveredPayload) {

@@ -26,9 +26,11 @@
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/cache.h"
+#include "pxr/usd/pcp/dynamicFileFormatContext.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/diagnostic.h"
+#include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 #include "pxr/usd/pcp/instancing.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
@@ -43,6 +45,7 @@
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/trace/trace.h"
@@ -362,7 +365,7 @@ PcpPrimIndexInputs::IsEquivalentTo(const PcpPrimIndexInputs& inputs) const
 ////////////////////////////////////////////////////////////////////////
 
 PcpNodeRef 
-PcpPrimIndexOutputs::Append(const PcpPrimIndexOutputs& childOutputs, 
+PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs, 
                             const PcpArc& arcToParent)
 {
     PcpNodeRef parent = arcToParent.parent;
@@ -372,6 +375,10 @@ PcpPrimIndexOutputs::Append(const PcpPrimIndexOutputs& childOutputs,
     if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
         parent.GetOwningGraph()->SetHasPayloads(true);
     }
+    // Append the contents of the child's file format dependency object to
+    // ours.
+    dynamicFileFormatDependency.AppendDependencyData(
+        std::move(childOutputs.dynamicFileFormatDependency));
 
     allErrors.insert(
         allErrors.end(), 
@@ -703,14 +710,10 @@ struct Task {
             // arcs with order-independent results.
             switch (a.type) {
             case EvalNodePayload:
-                if (_hasPayloadDecorator) {
-                    // Payload decorators can depend on non-local information,
-                    // so we must process these in strength order.
-                    return PcpCompareNodeStrength(a.node, b.node) == 1;
-                } else {
-                    // Arbitrary order
-                    return a.node > b.node;
-                }
+                // Payloads can have dynamic file format arguments that depend 
+                // on non-local information, so we must process these in 
+                // strength order.
+                return PcpCompareNodeStrength(a.node, b.node) == 1;
             case EvalNodeVariantAuthored:
             case EvalNodeVariantFallback:
                 // Variant selections can depend on non-local information
@@ -735,11 +738,6 @@ struct Task {
                 return a.node > b.node;
             }
         }
-        // We can use a slightly cheaper ordering for payload arcs
-        // when there is no payload decorator.
-        const bool _hasPayloadDecorator;
-        PriorityOrder(bool hasPayloadDecorator)
-            : _hasPayloadDecorator(hasPayloadDecorator) {}
     };
 
     explicit Task(Type type, const PcpNodeRef& node = PcpNodeRef())
@@ -917,7 +915,7 @@ struct Pcp_PrimIndexer
                     // Check if we've violated the order.  We've violated it if
                     // the comparator says the new task is less than the
                     // previously last task.
-                    Task::PriorityOrder comp(inputs.payloadDecorator);
+                    Task::PriorityOrder comp;
                     tasksSorted =
                         !comp(tasks[tasks.size()-1], tasks[tasks.size()-2]);
                 }
@@ -933,7 +931,7 @@ struct Pcp_PrimIndexer
         Task task(Task::Type::None);
         if (!tasks.empty()) {
             if (!tasksSorted) {
-                Task::PriorityOrder comp(inputs.payloadDecorator);
+                Task::PriorityOrder comp;
                 std::sort(tasks.begin(), tasks.end(), comp);
                 tasks.erase(
                     std::unique(tasks.begin(), tasks.end()), tasks.end());
@@ -1113,7 +1111,7 @@ struct Pcp_PrimIndexer
                       });
 
         // Sort and merge.
-        Task::PriorityOrder comp(inputs.payloadDecorator);
+        Task::PriorityOrder comp;
         std::sort(tasks.begin(), nonAuthVariantsEnd, comp);
         std::inplace_merge(
             tasks.begin(), nonAuthVariantsEnd, authVariantsEnd, comp);
@@ -1566,7 +1564,7 @@ _AddArc(
                             &childOutputs );
 
         // Combine the child output with our current output.
-        newNode = indexer->outputs->Append(childOutputs, newArc);
+        newNode = indexer->outputs->Append(std::move(childOutputs), newArc);
         PCP_INDEXING_UPDATE(
             indexer, newNode, 
             "Added subtree for site %s to graph",
@@ -1718,12 +1716,10 @@ _ApplyPayloadDecorator(const PcpNodeRef &node,
                        const SdfPayload& payload,
                        SdfLayer::FileFormatArguments *args)
 {
-    if (indexer.inputs.payloadDecorator) {
-        PcpPayloadContext payloadCtx = Pcp_CreatePayloadContext(
-            node, indexer.previousFrame);
-        indexer.inputs.payloadDecorator->
-            DecoratePayload(indexer.rootSite.path, payload, payloadCtx, args);
-    }
+    PcpPayloadContext payloadCtx = Pcp_CreatePayloadContext(
+        node, indexer.previousFrame);
+    indexer.inputs.payloadDecorator->
+        DecoratePayload(indexer.rootSite.path, payload, payloadCtx, args);
 }
 
 // Define a no op payload decorate function for SdfReference so that 
@@ -1735,6 +1731,58 @@ _ApplyPayloadDecorator(const PcpNodeRef &,
                        SdfLayer::FileFormatArguments *)
 {
     // Do nothing
+}
+
+// Declare helper function for creating PcpDynamicFileFormatContext, 
+// implemented in dynamicFileFormatContext.cpp
+PcpDynamicFileFormatContext
+Pcp_CreateComposeFieldContext(
+    const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *);
+
+// Generates dynamic file format arguments for a payload's asset path if the 
+// asset's file format supports it.
+static void
+_ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
+                                     const Pcp_PrimIndexer &indexer,
+                                     const SdfPayload &payload,
+                                     SdfLayer::FileFormatArguments *args)
+{
+    SdfFileFormatConstPtr fileFormat = SdfFileFormat::FindByExtension(
+        SdfFileFormat::GetFileExtension(payload.GetAssetPath()),
+        indexer.inputs.targetSchema);
+    if (!fileFormat) {
+        return;
+    }
+    if (const PcpDynamicFileFormatInterface *dynamicFileFormat = 
+            dynamic_cast<const PcpDynamicFileFormatInterface *>(
+                get_pointer(fileFormat))) {
+        // Create the context for composing the prim fields from the current 
+        // state of the index. This context will also populate a list of the
+        // fields that it composed for dependency tracking
+        TfToken::Set composedFieldNames;
+        PcpDynamicFileFormatContext context = Pcp_CreateComposeFieldContext(
+            node, indexer.previousFrame, &composedFieldNames);
+        // Ask the file format to generate dynamic file format arguments for 
+        // the asset in this context.
+        VtValue dependencyContextData;
+        dynamicFileFormat->ComposeFieldsForFileFormatArguments(
+            payload.GetAssetPath(), context, args, &dependencyContextData);
+
+        // Add this dependency context to dynamic file format dependency object.
+        indexer.outputs->dynamicFileFormatDependency.AddDependencyContext(
+            dynamicFileFormat, std::move(dependencyContextData), 
+            std::move(composedFieldNames));
+    }
+}
+
+static bool
+_ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
+                                     const Pcp_PrimIndexer &indexer,
+                                     const SdfReference &ref,
+                                     SdfLayer::FileFormatArguments *args)
+{
+    // References don't support dynamic file format arguments.
+    return false;
 }
 
 // Reference and payload arcs are composed in essentially the same way. 
@@ -1826,8 +1874,14 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             }
 
             SdfLayer::FileFormatArguments args;
-            // Apply payload decorators (payloads only)
-            _ApplyPayloadDecorator(node, *indexer, refOrPayload, &args);
+            // Existence of a payload decorator disables dynamic file format
+            // arguments. Decorators will eventually be removed.
+            if (indexer->inputs.payloadDecorator) {
+                _ApplyPayloadDecorator(node, *indexer, refOrPayload, &args);
+            } else {
+                _ComposeFieldsForFileFormatArguments(
+                    node, *indexer, refOrPayload, &args);
+            }
             Pcp_GetArgumentsForTargetSchema(
                 refOrPayload.GetAssetPath(), 
                 indexer->inputs.targetSchema, &args);
