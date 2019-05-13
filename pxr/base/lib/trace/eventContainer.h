@@ -62,7 +62,7 @@ class TraceEventContainer {
         static void Join(_Node *lhs, _Node *rhs);
 
         // Returns true if the node cannot hold any more events.
-        bool IsFull() const { return _size == _capacity; }
+        bool IsFull() const { return _end == _sentinel; }
 
         const_iterator begin() const {
             const char *p = reinterpret_cast<const char *>(this);
@@ -71,40 +71,47 @@ class TraceEventContainer {
         }
 
         const_iterator end() const {
-            return begin() + _size;
+            return _end;
         }
 
         const TraceEvent &back() const {
             return *std::prev(end());
         }
 
+        _Node *GetPrevNode() {
+            return _prev;
+        }
+
         const _Node *GetPrevNode() const {
             return _prev;
+        }
+
+        _Node *GetNextNode() {
+            return _next;
         }
 
         const _Node *GetNextNode() const {
             return _next;
         }
 
-        template <typename... Args>
-        void emplace_back(Args&&... args) {
-            char *p = reinterpret_cast<char *>(this);
-            p += sizeof(_Node) + _size*sizeof(TraceEvent);
-            new (p) TraceEvent(std::forward<Args>(args)...);
-            ++_size;
+        void ClaimEventEntry() {
+            ++_end;
         }
 
+        // Remove this node from the linked list to which it belongs.
+        void Unlink();
+
     private:
-        explicit _Node(size_t capacity);
+        _Node(TraceEvent *end, size_t capacity);
         ~_Node();
 
     private:
         union {
             struct {
+                TraceEvent *_end;
+                TraceEvent *_sentinel;
                 _Node *_prev;
                 _Node *_next;
-                size_t _size;
-                size_t _capacity;
             };
             // Ensure that _Node is aligned to at least the alignment of
             // TraceEvent.
@@ -213,10 +220,11 @@ public:
     /// @{
     template < class... Args>
     void emplace_back(Args&&... args) {
-        if (ARCH_UNLIKELY(!_back || _back->IsFull())) {
+        new (_nextEvent++) TraceEvent(std::forward<Args>(args)...);
+        _back->ClaimEventEntry();
+        if (_back->IsFull()) {
             Allocate();
         }
-        _back->emplace_back(std::forward<Args>(args)...);
     }
 
     const TraceEvent& back() const { return _back->back(); }
@@ -237,7 +245,7 @@ public:
         return const_reverse_iterator(begin());
     }
 
-    bool empty() const { return !_front; }
+    bool empty() const { return begin() == end(); }
     /// @}
 
     /// Append the events in \p other to the end of this container. This takes 
@@ -248,6 +256,8 @@ private:
     // Allocates a new block of memory for TraceEvent items.
     TRACE_API void Allocate();
 
+    // Points to where the next event should be constructed.
+    TraceEvent* _nextEvent;
     _Node* _front;
     _Node* _back;
     size_t _blockSizeBytes;
