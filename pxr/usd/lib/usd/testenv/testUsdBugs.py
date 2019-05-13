@@ -433,5 +433,12 @@ class TestUsdBugs(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException):
                 layer = Sdf.Layer.FindOrOpen(f.name)
 
+    def test_USD_5045(self):
+        # USD-5045 is github issue #753
+        from pxr import Usd
+        nullPrim = Usd.Prim()
+        with self.assertRaises(RuntimeError):
+            nullPrim.IsDefined()
+
 if __name__ == '__main__':
     unittest.main()
