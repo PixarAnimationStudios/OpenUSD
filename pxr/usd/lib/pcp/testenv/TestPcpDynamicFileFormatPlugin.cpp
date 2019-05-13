@@ -248,14 +248,15 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
     }
 
     // Otherwise, here we generate new file content.
+    SdfLayerRefPtr genLayer = SdfLayer::CreateAnonymous(".sdf");
     SdfChangeBlock block;
 
-    // Create a "Root" Xform prim at the root of the layer. 
+    // Create a "Root" Xform prim at the root of the genLayer. 
     SdfPrimSpecHandle rootSpec = SdfPrimSpec::New(
-        SdfLayerHandle(layer), std::string("Root"), SdfSpecifierDef, "Xform");
+        SdfLayerHandle(genLayer), std::string("Root"), SdfSpecifierDef, "Xform");
     // Make Root the generated layer's default prim. This is so that our 
     // recursively generated payloads below can reference in generated layers.
-    layer->SetDefaultPrim(rootSpec->GetNameToken());
+    genLayer->SetDefaultPrim(rootSpec->GetNameToken());
 
     // Add a "geom" reference to this layer. References don't generate dynamic 
     // file format arguments so the original contents of the layer will be 
@@ -336,6 +337,8 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
             }
         }
     }
+
+    layer->TransferContent(genLayer);
 
     return true;
 }

@@ -40,8 +40,11 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         except RuntimeError:
             pass
 
-    def tearDown(self):
-        Sdf.Layer.ReloadLayers(Sdf.Layer.GetLoadedLayers())
+    def setUp(self):
+        # We expect there to be no layers left loaded when we start each test
+        # case so we can start fresh. By the tearDown completes this needs to 
+        # be true.
+        assert not Sdf.Layer.GetLoadedLayers()
 
     def _CreatePcpCache(self, rootLayer):
         return Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
@@ -60,6 +63,9 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         baselineConeLayer = Sdf.Layer.FindOrOpen('baseline/cone_0.sdf')
         assert baselineConeLayer
         assert noArgConeLayer.ExportToString() == baselineConeLayer.ExportToString()
+        # Force reload the procedural layer to make sure it still works correctly
+        Sdf.Layer.Reload(noArgConeLayer, True)
+        assert noArgConeLayer.ExportToString() == baselineConeLayer.ExportToString()
 
         # Open the sphere.testpcpdynamic file with no arguments. This will
         # read the contents in as a normal sdf file
@@ -71,6 +77,9 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         baselineSphereLayer = Sdf.Layer.FindOrOpen('baseline/sphere_0.sdf')
         assert baselineSphereLayer
         assert noArgSphereLayer.ExportToString() == baselineSphereLayer.ExportToString()
+        # Force reload the procedural layer to make sure it still works correctly
+        Sdf.Layer.Reload(noArgSphereLayer, True)
+        assert noArgSphereLayer.ExportToString() == baselineSphereLayer.ExportToString()
 
         # Now open the dynamic cone file with file format arguments for 
         # depth and num. The contents will be dynamicly generated.
@@ -81,10 +90,14 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         baselineProcLayer = Sdf.Layer.FindOrOpen('baseline/proc_3_2.sdf')
         assert baselineProcLayer
         # The baseline comparison file uses a placeholder asset path so update
-        # it with the cone file's real path and then compare against the
-        # dynamic baseline
+        # it with the cone file's real path (converted to '/' on windows) and 
+        # then compare against the dynamic baseline
+        refConeLayerPath = procConeLayer.realPath.replace('\\', '/')
         baselineProcLayer.UpdateExternalReference('placeholder.sdf', 
-                                                  procConeLayer.realPath)
+                                                  refConeLayerPath)
+        assert procConeLayer.ExportToString() == baselineProcLayer.ExportToString()
+        # Force reload the procedural layer to make sure it still works correctly
+        Sdf.Layer.Reload(procConeLayer, True)
         assert procConeLayer.ExportToString() == baselineProcLayer.ExportToString()
 
         # Open the dynamic sphere file with the same file format arguments.
@@ -94,8 +107,12 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                                                {"TestPcp_depth":"3", "TestPcp_num":"2"})
         assert procSphereLayer
         assert procSphereLayer.GetFileFormat().formatId == "Test_PcpDynamicFileFormat"
-        baselineProcLayer.UpdateExternalReference(procConeLayer.realPath, 
-                                                  procSphereLayer.realPath)
+        refSphereLayerPath = procSphereLayer.realPath.replace('\\', '/')
+        baselineProcLayer.UpdateExternalReference(refConeLayerPath, 
+                                                  refSphereLayerPath)
+        assert procSphereLayer.ExportToString() == baselineProcLayer.ExportToString()
+        # Force reload the procedural layer to make sure it still works correctly
+        Sdf.Layer.Reload(procSphereLayer, True)
         assert procSphereLayer.ExportToString() == baselineProcLayer.ExportToString()
 
         print "test_FileFormat Success!\n"
@@ -312,9 +329,14 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius"]:
             assert cache.IsPossibleDynamicFileFormatArgumentField(field)
 
-        # Find the params layer that was referenced by in by /RootSphere.
-        paramsLayer = Sdf.Layer.Find("params.sdf")
-        assert paramsLayer
+        # Assert that we can find the params layer that was referenced by in by 
+        # /RootSphere.
+        assert Sdf.Layer.Find("params.sdf")
+        # FindOrOpen the params layer so that we still have an open reference
+        # to it when we change it. Otherwise the layer might get deleted when
+        # the prim indexes referencing it are invalidated and we could lose the
+        # changes.
+        paramsLayer = Sdf.Layer.FindOrOpen("params.sdf")
         # Verify that changing num on the referenced prim causes a significant
         # change to /RootSphere as it is used to compose the dynamic arguments
         self._TestChangeInfo(cache, paramsLayer.GetPrimAtPath('/Params'),
@@ -463,10 +485,15 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # Recompute the prim indices.
         self._VerifyComputeDynamicPayloads(cache, payloads, hasPayloadId=True)
 
-        # Now find root.sdf which was referenced in to /Root. It will already
-        # be open.
-        refLayer = Sdf.Layer.Find("root.sdf")
-        assert refLayer
+        # Assert that we can find root.sdf which was referenced in to /Root. It
+        # will already be open.
+        assert Sdf.Layer.Find("root.sdf")
+        # FindOrOpen the layer so that we still have an open reference
+        # to it when we change it. Otherwise the layer might get deleted when
+        # the prim indexes referencing it are invalidated and we could lose the
+        # changes.
+        refLayer = Sdf.Layer.FindOrOpen("root.sdf")
+
         # Change num the argDict on /RootMulti on the referenced layer which is
         # parent prim to referenced subprim. This will cause a significant 
         # change to /Root. The change to argDict is a significant change to 

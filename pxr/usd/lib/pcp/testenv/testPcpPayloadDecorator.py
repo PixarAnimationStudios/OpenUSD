@@ -73,8 +73,8 @@ class TestPcpPayloadDecorator(unittest.TestCase):
             
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
-        assert Sdf.Layer.Find(payloadLayerId1), \
-            "Failed to find expected payload layer '%s'" % payloadLayerId1
+        assert not Sdf.Layer.Find(payloadLayerId1), \
+            "Expected to not find payload layer '%s'" % payloadLayerId1
         assert Sdf.Layer.Find(payloadLayerId2), \
             "Failed to find expected payload layer '%s'" % payloadLayerId2
         assert not Sdf.Layer.Find(payloadLayerId3), \
@@ -92,10 +92,10 @@ class TestPcpPayloadDecorator(unittest.TestCase):
 
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
-        assert Sdf.Layer.Find(payloadLayerId1), \
-            "Failed to find expected payload layer '%s'" % payloadLayerId1
-        assert Sdf.Layer.Find(payloadLayerId2), \
-            "Failed to find expected payload layer '%s'" % payloadLayerId2
+        assert not Sdf.Layer.Find(payloadLayerId1), \
+            "Expected to not find payload layer '%s'" % payloadLayerId1
+        assert not Sdf.Layer.Find(payloadLayerId2), \
+            "Expected to not find payload layer '%s'" % payloadLayerId2
         assert Sdf.Layer.Find(payloadLayerId3), \
             "Failed to find expected payload layer '%s'" % payloadLayerId3
 
@@ -160,12 +160,12 @@ class TestPcpPayloadDecorator(unittest.TestCase):
 
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
-        assert Sdf.Layer.Find(payload1LayerId1), \
-            "Failed to find expected payload layer '%s'" % payload1LayerId1
+        assert not Sdf.Layer.Find(payload1LayerId1), \
+            "Expected to not find payload layer '%s'" % payload1LayerId1
         assert Sdf.Layer.Find(payload1LayerId2), \
             "Failed to find expected payload layer '%s'" % payload1LayerId2
-        assert Sdf.Layer.Find(payload2LayerId1), \
-            "Failed to find expected payload layer '%s'" % payload2LayerId1
+        assert not Sdf.Layer.Find(payload2LayerId1), \
+            "Expected to not find payload layer '%s'" % payload2LayerId1
         assert Sdf.Layer.Find(payload2LayerId2), \
             "Failed to find expected payload layer '%s'" % payload2LayerId2
 
