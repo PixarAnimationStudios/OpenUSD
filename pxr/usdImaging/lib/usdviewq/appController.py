@@ -96,15 +96,6 @@ class HUDEntries(ConstantGroup):
 class PropertyIndex(ConstantGroup):
     VALUE, METADATA, LAYERSTACK, COMPOSITION = range(4)
 
-class DebugTypes(ConstantGroup):
-    # Tf Debug entries to include in debug menu
-    HDST = "HDST"
-    HD = "HD"
-    HDX = "HDX"
-    USD = "USD"
-    USDIMAGING = "USDIMAGING"
-    USDVIEWQ = "USDVIEWQ"
-
 class UIDefaults(ConstantGroup):
     STAGE_VIEW_WIDTH = 604
     PRIM_VIEW_WIDTH = 521
@@ -1039,8 +1030,6 @@ class AppController(QtCore.QObject):
             self._ui.actionActivate.triggered.connect(self.activateSelectedPrims)
 
             self._ui.actionDeactivate.triggered.connect(self.deactivateSelectedPrims)
-
-            self._setupDebugMenu()
 
             # We refresh as if all view settings changed. In the future, we
             # should do more granular refreshes. This first requires more
@@ -4088,29 +4077,6 @@ class AppController(QtCore.QObject):
             print "Error encountered while computing prim subtree HUD info: %s" % err
         finally:
             QtWidgets.QApplication.restoreOverrideCursor()
-
-
-    def _setupDebugMenu(self):
-        def __helper(debugType, menu):
-            return lambda: self._createTfDebugMenu(menu, '{0}_'.format(debugType))
-
-        for debugType in DebugTypes:
-            menu = self._ui.menuDebug.addMenu('{0} Flags'.format(debugType))
-            menu.aboutToShow.connect(__helper(debugType, menu))
-
-    def _createTfDebugMenu(self, menu, flagFilter):
-        def __createTriggerLambda(flagToSet, value):
-            return lambda: Tf.Debug.SetDebugSymbolsByName(flagToSet, value)
-
-        flags = [flag for flag in Tf.Debug.GetDebugSymbolNames() if flag.startswith(flagFilter)]
-        menu.clear()
-        for flag in flags:
-            action = menu.addAction(flag)
-            isEnabled = Tf.Debug.IsDebugSymbolNameEnabled(flag)
-            action.setCheckable(True)
-            action.setChecked(isEnabled)
-            action.setStatusTip(Tf.Debug.GetDebugSymbolDescription(flag))
-            action.triggered[bool].connect(__createTriggerLambda(flag, not isEnabled))
 
     def _updateNavigationMenu(self):
         """Make the Navigation menu items enabled or disabled depending on the
