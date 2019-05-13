@@ -199,6 +199,24 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             }
         }
     }
+
+    // Velocity information is expected to be authored at the same sample
+    // rate as points data, so use the points dirty bit to let us know when
+    // to publish velocities.
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
+        UsdGeomBasisCurves curves(prim);
+        VtVec3fArray velocities;
+        if (curves.GetVelocitiesAttr().Get(&velocities, time)) {
+            // Expose velocities as a primvar.
+            _MergePrimvar(
+                &primvars,
+                UsdGeomTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath,
+                UsdGeomTokens->velocities) = VtValue(velocities);
+        }
+    }
 }
 
 
