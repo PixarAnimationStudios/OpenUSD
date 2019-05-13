@@ -24,8 +24,10 @@
 import sys, argparse, os
 
 from qt import QtWidgets
-from common import Timer, Complexities
+from common import Timer
 from appController import AppController
+
+from pxr import UsdAppUtils
 
 
 class InvalidUsdviewOption(Exception):
@@ -98,15 +100,14 @@ class Launcher(object):
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
 
-        parser.add_argument('--camera', action='store',
-                            default=UsdUtils.GetPrimaryCameraName(), type=str,
-                            help="Which camera to set the view to on "
-                            "open - may be given as either just the camera's "
-                            "prim name (ie, just the last element in the prim "
-                            "path), or as a full prim path.  Note that if only "
-                            "the prim name is used, and more than one camera "
-                            "exists with the name, which is used will be "
-                            "effectively random")
+        UsdAppUtils.cameraArgs.AddCmdlineArgs(parser,
+            altHelpText=(
+                "Which camera to set the view to on open - may be given as "
+                "either just the camera's prim name (ie, just the last "
+                "element in the prim path), or as a full prim path.  Note "
+                "that if only the prim name is used, and more than one camera "
+                "exists with the name, which is used will be effectively "
+                "random (default=%(default)s)"))
 
         parser.add_argument('--mask', action='store',
                             dest='populationMask',
@@ -157,11 +158,9 @@ class Launcher(object):
         parser.add_argument('--lf', action='store',
                             dest='lastframe', type=int)
 
-        parser.add_argument('--complexity', action='store',
-                            type=str, default="low", dest='complexity',
-                            choices=[c.id for c in Complexities.ordered()],
-                            help='Set the initial mesh refinement complexity '
-                                 '(%(default)s).')
+        UsdAppUtils.complexityArgs.AddCmdlineArgs(parser,
+            altHelpText=(
+                'Set the initial mesh refinement complexity (%(default)s).'))
 
         parser.add_argument('--quitAfterStartup', action='store_true',
                             dest='quitAfterStartup',
@@ -197,38 +196,34 @@ class Launcher(object):
             arg_parse_result.populationMask = (
                 arg_parse_result.populationMask.replace(',', ' ').split())
 
-        # convert the camera result to an sdf path, if possible, and verify
-        # that it is "just" a prim path
+        # Verify that the camera path is either an absolute path, or is just
+        # the name of a camera.
         if arg_parse_result.camera:
-            from pxr import Sdf
-            camPath = Sdf.Path(arg_parse_result.camera)
+            camPath = arg_parse_result.camera
             if camPath.isEmpty:
-                raise InvalidUsdviewOption("invalid camera path - %r" % \
-                                           (arg_parse_result.camera,))
+                raise InvalidUsdviewOption(
+                    "invalid camera path - %r" % camPath)
             if not camPath.IsPrimPath():
-                raise InvalidUsdviewOption("invalid camera path - must be a " \
-                                     "raw prim path, without variant " \
-                                     "selections, relational attributes, etc " \
-                                     "- got: %r" % \
-                                     (arg_parse_result.camera,))
+                raise InvalidUsdviewOption(
+                    "invalid camera path - must be a raw prim path with no "
+                    "variant selections or properties - got: %r" % camPath)
 
-            # check if it's a path, or just a name...
-            if camPath.name != arg_parse_result.camera:
-                # it's a "real" path, store the SdfPath version
+            # If it's a multi-element path, make sure it is absolute.
+            if camPath.pathElementCount > 1:
                 if not camPath.IsAbsolutePath():
                     # perhaps we should error here? For now just pre-pending
                     # root, and printing warning...
-                    print >> sys.stderr, "WARNING: camera path %r was not " \
-                                         "absolute, prepending %r to make " \
-                                         "it absolute" % \
-                                         (str(camPath),
-                                          str(Sdf.Path.absoluteRootPath))
-                    camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
-                arg_parse_result.camera = camPath
+                    from pxr import Sdf
+                    print >> sys.stderr, (
+                        "WARNING: camera path %r was not absolute, prepending "
+                        "%r to make it absolute" % (str(camPath),
+                            str(Sdf.Path.absoluteRootPath)))
+                    arg_parse_result.camera = camPath.MakeAbsolutePath(
+                        Sdf.Path.absoluteRootPath)
 
         if arg_parse_result.clearSettings and arg_parse_result.defaultSettings:
-            raise InvalidUsdviewOption("cannot supply both --clearsettings " \
-                                       "and --defaultsettings.")
+            raise InvalidUsdviewOption(
+                "cannot supply both --clearsettings and --defaultsettings.")
 
     def GetResolverContext(self, usdFile):
         """

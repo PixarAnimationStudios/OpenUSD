@@ -32,6 +32,8 @@ from collections import deque, OrderedDict
 
 # Usd Library Components
 from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
+from pxr import UsdAppUtils
+from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 
 # UI Components
 from ._usdviewq import Utils
@@ -63,7 +65,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
-                    GetPrimsLoadability, Complexities, ClearColors,
+                    GetPrimsLoadability, ClearColors,
                     HighlightColors)
 
 import settings2
@@ -418,10 +420,9 @@ class AppController(QtCore.QObject):
                 self._initialSelectPrim = None
 
             try:
-                self._dataModel.viewSettings.complexity = Complexities.fromId(
-                    parserData.complexity)
+                self._dataModel.viewSettings.complexity = parserData.complexity
             except ValueError:
-                fallback = Complexities.LOW
+                fallback = RefinementComplexities.LOW
                 sys.stderr.write(("Error: Invalid complexity '{}'. "
                     "Using fallback '{}' instead.\n").format(
                         parserData.complexity, fallback.id))
@@ -431,11 +432,12 @@ class AppController(QtCore.QObject):
             self._timeSamples = None
             self._stageView = None
             self._startingPrimCamera = None
-            if isinstance(parserData.camera, Sdf.Path):
+            if (parserData.camera.IsAbsolutePath() or
+                    parserData.camera.pathElementCount > 1):
                 self._startingPrimCameraName = None
                 self._startingPrimCameraPath = parserData.camera
             else:
-                self._startingPrimCameraName = parserData.camera
+                self._startingPrimCameraName = parserData.camera.pathString
                 self._startingPrimCameraPath = None
 
             settingsPathDir = self._outputBaseDirectory()
@@ -1680,17 +1682,17 @@ class AppController(QtCore.QObject):
 
     def _incrementComplexity(self):
         """Jump up to the next level of complexity."""
-        self._setComplexity(Complexities.next(
+        self._setComplexity(RefinementComplexities.next(
             self._dataModel.viewSettings.complexity))
 
     def _decrementComplexity(self):
         """Jump back to the previous level of complexity."""
-        self._setComplexity(Complexities.prev(
+        self._setComplexity(RefinementComplexities.prev(
             self._dataModel.viewSettings.complexity))
 
     def _changeComplexity(self, action):
         """Update the complexity from a selected QAction."""
-        self._setComplexity(Complexities.fromName(action.text()))
+        self._setComplexity(RefinementComplexities.fromName(action.text()))
 
     def _adjustFOV(self):
         fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",

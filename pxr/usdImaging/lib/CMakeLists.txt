@@ -1,4 +1,5 @@
 set(DIRS
+    usdAppUtils
     usdImaging
     usdImagingGL
     usdShaders

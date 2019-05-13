@@ -246,6 +246,10 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
 
 \subsection Usd_Package_UsdImaging The "usdImaging" package
 
+- \ref usdAppUtils_page_front : A library that provides a number of utilities
+  and common functionality for applications that view and/or record images of
+  UsdStages.
+
 - \b UsdImaging : An adapter to Pixar's modern, high-performance GL
   rendering engine \em Hydra (which in turn leverages OpenSubdiv) that
   provides preview imaging (including streaming playback) for any UsdStage

@@ -23,8 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-
-from pxr.Usdviewq.common import RenderModes, Complexities, Usd, UsdGeom
+from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
+from pxr.Usdviewq.common import RenderModes, Usd, UsdGeom
 from pxr import Vt, Gf
 
 
@@ -48,9 +48,9 @@ def _takeShot(appController, fileName):
     viewportShot.save(fileName, "PNG")
 
 def _testChangeComplexity(appController):
-    _setComplexity(appController, Complexities.MEDIUM)
+    _setComplexity(appController, RefinementComplexities.MEDIUM)
     _takeShot(appController, "change_complexity.png")
-    _setComplexity(appController, Complexities.LOW)
+    _setComplexity(appController, RefinementComplexities.LOW)
 
 def _testInvisVisOnPlayback(appController):
     # Start playback
