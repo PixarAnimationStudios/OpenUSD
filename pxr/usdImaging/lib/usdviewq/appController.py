@@ -324,6 +324,7 @@ class AppController(QtCore.QObject):
             self._currentSpec = None
             self._currentLayer = None
             self._console = None
+            self._debugFlagsWindow = None
             self._interpreter = None
             self._parserData = parserData
             self._noRender = parserData.noRender
@@ -769,6 +770,8 @@ class AppController(QtCore.QObject):
             self._ui.useExtentsHint.triggered.connect(self._setUseExtentsHint)
 
             self._ui.showInterpreter.triggered.connect(self._showInterpreter)
+
+            self._ui.showDebugFlags.triggered.connect(self._showDebugFlags)
 
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
@@ -2275,6 +2278,13 @@ class AppController(QtCore.QObject):
         self._interpreter.show()
         self._interpreter.activateWindow()
         self._interpreter.setFocus()
+
+    def _showDebugFlags(self):
+        if self._debugFlagsWindow is None:
+            from debugFlagsWidget import DebugFlagsWidget
+            self._debugFlagsWindow = DebugFlagsWidget()
+
+        self._debugFlagsWindow.show()
 
     # Screen capture functionality ===========================================
 

@@ -1450,6 +1450,7 @@
      <string>Window</string>
     </property>
     <addaction name="showInterpreter"/>
+    <addaction name="showDebugFlags"/>
    </widget>
    <widget class="QMenu" name="menuDebug">
     <property name="title">
@@ -2025,6 +2026,17 @@
    </property>
    <property name="shortcut">
     <string>I</string>
+   </property>
+  </action>
+  <action name="showDebugFlags">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Debug Flags</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Debug Flags Window</string>
    </property>
   </action>
   <action name="actionHUD_VBOInfo">
