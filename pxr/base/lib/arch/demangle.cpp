@@ -271,4 +271,25 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
 
 #endif // _AT_LEAST_GCC_THREE_ONE_OR_CLANG
 
+string
+ArchGetDemangled(const string& typeName)
+{
+    string r = typeName;
+    if (ArchDemangle(&r))
+        return r;
+    return string();
+}
+
+string
+ArchGetDemangled(const char *typeName)
+{
+    if (typeName) {
+        string r = typeName;
+        if (ArchDemangle(&r)) {
+            return r;
+        }
+    }
+    return string();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

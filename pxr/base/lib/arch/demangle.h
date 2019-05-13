@@ -60,14 +60,15 @@ ARCH_API bool ArchDemangle(std::string* typeName);
 /// string; otherwise, the function returns the empty string.
 ///
 /// \see ArchDemangle()
-inline std::string
-ArchGetDemangled(const std::string& typeName)
-{
-    std::string r = typeName;
-    if (ArchDemangle(&r))
-        return r;
-    return std::string();
-}
+ARCH_API std::string
+ArchGetDemangled(const std::string& typeName);
+
+/// Return demangled RTTI-generated type name.
+///
+/// \see ArchDemangle()
+/// \overload
+ARCH_API std::string
+ArchGetDemangled(const char *typeName);
 
 /// Return demangled RTTI-generated type name.
 ///
