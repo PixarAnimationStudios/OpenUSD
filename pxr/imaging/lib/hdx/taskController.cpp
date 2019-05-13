@@ -282,15 +282,8 @@ HdxTaskController::_CreateOitResolveTask()
 {
     _oitResolveTaskId = GetControllerId().AppendChild(_tokens->oitResolveTask);
 
-    HdxRenderTaskParams params;
-    params.camera = _cameraId;
-    params.viewport = GfVec4d(0,0,1,1);
-
     GetRenderIndex()->InsertTask<HdxOitResolveTask>(&_delegate,
         _oitResolveTaskId);
-
-    _delegate.SetParameter(_oitResolveTaskId, HdTokens->params,
-        params);
 }
 
 void
