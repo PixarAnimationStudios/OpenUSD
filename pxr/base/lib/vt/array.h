@@ -242,6 +242,27 @@ class VtArray : public Vt_ArrayBase {
     /// Create an empty array.
     VtArray() : _data(nullptr) {}
 
+    /// Create an array from a pair of iterators
+    ///
+    /// Equivalent to:
+    /// \code
+    /// VtArray<T> v;
+    /// v.assign(first, last);
+    /// \endcode
+    ///
+    /// Note we use enable_if with a dummy parameter here to avoid clashing
+    /// with our other constructor with the following signature:
+    ///
+    /// VtArray(size_t n, value_type const &value = value_type())
+    template <typename LegacyInputIterator>
+    VtArray(LegacyInputIterator first, LegacyInputIterator last,
+            typename std::enable_if<
+                !std::is_integral<LegacyInputIterator>::value, 
+                void>::type* = nullptr)
+        : VtArray() {
+        assign(first, last); 
+    }
+
     /// Create an array with foreign source.
     VtArray(Vt_ArrayForeignDataSource *foreignSrc,
             ElementType *data, size_t size, bool addRef = true)
