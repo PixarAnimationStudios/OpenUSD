@@ -53,25 +53,43 @@ SdfFileFormat::SdfFileFormat(
     const TfToken& formatId,
     const TfToken& versionString,
     const TfToken& target,
-    const std::string& extension)
-    : _formatId(formatId)
-    , _target(target)
-    , _cookie("#" + formatId.GetString())
-    , _versionString(versionString)
-    , _extensions(1, extension)
-    , _isPrimaryFormat(
-        _FileFormatRegistry
-            ->GetPrimaryFormatForExtension(extension) == formatId)
+    const std::string& extension,
+    const SdfSchemaBase& schema)
+    : SdfFileFormat(
+        formatId, versionString, target, std::vector<std::string>{extension}, 
+        schema)
 {
-    // Do Nothing.
 }
 
 SdfFileFormat::SdfFileFormat(
     const TfToken& formatId,
     const TfToken& versionString,
     const TfToken& target,
-    const std::vector<std::string>& extensions)
-    : _formatId(formatId)
+    const std::string& extension)
+    : SdfFileFormat(
+        formatId, versionString, target, std::vector<std::string>{extension}, 
+        SdfSchema::GetInstance())
+{
+}
+
+SdfFileFormat::SdfFileFormat(
+    const TfToken& formatId,
+    const TfToken& versionString,
+    const TfToken& target,
+    const std::vector<std::string> &extensions)
+    : SdfFileFormat(
+        formatId, versionString, target, extensions, SdfSchema::GetInstance())
+{
+}
+
+SdfFileFormat::SdfFileFormat(
+    const TfToken& formatId,
+    const TfToken& versionString,
+    const TfToken& target,
+    const std::vector<std::string>& extensions,
+    const SdfSchemaBase& schema)
+    : _schema(schema)
+    , _formatId(formatId)
     , _target(target)
     , _cookie("#" + formatId.GetString())
     , _versionString(versionString)
@@ -134,6 +152,12 @@ bool
 SdfFileFormat::LayersAreFileBased() const
 {
     return _LayersAreFileBased();
+}
+
+const SdfSchemaBase&
+SdfFileFormat::GetSchema() const
+{
+    return _schema;
 }
 
 const TfToken&

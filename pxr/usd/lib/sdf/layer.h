@@ -108,7 +108,7 @@ public:
 
     /// Returns the schema this layer adheres to. This schema provides details
     /// about the scene description that may be authored in this layer.
-    SDF_API virtual const SdfSchemaBase& GetSchema() const;
+    SDF_API const SdfSchemaBase& GetSchema() const;
 
     /// Returns the file format used by this layer.
     SDF_API const SdfFileFormatConstPtr& GetFileFormat() const;

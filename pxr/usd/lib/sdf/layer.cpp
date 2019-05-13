@@ -830,7 +830,7 @@ SdfLayer::OpenAsAnonymous(
 const SdfSchemaBase& 
 SdfLayer::GetSchema() const
 {
-    return SdfSchema::GetInstance();
+    return GetFileFormat()->GetSchema();
 }
 
 SdfLayer::_ReloadResult
