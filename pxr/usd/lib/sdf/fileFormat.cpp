@@ -270,15 +270,17 @@ SdfFileFormat::GetFileExtension(
         return s;
     }
 
+    // We remove any file format arguments that may be appended to the layer
+    // path so we can get just the raw extension.
+    std::string layerPath;
+    std::string dummyArgs;
     // XXX: if it is a dot file (e.g. .sdf) we append a temp
     // name to retain behavior of specifier stripping.
     // this is in place for backwards compatibility
-    std::string strippedExtension;
-    std::string dummyArgs;
     Sdf_SplitIdentifier((s[0] == '.' ? "temp_file_name" + s : s), 
-                        &strippedExtension, &dummyArgs);
+                        &layerPath, &dummyArgs);
 
-    std::string extension = Sdf_GetExtension(strippedExtension);
+    std::string extension = Sdf_GetExtension(layerPath);
        
     return extension.empty() ? s : extension;
 }
