@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
@@ -223,6 +224,23 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
+
+        // Velocity information is expected to be authored at the same sample
+        // rate as points data, so use the points dirty bit to let us know when
+        // to publish velocities.
+        UsdGeomPointBased pointBased(prim);
+        VtVec3fArray velocities;
+        if (pointBased.GetVelocitiesAttr() &&
+            pointBased.GetVelocitiesAttr().Get(&velocities, time)) {
+            // Expose velocities as a primvar.
+            _MergePrimvar(
+                &primvars,
+                HdTokens->velocities,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath, HdTokens->velocities) = 
+                VtValue(velocities);
+        }
     }
 
     SdfPath usdMaterialPath;

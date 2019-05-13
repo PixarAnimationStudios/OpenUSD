@@ -184,24 +184,6 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
             }
         }
     }
-
-    // Velocity information is expected to be authored at the same sample
-    // rate as points data, so use the points dirty bit to let us know when
-    // to publish velocities.
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        UsdGeomPoints points(prim);
-        VtVec3fArray velocities;
-        if (points.GetVelocitiesAttr().Get(&velocities, time)) {
-            // Expose velocities as a primvar.
-            _MergePrimvar(
-                &primvars,
-                UsdGeomTokens->velocities,
-                HdInterpolationVertex,
-                HdPrimvarRoleTokens->vector);
-            valueCache->GetPrimvar(cachePath,
-                UsdGeomTokens->velocities) = VtValue(velocities);
-        }
-    }
 }
 
 
