@@ -22,22 +22,22 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "primWrapper.h"
-#include "context.h"
 
-#include "UT_Gf.h"
+#include "context.h"
 #include "GT_VtArray.h"
-#include "USD_XformCache.h"
 #include "GU_USD.h"
 #include "tokens.h"
+#include "USD_XformCache.h"
+#include "UT_Gf.h"
 
 #include "pxr/base/gf/half.h"
 
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndexedString.h>
-#include <GT/GT_RefineParms.h>
 #include <GT/GT_DAIndirect.h>
-#include <GT/GT_DABool.h>
+#include <GT/GT_PrimInstance.h>
+#include <GT/GT_RefineParms.h>
 #include <SYS/SYS_Version.h>
+#include <UT/UT_ParallelUtil.h>
 #include <UT/UT_StringMMPattern.h>
 
 #include <iostream>
@@ -366,7 +366,7 @@ GusdPrimWrapper::setVisibility(const TfToken& visibility, UsdTimeCode time)
         m_visible = true;
     }
 
-    UsdAttribute visAttr = getUsdPrim().GetVisibilityAttr();
+    const UsdAttribute visAttr = getUsdPrim().GetVisibilityAttr();
     if( visAttr.IsValid() ) {
         TfToken oldVal;
         if( !visAttr.Get( &oldVal, 
@@ -430,18 +430,6 @@ GusdPrimWrapper::updateActiveFromGTPrim(
     }
 }
 
-namespace {
-bool
-isClose( const GfMatrix4d &m1, const GfMatrix4d &m2, double tol = 1e-10 ) {
-
-    for(int i = 0; i < 16; ++i) {
-        if(!GfIsClose(m1.GetArray()[i], m2.GetArray()[i], tol))
-            return false;
-    }
-    return true;
-}
-}
-
 void
 GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform, 
                                             UsdTimeCode time, bool force )
@@ -465,7 +453,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
         // The xformOps attribute is static so we only check if we haven't
         // changed anything yet. In addition nothing needs to be cleared if it
         // was previously empty.
-        if (m_lastXformSet.IsDefault() && (int)xformVec.size() > 0) {
+        if (m_lastXformSet.IsDefault() && !xformVec.empty()) {
             // Load the root layer for temp, stronger opinion changes.
             stage->GetRootLayer()->SetPermissionToSave(false);
             stage->SetEditTarget(stage->GetRootLayer());
@@ -491,7 +479,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
         if( !m_lastXformSet.IsDefault() ) {
 
             // Is the transform at this frame the same as the last frame
-            if( isClose(xform,m_xformCache) ) {
+            if( GfIsClose(xform, m_xformCache, 1e-10) ) {
                 setKnot = false;
                 m_lastXformCompared = time;
             }
@@ -505,8 +493,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
         }
         else {
             // If the transform is an identity, don't set it
-            if( isClose(xform,GfMatrix4d( 1.0 ))) {
-
+            if( GfIsClose(xform, GfMatrix4d(1), 1e-10) ) {
                 setKnot = false;
                 m_lastXformCompared = time;
             }
@@ -548,9 +535,8 @@ GusdPrimWrapper::updateAttributeFromGTPrim(
     if( it == m_lastAttrValueDict.end()) { 
 
         // Set the value for the first time
-        m_lastAttrValueDict.insert(
-                std::make_pair(key, 
-                               AttrLastValueEntry( time, houAttr->harden())));
+        m_lastAttrValueDict.emplace(
+            key, AttrLastValueEntry( time, houAttr->harden()));
 
         GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, time);
         return true;
@@ -610,9 +596,8 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
             }
         }
 
-        m_lastAttrValueDict.insert(
-            std::make_pair(key, 
-                       AttrLastValueEntry( time, data->harden())));
+        m_lastAttrValueDict.emplace(
+            key, AttrLastValueEntry( time, data->harden()));
 
         GusdGT_Utils::setPrimvarSample( prim, name, data, interpolation, time );
     }
@@ -708,10 +693,9 @@ GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
             }
         }
 
-        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
-                                       UsdTimeCode(bookendFrame));
-        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
-                                       UsdTimeCode(curFrame));   
+        const UsdAttribute attr = getUsdPrim().GetVisibilityAttr();
+        attr.Set(UsdGeomTokens->invisible, UsdTimeCode(bookendFrame));
+        attr.Set(UsdGeomTokens->inherited, UsdTimeCode(curFrame));
     }
 }
 
@@ -720,10 +704,9 @@ GusdPrimWrapper::addTrailingBookend( double curFrame )
 {
     double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
-    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
-                                   UsdTimeCode(bookendFrame));
-    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
-                                   UsdTimeCode(curFrame));     
+    const UsdAttribute attr = getUsdPrim().GetVisibilityAttr();
+    attr.Set(UsdGeomTokens->inherited, UsdTimeCode(bookendFrame));
+    attr.Set(UsdGeomTokens->invisible, UsdTimeCode(curFrame));
 }
 
 
@@ -1049,8 +1032,8 @@ GusdPrimWrapper::loadPrimvars(
 
         const TfToken interpolation = primvar.GetInterpolation();
 
-        // usd vertex primvars are assigned to points
-        if( interpolation == UsdGeomTokens->vertex )
+        if( interpolation == UsdGeomTokens->vertex ||
+            interpolation == UsdGeomTokens->varying )
         {
             if( gtData->entries() < minPoint ) {
                 TF_WARN( "Not enough values found for primvar: %s:%s. "

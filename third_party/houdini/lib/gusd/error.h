@@ -26,7 +26,7 @@
 
 #include "gusd/api.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/errorMark.h"

@@ -31,7 +31,7 @@
 #include "gusd/USD_DataCache.h"
 #include "gusd/USD_Utils.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformable.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -24,7 +24,7 @@
 #ifndef _GUSD_UT_STATICINIT_H_
 #define _GUSD_UT_STATICINIT_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include <UT/UT_Lock.h>
 

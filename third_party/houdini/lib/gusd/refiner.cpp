@@ -23,23 +23,19 @@
 //
 #include "refiner.h"
 
-#include "primWrapper.h"
+#include "GT_OldPointInstancer.h"
 #include "GT_PackedUSD.h"
 #include "GT_PointInstancer.h"
-#include "GT_OldPointInstancer.h"
 #include "GU_USD.h"
+#include "primWrapper.h"
 #include "stageCache.h"
 
 #include <GEO/GEO_Primitive.h>
-#include <GT/GT_PrimInstance.h>
-#include <GT/GT_GEOPrimPacked.h>
-#include <GT/GT_DANumeric.h>
 #include <GT/GT_DAIndexedString.h>
-#include <GT/GT_PrimPointMesh.h>
+#include <GT/GT_DANumeric.h>
 #include <GT/GT_GEODetail.h>
-#include <GT/GT_PrimFragments.h>
-#include <GT/GT_PrimPackedDetail.h>
-
+#include <GT/GT_GEOPrimPacked.h>
+#include <GT/GT_PrimInstance.h>
 #include <SYS/SYS_Types.h>
 
 #include <iostream>
@@ -223,7 +219,7 @@ void
 GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 {
     if(!gtPrimIn) {
-        std::cout << "Attempting to add invalid prim" << std::endl;
+        TF_WARN("Attempted to add invalid prim");
         return;
     }
     GT_PrimitiveHandle gtPrim = gtPrimIn;     // copy to a non-const handle
@@ -428,7 +424,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 
     if( primType == GT_PRIM_INSTANCE ) {
  
-       auto inst = UTverify_cast<const GT_PrimInstance*>(gtPrim.get());
+        auto inst = UTverify_cast<const GT_PrimInstance*>(gtPrim.get());
         const GT_PrimitiveHandle geometry = inst->geometry();
 
         if ( geometry->getPrimitiveType() == GT_GEO_PACKED ) {

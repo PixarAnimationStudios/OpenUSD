@@ -25,10 +25,10 @@
 #ifndef __GUSD_CONTEXT_H__
 #define __GUSD_CONTEXT_H__
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usdGeom/tokens.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include <GT/GT_Primitive.h>
 

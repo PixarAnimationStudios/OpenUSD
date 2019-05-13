@@ -24,9 +24,10 @@
 #ifndef _GUSD_UT_GF_H_
 #define _GUSD_UT_GF_H_
 
+#include "pxr/pxr.h"
+
 #include "UT_TypeTraits.h"
 
-#include <pxr/pxr.h>
 // Conversion specializations require full defs for some types.
 #include "pxr/base/gf/quaternion.h"
 #include "pxr/base/gf/quatd.h"
@@ -560,7 +561,7 @@ GusdUT_Gf::Convert(const UT_QuaternionT<T>& from, GfQuath& to)
 {
     to.SetReal(GfHalf(from.w()));
     to.SetImaginary(
-	GfVec3h(GfHalf(from.x()), GfHalf(from.y()), GfHalf(from.z())));
+        GfVec3h(GfHalf(from.x()), GfHalf(from.y()), GfHalf(from.z())));
 }
 
 

@@ -31,9 +31,9 @@
 #include <GU/GU_DetailHandle.h>
 #include <UT/UT_SharedPtr.h>
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/tokens.h>
-#include <pxr/usd/sdf/path.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/sdf/path.h"
 
 #include "writeCtrlFlags.h"
 

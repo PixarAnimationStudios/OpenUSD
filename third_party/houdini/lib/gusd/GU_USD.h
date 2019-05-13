@@ -29,13 +29,13 @@
 #include <GA/GA_Range.h>
 #include <UT/UT_ErrorManager.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
-#include "gusd/api.h"
-#include "gusd/defaultArray.h"
-#include "gusd/stageCache.h"
-#include "gusd/USD_Traverse.h"
-#include "gusd/USD_Utils.h"
+#include "api.h"
+#include "defaultArray.h"
+#include "stageCache.h"
+#include "USD_Traverse.h"
+#include "USD_Utils.h"
 
 class GA_AttributeFilter;
 class GU_Detail;
@@ -315,9 +315,11 @@ public:
                                    const UsdPrim& prim,
                                    UsdTimeCode time,
                                    const char* lod = nullptr,
-                                   GusdPurposeSet purpose = GUSD_PURPOSE_PROXY,
+                                   GusdPurposeSet purpose = GusdPurposeSet(
+                                       GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
                                    const char* primvarPattern = "*",
-                                   const UT_Matrix4D* xform = nullptr);
+                                   const UT_Matrix4D* xform = nullptr,
+                                   bool addPathAttributes = true);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,7 +28,7 @@
 #ifndef _GUSD_OP_PARMCHANGEMICRONODE_H_
 #define _GUSD_OP_PARMCHANGEMICRONODE_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include "gusd/api.h"
 

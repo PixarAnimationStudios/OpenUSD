@@ -61,15 +61,15 @@ GusdUSD_DataCache::ShouldClearPrim(
     }
     if (prim.GetStage()->GetRootLayer()->IsAnonymous())
     {
-	const std::string& path =
-	    prim.GetStage()->GetRootLayer()->GetIdentifier();
-	return stagesToClear.contains(path);
+        const std::string& path =
+            prim.GetStage()->GetRootLayer()->GetIdentifier();
+        return stagesToClear.contains(path);
     }
     else
     {
-	const std::string& path =
-	    prim.GetStage()->GetRootLayer()->GetRealPath();
-	return stagesToClear.contains(path);
+        const std::string& path =
+            prim.GetStage()->GetRootLayer()->GetRealPath();
+        return stagesToClear.contains(path);
     }
 }
 

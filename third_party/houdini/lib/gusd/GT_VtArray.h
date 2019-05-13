@@ -30,7 +30,7 @@
 #include <SYS/SYS_Version.h>
 #include <SYS/SYS_Math.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 
 #include "gusd/UT_TypeTraits.h"

@@ -33,10 +33,10 @@
 #include <UT/UT_Set.h>
 #include <UT/UT_Variadic.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/half.h>
-#include <pxr/usd/usd/common.h>
-#include <pxr/usd/usd/timeCode.h>
+#include "pxr/pxr.h"
+#include "pxr/base/gf/half.h"
+#include "pxr/usd/usd/common.h"
+#include "pxr/usd/usd/timeCode.h"
 
 #include <boost/function.hpp>
 

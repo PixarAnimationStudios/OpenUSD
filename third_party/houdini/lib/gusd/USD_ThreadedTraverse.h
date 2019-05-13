@@ -35,7 +35,7 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/imageable.h"

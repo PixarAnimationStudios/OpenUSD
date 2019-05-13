@@ -25,21 +25,21 @@
 #include "UT_Gf.h"
 #include "UT_Version.h"
 
+#include <GA/GA_ATIGroupBool.h>
 #include <GT/GT_DANumeric.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_Util.h>
-#include <GA/GA_ATIGroupBool.h>
 #include <SYS/SYS_Version.h>
 
-#include <pxr/base/gf/vec3h.h>
-#include <pxr/base/gf/vec4h.h>
-#include <pxr/base/tf/span.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/boundable.h>
-#include <pxr/usd/usdGeom/xformable.h>
+#include "pxr/base/gf/vec3h.h"
+#include "pxr/base/gf/vec4h.h"
+#include "pxr/base/tf/span.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
 #include <boost/tuple/tuple.hpp>
 

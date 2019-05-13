@@ -24,10 +24,10 @@
 #ifndef _GUSD_UT_TYPETRAITS_H_
 #define _GUSD_UT_TYPETRAITS_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
-#include <SYS/SYS_Types.h>
 #include <SYS/SYS_TypeTraits.h>
+#include <SYS/SYS_Types.h>
 #include <SYS/SYS_Version.h>
 #include <UT/UT_VectorTypes.h>
 

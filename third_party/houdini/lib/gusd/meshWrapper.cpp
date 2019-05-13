@@ -24,30 +24,26 @@
 #include "meshWrapper.h"
 
 #include "context.h"
-#include "UT_Gf.h"
-#include "GU_USD.h"
 #include "GT_VtArray.h"
-#include "GT_VtStringArray.h"
 #include "tokens.h"
 #include "USD_XformCache.h"
+#include "UT_Gf.h"
 
+#include <GT/GT_DAConstant.h>
 #include <GT/GT_DAConstantValue.h>
-#include <GT/GT_DANumeric.h>
-#include <GT/GT_PrimPolygonMesh.h>
-#include <GT/GT_PrimSubdivisionMesh.h>
-#include <GT/GT_RefineParms.h>
-#include <GT/GT_Refine.h>
-#include <GT/GT_DAIndexedString.h>
-#include <GT/GT_TransformArray.h>
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndirect.h>
+#include <GT/GT_DANumeric.h>
 #include <GT/GT_DASubArray.h>
 #include <GT/GT_GEOPrimPacked.h>
-#include <GT/GT_DAConstant.h>
+#include <GT/GT_PrimPolygonMesh.h>
+#include <GT/GT_PrimSubdivisionMesh.h>
+#include <GT/GT_Refine.h>
+#include <GT/GT_RefineParms.h>
 #include <GT/GT_UtilOpenSubdiv.h>
 #include <SYS/SYS_Version.h>
-#include <numeric>
+
 #include <iostream>
+#include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -335,7 +331,7 @@ GusdMeshWrapper::refine(
     gtPointAttrs = gtPointAttrs->addAttribute("P", gtPoints, true);
 
     UsdAttribute normalsAttr = m_usdMesh.GetNormalsAttr();
-    if( normalsAttr.HasAuthoredValue() && normalsAttr.Get(&vtVec3Array, m_time) ) {
+    if( normalsAttr.Get(&vtVec3Array, m_time) ) {
         
         GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
@@ -362,7 +358,7 @@ GusdMeshWrapper::refine(
 
         // point velocities
         UsdAttribute velAttr = m_usdMesh.GetVelocitiesAttr();
-        if ( velAttr.HasAuthoredValue() && velAttr.Get(&vtVec3Array, m_time) ) {
+        if ( velAttr.Get(&vtVec3Array, m_time) ) {
             
             GT_DataArrayHandle gtVel = 
                     new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_VECTOR);
@@ -455,19 +451,19 @@ GusdMeshWrapper::refine(
     }
 
     if( gtVertexAttrs->entries() > 0 ) {
-	if( reverseWindingOrder ) {
-	    // Construct an index array which will be used to lookup vertex
-	    // attributes in the correct order.
-	    GT_Int32Array* vertexIndirect
-		= new GT_Int32Array(gtIndicesHandle->entries(), 1);
-	    GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
-	    for(int i=0; i<gtIndicesHandle->entries(); ++i) {
-		vertexIndirect->set(i, i);
-	    }
-	    _reverseWindingOrder(vertexIndirect, gtVertexCounts );
+        if( reverseWindingOrder ) {
+            // Construct an index array which will be used to lookup vertex
+            // attributes in the correct order.
+            GT_Int32Array* vertexIndirect
+                = new GT_Int32Array(gtIndicesHandle->entries(), 1);
+            GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
+            for(int i=0; i<gtIndicesHandle->entries(); ++i) {
+                vertexIndirect->set(i, i);
+            }
+            _reverseWindingOrder(vertexIndirect, gtVertexCounts );
 
-	    gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
-	}
+            gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
+        }
     }
 
     // build GT_Primitive

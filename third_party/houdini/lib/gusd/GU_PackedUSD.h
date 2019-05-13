@@ -31,7 +31,7 @@
 #include <SYS/SYS_Version.h>
 #include <UT/UT_Error.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "gusd/purpose.h"
@@ -180,7 +180,7 @@ public:
     GA_Size usdLocalToWorldTransformSize(const GU_PrimPacked *prim) const
     { return 16; }
     void usdLocalToWorldTransform(const GU_PrimPacked *prim,
-	    fpreal64* val, exint size) const
+                                  fpreal64* val, exint size) const
     { usdLocalToWorldTransform(val, size); }
 #endif
 
@@ -205,10 +205,10 @@ public:
     exint getNumPurposes(const GU_PrimPacked *prim) const
     { return getNumPurposes(); }
     void getIntrinsicPurposes(const GU_PrimPacked *prim,
-	    UT_StringArray& purposes ) const
+                              UT_StringArray& purposes ) const
     { getIntrinsicPurposes(purposes); }
     void setIntrinsicPurposes(GU_PrimPacked *prim,
-	    const UT_StringArray& purposes )
+                              const UT_StringArray& purposes )
     { setIntrinsicPurposes(purposes); }
 #endif
 
@@ -225,11 +225,11 @@ public:
     bool     load(const UT_Options &options, const GA_LoadMap &map);
     void     update(const UT_Options &options);
     virtual bool     load(GU_PrimPacked *prim,
-			    const UT_Options &options,
-			    const GA_LoadMap &map) override
+                          const UT_Options &options,
+                          const GA_LoadMap &map) override
     { return load(options, map); }
     virtual void     update(GU_PrimPacked *prim,
-			    const UT_Options &options) override
+                            const UT_Options &options) override
     { update(options); }
 #endif
 
@@ -245,9 +245,9 @@ public:
     virtual bool     unpackUsingPolygons(GU_Detail &destgdp) const override;
 #else
     virtual bool     unpack(GU_Detail &destgdp,
-			    const UT_Matrix4D *transform) const override;
+                            const UT_Matrix4D *transform) const override;
     virtual bool     unpackUsingPolygons(GU_Detail &destgdp,
-			    const GU_PrimPacked *prim) const override;
+                                         const GU_PrimPacked *prim) const override;
 #endif
 
     bool visibleGT() const;   
@@ -274,11 +274,13 @@ public:
     bool unpackGeometry(
         GU_Detail &destgdp,
         const char* primvarPattern,
-        const UT_Matrix4D *transform) const;
+        const UT_Matrix4D *transform,
+        bool addPathAttributes=true) const;
 #else
     bool unpackGeometry(
         GU_Detail &destgdp,
-        const char* primvarPattern) const;
+        const char* primvarPattern,
+        bool addPathAttributes=true) const;
 #endif
 
     const UT_Matrix4D& getUsdTransform() const;
