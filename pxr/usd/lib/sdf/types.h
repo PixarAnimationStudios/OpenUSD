@@ -66,7 +66,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
+#include <boost/preprocessor/list/size.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/selection/max.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/seq.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
