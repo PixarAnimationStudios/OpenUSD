@@ -479,7 +479,7 @@ UsdSkelBindingAPI::ValidateJointIndices(TfSpan<const int> indices,
                                         size_t numJoints,
                                         std::string* reason)
 {
-    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+    for (size_t i = 0; i < indices.size(); ++i) {
         const int jointIndex = indices[i];
         if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= numJoints) {
             if (reason) {

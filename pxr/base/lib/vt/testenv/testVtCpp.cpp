@@ -278,7 +278,7 @@ static void testArray() {
             TfSpan<const int> span = copy;
             // Make sure we didn't detach.
             TF_AXIOM(span.data() == constData.cdata());
-            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+            TF_AXIOM(span.size() == copy.size());
         }
         {
             VtIntArray copy(constData);
@@ -286,7 +286,7 @@ static void testArray() {
             auto span = TfMakeConstSpan(copy);
             // Make sure we didn't detach.
             TF_AXIOM(span.data() == constData.cdata());
-            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+            TF_AXIOM(span.size() == copy.size());
         }
 
         {
@@ -296,7 +296,7 @@ static void testArray() {
             // Should have detached.
             TF_AXIOM(span.data() == copy.cdata() &&
                      span.data() != constData.cdata());
-            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+            TF_AXIOM(span.size() == copy.size());
         }
 
         {
@@ -306,7 +306,7 @@ static void testArray() {
             // Should have detached.
             TF_AXIOM(span.data() == copy.cdata() &&
                      span.data() != constData.cdata());
-            TF_AXIOM(span.size() == static_cast<std::ptrdiff_t>(copy.size()));
+            TF_AXIOM(span.size() == copy.size());
         }
     }
 }

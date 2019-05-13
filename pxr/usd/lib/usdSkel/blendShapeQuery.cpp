@@ -227,7 +227,7 @@ UsdSkelBlendShapeQuery::ComputeSubShapeWeights(
     blendShapeIndices->reserve(weights.size()*2);
     subShapeIndices->reserve(weights.size()*2);
 
-    for (ptrdiff_t i = 0; i < weights.size(); ++i) {
+    for (size_t i = 0; i < weights.size(); ++i) {
 
         const _BlendShape& blendShape = _blendShapes[i];
 
@@ -350,7 +350,7 @@ UsdSkelBlendShapeQuery::ComputeDeformedPoints(
         return false;
     }
 
-    for (ptrdiff_t i = 0; i < subShapeWeights.size(); ++i) {
+    for (size_t i = 0; i < subShapeWeights.size(); ++i) {
         const unsigned blendShapeIndex = blendShapeIndices[i];
         if (blendShapeIndex < blendShapePointIndices.size()) {
             const unsigned subShapeIndex = subShapeIndices[i];
@@ -393,7 +393,7 @@ _ComputeRangesFromCounts(const TfSpan<const unsigned>& counts,
     TF_AXIOM(counts.size() == ranges.size());
 
     unsigned start = 0;
-    for (ptrdiff_t i = 0; i < counts.size(); ++i) { 
+    for (size_t i = 0; i < counts.size(); ++i) { 
         const unsigned count = counts[i];
         ranges[i] = GfVec2i(start, start+count);
         start += count;

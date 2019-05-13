@@ -670,8 +670,8 @@ _ApplyPackedBlendShapes(const TfSpan<const GfVec4f>& offsets,
                         const TfSpan<const float>& weights,
                         TfSpan<GfVec3f> points)
 {
-    const ptrdiff_t end = std::min(ranges.size(), points.size());
-    for (ptrdiff_t i = 0; i < end; ++i) {
+    const size_t end = std::min(ranges.size(), points.size());
+    for (size_t i = 0; i < end; ++i) {
         const GfVec2i range = ranges[i];
 
         GfVec3f p = points[i];

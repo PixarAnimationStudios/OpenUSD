@@ -91,7 +91,7 @@ public:
     using value_type = typename std::remove_cv<T>::type;
     using pointer = T*;
     using reference = T&;
-    using index_type = std::ptrdiff_t;
+    using index_type = std::size_t;
     using difference_type = std::ptrdiff_t;
 
     using iterator = T*;

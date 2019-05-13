@@ -203,7 +203,7 @@ _MultTransforms(TfSpan<const Matrix4> a,
 {
     TF_DEV_AXIOM(a.size() == b.size() && a.size() == out.size());
 
-    for (ptrdiff_t i = 0; i < out.size(); ++i) {    
+    for (size_t i = 0; i < out.size(); ++i) {    
         out[i] = a[i] * b[i];
     }
 }

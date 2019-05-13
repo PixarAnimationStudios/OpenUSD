@@ -121,12 +121,12 @@ UsdSkel_ConcatJointTransforms(const UsdSkelTopology& topology,
     TRACE_FUNCTION();
 
     if (ARCH_UNLIKELY(jointLocalXforms.size() != topology.size())) {
-        TF_WARN("Size of jointLocalXforms [%td] != number of joints [%zu]",
+        TF_WARN("Size of jointLocalXforms [%zu] != number of joints [%zu]",
                 jointLocalXforms.size(), topology.size());
         return false;
     }
     if (ARCH_UNLIKELY(xforms.size() != topology.size())) {
-        TF_WARN("Size of xforms [%td] != number of joints [%zu]",
+        TF_WARN("Size of xforms [%zu] != number of joints [%zu]",
                 xforms.size(), topology.size());
         return false;
     }
@@ -229,17 +229,17 @@ UsdSkel_ComputeJointLocalTransforms(const UsdSkelTopology& topology,
     TRACE_FUNCTION();
 
     if (ARCH_UNLIKELY(xforms.size() != topology.size())) {
-        TF_WARN("Size of xforms [%td] != number of joints [%zu]",
+        TF_WARN("Size of xforms [%zu] != number of joints [%zu]",
                 xforms.size(), topology.size());
         return false;
     }
     if (ARCH_UNLIKELY(inverseXforms.size() != topology.size())) {
-        TF_WARN("Size of inverseXforms [%td] != number of joints [%zu]",
+        TF_WARN("Size of inverseXforms [%zu] != number of joints [%zu]",
                 inverseXforms.size(), topology.size());
         return false;
     }
     if (ARCH_UNLIKELY(jointLocalXforms.size() != topology.size())) {
-        TF_WARN("Size of jointLocalXforms [%td] != number of joints [%zu]",
+        TF_WARN("Size of jointLocalXforms [%zu] != number of joints [%zu]",
                 jointLocalXforms.size(), topology.size());
         return false;
     }
@@ -549,17 +549,17 @@ UsdSkel_DecomposeTransforms(TfSpan<const Matrix4> xforms,
     TRACE_FUNCTION();
 
     if (translations.size() != xforms.size()) {
-        TF_WARN("Size of translations [%td] != size of xforms [%td]",
+        TF_WARN("Size of translations [%zu] != size of xforms [%zu]",
                 translations.size(), xforms.size());
         return false;
     }
     if (rotations.size() != xforms.size()) {
-        TF_WARN("Size of rotations [%td] != size of xforms [%td]",
+        TF_WARN("Size of rotations [%zu] != size of xforms [%zu]",
                 rotations.size(), xforms.size());
         return false;
     }
     if (scales.size() != xforms.size()) {
-        TF_WARN("Size of scales [%td] != size of xforms [%td]",
+        TF_WARN("Size of scales [%zu] != size of xforms [%zu]",
                 scales.size(), xforms.size());
         return false;
     }
@@ -727,22 +727,22 @@ UsdSkel_MakeTransforms(TfSpan<const GfVec3f> translations,
     TRACE_FUNCTION();
 
     if (ARCH_UNLIKELY(translations.size() != xforms.size())) {
-        TF_WARN("Size of translations [%td] != size of xforms [%td]",
+        TF_WARN("Size of translations [%zu] != size of xforms [%zu]",
                 translations.size(), xforms.size());
         return false;
     }
     if (ARCH_UNLIKELY(rotations.size() != xforms.size())) {
-        TF_WARN("Size of rotations [%td] != size of xforms [%td]",
+        TF_WARN("Size of rotations [%zu] != size of xforms [%zu]",
                 rotations.size(), xforms.size());
         return false;
     }
     if (ARCH_UNLIKELY(scales.size() != xforms.size())) {
-        TF_WARN("Size of scales [%td] != size of xforms [%td]",
+        TF_WARN("Size of scales [%zu] != size of xforms [%zu]",
                 scales.size(), xforms.size());
         return false;
     }
 
-    for (ptrdiff_t i = 0; i < xforms.size(); ++i) {
+    for (size_t i = 0; i < xforms.size(); ++i) {
         UsdSkelMakeTransform(translations[i], rotations[i],
                              scales[i], &xforms[i]);
     }
@@ -891,13 +891,13 @@ namespace {
 /// number of influences per component.
 /// Throws a warning for failed validation.
 bool
-_ValidateArrayShape(ptrdiff_t size, int numInfluencesPerComponent)
+_ValidateArrayShape(size_t size, int numInfluencesPerComponent)
 {
     if (numInfluencesPerComponent > 0) {
         if (size%numInfluencesPerComponent == 0) {
             return true;
         } else {
-            TF_WARN("Unexpected array size [%td]: Size must be a multiple of "
+            TF_WARN("Unexpected array size [%zu]: Size must be a multiple of "
                     "the number of influences per component [%d].",
                     size, numInfluencesPerComponent);
         }
@@ -922,7 +922,7 @@ UsdSkelNormalizeWeights(TfSpan<float> weights,
         return false;
     }
 
-    const ptrdiff_t numComponents = weights.size()/numInfluencesPerComponent;
+    const size_t numComponents = weights.size()/numInfluencesPerComponent;
 
     _ParallelForN(
         numComponents, /* inSerial = */ false,
@@ -973,7 +973,7 @@ UsdSkelSortInfluences(TfSpan<int> indices,
     TRACE_FUNCTION();
 
     if (indices.size() != weights.size()) {
-        TF_WARN("Size of 'indices' [%td] != size of 'weights' [%td].",
+        TF_WARN("Size of 'indices' [%zu] != size of 'weights' [%zu].",
                 indices.size(), weights.size());
         return false;
     }
@@ -986,7 +986,7 @@ UsdSkelSortInfluences(TfSpan<int> indices,
         return true;
     }
 
-    const ptrdiff_t numComponents = indices.size()/numInfluencesPerComponent;
+    const size_t numComponents = indices.size()/numInfluencesPerComponent;
 
     _ParallelForN(
         numComponents, /* inSerial = */ false,
@@ -1184,18 +1184,18 @@ UsdSkelInterleaveInfluences(const TfSpan<const int>& indices,
     TRACE_FUNCTION();
 
     if (weights.size() != indices.size()) {
-        TF_WARN("Size of weights [%td] != size of indices [%td]",
+        TF_WARN("Size of weights [%zu] != size of indices [%zu]",
                 weights.size(), indices.size());
         return false;
     }
 
     if (interleavedInfluences.size() != indices.size()) {
-        TF_WARN("Size of interleavedInfluences [%td] != size of indices [%td]",
+        TF_WARN("Size of interleavedInfluences [%zu] != size of indices [%zu]",
                 interleavedInfluences.size(), indices.size());
         return false;
     }
 
-    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+    for (size_t i = 0; i < indices.size(); ++i) {
         interleavedInfluences[i] =
             GfVec2f(static_cast<float>(indices[i]), weights[i]);
     }
@@ -1214,7 +1214,7 @@ struct _NonInterleavedInfluencesFn {
 
     int         GetIndex(size_t index) const { return indices[index]; }
     float       GetWeight(size_t index) const { return weights[index]; }
-    ptrdiff_t   size() const { return indices.size(); }
+    size_t      size() const { return indices.size(); }
 };
 
 
@@ -1228,7 +1228,7 @@ struct _InterleavedInfluencesFn {
 
     float       GetWeight(size_t index) const { return influences[index][1]; }
 
-    ptrdiff_t   size() const { return influences.size(); }
+    size_t      size() const { return influences.size(); }
 };
     
 
@@ -1260,7 +1260,7 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
                     const int jointIdx = influenceFn.GetIndex(influenceIdx);
 
                     if (jointIdx >= 0 &&
-                       static_cast<ptrdiff_t>(jointIdx) < jointXforms.size()) {
+                       static_cast<size_t>(jointIdx) < jointXforms.size()) {
 
                         const float w = influenceFn.GetWeight(influenceIdx);
                         if (w != 0.0f) {
@@ -1296,7 +1296,7 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
                         // Bail out early.
 
                         TF_WARN("Out of range joint index %d at index %zu"
-                                " (num joints = %td).",
+                                " (num joints = %zu).",
                                 jointIdx, influenceIdx, jointXforms.size());
                         errors = true;
                         return;
@@ -1322,8 +1322,8 @@ _InterleavedSkinPointsLBS(const Matrix4& geomBindTransform,
                           bool inSerial)
 {
     if (influences.size() != (points.size()*numInfluencesPerPoint)) {
-        TF_WARN("Size of influences [%td] != "
-                "(points.size() [%td] * numInfluencesPerPoint [%d]).",
+        TF_WARN("Size of influences [%zu] != "
+                "(points.size() [%zu] * numInfluencesPerPoint [%d]).",
                 influences.size(), points.size(), numInfluencesPerPoint);
         return false;
     }
@@ -1345,14 +1345,14 @@ _NonInterleavedSkinPointsLBS(const Matrix4& geomBindTransform,
                              bool inSerial)
 {
     if (jointIndices.size() != jointWeights.size()) {
-        TF_WARN("Size of jointIndices [%td] != size of jointWeights [%td]",
+        TF_WARN("Size of jointIndices [%zu] != size of jointWeights [%zu]",
                 jointIndices.size(), jointWeights.size());
         return false;
     }
     
     if (jointIndices.size() != (points.size()*numInfluencesPerPoint)) {
-        TF_WARN("Size of jointIndices [%td] != "
-                "(points.size() [%td] * numInfluencesPerPoint [%d]).",
+        TF_WARN("Size of jointIndices [%zu] != "
+                "(points.size() [%zu] * numInfluencesPerPoint [%d]).",
                 jointIndices.size(), points.size(), numInfluencesPerPoint);
         return false;
     }
@@ -1494,12 +1494,12 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
         GfIsClose(influencesFn.GetWeight(0), 1.0f, 1e-6)) {
         const int jointIdx = influencesFn.GetIndex(0);
         if (jointIdx >= 0 &&
-            static_cast<ptrdiff_t>(jointIdx) < jointXforms.size()) {
+            static_cast<size_t>(jointIdx) < jointXforms.size()) {
             *xform = geomBindTransform*jointXforms[jointIdx];
             return true;
         } else {
             TF_WARN("Out of range joint index %d at index 0"
-                    " (num joints = %td).", jointIdx, jointXforms.size());
+                    " (num joints = %zu).", jointIdx, jointXforms.size());
             return false;
         }
     }
@@ -1530,10 +1530,10 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
         const GfVec3f initialP = framePoints[pi];
 
         GfVec3f p(0,0,0);
-        for (ptrdiff_t wi = 0; wi < influencesFn.size(); ++wi) {
+        for (size_t wi = 0; wi < influencesFn.size(); ++wi) {
             const int jointIdx = influencesFn.GetIndex(wi);
             if (jointIdx >= 0 &&
-                static_cast<ptrdiff_t>(jointIdx) < jointXforms.size()) {
+                static_cast<size_t>(jointIdx) < jointXforms.size()) {
                 const float w = influencesFn.GetWeight(wi);
                 if (w != 0.0f) {
                     // XXX: See the notes from _SkinPointsLBS():
@@ -1542,7 +1542,7 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
                 }
             } else {
                 TF_WARN("Out of range joint index %d at index %zu"
-                        " (num joints = %td).",
+                        " (num joints = %zu).",
                         jointIdx, wi, jointXforms.size());
                 return false;
             }
@@ -1568,7 +1568,7 @@ UsdSkel_NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
                                        Matrix4* xform)
 {
     if (jointIndices.size() != jointWeights.size()) {
-        TF_WARN("Size of jointIndices [%td] != size of jointWeights [%td]",
+        TF_WARN("Size of jointIndices [%zu] != size of jointWeights [%zu]",
                 jointIndices.size(), jointWeights.size());
         return false;
     }
@@ -1670,13 +1670,13 @@ UsdSkel_ApplyIndexedBlendShape(const float weight,
         {  
             for (size_t i = start; i < end; ++i) {
                 const unsigned index = indices[i];
-                if (static_cast<ptrdiff_t>(index) < points.size()) { 
+                if (static_cast<size_t>(index) < points.size()) { 
                     points[index] += offsets[i]*weight;
                 }  else {
                     // XXX: If one offset index is bad, an asset has probably
                     // gotten out of sync, and probably many other indices
                     // will be invalid, too. Bail out early.
-                    TF_WARN("Out of range point index %d (num points = %td).",
+                    TF_WARN("Out of range point index %d (num points = %zu).",
                             index, points.size());
                     errors = true;
                     return;

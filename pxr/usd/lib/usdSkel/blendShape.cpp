@@ -264,7 +264,7 @@ UsdSkelBlendShape::ValidatePointIndices(TfSpan<const int> indices,
                                         size_t numPoints,
                                         std::string* reason)
 {
-    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+    for (size_t i = 0; i < indices.size(); ++i) {
         const unsigned pointIndex = indices[i];
         if (pointIndex >= numPoints) {
             if (reason) {
