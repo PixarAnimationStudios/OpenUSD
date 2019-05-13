@@ -248,6 +248,14 @@ enum Tf_TestEnum {
     Tf_Delta,
 };
 
+enum class Tf_TestScopedEnum {
+    Hydrogen = 1,
+    Helium,
+    Lithium,
+    Beryllium,
+    Boron    
+};
+
 struct Tf_Enum {
     enum TestEnum2 {
         One = 1,
@@ -258,6 +266,11 @@ struct Tf_Enum {
         _Alpha = 100,
         _Beta,
         _Gamma,
+    };
+    enum class TestScopedEnum {
+        Alef = 300,
+        Bet,
+        Gimel
     };
 };
 
@@ -281,6 +294,18 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(Tf_Enum::_Gamma);
 }
 
+TF_REGISTRY_FUNCTION(TfEnum) {
+    TF_ADD_ENUM_NAME(Tf_Enum::TestScopedEnum::Alef);
+    TF_ADD_ENUM_NAME(Tf_Enum::TestScopedEnum::Bet);
+    TF_ADD_ENUM_NAME(Tf_Enum::TestScopedEnum::Gimel);
+}
+
+TF_REGISTRY_FUNCTION(TfEnum) {
+    TF_ADD_ENUM_NAME(Tf_TestScopedEnum::Hydrogen, "H");
+    TF_ADD_ENUM_NAME(Tf_TestScopedEnum::Lithium, "Li");
+    TF_ADD_ENUM_NAME(Tf_TestScopedEnum::Beryllium, "Be");
+    TF_ADD_ENUM_NAME(Tf_TestScopedEnum::Boron, "B");
+}
 
 static void takesTfEnum(TfEnum const &e) {
     printf("got enum '%s' with value '%d'\n",
@@ -460,8 +485,11 @@ void wrapTf_TestTfPython()
     {
         scope enumScope = class_<Tf_Enum>("_Enum", no_init);
         TfPyWrapEnum<Tf_Enum::TestEnum2>();
+        TfPyWrapEnum<Tf_Enum::TestScopedEnum>();
     }
-    
+
+    TfPyWrapEnum<Tf_TestScopedEnum>();
+
     def("_takesTfEnum", takesTfEnum);
     def("_returnsTfEnum", returnsTfEnum);
     def("_takesTestEnum", takesTestEnum);

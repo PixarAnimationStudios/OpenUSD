@@ -194,6 +194,15 @@ class TestPython(unittest.TestCase):
         Tf._takesTestEnum(Tf._Alpha)
         Tf._takesTestEnum2(Tf._Enum.One)
 
+        def testRepr(s):
+            self.assertEqual(s, repr(eval(s)))
+
+        testRepr("Tf._Alpha")
+        testRepr("Tf._TestScopedEnum.Hydrogen")
+        testRepr("Tf._Enum.One")
+        testRepr("Tf._Enum.TestScopedEnum.Alef")
+        
+
 
     def test_EnumComparisons(self):
         self.assertTrue(Tf._Alpha < Tf._Bravo < Tf._Charlie < Tf._Delta)
@@ -220,6 +229,11 @@ class TestPython(unittest.TestCase):
 
         self.assertEqual((Tf._Enum.One, Tf._Enum.Two, Tf._Enum.Three),
                 Tf._Enum.TestEnum2.allValues)
+
+        self.assertEqual((Tf._Enum.TestScopedEnum.Alef,
+                          Tf._Enum.TestScopedEnum.Bet,
+                          Tf._Enum.TestScopedEnum.Gimel),
+                         Tf._Enum.TestScopedEnum.allValues)
 
         self.assertEqual(1, Tf._Enum.One.value)
         self.assertEqual(2, Tf._Enum.Two.value)
