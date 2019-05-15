@@ -936,10 +936,9 @@ PxrUsdKatanaReadPrim(
 
     // 
     // Store the applied apiSchemas metadata a either a list of
-    // strings or a group of string attributes whose name will be
-    // the name of the schema and whose value will be the instance
-    // name of the schema. If the API schema has no instance name,
-    // then the string will be empty.
+    // strings or a group of int attributes whose name will be
+    // the name of the schema (or schema.instanceName) and whose
+    // value will be 1 if the schema is active.
     //
     // In a future release, we'll retire the list of strings
     // representation.
@@ -949,26 +948,32 @@ PxrUsdKatanaReadPrim(
         static const bool apiSchemasAsGroupAttr = 
                 TfGetEnvSetting(USD_KATANA_API_SCHEMAS_AS_GROUP_ATTR);
         if (apiSchemasAsGroupAttr){
-            FnKat::GroupBuilder apiSchemasBuilder;
             for (const TfToken& schema : appliedSchemaTokens){
                 std::vector<std::string> tokenizedSchema = 
                     TfStringTokenize(schema.GetString(), ":");
-                if (tokenizedSchema.size() == 1){
-                    apiSchemasBuilder.set(tokenizedSchema[0],
-                                          FnKat::StringAttribute(""));
-                }
-                else if (tokenizedSchema.size() == 2){
-                    apiSchemasBuilder.set(
-                        tokenizedSchema[0],
-                        FnKat::StringAttribute(tokenizedSchema[1]));
+                if (tokenizedSchema.size() == 1){                
+                    // single apply schemas
+                    std::string attrName = 
+                        TfStringPrintf("info.usd.apiSchemas.%s",
+                                       tokenizedSchema[0].c_str());
+                    attrs.set(attrName, FnKat::IntAttribute(1));
+                } 
+                else if (tokenizedSchema.size() > 1){
+                    // multi apply schemas
+                    std::string instanceName = TfStringJoin(
+                        tokenizedSchema.begin() + 1, tokenizedSchema.end());
+                    std::string attrName = 
+                        TfStringPrintf("info.usd.apiSchemas.%s.%s",
+                                       tokenizedSchema[0].c_str(),
+                                       instanceName.c_str());
+                    attrs.set(attrName, FnKat::IntAttribute(1));
                 }
                 else{
                     TF_WARN("apiSchema token '%s' cannot be decomposed into "
-                            "a schema name and instance name.",
+                            "a schema name and an (optional) instance name.",
                             schema.GetText());
                 }
             }
-            attrs.set("info.usd.apiSchemas", apiSchemasBuilder.build());
         } else{
             std::vector<std::string> appliedSchemas(appliedSchemaTokens.size());
             std::transform(appliedSchemaTokens.begin(), appliedSchemaTokens.end(), 
