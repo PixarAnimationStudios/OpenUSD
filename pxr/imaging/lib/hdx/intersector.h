@@ -154,6 +154,7 @@ public:
         int edgeIndex;
         int pointIndex;
         GfVec3f worldSpaceHitPoint;
+        GfVec3f worldSpaceHitNormal;
         float ndcDepth;
 
         inline bool IsValid() const {
@@ -195,11 +196,12 @@ public:
         HDX_API
         Result();
         HDX_API
-        Result(std::unique_ptr<unsigned char[]> primIds,
-               std::unique_ptr<unsigned char[]> instanceIds,
-               std::unique_ptr<unsigned char[]> elementIds,
-               std::unique_ptr<unsigned char[]> edgeIds,
-               std::unique_ptr<unsigned char[]> pointIds,
+        Result(std::unique_ptr<int[]> primIds,
+               std::unique_ptr<int[]> instanceIds,
+               std::unique_ptr<int[]> elementIds,
+               std::unique_ptr<int[]> edgeIds,
+               std::unique_ptr<int[]> pointIds,
+               std::unique_ptr<int[]> neyes,
                std::unique_ptr<float[]> depths,
                HdRenderIndex const *index,
                Params params,
@@ -242,17 +244,14 @@ public:
     private:
         bool _ResolveHit(int index, int x, int y, float z, Hit* hit) const;
         size_t _GetHash(int index) const;
-        bool _IsIdValid(unsigned char const* ids, int index) const;
-        bool _IsPrimIdValid(int index) const;
-        bool _IsPointIdValid(int index) const;
-        bool _IsEdgeIdValid(int index) const;
         bool _IsValidHit(int index) const;
         
-        std::unique_ptr<unsigned char[]> _primIds;
-        std::unique_ptr<unsigned char[]> _instanceIds;
-        std::unique_ptr<unsigned char[]> _elementIds;
-        std::unique_ptr<unsigned char[]> _edgeIds;
-        std::unique_ptr<unsigned char[]> _pointIds;
+        std::unique_ptr<int[]> _primIds;
+        std::unique_ptr<int[]> _instanceIds;
+        std::unique_ptr<int[]> _elementIds;
+        std::unique_ptr<int[]> _edgeIds;
+        std::unique_ptr<int[]> _pointIds;
+        std::unique_ptr<int[]> _neyes;
         std::unique_ptr<float[]> _depths;
         HdRenderIndex const *_index;
         Params _params;

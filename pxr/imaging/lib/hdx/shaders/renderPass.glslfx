@@ -27,82 +27,13 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdx/shaders/renderPass.glslfx
 
--- glsl HdxRenderPass.RenderColorShadowsOutput
-
-layout (location = 0) out vec4 colorOut;
-
-vec4 ApplyColorOverrides(vec4 color)
-{
-    return color;
-}
-
-vec4 ApplyColorOverridesPostLighting(vec4 color)
-{
-    return color;
-}
-
-void RenderColor(vec4 color)
-{
-    colorOut = color;
-}
-
---- --------------------------------------------------------------------------
--- glsl HdxRenderPass.ApplySelectionColor
-
-// Forward declare method defined in selection.glslfx
-vec4 ApplySelectionColor(vec4 color);
-
-// XXX: Make sure to update hdSt/shaders/renderPass.glslfx when editing these
-// color override methods, since they're currently duplicated. This is because
-// we don't have a mixin token for color overrides in a render pass yet.
-vec4 ApplyColorOverrides(vec4 color)
-{
-#if defined(HD_HAS_overrideColor)
-    // Mix in override color
-    vec4 overrideColor = HdGet_overrideColor();
-    color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
-#endif
-    return ApplySelectionColor(color);
-}
-
-vec3 ApplyMaskColor(vec4 color, float weight, vec4 maskColor)
-{
-    float strength = maskColor.a * clamp(weight, 0, 1);
-    return mix(color.rgb, maskColor.rgb, strength);
-}
-
-vec4 ApplyColorOverridesPostLighting(vec4 color)
-{
-    #if defined(HD_HAS_maskWeight)
-        float maskWeight = HdGet_maskWeight();
-        vec4 maskColor = GetMaskColor();
-        color.rgb = ApplyMaskColor(color, maskWeight, maskColor);
-    #endif
-    #if defined(HD_HAS_indicatorWeight)
-        float indicatorWeight = HdGet_indicatorWeight();
-        vec4 indicatorColor = GetIndicatorColor();
-        color.rgb = ApplyMaskColor(color, indicatorWeight, indicatorColor);
-    #endif
-    return color;
-}
-
---- --------------------------------------------------------------------------
--- glsl HdxRenderPass.RenderColorOutputWithSelection
-
-layout (location = 0) out vec4 colorOut;
-
-void RenderColor(vec4 color)
-{
-    colorOut = color;
-}
-
 --- --------------------------------------------------------------------------
 -- glsl HdxRenderPass.WriteOitLayersToBuffer
 
 layout (early_fragment_tests) in;
 layout (location = 0) out vec4 colorOut;
 
-void RenderColor(vec4 color)
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     int screenWidth = HdGet_oitWidth();
     int screenHeight = HdGet_oitHeight();
@@ -122,25 +53,14 @@ void RenderColor(vec4 color)
     }
 }
 
--- glsl HdxRenderPass.RenderColorIdOutput
+-- glsl HdxRenderPass.RenderPick
 
 layout (location = 0) out vec4 primIdOut;
 layout (location = 1) out vec4 instanceIdOut;
 layout (location = 2) out vec4 elementIdOut;
 layout (location = 3) out vec4 edgeIdOut;
 layout (location = 4) out vec4 pointIdOut;
-
-vec4 ApplyColorOverrides(vec4 color)
-{
-    // Don't apply overrides during ID render pass.
-    return color;
-}
-
-vec4 ApplyColorOverridesPostLighting(vec4 color)
-{
-    // Don't apply overrides during ID render pass.
-    return color;
-}
+layout (location = 5) out vec4 neyeOut;
 
 vec4 IntToVec4(int id)
 {
@@ -158,7 +78,7 @@ bool IsFragmentOnEdge(); // defined in edgeId.glslfx, or generated via codeGen
 int GetPointId(); // defined in pointId.glslfx
 bool IsFragmentOnPoint(); // defined in pointId.glslfx
 
-void RenderColor(vec4 color)
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     int primId = HdGet_primID();
     primIdOut = IntToVec4(primId);
@@ -172,22 +92,19 @@ void RenderColor(vec4 color)
     int elementId = GetElementID();
     elementIdOut = IntToVec4(elementId);
 
-    {
-        // XXX: This block should be under an #ifdef
-        int edgeId = -1;
-        if (IsFragmentOnEdge()) {
-            edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
-        }
-        edgeIdOut = IntToVec4(edgeId);
+    // XXX: This block should be under an #ifdef
+    int edgeId = -1;
+    if (IsFragmentOnEdge()) {
+        edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
     }
+    edgeIdOut = IntToVec4(edgeId);
 
-    {
-        // XXX: This block should be under an #ifdef
-        int pointId = -1;
-        if (IsFragmentOnPoint()) {
-            pointId = GetPointId();
-        }
-        pointIdOut = IntToVec4(pointId);
+    // XXX: This block should be under an #ifdef
+    int pointId = -1;
+    if (IsFragmentOnPoint()) {
+        pointId = GetPointId();
     }
+    pointIdOut = IntToVec4(pointId);
     
+    neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 }

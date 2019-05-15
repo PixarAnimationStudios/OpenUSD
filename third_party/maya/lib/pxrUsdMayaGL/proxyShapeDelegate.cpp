@@ -145,42 +145,11 @@ UsdMayaGL_ClosestPointOnProxyShape(
         return false;
     }
 
-    // We use the set of all hit points to estimate the surface normal.
-    HdxIntersector::HitVector hits;
-    if (!isectResult.ResolveAll(&hits)) {
-        return false;
-    }
-
-    // Cull the set of hit points to only those points on the same object as
-    // the intersection point, in case the hit points span multiple objects.
-    std::vector<GfVec3d> sameObjectHits;
-    for (const HdxIntersector::Hit& h : hits) {
-        if (h.objectId == hit.objectId &&
-                h.instanceIndex == hit.instanceIndex &&
-                h.elementIndex == hit.elementIndex) {
-            sameObjectHits.push_back(h.worldSpaceHitPoint);
-        }
-    }
-
-    // Fit a plane to the hit "point cloud" in order to find the normal.
-    GfPlane worldPlane;
-    if (!GfFitPlaneToPoints(sameObjectHits, &worldPlane)) {
-        return false;
-    }
-
-    // Make the plane face in the opposite direction of the incoming ray.
-    // Note that this isn't the same as GfPlane::Reorient().
-    if (GfDot(worldRay.GetDirection(), worldPlane.GetNormal()) > 0.0) {
-        worldPlane.Set(
-                -worldPlane.GetNormal(),
-                worldPlane.GetDistanceFromOrigin());
-    }
-
-    // Our hit point and plane normal are both in world space, so convert back
+    // Our hit point and hit normal are both in world space, so convert back
     // to local space.
     const GfMatrix4d worldToLocal = localToWorld.GetInverse();
     const GfVec3d point = worldToLocal.Transform(hit.worldSpaceHitPoint);
-    const GfVec3d normal = worldPlane.Transform(worldToLocal).GetNormal();
+    const GfVec3d normal = worldToLocal.TransformDir(hit.worldSpaceHitNormal);
 
     if (!std::isfinite(point.GetLengthSq()) ||
                 !std::isfinite(normal.GetLengthSq())) {

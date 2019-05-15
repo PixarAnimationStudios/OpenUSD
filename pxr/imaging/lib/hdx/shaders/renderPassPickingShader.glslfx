@@ -25,11 +25,10 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hdx/shaders/renderPassShader.glslfx
+--- #import $TOOLS/hdx/shaders/renderPassPickingShader.glslfx
 
 #import $TOOLS/hdSt/shaders/renderPass.glslfx
 #import $TOOLS/hdx/shaders/renderPass.glslfx
-#import $TOOLS/hdx/shaders/selection.glslfx
 
 -- configuration
 {
@@ -54,10 +53,9 @@
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ShouldCullFace",
-                            "Selection.DecodeUtils",
-                            "Selection.ComputeColor",
-                            "RenderPass.ApplyColorOverrides",
-                            "RenderPass.RenderColor" ]
+                            "RenderPass.NoSelection",
+                            "RenderPass.NoColorOverrides",
+                            "HdxRenderPass.RenderPick" ]
             }
         }
     }

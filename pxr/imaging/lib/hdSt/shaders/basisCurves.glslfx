@@ -776,7 +776,7 @@ void main(void)
         discard;
     }
 
-    RenderColor(color);
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
 
 --- --------------------------------------------------------------------------
@@ -818,7 +818,7 @@ void main(void)
         discard;
     }
 
-    RenderColor(color);
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
 
 --- --------------------------------------------------------------------------

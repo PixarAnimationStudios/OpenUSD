@@ -80,6 +80,7 @@ pxr_library(hdx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx
+        shaders/renderPassPickingShader.glslfx
         shaders/renderPassShadowShader.glslfx
         shaders/selection.glslfx
         shaders/simpleLightingShader.glslfx

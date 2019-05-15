@@ -193,7 +193,35 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 }
 
--- glsl RenderPass.RenderColorOutput
+-- glsl RenderPass.NoColorOverrides
+
+vec4 ApplyColorOverrides(vec4 color)
+{
+    return color;
+}
+
+vec3 ApplyMaskColor(vec3 color, float weight, vec4 maskColor)
+{
+    return color;
+}
+
+vec4 ApplyColorOverridesPostLighting(vec4 color)
+{
+    return color;
+}
+
+-- glsl RenderPass.NoSelection
+
+vec4 ApplySelectionColor(vec4 color)
+{
+    return color;
+}
+
+-- glsl RenderPass.ApplyColorOverrides
+
+// Forward declare selection functionality.
+// XXX: Currently, the non-empty implementation of this is in hdx.
+vec4 ApplySelectionColor(vec4 color);
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
@@ -205,13 +233,13 @@ vec4 ApplyColorOverrides(vec4 color)
     vec4 overrideColor = HdGet_overrideColor();
     color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
 #endif
-    return color;
+    return ApplySelectionColor(color);
 }
 
-vec3 ApplyMaskColor(vec4 color, float weight, vec4 maskColor)
+vec3 ApplyMaskColor(vec3 color, float weight, vec4 maskColor)
 {
     float strength = maskColor.a * clamp(weight, 0, 1);
-    return mix(color.rgb, maskColor.rgb, strength);
+    return mix(color, maskColor.rgb, strength);
 }
 
 vec4 ApplyColorOverridesPostLighting(vec4 color)
@@ -219,19 +247,49 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
     #if defined(HD_HAS_maskWeight)
         float maskWeight = HdGet_maskWeight();
         vec4 maskColor = GetMaskColor();
-        color.rgb = ApplyMaskColor(color, maskWeight, maskColor);
+        color.rgb = ApplyMaskColor(color.rgb, maskWeight, maskColor);
     #endif
     #if defined(HD_HAS_indicatorWeight)
         float indicatorWeight = HdGet_indicatorWeight();
         vec4 indicatorColor = GetIndicatorColor();
-        color.rgb = ApplyMaskColor(color, indicatorWeight, indicatorColor);
+        color.rgb = ApplyMaskColor(color.rgb, indicatorWeight, indicatorColor);
     #endif
     return color;
 }
 
+-- glsl RenderPass.RenderColor
+
 layout (location = 0) out vec4 colorOut;
 
-void RenderColor(vec4 color)
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     colorOut = color;
+}
+
+-- glsl RenderPass.RenderId
+
+// XXX: This whole snippet is a little sketchy and should ideally be replaced
+// with AoVs.  We generate "primId" and "instanceId", and depending on how
+// the client called glDrawBuffers, they will get one or both.
+layout (location = 0) out vec4 primIdOut;
+layout (location = 1) out vec4 instanceIdOut;
+
+vec4 IntToVec4(int id)
+{
+    return vec4(((id >>  0) & 0xff) / 255.0,
+                ((id >>  8) & 0xff) / 255.0,
+                ((id >> 16) & 0xff) / 255.0,
+                ((id >> 24) & 0xff) / 255.0);
+}
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    int primId = HdGet_primID();
+    primIdOut = IntToVec4(primId);
+
+    // instanceIndex is a tuple of integers (num nested levels).
+    // for picking, we store global instanceId (instanceIndex[0]) in the
+    // selection framebuffer and then reconstruct the tuple in postprocess.
+    int instanceId = GetDrawingCoord().instanceIndex[0];
+    instanceIdOut = IntToVec4(instanceId);
 }
