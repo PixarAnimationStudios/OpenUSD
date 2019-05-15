@@ -433,6 +433,13 @@ UsdSkelSkeletonQuery::GetTopology() const
 }
 
 
+const UsdSkelAnimMapper&
+UsdSkelSkeletonQuery::GetMapper() const
+{
+    return _animToSkelMapper;
+}
+
+
 VtTokenArray
 UsdSkelSkeletonQuery::GetJointOrder() const
 {
