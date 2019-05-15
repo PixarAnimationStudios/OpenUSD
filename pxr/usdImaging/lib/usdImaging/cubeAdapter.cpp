@@ -195,5 +195,26 @@ UsdImagingCubeAdapter::GetMeshTransform(UsdPrim const& prim,
     return xf;
 }
 
+size_t
+UsdImagingCubeAdapter::SampleTransform(
+    UsdPrim const& prim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *sampleTimes,
+    GfMatrix4d *sampleValues)
+{
+    const size_t numSamples = BaseAdapter::SampleTransform(
+        prim, cachePath, configuredSampleTimes, maxNumSamples,
+        sampleTimes, sampleValues);
+
+    // Apply modeling transformation (which may be time-varying)
+    for (size_t i=0; i < numSamples; ++i) {
+        UsdTimeCode usdTime = _GetTimeWithOffset(sampleTimes[i]);
+        GfMatrix4d xf = GetMeshTransform(prim, usdTime);
+        sampleValues[i] = xf * sampleValues[i];
+    }
+
+    return numSamples;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

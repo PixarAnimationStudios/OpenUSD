@@ -384,7 +384,8 @@ public:
                             bool ignoreRootTransform = false) const;
 
     /// Samples the transform for the given prim.
-    size_t
+    USDIMAGING_API
+    virtual size_t
     SampleTransform(UsdPrim const& prim, SdfPath const& cachePath,
                     const std::vector<float>& configuredSampleTimes,
                     size_t maxNumSamples, float *sampleTimes,

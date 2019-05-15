@@ -261,7 +261,7 @@ _GenerateConeMeshTopology()
 
     TF_VERIFY(face == numCounts && index == numIndices);
 
-    return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
+    return HdMeshTopology(PxOsdOpenSubdivTokens->catmullClark,
                           HdTokens->rightHanded,
                           countsArray, indicesArray);
 }
