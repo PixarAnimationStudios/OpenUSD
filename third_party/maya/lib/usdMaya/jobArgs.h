@@ -88,6 +88,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (mergeTransformAndShape) \
     (normalizeNurbs) \
     (parentScope) \
+    (overrideLayer) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
     (renderableOnly) \
@@ -180,6 +181,7 @@ struct UsdMayaJobExportArgs
     const TfToken rootKind;
     const TfToken shadingMode;
     const bool verbose;
+    const std::string overrideLayer;
 
     typedef std::map<std::string, std::string> ChaserArgs;
     const std::vector<std::string> chaserNames;

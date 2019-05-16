@@ -256,7 +256,8 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     UsdGeomPointBased::ComputeExtent(points, &extent);
 
     _SetAttribute(primSchema.GetPointsAttr(), &points, usdTime);
-    _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
+    _SetAttribute(primSchema.CreateExtentAttr(VtValue(),true),
+                  &extent, usdTime);
 
     // Get faceVertexIndices
     unsigned int numFaceVertices = geomMesh.numFaceVertices(&status);

@@ -426,6 +426,11 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         return false;
     }
 
+   if (mArgs.overrideLayer != "") {
+        std::vector<std::string> sublayers(1,mArgs.overrideLayer);
+        layer->SetSubLayerPaths(sublayers);
+   }
+
     if (!mArgs.parentScope.IsEmpty()) {
         mParentScopePath = mArgs.parentScope;
         // Note that we only need to create the parentScope prim if we're not
@@ -481,6 +486,12 @@ UsdMayaWriteJobContext::_PostProcess()
                         instancesPrimPath.GetText());
             }
         }
+    }
+
+    if (mArgs.overrideLayer != "") {
+        // Remove override sublayers.
+        std::vector<std::string> sublayers;
+        mStage->GetRootLayer()->SetSubLayerPaths(sublayers);
     }
 
     if (!_skelBindingsProcessor->PostProcessSkelBindings(mStage)) {

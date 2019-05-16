@@ -132,7 +132,7 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
         return;
     }
 
-    _usdPrim = GetUsdStage()->DefinePrim(usdInstancePath);
+    _usdPrim = GetUsdStage()->OverridePrim(usdInstancePath);
     if (!TF_VERIFY(
             _usdPrim,
             "Could not define UsdPrim at path '%s'\n",
@@ -153,7 +153,9 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
 
     _usdPrim.GetReferences().AddReference(
         SdfReference(std::string(), referencePath));
-    _usdPrim.SetInstanceable(true);
+    //if(!_usdPrim.HasAuthoredInstanceable()) {
+        _usdPrim.SetInstanceable(true);
+    //}
 
     // Get the Maya DAG path corresponding to our "instance master" root.
     // We used the 0th instance to write out the USD instance master.

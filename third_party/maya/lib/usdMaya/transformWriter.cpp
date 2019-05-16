@@ -422,6 +422,35 @@ UsdMayaTransformWriter::_PushTransformStack(
     // including the inverse ones if needed
     TF_FOR_ALL(iter, _animChannels) {
         _AnimChannel& animChan = *iter;
+        UsdAttribute xformOpOrderAttr =  usdXformable.GetXformOpOrderAttr();
+
+        // Check if the xformOp we're about to add already exists in xformOpOrder
+        VtTokenArray xformOpOrder;
+        xformOpOrderAttr.Get(&xformOpOrder, UsdTimeCode::Default());
+
+        TfToken opName = UsdGeomXformOp::GetOpName(animChan.usdOpType,
+                                                   animChan.opName,
+                                                   animChan.isInverse);
+        VtTokenArray::iterator it = std::find(xformOpOrder.begin(),
+            xformOpOrder.end(), opName);
+        if (it != xformOpOrder.end()) {
+            // already existing op found, setting that one.
+            bool resetsXformStack;
+            std::vector<UsdGeomXformOp> orderedXformOps =
+                    usdXformable.GetOrderedXformOps(&resetsXformStack);
+            // get the existing op and set that.
+            std::vector<UsdGeomXformOp>::iterator xform_it = orderedXformOps.begin();
+            for (; xform_it != orderedXformOps.end(); ++xform_it) {
+                if(xform_it->GetOpName().GetText() == opName.GetText()) {
+                    break;
+                }
+            }
+            if (xform_it != orderedXformOps.end()) {
+                animChan.op = *xform_it;
+                continue;
+            }
+        }
+
         animChan.op = usdXformable.AddXformOp(
             animChan.usdOpType, animChan.precision,
             animChan.opName,
@@ -441,9 +470,13 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
 {
     // Even though we define an Xform here, it's OK for subclassers to
     // re-define the prim as another type.
-    UsdGeomXform primSchema = UsdGeomXform::Define(GetUsdStage(), GetUsdPath());
-    _usdPrim = primSchema.GetPrim();
-    TF_VERIFY(_usdPrim);
+    _usdPrim = GetUsdStage()->GetPrimAtPath(GetUsdPath());
+    UsdGeomXform primSchema(_usdPrim);
+    if(!_usdPrim) {
+        primSchema = UsdGeomXform::Define(GetUsdStage(), GetUsdPath());
+        _usdPrim = primSchema.GetPrim();
+        TF_VERIFY(_usdPrim);
+    }
 
     // There are special cases where you might subclass UsdMayaTransformWriter
     // without actually having a transform (e.g. the internal

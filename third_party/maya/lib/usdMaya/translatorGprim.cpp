@@ -60,7 +60,9 @@ UsdMayaTranslatorGprim::Write(
 
     bool doubleSided = false;
     if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)){
-        gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
+        if(!gprim.GetDoubleSidedAttr().HasAuthoredValue()){
+            gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
+        }
     }
 
     bool opposite = false;
@@ -69,7 +71,9 @@ UsdMayaTranslatorGprim::Write(
         // If mesh is double sided in maya, opposite is disregarded
         TfToken orientation = (opposite && !doubleSided ? UsdGeomTokens->leftHanded :
                                                           UsdGeomTokens->rightHanded);
-        gprim.CreateOrientationAttr(VtValue(orientation), true);
+        if(!gprim.GetOrientationAttr().HasAuthoredValue()){
+            gprim.CreateOrientationAttr(VtValue(orientation), true);
+        }
     }
 
 }

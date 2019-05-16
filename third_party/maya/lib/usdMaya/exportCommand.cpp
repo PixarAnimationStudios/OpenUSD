@@ -117,6 +117,9 @@ MSyntax UsdMayaExportCommand::createSyntax()
     syntax.addFlag("-psc",
                    UsdMayaJobExportArgsTokens->parentScope.GetText(),
                    MSyntax::kString);
+    syntax.addFlag("-ol",
+                   UsdMayaJobExportArgsTokens->overrideLayer.GetText(),
+                   MSyntax::kString);
     syntax.addFlag("-ro",
                    UsdMayaJobExportArgsTokens->renderableOnly.GetText(),
                    MSyntax::kNoArg);

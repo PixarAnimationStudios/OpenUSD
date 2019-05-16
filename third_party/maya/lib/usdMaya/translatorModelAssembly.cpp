@@ -101,7 +101,11 @@ UsdMayaTranslatorModelAssembly::Create(
     context->SetPruneChildren(true);
     context->SetModelPaths({authorPath});
 
-    UsdPrim prim = stage->DefinePrim(authorPath);
+    UsdPrim prim = stage->GetPrimAtPath(authorPath);
+    if (!prim) {
+        prim = stage->DefinePrim(authorPath);
+    }
+
     if (!prim) {
         TF_RUNTIME_ERROR(
                 "Failed to create prim for USD reference assembly at path <%s>",
@@ -159,15 +163,28 @@ UsdMayaTranslatorModelAssembly::Create(
                 refs.AddReference(refAssetPath);
             } else {
                 SdfPath refPrimPath(refPrimPathStr);
-
-                if (refPrimPath.IsRootPrimPath()) {
-                    refs.AddReference(SdfReference(refAssetPath, refPrimPath));
+                if(prim.HasAuthoredReferences()) {
+                    // make sure we are not adding a reference that already exists.
+                    SdfReferenceListOp refsOp;
+                    SdfReferenceListOp::ItemVector refslist;
+                    prim.GetMetadata(SdfFieldKeys->References, &refsOp);
+                    refsOp.ApplyOperations(&refslist);
+                    if (!refslist.empty()) {
+                        const SdfReference& ref = refslist[0];
+                        if(refAssetPath != ref.GetAssetPath()) {
+                            refs.AddReference(SdfReference(refAssetPath, refPrimPath));
+                        }
+                    }
                 } else {
-                    TF_RUNTIME_ERROR(
-                            "Not creating reference for assembly node '%s' "
-                            "with non-root prim path <%s>",
-                            assemblyNode.fullPathName().asChar(),
-                            refPrimPath.GetText());
+                    if (refPrimPath.IsRootPrimPath()) {
+                        refs.AddReference(SdfReference(refAssetPath, refPrimPath));
+                    } else {
+                        TF_RUNTIME_ERROR(
+                                "Not creating reference for assembly node '%s' "
+                                "with non-root prim path <%s>",
+                                assemblyNode.fullPathName().asChar(),
+                                refPrimPath.GetText());
+                    }
                 }
             }
         } else {

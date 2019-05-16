@@ -1014,7 +1014,11 @@ UsdMayaWriteUtil::WriteMetadataToPrim(
     }
 
     for (const auto& keyValue : adaptor.GetAllAuthoredMetadata()) {
-        prim.SetMetadata(keyValue.first, keyValue.second);
+        VtValue value;
+        prim.GetMetadata(keyValue.first, &value);
+        if (value != keyValue.second) {
+            prim.SetMetadata(keyValue.first, keyValue.second);
+        }
     }
     return true;
 }

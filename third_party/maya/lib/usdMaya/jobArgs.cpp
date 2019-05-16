@@ -323,6 +323,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
                 UsdMayaJobExportArgsTokens->stripNamespaces)),
         parentScope(
             _AbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope)),
+        overrideLayer(
+            _String(userArgs, UsdMayaJobExportArgsTokens->overrideLayer)),
         renderLayerMode(
             _Token(userArgs,
                 UsdMayaJobExportArgsTokens->renderLayerMode,
@@ -385,6 +387,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
         << "normalizeNurbs: " << TfStringify(exportArgs.normalizeNurbs) << std::endl
         << "parentScope: " << exportArgs.parentScope << std::endl
+        << "overrideLayer: " << exportArgs.overrideLayer << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
@@ -477,6 +480,7 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = true;
         d[UsdMayaJobExportArgsTokens->normalizeNurbs] = false;
         d[UsdMayaJobExportArgsTokens->parentScope] = std::string();
+        d[UsdMayaJobExportArgsTokens->overrideLayer] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->renderableOnly] = false;
