@@ -2496,6 +2496,19 @@ UsdImagingDelegate::GetCategories(SdfPath const &id)
     return _collectionCache.ComputeCollectionsContainingPath(cachePath);
 }
 
+/*virtual*/
+std::vector<VtArray<TfToken>>
+UsdImagingDelegate::GetInstanceCategories(SdfPath const &instancerId)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetInstanceCategories(primInfo->usdPrim);
+    }
+    return std::vector<VtArray<TfToken>>();
+}
+
 // -------------------------------------------------------------------------- //
 // Primvar Support Methods
 // -------------------------------------------------------------------------- //

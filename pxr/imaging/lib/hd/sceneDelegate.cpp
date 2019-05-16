@@ -205,6 +205,12 @@ HdSceneDelegate::GetCategories(SdfPath const& id)
     return VtArray<TfToken>();
 }
 
+std::vector<VtArray<TfToken>>
+HdSceneDelegate::GetInstanceCategories(SdfPath const &instancerId)
+{
+    return std::vector<VtArray<TfToken>>();
+}
+
 HdIdVectorSharedPtr
 HdSceneDelegate::GetCoordSysBindings(SdfPath const& id)
 {

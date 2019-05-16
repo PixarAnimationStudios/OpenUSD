@@ -393,6 +393,11 @@ public:
     HD_API
     virtual VtArray<TfToken> GetCategories(SdfPath const& id);
 
+    /// Returns the categories for all instances in the instancer.
+    HD_API
+    virtual std::vector<VtArray<TfToken>>
+    GetInstanceCategories(SdfPath const &instancerId);
+
     /// Returns the coordinate system bindings, or a nullptr if none are bound.
     HD_API
     virtual HdIdVectorSharedPtr GetCoordSysBindings(SdfPath const& id);

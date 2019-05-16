@@ -307,6 +307,9 @@ public:
     USDIMAGING_API
     virtual VtArray<TfToken> GetCategories(SdfPath const &id) override;
     USDIMAGING_API
+    virtual std::vector<VtArray<TfToken>>
+    GetInstanceCategories(SdfPath const &instancerId) override;
+    USDIMAGING_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(SdfPath const& id,
                           HdInterpolation interpolation) override;

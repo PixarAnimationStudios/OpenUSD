@@ -152,6 +152,9 @@ public:
 
     virtual SdfPath GetInstancer(SdfPath const &cachePath) override;
 
+    virtual std::vector<VtArray<TfToken>>
+    GetInstanceCategories(UsdPrim const& prim) override;
+
     virtual size_t
     SampleInstancerTransform(UsdPrim const& instancerPrim,
                              SdfPath const& instancerPath,

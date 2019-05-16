@@ -261,6 +261,11 @@ public:
     USDIMAGING_API
     virtual SdfPath GetInstancer(SdfPath const &instancePath);
 
+    /// Return an array of the categories used by each instance.
+    USDIMAGING_API
+    virtual std::vector<VtArray<TfToken>>
+    GetInstanceCategories(UsdPrim const& prim);
+
     /// Sample the instancer transform for the given prim.
     /// \see HdSceneDelegate::SampleInstancerTransform()
     USDIMAGING_API

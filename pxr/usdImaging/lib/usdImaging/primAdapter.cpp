@@ -229,6 +229,13 @@ UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 }
 
 /*virtual*/
+std::vector<VtArray<TfToken>>
+UsdImagingPrimAdapter::GetInstanceCategories(UsdPrim const& prim)
+{
+    return std::vector<VtArray<TfToken>>();
+}
+
+/*virtual*/
 size_t
 UsdImagingPrimAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,

@@ -1156,6 +1156,23 @@ UsdImagingInstanceAdapter::GetInstancer(SdfPath const &cachePath)
 }
 
 /*virtual*/
+std::vector<VtArray<TfToken>>
+UsdImagingInstanceAdapter::GetInstanceCategories(UsdPrim const& prim) 
+{
+    HD_TRACE_FUNCTION();
+    std::vector<VtArray<TfToken>> categories;
+    if (const _InstancerData* instancerData = 
+        TfMapLookupPtr(_instancerData, prim.GetPath())) {
+        UsdImaging_CollectionCache& cc = _GetCollectionCache();
+        categories.reserve(instancerData->instancePaths.size());
+        for (SdfPath const& p: instancerData->instancePaths) {
+            categories.push_back(cc.ComputeCollectionsContainingPath(p));
+        }
+    }
+    return categories;
+}
+
+/*virtual*/
 size_t
 UsdImagingInstanceAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,
