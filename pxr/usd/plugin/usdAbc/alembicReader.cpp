@@ -98,7 +98,7 @@ TF_DEFINE_ENV_SETTING(
 #if ALEMBIC_LIBRARY_VERSION >= 10709
 TF_DEFINE_ENV_SETTING(
     USD_ABC_READ_ARCHIVE_USE_MMAP, false,
-    "Collapse Xforms containing a single geometry into a single geom Prim in USD");
+    "Use mmap when reading from an Ogawa archive.");
 #endif
 
 namespace {
