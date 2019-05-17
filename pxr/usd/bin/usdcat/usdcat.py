@@ -34,6 +34,16 @@ def GetUsdData(filePath):
     from pxr import Sdf
     return Sdf.Layer.FindOrOpen(filePath)
 
+def GetUsdLayerMetaData(filePath):
+    """Return an SdfLayer holding just the layer metadata of the given layer."""
+    from pxr import Sdf, UsdUtils
+    srcLayer = Sdf.Layer.OpenAsAnonymous(filePath, metadataOnly=True)
+    # Not all file format plugins support metadata-only parsing.
+    # Create a new anonymous layer and copy just the layer metadata.
+    layer = Sdf.Layer.CreateAnonymous(filePath, Sdf.FileFormat.FindById('usda'))
+    UsdUtils.CopyLayerMetadata(srcLayer, layer)
+    return layer
+
 def GetFlattenedUsdData(filePath, populationMaskPaths):
     from pxr import Ar, Usd
     Ar.GetResolver().ConfigureResolverForAsset(filePath)
@@ -94,7 +104,10 @@ def main():
                         'multiple paths, either use commas with no spaces '
                         'or quote the argument and separate paths by '
                         'commas and/or spaces.  Requires --flatten.')
-
+    parser.add_argument('--layerMetadata', action='store_true',
+                        help='Load only layer metadata in the USD file. '
+                        'This option cannot be combined with either '
+                        '--flatten or --flattenStack')
 
     args = parser.parse_args()
 
@@ -139,6 +152,16 @@ def main():
             return 1
         args.populationMask = args.populationMask.replace(',', ' ').split()
 
+    if args.layerMetadata:
+        if args.flatten:
+            # Cannot parse only metadata when flattening.
+            _Err("%s: error: --layerMetadata cannot be used "
+                 "together with --flatten" % parser.prog)
+        if args.flattenLayerStack:
+            # Cannot parse only metadata when flattening.
+            _Err("%s: error: --layerMetadata cannot be used "
+                  "together with --flattenLayerStack" % parser.prog)
+
     from pxr import Usd
 
     exitCode = 0
@@ -152,6 +175,8 @@ def main():
                 usdData = GetFlattenedUsdData(inputFile, args.populationMask)
             elif args.flattenLayerStack:
                 usdData = GetFlattenedLayerStack(inputFile)
+            elif args.layerMetadata:
+                usdData = GetUsdLayerMetaData(inputFile)
             else:
                 usdData = GetUsdData(inputFile)
             if not usdData:
