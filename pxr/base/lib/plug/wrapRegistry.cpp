@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -91,7 +92,7 @@ _GetAllDerivedTypes(TfType const &type)
 // For testing -- load plugins in parallel.
 
 typedef bool PluginPredicateSig(PlugPluginPtr);
-typedef boost::function<PluginPredicateSig> PluginPredicateFn;
+typedef std::function<PluginPredicateSig> PluginPredicateFn;
 
 struct SharedState : boost::noncopyable {
 
