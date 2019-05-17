@@ -388,7 +388,7 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
                         const char* lod,
                         GusdPurposeSet purpose,
                         UT_ErrorSeverity sev,
-                        UT_Array<GU_ConstDetailHandle>& details)
+                        UT_Array<GU_DetailHandle>& details)
 {
     TRACE_FUNCTION();
 
@@ -465,7 +465,7 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
                         const char* lod,
                         GusdPurposeSet purpose,
                         UT_ErrorSeverity sev,
-                        UT_Array<GU_ConstDetailHandle>& details)
+                        UT_Array<GU_DetailHandle>& details)
 {
     const UsdSkelSkeleton& skel = binding.GetSkeleton();
 
@@ -502,6 +502,48 @@ Gusd_ReadSkinnablePrims(const UsdSkelBinding& binding,
 
 
 } // namespace
+
+
+bool
+GusdReadSkinnablePrims(const UsdSkelBinding& binding,
+                       UT_Array<GU_DetailHandle>& details,
+                       UsdTimeCode time,
+                       const char* lod,
+                       GusdPurposeSet purpose,
+                       UT_ErrorSeverity sev)
+{
+    const UsdSkelSkeleton& skel = binding.GetSkeleton();
+
+    VtTokenArray joints;
+    if (!skel.GetJointsAttr().Get(&joints)) {
+        GUSD_WARN().Msg("%s -- 'joints' attr is invalid",
+                        skel.GetPrim().GetPath().GetText());
+        return false;
+    }
+    VtTokenArray jointNames;
+    if (!Gusd_GetJointNames(skel, joints, jointNames)) {
+        return false;
+    }
+
+    VtMatrix4dArray invBindTransforms;
+    if (!skel.GetBindTransformsAttr().Get(&invBindTransforms)) {
+        GUSD_WARN().Msg("%s -- no authored bindTransforms",
+                        skel.GetPrim().GetPath().GetText());
+        return false;
+    }
+    if (invBindTransforms.size() != joints.size()) {
+        GUSD_WARN().Msg("%s -- size of 'bindTransforms' [%zu] != "
+                        "size of 'joints' [%zu].",
+                        skel.GetPrim().GetPath().GetText(),
+                        invBindTransforms.size(), joints.size());
+        return false;
+    }
+    // XXX: Want *inverse* bind transforms when writing out capture data.
+    Gusd_InvertTransforms(invBindTransforms);
+    
+    return Gusd_ReadSkinnablePrims(binding, jointNames, invBindTransforms,
+                                   time, lod, purpose, sev, details);
+}
 
 
 bool
@@ -557,7 +599,7 @@ GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
 
     // Read geom for each skinning target into its own detail.
 
-    UT_Array<GU_ConstDetailHandle> details;
+    UT_Array<GU_DetailHandle> details;
     if (!Gusd_ReadSkinnablePrims(binding, time, lod, purpose, sev, details)) {
         return nullptr;
     }
@@ -586,7 +628,7 @@ namespace {
 // TODO: This is the bottle neck in import.
 bool
 _CoalesceShapes(GEO_Detail& coalescedGd,
-                const UT_Array<GU_ConstDetailHandle>& details)
+                const UT_Array<GU_DetailHandle>& details)
 {
     UT_AutoInterrupt task("Coalesce shapes");
 
@@ -613,8 +655,8 @@ GusdCoalesceAgentShapes(GEO_Detail& gd,
                         GusdPurposeSet purpose,
                         UT_ErrorSeverity sev)
 {
-    UT_Array<GU_ConstDetailHandle> details;
-    if (Gusd_ReadSkinnablePrims(binding, time, lod, purpose, sev, details)) {
+    UT_Array<GU_DetailHandle> details;
+    if (GusdReadSkinnablePrims(binding, details, time, lod, purpose, sev)) {
         return _CoalesceShapes(gd, details);
     }
     return false;

@@ -87,7 +87,7 @@ GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
 /// Read in all skinnable shapes for \p binding, coalescing them into \p gd.
 /// The \p sev defines the error severity when reading in each shape.
 /// If the severity is less than UT_ERROR_ABORT, the invalid shape is
-/// skipped. Otherwise, creation of the shape lib fails if errors are
+/// skipped. Otherwise, creation of the coalesced detail fails if errors are
 /// produced processing any shapes.
 GUSD_API bool
 GusdCoalesceAgentShapes(GEO_Detail& gd,
@@ -116,6 +116,22 @@ GusdReadSkinnablePrim(GU_Detail& gd,
                       GusdPurposeSet purpose=GusdPurposeSet(
                           GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
                       UT_ErrorSeverity sev=UT_ERROR_ABORT);
+
+
+/// Read shapes for each shape in \p binding.
+/// The \p sev defines the error severity when reading in each shape.
+/// If the severity is less than UT_ERROR_ABORT, invalid shapes are
+/// skipped, and an empty detail handle is stored in \p details for
+/// the corresponding shape. Otherwise, the process returns false if
+/// errors are encountered processing any shapes.
+bool
+GusdReadSkinnablePrims(const UsdSkelBinding& binding,
+                       UT_Array<GU_DetailHandle>& details,
+                       UsdTimeCode time=UsdTimeCode::EarliestTime(),
+                       const char* lod=nullptr,
+                       GusdPurposeSet purpose=GusdPurposeSet(
+                            GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
+                       UT_ErrorSeverity sev=UT_ERROR_WARNING);
 
 
 /// Helper for writing out a rig, shape library and layer, for 
