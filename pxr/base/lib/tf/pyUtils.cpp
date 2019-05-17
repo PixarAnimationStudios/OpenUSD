@@ -40,6 +40,7 @@
 #include <boost/python.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 
+#include <functional>
 #include <vector>
 
 using namespace boost::python;
@@ -217,7 +218,7 @@ TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError)
 TF_API void
 Tf_PyWrapOnceImpl(
     boost::python::type_info const &type,
-    boost::function<void()> const &wrapFunc,
+    std::function<void()> const &wrapFunc,
     bool * isTypeWrapped)
 {
     static std::mutex pyWrapOnceMutex;

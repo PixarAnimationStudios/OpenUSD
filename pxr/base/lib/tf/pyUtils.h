@@ -36,6 +36,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/api.h"
 
+#include <functional>
 #include <typeinfo>
 #include <string>
 #include <vector>
@@ -191,7 +192,7 @@ TfPyGetClassObject() {
 TF_API
 void
 Tf_PyWrapOnceImpl(boost::python::type_info const &,
-                  boost::function<void()> const&,
+                  std::function<void()> const&,
                   bool *);
 
 /// Invokes \p wrapFunc to wrap type \c T if \c T is not already wrapped.
@@ -203,7 +204,7 @@ Tf_PyWrapOnceImpl(boost::python::type_info const &,
 /// invoke \p wrapFunc if Python has not been initialized.
 template <typename T>
 void
-TfPyWrapOnce(boost::function<void()> const &wrapFunc)
+TfPyWrapOnce(std::function<void()> const &wrapFunc)
 {
     // Don't try to wrap if python isn't initialized.
     if (!TfPyIsInitialized()) {

@@ -33,7 +33,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
@@ -41,6 +40,8 @@
 #include <boost/python/manage_new_object.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/scope.hpp>
+
+#include <functional>
 
 using std::string;
 
@@ -78,7 +79,7 @@ class Tf_PyNoticeInternal
     struct Listener : public TfWeakBase, public boost::noncopyable {
 
         typedef void CallbackSig(object const &, handle<> const &);
-        typedef boost::function<CallbackSig> Callback;
+        typedef std::function<CallbackSig> Callback;
 
         static Listener *New(TfType const &noticeType,
                              Callback const &callback,

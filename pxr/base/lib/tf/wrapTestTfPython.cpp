@@ -55,6 +55,7 @@
 
 #include <boost/smart_ptr.hpp>
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -342,26 +343,26 @@ static void registerInvalidEnum(object &obj) {
 ////////////////////////////////
 // Function callback stuff.
 
-static void callback(boost::function<void ()> const &f) {
+static void callback(std::function<void ()> const &f) {
     f();
 }
 
-static string stringCallback(boost::function<string ()> const &f) {
+static string stringCallback(std::function<string ()> const &f) {
     return f();
 }
 
-static string stringStringCallback(boost::function<string (string)> const &f) {
+static string stringStringCallback(std::function<string (string)> const &f) {
     return f("c++ is calling...");
 }
 
-static string callUnboundInstance(boost::function<string (string)> const &f,
+static string callUnboundInstance(std::function<string (string)> const &f,
                                   string const &str) {
     return f(str);
 }
 
-static TfStaticData<boost::function<string ()> > _testCallback;
+static TfStaticData<std::function<string ()> > _testCallback;
 
-static void setTestCallback(boost::function<string ()> const &func) {
+static void setTestCallback(std::function<string ()> const &func) {
     *_testCallback = func;
 }
 

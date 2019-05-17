@@ -54,11 +54,11 @@
 #include <boost/python/raw_function.hpp>
 #include <boost/python/scope.hpp>
 
-#include <boost/function.hpp>
 #include <boost/mpl/vector/vector10.hpp>
 
 #include <string>
 #include <vector>
+#include <functional>
 
 using std::string;
 using std::vector;
@@ -72,7 +72,7 @@ public:
 
     typedef Tf_ModuleProcessor This;
     
-    typedef boost::function<
+    typedef std::function<
         bool (char const *, object const &, object const &)
     > WalkCallbackFn;
     
