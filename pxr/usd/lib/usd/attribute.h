@@ -525,7 +525,7 @@ public:
     /// semantics, which we will document soon 
     USD_API
     bool AddConnection(const SdfPath& source,
-                   UsdListPosition position=UsdListPositionTempDefault) const;
+           UsdListPosition position=UsdListPositionBackOfPrependList) const;
 
     /// Removes \p target from the list of targets.
     ///

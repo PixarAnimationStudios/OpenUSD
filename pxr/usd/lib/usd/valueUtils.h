@@ -145,13 +145,6 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
     typename PROXY::ListProxy list(/* unused */ SdfListOpTypeExplicit);
     bool atFront = false;
     switch (position) {
-    case UsdListPositionTempDefault:
-        if (UsdAuthorOldStyleAdd()) {
-            proxy.Add(item);
-            return;
-        } else {
-            // Fall through to UsdListPositionBackOfPrependList case.
-        }
     case UsdListPositionBackOfPrependList:
         list = proxy.GetPrependedItems();
         atFront = false;
