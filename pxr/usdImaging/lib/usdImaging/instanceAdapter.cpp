@@ -1194,6 +1194,33 @@ UsdImagingInstanceAdapter::SampleInstancerTransform(
 }
 
 size_t
+UsdImagingInstanceAdapter::SampleTransform(
+    UsdPrim const& usdPrim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *sampleTimes,
+    GfMatrix4d *sampleValues)
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        // Note that the proto group in this rproto has not yet been
+        // updated with new instances at this point.
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            return 0;
+        }
+        return rproto.adapter->SampleTransform(
+            _GetPrim(rproto.path), cachePath,
+            configuredSampleTimes, maxNumSamples, sampleTimes, sampleValues);
+    } else {
+        return UsdImagingPrimAdapter::SampleTransform(
+            usdPrim, cachePath, configuredSampleTimes, maxNumSamples,
+            sampleTimes, sampleValues);
+    }
+}
+
+size_t
 UsdImagingInstanceAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,
     SdfPath const& cachePath,

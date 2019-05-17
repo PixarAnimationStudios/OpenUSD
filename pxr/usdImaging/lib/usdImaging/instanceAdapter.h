@@ -165,6 +165,12 @@ public:
                              GfMatrix4d *samples) override;
 
     virtual size_t
+    SampleTransform(UsdPrim const& prim, SdfPath const& cachePath,
+                    const std::vector<float>& configuredSampleTimes,
+                    size_t maxNumSamples, float *sampleTimes,
+                    GfMatrix4d *sampleValues) override;
+
+    virtual size_t
     SamplePrimvar(UsdPrim const& usdPrim,
                   SdfPath const& cachePath,
                   TfToken const& key,
