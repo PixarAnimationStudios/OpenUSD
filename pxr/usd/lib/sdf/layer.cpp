@@ -267,11 +267,24 @@ _GetFileFormatForExtension(
 {
     // Find a file format that can handle this extension and the
     // specified target (if any).
-    const std::string* target = 
+    const std::string* targets = 
         TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
+    if (targets) {
+        for (std::string& target : TfStringTokenize(*targets, ",")) {
+            target = TfStringTrim(target);
+            if (target.empty()) {
+                continue;
+            }
 
-    return SdfFileFormat::FindByExtension(
-        ext, (target ? *target : std::string()));
+            if (const SdfFileFormatConstPtr format = 
+                SdfFileFormat::FindByExtension(ext, target)) {
+                return format;
+            }
+        }
+        return TfNullPtr;
+    }
+
+    return SdfFileFormat::FindByExtension(ext);
 }
 
 SdfLayerRefPtr
@@ -551,7 +564,6 @@ _CanonicalizeFileFormatArguments(const std::string& filePath,
                                  const SdfFileFormatConstPtr& fileFormat,
                                  SdfLayer::FileFormatArguments& args)
 {
-
     // Nothing to do if there isn't an associated file format.
     // This is expected by _ComputeInfoToFindOrOpenLayer and isn't an error.
     if (!fileFormat) {
@@ -581,11 +593,25 @@ _CanonicalizeFileFormatArguments(const std::string& filePath,
         return args;
     }
 
-    // If the file format plugin being used to open the indicated layer
-    // is the primary plugin for layers of that type, it means the 'target'
-    // argument (if any) had no effect and can be stripped from the arguments.
-    if (fileFormat->IsPrimaryFormatForExtensions()) {
-        args.erase(SdfFileFormatTokens->TargetArg);
+    SdfLayer::FileFormatArguments::iterator targetIt = 
+        args.find(SdfFileFormatTokens->TargetArg);
+    if (targetIt != args.end()) {
+        if (fileFormat->IsPrimaryFormatForExtensions()) {
+            // If the file format plugin being used to open the indicated layer
+            // is the primary plugin for layers of that type, it means the 
+            // 'target' argument (if any) had no effect and can be stripped 
+            // from the arguments.
+            args.erase(targetIt);
+        }
+        else {
+            // The target argument may have been a comma-delimited list of
+            // targets to use. The canonical arguments should contain just
+            // the target for the file format for this layer so that subsequent
+            // lookups using the same target return the same layer. For example,
+            // a layer opened with target="x" and target="x,y" should return
+            // the same layer.
+            targetIt->second = fileFormat->GetTarget().GetString();
+        }
     }
 
     // If there aren't any more args to canonicalize, we can exit early.
