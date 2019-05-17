@@ -32,7 +32,6 @@
 #include "pxr/base/tf/token.h"
 
 #include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -220,8 +219,6 @@ private:
     SdfPathVector _excludePaths;
     TfTokenVector _renderTags;
 };
-
-typedef std::vector<HdRprimCollection> HdRprimCollectionVector;
 
 // VtValue requirements
 HD_API

@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxProgressiveTask(id)
-    , _passes()
+    , _pass()
     , _setupTask()
 {
 }
@@ -55,11 +55,10 @@ HdxRenderTask::~HdxRenderTask()
 bool
 HdxRenderTask::IsConverged() const
 {
-    TF_FOR_ALL(pass, _passes) {
-        if (!(*pass)->IsConverged()) {
-            return false;
-        }
+    if (_pass) {
+        return _pass->IsConverged();
     }
+
     return true;
 }
 
@@ -74,32 +73,20 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
 
     if (bits & HdChangeTracker::DirtyCollection) {
 
-        HdRprimCollectionVector collections;
         VtValue val = delegate->Get(GetId(), HdTokens->collection);
 
-        if (val.IsHolding<HdRprimCollection>()) {
-            collections.push_back(val.UncheckedGet<HdRprimCollection>());
-        } else if (val.IsHolding<HdRprimCollectionVector>()) {
-            collections = val.UncheckedGet<HdRprimCollectionVector>();
-        } else {
-            TF_CODING_ERROR("The task collection is the wrong type");
-            return;
-        }
+        HdRprimCollection collection = val.Get<HdRprimCollection>();
 
-        if (_passes.size() == collections.size()) {
-            // reuse same render passes.
-            for (size_t i = 0; i < _passes.size(); ++i) {
-                _passes[i]->SetRprimCollection(collections[i]);
-            }
+        if (collection.GetName().IsEmpty()) {
+            _pass.reset();
         } else {
-            // reconstruct render passes.
-            _passes.clear();
-            HdRenderIndex &index = delegate->GetRenderIndex();
-            TF_FOR_ALL(it, collections) {
-                _passes.push_back(HdRenderPassSharedPtr(
-                    index.GetRenderDelegate()->CreateRenderPass(&index, *it)));
+            if (!_pass) {
+                HdRenderIndex &index = delegate->GetRenderIndex();
+                HdRenderDelegate *renderDelegate = index.GetRenderDelegate();
+                _pass = renderDelegate->CreateRenderPass(&index, collection);
+            } else {
+                _pass->SetRprimCollection(collection);
             }
-            bits |= HdChangeTracker::DirtyParams;
         }
     }
 
@@ -131,10 +118,9 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
-    // sync render passes
-    TF_FOR_ALL (it, _passes){
-        HdRenderPassSharedPtr const &pass = (*it);
-        pass->Sync();
+    // sync render pass
+    if (_pass) {
+        _pass->Sync();
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -166,19 +152,11 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
     }
 
     // Bind the render state and render geometry with the rendertags (if any)
-    renderPassState->Bind();
-    if(renderTags.size() == 0) {
-        // execute all render passes.
-        TF_FOR_ALL(it, _passes) {
-            (*it)->Execute(renderPassState);
-        }
-    } else {
-        // execute all render passes with only a subset of render tags
-        TF_FOR_ALL(it, _passes) {
-            (*it)->Execute(renderPassState, renderTags);
-        }
+    if (_pass) {
+        renderPassState->Bind();
+        _pass->Execute(renderPassState, renderTags);
+        renderPassState->Unbind();
     }
-    renderPassState->Unbind();
 }
 
 HdRenderPassStateSharedPtr 

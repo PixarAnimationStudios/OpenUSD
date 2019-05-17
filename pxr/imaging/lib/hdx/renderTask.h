@@ -41,7 +41,6 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
-typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 /// \class HdxRenderTask
 ///
@@ -94,7 +93,7 @@ protected:
     HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 
 private:
-    HdRenderPassSharedPtrVector _passes;
+    HdRenderPassSharedPtr _pass;
 
     // Optional internal render setup task, for params unpacking.
     HdxRenderSetupTaskSharedPtr _setupTask;

@@ -420,6 +420,15 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         const PxrMayaHdRenderParams& renderParams,
         const HdRprimCollectionVector& rprimCollections)
 {
+    HdTaskSharedPtrVector taskList;
+    HdRenderIndex &renderIndex = GetRenderIndex();
+
+    // Task List Consist of:
+    //  Render Setup Task
+    //  Render Task Per Collection
+    //  Selection Task
+    taskList.reserve(2 + rprimCollections.size());
+
     SdfPath renderSetupTaskId;
     if (!TfMapLookup(_renderSetupTaskIdMap, hash, &renderSetupTaskId)) {
         // Create a new render setup task if one does not exist for this hash.
@@ -428,8 +437,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
                                    HdxPrimitiveTokens->renderSetupTask.GetText(),
                                    hash)));
 
-        GetRenderIndex().InsertTask<HdxRenderSetupTask>(this,
-                                                        renderSetupTaskId);
+        renderIndex.InsertTask<HdxRenderSetupTask>(this, renderSetupTaskId);
 
         HdxRenderTaskParams renderSetupTaskParams;
         renderSetupTaskParams.camera = _cameraId;
@@ -450,24 +458,58 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
 
         _renderSetupTaskIdMap[hash] = renderSetupTaskId;
     }
+    taskList.emplace_back(renderIndex.GetTask(renderSetupTaskId));
 
-    SdfPath renderTaskId;
-    if (!TfMapLookup(_renderTaskIdMap, hash, &renderTaskId)) {
-        // Create a new render task if one does not exist for this hash.
-        renderTaskId = _rootId.AppendChild(
-            TfToken(TfStringPrintf("%s_%zx",
-                                   HdxPrimitiveTokens->renderTask.GetText(),
-                                   hash)));
+    size_t numCollections = rprimCollections.size();
+    for (size_t collectionNum = 0;
+                collectionNum <  numCollections;
+              ++collectionNum)
 
-        GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
+    {
+        const HdRprimCollection &collection = rprimCollections[collectionNum];
 
-        // Note that the render task has no params of its own. All of the
-        // render params are on the render setup task instead.
-        _ValueCache& cache = _valueCacheMap[renderTaskId];
-        cache[HdTokens->params] = VtValue();
-        cache[HdTokens->collection] = VtValue();
 
-        _renderTaskIdMap[hash] = renderTaskId;
+        SdfPath renderTaskId;
+
+        _RenderTaskIdMapKey key = {hash, collection.GetName()};
+
+
+        if (!TfMapLookup(_renderTaskIdMap, key, &renderTaskId)) {
+            // The collection name derived from Maya's shape name
+            // and therefore can contain symbols that are not
+            // valid in a SdfPath.  This converts any invalid
+            // symbol to an _.  This may therefore protentially
+            // cause collisions, if two collection names differ
+            // only in invalid symbols.
+            std::string safeCollectionName =
+                        TfMakeValidIdentifier(key.collectionName.GetString());
+
+            // Create a new render task if one does not exist for this hash.
+            renderTaskId = _rootId.AppendChild(
+                TfToken(TfStringPrintf("%s_%zx_%s",
+                                       HdxPrimitiveTokens->renderTask.GetText(),
+                                       key.hash,
+                                       safeCollectionName.c_str())));
+
+            GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
+
+            // Note that the render task has no params of its own. All of the
+            // render params are on the render setup task instead.
+            _ValueCache& cache = _valueCacheMap[renderTaskId];
+            cache[HdTokens->params] = VtValue();
+            cache[HdTokens->collection] = VtValue(collection);
+
+            _renderTaskIdMap[key] = renderTaskId;
+        }
+
+        taskList.emplace_back(renderIndex.GetTask(renderTaskId));
+
+        // Update the collections on the render task and mark them dirty.
+        // XXX: Should only mark collection dirty if collection has changed
+        _SetValue(renderTaskId, HdTokens->collection, collection);
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            renderTaskId,
+            HdChangeTracker::DirtyCollection);
     }
 
     SdfPath selectionTaskId;
@@ -494,6 +536,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
 
         _selectionTaskIdMap[hash] = selectionTaskId;
     }
+    taskList.emplace_back(renderIndex.GetTask(selectionTaskId));
 
     //
     // (meta-XXX): The notes below are actively being addressed with an
@@ -552,17 +595,26 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     }
 
 
-    // Update the collections on the render task and mark them dirty.
-    _SetValue(renderTaskId, HdTokens->collection, rprimCollections);
-    GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-        renderTaskId,
-        HdChangeTracker::DirtyCollection);
-
-
-    return { GetRenderIndex().GetTask(renderSetupTaskId),
-             GetRenderIndex().GetTask(renderTaskId),
-             GetRenderIndex().GetTask(selectionTaskId) };
+    return taskList;
 }
 
+
+size_t
+PxrMayaHdSceneDelegate::_RenderTaskIdMapKey::HashFunctor::operator ()(
+        const  _RenderTaskIdMapKey& value) const
+{
+    size_t hash = value.hash;
+    boost::hash_combine(hash, value.collectionName);
+
+    return hash;
+}
+
+bool
+PxrMayaHdSceneDelegate::_RenderTaskIdMapKey::operator ==(
+        const  _RenderTaskIdMapKey& other) const
+{
+    return ((this->hash           == other.hash) &&
+            (this->collectionName == other.collectionName));
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

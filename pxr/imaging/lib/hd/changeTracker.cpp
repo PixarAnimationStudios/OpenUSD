@@ -285,8 +285,9 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     _IDStateMap::iterator it = _taskState.find(id);
-    if (!TF_VERIFY(it != _taskState.end()))
+    if (!TF_VERIFY(it != _taskState.end(), "Task Id = %s", id.GetText())) {
         return;
+    }
     it->second = it->second | bits;
     ++_sceneStateVersion;
 }

@@ -52,6 +52,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using HdRprimCollectionVector = std::vector<HdRprimCollection>;
 
 class PxrMayaHdSceneDelegate : public HdSceneDelegate
 {
@@ -127,12 +128,37 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         SdfPath _shadowTaskId;
 
-        typedef std::unordered_map<size_t, SdfPath> _RenderTaskIdMap;
-        _RenderTaskIdMap _renderSetupTaskIdMap;
-        _RenderTaskIdMap _renderTaskIdMap;
-        _RenderTaskIdMap _selectionTaskIdMap;
+        // XXX: While this is correct, that we are using
+        // hash in forming the task id, so the map is valid.
+        // It is possible for the hash to collide, so the id
+        // formed from the combination of hash and collection name is not
+        // necessarily unique.
+        struct _RenderTaskIdMapKey
+        {
+            size_t                hash;
+            TfToken               collectionName;
 
-        SdfPath _pickingTaskId;
+            struct HashFunctor {
+                size_t operator()(const  _RenderTaskIdMapKey& value) const;
+            };
+
+            bool operator==(const  _RenderTaskIdMapKey& other) const;
+        };
+
+        typedef std::unordered_map<
+                _RenderTaskIdMapKey,
+                SdfPath,
+                _RenderTaskIdMapKey::HashFunctor> _RenderTaskIdMap;
+
+        typedef std::unordered_map<size_t, SdfPath> _RenderParamTaskIdMap;
+
+
+       
+        _RenderParamTaskIdMap _renderSetupTaskIdMap;
+        _RenderTaskIdMap      _renderTaskIdMap;
+        _RenderParamTaskIdMap _selectionTaskIdMap;
+
+		SdfPath _pickingTaskId;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
