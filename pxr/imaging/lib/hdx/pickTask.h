@@ -38,6 +38,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/usd/sdf/path.h"
@@ -234,22 +235,39 @@ private:
 /// A utility class for resolving ID buffers into hits.
 class HdxPickResult {
 public:
-    HDX_API
-    HdxPickResult();
 
+    // Pick result takes a tuple of ID buffers:
+    // - (primId, instanceId, elementId, edgeId, pointId)
+    // along with some geometric buffers:
+    // - (depth, Neye)
+    // ... and resolves them into a series of hits, using one of the
+    // algorithms specified below.
+    //
+    // index is used to fill in the HdxPickHit structure;
+    // pickTarget is used to determine what a valid hit is;
+    // viewMatrix, projectionMatrix, depthRange are used for unprojection
+    // to calculate the worldSpaceHitPosition and worldSpaceHitNormal.
+    // bufferSize is the size of the ID buffers, and subRect is the sub-region
+    // of the id buffers to iterate over in the resolution algorithm.
+    //
+    // All buffers need to be the same size, if passed in.  It's legal for
+    // only the depth and primId buffers to be provided; everything else is
+    // optional but provides a richer picking result.
     HDX_API
-    HdxPickResult(std::unique_ptr<int[]> primIds,
-                  std::unique_ptr<int[]> instanceIds,
-                  std::unique_ptr<int[]> elementIds,
-                  std::unique_ptr<int[]> edgeIds,
-                  std::unique_ptr<int[]> pointIds,
-                  std::unique_ptr<int[]> neyes,
-                  std::unique_ptr<float[]> depths,
+    HdxPickResult(int const* primIds,
+                  int const* instanceIds,
+                  int const* elementIds,
+                  int const* edgeIds,
+                  int const* pointIds,
+                  int const* neyes,
+                  float const* depths,
                   HdRenderIndex const *index,
                   TfToken const& pickTarget,
                   GfMatrix4d const& viewMatrix,
                   GfMatrix4d const& projectionMatrix,
-                  GfVec4i viewport);
+                  GfVec2f const& depthRange,
+                  GfVec2i const& bufferSize,
+                  GfVec4i const& subRect);
 
     HDX_API
     ~HdxPickResult();
@@ -259,10 +277,9 @@ public:
     HDX_API
     HdxPickResult& operator=(HdxPickResult &&);
 
-    inline bool IsValid() const
-    {
-        return _viewport[2] > 0 && _viewport[3] > 0;
-    }
+    /// Return whether the result was given well-formed parameters.
+    HDX_API
+    bool IsValid() const;
 
     /// Return the nearest single hit point. Note that this method may be
     /// considerably more efficient, as it only needs to construct a single
@@ -291,18 +308,43 @@ private:
     size_t _GetHash(int index) const;
     bool _IsValidHit(int index) const;
 
-    std::unique_ptr<int[]> _primIds;
-    std::unique_ptr<int[]> _instanceIds;
-    std::unique_ptr<int[]> _elementIds;
-    std::unique_ptr<int[]> _edgeIds;
-    std::unique_ptr<int[]> _pointIds;
-    std::unique_ptr<int[]> _neyes;
-    std::unique_ptr<float[]> _depths;
+    // Provide accessors for all of the ID buffers.  Since all but _primIds
+    // are optional, if the buffer doesn't exist just return -1 (== no hit).
+    int _GetPrimId(int index) const {
+        return _primIds ? _primIds[index] : -1;
+    }
+    int _GetInstanceId(int index) const {
+        return _instanceIds ? _instanceIds[index] : -1;
+    }
+    int _GetElementId(int index) const {
+        return _elementIds ? _elementIds[index] : -1;
+    }
+    int _GetEdgeId(int index) const {
+        return _edgeIds ? _edgeIds[index] : -1;
+    }
+    int _GetPointId(int index) const {
+        return _pointIds ? _pointIds[index] : -1;
+    }
+
+    // Provide an accessor for the normal buffer.  If the normal buffer is
+    // provided, this function will unpack the normal.  The fallback is
+    // GfVec3f(0.0f).
+    GfVec3f _GetNormal(int index) const;
+
+    int const* _primIds;
+    int const* _instanceIds;
+    int const* _elementIds;
+    int const* _edgeIds;
+    int const* _pointIds;
+    int const* _neyes;
+    float const* _depths;
     HdRenderIndex const *_index;
     TfToken  _pickTarget;
-    GfMatrix4d _viewMatrix;
-    GfMatrix4d _projectionMatrix;
-    GfVec4i _viewport;
+    GfMatrix4d _ndcToWorld;
+    GfMatrix4d _eyeToWorld;
+    GfVec2f _depthRange;
+    GfVec2i _bufferSize;
+    GfVec4i _subRect;
 };
 
 // For sorting, order hits by ndc depth.

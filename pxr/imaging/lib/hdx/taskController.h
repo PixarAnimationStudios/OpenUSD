@@ -210,6 +210,7 @@ private:
     void _CreateColorizeSelectionTask();
     void _CreateColorCorrectionTask();
     void _CreatePickTask();
+    void _CreatePickFromRenderBufferTask();
 
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
                                       HdxRenderTaskParams *renderParams) const;
@@ -287,6 +288,7 @@ private:
     SdfPath _colorizeTaskId;
     SdfPath _colorCorrectionTaskId;
     SdfPath _pickTaskId;
+    SdfPath _pickFromRenderBufferTaskId;
 
     // Generated camera (for the default/free cam)
     SdfPath _cameraId;

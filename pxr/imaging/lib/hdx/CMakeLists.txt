@@ -46,6 +46,7 @@ pxr_library(hdx
         oitResolveTask
         package
         pickTask
+        pickFromRenderBufferTask
         progressiveTask
         rendererPlugin
         rendererPluginRegistry

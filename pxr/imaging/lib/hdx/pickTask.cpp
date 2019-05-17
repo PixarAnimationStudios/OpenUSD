@@ -511,12 +511,20 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     GLF_POST_PENDING_GL_ERRORS();
 
+    // For un-projection, get the current depth range.
+    GLfloat p[2];
+    glGetFloatv(GL_DEPTH_RANGE, &p[0]);
+    GfVec2f depthRange(p[0], p[1]);
+
+    // HdxPickResult takes a subrect, which is the region of the id buffer to
+    // search over; this task always uses the whole buffer...
+    GfVec4i subRect(0, 0, size[0], size[1]);
+
     HdxPickResult result(
-            std::move(primIds), std::move(instanceIds), std::move(elementIds),
-            std::move(edgeIds), std::move(pointIds), std::move(neyes),
-            std::move(depths),
+            primIds.get(), instanceIds.get(), elementIds.get(),
+            edgeIds.get(), pointIds.get(), neyes.get(), depths.get(),
             _index, _contextParams.pickTarget, _contextParams.viewMatrix,
-            _contextParams.projectionMatrix, viewport);
+            _contextParams.projectionMatrix, depthRange, size, subRect);
 
     // Resolve!
     if (_contextParams.resolveMode ==
@@ -537,25 +545,21 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 }
 
-HdxPickResult::HdxPickResult()
-    : _index(nullptr)
-    , _viewport(0,0,0,0)
-{
-}
-
 HdxPickResult::HdxPickResult(
-        std::unique_ptr<int[]> primIds,
-        std::unique_ptr<int[]> instanceIds,
-        std::unique_ptr<int[]> elementIds,
-        std::unique_ptr<int[]> edgeIds,
-        std::unique_ptr<int[]> pointIds,
-        std::unique_ptr<int[]> neyes,
-        std::unique_ptr<float[]> depths,
+        int const* primIds,
+        int const* instanceIds,
+        int const* elementIds,
+        int const* edgeIds,
+        int const* pointIds,
+        int const* neyes,
+        float const* depths,
         HdRenderIndex const *index,
         TfToken const& pickTarget,
         GfMatrix4d const& viewMatrix,
         GfMatrix4d const& projectionMatrix,
-        GfVec4i viewport)
+        GfVec2f const& depthRange,
+        GfVec2i const& bufferSize,
+        GfVec4i const& subRect)
     : _primIds(std::move(primIds))
     , _instanceIds(std::move(instanceIds))
     , _elementIds(std::move(elementIds))
@@ -565,10 +569,12 @@ HdxPickResult::HdxPickResult(
     , _depths(std::move(depths))
     , _index(index)
     , _pickTarget(pickTarget)
-    , _viewMatrix(viewMatrix)
-    , _projectionMatrix(projectionMatrix)
-    , _viewport(viewport)
+    , _depthRange(depthRange)
+    , _bufferSize(bufferSize)
+    , _subRect(subRect)
 {
+    _eyeToWorld = viewMatrix.GetInverse();
+    _ndcToWorld = (viewMatrix * projectionMatrix).GetInverse();
 }
 
 HdxPickResult::~HdxPickResult()
@@ -581,10 +587,32 @@ HdxPickResult&
 HdxPickResult::operator=(HdxPickResult &&) = default;
 
 bool
+HdxPickResult::IsValid() const
+{
+    // Make sure we have at least a primId buffer and a depth buffer.
+    if (!_depths || !_primIds) {
+        return false;
+    }
+
+    return true;
+}
+
+GfVec3f
+HdxPickResult::_GetNormal(int index) const
+{
+    GfVec3f normal = GfVec3f(0);
+    if (_neyes != nullptr) {
+        GfVec3f neye = HdVec4f_2_10_10_10_REV(_neyes[index]).GetAsVec<GfVec3f>();
+        normal = _eyeToWorld.TransformDir(neye);
+    }
+    return normal;
+}
+
+bool
 HdxPickResult::_ResolveHit(int index, int x, int y, float z,
                            HdxPickHit* hit) const
 {
-    int primId = _primIds[index];
+    int primId = _GetPrimId(index);
     hit->objectId = _index->GetRprimPathFromPrimId(primId);
 
     if (!hit->IsValid()) {
@@ -599,33 +627,19 @@ HdxPickResult::_ResolveHit(int index, int x, int y, float z,
         return false;
     }
 
-    GfVec3d hitPoint(0,0,0);
-    gluUnProject(x, y, z,
-                 _viewMatrix.GetArray(),
-                 _projectionMatrix.GetArray(),
-                 &_viewport[0],
-                 &((hitPoint)[0]),
-                 &((hitPoint)[1]),
-                 &((hitPoint)[2]));
+    // Calculate the hit location in NDC, then transform to worldspace.
+    GfVec3d ndcHit(
+        (x / _bufferSize[0]) * 2.0 - 1.0,
+        (y / _bufferSize[1]) * 2.0 - 1.0,
+        ((z - _depthRange[0]) / (_depthRange[1] - _depthRange[0])) * 2.0 - 1.0);
+    hit->worldSpaceHitPoint = GfVec3f(_ndcToWorld.Transform(ndcHit));
+    hit->ndcDepth = ndcHit[2];
+    hit->worldSpaceHitNormal = _GetNormal(index);
 
-    hit->worldSpaceHitPoint = GfVec3f(hitPoint);
-    hit->ndcDepth = float(z);
-
-    GfMatrix4d eyeToWorld = _viewMatrix.GetInverse();
-    GfVec3f neye = HdVec4f_2_10_10_10_REV(_neyes[index]).GetAsVec<GfVec3f>();
-    hit->worldSpaceHitNormal = eyeToWorld.TransformDir(neye);
-
-    int instanceIndex = _instanceIds[index];
-    hit->instanceIndex = instanceIndex;
-
-    int elementIndex = _elementIds[index];
-    hit->elementIndex = elementIndex;
-
-    int edgeIndex = _edgeIds[index];
-    hit->edgeIndex = edgeIndex;
-
-    int pointIndex = _pointIds[index];
-    hit->pointIndex = pointIndex;
+    hit->instanceIndex = _GetInstanceId(index);
+    hit->elementIndex = _GetElementId(index);
+    hit->edgeIndex = _GetEdgeId(index);
+    hit->pointIndex = _GetPointId(index);
 
     if (TfDebug::IsEnabled(HDX_INTERSECT)) {
         std::cout << *hit << std::endl;
@@ -637,11 +651,11 @@ HdxPickResult::_ResolveHit(int index, int x, int y, float z,
 size_t
 HdxPickResult::_GetHash(int index) const
 {
-    int primId = _primIds[index];
-    int instanceIndex = _instanceIds[index];
-    int elementIndex = _elementIds[index];
-    int edgeIndex = _edgeIds[index];
-    int pointIndex = _pointIds[index];
+    int primId = _GetPrimId(index);
+    int instanceIndex = _GetInstanceId(index);
+    int elementIndex = _GetElementId(index);
+    int edgeIndex = _GetEdgeId(index);
+    int pointIndex = _GetPointId(index);
 
     size_t hash = 0;
     boost::hash_combine(hash, primId);
@@ -659,11 +673,11 @@ HdxPickResult::_IsValidHit(int index) const
     // Inspect the id buffers to determine if the pixel index is a valid hit
     // by accounting for the pick target when picking points and edges.
     // This allows the hit(s) returned to be relevant.
-    bool validPrim = (_primIds[index] != -1);
+    bool validPrim = (_GetPrimId(index) != -1);
     bool invalidTargetEdgePick = (_pickTarget == HdxPickTokens->pickEdges)
-        && (_edgeIds[index] == -1);
+        && (_GetEdgeId(index) == -1);
     bool invalidTargetPointPick = (_pickTarget == HdxPickTokens->pickPoints)
-        && (_pointIds[index] == -1);
+        && (_GetPointId(index) == -1);
 
     return validPrim
            && !invalidTargetEdgePick
@@ -675,34 +689,33 @@ HdxPickResult::ResolveNearestToCamera(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid() || allHits == nullptr) {
+    if (!IsValid() || !allHits) {
         return;
     }
 
-    int width = _viewport[2];
-    int height = _viewport[3];
-    float const* depths = _depths.get();
     int xMin = 0;
     int yMin = 0;
-    double zMin = 1.0;
+    double zMin = 0;
     int zMinIndex = -1;
 
     // Find the smallest value (nearest pixel) in the z buffer that is a valid
     // prim. The last part is important since the depth buffer may be
     // populated with occluders (which aren't picked, and thus won't update any
     // of the ID buffers)
-    for (int y=0, i=0; y < height; y++) {
-        for (int x=0; x < width; x++, i++) {
-            if (_IsValidHit(i) && depths[i] < zMin) {
+    for (int y = _subRect[1]; y < _subRect[1] + _subRect[3]; ++y) {
+        for (int x = _subRect[0]; x < _subRect[0] + _subRect[2]; ++x) {
+            int i = y * _bufferSize[0] + x;
+            if (_IsValidHit(i) && (zMinIndex == -1 || _depths[i] < zMin)) {
                 xMin = x;
                 yMin = y;
-                zMin = depths[i];
+                zMin = _depths[i];
                 zMinIndex = i;
             }
         }
     }
 
-    if (zMin >= 1.0) {
+    if (zMinIndex == -1) {
+        // We didn't find any valid hits.
         return;
     }
 
@@ -717,13 +730,12 @@ HdxPickResult::ResolveNearestToCenter(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid() || allHits == nullptr) {
+    if (!IsValid() || !allHits) {
         return;
     }
 
-    int width = _viewport[2];
-    int height = _viewport[3];
-    float const* depths = _depths.get();
+    int width = _subRect[2];
+    int height = _subRect[3];
 
     int midH = height/2;
     int midW = width /2;
@@ -733,24 +745,25 @@ HdxPickResult::ResolveNearestToCenter(HdxPickHitVector* allHits) const
     if (width%2 == 0) {
         midW--;
     }
-    
+
     // Return the first valid hit that's closest to the center of the draw
     // target by walking from the center outwards.
-    for (int x = midW, y = midH; x >= 0 && y >= 0; x--, y--) {
-        for (int xx = x; xx < width-x; xx++) {
-            for (int yy = y; yy < height-y; yy++) {
-                int index = xx + yy*width;
-                if (_IsValidHit(index)) {
+    for (int w = midW, h = midH; w >= 0 && h >= 0; w--, h--) {
+        for (int ww = w; ww < width-w; ww++) {
+            for (int hh = h; hh < height-h; hh++) {
+                int x = ww + _subRect[0];
+                int y = hh + _subRect[1];
+                int i = y * _bufferSize[0] + x;
+                if (_IsValidHit(i)) {
                     HdxPickHit hit;
-                    if (_ResolveHit(index, index%width, index/width,
-                                    depths[index], &hit)) {
+                    if (_ResolveHit(i, x, y, _depths[i], &hit)) {
                         allHits->push_back(hit);
-                        return;
                     }
+                    return;
                 }
                 // Skip pixels we've already visited and jump to the boundary
-                if (!(xx == x || xx == width-x-1) && yy == y) {
-                    yy = std::max(yy, height-y-2);
+                if (!(ww == w || ww == width-w-1) && hh == h) {
+                    hh = std::max(hh, height-h-2);
                 }
             }
         }
@@ -762,18 +775,17 @@ HdxPickResult::ResolveAll(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid() || allHits == nullptr) { return; }
+    if (!IsValid() || !allHits) {
+        return;
+    }
 
-    int width = _viewport[2];
-    int height = _viewport[3];
-    float const* depths = _depths.get();
-
-    for (int y=0, i=0; y < height; y++) {
-        for (int x=0; x < width; x++, i++) {
+    for (int y = _subRect[1]; y < _subRect[1] + _subRect[3]; ++y) {
+        for (int x = _subRect[0]; x < _subRect[0] + _subRect[2]; ++x) {
+            int i = y * _bufferSize[0] + x;
             if (!_IsValidHit(i)) continue;
 
             HdxPickHit hit;
-            if (_ResolveHit(i, x, y, depths[i], &hit)) {
+            if (_ResolveHit(i, x, y, _depths[i], &hit)) {
                 allHits->push_back(hit);
             }
         }
@@ -785,42 +797,43 @@ HdxPickResult::ResolveUnique(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid() || allHits == nullptr) { return; }
+    if (!IsValid() || !allHits) {
+        return;
+    }
 
-    int width = _viewport[2];
-    int height = _viewport[3];
-
-    std::unordered_map<size_t, int> hitIndices;
+    std::unordered_map<size_t, GfVec2i> hitIndices;
     {
         HD_TRACE_SCOPE("unique indices");
         size_t previousHash = 0;
-        for (int i = 0; i < width * height; ++i) {
-            if (!_IsValidHit(i)) continue;
-           
-            size_t hash = _GetHash(i);
-            // As an optimization, keep track of the previous hash value and
-            // reject indices that match it without performing a map lookup.
-            // Adjacent indices are likely enough to have the same prim,
-            // instance and element ids that this can be a significant
-            // improvement.
-            if (hitIndices.empty() || hash != previousHash) {
-                hitIndices.insert(std::make_pair(hash, i));
-                previousHash = hash;
+        for (int y = _subRect[1]; y < _subRect[1] + _subRect[3]; ++y) {
+            for (int x = _subRect[0]; x < _subRect[0] + _subRect[2]; ++x) {
+                int i = y * _bufferSize[0] + x;
+                if (!_IsValidHit(i)) continue;
+
+                size_t hash = _GetHash(i);
+                // As an optimization, keep track of the previous hash value and
+                // reject indices that match it without performing a map lookup.
+                // Adjacent indices are likely enough to have the same prim,
+                // instance and element ids that this can be a significant
+                // improvement.
+                if (hitIndices.empty() || hash != previousHash) {
+                    hitIndices.insert(std::make_pair(hash, GfVec2i(x,y)));
+                    previousHash = hash;
+                }
             }
         }
     }
 
     {
         HD_TRACE_SCOPE("resolve");
-        float const* depths = _depths.get();
 
-        TF_FOR_ALL(it, hitIndices) {
-            int index = it->second;
-            int x = index % width;
-            int y = index / width;
+        for (auto const& pair : hitIndices) {
+            int x = pair.second[0];
+            int y = pair.second[1];
+            int i = y * _bufferSize[0] + x;
+
             HdxPickHit hit;
-            if (_ResolveHit(index, x, y, depths[index], &hit)) {
-                // _GetHash has done the uniqueifying for us here.
+            if (_ResolveHit(i, x, y, _depths[i], &hit)) {
                 allHits->push_back(hit);
             }
         }

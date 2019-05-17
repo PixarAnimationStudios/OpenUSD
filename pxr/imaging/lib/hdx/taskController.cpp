@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdx/oitRenderTask.h"
 #include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/pickTask.h"
+#include "pxr/imaging/hdx/pickFromRenderBufferTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -59,6 +60,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (oitResolveTask)
     (colorCorrectionTask)
     (pickTask)
+    (pickFromRenderBufferTask)
 
     // global camera
     (camera)
@@ -146,6 +148,7 @@ HdxTaskController::~HdxTaskController()
         _colorizeTaskId,
         _colorCorrectionTaskId,
         _pickTaskId,
+        _pickFromRenderBufferTaskId,
     };
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         if (!tasks[i].IsEmpty()) {
@@ -197,6 +200,8 @@ HdxTaskController::_CreateRenderGraph()
         if (_AovsSupported()) {
             _CreateColorizeTask();
             _CreateColorizeSelectionTask();
+
+            _CreatePickFromRenderBufferTask();
 
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
@@ -427,6 +432,22 @@ HdxTaskController::_CreatePickTask()
     _delegate.SetParameter(_pickTaskId, HdTokens->params, taskParams);
 }
 
+void
+HdxTaskController::_CreatePickFromRenderBufferTask()
+{
+    _pickFromRenderBufferTaskId = GetControllerId().AppendChild(
+        _tokens->pickFromRenderBufferTask);
+
+    HdxPickFromRenderBufferTaskParams taskParams;
+    taskParams.cameraId = _cameraId;
+
+    GetRenderIndex()->InsertTask<HdxPickFromRenderBufferTask>(&_delegate,
+        _pickFromRenderBufferTaskId);
+
+    _delegate.SetParameter(_pickFromRenderBufferTaskId, HdTokens->params,
+        taskParams);
+}
+
 bool
 HdxTaskController::_ShadowsEnabled() const
 {
@@ -544,6 +565,8 @@ HdxTaskController::GetPickingTasks() const
     HdTaskSharedPtrVector tasks;
     if (!_pickTaskId.IsEmpty())
         tasks.push_back(GetRenderIndex()->GetTask(_pickTaskId));
+    if (!_pickFromRenderBufferTaskId.IsEmpty())
+        tasks.push_back(GetRenderIndex()->GetTask(_pickFromRenderBufferTaskId));
 
     return tasks;
 }
@@ -721,6 +744,35 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
             selParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+    }
+
+    if (!_pickFromRenderBufferTaskId.IsEmpty()) {
+        HdxPickFromRenderBufferTaskParams pickParams =
+            _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                _pickFromRenderBufferTaskId, HdTokens->params);
+
+        if (name == HdAovTokens->color) {
+            // If we're rendering color, make sure the pick task has the
+            // proper id & depth buffers...
+            pickParams.primIdBufferPath =
+                _GetAovPath(HdAovTokens->primId);
+            pickParams.instanceIdBufferPath =
+                _GetAovPath(HdAovTokens->instanceId);
+            pickParams.elementIdBufferPath =
+                _GetAovPath(HdAovTokens->elementId);
+            pickParams.depthBufferPath =
+                _GetAovPath(HdAovTokens->depth);
+        } else {
+            pickParams.primIdBufferPath = SdfPath::EmptyPath();
+            pickParams.instanceIdBufferPath = SdfPath::EmptyPath();
+            pickParams.elementIdBufferPath = SdfPath::EmptyPath();
+            pickParams.depthBufferPath = SdfPath::EmptyPath();
+        }
+
+        _delegate.SetParameter(_pickFromRenderBufferTaskId, HdTokens->params,
+            pickParams);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
