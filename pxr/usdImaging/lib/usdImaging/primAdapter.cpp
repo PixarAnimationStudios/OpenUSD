@@ -750,7 +750,7 @@ UsdImagingPrimAdapter::SampleTransform(
     const std::vector<float>& configuredSampleTimes,
     size_t maxNumSamples, float *times, GfMatrix4d *samples)
 {
-    if (maxNumSamples < 1) {
+    if (maxNumSamples < 1 || configuredSampleTimes.empty()) {
         return 0;
     }
     if (!prim) {
@@ -776,7 +776,7 @@ UsdImagingPrimAdapter::SampleTransform(
             _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
         samples[i] = UsdImaging_XfStrategy::ComputeTransform(
             prim, xfCache.GetRootPath(), sceneTime, 
-            _delegate->_rigidXformOverrides);
+            _delegate->_rigidXformOverrides) * _delegate->_rootXf;
     }
 
     // Some backends benefit if they can avoid time sample animation
