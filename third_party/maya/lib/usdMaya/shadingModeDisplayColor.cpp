@@ -183,24 +183,51 @@ private:
             // instead we set the values only on the material's interface,
             // emphasizing that the interface is a value provider for
             // its shading networks.
-            UsdShadeInput dispColorIA =
-                material.CreateInput(_tokens->displayColor,
+
+            //UsdShadeInput dispColorIA = material.GetInput(_tokens->displayColor);
+            //if(!dispColorIA) {
+            UsdShadeInput dispColorIA = material.CreateInput(_tokens->displayColor,
                                      SdfValueTypeNames->Color3f);
-            dispColorIA.Set(VtValue(color));
+            //    dispColorIA.Set(VtValue(color));
+            //} else {
+                VtValue currentVal;
+                dispColorIA.Get(&currentVal);
+                if( currentVal != VtValue(color)) {
+                    dispColorIA.Set(VtValue(color));
+                }
+            //}
 
             const std::string shaderName =
                 TfStringPrintf("%s_lambert", materialPrim.GetName().GetText());
             const TfToken shaderPrimName(shaderName);
-            UsdShadeShader shaderSchema =
-                UsdShadeShader::Define(
-                    stage,
-                    materialPrim.GetPath().AppendChild(shaderPrimName));
-            shaderSchema.CreateIdAttr(VtValue(_tokens->DefaultShaderId));
-            UsdShadeInput diffuse =
-                shaderSchema.CreateInput(_tokens->diffuseColor,
-                                         SdfValueTypeNames->Color3f);
+            SdfPath shaderPrimPath = materialPrim.GetPath().AppendChild(shaderPrimName);
+            UsdPrim shaderPrim = stage->GetPrimAtPath(shaderPrimPath);
+            UsdShadeShader shaderSchema;
+            if (!shaderPrim) {
+                shaderSchema = UsdShadeShader::Define(stage, shaderPrimPath);
+            } else {
+                shaderSchema = UsdShadeShader(shaderPrim);
+            }
+            UsdAttribute idAttribute = shaderSchema.GetIdAttr();
+            if(!idAttribute) {
+                shaderSchema.CreateIdAttr(VtValue(_tokens->DefaultShaderId), true);
+            } else {
+               TfToken shaderId;
+               idAttribute.Get(&shaderId);
+               if (shaderId != VtValue(_tokens->DefaultShaderId)) {
+                   shaderSchema.CreateIdAttr(VtValue(_tokens->DefaultShaderId), true);
+               }
+            }
+            UsdShadeInput diffuse = shaderSchema.CreateInput(_tokens->diffuseColor,
+                                                SdfValueTypeNames->Color3f);
+            UsdShadeConnectableAPI source;
+            TfToken sourceName;
+            UsdShadeAttributeType sourceType;
+            diffuse.GetConnectedSource(&source, &sourceName, &sourceType);
+            if(sourceName != dispColorIA.GetBaseName()) {
+                 diffuse.ConnectToSource(dispColorIA);
+            }
 
-            diffuse.ConnectToSource(dispColorIA);
 
             // Make an interface input for transparency, which we will hook up
             // to the shader, and a displayOpacity, for any shader that might
@@ -219,7 +246,11 @@ private:
             UsdShadeInput transmission =
                 shaderSchema.CreateInput(_tokens->transmissionColor,
                                          SdfValueTypeNames->Color3f);
-            transmission.ConnectToSource(transparencyIA);
+
+            transmission.GetConnectedSource(&source, &sourceName, &sourceType);
+            if(sourceName != transparencyIA.GetBaseName()) {
+                 transmission.ConnectToSource(transparencyIA);
+            }
 
             if (transparencyAvg > 0.0f) {
                 transparencyIA.Set(VtValue(transparency));
@@ -234,8 +265,10 @@ private:
             }
 
             UsdRiMaterialAPI riMaterialAPI(materialPrim);
-            riMaterialAPI.SetSurfaceSource(
-                    shaderDefaultOutput.GetAttr().GetPath());
+            if(!riMaterialAPI.GetSurface()) {
+                riMaterialAPI.SetSurfaceSource(
+                        shaderDefaultOutput.GetAttr().GetPath());
+            }
         }
     }
 };

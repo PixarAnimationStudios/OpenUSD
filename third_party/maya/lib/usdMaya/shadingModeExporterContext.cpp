@@ -459,10 +459,14 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             assignmentsToBind)) {
         SdfPath materialPath = materialParent.GetPath().AppendChild(
                 TfToken(materialName));
-        UsdShadeMaterial material = UsdShadeMaterial::Define(
-                GetUsdStage(), materialPath);
-
-        UsdPrim materialPrim = material.GetPrim();
+        UsdPrim materialPrim = GetUsdStage()->GetPrimAtPath(materialPath);
+        UsdShadeMaterial material  = UsdShadeMaterial::Get(
+                    GetUsdStage(), materialPath);
+        if (!materialPrim) {
+            material = UsdShadeMaterial::Define(
+                    GetUsdStage(), materialPath);
+            materialPrim = material.GetPrim();
+        }
 
         // could use this to determine where we want to export.
         TF_FOR_ALL(iter, assignmentsToBind) {
@@ -489,7 +493,14 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                     }
                     else {
                         UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
-                        UsdShadeMaterialBindingAPI(boundPrim).Bind(material);
+                        UsdShadeMaterialBindingAPI bindingAPI;
+                        bindingAPI = UsdShadeMaterialBindingAPI(boundPrim);
+                        UsdPrim foundMaterialPrim =
+                            bindingAPI.ComputeBoundMaterial().GetPrim();
+                        if (foundMaterialPrim != materialPrim) {
+                            // only do binding if we have changed the material prim
+                            bindingAPI.Bind(material);
+                        }
                     }
                 }
 
