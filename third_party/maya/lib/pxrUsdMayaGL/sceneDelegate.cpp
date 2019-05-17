@@ -164,6 +164,15 @@ PxrMayaHdSceneDelegate::Get(const SdfPath& id, const TfToken& key)
     return VtValue();
 }
 
+/*virtual*/
+VtValue
+PxrMayaHdSceneDelegate::GetCameraParamValue(
+        SdfPath const& cameraId,
+        TfToken const& paramName)
+{
+    return Get(cameraId, paramName);
+}
+
 void
 PxrMayaHdSceneDelegate::SetCameraState(
         const GfMatrix4d& worldToViewMatrix,
@@ -175,6 +184,7 @@ PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
     cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
     cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
+    cache[HdCameraTokens->clipPlanes] = VtValue(std::vector<GfVec4d>());
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,

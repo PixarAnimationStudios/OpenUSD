@@ -66,6 +66,11 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         VtValue Get(const SdfPath& id, const TfToken& key) override;
 
         PXRUSDMAYAGL_API
+        VtValue GetCameraParamValue(
+                SdfPath const& cameraId,
+                TfToken const& paramName) override;
+
+        PXRUSDMAYAGL_API
         void SetCameraState(
                 const GfMatrix4d& worldToViewMatrix,
                 const GfMatrix4d& projectionMatrix,
