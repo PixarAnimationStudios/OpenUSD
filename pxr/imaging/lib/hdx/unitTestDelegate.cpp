@@ -912,6 +912,20 @@ Hdx_UnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId,
     return VtValue();
 }
 
+/*virtual*/
+VtValue
+Hdx_UnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId,
+                                          TfToken const &paramName)
+{
+    _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, cameraId);
+    VtValue ret;
+    if (vcache && TfMapLookup(*vcache, paramName, &ret)) {
+        return ret;
+    }
+
+    return VtValue();
+}
+
 HdTextureResourceSharedPtr
 Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {

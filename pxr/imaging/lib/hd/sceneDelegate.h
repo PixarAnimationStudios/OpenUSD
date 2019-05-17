@@ -588,10 +588,11 @@ public:
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//
 
-    /// Returns an array of clip plane equations in eye-space with y-up
-    /// orientation.
+    /// Returns a single value for a given camera and parameter.
+    /// See HdCameraTokens for the list of paramters.
     HD_API
-    virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+    virtual VtValue GetCameraParamValue(SdfPath const& cameraId,
+                                        TfToken const& paramName);
 
     // -----------------------------------------------------------------------//
     /// \name Volume Aspects

@@ -372,10 +372,11 @@ HdSceneDelegate::GetLightParamValue(SdfPath const &id,
 // -----------------------------------------------------------------------//
 
 /*virtual*/
-std::vector<GfVec4d>
-HdSceneDelegate::GetClipPlanes(SdfPath const& cameraId)
+VtValue 
+HdSceneDelegate::GetCameraParamValue(SdfPath const &cameraId, 
+                                     TfToken const &paramName) 
 {
-    return std::vector<GfVec4d>();
+    return VtValue();
 }
 
 // -----------------------------------------------------------------------//

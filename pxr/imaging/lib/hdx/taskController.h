@@ -304,8 +304,9 @@ private:
 
         // HdSceneDelegate interface
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
+        virtual VtValue GetCameraParamValue(SdfPath const& id, 
+                                            TfToken const& key);
         virtual bool IsEnabled(TfToken const& option) const;
-        virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
         virtual HdRenderBufferDescriptor
             GetRenderBufferDescriptor(SdfPath const& id);
 
@@ -326,7 +327,7 @@ private:
     SdfPath _colorizeTaskId;
     SdfPath _colorCorrectionTaskId;
 
-    // Generated cameras
+    // Generated camera (for the default/free cam)
     SdfPath _cameraId;
 
     // Generated lights

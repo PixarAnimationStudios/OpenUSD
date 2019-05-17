@@ -87,6 +87,14 @@ HdxTaskController::_Delegate::Get(SdfPath const& id, TfToken const& key)
 }
 
 /* virtual */
+VtValue
+HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
+                                                  TfToken const& key)
+{   
+    return Get(id, key);
+}
+
+/* virtual */
 bool
 HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
 {
@@ -96,14 +104,6 @@ HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
         return true;
     }
     return HdSceneDelegate::IsEnabled(option);
-}
-
-/* virtual */
-std::vector<GfVec4d>
-HdxTaskController::_Delegate::GetClipPlanes(SdfPath const& cameraId)
-{
-    return GetParameter<std::vector<GfVec4d>>(cameraId,
-                HdCameraTokens->clipPlanes);
 }
 
 /* virtual */
@@ -135,6 +135,34 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     , _delegate(renderIndex, controllerId)
 {
     _CreateRenderGraph();
+}
+
+HdxTaskController::~HdxTaskController()
+{
+    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
+    SdfPath const tasks[] = {
+        _oitResolveTaskId,
+        _selectionTaskId,
+        _simpleLightTaskId,
+        _shadowTaskId,
+        _colorizeSelectionTaskId,
+        _colorizeTaskId,
+        _colorCorrectionTaskId
+    };
+    for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
+        if (!tasks[i].IsEmpty()) {
+            GetRenderIndex()->RemoveTask(tasks[i]);
+        }
+    }
+    for (auto const& id : _renderTaskIds) {
+        GetRenderIndex()->RemoveTask(id);
+    }
+    for (auto const& id : _lightIds) {
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
+    }
+    for (auto const& id : _aovBufferIds) {
+        GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
+    }
 }
 
 void
@@ -382,34 +410,6 @@ HdxTaskController::_CreateColorCorrectionTask()
 
     _delegate.SetParameter(_colorCorrectionTaskId, HdTokens->params,
         taskParams);
-}
-
-HdxTaskController::~HdxTaskController()
-{
-    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
-    SdfPath const tasks[] = {
-        _oitResolveTaskId,
-        _selectionTaskId,
-        _simpleLightTaskId,
-        _shadowTaskId,
-        _colorizeSelectionTaskId,
-        _colorizeTaskId,
-        _colorCorrectionTaskId
-    };
-    for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
-        if (!tasks[i].IsEmpty()) {
-            GetRenderIndex()->RemoveTask(tasks[i]);
-        }
-    }
-    for (auto const& id : _renderTaskIds) {
-        GetRenderIndex()->RemoveTask(id);
-    }
-    for (auto const& id : _lightIds) {
-        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
-    }
-    for (auto const& id : _aovBufferIds) {
-        GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
-    }
 }
 
 bool

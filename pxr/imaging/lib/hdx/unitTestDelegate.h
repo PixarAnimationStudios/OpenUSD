@@ -171,6 +171,8 @@ public:
     virtual HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId);
     virtual VtValue GetMaterialParamValue(SdfPath const &shaderId,
                                           TfToken const &paramName);
+    virtual VtValue GetCameraParamValue(SdfPath const &cameraId,
+                                        TfToken const &paramName);
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 

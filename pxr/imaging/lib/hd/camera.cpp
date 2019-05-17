@@ -68,7 +68,7 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
         GfMatrix4d worldToViewInverseMatrix(1.0);
 
         // extract view matrix
-        VtValue vMatrix = sceneDelegate->Get(id,
+        VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
             HdCameraTokens->worldToViewMatrix);
         worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
         worldToViewInverseMatrix = worldToViewMatrix.GetInverse();
@@ -84,7 +84,7 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
         GfMatrix4d projectionMatrix(1.0);
 
         // extract projection matrix
-        VtValue vMatrix = sceneDelegate->Get(id,
+        VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
             HdCameraTokens->projectionMatrix);
         projectionMatrix = vMatrix.Get<GfMatrix4d>();
 
@@ -95,12 +95,17 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyWindowPolicy) {
         _cameraValues[HdCameraTokens->windowPolicy] =
-                sceneDelegate->Get(id, HdCameraTokens->windowPolicy);
+            sceneDelegate->GetCameraParamValue(id,
+                HdCameraTokens->windowPolicy);
     }
 
     if (bits & DirtyClipPlanes) {
-        _cameraValues[HdCameraTokens->clipPlanes] =
-                sceneDelegate->GetClipPlanes(id);
+        VtValue clipPlanes = 
+            sceneDelegate->GetCameraParamValue(id, HdCameraTokens->clipPlanes);
+        if (clipPlanes.IsEmpty()) {
+            clipPlanes = VtValue(std::vector<GfVec4d>());
+        }
+        _cameraValues[HdCameraTokens->clipPlanes] = clipPlanes;
     }
 
     *dirtyBits = Clean;
