@@ -67,6 +67,10 @@ if (${PXR_BUILD_HOUDINI_PLUGIN})
     add_subdirectory(third_party/houdini)
 endif()
 
+if (${PXR_BUILD_PRMAN_PLUGIN})
+    add_subdirectory(third_party/renderman-${RENDERMAN_VERSION_MAJOR})
+endif()
+
 if (${PXR_BUILD_DOCUMENTATION})
     # Ensure we have doxygen+graphviz available
     find_program(DOXYGEN_EXECUTABLE
