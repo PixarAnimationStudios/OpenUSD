@@ -76,6 +76,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
                                 \
     (oitRenderTask)             \
     (oitRenderSetupTask)        \
+    (oitResolveTask)            \
     (renderTask)                \
     (renderSetupTask)           \
     (simpleLightTask)           \

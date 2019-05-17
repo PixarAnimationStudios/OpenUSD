@@ -35,6 +35,7 @@ layout (location = 0) out vec4 colorOut;
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
+#if defined(HD_HAS_hdxOitDataBuffer)
     int screenWidth = HdGet_oitWidth();
     int screenHeight = HdGet_oitHeight();
     int numSamples = HdGet_oitSamples();
@@ -51,6 +52,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
         hdxOitIndexBuffer[writeIndex] = prevIndex;
     }
+#endif
 }
 
 -- glsl HdxRenderPass.RenderPick

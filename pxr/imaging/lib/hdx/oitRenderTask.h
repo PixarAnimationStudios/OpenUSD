@@ -48,7 +48,7 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 /// A task for rendering transparent geometry into OIT buffers.
 /// Its companion task, OITResolveTask, will blend the buffers to screen.
 ///
-class HdxOitRenderTask final : public HdxRenderTask 
+class HdxOitRenderTask : public HdxRenderTask 
 {
 public:
     HDX_API
@@ -59,17 +59,18 @@ public:
 
     /// Sync the render pass resources
     HDX_API
-    void Sync(HdSceneDelegate* delegate,
-              HdTaskContext* ctx,
-              HdDirtyBits* dirtyBits) override;
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
 
     /// Prepare the tasks resources
     HDX_API
-    void Prepare(HdTaskContext* ctx, HdRenderIndex* renderIndex) override;
+    virtual void Prepare(HdTaskContext* ctx, 
+                         HdRenderIndex* renderIndex) override;
 
     /// Execute render pass task
     HDX_API
-    void Execute(HdTaskContext* ctx) override;
+    virtual void Execute(HdTaskContext* ctx) override;
 
 private:
     HdxOitRenderTask() = delete;
@@ -81,8 +82,7 @@ private:
 
     HdStRenderPassShaderSharedPtr _oitRenderPassShader;
 
-    GfVec4d _viewport;
-    bool _rebuildOitBuffers;
+    GfVec4i _viewport;
     HdBufferArrayRangeSharedPtr _counterBar;
     HdBufferArrayRangeSharedPtr _dataBar;
     HdBufferArrayRangeSharedPtr _depthBar;
