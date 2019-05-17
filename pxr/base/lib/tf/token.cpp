@@ -190,6 +190,18 @@ private:
         return ret;
     }
 
+    static inline uint64_t _ComputeCompareCode(char const *p) {
+        uint64_t compCode = 0;
+        int nchars = sizeof(compCode);
+        while (nchars--) {
+            compCode |= static_cast<uint64_t>(*p) << (8*nchars);
+            if (*p) {
+                ++p;
+            }
+        }
+        return compCode;
+    }
+
     /*
      * Either finds a key that is stringwise-equal to s,
      * or puts a new _Rep into the map for s.
@@ -221,6 +233,7 @@ private:
             _RepPtr rep = &(*_sets[setNum].insert(TfToken::_Rep(s)).first);
             rep->_isCounted = !makeImmortal;
             rep->_setNum = setNum;
+            rep->_compareCode = _ComputeCompareCode(rep->_cstr);
             if (!makeImmortal)
                 rep->_refCount = 1;
             return _RepPtrAndBits(rep, !makeImmortal);
