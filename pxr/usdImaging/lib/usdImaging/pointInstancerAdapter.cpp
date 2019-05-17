@@ -1880,6 +1880,24 @@ UsdImagingPointInstancerAdapter::SampleInstancerTransform(
 }
 
 size_t
+UsdImagingPointInstancerAdapter::SampleTransform(
+    UsdPrim const& usdPrim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *sampleTimes,
+    GfMatrix4d *sampleValues)
+{
+    if (maxNumSamples == 0) {
+        return 0;
+    }
+    // Pull a single sample from the value-cached transform.
+    // This makes the (hopefully safe) assumption that we do not need
+    // motion blur on the underlying prototypes.
+    sampleTimes[0] = configuredSampleTimes[0];
+    sampleValues[0] = _GetValueCache()->GetTransform(cachePath);
+    return 1;
+}
+
+size_t
 UsdImagingPointInstancerAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,
     SdfPath const& cachePath,
