@@ -274,6 +274,18 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
     glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
+const TfTokenVector &
+HdxShadowTask::GetRenderTags() const
+{
+    // This task currently uses a hard coded set of render tags.
+    static TfTokenVector renderTags = {
+            HdTokens->geometry,
+            HdxRenderTagsTokens->interactiveOnlyGeom
+    };
+
+    return renderTags;
+}
+
 void
 HdxShadowTask::_CreateOverrideShader()
 {

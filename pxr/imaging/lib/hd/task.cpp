@@ -42,5 +42,13 @@ HdTask::~HdTask()
 {
 }
 
+const TfTokenVector &
+HdTask::GetRenderTags() const
+{
+    static TfTokenVector EMPTY_SET;
+
+    return EMPTY_SET;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

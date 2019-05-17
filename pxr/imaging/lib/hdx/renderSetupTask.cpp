@@ -112,6 +112,13 @@ HdxRenderSetupTask::Execute(HdTaskContext* ctx)
     (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
 }
 
+/// Gather render tags
+const TfTokenVector &
+HdxRenderSetupTask::GetRenderTags() const
+{
+    return _renderTags;
+}
+
 void
 HdxRenderSetupTask::_SetHdStRenderPassState(HdxRenderTaskParams const &params,
                                         HdStRenderPassState *renderPassState)
@@ -184,9 +191,17 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
-    _renderTags = params.renderTags;
     _cameraId = params.camera;
     _aovBindings = params.aovBindings;
+
+    // We have to notify Hydra that the render tags have changed.
+    // So that sync will pick it up.
+    if (_renderTags != params.renderTags) {
+        _renderTags = params.renderTags;
+
+        renderIndex.GetChangeTracker().MarkRenderTagsDirty();
+    }
+
 
     if (HdStRenderPassState* extendedState =
             dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {

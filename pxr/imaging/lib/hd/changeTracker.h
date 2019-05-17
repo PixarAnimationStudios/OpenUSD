@@ -342,7 +342,12 @@ public:
     HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
-    /// Set the flag when the set of render tags have changed.
+    /// Called to flag when the set of active render tags have changed.
+    /// This can either be because either the Task's opinion (which
+    /// resolves both view and render pass opinions) and a Prims opinion.
+    ///
+    /// Calling this means that any cached prim gathers that filter by render
+    /// tag need to invalidated.
     HD_API
     void MarkRenderTagsDirty();
 

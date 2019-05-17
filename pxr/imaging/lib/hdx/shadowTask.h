@@ -122,6 +122,11 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+    /// Collect Render Tags used by the task.
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
+
+
 private:
     void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
         HdStRenderPassState *renderPassState);

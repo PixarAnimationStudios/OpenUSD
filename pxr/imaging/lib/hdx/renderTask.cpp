@@ -77,6 +77,10 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
 
         HdRprimCollection collection = val.Get<HdRprimCollection>();
 
+        // Check for cases where the collection is empty (i.e. default
+        // constructed).  To do this, the code looks at the root paths,
+        // if it is empty, the collection doesn't refer to any prims at
+        // all.
         if (collection.GetName().IsEmpty()) {
             _pass.reset();
         } else {
@@ -142,7 +146,7 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
-    TfTokenVector renderTags = _GetRenderTags(ctx);
+    TfTokenVector renderTags = _GetRenderTagsForExecute(ctx);
 
     if (!TF_VERIFY(renderPassState)) return;
 
@@ -156,6 +160,27 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
         renderPassState->Bind();
         _pass->Execute(renderPassState, renderTags);
         renderPassState->Unbind();
+    }
+}
+
+const TfTokenVector &
+HdxRenderTask::GetRenderTags() const
+{
+    // The setupTask manages the render tags.  So if we own the
+    // setup task, forward the message.  Otherwise if the
+    // task is in the task list, it will add them itself.
+    // (we don't have the task context
+    // ctx to obtain them from the setup task to here, so the
+    // setup task has to do it).
+    // As Sync will agregate the render tags across all tasks
+    // in the task list, it is ok for the setup task
+    // to do this on this tasks behalf and return the
+    // empty set here.
+    if (_setupTask) {
+        return _setupTask->GetRenderTags();
+    } else {
+        static const TfTokenVector EMPTY_SET;
+        return EMPTY_SET;
     }
 }
 
@@ -178,7 +203,7 @@ HdxRenderTask::_GetRenderPassState(HdTaskContext *ctx) const
 }
 
 TfTokenVector
-HdxRenderTask::_GetRenderTags(HdTaskContext *ctx) const
+HdxRenderTask::_GetRenderTagsForExecute(HdTaskContext *ctx) const
 {
     if (_setupTask) {
         // If HdxRenderTaskParams is set on this task, we will have created an

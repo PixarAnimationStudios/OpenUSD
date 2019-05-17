@@ -71,6 +71,8 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _instancerMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
+    , _activeRenderTags()
+    , _renderTagVersion(_tracker.GetRenderTagVersion() - 1)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
@@ -1110,6 +1112,16 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Render Tag Gather
+    //
+    // Because the task list is not state tracked and can vary from
+    // Sync to Sync as different views use different task lists.
+    // Therefore, the render tags cannot be cached and need to be gathered
+    // every Sync.
+    _GatherRenderTags(tasks);
+
     // Merge IDs using the slow SdfPath less-than so that all delegate IDs group
     // together. Unfortunately, FastLessThan makes the optimization below less
     // effective, however the time to build the std::map dominates when using
@@ -1153,9 +1165,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
             }
 
             // PERFORMANCE: this loop can be expensive.
-            TfTokenVector const &renderTags = collection.GetRenderTags();
             SdfPathVector const &dirtyPrims
-                               = hdDirtyList->GetDirtyRprims(renderTags);
+                               = hdDirtyList->GetDirtyRprims(_activeRenderTags);
 
             size_t numDirtyPrims = dirtyPrims.size();
             for (size_t primNum = 0; primNum < numDirtyPrims; ++primNum) {
@@ -1341,6 +1352,62 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         _syncQueue.clear();
     }
 }
+
+void HdRenderIndex::_GatherRenderTags(const HdTaskSharedPtrVector *tasks)
+{
+    TfTokenVector currentRenderTags;
+    size_t numTasks = tasks->size();
+    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+        const HdTaskSharedPtr &task = (*tasks)[taskNum];
+
+        const TfTokenVector &taskRenderTags = task->GetRenderTags();
+
+        // Append this tasks render tags with those in the set.
+        currentRenderTags.insert(currentRenderTags.end(),
+                                 taskRenderTags.begin(),
+                                 taskRenderTags.end());
+    }
+
+    // Deduplicate the render tag set
+    std::sort(currentRenderTags.begin(), currentRenderTags.end());
+
+    TfTokenVector::iterator newEnd =
+            std::unique(currentRenderTags.begin(), currentRenderTags.end());
+
+    currentRenderTags.erase(newEnd, currentRenderTags.end());
+
+    unsigned int currentRenderTagVersion = _tracker.GetRenderTagVersion();
+    if (currentRenderTagVersion != _renderTagVersion) {
+        // If the render tag version has changed, we reset tracking of the
+        // current set of render tags, the the new set built by this sync.
+        _activeRenderTags.swap(currentRenderTags);
+    } else {
+        // As the tasks list is not consistent between runs of Sync and there
+        // is no tracking of the when the task list changes.
+        // The set of active render tags needs to build up over time.
+        // This is an additive only aproach, with the list reset when something
+        // marks render tags dirty in the change tracker.
+
+        TfTokenVector combinedRenderTags;
+        std::set_union(_activeRenderTags.cbegin(),
+                       _activeRenderTags.cend(),
+                       currentRenderTags.cbegin(),
+                       currentRenderTags.cend(),
+                       std::back_inserter(combinedRenderTags));
+
+        if (_activeRenderTags != combinedRenderTags) {
+            _activeRenderTags.swap(combinedRenderTags);
+
+            // Mark render tags dirty to cause dirty list to rebuild with the
+            // new active set
+            _tracker.MarkRenderTagsDirty();
+        }
+    }
+
+    // Active Render Tags have been updated, so update the version
+    _renderTagVersion = currentRenderTagVersion;
+}
+
 
 void
 HdRenderIndex::_CompactPrimIds()

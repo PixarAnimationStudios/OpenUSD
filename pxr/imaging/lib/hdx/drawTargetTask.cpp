@@ -388,6 +388,17 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     glFrontFace(GL_CCW);
 }
 
+const TfTokenVector &
+HdxDrawTargetTask::GetRenderTags() const
+{
+    // This task currently uses a hard coded set of render tags.
+    static TfTokenVector renderTags = {
+            HdTokens->geometry,
+            HdxRenderTagsTokens->interactiveOnlyGeom
+    };
+
+    return renderTags;
+}
 // --------------------------------------------------------------------------- //
 // VtValue Requirements
 // --------------------------------------------------------------------------- //

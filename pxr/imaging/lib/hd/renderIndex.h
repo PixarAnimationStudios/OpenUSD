@@ -456,6 +456,12 @@ private:
 
     HdRenderDelegate *_renderDelegate;
 
+    // ---------------------------------------------------------------------- //
+    // Sync State
+    // ---------------------------------------------------------------------- //
+    TfTokenVector _activeRenderTags;
+    unsigned int  _renderTagVersion;
+
     /// Register the render delegate's list of supported prim types.
     void _InitPrimTypes();
 
@@ -464,6 +470,8 @@ private:
 
     /// Release the fallback prims.
     void _DestroyFallbackPrims();
+
+    void _GatherRenderTags(const HdTaskSharedPtrVector *tasks);
 
     typedef tbb::enumerable_thread_specific<HdRenderIndex::HdDrawItemView>
                                                            _ConcurrentDrawItems;

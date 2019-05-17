@@ -580,11 +580,37 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     HdxRenderTaskParams renderSetupTaskParams =
         _GetValue<HdxRenderTaskParams>(renderSetupTaskId, HdTokens->params);
 
+    // Aggregate Render Tags across from all collections, to set in the
+    // setup task.
+    // This is a summary state, to help avoid syncing prims that don't
+    // participate in the final scene.  This doesn't effect which prims gets
+    // rendered in the final task.
+    TfTokenVector renderTags;
+    for (size_t collectionNum = 0;
+                collectionNum <  numCollections;
+              ++collectionNum)
+
+    {
+        const HdRprimCollection &collection = rprimCollections[collectionNum];
+        const TfTokenVector &colRenderTags = collection.GetRenderTags();
+
+        renderTags.insert(renderTags.end(),
+                          colRenderTags.cbegin(),
+                          colRenderTags.cend());
+    }
+    std::sort(renderTags.begin(), renderTags.end());
+
+    TfTokenVector::iterator newEnd =
+            std::unique(renderTags.begin(), renderTags.end());
+    renderTags.erase(newEnd, renderTags.end());
+
     if (renderSetupTaskParams.enableLighting != renderParams.enableLighting ||
-            renderSetupTaskParams.wireframeColor != renderParams.wireframeColor) {
+        renderSetupTaskParams.wireframeColor != renderParams.wireframeColor ||
+        renderSetupTaskParams.renderTags     != renderTags) {
         // Update the render setup task params.
         renderSetupTaskParams.enableLighting = renderParams.enableLighting;
         renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
+        renderSetupTaskParams.renderTags.swap(renderTags);
 
         // Store the updated render setup task params back in the cache and
         // mark them dirty.
@@ -593,7 +619,6 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
             renderSetupTaskId,
             HdChangeTracker::DirtyParams);
     }
-
 
     return taskList;
 }

@@ -88,6 +88,10 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+    /// Collect Render Tags used by the task.
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
+
 protected:
     HDX_API
     HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
@@ -103,8 +107,11 @@ private:
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
 
-    // Gather the render tags
-    TfTokenVector _GetRenderTags(HdTaskContext *ctx) const;
+    // Get Render Tags for Execute Phase.
+    // The setup task is what manages the render tags and so the dataflow
+    // is different depending on the phase and whether this task owns the
+    // setup task.
+    TfTokenVector _GetRenderTagsForExecute(HdTaskContext *ctx) const;
 
     HdxRenderTask() = delete;
     HdxRenderTask(const HdxRenderTask &) = delete;

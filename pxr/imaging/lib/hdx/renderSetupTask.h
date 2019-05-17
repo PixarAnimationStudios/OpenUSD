@@ -81,9 +81,6 @@ public:
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
-    TfTokenVector const &GetRenderTags() const {
-        return _renderTags;
-    }
 
     /// Sync the render pass resources
     HDX_API
@@ -100,6 +97,9 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+    /// Gather render tags
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;

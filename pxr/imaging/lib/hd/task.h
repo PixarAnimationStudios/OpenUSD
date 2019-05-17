@@ -132,6 +132,27 @@ public:
     /// for inter-task communication.
     virtual void Execute(HdTaskContext* ctx) = 0;
 
+    /// Render Tag Gather.
+    ///
+    /// Is called during the Sync phase after the task has been sync'ed.
+    ///
+    /// The task should return the render tags it wants to be appended to the
+    /// active set.
+    ///
+    /// Hydra prims are marked up with a render tag and only prims
+    /// marked with the render tags in the current active set are Sync'ed.
+    ///
+    /// Hydra's core will combine the sets from each task and deduplicated the
+    /// result.  So tasks don't need to co-ordinate with each other to
+    /// Optimize the set.
+    ///
+    /// For those tasks that use HdRenderPass, is the typically the set passed
+    /// to HdRenderPass's Execute method.
+    ///
+    /// The default implementation returns an empty set
+    HD_API
+    virtual const TfTokenVector &GetRenderTags() const;
+
     SdfPath const& GetId() const { return _id; }
 
 protected:
