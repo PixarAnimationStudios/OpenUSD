@@ -62,6 +62,7 @@
 #include <Alembic/AbcGeom/IXform.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/Visibility.h>
+#include <functional>
 #include <memory>
 #include <mutex>
 
@@ -576,7 +577,7 @@ AlembicProperty::GetHeader() const
 /// previous via a \c _PrimReaderContext.
 class _ReaderSchema {
 public:
-    typedef boost::function<void (_PrimReaderContext*)> PrimReader;
+    typedef std::function<void (_PrimReaderContext*)> PrimReader;
     typedef std::vector<PrimReader> PrimReaderVector;
     typedef UsdAbc_AlembicDataConversion::ToUsdConverter Converter;
 
@@ -655,8 +656,8 @@ _ReaderSchema::GetPrimReaders(const std::string& schema) const
 class _ReaderContext {
 public:
     /// Gets data from some property at a given sample.
-    typedef boost::function<bool (const UsdAbc_AlembicDataAny&,
-                                  const ISampleSelector&)> Converter;
+    typedef std::function<bool (const UsdAbc_AlembicDataAny&,
+                                const ISampleSelector&)> Converter;
 
     /// An optional ordering of name children or properties.
     typedef boost::optional<TfTokenVector> Ordering;
@@ -1808,9 +1809,9 @@ public:
     typedef _IsValidTag IsValidTag;
     typedef _MetaDataTag MetaDataTag;
     typedef _SampleTimesTag SampleTimesTag;
-    typedef boost::function<bool (IsValidTag)> IsValid;
-    typedef boost::function<const MetaData& (MetaDataTag)> GetMetaData;
-    typedef boost::function<_AlembicTimeSamples(SampleTimesTag)> GetSampleTimes;
+    typedef std::function<bool (IsValidTag)> IsValid;
+    typedef std::function<const MetaData& (MetaDataTag)> GetMetaData;
+    typedef std::function<_AlembicTimeSamples(SampleTimesTag)> GetSampleTimes;
 
     _PrimReaderContext(_ReaderContext&,
                        const IObject& prim,
