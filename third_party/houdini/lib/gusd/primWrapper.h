@@ -34,6 +34,8 @@
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
+#include <functional>
+
 #include "GT_Utils.h"
 #include "purpose.h"
 
@@ -88,25 +90,25 @@ class GUSD_API GusdPrimWrapper : public GT_Primitive
 {
 public:
 
-    typedef boost::function<GT_PrimitiveHandle
+    typedef std::function<GT_PrimitiveHandle
             (const GT_PrimitiveHandle&, /* sourcePrim */
              const UsdStagePtr&,
              const SdfPath&        /* path */,
              const GusdContext&)>
         DefinitionForWriteFunction;
 
-    typedef boost::function<GT_PrimitiveHandle
+    typedef std::function<GT_PrimitiveHandle
              (const UsdGeomImageable&,
               UsdTimeCode,
               GusdPurposeSet)>
         DefinitionForReadFunction;
 
-    typedef boost::function<bool
+    typedef std::function<bool
             (const GT_PrimitiveHandle&,
              std::string &primName)>
         GetPrimNameFunction;
 
-    typedef boost::function<GT_DataArrayHandle
+    typedef std::function<GT_DataArrayHandle
             ( const GT_DataArrayHandle & )>
         ResampleArrayFunction;
 

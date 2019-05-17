@@ -32,6 +32,7 @@
 
 #include <GT/GT_Primitive.h>
 
+#include <functional>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +45,7 @@ class UsdGeomXformCache;
 
 class GusdContext {
 public:
-    typedef boost::function<UsdStageRefPtr ()> GetStageFunc;
+    typedef std::function<UsdStageRefPtr ()> GetStageFunc;
     enum Granularity { ONE_FILE, PER_FRAME };
 
     GusdContext( UsdTimeCode t, 
