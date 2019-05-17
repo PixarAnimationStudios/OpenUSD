@@ -28,6 +28,8 @@
 #include "usdKatana/usdInArgs.h"
 
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
+
 #include <FnGeolib/op/FnGeolibOp.h>
 #include <memory>
 
@@ -136,6 +138,15 @@ public:
             FnAttribute::GroupAttribute opArgs) const;
     
     
+    /// \brief Access to shared caches relevant to efficient binding of
+    ///        materials across the hierarchy.
+    UsdShadeMaterialBindingAPI::CollectionQueryCache *
+    GetCollectionQueryCache() const;
+    UsdShadeMaterialBindingAPI::BindingsCache *
+    GetBindingsCache() const;
+    
+
+
     /// \brief extract private data from either the interface (its natural
     ///        location) with room for future growth
     static PxrUsdKatanaUsdInPrivateData * GetPrivateData(
@@ -159,6 +170,16 @@ private:
     
     
     mutable FnAttribute::GroupBuilder * _extGb;
+
+
+
+    typedef std::shared_ptr<UsdShadeMaterialBindingAPI::CollectionQueryCache>
+            _CollectionQueryCachePtr;
+    typedef std::shared_ptr<UsdShadeMaterialBindingAPI::BindingsCache>
+            _BindingsCachePtr;
+
+    _CollectionQueryCachePtr _collectionQueryCache;
+    _BindingsCachePtr _bindingsCache;
 
 
 };

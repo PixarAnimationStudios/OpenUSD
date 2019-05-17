@@ -319,6 +319,28 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
             }
         }
     }
+
+
+    if (parentData)
+    {
+        _collectionQueryCache = parentData->_collectionQueryCache;
+        _bindingsCache = parentData->_bindingsCache;
+        
+    }
+
+    if (!_collectionQueryCache)
+    {
+        _collectionQueryCache.reset(
+                new UsdShadeMaterialBindingAPI::CollectionQueryCache);
+    }
+
+    if (!_bindingsCache)
+    {
+        _bindingsCache.reset(
+            new UsdShadeMaterialBindingAPI::BindingsCache);
+    }
+
+
 }
 
 const bool
@@ -529,6 +551,21 @@ PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
         .deepUpdate(_extGb->build())
         .build();
 }
+
+
+UsdShadeMaterialBindingAPI::CollectionQueryCache *
+PxrUsdKatanaUsdInPrivateData::GetCollectionQueryCache() const
+{
+    return _collectionQueryCache.get();
+   
+}
+
+UsdShadeMaterialBindingAPI::BindingsCache *
+PxrUsdKatanaUsdInPrivateData::GetBindingsCache() const
+{
+    return _bindingsCache.get();
+}
+
 
 PxrUsdKatanaUsdInPrivateData *
 PxrUsdKatanaUsdInPrivateData::GetPrivateData(
