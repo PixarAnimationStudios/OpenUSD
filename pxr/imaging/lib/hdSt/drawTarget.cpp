@@ -194,10 +194,8 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
 
 
     // embed camera matrices into metadata
-    VtValue viewMatrixVt  = camera->Get(HdShaderTokens->worldToViewMatrix);
-    VtValue projMatrixVt  = camera->Get(HdShaderTokens->projectionMatrix);
-    const GfMatrix4d &viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
-    const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
+    const GfMatrix4d &viewMatrix = camera->GetViewMatrix();
+    const GfMatrix4d &projMatrix = camera->GetProjectionMatrix();
 
     // Make sure all draw target operations happen on the same
     // context.
