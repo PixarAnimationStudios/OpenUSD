@@ -57,8 +57,6 @@
 
 #include "pxr/base/trace/trace.h"
 
-#include "pxr/imaging/hdx/intersector.h"
-
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -66,6 +64,8 @@
 
 // Mesh Topology
 #include "pxr/imaging/hd/meshTopology.h"
+// Pick task, for DecodeIDRenderColor
+#include "pxr/imaging/hdx/pickTask.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/gamma.h"
@@ -1395,13 +1395,13 @@ UsdImagingGLLegacyEngine::TestIntersection(
             int idIndex = zMinIndex*4;
 
             *outHitPrimPath = GetRprimPathFromPrimId(
-                    HdxIntersector::DecodeIDRenderColor(&primId[idIndex]));
+                    HdxPickTask::DecodeIDRenderColor(&primId[idIndex]));
             if (outHitInstanceIndex) {
-                *outHitInstanceIndex = HdxIntersector::DecodeIDRenderColor(
+                *outHitInstanceIndex = HdxPickTask::DecodeIDRenderColor(
                         &instanceId[idIndex]);
             }
             if (outHitElementIndex) {
-                *outHitElementIndex = HdxIntersector::DecodeIDRenderColor(
+                *outHitElementIndex = HdxPickTask::DecodeIDRenderColor(
                         &elementId[idIndex]);
             }
 

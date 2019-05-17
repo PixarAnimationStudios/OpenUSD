@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,13 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdx/intersector.h"
+
+#include "pxr/imaging/hdx/pickTask.h"
+
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -40,6 +41,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/diagnostic.h"
@@ -49,6 +51,8 @@
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PUBLIC_TOKENS(HdxPickTokens, HDX_PICK_TOKENS);
 
 static HdRenderPassStateSharedPtr
 _InitIdRenderPassState(HdRenderIndex *index)
@@ -77,13 +81,18 @@ _IsStreamRenderingBackend(HdRenderIndex *index)
     return true;
 }
 
-HdxIntersector::HdxIntersector(HdRenderIndex *index)
-    : _index(index)
-{ 
+HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
+    : HdTask(id)
+    , _index(nullptr)
+{
+}
+
+HdxPickTask::~HdxPickTask()
+{
 }
 
 void
-HdxIntersector::_Init(GfVec2i const& size)
+HdxPickTask::_Init(GfVec2i const& size)
 {
     // The collection created below is purely for satisfying the HdRenderPass
     // constructor. The collections for the render passes are set in Query(..)
@@ -144,7 +153,7 @@ HdxIntersector::_Init(GfVec2i const& size)
 }
 
 void
-HdxIntersector::_ConfigureSceneMaterials(bool enableSceneMaterials,
+HdxPickTask::_ConfigureSceneMaterials(bool enableSceneMaterials,
     HdStRenderPassState *renderPassState)
 {
     if (enableSceneMaterials) {
@@ -160,17 +169,10 @@ HdxIntersector::_ConfigureSceneMaterials(bool enableSceneMaterials,
 }
 
 void
-HdxIntersector::SetResolution(GfVec2i const& widthHeight)
+HdxPickTask::_SetResolution(GfVec2i const& widthHeight)
 {
     TRACE_FUNCTION();
 
-    // XXX: Check if we're using the stream render delegate. The current
-    // implementation needs to be extended to be truly backend agnostic.
-    if (!_IsStreamRenderingBackend(_index)) {
-        TF_DEBUG(HDX_INTERSECT).Msg("Picking/ID render is not supported by"
-        " non-Stream render delegates yet.\n");
-        return;
-    }
     // Make sure we're in a sane GL state before attempting anything.
     if (GlfHasLegacyGraphics()) {
         TF_RUNTIME_ERROR("framebuffer object not supported");
@@ -199,7 +201,8 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
 }
 
 void
-HdxIntersector::_ConditionStencilWithGLCallback(DepthMaskCallback maskCallback)
+HdxPickTask::_ConditionStencilWithGLCallback(
+    HdxPickTaskContextParams::DepthMaskCallback maskCallback)
 {
     // Setup stencil state and prevent writes to color buffer.
     // We don't use the pickable/unpickable render pass state below, since
@@ -229,12 +232,72 @@ HdxIntersector::_ConditionStencilWithGLCallback(DepthMaskCallback maskCallback)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glFrontFace(GL_CCW);
     }
+}
+
+bool
+HdxPickTask::_UseOcclusionPass() const
+{
+    return _contextParams.doUnpickablesOcclude &&
+           !_contextParams.collection.GetExcludePaths().empty();
+}
+
+void
+HdxPickTask::Sync(HdSceneDelegate* delegate,
+                  HdTaskContext* ctx,
+                  HdDirtyBits* dirtyBits)
+{
+    if (!_IsStreamRenderingBackend(&(delegate->GetRenderIndex()))) {
+        return;
+    }
+
+    // Gather params from the scene and the task context.
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
+        _GetTaskParams(delegate, &_params);
+        *dirtyBits = HdChangeTracker::Clean;
+    }
+    _GetTaskContextData(ctx, HdxPickTokens->pickParams, &_contextParams);
+
+    // Store the render index so we can map ids to paths in Execute()...
+    _index = &(delegate->GetRenderIndex());
+
+    // Make sure we're in a sane GL state before attempting anything.
+    if (GlfHasLegacyGraphics()) {
+        TF_RUNTIME_ERROR("framebuffer object not supported");
+        return;
+    }
+    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
+    if (!TF_VERIFY(context)) {
+        TF_RUNTIME_ERROR("Invalid GL context");
+        return;
+    }
+
+    if (!_drawTarget) {
+        // Initialize the shared draw target late to ensure there is a valid GL
+        // context, which may not be the case at constructon time.
+        _Init(_contextParams.resolution);
+    } else {
+        _SetResolution(_contextParams.resolution);
+    }
+
+    if (!TF_VERIFY(_pickableRenderPass) || 
+        !TF_VERIFY(_occluderRenderPass)) {
+        return;
+    }
     
-    // Update the stencil state for the render passes
-    {
-        HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
-                                               _occluderRenderPassState};
-        for (auto& state : states) {
+    HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
+                                           _occluderRenderPassState};
+
+    // Are we using stencil conditioning?
+    bool needStencilConditioning =
+        (_contextParams.depthMaskCallback != nullptr);
+
+    // Calculate the viewport
+    GfVec2i size(_drawTarget->GetSize());
+    GfVec4i viewport(0, 0, size[0], size[1]);
+
+    // Update the renderpass states.
+    for (auto& state : states) {
+        if (needStencilConditioning) {
             state->SetStencilEnabled(true);
             state->SetStencil(HdCmpFuncLess,
                             /*ref=*/0,
@@ -242,99 +305,68 @@ HdxIntersector::_ConditionStencilWithGLCallback(DepthMaskCallback maskCallback)
                             /*sFail*/HdStencilOpKeep,
                             /*sPassZFail*/HdStencilOpKeep,
                             /*sPassZPass*/HdStencilOpKeep);
+        } else {
+            state->SetStencilEnabled(false);
+        }
+        state->SetAlphaThreshold(_params.alphaThreshold);
+        state->SetClipPlanes(_contextParams.clipPlanes);
+        state->SetCullStyle(_params.cullStyle);
+        state->SetCamera(_contextParams.viewMatrix, 
+                         _contextParams.projectionMatrix, viewport);
+        state->SetLightingEnabled(false);
+
+        // If scene materials are disabled in this environment then 
+        // let's setup the override shader
+        if (HdStRenderPassState* extState =
+                dynamic_cast<HdStRenderPassState*>(state.get())) {
+            _ConfigureSceneMaterials(_params.enableSceneMaterials, extState);
         }
     }
+
+    // Update the collections
+    //
+    // The picking operation is composed of one or more conceptual passes:
+    // (i) [optional] depth-only pass for "unpickable" prims: This ensures 
+    // that occlusion stemming for unpickable prims is honored during 
+    // picking.
+    //
+    // (ii) [mandatory] id render for "pickable" prims: This writes out the
+    // various id's for prims that pass the depth test.
+    if (_UseOcclusionPass()) {
+        // Pass (i) from above
+        HdRprimCollection occluderCol =
+            _contextParams.collection.CreateInverseCollection();
+        _occluderRenderPass->SetRprimCollection(occluderCol);
+    }
+
+    // Pass (ii) from above
+    _pickableRenderPass->SetRprimCollection(_contextParams.collection);
+
+    if (_UseOcclusionPass()) {
+        _occluderRenderPass->Sync();
+    }
+    _pickableRenderPass->Sync();
 }
 
-class HdxIntersector_DrawTask final : public HdTask
+void
+HdxPickTask::Prepare(HdTaskContext* ctx,
+                     HdRenderIndex* renderIndex)
 {
-public:
-    HdxIntersector_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                HdRenderPassStateSharedPtr const &renderPassState,
-                TfTokenVector const &renderTags)
-    : HdTask(SdfPath::EmptyPath())
-    , _renderPass(renderPass)
-    , _renderPassState(renderPassState)
-    , _renderTags(renderTags)
-    {
-    }
-
-    virtual void Sync(HdSceneDelegate*,
-                      HdTaskContext*,
-                      HdDirtyBits*) override
-    {
-        _renderPass->Sync();
-    }
-
-    /// Prepare the tasks resources
-    HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override
-    {
-        _renderPassState->Prepare(renderIndex->GetResourceRegistry());
-    }
-
-    virtual void Execute(HdTaskContext* ctx) override
-    {
-        // Try to extract render tags from the context in case
-        // there are render tags passed to the graph that 
-        // we should be using while rendering the id buffer
-        // XXX If this was a task (in the render graph) we could
-        // just connect it to the render pass setup which receives
-        // its rendertags from the viewer.
-        if(_renderTags.empty()) {
-            _GetTaskContextData(ctx, HdxTokens->renderTags, &_renderTags);
-        }
-
-        _renderPassState->Bind();
-        if(_renderTags.size()) {
-            _renderPass->Execute(_renderPassState, _renderTags);
-        } else {
-            _renderPass->Execute(_renderPassState);
-        }
-        _renderPassState->Unbind();
-    }
-
-private:
-    HdRenderPassSharedPtr _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
-    TfTokenVector _renderTags;
-};
-
-bool
-HdxIntersector::Query(HdxIntersector::Params const& params,
-                      HdRprimCollection const& pickablesCol,
-                      HdEngine* engine,
-                      HdxIntersector::Result* result)
-{
-    TRACE_FUNCTION();
-    GLF_GROUP_FUNCTION();
-
-    // XXX: Check if we're using the stream render delegate. The current
-    // implementation needs to be extended to be truly backend agnostic.
-    if (!_IsStreamRenderingBackend(_index)) {
-        TF_DEBUG(HDX_INTERSECT).Msg("Picking/ID render is not supported by"
-        " non-Stream render delegates yet.\n");
-        return false;
-    }
-    // Make sure we're in a sane GL state before attempting anything.
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return false;
-    }
-    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (!TF_VERIFY(context)) {
-        TF_RUNTIME_ERROR("Invalid GL context");
-        return false;
-    }
     if (!_drawTarget) {
-        // Initialize the shared draw target late to ensure there is a valid GL
-        // context, which may not be the case at constructon time.
-        _Init(GfVec2i(128,128));
+        return;
     }
-    if (!TF_VERIFY(_pickableRenderPass) || 
-        !TF_VERIFY(_occluderRenderPass)) {
-        return false;
+
+    if (_UseOcclusionPass()) {
+        _occluderRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+    }
+    _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+}
+
+void
+HdxPickTask::Execute(HdTaskContext* ctx)
+{
+    if (!_drawTarget) {
+        return;
     }
 
     GfVec2i size(_drawTarget->GetSize());
@@ -379,107 +411,63 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
     GLF_POST_PENDING_GL_ERRORS();
-    
+
     //
     // Execute the picking pass
     //
-    {
-        GLuint vao;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
-        bool needStencilConditioning = (params.depthMaskCallback != nullptr);
-
-        if (needStencilConditioning) {
-            _ConditionStencilWithGLCallback(params.depthMaskCallback);
-        } else {
-            // disable stencil
-            _pickableRenderPassState->SetStencilEnabled(false);
-            _occluderRenderPassState->SetStencilEnabled(false);
-        }
-
-        // Update render pass states based on incoming params.
-        HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
-                                               _occluderRenderPassState};
-        for (auto& state : states) {
-            state->SetAlphaThreshold(params.alphaThreshold);
-            state->SetClipPlanes(params.clipPlanes);
-            state->SetCullStyle(params.cullStyle);
-            state->SetCamera(params.viewMatrix, 
-                params.projectionMatrix, viewport);
-            state->SetLightingEnabled(false);
-
-            // If scene materials are disabled in this environment then 
-            // let's setup the override shader
-            if (HdStRenderPassState* extState =
-                    dynamic_cast<HdStRenderPassState*>(state.get())) {
-                _ConfigureSceneMaterials(params.enableSceneMaterials, extState);
-            }
-        }
-
-        //
-        // Enable conservative rasterization, if available.
-        //
-        // XXX: This wont work until it's in the Glew build.
-        bool convRstr = glewIsSupported("GL_NV_conservative_raster");
-        if (convRstr) {
-            // XXX: this should come from Glew
-            #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
-            glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
-        }
-
-        // XXX: Make HdxIntersector a task with multiple passes, instead of the
-        // multi-task usage below.
-        HdTaskSharedPtrVector tasks;
-
-        // The picking operation is composed of one or more conceptual passes:
-        // (i) [optional] depth-only pass for "unpickable" prims: This ensures 
-        // that occlusion stemming for unpickable prims is honored during 
-        // picking.
-        //
-        // (ii) [mandatory] id render for "pickable" prims: This writes out the
-        // various id's for prims that pass the depth test.
-
-        if (params.doUnpickablesOcclude &&
-            !pickablesCol.GetExcludePaths().empty()) {
-            // Pass (i) from above
-            HdRprimCollection occluderCol =
-                pickablesCol.CreateInverseCollection();
-            _occluderRenderPass->SetRprimCollection(occluderCol);
-
-            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                    _occluderRenderPass,
-                    _occluderRenderPassState,
-                    params.renderTags));
-        }
-
-        // Pass (ii) from above
-        _pickableRenderPass->SetRprimCollection(pickablesCol);
-        tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                _pickableRenderPass,
-                _pickableRenderPassState,
-                params.renderTags));
-
-        engine->Execute(_index, &tasks);
-
-        glDisable(GL_STENCIL_TEST);
-
-        if (convRstr) {
-            // XXX: this should come from Glew
-            #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
-            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
-        }
-
-        // Restore
-        glBindVertexArray(0);
-        glDeleteVertexArrays(1, &vao);
+    if (_contextParams.depthMaskCallback != nullptr) {
+        _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback);
     }
+
+    //
+    // Enable conservative rasterization, if available.
+    //
+    // XXX: This wont work until it's in the Glew build.
+    bool convRstr = glewIsSupported("GL_NV_conservative_raster");
+    if (convRstr) {
+        // XXX: this should come from Glew
+        #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
+        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    }
+
+    if (_UseOcclusionPass()) {
+        _occluderRenderPassState->Bind();
+        if (_params.renderTags.size() > 0) {
+            _occluderRenderPass->Execute(_occluderRenderPassState,
+                                         _params.renderTags);
+        } else {
+            _occluderRenderPass->Execute(_occluderRenderPassState);
+        }
+        _occluderRenderPassState->Unbind();
+    }
+    _pickableRenderPassState->Bind();
+    if (_params.renderTags.size() > 0) {
+        _pickableRenderPass->Execute(_pickableRenderPassState,
+                                     _params.renderTags);
+    } else {
+        _pickableRenderPass->Execute(_pickableRenderPassState);
+    }
+    _pickableRenderPassState->Unbind();
+
+    glDisable(GL_STENCIL_TEST);
+
+    if (convRstr) {
+        // XXX: this should come from Glew
+        #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
+        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    }
+
+    // Restore
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &vao);
 
     GLF_POST_PENDING_GL_ERRORS();
 
-    //
-    // Capture the result buffers to be resolved later.
-    //
+    // Capture the result buffers.
     size_t len = size[0] * size[1];
     std::unique_ptr<int[]> primIds(new int[len]);
     std::unique_ptr<int[]> instanceIds(new int[len]);
@@ -515,42 +503,59 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
 
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, &depths[0]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+                    &depths[0]);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+    drawTarget->Unbind();
 
     GLF_POST_PENDING_GL_ERRORS();
 
-    if (result) {
-        *result = HdxIntersector::Result(
+    HdxPickResult result(
             std::move(primIds), std::move(instanceIds), std::move(elementIds),
             std::move(edgeIds), std::move(pointIds), std::move(neyes),
             std::move(depths),
-            _index, params, viewport);
+            _index, _contextParams.pickTarget, _contextParams.viewMatrix,
+            _contextParams.projectionMatrix, viewport);
+
+    // Resolve!
+    if (_contextParams.resolveMode ==
+            HdxPickTokens->resolveNearestToCenter) {
+        result.ResolveNearestToCenter(_contextParams.outHits);
+    } else if (_contextParams.resolveMode ==
+            HdxPickTokens->resolveNearestToCamera) {
+        result.ResolveNearestToCamera(_contextParams.outHits);
+    } else if (_contextParams.resolveMode ==
+            HdxPickTokens->resolveUnique) {
+        result.ResolveUnique(_contextParams.outHits);
+    } else if (_contextParams.resolveMode ==
+            HdxPickTokens->resolveAll) {
+        result.ResolveAll(_contextParams.outHits);
+    } else {
+        TF_CODING_ERROR("Unrecognized interesection mode '%s'",
+            _contextParams.resolveMode.GetText());
     }
-
-    drawTarget->Unbind();
-    GLF_POST_PENDING_GL_ERRORS();
-
-    return true;
 }
 
-HdxIntersector::Result::Result()
+HdxPickResult::HdxPickResult()
     : _index(nullptr)
     , _viewport(0,0,0,0)
 {
 }
 
-HdxIntersector::Result::Result(std::unique_ptr<int[]> primIds,
-                        std::unique_ptr<int[]> instanceIds,
-                        std::unique_ptr<int[]> elementIds,
-                        std::unique_ptr<int[]> edgeIds,
-                        std::unique_ptr<int[]> pointIds,
-                        std::unique_ptr<int[]> neyes,
-                        std::unique_ptr<float[]> depths,
-                        HdRenderIndex const *index,
-                        HdxIntersector::Params params,
-                        GfVec4i viewport)
+HdxPickResult::HdxPickResult(
+        std::unique_ptr<int[]> primIds,
+        std::unique_ptr<int[]> instanceIds,
+        std::unique_ptr<int[]> elementIds,
+        std::unique_ptr<int[]> edgeIds,
+        std::unique_ptr<int[]> pointIds,
+        std::unique_ptr<int[]> neyes,
+        std::unique_ptr<float[]> depths,
+        HdRenderIndex const *index,
+        TfToken const& pickTarget,
+        GfMatrix4d const& viewMatrix,
+        GfMatrix4d const& projectionMatrix,
+        GfVec4i viewport)
     : _primIds(std::move(primIds))
     , _instanceIds(std::move(instanceIds))
     , _elementIds(std::move(elementIds))
@@ -559,27 +564,26 @@ HdxIntersector::Result::Result(std::unique_ptr<int[]> primIds,
     , _neyes(std::move(neyes))
     , _depths(std::move(depths))
     , _index(index)
-    , _params(params)
+    , _pickTarget(pickTarget)
+    , _viewMatrix(viewMatrix)
+    , _projectionMatrix(projectionMatrix)
     , _viewport(viewport)
 {
 }
 
-HdxIntersector::Result::~Result()
+HdxPickResult::~HdxPickResult()
 {
-    _params = Params();
-    _viewport = GfVec4i(0,0,0,0);
 }
 
-HdxIntersector::Result::Result(Result &&) = default;
+HdxPickResult::HdxPickResult(HdxPickResult &&) = default;
 
-HdxIntersector::Result&
-HdxIntersector::Result::operator=(Result &&) = default;
+HdxPickResult&
+HdxPickResult::operator=(HdxPickResult &&) = default;
 
 bool
-HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
-                                    HdxIntersector::Hit* hit) const
+HdxPickResult::_ResolveHit(int index, int x, int y, float z,
+                           HdxPickHit* hit) const
 {
-
     int primId = _primIds[index];
     hit->objectId = _index->GetRprimPathFromPrimId(primId);
 
@@ -597,16 +601,17 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
 
     GfVec3d hitPoint(0,0,0);
     gluUnProject(x, y, z,
-                 _params.viewMatrix.GetArray(),
-                 _params.projectionMatrix.GetArray(),
+                 _viewMatrix.GetArray(),
+                 _projectionMatrix.GetArray(),
                  &_viewport[0],
                  &((hitPoint)[0]),
                  &((hitPoint)[1]),
                  &((hitPoint)[2]));
+
     hit->worldSpaceHitPoint = GfVec3f(hitPoint);
     hit->ndcDepth = float(z);
 
-    GfMatrix4d eyeToWorld = _params.viewMatrix.GetInverse();
+    GfMatrix4d eyeToWorld = _viewMatrix.GetInverse();
     GfVec3f neye = HdVec4f_2_10_10_10_REV(_neyes[index]).GetAsVec<GfVec3f>();
     hit->worldSpaceHitNormal = eyeToWorld.TransformDir(neye);
 
@@ -630,7 +635,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
 }
 
 size_t
-HdxIntersector::Result::_GetHash(int index) const
+HdxPickResult::_GetHash(int index) const
 {
     int primId = _primIds[index];
     int instanceIndex = _instanceIds[index];
@@ -649,15 +654,15 @@ HdxIntersector::Result::_GetHash(int index) const
 }
 
 bool
-HdxIntersector::Result::_IsValidHit(int index) const
+HdxPickResult::_IsValidHit(int index) const
 {
     // Inspect the id buffers to determine if the pixel index is a valid hit
     // by accounting for the pick target when picking points and edges.
     // This allows the hit(s) returned to be relevant.
     bool validPrim = (_primIds[index] != -1);
-    bool invalidTargetEdgePick = (_params.pickTarget == PickEdges)
+    bool invalidTargetEdgePick = (_pickTarget == HdxPickTokens->pickEdges)
         && (_edgeIds[index] == -1);
-    bool invalidTargetPointPick = (_params.pickTarget == PickPoints)
+    bool invalidTargetPointPick = (_pickTarget == HdxPickTokens->pickPoints)
         && (_pointIds[index] == -1);
 
     return validPrim
@@ -665,13 +670,13 @@ HdxIntersector::Result::_IsValidHit(int index) const
            && !invalidTargetPointPick;
 }
 
-bool
-HdxIntersector::Result::ResolveNearestToCamera(HdxIntersector::Hit* hit) const
+void
+HdxPickResult::ResolveNearestToCamera(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid()) {
-        return false;
+    if (!IsValid() || allHits == nullptr) {
+        return;
     }
 
     int width = _viewport[2];
@@ -698,19 +703,22 @@ HdxIntersector::Result::ResolveNearestToCamera(HdxIntersector::Hit* hit) const
     }
 
     if (zMin >= 1.0) {
-        return false;
+        return;
     }
 
-    return _ResolveHit(zMinIndex, xMin, yMin, zMin, hit);
+    HdxPickHit hit;
+    if (_ResolveHit(zMinIndex, xMin, yMin, zMin, &hit)) {
+        allHits->push_back(hit);
+    }
 }
 
-bool
-HdxIntersector::Result::ResolveNearestToCenter(HdxIntersector::Hit* hit) const
+void
+HdxPickResult::ResolveNearestToCenter(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid()) {
-        return false;
+    if (!IsValid() || allHits == nullptr) {
+        return;
     }
 
     int width = _viewport[2];
@@ -733,8 +741,12 @@ HdxIntersector::Result::ResolveNearestToCenter(HdxIntersector::Hit* hit) const
             for (int yy = y; yy < height-y; yy++) {
                 int index = xx + yy*width;
                 if (_IsValidHit(index)) {
-                    return _ResolveHit(index, index%width, index/width,
-                                       depths[index], hit);
+                    HdxPickHit hit;
+                    if (_ResolveHit(index, index%width, index/width,
+                                    depths[index], &hit)) {
+                        allHits->push_back(hit);
+                        return;
+                    }
                 }
                 // Skip pixels we've already visited and jump to the boundary
                 if (!(xx == x || xx == width-x-1) && yy == y) {
@@ -743,45 +755,37 @@ HdxIntersector::Result::ResolveNearestToCenter(HdxIntersector::Hit* hit) const
             }
         }
     }
-
-    return false;
 }
 
-bool
-HdxIntersector::Result::ResolveAll(HdxIntersector::HitVector* allHits) const
+void
+HdxPickResult::ResolveAll(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid()) { return false; }
+    if (!IsValid() || allHits == nullptr) { return; }
 
     int width = _viewport[2];
     int height = _viewport[3];
     float const* depths = _depths.get();
 
-    int hitCount = 0;
     for (int y=0, i=0; y < height; y++) {
         for (int x=0; x < width; x++, i++) {
             if (!_IsValidHit(i)) continue;
 
-            Hit hit;
+            HdxPickHit hit;
             if (_ResolveHit(i, x, y, depths[i], &hit)) {
-                hitCount++;
-                if (allHits) {
-                    allHits->push_back(hit);
-                }
+                allHits->push_back(hit);
             }
         }
     }
-
-    return hitCount > 0;
 }
 
-bool
-HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
+void
+HdxPickResult::ResolveUnique(HdxPickHitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (!IsValid()) { return false; }
+    if (!IsValid() || allHits == nullptr) { return; }
 
     int width = _viewport[2];
     int height = _viewport[3];
@@ -806,7 +810,6 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
         }
     }
 
-    int hitCount = 0;
     {
         HD_TRACE_SCOPE("resolve");
         float const* depths = _depths.get();
@@ -815,20 +818,17 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
             int index = it->second;
             int x = index % width;
             int y = index / width;
-            Hit hit;
+            HdxPickHit hit;
             if (_ResolveHit(index, x, y, depths[index], &hit)) {
-                hitCount++;
-                if (hitSet) {
-                    hitSet->insert(hit);
-                }
+                // _GetHash has done the uniqueifying for us here.
+                allHits->push_back(hit);
             }
         }
     }
-    return hitCount > 0;
 }
 
 size_t
-HdxIntersector::Hit::GetHash() const
+HdxPickHit::GetHash() const
 {
     size_t hash = 0;
 
@@ -850,57 +850,35 @@ HdxIntersector::Hit::GetHash() const
     return hash;
 }
 
-size_t 
-HdxIntersector::Hit::HitSetHash::operator()(Hit const& hit) const
+bool
+operator<(HdxPickHit const& lhs, HdxPickHit const& rhs)
 {
-    size_t hash = 0;
-
-    boost::hash_combine(hash, hit.delegateId.GetHash());
-    boost::hash_combine(hash, hit.objectId.GetHash());
-    boost::hash_combine(hash, hit.instancerId.GetHash());
-    boost::hash_combine(hash, hit.instanceIndex);
-    boost::hash_combine(hash, hit.elementIndex);
-    boost::hash_combine(hash, hit.edgeIndex);
-    boost::hash_combine(hash, hit.pointIndex);
-
-    return hash;
+    return lhs.ndcDepth < rhs.ndcDepth;
 }
 
 bool
-HdxIntersector::Hit::HitSetEq::operator()(Hit const& a, Hit const& b) const
+operator==(HdxPickHit const& lhs, HdxPickHit const& rhs)
 {
-    return a.delegateId == b.delegateId
-       && a.objectId == b.objectId
-       && a.instancerId == b.instancerId
-       && a.instanceIndex == b.instanceIndex
-       && a.elementIndex == b.elementIndex
-       && a.edgeIndex == b.edgeIndex
-       && a.pointIndex == b.pointIndex;
+    return lhs.objectId == rhs.objectId
+        && lhs.delegateId == rhs.delegateId
+        && lhs.instancerId == rhs.instancerId
+        && lhs.instanceIndex == rhs.instanceIndex
+        && lhs.elementIndex == rhs.elementIndex
+        && lhs.edgeIndex == rhs.edgeIndex
+        && lhs.pointIndex == rhs.pointIndex
+        && lhs.worldSpaceHitPoint == rhs.worldSpaceHitPoint
+        && lhs.worldSpaceHitNormal == rhs.worldSpaceHitNormal
+        && lhs.ndcDepth == rhs.ndcDepth;
 }
 
 bool
-HdxIntersector::Hit::operator<(Hit const& lhs) const
+operator!=(HdxPickHit const& lhs, HdxPickHit const& rhs)
 {
-    return ndcDepth < lhs.ndcDepth;
-}
-
-bool
-HdxIntersector::Hit::operator==(Hit const& lhs) const
-{
-    return objectId == lhs.objectId
-       && delegateId == lhs.delegateId
-       && instancerId == lhs.instancerId
-       && instanceIndex == lhs.instanceIndex
-       && elementIndex == lhs.elementIndex
-       && edgeIndex == lhs.edgeIndex
-       && pointIndex == lhs.pointIndex
-       && worldSpaceHitPoint == lhs.worldSpaceHitPoint
-       && worldSpaceHitNormal == lhs.worldSpaceHitNormal
-       && ndcDepth == lhs.ndcDepth;
+    return !(lhs==rhs);
 }
 
 std::ostream&
-operator<<(std::ostream& out, HdxIntersector::Hit const & h)
+operator<<(std::ostream& out, HdxPickHit const& h)
 {
     out << "Delegate: <" << h.delegateId << "> "
         << "Object: <" << h.objectId << "> "
@@ -915,6 +893,92 @@ operator<<(std::ostream& out, HdxIntersector::Hit const & h)
     return out;
 }
 
+bool
+operator==(HdxPickTaskParams const& lhs, HdxPickTaskParams const& rhs)
+{
+    return lhs.alphaThreshold == rhs.alphaThreshold
+        && lhs.cullStyle == rhs.cullStyle
+        && lhs.renderTags == rhs.renderTags
+        && lhs.enableSceneMaterials == rhs.enableSceneMaterials;
+}
+
+bool
+operator!=(HdxPickTaskParams const& lhs, HdxPickTaskParams const& rhs)
+{
+    return !(lhs==rhs);
+}
+
+std::ostream&
+operator<<(std::ostream& out, HdxPickTaskParams const& p)
+{
+    out << "PickTask Params: (...) "
+        << p.alphaThreshold << " "
+        << p.cullStyle << " "
+        << p.enableSceneMaterials;
+    for (auto const& a : p.renderTags) {
+        out << a << " ";
+    }
+    return out;
+}
+
+bool
+operator==(HdxPickTaskContextParams const& lhs,
+           HdxPickTaskContextParams const& rhs)
+{
+    typedef void (*RawDepthMaskCallback)(void);
+    const RawDepthMaskCallback *lhsDepthMaskPtr =
+        lhs.depthMaskCallback.target<RawDepthMaskCallback>();
+    const RawDepthMaskCallback *rhsDepthMaskPtr =
+        rhs.depthMaskCallback.target<RawDepthMaskCallback>();
+    const RawDepthMaskCallback lhsDepthMask =
+        lhsDepthMaskPtr ? *lhsDepthMaskPtr : nullptr;
+    const RawDepthMaskCallback rhsDepthMask =
+        rhsDepthMaskPtr ? *rhsDepthMaskPtr : nullptr;
+
+    return lhs.resolution == rhs.resolution
+        && lhs.hitMode == rhs.hitMode
+        && lhs.pickTarget == rhs.pickTarget
+        && lhs.resolveMode == rhs.resolveMode
+        && lhs.doUnpickablesOcclude == rhs.doUnpickablesOcclude
+        && lhs.viewMatrix == rhs.viewMatrix
+        && lhs.projectionMatrix == rhs.projectionMatrix
+        && lhs.clipPlanes == rhs.clipPlanes
+        && lhsDepthMask == rhsDepthMask
+        && lhs.collection == rhs.collection
+        && lhs.outHits == rhs.outHits;
+}
+
+bool
+operator!=(HdxPickTaskContextParams const& lhs,
+           HdxPickTaskContextParams const& rhs)
+{
+    return !(lhs==rhs);
+}
+
+std::ostream&
+operator<<(std::ostream& out, HdxPickTaskContextParams const& p)
+{
+    typedef void (*RawDepthMaskCallback)(void);
+    const RawDepthMaskCallback *depthMaskPtr =
+        p.depthMaskCallback.target<RawDepthMaskCallback>();
+    const RawDepthMaskCallback depthMask =
+        depthMaskPtr ? *depthMaskPtr : nullptr;
+
+    out << "PickTask Context Params: (...) "
+        << p.resolution << " "
+        << p.hitMode << " "
+        << p.pickTarget << " "
+        << p.resolveMode << " "
+        << p.doUnpickablesOcclude << " "
+        << p.viewMatrix << " "
+        << p.projectionMatrix << " "
+        << depthMask << " "
+        << p.collection << " "
+        << p.outHits;
+    for (auto const& a : p.clipPlanes) {
+        out << a << " ";
+    }
+    return out;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

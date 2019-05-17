@@ -96,6 +96,9 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
                 const PxrMayaHdRenderParams& renderParams,
                 const HdRprimCollectionVector& rprimCollections);
 
+        PXRUSDMAYAGL_API
+        HdTaskSharedPtrVector GetPickingTasks();
+
     protected:
         PXRUSDMAYAGL_API
         void _SetLightingStateFromLightingContext();
@@ -128,6 +131,8 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         _RenderTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap _renderTaskIdMap;
         _RenderTaskIdMap _selectionTaskIdMap;
+
+        SdfPath _pickingTaskId;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

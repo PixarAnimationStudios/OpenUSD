@@ -50,6 +50,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
@@ -110,6 +111,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
 
     _simpleLightTaskId = _rootId.AppendChild(HdxPrimitiveTokens->simpleLightTask);
     _shadowTaskId = _rootId.AppendChild(HdxPrimitiveTokens->shadowTask);
+    _pickingTaskId = _rootId.AppendChild(HdxPrimitiveTokens->pickTask);
     _cameraId = _rootId.AppendChild(HdPrimTypeTokens->camera);
 
     // camera
@@ -143,6 +145,16 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         HdxShadowTaskParams taskParams;
         taskParams.camera = _cameraId;
         taskParams.viewport = _viewport;
+        cache[HdTokens->params] = VtValue(taskParams);
+    }
+
+    // Picking task.
+    {
+        renderIndex->InsertTask<HdxPickTask>(this, _pickingTaskId);
+        _ValueCache& cache = _valueCacheMap[_pickingTaskId];
+        HdxPickTaskParams taskParams;
+        taskParams.alphaThreshold = 0.1f;
+        taskParams.enableSceneMaterials = true;
         cache[HdTokens->params] = VtValue(taskParams);
     }
 }
@@ -388,6 +400,16 @@ PxrMayaHdSceneDelegate::GetSetupTasks()
 
     tasks.push_back(GetRenderIndex().GetTask(_simpleLightTaskId));
     tasks.push_back(GetRenderIndex().GetTask(_shadowTaskId));
+
+    return tasks;
+}
+
+HdTaskSharedPtrVector
+PxrMayaHdSceneDelegate::GetPickingTasks()
+{
+    HdTaskSharedPtrVector tasks;
+
+    tasks.push_back(GetRenderIndex().GetTask(_pickingTaskId));
 
     return tasks;
 }

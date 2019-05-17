@@ -46,8 +46,8 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/M3dView.h>
@@ -217,7 +217,7 @@ public:
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
     PXRUSDMAYAGL_API
-    const HdxIntersector::HitSet* TestIntersection(
+    const HdxPickHitVector* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             MSelectInfo& selectInfo);
 
@@ -231,7 +231,7 @@ public:
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
     PXRUSDMAYAGL_API
-    const HdxIntersector::HitSet* TestIntersection(
+    const HdxPickHitVector* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             const MHWRender::MSelectionInfo& selectionInfo,
             const MHWRender::MDrawContext& context);
@@ -250,7 +250,7 @@ public:
             const HdRprimCollection& collection,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
-            HdxIntersector::Result* outResult);
+            HdxPickHitVector* outResult);
 
     /// Utility function for finding the nearest hit (in terms of ndcDepth) in
     /// the given \p hitSet.
@@ -258,14 +258,14 @@ public:
     /// If \p hitSet is nullptr or is empty, nullptr is returned. Otherwise a
     /// pointer to the nearest hit in \p hitSet is returned.
     PXRUSDMAYAGL_API
-    static const HdxIntersector::Hit* GetNearestHit(
-            const HdxIntersector::HitSet* hitSet);
+    static const HdxPickHit* GetNearestHit(
+            const HdxPickHitVector* hitSet);
 
     /// Returns the absoluteInstanceIndex (index within the point instancer) for \c hit.
     ///
     /// Returns -1 if unable to get the absoluteInstanceIndex.
     PXRUSDMAYAGL_API
-    int GetAbsoluteInstanceIndexForHit(const HdxIntersector::Hit& hit) const;
+    int GetAbsoluteInstanceIndexForHit(const HdxPickHit& hit) const;
 
     /// Returns whether soft selection for proxy shapes is currently enabled.
     PXRUSDMAYAGL_API
@@ -327,8 +327,10 @@ private:
     /// the \p *result.
     bool _TestIntersection(
             const HdRprimCollection& rprimCollection,
-            HdxIntersector::Params queryParams,
-            HdxIntersector::Result* result);
+            const GfMatrix4d& viewMatrix,
+            const GfMatrix4d& projectionMatrix,
+            const bool singleSelection,
+            HdxPickHitVector* result);
 
     // Handler for Maya scene resets (e.g. new scene or switch scenes).
     void _OnMayaSceneReset(const UsdMayaSceneResetNotice& notice);
@@ -446,7 +448,7 @@ private:
     /// A cache of all selection results gathered since the last selection was
     /// computed. It maps delegate IDs to a HitSet of all of the intersection
     /// hits for that delegate ID.
-    std::unordered_map<SdfPath, HdxIntersector::HitSet, SdfPath::Hash> _selectResults;
+    std::unordered_map<SdfPath, HdxPickHitVector, SdfPath::Hash> _selectResults;
 
     /// We keep track of a "key" that's associated with the select results.
     /// This is used to determine if the results can be shared among multiple
@@ -480,7 +482,6 @@ private:
 
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
 
-    std::unique_ptr<HdxIntersector> _intersector;
     GfVec2i _selectionResolution;
     bool _enableDepthSelection;
 

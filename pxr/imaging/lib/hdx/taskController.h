@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
@@ -49,29 +48,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX: This API is transitional. At the least, render/picking/selection
 // APIs should be decoupled.
-
-/// Intersection mode tokens, mapped to HdxIntersector API.
-/// Note: The "nearest*" hitmodes may be considerably more efficient.
-/// - "nearestToCamera" returns the single hit point closest (by depth) to the
-///                     camera
-/// - "nearestToCenter" returns the single hit point nearest to the center of
-///                     the selection region; note that this should be faster
-///                     than nearestToCamera, as it will sample outward from the
-///                     center, and stop as soon as it finds any hit, while
-///                     nearestToCamera will check ALL pixels in the selection
-///                     region, and return the hit that has the lowest z
-/// - "unique"  returns the set of unique hit prims, keeping only the nearest
-///             depth per prim.
-/// - "all"     returns all hit points, possibly including multiple hits per
-///             prim.
-#define HDX_INTERSECTION_MODE_TOKENS           \
-    (nearestToCamera)                          \
-    (nearestToCenter)                          \
-    (unique)                                   \
-    (all)
-
-TF_DECLARE_PUBLIC_TOKENS(HdxIntersectionModeTokens, HDX_API, \
-    HDX_INTERSECTION_MODE_TOKENS);
 
 class HdRenderBuffer;
 
@@ -95,12 +71,15 @@ public:
     /// Execution API
 
     /// Obtain the set of tasks managed by the task controller,
-    /// for execution. The tasks returned will be different based on
-    /// current renderer state.
-    ///
-    /// A vector of zero length indicates error.
+    /// for image generation. The tasks returned will be different
+    /// based on current renderer state.
     HDX_API
-    HdTaskSharedPtrVector const GetTasks() const;
+    HdTaskSharedPtrVector const GetRenderingTasks() const;
+
+    /// Obtain the set of tasks managed by the task controller,
+    /// for picking.
+    HDX_API
+    HdTaskSharedPtrVector const GetPickingTasks() const;
 
     /// -------------------------------------------------------
     /// Rendering API
@@ -171,24 +150,6 @@ public:
     void SetCameraWindowPolicy(CameraUtilConformWindowPolicy windowPolicy);
 
     /// -------------------------------------------------------
-    /// Picking API
-
-    /// Set pick target resolution (if applicable).
-    /// XXX: Is there a better place for this to live?
-    HDX_API
-    void SetPickResolution(unsigned int size);
-
-    /// Test for intersection.
-    /// XXX: This should be changed to not take an HdEngine*.
-    HDX_API
-    bool TestIntersection(
-            HdEngine* engine,
-            HdRprimCollection const& collection,
-            HdxIntersector::Params const& qparams,
-            TfToken const& intersectionMode,
-            HdxIntersector::HitVector *allHits);
-
-    /// -------------------------------------------------------
     /// Selection API
 
     /// Turns the selection task on or off.
@@ -235,8 +196,6 @@ private:
     HdRenderIndex *_index;
     SdfPath const _controllerId;
 
-    std::unique_ptr<HdxIntersector> _intersector;
-
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.
     void _CreateRenderGraph();
@@ -250,6 +209,7 @@ private:
     void _CreateColorizeTask();
     void _CreateColorizeSelectionTask();
     void _CreateColorCorrectionTask();
+    void _CreatePickTask();
 
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
                                       HdxRenderTaskParams *renderParams) const;
@@ -326,6 +286,7 @@ private:
     SdfPath _colorizeSelectionTaskId;
     SdfPath _colorizeTaskId;
     SdfPath _colorCorrectionTaskId;
+    SdfPath _pickTaskId;
 
     // Generated camera (for the default/free cam)
     SdfPath _cameraId;

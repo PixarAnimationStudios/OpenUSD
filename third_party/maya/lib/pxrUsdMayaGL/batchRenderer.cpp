@@ -58,7 +58,6 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
@@ -443,9 +442,6 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _renderIndex->GetChangeTracker().AddCollection(
         _viewport2RprimCollection.GetName());
 
-    _intersector.reset(new HdxIntersector(_renderIndex.get()));
-    SetSelectionResolution(_selectionResolution);
-
     _selectionTracker.reset(new HdxSelectionTracker());
 
     TfWeakPtr<UsdMayaGLBatchRenderer> me(this);
@@ -482,7 +478,6 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
 UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
     _selectionTracker.reset();
-    _intersector.reset();
     _taskDelegate.reset();
 
     // We remove the softSelectOptionsChanged callback because it's passed
@@ -729,10 +724,6 @@ void
 UsdMayaGLBatchRenderer::SetSelectionResolution(const GfVec2i& widthHeight)
 {
     _selectionResolution = widthHeight;
-
-    if (_intersector) {
-        _intersector->SetResolution(_selectionResolution);
-    }
 }
 
 bool
@@ -747,7 +738,7 @@ UsdMayaGLBatchRenderer::SetDepthSelectionEnabled(const bool enabled)
     _enableDepthSelection = enabled;
 }
 
-const HdxIntersector::HitSet*
+const HdxPickHitVector*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         MSelectInfo& selectInfo)
@@ -817,7 +808,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
                           selectInfo.singleSelection());
     }
 
-    const HdxIntersector::HitSet* const hitSet =
+    const HdxPickHitVector* const hitSet =
         TfMapLookupPtr(_selectResults, shapeAdapterDelegateId);
     if (!hitSet || hitSet->empty()) {
         if (_selectResults.empty()) {
@@ -839,7 +830,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    FOUND %zu HIT(s)\n", hitSet->size());
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
-        for (const HdxIntersector::Hit& hit : *hitSet) {
+        for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "        HIT:\n"
                 "            delegateId: %s\n"
@@ -854,7 +845,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     return hitSet;
 }
 
-const HdxIntersector::HitSet*
+const HdxPickHitVector*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         const MHWRender::MSelectionInfo& selectionInfo,
@@ -923,7 +914,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
         _selectResultsKey = key;
     }
 
-    const HdxIntersector::HitSet* const hitSet =
+    const HdxPickHitVector* const hitSet =
         TfMapLookupPtr(_selectResults, shapeAdapter->GetDelegateID());
     if (!hitSet || hitSet->empty()) {
         return nullptr;
@@ -932,7 +923,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    FOUND %zu HIT(s)\n", hitSet->size());
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
-        for (const HdxIntersector::Hit& hit : *hitSet) {
+        for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "        HIT:\n"
                 "            delegateId: %s\n"
@@ -952,23 +943,19 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
         const HdRprimCollection& collection,
         const GfMatrix4d& viewMatrix,
         const GfMatrix4d& projectionMatrix,
-        HdxIntersector::Result* outResult)
+        HdxPickHitVector* outResult)
 {
     // Custom collection implementation.
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
-    HdxIntersector::Params params;
-    params.viewMatrix = viewMatrix;
-    params.projectionMatrix = projectionMatrix;
-    params.alphaThreshold = 0.1f;
-
-    return _TestIntersection(collection, params, outResult);
+    return _TestIntersection(collection, viewMatrix, projectionMatrix,
+                             true, outResult);
 }
 
 int
 UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
-        const HdxIntersector::Hit& hit) const
+        const HdxPickHit& hit) const
 {
     int ret = -1;
     if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
@@ -981,15 +968,15 @@ UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
 }
 
 /* static */
-const HdxIntersector::Hit*
+const HdxPickHit*
 UsdMayaGLBatchRenderer::GetNearestHit(
-        const HdxIntersector::HitSet* const hitSet)
+        const HdxPickHitVector* const hitSet)
 {
     if (!hitSet || hitSet->empty()) {
         return nullptr;
     }
 
-    const HdxIntersector::Hit* minHit = &(*hitSet->begin());
+    const HdxPickHit* minHit = &(*hitSet->begin());
 
     for (const auto& hit : *hitSet) {
         if (hit < *minHit) {
@@ -1050,10 +1037,14 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
 bool
 UsdMayaGLBatchRenderer::_TestIntersection(
         const HdRprimCollection& rprimCollection,
-        HdxIntersector::Params queryParams,
-        HdxIntersector::Result* result)
+        const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projectionMatrix,
+        const bool singleSelection,
+        HdxPickHitVector* result)
 {
-    queryParams.renderTags = rprimCollection.GetRenderTags();
+    if (!result) {
+        return false;
+    }
 
     glPushAttrib(GL_VIEWPORT_BIT |
                  GL_ENABLE_BIT |
@@ -1062,12 +1053,40 @@ UsdMayaGLBatchRenderer::_TestIntersection(
                  GL_STENCIL_BUFFER_BIT |
                  GL_TEXTURE_BIT |
                  GL_POLYGON_BIT);
-    const bool r = _intersector->Query(queryParams,
-                                       rprimCollection,
-                                       &_hdEngine,
-                                       result);
+
+    // hydra orients all geometry during topological processing so that
+    // front faces have ccw winding. We disable culling because culling
+    // is handled by fragment shader discard.
+    glFrontFace(GL_CCW); // < State is pushed via GL_POLYGON_BIT
+    glDisable(GL_CULL_FACE);
+
+    // note: to get benefit of alpha-to-coverage, the target framebuffer
+    // has to be a MSAA buffer.
+    glDisable(GL_BLEND);
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    HdTaskSharedPtrVector tasks;
+    tasks = _taskDelegate->GetPickingTasks();
+
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolution = _selectionResolution;
+    pickParams.resolveMode = singleSelection ?
+        HdxPickTokens->resolveNearestToCenter :
+        HdxPickTokens->resolveUnique;
+    pickParams.viewMatrix = viewMatrix;
+    pickParams.projectionMatrix = projectionMatrix;
+    pickParams.collection = rprimCollection;
+    pickParams.outHits = result;
+
+    VtValue vtPickParams(pickParams);
+    _hdEngine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _hdEngine.Execute(_renderIndex.get(), &tasks);
+
     glPopAttrib();
-    return r;
+
+    return (result->size() > 0);
 }
 
 void
@@ -1093,11 +1112,6 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         singleSelection ? "true" : "false",
         rprimCollections.size());
 
-    HdxIntersector::Params qparams;
-    qparams.viewMatrix = viewMatrix;
-    qparams.projectionMatrix = projectionMatrix;
-    qparams.alphaThreshold = 0.1f;
-
     _selectResults.clear();
 
     for (const HdRprimCollection& rprimCollection : rprimCollections) {
@@ -1105,33 +1119,21 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
             "    --- Intersection Testing with collection: %s\n",
             rprimCollection.GetName().GetText());
 
-        HdxIntersector::Result result;
-        if (!_TestIntersection(rprimCollection, qparams, &result)) {
+        HdxPickHitVector hits;
+        if (!_TestIntersection(rprimCollection, viewMatrix, projectionMatrix,
+                               singleSelection, &hits)) {
             continue;
         }
 
-        HdxIntersector::HitSet hits;
-        if (singleSelection) {
-            HdxIntersector::Hit hit;
-            if (!result.ResolveNearestToCenter(&hit)) {
-                continue;
-            }
-
-            hits.insert(hit);
-        }
-        else if (!result.ResolveUnique(&hits)) {
-            continue;
-        }
-
-        for (const HdxIntersector::Hit& hit : hits) {
+        for (const HdxPickHit& hit : hits) {
             const auto itIfExists =
                 _selectResults.emplace(
                     std::make_pair(hit.delegateId,
-                                   HdxIntersector::HitSet({hit})));
+                                   HdxPickHitVector({hit})));
 
             const bool& inserted = itIfExists.second;
             if (!inserted) {
-                _selectResults[hit.delegateId].insert(hit);
+                _selectResults[hit.delegateId].push_back(hit);
             }
         }
     }
@@ -1143,9 +1145,9 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         HdSelection::HighlightModeSelect;
 
     for (const auto& delegateHits : _selectResults) {
-        const HdxIntersector::HitSet& hitSet = delegateHits.second;
+        const HdxPickHitVector& hitSet = delegateHits.second;
 
-        for (const HdxIntersector::Hit& hit : hitSet) {
+        for (const HdxPickHit& hit : hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "    NEW HIT\n"
                 "        delegateId   : %s\n"

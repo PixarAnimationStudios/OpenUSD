@@ -38,6 +38,7 @@
 
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/drawTargetResolveTask.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -382,6 +383,16 @@ void
 Hdx_UnitTestDelegate::AddDrawTargetResolveTask(SdfPath const &id)
 {
     GetRenderIndex().InsertTask<HdxDrawTargetResolveTask>(this, id);
+}
+
+void
+Hdx_UnitTestDelegate::AddPickTask(SdfPath const &id)
+{
+    GetRenderIndex().InsertTask<HdxPickTask>(this, id);
+    _ValueCache &cache = _valueCacheMap[id];
+
+    HdxPickTaskParams params;
+    cache[HdTokens->params] = params;
 }
 
 void

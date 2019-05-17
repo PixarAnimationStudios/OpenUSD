@@ -35,7 +35,6 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/info.h"
 
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/rendererPlugin.h"
 #include "pxr/imaging/hdx/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/taskController.h"
@@ -248,7 +247,16 @@ UsdImagingGLEngine::RenderBatch(
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    _Render(params);
+    SetColorCorrectionSettings(params.colorCorrectionMode, 
+                               params.renderResolution);
+
+    // Forward scene materials enable option to delegate
+    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
+
+    VtValue selectionValue(_selTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
+    _Execute(params, /*fp16 draw target*/true,
+             _taskController->GetRenderingTasks());
 }
 
 void 
@@ -277,7 +285,16 @@ UsdImagingGLEngine::Render(
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    _Render(params);
+    SetColorCorrectionSettings(params.colorCorrectionMode, 
+                               params.renderResolution);
+
+    // Forward scene materials enable option to delegate
+    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
+
+    VtValue selectionValue(_selTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
+    _Execute(params, /*fp16 draw target*/true,
+             _taskController->GetRenderingTasks());
 }
 
 void
@@ -523,38 +540,41 @@ UsdImagingGLEngine::TestIntersection(
     }
 
     TF_VERIFY(_delegate);
+    TF_VERIFY(_taskController);
 
     // XXX(UsdImagingPaths): Is it correct to map USD root path directly
     // to the cachePath here?
     SdfPath cachePath = root.GetPath();
-    SdfPath rootPath = _delegate->ConvertCachePathToIndexPath(cachePath);
-    SdfPathVector roots(1, rootPath);
+    SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
     _UpdateHydraCollection(&_intersectCollection, roots, params);
 
-    HdxIntersector::HitVector allHits;
-    HdxIntersector::Params qparams;
-    qparams.viewMatrix = worldToLocalSpace * viewMatrix;
-    qparams.projectionMatrix = projectionMatrix;
-    qparams.alphaThreshold = params.alphaThreshold;
-    qparams.cullStyle = HdCullStyleNothing;
-    qparams.enableSceneMaterials = params.enableSceneMaterials;
+    HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
+    _taskController->SetRenderParams(hdParams);
 
-    _ComputeRenderTags(params, &qparams.renderTags);
+    // Forward scene materials enable option to delegate
+    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
 
-    if (!_taskController->TestIntersection(
-            &_engine,
-            _intersectCollection,
-            qparams,
-            HdxIntersectionModeTokens->nearestToCenter,
-            &allHits)) {
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolveMode = HdxPickTokens->resolveNearestToCenter;
+    pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
+    pickParams.projectionMatrix = projectionMatrix;
+    pickParams.clipPlanes = params.clipPlanes;
+    pickParams.collection = _intersectCollection;
+    pickParams.outHits = &allHits;
+    VtValue vtPickParams(pickParams);
+
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _Execute(params, /*fp16 draw target*/false,
+             _taskController->GetPickingTasks());
+
+    // Since we are in nearest-hit mode, we expect allHits to have
+    // a single point in it.
+    if (allHits.size() != 1) {
         return false;
     }
 
-    // Since we are in nearest-hit mode, and TestIntersection
-    // returned true, we know allHits has a single point in it.
-    TF_VERIFY(allHits.size() == 1);
-
-    HdxIntersector::Hit &hit = allHits[0];
+    HdxPickHit &hit = allHits[0];
 
     if (outHitPoint) {
         *outHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
@@ -601,7 +621,7 @@ UsdImagingGLEngine::GetPrimPathFromPrimIdColor(
         uint8_t(primIdColor[3])
     };
 
-    int primId = HdxIntersector::DecodeIDRenderColor(primIdColorBytes);
+    int primId = DecodeIDRenderColor(primIdColorBytes);
     SdfPath result = GetRprimPathFromPrimId(primId);
     if (!result.IsEmpty()) {
         if (instanceIndexOut) {
@@ -611,8 +631,7 @@ UsdImagingGLEngine::GetPrimPathFromPrimIdColor(
                 uint8_t(instanceIdColor[2]),
                 uint8_t(instanceIdColor[3])
             };
-            *instanceIndexOut = HdxIntersector::DecodeIDRenderColor(
-                    instanceIdColorBytes);
+            *instanceIndexOut = DecodeIDRenderColor(instanceIdColorBytes);
         }
     }
     return result;
@@ -950,7 +969,9 @@ UsdImagingGLEngine::_GetRenderIndex() const
 }
 
 void 
-UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
+UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
+                             bool fp16DrawTarget,
+                             HdTaskSharedPtrVector tasks)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return;
@@ -959,12 +980,9 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
     TF_VERIFY(_delegate);
 
     // Render into our interal framebuffer for color management / post-effects.
-    _BindInternalDrawTarget(params);
-    SetColorCorrectionSettings(params.colorCorrectionMode, 
-                               params.renderResolution);
-
-    // Forward scene materials enable option to delegate
-    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
+    if (fp16DrawTarget) {
+        _BindInternalDrawTarget(params);
+    }
 
     // User is responsible for initializing GL context and glew
     bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
@@ -1014,11 +1032,6 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
     //  * showGuides, showRender, showProxy
     //  * gammaCorrectColors
 
-
-    VtValue selectionValue(_selTracker);
-    _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
-
-    HdTaskSharedPtrVector tasks = _taskController->GetTasks();
     _engine.Execute(_renderIndex, &tasks);
 
     if (isCoreProfileContext) {
@@ -1033,8 +1046,10 @@ UsdImagingGLEngine::_Render(const UsdImagingGLRenderParams &params)
         glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
     }
 
-    // Copy the results into the client applications framebuffer.
-    _RestoreClientDrawTarget(params);
+    if (fp16DrawTarget) {
+        // Copy the results into the client applications framebuffer.
+        _RestoreClientDrawTarget(params);
+    }
 }
 
 bool 

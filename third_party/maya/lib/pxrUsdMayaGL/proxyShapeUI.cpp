@@ -31,7 +31,6 @@
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -170,12 +169,12 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    const HdxIntersector::HitSet* hitSet =
+    const HdxPickHitVector* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
             selectInfo);
 
-    const HdxIntersector::Hit* nearestHit =
+    const HdxPickHit* nearestHit =
         UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
 
     if (!nearestHit) {

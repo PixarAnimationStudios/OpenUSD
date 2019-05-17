@@ -42,10 +42,10 @@ pxr_library(hdx
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
-        intersector
         oitRenderTask
         oitResolveTask
         package
+        pickTask
         progressiveTask
         rendererPlugin
         rendererPluginRegistry

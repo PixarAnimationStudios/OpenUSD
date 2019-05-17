@@ -82,7 +82,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
     (simpleLightTask)           \
     (shadowTask)                \
     (drawTargetTask)            \
-    (drawTargetResolveTask)
+    (drawTargetResolveTask)     \
+    (pickTask)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
 
