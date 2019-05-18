@@ -234,6 +234,10 @@ public:
                     const UsdGeomPrimvar& primvar, 
                     UsdTimeCode time );
 
+    static GT_DataArrayHandle convertPrimvarData( 
+                    const UsdGeomPrimvar& primvar, 
+                    const VtValue& val);
+
     /// Load primvars for prim from USD.
     /// remapIndicies is used to expand curve primvars into point attributes if
     /// needed.

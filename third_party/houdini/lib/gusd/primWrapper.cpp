@@ -861,7 +861,15 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
     if (!primvar.ComputeFlattened(&val, time)) {
         return nullptr;
     }
+    return convertPrimvarData(primvar, val);
+}
 
+
+/* static */
+GT_DataArrayHandle
+GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar,
+                                     const VtValue& val )
+{
 #define _CONVERT_TUPLE(elemType, gtArray, gtType)                       \
     if (val.IsHolding<elemType>()) {                                    \
         return Gusd_ConvertTupleToGt<elemType, gtArray, gtType>(val);   \
@@ -1010,8 +1018,17 @@ GusdPrimWrapper::loadPrimvars(
             continue;
         }
 
-        GT_DataArrayHandle gtData = convertPrimvarData( primvar, time );
+        // Compute the value before calling convertPrimvarData, so that
+        // we can distinguish between primvars with no authored value
+        // and primvars whose authored value can't be converted.
+        // Note that the 'authored' primvars above are only known to have
+        // scene description, and still may have no value!
+        VtValue val;
+        if (!primvar.ComputeFlattened(&val, time)) {
+            continue;
+        }
 
+        GT_DataArrayHandle gtData = convertPrimvarData(primvar, val);
         if( !gtData )
         {
             TF_WARN( "Failed to convert primvar %s:%s %s.", 
