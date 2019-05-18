@@ -708,7 +708,9 @@ GusdGU_PackedUSD::unpackPrim(
 
     if( !gtPrim ) {
         const TfToken &type = prim.GetPrim().GetTypeName();
-        if( type != "PxHairman" && type != "PxProcArgs" ) {
+        static const TfToken PxHairman("PxHairman");
+        static const TfToken PxProcArgs("PxProcArgs");
+        if( type != PxHairman && type != PxProcArgs ) {
             TF_WARN( "Can't convert prim for unpack. %s. Type = %s.", 
                       prim.GetPrim().GetPath().GetText(),
                       type.GetText() );
