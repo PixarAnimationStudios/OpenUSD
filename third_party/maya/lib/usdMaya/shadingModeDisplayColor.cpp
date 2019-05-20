@@ -184,18 +184,14 @@ private:
             // emphasizing that the interface is a value provider for
             // its shading networks.
 
-            //UsdShadeInput dispColorIA = material.GetInput(_tokens->displayColor);
-            //if(!dispColorIA) {
+
             UsdShadeInput dispColorIA = material.CreateInput(_tokens->displayColor,
                                      SdfValueTypeNames->Color3f);
-            //    dispColorIA.Set(VtValue(color));
-            //} else {
-                VtValue currentVal;
-                dispColorIA.Get(&currentVal);
-                if( currentVal != VtValue(color)) {
-                    dispColorIA.Set(VtValue(color));
-                }
-            //}
+            VtValue currentVal;
+            dispColorIA.Get(&currentVal);
+            if( currentVal != VtValue(color)) {
+                dispColorIA.Set(VtValue(color));
+            }
 
             const std::string shaderName =
                 TfStringPrintf("%s_lambert", materialPrim.GetName().GetText());
